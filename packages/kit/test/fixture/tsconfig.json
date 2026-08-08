@@ -1,0 +1,5 @@
+{
+  "//": "Ровно то, что ляжет у потребителя: наследование базы kit одной строкой и include.",
+  "extends": "@omnifield/probe-web-kit/tsconfig",
+  "include": ["src", "vite.config.ts"]
+}

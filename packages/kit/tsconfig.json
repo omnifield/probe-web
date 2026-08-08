@@ -1,0 +1,30 @@
+{
+  "//": [
+    "Конфиг САМОГО пакета — не путать с `tsconfig.base.json`, который kit отдаёт наружу",
+    "подпутём `/tsconfig`. У них разные адресаты: этот собирает исходники kit, тот задаёт",
+    "базу приложениям потребителя."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    // Исходники в тарбол не едут (`files` манифеста), поэтому карта обязана нести их в
+    // себе — иначе у потребителя она указывает в пустоту. По той же причине нет
+    // `declarationMap`: карте деклараций подкладывать в себя нечего.
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test/*.ts", "vitest.config.ts"],
+  "exclude": ["test/fixture", "dist", "node_modules"]
+}
