@@ -40,12 +40,27 @@ models:
 # ДОГАДКА architect'а baser при заведении полигона, а не контракт: раскладку
 # меняет architect этой локации под то, что тут правда появится.
 zones:
-  kit:
-    paths: [packages/kit]
-    description: фреймворк-времянка на Solid — то, что продукты импортируют, а не копируют
+  style:
+    paths: [packages/style]
+    description: токены, cn/createStyle, темы — ноль зависимостей от кита и рантайма
+  ui:
+    paths: [packages/ui]
+    description: примитивы на kobalte — 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь
+  runtime:
+    paths: [packages/runtime]
+    description: mount() и контракт #root — то, что зовёт скелет у потребителя
+  build:
+    paths: [packages/build]
+    description: оснастка сборки — подпути /vite, /tsconfig, /vitest
+  lint:
+    paths: [packages/lint]
+    description: пресет eslint-plugin-solid — канон Solid, выраженный машиной
   starter:
     paths: [packages/starter]
     description: npm-обвес @omnifield/probe-web — шаблоны скелета, который baser кладёт в web/
+  reference:
+    paths: [apps/reference]
+    description: эталонное приложение — гейт сборки всей цепочки, а не витрина
 
 # Git-доступ по роли — РАМКА (инвариант shared-policy), приведён для наглядности,
 # выключить нельзя: architect=full; owner=commit-only (gate); layer=none.
