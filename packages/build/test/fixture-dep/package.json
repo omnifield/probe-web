@@ -1,0 +1,30 @@
+{
+  "//": [
+    "Тестовая ЗАВИСИМОСТЬ, отдающая непреобразованный JSX, — так публикуются solid-библиотеки",
+    "(норма `solid` в exports, фонд solid-lib-starter.md). Нужна, чтобы Acceptance задачи",
+    "`tasker:PROBEWEB-9` проверялся честно: JSX собственного приложения трансформируется",
+    "почти любым конфигом, а JSX из зависимости — только если разрешение дошло до условия",
+    "`solid` и трансформ применился к файлу внутри node_modules.",
+    "",
+    "Ветка `default` намеренно ведёт в модуль, который падает: без условия `solid` тест обязан",
+    "упасть с внятной причиной, а не пройти по другой ветке и ничего не доказать."
+  ],
+  "name": "probe-web-build-fixture-jsx-dep",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "solid": "./src/index.jsx",
+      "default": "./src/no-solid-condition.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  }
+}
