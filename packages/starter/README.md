@@ -70,22 +70,27 @@ pnpm -C web dev
 ## Что скелет замораживает
 
 Файлы `placed-once` зовут пакеты вечно и той версией вызова, какой их положили. Поэтому
-поверхность, которую трогает скелет, — **пять точек плюс `#root`** в разметке:
+поверхность, которую трогает скелет, — **шесть точек плюс `#root`** в разметке:
 
 ```ts
-import { mount } from "@omnifield/probe-web-runtime";        // рантайм
-import { Button } from "@omnifield/probe-web-ui";            // примитивы
-import "@omnifield/probe-web-style/css";                     // стиль
-import { defineConfig } from "@omnifield/probe-web-build/vite"; // сборка
-// "extends": "@omnifield/probe-web-build/tsconfig"           // типы
+import { mount } from "@omnifield/probe-web-runtime";           // рантайм
+import { Button } from "@omnifield/probe-web-ui";               // примитивы
+import "@omnifield/probe-web-style/css";                        // стиль: базовый слой
+import "@omnifield/probe-web-style/themes.css";                 // стиль: значения токенов
+import { defineConfig } from "@omnifield/probe-web-build/vite";  // сборка
+// "extends": "@omnifield/probe-web-build/tsconfig"              // типы
 ```
+
+CSS двумя строками — не дубль: базовый слой не держит ни одного литерального цвета, значения
+приходят темой. С одним `/css` браузер отбросил бы неразрешённые `var()`, и страница вышла бы
+бесцветной. Своя тема вместо нашей — правь вторую строку, файл твой.
 
 Версия Vite, набор плагинов, цель компиляции и способ разрешения путей за этими точками
 двигаются выпуском пакета, не задевая уже созданные продукты. Так же уедет и переход на
 Solid 2.0 со сменой `jsxImportSource`: у потребителя в `tsconfig.json` лежит только `extends`.
 
 Число касаний сторожит проба `test/surface.test.ts`: попытка позвать из скелета что-то сверх
-пяти точек — красная.
+шести точек — красная.
 
 ## Проверить обвес
 

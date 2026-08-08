@@ -17,7 +17,14 @@ const UI = "@omnifield/probe-web-ui";
 const STYLE = "@omnifield/probe-web-style";
 
 /** Точки контракта, которых касается скелет, — и ни одной больше без мажора и architect'а. */
-const FROZEN_ENTRYPOINTS = [`${BUILD}/tsconfig`, `${BUILD}/vite`, RUNTIME, `${STYLE}/css`, UI];
+const FROZEN_ENTRYPOINTS = [
+  `${BUILD}/tsconfig`,
+  `${BUILD}/vite`,
+  RUNTIME,
+  `${STYLE}/css`,
+  `${STYLE}/themes.css`,
+  UI,
+];
 
 /**
  * Что скелет зовёт ПО ИМЕНАМ и откуда. Типы (`${BUILD}/tsconfig`) точки входа не имеют, CSS
@@ -131,6 +138,11 @@ describe("точка входа скелета", () => {
     // Напрямую — потому что строгий менеджер пакетов транзитивный импорт не разрешит;
     // побочкой — потому что `sideEffects: false` у стиля запрещает отдавать CSS из корня.
     expect(main).toContain(`import "${STYLE}/css";`);
+    // Тема — вторая строка, а не избыточность: базовый слой держит инвариант «ни одного
+    // литерального цвета», значения приходят темой. Без неё var() не разрешается и
+    // страница выходит бесцветной — ровно та «пустая страница», ради которой контракт
+    // и велел скелету показывать работающий кит.
+    expect(main).toContain(`import "${STYLE}/themes.css";`);
   });
 
   it("не тянет solid напрямую", () => {
