@@ -40,9 +40,12 @@ models:
 # ДОГАДКА architect'а baser при заведении полигона, а не контракт: раскладку
 # меняет architect этой локации под то, что тут правда появится.
 zones:
-  outfit:
-    paths: [packages/probe-web]
-    description: обвес, который эта локация отгружает — заготовка фронта
+  kit:
+    paths: [packages/kit]
+    description: фреймворк-времянка на Solid — то, что продукты импортируют, а не копируют
+  starter:
+    paths: [packages/starter]
+    description: npm-обвес @omnifield/probe-web — шаблоны скелета, который baser кладёт в web/
 
 # Git-доступ по роли — РАМКА (инвариант shared-policy), приведён для наглядности,
 # выключить нельзя: architect=full; owner=commit-only (gate); layer=none.

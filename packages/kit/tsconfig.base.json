@@ -1,0 +1,27 @@
+{
+  "//": [
+    "Точка 3 замороженной поверхности — ТИПЫ (kb:PROBEWEB-2).",
+    "`tsconfig.json` у потребителя едет классом `placed-once` и наследует этот файл одной",
+    "строкой `extends`. Всё, что тут стоит, kit меняет своим выпуском; всё, что окажется",
+    "у потребителя в файле, застынет навсегда — поэтому там остаются только `extends`",
+    "и `include`."
+  ],
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}
