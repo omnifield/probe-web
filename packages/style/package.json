@@ -1,0 +1,44 @@
+{
+  "name": "@omnifield/probe-web-style",
+  "version": "0.1.0",
+  "description": "Стилевой слой probe-web: токен-контракт, cn/createStyle, дефолтная пара тем. Ноль зависимостей на кит и рантайм (kb:PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./css": "./dist/css/base.css",
+    "./themes.css": "./dist/css/themes.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/build-css.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
