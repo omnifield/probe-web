@@ -10,7 +10,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./css": "./dist/css/base.css",
+    "./base.css": "./dist/css/base.css",
     "./themes.css": "./dist/css/themes.css"
   },
   "files": [
@@ -39,6 +39,7 @@
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10"
   }
 }

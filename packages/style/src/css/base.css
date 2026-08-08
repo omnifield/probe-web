@@ -1,4 +1,4 @@
-/* @omnifield/probe-web-style — базовый CSS, подпуть `@omnifield/probe-web-style/css`.
+/* @omnifield/probe-web-style — базовый CSS, подпуть `@omnifield/probe-web-style/base.css`.
 
    ИНВАРИАНТ ФАЙЛА: ни одного литерального ЦВЕТА. Здесь только сброс, производные шкалы и
    ссылки на токены; сами значения приходят темой — `/themes.css` или `registerTheme()`.

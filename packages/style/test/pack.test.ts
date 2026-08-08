@@ -1,43 +1,21 @@
-import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { PKG, installFromTarball } from "./helpers/install.js";
 
 // Гейт ПОСТАВКИ: что окажется в тарболе и разрешится ли из него подпуть. Проверять это по
 // полям манифеста бессмысленно — `files` и `exports` расходятся с фактом молча, и узнаёт
-// об этом потребитель, а не мы.
-
-const pkgRoot = resolve(import.meta.dirname, "..");
-const PKG = "@omnifield/probe-web-style";
+// об этом потребитель, а не мы. Ответ на вопрос «а ТИПИЗИРУЕТСЯ ли подпуть у потребителя»
+// этот гейт не даёт — он в `types.test.ts`.
 
 let work: string;
 let entries: string[];
 let install: string;
 
 beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), "probe-web-style-pack-"));
-
-  const packed = execFileSync("pnpm", ["pack", "--pack-destination", work], {
-    cwd: pkgRoot,
-    encoding: "utf8",
-  });
-  const tarball = packed.trim().split("\n").at(-1) as string;
-
-  entries = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8" })
-    .trim()
-    .split("\n")
-    // npm-тарбол кладёт всё под `package/` — сравниваем пути такими, какими их увидит
-    // потребитель после установки.
-    .map((entry) => entry.replace(/^package\//, ""));
-
-  // «Чистая установка» без dev-обвеса: распакованный тарбол лежит там, где его ищет
-  // резолвер Node, и подпуть проверяется по `exports`, а не по угаданному пути в dist.
-  install = join(work, "consumer");
-  mkdirSync(join(install, "node_modules", "@omnifield"), { recursive: true });
-  execFileSync("tar", ["-xzf", tarball, "-C", work]);
-  execFileSync("mv", [join(work, "package"), join(install, "node_modules", PKG)]);
+  ({ work, install, entries } = installFromTarball("probe-web-style-pack-"));
   writeFileSync(join(install, "index.cjs"), "", "utf8");
 });
 
@@ -80,10 +58,16 @@ describe("разрешение из установки", () => {
     );
   });
 
-  it("подпуть `/css` резолвится в базовый CSS", () => {
-    expect(req().resolve(`${PKG}/css`)).toBe(
+  it("подпуть `/base.css` резолвится в базовый CSS", () => {
+    expect(req().resolve(`${PKG}/base.css`)).toBe(
       join(install, "node_modules", PKG, "dist", "css", "base.css"),
     );
+  });
+
+  it("старого подпутя `/css` нет — алиаса не осталось", () => {
+    // Два имени одного файла = второй источник правды: через месяц не сказать, какое
+    // каноническое, и в скелетах разъедутся оба.
+    expect(() => req().resolve(`${PKG}/css`)).toThrow();
   });
 
   it("подпуть `/themes.css` резолвится в дефолтную пару тем", () => {
