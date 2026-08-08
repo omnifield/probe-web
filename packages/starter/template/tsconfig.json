@@ -1,0 +1,4 @@
+{
+  "extends": "@omnifield/probe-web-kit/tsconfig",
+  "include": ["src", "vite.config.ts"]
+}
