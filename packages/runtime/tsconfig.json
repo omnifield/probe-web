@@ -1,0 +1,34 @@
+{
+  "//": [
+    "Конфиг САМОГО пакета: собирает исходники рантайма и типизирует его тесты.",
+    "Базы для потребителя здесь нет и не будет — её отдаёт зона `build` подпутём",
+    "`@omnifield/probe-web-build/tsconfig` (kb:PROBEWEB-4)."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    // JSX нужен ТЕСТАМ: тест обязан поднимать настоящее приложение, а приложение на Solid
+    // пишется на JSX. В `src` его нет — трансформ в сборку не попадает.
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    // Исходники в тарбол не едут (`files` манифеста), поэтому карта обязана нести их в
+    // себе — иначе у потребителя она указывает в пустоту. По той же причине нет
+    // `declarationMap`: карте деклараций подкладывать в себя нечего.
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}
