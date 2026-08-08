@@ -1,63 +1,105 @@
-// ЗАМОРОЖЕННАЯ ПОВЕРХНОСТЬ. Скелет едет placed-once: файлы, которые он положит, зовут kit
-// вечно и той версией вызова, какой их положили. Значит замораживается не файл, а ПОВЕРХНОСТЬ,
-// которую скелет трогает, — и держать её узкой обязан именно этот пакет (`kb:PROBEWEB-2`).
+// ЗАМОРОЖЕННАЯ ПОВЕРХНОСТЬ. Скелет едет placed-once: файлы, которые он положит, зовут наши
+// пакеты вечно и той версией вызова, какой их положили. Значит замораживается не файл, а
+// ПОВЕРХНОСТЬ, которую скелет трогает, — и держать её узкой обязан именно этот пакет
+// (`kb:PROBEWEB-4`).
 //
-// Проба сторожит ЧИСЛО касаний, а не их правильность: правильность судят пробы kit. Здесь
-// падает попытка позвать из скелета что-то сверх трёх точек — то есть заморозить больше.
+// Проба сторожит ЧИСЛО касаний, а не их правильность: правильность судят пробы самих зон.
+// Здесь падает попытка позвать из скелета что-то сверх объявленных точек — то есть
+// заморозить у потребителя больше, чем решено контрактом.
 
 import { describe, expect, it } from "vitest";
 
 import { declaration, readTemplate } from "./source.js";
 
-const KIT = "@omnifield/probe-web-kit";
+const RUNTIME = "@omnifield/probe-web-runtime";
+const BUILD = "@omnifield/probe-web-build";
+const UI = "@omnifield/probe-web-ui";
+const STYLE = "@omnifield/probe-web-style";
 
-/** Три точки контракта — и ни одной больше без мажора и разговора с architect. */
-const FROZEN_ENTRYPOINTS = [KIT, `${KIT}/tsconfig`, `${KIT}/vite`];
+/** Точки контракта, которых касается скелет, — и ни одной больше без мажора и architect'а. */
+const FROZEN_ENTRYPOINTS = [`${BUILD}/tsconfig`, `${BUILD}/vite`, RUNTIME, `${STYLE}/css`, UI];
 
-/** Что скелет зовёт по именам: рантайм и сборка. Типы точки входа не имеют. */
-const FROZEN_IMPORTS = ["defineConfig", "mount"];
+/**
+ * Что скелет зовёт ПО ИМЕНАМ и откуда. Типы (`${BUILD}/tsconfig`) точки входа не имеют, CSS
+ * (`${STYLE}/css`) подключается побочкой — потому их здесь нет.
+ */
+const FROZEN_IMPORTS: Record<string, readonly string[]> = {
+  [RUNTIME]: ["mount"],
+  [UI]: ["Button"],
+  [`${BUILD}/vite`]: ["defineConfig"],
+};
 
-/** Каждое упоминание kit во всех файлах груза: `from "…"` и `"extends": "…"`. */
-function kitReferences(): string[] {
+/** Пакет 0.1.0: `kit` растворён на четыре зоны, и в скелете его быть не может. */
+const DISSOLVED = "@omnifield/probe-web-kit";
+
+/**
+ * Файлы груза, которые ЗОВУТ наши пакеты кодом. Манифест сюда не входит намеренно: он
+ * называет пакеты зависимостями, а не точками входа, и его состав судит `template.test.ts`.
+ * Смешать эти два перечня значило бы считать строку `"@omnifield/probe-web-style"` в
+ * `dependencies` касанием поверхности.
+ */
+const CODE = declaration.layout.filter((entry) => entry.dest !== "web/package.json");
+
+/** Файл груза без строчных комментариев: судим КОД, а не пояснение над ним. */
+function code(src: string): string {
+  return readTemplate(src).replace(/^\s*\/\/.*$/gm, "");
+}
+
+/** Каждое упоминание наших пакетов в коде скелета: `from "…"`, `import "…"`, `extends`. */
+function references(): string[] {
   const found: string[] = [];
-  for (const entry of declaration.layout) {
-    const text = readTemplate(entry.src);
-    for (const match of text.matchAll(
-      new RegExp(String.raw`["']${KIT}(/[a-z/-]*)?["']`, "g"),
+  for (const entry of CODE) {
+    for (const match of code(entry.src).matchAll(
+      /["'](@omnifield\/probe-web-[a-z]+)(\/[a-z0-9./-]*)?["']/g,
     )) {
-      found.push(`${KIT}${match[1] ?? ""}`);
+      found.push(`${match[1]}${match[2] ?? ""}`);
     }
   }
   return found;
 }
 
-describe("поверхность kit, вызываемая скелетом", () => {
-  it("трогает ровно три точки", () => {
-    expect([...new Set(kitReferences())].sort()).toEqual(FROZEN_ENTRYPOINTS);
+describe("поверхность зон, вызываемая скелетом", () => {
+  it("трогает ровно объявленные точки", () => {
+    expect([...new Set(references())].sort()).toEqual([...FROZEN_ENTRYPOINTS].sort());
   });
 
-  it("зовёт по именам только mount и defineConfig", () => {
-    const names = new Set<string>();
+  it("не тянет ничего мимо объявленных точек", () => {
+    // Глубокий путь (`…/dist/…`, `…/src/…`) заморозил бы внутренности, которые зона
+    // считает своими и ломает свободно.
+    for (const reference of references()) {
+      expect(FROZEN_ENTRYPOINTS, reference).toContain(reference);
+    }
+  });
+
+  it("не помнит растворённый kit", () => {
+    // Три точки 0.1.0 пересмотрены один раз и больше никогда (`kb:PROBEWEB-4`). Ссылка,
+    // забытая в грузе, уехала бы к потребителю ненаходимой зависимостью.
     for (const entry of declaration.layout) {
-      for (const match of readTemplate(entry.src).matchAll(
-        new RegExp(String.raw`import\s*\{([^}]*)\}\s*from\s*["']${KIT}[^"']*["']`, "g"),
+      expect(readTemplate(entry.src), entry.src).not.toContain(DISSOLVED);
+    }
+  });
+
+  it("зовёт по именам только то, что объявлено, и из своей точки", () => {
+    const names: Record<string, Set<string>> = {};
+    for (const entry of CODE) {
+      for (const match of code(entry.src).matchAll(
+        /import\s*\{([^}]*)\}\s*from\s*["'](@omnifield\/probe-web-[a-z/.-]*)["']/g,
       )) {
+        const from = (names[match[2] ?? ""] ??= new Set<string>());
         for (const name of (match[1] ?? "").split(",")) {
           if (name.trim() !== "") {
-            names.add(name.trim());
+            from.add(name.trim());
           }
         }
       }
     }
-    expect([...names].sort()).toEqual(FROZEN_IMPORTS);
-  });
-
-  it("не тянет из kit ничего мимо объявленных точек", () => {
-    // Глубокий путь (`…/dist/…`, `…/src/…`) заморозил бы внутренности, которые kit
-    // считает своими и ломает свободно.
-    for (const reference of kitReferences()) {
-      expect(FROZEN_ENTRYPOINTS, reference).toContain(reference);
-    }
+    expect(
+      Object.fromEntries(
+        Object.entries(names)
+          .map(([module, imported]) => [module, [...imported].sort()] as const)
+          .sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    ).toEqual(FROZEN_IMPORTS);
   });
 });
 
@@ -65,19 +107,34 @@ describe("точка входа скелета", () => {
   const main = readTemplate("main.tsx");
 
   it("монтирует приложение одним вызовом", () => {
-    expect(main).toContain(`import { mount } from "${KIT}";`);
-    expect(main.match(/\bmount\(/g)).toHaveLength(1);
+    expect(main).toContain(`import { mount } from "${RUNTIME}";`);
+    // Счёт по коду без комментариев: пояснение над файлом называет `mount()` вслух, и
+    // проба по сырому тексту падала бы на собственной доке.
+    expect(code("main.tsx").match(/\bmount\(/g)).toHaveLength(1);
   });
 
   it("не ищет точку монтирования сама", () => {
-    // `#root` ищет kit — в сигнатуре её нет намеренно, иначе способ разметки страницы
-    // оказался бы заморожен заодно (`kb:PROBEWEB-2`).
+    // `#root` ищет рантайм — в сигнатуре её нет намеренно, иначе способ разметки страницы
+    // оказался бы заморожен заодно (`kb:PROBEWEB-4`).
     expect(main).not.toContain("getElementById");
     expect(main).not.toContain("querySelector");
   });
 
+  it("показывает работающий кит, а не пустую страницу", () => {
+    // Цена названа контрактом и принята: примитив и CSS замерзают в скелете ради того,
+    // чтобы `baser add` давал видимый результат, а не белый экран.
+    expect(main).toContain(`import { Button } from "${UI}";`);
+    expect(main).toMatch(/<Button>[^<]+<\/Button>/);
+  });
+
+  it("подключает CSS стилевого слоя напрямую и побочкой", () => {
+    // Напрямую — потому что строгий менеджер пакетов транзитивный импорт не разрешит;
+    // побочкой — потому что `sideEffects: false` у стиля запрещает отдавать CSS из корня.
+    expect(main).toContain(`import "${STYLE}/css";`);
+  });
+
   it("не тянет solid напрямую", () => {
-    // Скелету достаточно JSX, который настроен базой типов kit. Прямой импорт
+    // Скелету достаточно JSX, который настроен базой типов из `build`. Прямой импорт
     // `solid-js` заморозил бы ещё и его API у каждого потребителя.
     expect(main).not.toContain("solid-js");
   });

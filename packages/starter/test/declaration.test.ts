@@ -1,7 +1,7 @@
 // ОБЪЯВЛЕНИЕ. Судим форму блока `baser` и перечень поставки: это единственное, что читает
 // чужая дверь, и ошибка здесь выясняется у потребителя, а не у нас.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { declaration, manifest, ROOT } from "./source.js";
@@ -35,7 +35,10 @@ describe("объявление обвеса", () => {
   });
 
   it("держит версию в манифесте пакета и не заводит ей второго места", () => {
-    expect(manifest.version).toBe("0.1.0");
+    // Номер здесь не назван нарочно: версию поднимает architect при публикации, и проба
+    // на конкретное значение краснела бы ровно на его выпуске. Инвариант — что место
+    // ОДНО: второе объявление разъехалось бы с первым молча.
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(declaration.source).not.toHaveProperty("version");
   });
 });
@@ -47,7 +50,7 @@ describe("раскладка", () => {
 
   it("целится в web/, а не в корень", () => {
     // В `omnifield/sandbox` лягут ДВА обвеса — Go соседа в core/ и наш в web/. Оба в
-    // корень значит перемешанные скелеты (`kb:PROBEWEB-2`).
+    // корень значит перемешанные скелеты (`kb:PROBEWEB-4`).
     for (const entry of declaration.layout) {
       expect(entry.dest.startsWith("web/"), `${entry.dest} мимо web/`).toBe(true);
     }
@@ -92,8 +95,29 @@ describe("раскладка", () => {
 describe("настройки", () => {
   it("объявлены ровно те, что действуют В МОМЕНТ УКЛАДКИ", () => {
     // Порт дев-сервера сюда не выносится намеренно: он попал бы в файл один раз и
-    // застыл. То, что человек крутит потом, живёт в kit (`tasker:PROBEWEB-1`).
-    expect(Object.keys(declaration.settings).sort()).toEqual(["kitVersion", "productName"]);
+    // застыл. То, что человек крутит потом, живёт за пакетами (`tasker:PROBEWEB-1`).
+    expect(Object.keys(declaration.settings).sort()).toEqual([
+      "buildVersion",
+      "productName",
+      "runtimeVersion",
+      "styleVersion",
+      "uiVersion",
+    ]);
+  });
+
+  it("даёт настройку версии каждому пакету, который называет манифест скелета", () => {
+    // Хардкод версии в шаблоне заморозил бы её у потребителя навсегда И заставил бы
+    // starter ждать публикации четырёх зон. Настройка снимает обе цены сразу
+    // (`kb:PROBEWEB-4`): дефолты проставляет architect перед публикацией.
+    const skeleton = readFileSync(
+      `${ROOT}${declaration.source.contentRoot}/package.json.ejs`,
+      "utf-8",
+    );
+    for (const zone of ["runtime", "build", "ui", "style"]) {
+      const setting = `${zone}Version`;
+      expect(declaration.settings, setting).toHaveProperty(setting);
+      expect(skeleton, setting).toContain(`"@omnifield/probe-web-${zone}": "<%- ${setting} %>"`);
+    }
   });
 
   it("каждая несёт title, description, type и дефолт", () => {
@@ -123,7 +147,7 @@ describe("состав поставки", () => {
 
   it("публикуется в GitHub Packages", () => {
     // Пакет без метки `latest` дверь не видит вовсе (`tasker:BASER2-216`); переезд на
-    // публичный npm объявлен и не начат (`kb:PROBEWEB-2`).
+    // публичный npm объявлен и не начат (`kb:ADR-19`).
     expect(manifest).toHaveProperty(
       "publishConfig.registry",
       "https://npm.pkg.github.com",
