@@ -89,7 +89,7 @@ describe("манифест скелета", () => {
     // пакетов транзитивный импорт не разрешит. Это не избыточность (`kb:PROBEWEB-4`).
     const own = render(defaults);
     expect(own.dependencies).toHaveProperty(STYLE);
-    expect(readTemplate("main.tsx")).toContain(`"${STYLE}/css"`);
+    expect(readTemplate("main.tsx")).toContain(`"${STYLE}/base.css"`);
   });
 });
 

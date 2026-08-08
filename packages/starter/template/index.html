@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>web</title>
+    <!-- Оформление ПОТРЕБИТЕЛЯ — то есть твоё. Кит безголовый (kb:PROBEWEB-4): примитив не
+         везёт ни одного класса по умолчанию, зато ставит зацепку data-slot ДО спреда пропсов,
+         а тема даёт токены. Цепляешься за то и другое — и одеваешь весь кит разом, а не
+         каждую кнопку поимённо.
+
+         Блок показывает ПРИЁМ и намеренно мал. Скелет положен один раз, обвес в него больше
+         не заглянет — значит всё, что здесь написано, замёрзнет у тебя навсегда, и дизайн-
+         системе в нём не место. Свой CSS клади отдельным файлом рядом с main.tsx, импортируй
+         его там же, а этот блок убирай. -->
+    <style>
+      [data-slot="button"] {
+        padding: 0.5rem 0.875rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background-color: var(--primary);
+        color: var(--primary-foreground);
+        font: inherit;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <!-- #root — часть замороженной поверхности (kb:PROBEWEB-4): mount() ищет его сам. -->
