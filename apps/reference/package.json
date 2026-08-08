@@ -1,0 +1,34 @@
+{
+  "name": "@omnifield/probe-web-reference",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Эталонное приложение probe-web: гейт сборки всей цепочки. В реестр не едет (kb:PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kobalte/core": "^0.13.12",
+    "@omnifield/probe-web-runtime": "file:../../packages/runtime",
+    "@omnifield/probe-web-style": "file:../../packages/style",
+    "@omnifield/probe-web-ui": "file:../../packages/ui",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "file:../../packages/build",
+    "@omnifield/probe-web-lint": "file:../../packages/lint",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}
