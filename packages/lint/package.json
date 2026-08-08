@@ -1,0 +1,41 @@
+{
+  "name": "@omnifield/probe-web-lint",
+  "version": "0.1.0",
+  "description": "Пресет ESLint поверх eslint-plugin-solid: канон Solid, выраженный машиной (kb:PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/eslint-parser": "^8.0.1",
+    "eslint-plugin-solid": "^0.14.5"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0 || ^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
