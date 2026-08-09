@@ -1,6 +1,6 @@
 {
   "name": "@omnifield/probe-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Обвес baser: скелет фронта probe-web в web/ — пять файлов placed-once поверх пакетов -runtime, -build, -ui, -style.",
   "license": "UNLICENSED",
   "type": "module",
@@ -22,25 +22,25 @@
         "title": "Версия @omnifield/probe-web-runtime",
         "description": "Диапазон npm для пакета с mount() — скелет пропишет его зависимостью в web/package.json. Не заполнил у себя — версия едет за нашими выпусками; заполнил — замерла на твоём значении.",
         "type": "string",
-        "default": "^0.2.0"
+        "default": "^0.1.0"
       },
       "buildVersion": {
         "title": "Версия @omnifield/probe-web-build",
         "description": "Диапазон npm для оснастки сборки: за неё цепляются web/vite.config.ts и web/tsconfig.json. Идёт в devDependencies — у потребителя она нужна только при сборке.",
         "type": "string",
-        "default": "^0.2.0"
+        "default": "^0.1.0"
       },
       "uiVersion": {
         "title": "Версия @omnifield/probe-web-ui",
         "description": "Диапазон npm для примитивов: их зовёт web/src/main.tsx, чтобы страница показывала работающий кит, а не пустоту.",
         "type": "string",
-        "default": "^0.2.0"
+        "default": "^0.1.0"
       },
       "styleVersion": {
         "title": "Версия @omnifield/probe-web-style",
         "description": "Диапазон npm для стилевого слоя. Назван ЯВНО, а не транзитивно через ui: приложение импортирует его CSS напрямую, а строгий менеджер пакетов транзитивный импорт не разрешит.",
         "type": "string",
-        "default": "^0.2.0"
+        "default": "^0.1.0"
       },
       "productName": {
         "title": "Имя продукта",
