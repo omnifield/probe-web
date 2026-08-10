@@ -1,0 +1,416 @@
+/* Оформление ПЛОЩАДКИ. Конструктор фильтра безголовый — ни одного класса он не везёт,
+   поэтому весь вид живёт здесь и цепляется ровно за две вещи:
+
+     • `data-slot` — зацепки, которые ставят примитивы кита и наш конструктор;
+     • токены темы (`var(--primary)`, `var(--radius-md)`) из `@omnifield/probe-web-style`.
+
+   Ни одного литерального цвета и ни одного селектора по внутренностям kobalte. Отсюда
+   свойство: снимут зацепку — вид разъедется целиком и это будет видно, а не «немного поедет». */
+
+.page {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page__head h1 {
+  margin: 0 0 0.375rem;
+  font-size: 1.375rem;
+}
+
+.page__lead {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.page__panel {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+/* --- Конструктор ---------------------------------------------------------------------- */
+
+[data-slot="filter-builder"] {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+[data-slot="filter-toolbar"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+[data-slot="filter-preset"],
+[data-slot="filter-template"] {
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-slot="filter-template"] {
+  border-style: dashed;
+  background-color: transparent;
+  color: var(--muted-foreground);
+}
+
+[data-slot="filter-preset"]:hover,
+[data-slot="filter-template"]:hover {
+  border-color: var(--ring);
+  color: var(--foreground);
+}
+
+/* --- Форма шаблона -------------------------------------------------------------------- */
+
+[data-slot="filter-template-form"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ring);
+  border-radius: var(--radius-md);
+  background-color: var(--muted);
+}
+
+[data-slot="filter-template-title"] {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+[data-slot="filter-template-param"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+[data-slot="filter-template-param-label"] {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+[data-slot="filter-template-actions"] {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* --- Список условий ------------------------------------------------------------------- */
+
+[data-slot="filter-conditions"] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+[data-slot="filter-condition"] {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+}
+
+[data-slot="condition-number"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-full);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-slot="condition-body"] {
+  min-width: 0;
+}
+
+[data-slot="condition-value"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+[data-slot="condition-presence"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+[data-slot="condition-presence-head"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+[data-slot="condition-count"] {
+  align-self: center;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+[data-slot="condition-remove"] {
+  align-self: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+[data-slot="condition-remove"]:hover {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+/* --- Поля ввода и выпадающие списки ---------------------------------------------------- */
+
+select[data-slot^="condition-"] {
+  padding: 0.3125rem 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+[data-slot="input"] {
+  padding: 0.3125rem 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  min-width: 12rem;
+}
+
+[data-slot="input"]:focus-visible,
+select[data-slot^="condition-"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+/* --- Фишки полей ----------------------------------------------------------------------- */
+
+[data-slot="field-chips"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+[data-slot="field-chip"] {
+  padding: 0.1875rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-slot="field-chip"][data-selected] {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* --- Добавление условий и логика -------------------------------------------------------- */
+
+[data-slot="filter-add"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+[data-slot="filter-add"] [data-slot="button"] {
+  padding: 0.3125rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-slot="filter-add"] [data-slot="button"]:hover {
+  border-color: var(--ring);
+  border-style: solid;
+}
+
+[data-slot="filter-logic"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px dashed var(--border);
+}
+
+[data-slot="logic-toggle"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+[data-slot="logic-hint"] {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+[data-slot="logic-input"] {
+  min-width: 20rem;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-slot="logic-error"] {
+  margin: 0;
+  color: var(--destructive);
+  font-size: 0.8125rem;
+}
+
+[data-slot="filter-template-actions"] [data-slot="button"],
+[data-slot="filter-template-form"] [data-slot="button"] {
+  padding: 0.3125rem 0.875rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-slot="filter-secondary"] {
+  border-color: var(--border) !important;
+  background-color: transparent !important;
+  color: var(--foreground) !important;
+}
+
+/* --- Итог и результат -------------------------------------------------------------------- */
+
+.page__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1.25rem;
+  padding: 0.875rem 1rem;
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--muted);
+}
+
+.page__phrase {
+  margin: 0;
+  flex: 1 1 24rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.page__count,
+.page__error,
+.page__note,
+.page__empty {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.page__error {
+  color: var(--destructive);
+}
+
+.page__note {
+  color: var(--muted-foreground);
+}
+
+.page__reset {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.page__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.page__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.page__rows table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.page__rows th,
+.page__rows td {
+  padding: 0.375rem 0.625rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.page__rows th {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+[data-cell="missing"] {
+  color: var(--destructive);
+  font-style: italic;
+  opacity: 0.75;
+}
+
+[data-cell="empty"] {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
