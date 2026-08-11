@@ -1,0 +1,61 @@
+/* @omnifield/probe-web-style — базовый CSS, подпуть `@omnifield/probe-web-style/base.css`.
+
+   ИНВАРИАНТ ФАЙЛА: ни одного литерального ЦВЕТА. Здесь только сброс, производные шкалы и
+   ссылки на токены; сами значения приходят темой — `/themes.css` или `registerTheme()`.
+   Инвариант держит тест `test/base-css.test.ts`, а не обещание: цвет, вписанный сюда
+   руками, роняет прогон. Причина — цвет в базовом слое не переключается вместе с темой и
+   всплывает светлым пятном в тёмном режиме.
+
+   Файл рассчитан на тему рядом. Без неё страница не ломается: неразрешённый `var()` делает
+   свойство недействительным, и браузер берёт свой дефолт. */
+
+:root {
+  /* Радиусы — производные от одного токена `--radius`: тема задаёт число, шкалу считаем мы.
+     Иначе восемь значений в каждой теме, и любая правка формы — это восемь правок. */
+  --radius-xs: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+  --radius-full: 9999px;
+
+  /* Длительности и кривые — theme-independent: палитра их не красит, а согласованность
+     движения нужна с первого компонента. */
+  --motion-instant: 75ms;
+  --motion-fast: 200ms;
+  --motion-normal: 320ms;
+  --motion-slow: 400ms;
+
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Режим объявляется браузеру, а не только нам: от `color-scheme` зависят системные
+   элементы — скроллбары, чекбоксы, автозаполнение форм. Без него тёмная страница получает
+   светлые системные виджеты. */
+:root {
+  color-scheme: light;
+}
+
+:root.dark,
+.dark {
+  color-scheme: dark;
+}
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-normal);
+}

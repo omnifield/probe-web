@@ -1,0 +1,215 @@
+/* Оформление ПОТРЕБИТЕЛЯ. Кит безголовый (`kb:PROBEWEB-4`): ни один примитив не везёт класса
+   по умолчанию, поэтому весь внешний вид страницы живёт здесь — и это не пример стиля, а
+   проверка контракта. Файл цепляется ТОЛЬКО за две вещи:
+
+     • `data-slot` — зацепка, которую примитив ставит ДО спреда пропсов;
+     • токены темы (`var(--primary)`, `var(--radius-md)`) из `@omnifield/probe-web-style`.
+
+   Ни одного селектора по внутренностям kobalte и ни одного литерального цвета. Отсюда и
+   свойство гейта: снимут зацепку в зоне `ui` — страница разъедется целиком, а не «немного
+   поедет»; уедет токен из зоны `style` — свойство станет недействительным и место
+   поломки будет видно глазом. */
+
+.app {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.app__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app__head h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.app__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.app__done {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* --- Поле: подпись, ввод, пояснение, ошибка ------------------------------------------- */
+
+[data-slot="field"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+[data-slot="label"] {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+[data-slot="input"],
+[data-slot="textarea"] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+[data-slot="input"]:focus-visible,
+[data-slot="textarea"]:focus-visible,
+[data-slot="button"]:focus-visible,
+[data-slot="toggle"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Состояния приезжают атрибутами, а не классами: примитив их ставит, CSS читает. */
+[data-slot="input"][data-invalid],
+[data-slot="textarea"][data-invalid] {
+  border-color: var(--destructive);
+}
+
+[data-slot="field-description"] {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+[data-slot="field-error"] {
+  font-size: 0.8125rem;
+  color: var(--destructive);
+}
+
+/* --- Кнопки и переключатель ------------------------------------------------------------ */
+
+[data-slot="button"],
+[data-slot="toggle"],
+[data-slot="select-trigger"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font: inherit;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+[data-slot="button"][data-disabled],
+[data-slot="button"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+[data-slot="toggle"][data-pressed] {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+/* Варианты кнопки отправки собраны `createStyle` в `app.tsx` — то есть вторым, JS-путём
+   стилизации. Классы здесь именованные (не утилитарные): Tailwind контракт зон не
+   объявляет, а `cn` работает и без него. */
+.app-submit {
+  align-self: flex-start;
+}
+
+.app-submit--active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.app-submit--waiting {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* --- Спиннер: кольцо рисует потребитель --------------------------------------------------
+   Примитив даёт только `role="status"` — вращающееся кольцо это CSS, и живёт он тут. */
+
+[data-slot="spinner"] {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: app-spin var(--motion-slow) var(--ease-linear) infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="spinner"] {
+    animation: none;
+  }
+}
+
+/* --- Список ------------------------------------------------------------------------------
+   `SelectContent` приводит в документ два узла (позиционер floating-ui и панель) — названное
+   отступление от 1-to-1, задокументированное в зоне `ui`. Красим панель, позиционер не
+   трогаем: его геометрию считает kobalte. */
+
+[data-slot="select-content"] {
+  min-width: 12rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+}
+
+[data-slot="select-listbox"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+[data-slot="select-item"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+[data-slot="select-item"][data-highlighted] {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+[data-slot="separator"] {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background-color: var(--border);
+}

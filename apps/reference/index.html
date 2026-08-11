@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>probe-web reference</title>
+  </head>
+  <body>
+    <!-- #root — часть ЗАМОРОЖЕННОЙ поверхности (kb:PROBEWEB-4): mount() ищет точку сам, в
+         сигнатуре её нет. Переименуешь идентификатор — приложение не поднимется, и это
+         единственный способ такую поломку заметить: типы про разметку ничего не знают. -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

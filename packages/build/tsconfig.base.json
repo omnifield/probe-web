@@ -1,0 +1,31 @@
+{
+  "//": [
+    "Точка 3 замороженной поверхности — ТИПЫ (kb:PROBEWEB-4).",
+    "`tsconfig.json` у потребителя едет классом `placed-once` и наследует этот файл одной",
+    "строкой `extends`. Всё, что стоит здесь, зона build меняет своим выпуском; всё, что",
+    "окажется у потребителя в файле, застынет навсегда — поэтому там остаются только",
+    "`extends` и `include`.",
+    "",
+    "`jsxImportSource` живёт ИМЕННО тут и в этом весь смысл файла: Solid 2.0 уносит JSX-типы",
+    "из `solid-js` в `@solidjs/web` (фонд solid-2.0-migration.md, сверено 2026-08-08), и смена",
+    "обязана доехать нашим выпуском, а не правкой замороженного файла в каждом продукте."
+  ],
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}

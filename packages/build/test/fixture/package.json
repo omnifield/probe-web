@@ -1,0 +1,35 @@
+{
+  "//": [
+    "Тестовое приложение: повторяет скелет, который зона `starter` кладёт потребителю в web/",
+    "(kb:PROBEWEB-4). Пакеты подключены как УСТАНОВЛЕННЫЕ (`workspace:*`), поэтому проверяется",
+    "разрешение по `exports`, а не файлы на диске.",
+    "",
+    "Симлинк workspace уводит реальный путь зависимости ИЗ node_modules, а от этого зависит,",
+    "инлайнит её раннер или отдаёт Node напрямую. Проверено руками 2026-08-08: копия",
+    "`fixture-dep` ФИЗИЧЕСКИ внутри node_modules даёт тот же результат — и `vite build`, и",
+    "прогон пресетом зелёные, JSX зависимости трансформируется. Значит симлинк тут ничего не",
+    "прячет, а `dependenciesMeta.injected` (pnpm 11.17.0) на этот пакет не срабатывает.",
+    "",
+    "`mount()` здесь не зовут: это точка зоны `runtime`, а доказать надо сборку. Приложение",
+    "монтируется само через `solid-js/web`."
+  ],
+  "name": "probe-web-build-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
+    "probe-web-build-fixture-jsx-dep": "workspace:*",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

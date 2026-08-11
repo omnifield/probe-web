@@ -1,0 +1,59 @@
+{
+  "name": "@omnifield/probe-web-build",
+  "version": "0.1.0",
+  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig и пресет vitest за тремя подпутями (kb:PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    },
+    "./vitest": {
+      "types": "./dist/vitest.d.ts",
+      "default": "./dist/vitest.js"
+    },
+    "./tsconfig": "./tsconfig.base.json"
+  },
+  "files": [
+    "dist",
+    "tsconfig.base.json",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "vite-plugin-solid": "^2.11.14"
+  },
+  "peerDependencies": {
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  },
+  "peerDependenciesMeta": {
+    "jsdom": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.3",
+    "@types/node": "^24.10.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

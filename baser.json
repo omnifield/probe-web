@@ -2,8 +2,8 @@
   "formVersion": 7,
   "sources": [
     {
-      "use": "@omnifield/baser-devbox",
-      "channel": "dev"
+      "use": "@baser/devbox",
+      "channel": "latest"
     },
     {
       "use": "@omnifield/brainer-harness",

@@ -37,15 +37,39 @@ models:
 # owner-<zone> владеет папками целиком (commit-only под git-gate). paths[] — МАССИВ: один
 # owner может держать несколько папок; пути РАЗНЫХ зон не пересекаются (одна папка — один
 # владелец, disjoint). ЗАМЕНИ на реальные папки. (legacy одиночный `path:` тоже читается.)
-# ДОГАДКА architect'а baser при заведении полигона, а не контракт: раскладку
-# меняет architect этой локации под то, что тут правда появится.
+# Засеянная догадка baser заменена 2026-08-08 architect'ом этой локации.
+# Действующая раскладка и границы зон — контракт kb:PROBEWEB-4.
 zones:
-  kit:
-    paths: [packages/kit]
-    description: фреймворк-времянка на Solid — то, что продукты импортируют, а не копируют
+  style:
+    paths: [packages/style]
+    description: токены, cn/createStyle, темы — ноль зависимостей от кита и рантайма
+  ui:
+    paths: [packages/ui]
+    description: примитивы на kobalte — 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь
+  runtime:
+    paths: [packages/runtime]
+    description: mount() и контракт #root — то, что зовёт скелет у потребителя
+  build:
+    paths: [packages/build]
+    description: оснастка сборки — подпути /vite, /tsconfig, /vitest
+  lint:
+    paths: [packages/lint]
+    description: пресет eslint-plugin-solid — канон Solid, выраженный машиной
   starter:
     paths: [packages/starter]
     description: npm-обвес @omnifield/probe-web — шаблоны скелета, который baser кладёт в web/
+  reference:
+    paths: [apps/reference]
+    description: эталонное приложение — гейт сборки всей цепочки, а не витрина
+
+  # Зоны products/ стоят здесь ВРЕМЕННО и уедут отдельными продуктами; условие выезда и
+  # запрет на публикацию — контракт kb:PROBEWEB-5. В packages/ им нельзя: там база.
+  tables:
+    paths: [products/tables]
+    description: таблицы, headless как и кит; фильтры — модуль внутри со своей границей
+  studio:
+    paths: [products/studio]
+    description: витрина первой волны — что умеет производство; плагинная модель позже
 
 # Git-доступ по роли — РАМКА (инвариант shared-policy), приведён для наглядности,
 # выключить нельзя: architect=full; owner=commit-only (gate); layer=none.
@@ -83,9 +107,9 @@ pilots:
 # а не на сессию: адрес стабилен, описание = текущее состояние, комменты = история.
 # Адрес несёт `root` (ключ узла-корня); `workspace` — где его искать.
 #
-# ЗАКОММЕНТИРОВАН НАМЕРЕННО: подставить сюда правдоподобный ключ значило бы дать баннеру
-# несуществующий адрес. Завёл раздел у себя — раскомментируй и впиши свои ключи; не завёл —
-# харнесс про чекпойнт молчит (как с grabli), и это штатное состояние, а не поломка.
-# checkpoints:
-#   workspace: MYPROD
-#   root: MYPROD-1
+# Раздел заведён 2026-08-08 по запросу user: корень — `tasker:PROBEWEB-15` (МАРШРУТ),
+# узел на роль — его дети (`PROBEWEB-16` = architect/main). Форма записи и правила ведения
+# описаны в самом корне; рамка — shared-policy.
+checkpoints:
+  workspace: PROBEWEB
+  root: PROBEWEB-15

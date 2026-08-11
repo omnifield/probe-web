@@ -6,7 +6,16 @@ import { describe, expect, it } from "vitest";
 
 import { declaration, defaults, readTemplate } from "./source.js";
 
-const KIT = "@omnifield/probe-web-kit";
+const RUNTIME = "@omnifield/probe-web-runtime";
+const BUILD = "@omnifield/probe-web-build";
+const UI = "@omnifield/probe-web-ui";
+const STYLE = "@omnifield/probe-web-style";
+
+interface SkeletonManifest {
+  readonly name: string;
+  readonly dependencies: Record<string, string>;
+  readonly devDependencies: Record<string, string>;
+}
 
 describe("язык подстановки", () => {
   const rendered = declaration.layout.filter((entry) => entry.render !== false);
@@ -31,43 +40,56 @@ describe("язык подстановки", () => {
 });
 
 describe("манифест скелета", () => {
-  const render = (values: Record<string, unknown>): Record<string, never> =>
-    JSON.parse(ejs.render(readTemplate("package.json.ejs"), { ...values }, {}));
+  const render = (values: Record<string, unknown>): SkeletonManifest =>
+    JSON.parse(ejs.render(readTemplate("package.json.ejs"), { ...values }, {})) as SkeletonManifest;
 
   it("на дефолтах даёт валидный JSON", () => {
     expect(() => render(defaults)).not.toThrow();
   });
 
-  it("берёт версию kit настройкой, а не хардкодом", () => {
+  it("берёт версии наших пакетов настройками, а не хардкодом", () => {
     // Версию в шаблоне не хардкодим: дефолт проставляет architect при публикации, и
-    // незаполненная у локации настройка едет за нашими выпусками (`kb:PROBEWEB-2`).
-    expect(readTemplate("package.json.ejs")).toContain("<%- kitVersion %>");
+    // незаполненная у локации настройка едет за нашими выпусками (`kb:PROBEWEB-4`).
+    // Это же снимает блокировку между зонами — starter не ждёт ничьей публикации.
+    const source = readTemplate("package.json.ejs");
+    for (const setting of ["runtimeVersion", "buildVersion", "uiVersion", "styleVersion"]) {
+      expect(source, setting).toContain(`<%- ${setting} %>`);
+    }
 
-    const own = render({ ...defaults, kitVersion: "1.2.3" }) as unknown as {
-      dependencies: Record<string, string>;
-    };
-    expect(own.dependencies[KIT]).toBe("1.2.3");
+    const own = render({
+      ...defaults,
+      runtimeVersion: "1.2.3",
+      buildVersion: "2.3.4",
+      uiVersion: "3.4.5",
+      styleVersion: "4.5.6",
+    });
+    expect(own.dependencies[RUNTIME]).toBe("1.2.3");
+    expect(own.devDependencies[BUILD]).toBe("2.3.4");
+    expect(own.dependencies[UI]).toBe("3.4.5");
+    expect(own.dependencies[STYLE]).toBe("4.5.6");
   });
 
   it("берёт имя продукта настройкой", () => {
-    const own = render({ ...defaults, productName: "sandbox" }) as unknown as {
-      name: string;
-    };
-    expect(own.name).toBe("sandbox");
+    expect(render({ ...defaults, productName: "sandbox" }).name).toBe("sandbox");
   });
 
-  it("зовёт kit зависимостью, а не копией его кода", () => {
-    // Критерий готовности шва — «фронт собран из УСТАНОВЛЕННОГО пакета». Скопированный
-    // в скелет код подтвердил бы укладку файлов и не подтвердил бы шов (`kb:PROBEWEB-2`).
-    const own = render(defaults) as unknown as {
-      dependencies: Record<string, string>;
-      devDependencies: Record<string, string>;
-    };
-    expect(own.dependencies).toHaveProperty(KIT);
-    expect(Object.keys(own.dependencies).sort()).toEqual([KIT, "solid-js"]);
-    // vite и typescript стоят в скелете потому, что kit держит их peer-зависимостями:
-    // поставить их за потребителя он не может.
-    expect(Object.keys(own.devDependencies).sort()).toEqual(["typescript", "vite"]);
+  it("зовёт зоны зависимостями, а не копией их кода", () => {
+    // Критерий готовности выпуска — «приложение собралось из УСТАНОВЛЕННЫХ пакетов».
+    // Скопированный в скелет код подтвердил бы укладку файлов и не подтвердил бы шов.
+    const own = render(defaults);
+    expect(Object.keys(own.dependencies).sort()).toEqual([RUNTIME, STYLE, UI, "solid-js"].sort());
+    // `build` — оснастка сборки: у потребителя она нужна только когда он собирает.
+    // vite и typescript стоят рядом с ней потому, что зоны держат их peer-зависимостями:
+    // поставить их за потребителя они не могут.
+    expect(Object.keys(own.devDependencies).sort()).toEqual([BUILD, "typescript", "vite"].sort());
+  });
+
+  it("называет style явно, а не транзитивно через ui", () => {
+    // Приложение импортирует CSS стилевого слоя напрямую (`main.tsx`), а строгий менеджер
+    // пакетов транзитивный импорт не разрешит. Это не избыточность (`kb:PROBEWEB-4`).
+    const own = render(defaults);
+    expect(own.dependencies).toHaveProperty(STYLE);
+    expect(readTemplate("main.tsx")).toContain(`"${STYLE}/base.css"`);
   });
 });
 
@@ -76,7 +98,7 @@ describe("разметка страницы", () => {
 
   it("даёт точку монтирования #root", () => {
     // DOM-контракт: идентификатор `root` — часть замороженной поверхности наравне с
-    // тремя экспортами, потому что живёт в placed-once-файле у потребителя.
+    // экспортами, потому что живёт в placed-once-файле у потребителя.
     expect(html).toContain('<div id="root"></div>');
   });
 
@@ -88,25 +110,26 @@ describe("разметка страницы", () => {
 describe("сборка у потребителя", () => {
   it("конфиг Vite не знает ни про плагины, ни про версию", () => {
     const config = readTemplate("vite.config.ts");
-    expect(config).toContain(`from "${KIT}/vite"`);
+    expect(config).toContain(`from "${BUILD}/vite"`);
     expect(config).toContain("export default defineConfig()");
     // Судим КОД, а не пояснение над ним: комментарий эти же слова называет вслух, и
     // проба по сырому тексту падала бы на собственной доке.
     const code = config.replace(/^\s*\/\/.*$/gm, "").trim();
     // Всё, что обязано двигаться, спрятано за точкой: назови плагин или порт здесь —
-    // и он замёрзнет у каждого потребителя навсегда (`kb:PROBEWEB-2`).
+    // и он замёрзнет у каждого потребителя навсегда (`kb:PROBEWEB-4`).
     expect(code).not.toMatch(/solid|plugins|\bserver\b|\bport\b/);
     expect(code.split("\n")).toHaveLength(3);
   });
 
-  it("tsconfig наследует базу kit одной строкой", () => {
+  it("tsconfig наследует базу build одной строкой", () => {
     const tsconfig = JSON.parse(readTemplate("tsconfig.json")) as Record<string, unknown>;
     expect(tsconfig).toEqual({
-      extends: `${KIT}/tsconfig`,
+      extends: `${BUILD}/tsconfig`,
       include: ["src", "vite.config.ts"],
     });
     // `compilerOptions` здесь — это замороженные цель компиляции и способ разрешения
-    // путей; они живут в kit и двигаются его выпуском.
+    // путей; они живут в build и двигаются его выпуском. Смена `jsxImportSource` на
+    // Solid 2.0 доедет выпуском, не задев ни одного созданного продукта.
     expect(tsconfig).not.toHaveProperty("compilerOptions");
   });
 });
