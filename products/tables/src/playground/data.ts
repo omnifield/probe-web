@@ -12,6 +12,7 @@
 
 import type { Preset, Row, Template } from "../filters/index.js";
 import type { ColumnSpec } from "../table/index.js";
+import type { AdapterSpec } from "../adapter/index.js";
 
 /**
  * ОДИН словарь на отбор и на таблицу: ссылка-путь (JSON Pointer), подпись, ТИП и показ.
@@ -392,3 +393,89 @@ export const TEMPLATES: Template[] = [
     },
   },
 ];
+
+
+/**
+ * ЧУЖОЙ ответ — как его отдаёт бэк, который под наш контракт не пойдёт.
+ *
+ * Здесь собрано ровно то, что встречается в жизни и чего у нас нет: набор завёрнут в обёртку,
+ * имена свои, фамилия и имя врозь, сумма в копейках строкой, дата в виде дд.мм.гггг, статус
+ * кодом, телефон в двух разных полях, и одно поле лишнее.
+ */
+export const FOREIGN_RESPONSE = {
+  ok: true,
+  meta: { page: 1 },
+  payload: {
+    rows: [
+      {
+        client: { last: "Смирнов", first: "Олег" },
+        amount_cents: "1 240 000",
+        created_at: "03.08.2026",
+        status_code: "1",
+        mobile: "",
+        work_phone: "+7 495 100-20-30",
+        region_name: "Москва",
+        legacy_id: "L-1",
+      },
+      {
+        client: { last: "Волкова", first: "Инна" },
+        amount_cents: "85 000",
+        created_at: "27.07.2026",
+        status_code: "2",
+        mobile: "+7 901 555-10-20",
+        region_name: "Казань",
+        legacy_id: "L-2",
+      },
+      {
+        client: { last: "Зайцев", first: "Пётр" },
+        amount_cents: "неизвестно",
+        created_at: "давно",
+        status_code: "9",
+        region_name: "Тула",
+        legacy_id: "L-3",
+      },
+      {
+        client: { last: "Орлова", first: "Дарья" },
+        amount_cents: "3 700 000",
+        created_at: "11.08.2026",
+        status_code: "3",
+        mobile: "+7 903 777-88-99",
+        region_name: "Санкт-Петербург",
+        legacy_id: "L-4",
+      },
+    ],
+  },
+};
+
+/** Переходник под этот ответ — ровно то, что человек собирает в конструкторе мышкой. */
+export const FOREIGN_ADAPTER: AdapterSpec = {
+  version: 1,
+  label: "Старый бэк заявок",
+  rows: "/payload/rows",
+  fields: [
+    {
+      target: "/applicant",
+      from: "/client/last",
+      steps: [{ kind: "concat", parts: [{ from: "/client/first" }], separator: " " }],
+    },
+    {
+      target: "/amount",
+      from: "/amount_cents",
+      steps: [{ kind: "number" }, { kind: "divide", by: 100 }],
+    },
+    { target: "/created", from: "/created_at", steps: [{ kind: "date", from: "dmy" }] },
+    {
+      target: "/status",
+      from: "/status_code",
+      steps: [
+        {
+          kind: "dictionary",
+          values: { "1": "новая", "2": "в работе", "3": "на проверке" },
+          otherwise: "fail",
+        },
+      ],
+    },
+    { target: "/contact/phone", steps: [{ kind: "coalesce", from: ["/mobile", "/work_phone"] }] },
+    { target: "/region", from: "/region_name" },
+  ],
+};

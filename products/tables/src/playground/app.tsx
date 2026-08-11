@@ -34,7 +34,12 @@ import {
   type ViewState,
   visibleColumns,
 } from "../table/index.js";
-import { COLUMNS, PRESETS, ROWS, TEMPLATES } from "./data.js";
+import {
+  AdapterBuilder,
+  type AdapterSpec,
+  applyAdapter,
+} from "../adapter/index.js";
+import { COLUMNS, FOREIGN_ADAPTER, FOREIGN_RESPONSE, PRESETS, ROWS, TEMPLATES } from "./data.js";
 
 const LABELS = labelsOf(COLUMNS);
 
@@ -63,10 +68,16 @@ export function App() {
   const [view, setView] = createSignal<ViewState>({ ...EMPTY_VIEW, pageSize: 10 });
   const [session, setSession] = createSignal<SessionState>(EMPTY_SESSION);
   const [touched, setTouched] = createSignal<CellContext | null>(null);
+  const [foreign, setForeign] = createSignal(false);
+  const [adapter, setAdapter] = createSignal<AdapterSpec>(FOREIGN_ADAPTER);
+
+  /** Данные, на которых стоит вся площадка: свои — или чужие, пропущенные через переходник. */
+  const adapted = createMemo(() => applyAdapter(FOREIGN_RESPONSE, adapter()));
+  const source = createMemo(() => (foreign() ? adapted().rows : ROWS));
 
   // Словарь полей отдаётся вычислителю: без него «сумма больше 90000» сравнивалась бы текстом,
   // а «заведена до 01.07» вообще не имела бы смысла.
-  const result = createMemo(() => applyFilter(ROWS, filter(), { fields: COLUMNS }));
+  const result = createMemo(() => applyFilter(source(), filter(), { fields: COLUMNS }));
   const phrase = createMemo(() => describeFilter(filter(), LABELS));
 
   const filtered = createMemo(() => new Set(filter().conditions.flatMap(fieldsOf)));
@@ -104,10 +115,35 @@ export function App() {
         </p>
       </header>
 
+      <section class="page__adapter">
+        <label class="page__switch">
+          <input
+            type="checkbox"
+            checked={foreign()}
+            onChange={(event) => setForeign(event.currentTarget.checked)}
+          />
+          показать чужой бэк через переходник
+        </label>
+
+        <Show when={foreign()}>
+          <p class="page__note">
+            Данные приходят в чужой форме: набор завёрнут, имя и фамилия врозь, сумма в
+            копейках строкой, дата в виде дд.мм.гггг, статус кодом. Переходник — отдельный
+            файл: правила ниже собираются мышкой, и ниже же видно, что не легло.
+          </p>
+          <AdapterBuilder
+            fields={COLUMNS}
+            sample={FOREIGN_RESPONSE}
+            spec={adapter()}
+            onChange={setAdapter}
+          />
+        </Show>
+      </section>
+
       <section class="page__panel">
         <FilterBuilder
           fields={COLUMNS}
-          rows={ROWS}
+          rows={source()}
           state={filter()}
           onChange={setFilter}
           presets={PRESETS}
@@ -118,7 +154,7 @@ export function App() {
       <section class="page__summary">
         <p class="page__phrase">{phrase()}</p>
         <p class="page__count">
-          Отобрано <strong>{result().rows.length}</strong> из {ROWS.length} · колонок{" "}
+          Отобрано <strong>{result().rows.length}</strong> из {source().length} · колонок{" "}
           {visibleColumns(COLUMNS, view()).length} из {COLUMNS.length} · выделено{" "}
           {session().selected.length}
         </p>
