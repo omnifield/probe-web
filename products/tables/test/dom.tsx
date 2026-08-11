@@ -31,7 +31,8 @@ export function cleanup(): void {
 export function press(node: Element): void {
   node.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
   node.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0 }));
-  (node as HTMLElement).click();
+  // Событием, а не методом `.click()`: у элементов SVG его нет, а нажимают и по ним тоже.
+  node.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0 }));
 }
 
 /** Ввод текста в поле: значение плюс событие, которое слушает Solid. */

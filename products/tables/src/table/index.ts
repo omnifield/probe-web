@@ -6,8 +6,16 @@
 //
 // `trace.js` наружу не выходит: замер — внутреннее дело модуля, а каждый экспорт замерзает.
 
-export { aggregate, type Aggregated } from "./aggregate.js";
-export { DEFAULT_LOCALE, type Formatted, formatValue } from "./format.js";
+// Показ значения и сведение — общая середина зоны (`src/dataset`), а не принадлежность
+// таблицы: график берёт их же. Здесь они перевыставлены, чтобы потребителю таблицы не
+// приходилось знать про две двери сразу.
+export {
+  aggregate,
+  type Aggregated,
+  DEFAULT_LOCALE,
+  type Formatted,
+  formatValue,
+} from "../dataset/index.js";
 export {
   AGGREGATE_LABELS,
   type AggregateKind,

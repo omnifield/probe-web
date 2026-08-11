@@ -11,45 +11,28 @@
 // без общей нормы). Значит форма наша, и берётся та же, что уже работает у фильтра:
 // сериализуемая структура с версией формата и проверкой чужого JSON на границе.
 
-import type { FieldRef, FieldSpec, FieldType } from "../filters/index.js";
+import type { FieldRef, FieldSpec } from "../filters/index.js";
+import type { AggregateKind, Presentable } from "../dataset/index.js";
 
 export type { FieldRef, FieldSpec, FieldType, Row } from "../filters/index.js";
+export {
+  AGGREGATE_LABELS,
+  type AggregateKind,
+  defaultFormat,
+  FORMAT_LABELS,
+  type FormatKind,
+  type FormatOptions,
+  formatOf,
+  type Presentable,
+} from "../dataset/index.js";
 
 /**
- * Как показывать значение. Это ВИЗУАЛ, а не тип данных: тип говорит, что лежит в поле,
- * формат — каким его видит человек. Одно число бывает и суммой, и процентом, и рейтингом.
- */
-export type FormatKind = "text" | "number" | "percent" | "date" | "datetime" | "bool" | "rating";
-
-export interface FormatOptions {
-  /** Сколько знаков после запятой у числа и процента. */
-  fractionDigits?: number;
-  /**
-   * Что лежит в поле для процентов: доля (`0.42`) или сотые (`42`).
-   *
-   * Спрошено явно, а не угадано: молчаливое умножение на сто — самая дешёвая ошибка на свете
-   * и самая заметная на экране.
-   */
-  percentBase?: "fraction" | "hundred";
-  /** Верх шкалы рейтинга; уезжает в атрибут, рисует потребитель. */
-  ratingMax?: number;
-}
-
-/**
- * Как сводить много значений в одно.
+ * Колонка = поле из словаря плюс показ и поведение в таблице.
  *
- * Имена взяты у OData Data Aggregation (Committee Specification 04) — единственного свода,
- * который нормирует и методы (`sum`/`min`/`max`/`average`/`countdistinct`), и особый счёт
- * членов группы (`$count`). Начинка чужая, имена рыночные: выдумывать свои там, где норма
- * уже есть, — ровно то, чего сверка велит не делать.
+ * Показ (`format`) описан общей серединой (`Presentable`), а не заведён здесь: график
+ * показывает значения теми же правилами, и второе описание разъехалось бы с первым.
  */
-export type AggregateKind = "count" | "sum" | "min" | "max" | "average" | "countdistinct";
-
-/** Колонка = поле из словаря плюс то, что относится к показу. */
-export interface ColumnSpec extends FieldSpec {
-  /** По умолчанию выводится из типа поля. */
-  format?: FormatKind;
-  formatOptions?: FormatOptions;
+export interface ColumnSpec extends FieldSpec, Presentable {
   /** По умолчанию сортировать можно. */
   sortable?: boolean;
   /** По умолчанию группировать можно текст и да/нет — см. `groupableBy`. */
@@ -151,40 +134,3 @@ export function groupableBy(column: ColumnSpec): boolean {
   return column.groupable ?? (column.type === "text" || column.type === "bool");
 }
 
-/** Формат по умолчанию — от типа поля. */
-export function defaultFormat(type: FieldType): FormatKind {
-  switch (type) {
-    case "number":
-      return "number";
-    case "date":
-      return "date";
-    case "bool":
-      return "bool";
-    case "text":
-      return "text";
-  }
-}
-
-/** Формат колонки: заданный явно или выведенный из типа. */
-export function formatOf(column: ColumnSpec): FormatKind {
-  return column.format ?? defaultFormat(column.type);
-}
-
-export const AGGREGATE_LABELS: Record<AggregateKind, string> = {
-  count: "сколько",
-  sum: "сумма",
-  min: "наименьшее",
-  max: "наибольшее",
-  average: "среднее",
-  countdistinct: "различных",
-};
-
-export const FORMAT_LABELS: Record<FormatKind, string> = {
-  text: "текст",
-  number: "число",
-  percent: "проценты",
-  date: "дата",
-  datetime: "дата и время",
-  bool: "да/нет",
-  rating: "рейтинг",
-};

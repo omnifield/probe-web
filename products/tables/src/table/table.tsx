@@ -41,8 +41,7 @@ import {
 import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 
 import { lookup } from "../filters/index.js";
-import { aggregate } from "./aggregate.js";
-import { DEFAULT_LOCALE, formatValue } from "./format.js";
+import { aggregate, DEFAULT_LOCALE, formatValue } from "../dataset/index.js";
 import {
   type AggregateKind,
   type ColumnDictionary,

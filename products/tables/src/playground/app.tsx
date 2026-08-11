@@ -2,7 +2,7 @@
 // это зона `studio`) и не эталон: здесь проверяется UX, поэтому оформление живёт ЗДЕСЬ, в
 // потребителе, а не в компонентах — они безголовые и ни одного класса не привозят.
 
-import { createMemo, createSignal, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 
 import {
   applyFilter,
@@ -14,6 +14,14 @@ import {
   type FilterState,
   labelsOf,
 } from "../filters/index.js";
+import {
+  Chart,
+  ChartLegend,
+  type ChartSpec,
+  type ChartSelection,
+  selectionCondition,
+  seriesCondition,
+} from "../chart/index.js";
 import {
   type CellContext,
   ColumnControls,
@@ -40,8 +48,18 @@ function rowId(row: Record<string, unknown>, index: number): string {
   return String(row["applicant"] ?? row["agent"] ?? index);
 }
 
+/** Начальный график: сколько заявок по регионам. Меняется прямо на площадке. */
+const START_CHART: ChartSpec = {
+  version: 1,
+  mark: "bar",
+  slice: "/region",
+  measure: { field: "/amount", aggregate: "sum" },
+  order: "value-desc",
+};
+
 export function App() {
   const [filter, setFilter] = createSignal<FilterState>(EMPTY_FILTER);
+  const [chart, setChart] = createSignal<ChartSpec>(START_CHART);
   const [view, setView] = createSignal<ViewState>({ ...EMPTY_VIEW, pageSize: 10 });
   const [session, setSession] = createSignal<SessionState>(EMPTY_SESSION);
   const [touched, setTouched] = createSignal<CellContext | null>(null);
@@ -52,6 +70,29 @@ export function App() {
   const phrase = createMemo(() => describeFilter(filter(), LABELS));
 
   const filtered = createMemo(() => new Set(filter().conditions.flatMap(fieldsOf)));
+
+  /** Что на графике уже отобрано: значения условий по полю среза. */
+  const picked = createMemo(() =>
+    filter()
+      .conditions.filter(
+        (condition) => condition.kind === "compare" && condition.field === chart().slice,
+      )
+      .map((condition) => (condition.kind === "compare" ? condition.value : "")),
+  );
+
+  /**
+   * Выделение на графике — ЗАПРОС К ДАННЫМ: клик добавляет условие в тот же фильтр, который
+   * читает таблица. Отдельной механики «график управляет таблицей» здесь нет и не нужно.
+   */
+  const pick = (selection: ChartSelection): void => {
+    const conditions = [
+      selectionCondition(chart(), selection),
+      seriesCondition(chart(), selection),
+    ].filter((condition) => condition !== null);
+
+    if (conditions.length === 0) return;
+    setFilter((current) => ({ ...current, conditions: [...current.conditions, ...conditions] }));
+  };
 
   return (
     <div class="page">
@@ -89,6 +130,99 @@ export function App() {
             Сбросить фильтр
           </button>
         </Show>
+      </section>
+
+      <section class="page__chart">
+        <div class="page__chart-controls">
+          <label>
+            вид
+            <select
+              value={chart().mark}
+              onChange={(event) =>
+                setChart((current) => ({
+                  ...current,
+                  mark: event.currentTarget.value as ChartSpec["mark"],
+                }))
+              }
+            >
+              <option value="bar">столбики</option>
+              <option value="line">линия</option>
+              <option value="point">точки</option>
+            </select>
+          </label>
+
+          <label>
+            срез
+            <select
+              value={chart().slice}
+              onChange={(event) =>
+                setChart((current) => ({ ...current, slice: event.currentTarget.value }))
+              }
+            >
+              <For each={COLUMNS.filter((column) => column.type === "text" || column.type === "bool")}>
+                {(column) => <option value={column.name}>{column.label}</option>}
+              </For>
+            </select>
+          </label>
+
+          <label>
+            мера
+            <select
+              value={`${chart().measure.aggregate}:${chart().measure.field ?? ""}`}
+              onChange={(event) => {
+                const [aggregate, field] = event.currentTarget.value.split(":");
+                setChart((current) => ({
+                  ...current,
+                  measure: {
+                    aggregate: aggregate as ChartSpec["measure"]["aggregate"],
+                    ...(field === "" ? {} : { field }),
+                  },
+                }));
+              }}
+            >
+              <option value="count:">сколько заявок</option>
+              <option value="sum:/amount">сумма</option>
+              <option value="average:/amount">средняя сумма</option>
+              <option value="average:/score">средний рейтинг</option>
+              <option value="countdistinct:/status">различных статусов</option>
+            </select>
+          </label>
+
+          <label>
+            серии
+            <select
+              value={chart().series ?? ""}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setChart((current) => ({
+                  ...current,
+                  ...(value === "" ? { series: undefined } : { series: value }),
+                }));
+              }}
+            >
+              <option value="">без разбивки</option>
+              <option value="/status">по статусу</option>
+              <option value="/urgent">по срочности</option>
+            </select>
+          </label>
+        </div>
+
+        <p class="page__note">
+          Щелчок по величине — не «график управляет таблицей», а условие, добавленное в тот же
+          фильтр: и таблица, и сам график читают одно состояние отбора.
+        </p>
+
+        <Chart
+          columns={COLUMNS}
+          rows={result().rows}
+          spec={chart()}
+          width={760}
+          height={260}
+          title="Заявки"
+          onSelect={pick}
+          selected={picked()}
+        />
+        <ChartLegend columns={COLUMNS} rows={result().rows} spec={chart()} />
       </section>
 
       <section class="page__columns">

@@ -5,7 +5,7 @@
 // рисует потребитель своим CSS. Привези мы звёзды сами — база стала бы непоследовательной:
 // половина безголовая, половина оформленная.
 
-import { type ColumnSpec, type FormatKind, formatOf } from "./model.js";
+import { type FormatKind, formatOf, type Presentable } from "./spec.js";
 
 /** Что получилось: текст в ячейку и атрибуты-зацепки к ней. */
 export interface Formatted {
@@ -57,11 +57,11 @@ function toBool(value: unknown): boolean | null {
  */
 export function formatValue(
   value: unknown,
-  column: ColumnSpec,
+  field: Presentable,
   locale: string = DEFAULT_LOCALE,
 ): Formatted {
-  const kind: FormatKind = formatOf(column);
-  const options = column.formatOptions ?? {};
+  const kind: FormatKind = formatOf(field);
+  const options = field.formatOptions ?? {};
 
   if (value === null || value === undefined) return { text: "", attrs: {} };
 

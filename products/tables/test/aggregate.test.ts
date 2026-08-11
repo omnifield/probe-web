@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { aggregate } from "../src/table/aggregate.js";
+import { aggregate } from "../src/dataset/aggregate.js";
 import type { ColumnSpec } from "../src/table/model.js";
 import type { Row } from "../src/filters/index.js";
 

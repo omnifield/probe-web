@@ -2,9 +2,9 @@
 
 import { describe, expect, it } from "vitest";
 
-import { formatValue } from "../src/table/format.js";
+import { formatValue } from "../src/dataset/format.js";
 import type { ColumnSpec } from "../src/table/model.js";
-import { defaultFormat, formatOf } from "../src/table/model.js";
+import { defaultFormat, formatOf } from "../src/dataset/spec.js";
 
 const column = (over: Partial<ColumnSpec> = {}): ColumnSpec => ({
   name: "/value",

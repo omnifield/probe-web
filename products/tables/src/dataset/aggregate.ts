@@ -11,7 +11,13 @@
 // странице — не итог, а сумма того, что попалось на глаза.
 
 import { lookup, type Row } from "../filters/index.js";
-import type { AggregateKind, ColumnSpec } from "./model.js";
+import type { AggregateKind, FieldRef, Presentable } from "./spec.js";
+
+/** Поле, по которому считают: путь, как показывать и чем сводить по умолчанию. */
+export interface AggregatableField extends Presentable {
+  name: FieldRef;
+  aggregate?: AggregateKind;
+}
 
 /** Итог: чем считали и что вышло. `null` — считать было нечего. */
 export interface Aggregated {
@@ -21,10 +27,10 @@ export interface Aggregated {
   counting: boolean;
 }
 
-function numeric(value: unknown, column: ColumnSpec): number | null {
+function numeric(value: unknown, field: Presentable): number | null {
   if (value === null || value === undefined) return null;
 
-  if (column.type === "date") {
+  if (field.type === "date") {
     const time = value instanceof Date ? value.getTime() : Date.parse(String(value));
     return Number.isNaN(time) ? null : time;
   }
@@ -46,15 +52,15 @@ function numeric(value: unknown, column: ColumnSpec): number | null {
  */
 export function aggregate(
   rows: readonly Row[],
-  column: ColumnSpec,
-  kind: AggregateKind = column.aggregate ?? "count",
+  field: AggregatableField,
+  kind: AggregateKind = field.aggregate ?? "count",
 ): Aggregated {
   if (kind === "count") {
     return { kind, value: rows.length, counting: true };
   }
 
   const values = rows
-    .map((row) => lookup(row, column.name))
+    .map((row) => lookup(row, field.name))
     .filter((found) => found.found)
     .map((found) => found.value)
     .filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
@@ -64,7 +70,7 @@ export function aggregate(
   }
 
   const numbers = values
-    .map((value) => numeric(value, column))
+    .map((value) => numeric(value, field))
     .filter((value): value is number => value !== null);
 
   if (numbers.length === 0) return { kind, value: null, counting: false };
