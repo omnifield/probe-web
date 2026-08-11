@@ -6,25 +6,64 @@
 //
 // Обратная сторона границы тоже держится: модуль НЕ знает про таблицу. Здесь нет ни одного
 // импорта из `../table` и быть не может — фильтры работают с голым массивом объектов.
+//
+// `trace.js` наружу НЕ выходит: замер — внутреннее дело модуля, а каждый экспорт замерзает.
 
-export { applyFilter, compile, countMatching, hasField, isFilled, matchCondition } from "./evaluate.js";
-export { describeCondition, describeFilter, type FieldLabels } from "./describe.js";
-export { defaultFormula, type Expr, parseFormula, type ParseResult } from "./formula.js";
 export {
+  applyFilter,
+  compile,
+  type Compiled,
+  countMatching,
+  type EvaluateOptions,
+  hasField,
+  isFilled,
+  matchCondition,
+} from "./evaluate.js";
+export { describeCondition, describeFilter, type FieldLabels, labelsOf } from "./describe.js";
+export {
+  type FieldRef,
+  isFieldRef,
+  lookup,
+  type Lookup,
+  type Row,
+  toFieldRef,
+} from "./field.js";
+export {
+  danglingIds,
+  defaultExpr,
+  defaultFormula,
+  type Expr,
+  formatFormula,
+  parseFormula,
+  type ParseResult,
+  referencedIds,
+  remapIds,
+} from "./formula.js";
+export {
+  COMPARISON_OPERATOR_LABELS,
+  type ComparisonCondition,
+  type ComparisonOperator,
   type Condition,
+  CONDITION_KIND_LABELS,
+  type ConditionKind,
   EMPTY_FILTER,
+  type FieldDictionary,
+  type FieldSpec,
+  type FieldType,
+  FILTER_FORMAT_VERSION,
   type FilterState,
   type Logic,
+  type MemberCondition,
   nextConditionId,
+  operatorsFor,
   PRESENCE_MODE_LABELS,
   type PresenceCondition,
   type PresenceMode,
   QUANTIFIER_LABELS,
   type Quantifier,
-  type Row,
-  VALUE_OPERATOR_LABELS,
-  type ValueCondition,
-  type ValueOperator,
+  type RangeCondition,
+  reserveConditionIds,
+  supportsRange,
 } from "./model.js";
 export {
   applyPreset,
@@ -33,4 +72,6 @@ export {
   type Template,
   type TemplateParam,
 } from "./presets.js";
-export { type FieldOption, FilterBuilder, type FilterBuilderProps } from "./ui/filter-builder.jsx";
+export { parseFilter, type ParsedFilter, serializeFilter } from "./serialize.js";
+export { and, not, or, passes, type Truth, UNKNOWN } from "./truth.js";
+export { FilterBuilder, type FilterBuilderProps } from "./ui/filter-builder.jsx";

@@ -8,20 +8,23 @@ import {
   applyFilter,
   describeFilter,
   EMPTY_FILTER,
-  type FieldLabels,
   FilterBuilder,
   type FilterState,
   hasField,
   isFilled,
+  labelsOf,
+  lookup,
 } from "../filters/index.js";
 import { FIELDS, PRESETS, ROWS, TEMPLATES } from "./data.js";
 
-const LABELS: FieldLabels = Object.fromEntries(FIELDS.map((field) => [field.name, field.label]));
+const LABELS = labelsOf(FIELDS);
 
 export function App() {
   const [filter, setFilter] = createSignal<FilterState>(EMPTY_FILTER);
 
-  const result = createMemo(() => applyFilter(ROWS, filter()));
+  // Словарь полей отдаётся вычислителю: без него «сумма больше 90000» сравнивалась бы текстом,
+  // а «заведена до 01.07» вообще не имела бы смысла.
+  const result = createMemo(() => applyFilter(ROWS, filter(), { fields: FIELDS }));
   const phrase = createMemo(() => describeFilter(filter(), LABELS));
 
   return (
@@ -30,7 +33,7 @@ export function App() {
         <h1>Фильтры — площадка</h1>
         <p class="page__lead">
           Плоский список условий плюс отдельная строка логики. Вложенных групп нет намеренно.
-          Данные локальные, набор полей у строк разный.
+          Данные локальные, набор полей у строк разный, контакты лежат вложенно.
         </p>
       </header>
 
@@ -63,7 +66,8 @@ export function App() {
       <section class="page__rows">
         <p class="page__note">
           Сырой вывод, а не компонент таблицы: <span data-cell="missing">поля нет</span> и{" "}
-          <span data-cell="empty">поле пустое</span> показаны по-разному — фильтр их различает.
+          <span data-cell="empty">поле пустое</span> показаны по-разному — фильтр их различает,
+          и на отсутствующем поле условие отвечает «неизвестно», а не «нет».
         </p>
         <div class="page__scroll">
           <table>
@@ -90,7 +94,7 @@ export function App() {
                           {!hasField(row, field.name)
                             ? "нет поля"
                             : isFilled(row, field.name)
-                              ? String(row[field.name])
+                              ? String(lookup(row, field.name).value)
                               : "пусто"}
                         </td>
                       )}

@@ -5,10 +5,16 @@
 // связывает сильнее `И`, «чтобы совпасть с речью», и `a И b ИЛИ c` там значит `a И (b ИЛИ c)`.
 // Один и тот же текст даёт разный результат в зависимости от свода, поэтому наш выбор
 // записан здесь, а не оставлен «как получится у парсера» (фонд canons/filter-tables-graphs,
-// gaps/operator-naming-divergence.md).
+// gaps/operator-naming-divergence.md; сверено 2026-08-11, подтверждено — не меняем).
+//
+// НОМЕР — ЭТО ВВОД И ПОКАЗ, А НЕ ХРАНЕНИЕ. Пользователь пишет номера, но дерево ссылается на
+// устойчивый `id` условия: позиционная ссылка на изменяемый набор неустойчива (цену называет
+// RFC 6901), и удаление условия молча меняло смысл сохранённой формулы. Разбор переводит
+// номер в `id`, показ — обратно (`tasker:TABLES-4`, раздел B).
 
+/** Узел выражения. `ref` держит `id` условия, а не его номер. */
 export type Expr =
-  | { t: "ref"; n: number }
+  | { t: "ref"; id: string }
   | { t: "not"; a: Expr }
   | { t: "and"; a: Expr; b: Expr }
   | { t: "or"; a: Expr; b: Expr };
@@ -98,13 +104,14 @@ function tokenize(text: string): Token[] | string {
  * Разобрать строку логики.
  *
  * @param text — что написал пользователь
- * @param count — сколько условий сейчас в списке; ссылка за пределы — ошибка с адресом
+ * @param ids — идентификаторы условий В ПОРЯДКЕ ПОКАЗА: номер `n` означает `ids[n - 1]`
  */
-export function parseFormula(text: string, count: number): ParseResult {
+export function parseFormula(text: string, ids: readonly string[]): ParseResult {
   const tokens = tokenize(text);
   if (typeof tokens === "string") return { ok: false, error: tokens };
   if (tokens.length === 0) return { ok: false, error: "формула пустая" };
 
+  const count = ids.length;
   let pos = 0;
   let failure: string | null = null;
 
@@ -154,14 +161,15 @@ export function parseFormula(text: string, count: number): ParseResult {
 
     if (token.t === "num") {
       pos += 1;
-      if (token.n < 1 || token.n > count) {
+      const id = ids[token.n - 1];
+      if (id === undefined) {
         failure ??=
           count === 0
             ? `условия №${token.n} нет — список условий пуст`
             : `условия №${token.n} нет, сейчас их ${count}`;
         return null;
       }
-      return { t: "ref", n: token.n };
+      return { t: "ref", id };
     }
 
     if (token.t === "(") {
@@ -192,7 +200,92 @@ export function parseFormula(text: string, count: number): ParseResult {
   return { ok: true, expr };
 }
 
-/** Формула по умолчанию: все условия через И. */
+const PRIORITY = { or: 1, and: 2, not: 3 } as const;
+
+/**
+ * Показать дерево строкой с текущими номерами условий.
+ *
+ * Условие, на которое ссылка есть, а самого условия уже нет, показывается как `?` — это
+ * видимое событие, а не молчаливый сдвиг номеров, ради которого всё и переделывалось.
+ */
+export function formatFormula(expr: Expr, ids: readonly string[]): string {
+  const render = (node: Expr, parentPriority: number): string => {
+    switch (node.t) {
+      case "ref": {
+        const index = ids.indexOf(node.id);
+        return index === -1 ? "?" : String(index + 1);
+      }
+      case "not":
+        return `НЕ ${render(node.a, PRIORITY.not)}`;
+      case "and": {
+        const text = `${render(node.a, PRIORITY.and)} И ${render(node.b, PRIORITY.and)}`;
+        return parentPriority > PRIORITY.and ? `(${text})` : text;
+      }
+      case "or": {
+        const text = `${render(node.a, PRIORITY.or)} ИЛИ ${render(node.b, PRIORITY.or)}`;
+        return parentPriority > PRIORITY.or ? `(${text})` : text;
+      }
+    }
+  };
+
+  return render(expr, 0);
+}
+
+/** Все идентификаторы, на которые ссылается дерево. */
+export function referencedIds(expr: Expr): Set<string> {
+  const found = new Set<string>();
+
+  const walk = (node: Expr): void => {
+    switch (node.t) {
+      case "ref":
+        found.add(node.id);
+        return;
+      case "not":
+        walk(node.a);
+        return;
+      case "and":
+      case "or":
+        walk(node.a);
+        walk(node.b);
+    }
+  };
+
+  walk(expr);
+  return found;
+}
+
+/** Ссылки на условия, которых больше нет. Пусто — формула цела. */
+export function danglingIds(expr: Expr, ids: readonly string[]): string[] {
+  return [...referencedIds(expr)].filter((id) => !ids.includes(id));
+}
+
+/** Переписать идентификаторы в дереве — при клоне пресета или подстановке шаблона. */
+export function remapIds(expr: Expr, mapping: ReadonlyMap<string, string>): Expr {
+  switch (expr.t) {
+    case "ref":
+      return { t: "ref", id: mapping.get(expr.id) ?? expr.id };
+    case "not":
+      return { t: "not", a: remapIds(expr.a, mapping) };
+    case "and":
+      return { t: "and", a: remapIds(expr.a, mapping), b: remapIds(expr.b, mapping) };
+    case "or":
+      return { t: "or", a: remapIds(expr.a, mapping), b: remapIds(expr.b, mapping) };
+  }
+}
+
+/** Дерево «все условия через И». `null`, когда условий нет. */
+export function defaultExpr(ids: readonly string[]): Expr | null {
+  if (ids.length === 0) return null;
+
+  return ids
+    .slice(1)
+    .reduce<Expr>((left, id) => ({ t: "and", a: left, b: { t: "ref", id } }), {
+      t: "ref",
+      id: ids[0]!,
+    });
+}
+
+/** Формула по умолчанию строкой: все условия через И. Для показа и как заготовка ввода. */
 export function defaultFormula(count: number): string {
   return Array.from({ length: count }, (_, index) => String(index + 1)).join(" И ");
 }

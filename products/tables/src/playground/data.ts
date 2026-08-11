@@ -5,21 +5,33 @@
 //   • поля нет вовсе          → `exists` = нет
 //   • поле есть, но пустое    → `exists` = да, `filled` = нет
 //   • поле есть и заполнено   → оба да
+//
+// Контакты лежат ВЛОЖЕННО (`contact.phone`, `contact.email`) — специально, чтобы площадка
+// проверяла ссылку-путь, а не только плоские имена. У части строк нет самого `contact`, у
+// части он есть, а телефона в нём нет: это разные вещи, и путь обязан их различать.
 
-import type { FieldOption, Preset, Row, Template } from "../filters/index.js";
+import type { FieldSpec, Preset, Row, Template } from "../filters/index.js";
 
-export const FIELDS: FieldOption[] = [
-  { name: "applicant", label: "заявитель" },
-  { name: "agent", label: "агент" },
-  { name: "passport", label: "паспорт" },
-  { name: "snils", label: "СНИЛС" },
-  { name: "inn", label: "ИНН" },
-  { name: "phone", label: "телефон" },
-  { name: "email", label: "почта" },
-  { name: "amount", label: "сумма" },
-  { name: "region", label: "регион" },
-  { name: "status", label: "статус" },
-  { name: "comment", label: "комментарий" },
+/**
+ * Словарь полей: ссылка-путь (JSON Pointer), подпись и ТИП.
+ *
+ * Тип здесь не для красоты: от него зависит и набор операторов в интерфейсе, и разбор
+ * введённого значения. Без него «сумма больше 90000» сравнивалась бы текстом.
+ */
+export const FIELDS: FieldSpec[] = [
+  { name: "/applicant", label: "заявитель", type: "text" },
+  { name: "/agent", label: "агент", type: "text" },
+  { name: "/passport", label: "паспорт", type: "text" },
+  { name: "/snils", label: "СНИЛС", type: "text" },
+  { name: "/inn", label: "ИНН", type: "text" },
+  { name: "/contact/phone", label: "телефон", type: "text" },
+  { name: "/contact/email", label: "почта", type: "text" },
+  { name: "/amount", label: "сумма", type: "number" },
+  { name: "/created", label: "заведена", type: "date" },
+  { name: "/region", label: "регион", type: "text" },
+  { name: "/status", label: "статус", type: "text" },
+  { name: "/urgent", label: "срочная", type: "bool" },
+  { name: "/comment", label: "комментарий", type: "text" },
 ];
 
 export const ROWS: Row[] = [
@@ -28,25 +40,30 @@ export const ROWS: Row[] = [
     passport: "4510 123456",
     snils: "112-233-445 95",
     inn: "770123456789",
-    phone: "+7 900 111-22-33",
+    contact: { phone: "+7 900 111-22-33" },
     amount: 850_000,
+    created: "2026-07-14",
     region: "Москва",
     status: "в работе",
+    urgent: false,
   },
   {
     applicant: "Петрова А. С.",
     passport: "4511 654321",
     snils: "",
-    phone: "+7 901 222-33-44",
+    contact: { phone: "+7 901 222-33-44" },
     amount: 120_000,
+    created: "2026-08-02",
     region: "Москва",
     status: "новая",
+    urgent: true,
   },
   {
     applicant: "Сидоров П. К.",
     inn: "780987654321",
-    email: "sidorov@example.ru",
+    contact: { email: "sidorov@example.ru" },
     amount: 1_400_000,
+    created: "2026-06-30",
     region: "Санкт-Петербург",
     status: "в работе",
     comment: "просит перезвонить после 18:00",
@@ -55,6 +72,7 @@ export const ROWS: Row[] = [
     agent: "ООО «Вектор»",
     inn: "504112233445",
     amount: 3_200_000,
+    created: "2026-05-19",
     region: "Московская обл.",
     status: "на проверке",
   },
@@ -62,26 +80,31 @@ export const ROWS: Row[] = [
     applicant: "",
     agent: "ИП Кузнецов",
     passport: "4612 778899",
-    phone: "+7 902 333-44-55",
+    contact: { phone: "+7 902 333-44-55", email: "" },
     amount: 75_000,
+    created: "2026-08-08",
     region: "Тула",
     status: "новая",
+    urgent: true,
   },
   {
     applicant: "Николаева О. В.",
     passport: "4513 010203",
     snils: "223-344-556 07",
     inn: "770223344556",
-    email: "nikolaeva@example.ru",
+    contact: { email: "nikolaeva@example.ru" },
     amount: 640_000,
+    created: "2026-07-01",
     region: "Москва",
     status: "одобрена",
+    urgent: false,
   },
   {
     applicant: "Морозов Д. А.",
     snils: "334-455-667 18",
-    phone: "",
+    contact: { phone: "" },
     amount: 45_000,
+    created: "2026-04-11",
     region: "Казань",
     status: "отклонена",
     comment: "нет паспорта",
@@ -91,13 +114,15 @@ export const ROWS: Row[] = [
     passport: "4514 445566",
     inn: "160334455667",
     amount: 210_000,
+    created: "2026-08-05",
     region: "Казань",
     status: "в работе",
   },
   {
     agent: "ООО «Ремстрой»",
-    email: "office@remstroy.example",
+    contact: { email: "office@remstroy.example" },
     amount: 5_800_000,
+    created: "2026-03-27",
     region: "Екатеринбург",
     status: "на проверке",
     comment: "юрлицо, пакет неполный",
@@ -107,24 +132,28 @@ export const ROWS: Row[] = [
     passport: "4515 998877",
     snils: "445-566-778 29",
     inn: "660445566778",
-    phone: "+7 903 444-55-66",
-    email: "grigoriev@example.ru",
+    contact: { phone: "+7 903 444-55-66", email: "grigoriev@example.ru" },
     amount: 990_000,
+    created: "2026-07-22",
     region: "Екатеринбург",
     status: "одобрена",
+    urgent: false,
   },
   {
     applicant: "Захарова Л. П.",
-    phone: "+7 904 555-66-77",
+    contact: { phone: "+7 904 555-66-77" },
     amount: 30_000,
+    created: "2026-08-09",
     region: "Тула",
     status: "новая",
+    urgent: true,
   },
   {
     applicant: "Ковалёв А. Ю.",
     passport: "4516 112233",
     inn: "770556677889",
     amount: 1_750_000,
+    created: "2026-06-06",
     region: "Москва",
     status: "в работе",
     comment: "",
@@ -133,15 +162,17 @@ export const ROWS: Row[] = [
     agent: "ИП Соколова",
     snils: "556-677-889 30",
     inn: "504667788990",
-    phone: "+7 905 666-77-88",
+    contact: { phone: "+7 905 666-77-88" },
     amount: 420_000,
+    created: "2026-07-30",
     region: "Московская обл.",
     status: "одобрена",
   },
   {
     applicant: "Тарасов В. В.",
-    email: "",
+    contact: { email: "" },
     amount: 88_000,
+    created: "2026-05-03",
     region: "Санкт-Петербург",
     status: "отклонена",
   },
@@ -149,16 +180,18 @@ export const ROWS: Row[] = [
     applicant: "Белова Н. И.",
     passport: "4517 334455",
     snils: "667-788-990 41",
-    phone: "+7 906 777-88-99",
-    email: "belova@example.ru",
+    contact: { phone: "+7 906 777-88-99", email: "belova@example.ru" },
     amount: 2_100_000,
+    created: "2026-08-01",
     region: "Санкт-Петербург",
     status: "на проверке",
+    urgent: true,
   },
   {
     agent: "ООО «Апрель»",
     inn: "770778899001",
     amount: 760_000,
+    created: "2026-06-18",
     region: "Москва",
     status: "новая",
     comment: "запросить учредительные",
@@ -174,13 +207,14 @@ export const PRESETS: Preset[] = [
     label: "Без документов",
     hint: "ни паспорта, ни СНИЛС, ни ИНН",
     state: {
+      version: 1,
       conditions: [
         {
           id: "preset-no-docs-1",
           kind: "presence",
           quantifier: "none",
           mode: "exists",
-          fields: ["passport", "snils", "inn"],
+          fields: ["/passport", "/snils", "/inn"],
         },
       ],
       logic: { mode: "all" },
@@ -191,13 +225,14 @@ export const PRESETS: Preset[] = [
     label: "Полный пакет физлица",
     hint: "паспорт, СНИЛС и ИНН — все заполнены",
     state: {
+      version: 1,
       conditions: [
         {
           id: "preset-full-1",
           kind: "presence",
           quantifier: "all",
           mode: "filled",
-          fields: ["passport", "snils", "inn"],
+          fields: ["/passport", "/snils", "/inn"],
         },
       ],
       logic: { mode: "all" },
@@ -208,9 +243,45 @@ export const PRESETS: Preset[] = [
     label: "Крупные в работе",
     hint: "сумма больше 500 000 и статус «в работе»",
     state: {
+      version: 1,
       conditions: [
-        { id: "preset-big-1", kind: "value", field: "amount", operator: "gt", value: "500000" },
-        { id: "preset-big-2", kind: "value", field: "status", operator: "eq", value: "в работе" },
+        { id: "preset-big-1", kind: "compare", field: "/amount", operator: "gt", value: "500000" },
+        { id: "preset-big-2", kind: "compare", field: "/status", operator: "eq", value: "в работе" },
+      ],
+      logic: { mode: "all" },
+    },
+  },
+  {
+    id: "capitals",
+    label: "Обе столицы",
+    hint: "регион — одно из двух значений: одним условием, а не двумя и формулой",
+    state: {
+      version: 1,
+      conditions: [
+        {
+          id: "preset-capitals-1",
+          kind: "in",
+          field: "/region",
+          values: ["Москва", "Санкт-Петербург"],
+        },
+      ],
+      logic: { mode: "all" },
+    },
+  },
+  {
+    id: "summer-window",
+    label: "Заведены летом",
+    hint: "диапазон дат, границы включительно",
+    state: {
+      version: 1,
+      conditions: [
+        {
+          id: "preset-summer-1",
+          kind: "between",
+          field: "/created",
+          from: "2026-06-01",
+          to: "2026-08-31",
+        },
       ],
       logic: { mode: "all" },
     },
@@ -229,6 +300,7 @@ export const TEMPLATES: Template[] = [
     hint: "выбрать набор полей, достаточно одного",
     params: [{ key: "fields", label: "какие поля", kind: "fields" }],
     state: {
+      version: 1,
       conditions: [
         {
           id: "tpl-any-1",
@@ -247,11 +319,12 @@ export const TEMPLATES: Template[] = [
     hint: "поиск по имени заявителя",
     params: [{ key: "name", label: "часть имени", kind: "text" }],
     state: {
+      version: 1,
       conditions: [
         {
           id: "tpl-applicant-1",
-          kind: "value",
-          field: "applicant",
+          kind: "compare",
+          field: "/applicant",
           operator: "contains",
           value: "{{name}}",
         },
@@ -265,6 +338,7 @@ export const TEMPLATES: Template[] = [
     hint: "опорный кейс: набор полей на выбор плюс обязательный заявитель",
     params: [{ key: "fields", label: "любое из полей", kind: "fields" }],
     state: {
+      version: 1,
       conditions: [
         {
           id: "tpl-case-1",
@@ -278,10 +352,15 @@ export const TEMPLATES: Template[] = [
           kind: "presence",
           quantifier: "all",
           mode: "filled",
-          fields: ["applicant"],
+          fields: ["/applicant"],
         },
       ],
-      logic: { mode: "formula", text: "1 И 2" },
+      // Логика — ДЕРЕВО по `id`, а не строка с номерами: клон шаблона выдаёт условиям новые
+      // идентификаторы и переписывает ссылки, поэтому формула переживает подстановку.
+      logic: {
+        mode: "formula",
+        expr: { t: "and", a: { t: "ref", id: "tpl-case-1" }, b: { t: "ref", id: "tpl-case-2" } },
+      },
     },
   },
 ];
