@@ -122,10 +122,14 @@ describe("сортировка", () => {
 
 describe("чтение и запись вида", () => {
   const view: ViewState = {
-    version: 1,
+    version: 2,
     order: ["/amount", "/applicant"],
     hidden: ["/created"],
     sorting: [{ field: "/amount", direction: "desc" }],
+    pinned: { start: ["/applicant"], end: [] },
+    widths: { "/amount": 120 },
+    grouping: ["/created"],
+    pageSize: 25,
   };
 
   it("круг без потерь", () => {
@@ -139,8 +143,30 @@ describe("чтение и запись вида", () => {
     expect(parsed).toEqual({ ok: false, error: "у вида нет версии формата — прочитать его нечем" });
   });
 
+  it("вид ПЕРВОЙ версии читается и поднимается до текущей", () => {
+    // Ровно ради этого версия и заводилась: старое состояние читается, а не выбрасывается.
+    const parsed = parseView({
+      version: 1,
+      order: ["/amount"],
+      hidden: ["/created"],
+      sorting: [{ field: "/amount", direction: "asc" }],
+    });
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.view.version).toBe(2);
+    expect(parsed.view.order).toEqual(["/amount"]);
+    expect(parsed.view.sorting).toEqual([{ field: "/amount", direction: "asc" }]);
+    // Поля второй волны получают умолчания, а не остаются неопределёнными.
+    expect(parsed.view.pinned).toEqual({ start: [], end: [] });
+    expect(parsed.view.widths).toEqual({});
+    expect(parsed.view.grouping).toEqual([]);
+    expect(parsed.view.pageSize).toBeNull();
+  });
+
   it.each([
-    [{ version: 2, order: [], hidden: [], sorting: [] }, "версия формата 2 не поддерживается, нужна 1"],
+    [{ version: 9, order: [], hidden: [], sorting: [] }, "версия формата 9 не поддерживается, нужна 2"],
     [
       { version: 1, order: ["amount"], hidden: [], sorting: [] },
       "порядок колонок: «amount» — не путь вида «/имя» (JSON Pointer)",
@@ -161,6 +187,24 @@ describe("чтение и запись вида", () => {
         ],
       },
       "ключ сортировки №2: поле «/a» уже участвует",
+    ],
+    [
+      {
+        version: 2,
+        order: [],
+        hidden: [],
+        sorting: [],
+        pinned: { start: ["/a"], end: ["/a"] },
+      },
+      "закреплённые колонки: «/a» прижата к обоим краям сразу",
+    ],
+    [
+      { version: 2, order: [], hidden: [], sorting: [], widths: { "/a": -5 } },
+      "ширины: у «/a» ширина «-5» — не положительное число",
+    ],
+    [
+      { version: 2, order: [], hidden: [], sorting: [], pageSize: 0 },
+      "размер страницы «0» — не число больше нуля",
     ],
   ])("испорченный вид не проходит: %o", (input, error) => {
     const parsed = parseView(input);

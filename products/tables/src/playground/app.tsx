@@ -18,7 +18,11 @@ import {
   type CellContext,
   ColumnControls,
   DataTable,
+  EMPTY_SESSION,
   EMPTY_VIEW,
+  GroupControls,
+  type SessionState,
+  TablePager,
   type ViewState,
   visibleColumns,
 } from "../table/index.js";
@@ -31,9 +35,15 @@ function fieldsOf(condition: Condition): FieldRef[] {
   return condition.kind === "presence" ? condition.fields : [condition.field];
 }
 
+/** Тождество строки: на площадке данные локальные, поэтому годится заявитель или агент. */
+function rowId(row: Record<string, unknown>, index: number): string {
+  return String(row["applicant"] ?? row["agent"] ?? index);
+}
+
 export function App() {
   const [filter, setFilter] = createSignal<FilterState>(EMPTY_FILTER);
-  const [view, setView] = createSignal<ViewState>(EMPTY_VIEW);
+  const [view, setView] = createSignal<ViewState>({ ...EMPTY_VIEW, pageSize: 10 });
+  const [session, setSession] = createSignal<SessionState>(EMPTY_SESSION);
   const [touched, setTouched] = createSignal<CellContext | null>(null);
 
   // Словарь полей отдаётся вычислителю: без него «сумма больше 90000» сравнивалась бы текстом,
@@ -67,8 +77,9 @@ export function App() {
       <section class="page__summary">
         <p class="page__phrase">{phrase()}</p>
         <p class="page__count">
-          Показано <strong>{result().rows.length}</strong> из {ROWS.length} · колонок{" "}
-          {visibleColumns(COLUMNS, view()).length} из {COLUMNS.length}
+          Отобрано <strong>{result().rows.length}</strong> из {ROWS.length} · колонок{" "}
+          {visibleColumns(COLUMNS, view()).length} из {COLUMNS.length} · выделено{" "}
+          {session().selected.length}
         </p>
         <Show when={result().error}>
           {(error) => <p class="page__error">Фильтр не применён: {error()}</p>}
@@ -82,10 +93,14 @@ export function App() {
 
       <section class="page__columns">
         <p class="page__note">
-          Колонки: флажок прячет, стрелки двигают. Заголовок сортирует — второе нажатие
-          разворачивает, третье снимает; с shift ключи копятся.
+          Колонки: флажок прячет, стрелки двигают, ⇤ и ⇥ прижимают к краям, ⊞ собирает строки в
+          группы. Ширину тянут за правый край заголовка — или стрелками с клавиатуры, Enter
+          возвращает как было. Заголовок сортирует; с shift ключи копятся.
         </p>
         <ColumnControls columns={COLUMNS} view={view()} onViewChange={setView} />
+        <Show when={view().grouping.length > 0}>
+          <GroupControls session={session()} onSessionChange={setSession} />
+        </Show>
       </section>
 
       <section class="page__rows">
@@ -102,11 +117,24 @@ export function App() {
             rows={result().rows}
             view={view()}
             onViewChange={setView}
+            session={session()}
+            onSessionChange={setSession}
+            rowId={rowId}
             caption="Заявки"
+            selectable
+            totals
             onCellClick={setTouched}
             cellAttrs={(cell) => ({ highlighted: filtered().has(cell.column.name) })}
           />
         </div>
+
+        <TablePager
+          total={result().rows.length}
+          view={view()}
+          onViewChange={setView}
+          session={session()}
+          onSessionChange={setSession}
+        />
 
         <Show when={touched()}>
           {(cell) => (
@@ -123,7 +151,10 @@ export function App() {
       </section>
 
       <section class="page__state">
-        <p class="page__note">Состояние вида — данные с версией формата: его можно сохранить и вернуть.</p>
+        <p class="page__note">
+          Состояние вида — данные с версией формата: его можно сохранить и вернуть. Состояние
+          сеанса (страница, раскрытые группы, выделение) намеренно рядом, но НЕ сохраняется.
+        </p>
         <pre class="page__json">{JSON.stringify(view(), null, 2)}</pre>
       </section>
     </div>

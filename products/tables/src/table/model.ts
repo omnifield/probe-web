@@ -35,6 +35,16 @@ export interface FormatOptions {
   ratingMax?: number;
 }
 
+/**
+ * Как сводить много значений в одно.
+ *
+ * Имена взяты у OData Data Aggregation (Committee Specification 04) — единственного свода,
+ * который нормирует и методы (`sum`/`min`/`max`/`average`/`countdistinct`), и особый счёт
+ * членов группы (`$count`). Начинка чужая, имена рыночные: выдумывать свои там, где норма
+ * уже есть, — ровно то, чего сверка велит не делать.
+ */
+export type AggregateKind = "count" | "sum" | "min" | "max" | "average" | "countdistinct";
+
 /** Колонка = поле из словаря плюс то, что относится к показу. */
 export interface ColumnSpec extends FieldSpec {
   /** По умолчанию выводится из типа поля. */
@@ -42,6 +52,10 @@ export interface ColumnSpec extends FieldSpec {
   formatOptions?: FormatOptions;
   /** По умолчанию сортировать можно. */
   sortable?: boolean;
+  /** По умолчанию группировать можно текст и да/нет — см. `groupableBy`. */
+  groupable?: boolean;
+  /** Чем сводить значения в группе и в итоговой строке. Без него итога у колонки нет. */
+  aggregate?: AggregateKind;
 }
 
 export type ColumnDictionary = readonly ColumnSpec[];
@@ -53,8 +67,20 @@ export interface SortRule {
   direction: SortDirection;
 }
 
-/** Версия формата состояния вида. Поднимается при несовместимом изменении формы. */
-export const VIEW_FORMAT_VERSION = 1;
+/**
+ * Версия формата состояния вида. Поднимается при несовместимом изменении формы.
+ *
+ * **2** — вторая волна: закрепление колонок, ширины, группировка и размер страницы. Виды
+ * версии 1 читаются и поднимаются до 2 разбором (`parseView`): версия для того и заводилась,
+ * чтобы старое состояние не выбрасывать молча.
+ */
+export const VIEW_FORMAT_VERSION = 2;
+
+/** Края, к которым прижаты колонки. */
+export interface PinnedEdges {
+  start: FieldRef[];
+  end: FieldRef[];
+}
 
 export interface ViewState {
   version: typeof VIEW_FORMAT_VERSION;
@@ -67,6 +93,14 @@ export interface ViewState {
   hidden: FieldRef[];
   /** Ключи сортировки по порядку значимости. Пусто — сортировки нет. */
   sorting: SortRule[];
+  /** Колонки, прижатые к краям: они уходят из общего порядка к своему краю. */
+  pinned: PinnedEdges;
+  /** Заданные пользователем ширины в пикселях. Колонки без записи меряет разметка. */
+  widths: Record<FieldRef, number>;
+  /** Поля, по которым строки собраны в группы. Порядок задаёт вложенность уровней. */
+  grouping: FieldRef[];
+  /** Строк на странице. `null` — листания нет, показываем всё. */
+  pageSize: number | null;
 }
 
 export const EMPTY_VIEW: ViewState = {
@@ -74,7 +108,48 @@ export const EMPTY_VIEW: ViewState = {
   order: [],
   hidden: [],
   sorting: [],
+  pinned: { start: [], end: [] },
+  widths: {},
+  grouping: [],
+  pageSize: null,
 };
+
+/**
+ * Состояние СЕАНСА — то, что живёт до перезагрузки и НЕ сохраняется.
+ *
+ * Разведено с видом намеренно. Вид — это «как я смотрю на данные»: его сохраняют, возят с
+ * собой и версионируют. Страница, раскрытые группы, выделенные и закреплённые строки — это
+ * «где я сейчас»; они привязаны к конкретным строкам и к конкретному моменту, и сохранять их
+ * вместе с видом значит однажды восстановить выделение строк, которых больше нет. Поэтому у
+ * сеанса нет ни версии, ни разбора с границы.
+ */
+export interface SessionState {
+  /** Номер страницы с нуля. */
+  page: number;
+  /** Раскрытые группы по идентификатору строки; `"all"` — раскрыты все. */
+  expanded: string[] | "all";
+  /** Выделенные строки по идентификатору. */
+  selected: string[];
+  /** Строки, прижатые к верху и низу таблицы. */
+  pinnedRows: { top: string[]; bottom: string[] };
+}
+
+export const EMPTY_SESSION: SessionState = {
+  page: 0,
+  expanded: [],
+  selected: [],
+  pinnedRows: { top: [], bottom: [] },
+};
+
+/**
+ * Можно ли группировать по этому полю.
+ *
+ * Умолчание — текст и да/нет: группировка по сумме или по дате даёт столько же групп, сколько
+ * строк, и это не группировка, а тот же список с отступами. Колонка вправе решить иначе.
+ */
+export function groupableBy(column: ColumnSpec): boolean {
+  return column.groupable ?? (column.type === "text" || column.type === "bool");
+}
 
 /** Формат по умолчанию — от типа поля. */
 export function defaultFormat(type: FieldType): FormatKind {
@@ -94,6 +169,15 @@ export function defaultFormat(type: FieldType): FormatKind {
 export function formatOf(column: ColumnSpec): FormatKind {
   return column.format ?? defaultFormat(column.type);
 }
+
+export const AGGREGATE_LABELS: Record<AggregateKind, string> = {
+  count: "сколько",
+  sum: "сумма",
+  min: "наименьшее",
+  max: "наибольшее",
+  average: "среднее",
+  countdistinct: "различных",
+};
 
 export const FORMAT_LABELS: Record<FormatKind, string> = {
   text: "текст",

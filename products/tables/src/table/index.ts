@@ -6,11 +6,15 @@
 //
 // `trace.js` наружу не выходит: замер — внутреннее дело модуля, а каждый экспорт замерзает.
 
+export { aggregate, type Aggregated } from "./aggregate.js";
 export { DEFAULT_LOCALE, type Formatted, formatValue } from "./format.js";
 export {
+  AGGREGATE_LABELS,
+  type AggregateKind,
   type ColumnDictionary,
   type ColumnSpec,
   defaultFormat,
+  EMPTY_SESSION,
   EMPTY_VIEW,
   type FieldRef,
   type FieldSpec,
@@ -19,12 +23,28 @@ export {
   type FormatKind,
   type FormatOptions,
   formatOf,
+  groupableBy,
+  type PinnedEdges,
   type Row,
+  type SessionState,
   type SortDirection,
   type SortRule,
   VIEW_FORMAT_VERSION,
   type ViewState,
 } from "./model.js";
+export {
+  clampPage,
+  expandAll,
+  goToPage,
+  isExpanded,
+  isSelected,
+  pageCount,
+  pinnedRowEdge,
+  pinRow,
+  setSelected,
+  toggleExpanded,
+  toggleSelected,
+} from "./session.js";
 export { compareValues } from "./sort.js";
 export {
   type CellAttrs,
@@ -33,17 +53,29 @@ export {
   type ColumnControlsProps,
   DataTable,
   type DataTableProps,
+  GroupControls,
+  type GroupControlsProps,
+  TablePager,
+  type TablePagerProps,
 } from "./table.jsx";
 export {
+  COLUMN_WIDTH_STEP,
   columnOrder,
+  groupableColumns,
   isVisible,
+  MIN_COLUMN_WIDTH,
   moveColumn,
   type ParsedView,
   parseView,
+  pinColumn,
+  pinnedEdgeOf,
   serializeView,
+  setColumnWidth,
+  setPageSize,
   sortDirectionOf,
   sortPositionOf,
   toggleColumn,
+  toggleGrouping,
   toggleSort,
   visibleColumns,
 } from "./view.js";
