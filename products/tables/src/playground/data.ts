@@ -10,15 +10,19 @@
 // проверяла ссылку-путь, а не только плоские имена. У части строк нет самого `contact`, у
 // части он есть, а телефона в нём нет: это разные вещи, и путь обязан их различать.
 
-import type { FieldSpec, Preset, Row, Template } from "../filters/index.js";
+import type { Preset, Row, Template } from "../filters/index.js";
+import type { ColumnSpec } from "../table/index.js";
 
 /**
- * Словарь полей: ссылка-путь (JSON Pointer), подпись и ТИП.
+ * ОДИН словарь на отбор и на таблицу: ссылка-путь (JSON Pointer), подпись, ТИП и показ.
  *
- * Тип здесь не для красоты: от него зависит и набор операторов в интерфейсе, и разбор
- * введённого значения. Без него «сумма больше 90000» сравнивалась бы текстом.
+ * Тип нужен обоим: фильтру — чтобы предложить операторы и разобрать введённое значение,
+ * таблице — чтобы сравнить значения при сортировке. Формат нужен только таблице и на фильтр
+ * не влияет: он про то, каким значение видит человек, а не про то, что в поле лежит.
+ *
+ * Второй словарь развёл бы фильтр и таблицу на первой правке, поэтому его здесь нет.
  */
-export const FIELDS: FieldSpec[] = [
+export const COLUMNS: ColumnSpec[] = [
   { name: "/applicant", label: "заявитель", type: "text" },
   { name: "/agent", label: "агент", type: "text" },
   { name: "/passport", label: "паспорт", type: "text" },
@@ -26,12 +30,14 @@ export const FIELDS: FieldSpec[] = [
   { name: "/inn", label: "ИНН", type: "text" },
   { name: "/contact/phone", label: "телефон", type: "text" },
   { name: "/contact/email", label: "почта", type: "text" },
-  { name: "/amount", label: "сумма", type: "number" },
+  { name: "/amount", label: "сумма", type: "number", formatOptions: { fractionDigits: 0 } },
   { name: "/created", label: "заведена", type: "date" },
+  { name: "/share", label: "доля одобрения", type: "number", format: "percent" },
+  { name: "/score", label: "рейтинг", type: "number", format: "rating", formatOptions: { ratingMax: 5 } },
   { name: "/region", label: "регион", type: "text" },
   { name: "/status", label: "статус", type: "text" },
   { name: "/urgent", label: "срочная", type: "bool" },
-  { name: "/comment", label: "комментарий", type: "text" },
+  { name: "/comment", label: "комментарий", type: "text", sortable: false },
 ];
 
 export const ROWS: Row[] = [
@@ -43,6 +49,8 @@ export const ROWS: Row[] = [
     contact: { phone: "+7 900 111-22-33" },
     amount: 850_000,
     created: "2026-07-14",
+    share: 0.82,
+    score: 4.5,
     region: "Москва",
     status: "в работе",
     urgent: false,
@@ -54,6 +62,8 @@ export const ROWS: Row[] = [
     contact: { phone: "+7 901 222-33-44" },
     amount: 120_000,
     created: "2026-08-02",
+    share: 0.31,
+    score: 2,
     region: "Москва",
     status: "новая",
     urgent: true,
@@ -64,6 +74,7 @@ export const ROWS: Row[] = [
     contact: { email: "sidorov@example.ru" },
     amount: 1_400_000,
     created: "2026-06-30",
+    score: 5,
     region: "Санкт-Петербург",
     status: "в работе",
     comment: "просит перезвонить после 18:00",
@@ -73,6 +84,7 @@ export const ROWS: Row[] = [
     inn: "504112233445",
     amount: 3_200_000,
     created: "2026-05-19",
+    share: 0.64,
     region: "Московская обл.",
     status: "на проверке",
   },
@@ -83,6 +95,8 @@ export const ROWS: Row[] = [
     contact: { phone: "+7 902 333-44-55", email: "" },
     amount: 75_000,
     created: "2026-08-08",
+    share: 0.05,
+    score: 1,
     region: "Тула",
     status: "новая",
     urgent: true,
@@ -95,6 +109,8 @@ export const ROWS: Row[] = [
     contact: { email: "nikolaeva@example.ru" },
     amount: 640_000,
     created: "2026-07-01",
+    share: 0.97,
+    score: 4,
     region: "Москва",
     status: "одобрена",
     urgent: false,
@@ -135,6 +151,8 @@ export const ROWS: Row[] = [
     contact: { phone: "+7 903 444-55-66", email: "grigoriev@example.ru" },
     amount: 990_000,
     created: "2026-07-22",
+    share: 0.73,
+    score: 3.5,
     region: "Екатеринбург",
     status: "одобрена",
     urgent: false,
@@ -183,6 +201,8 @@ export const ROWS: Row[] = [
     contact: { phone: "+7 906 777-88-99", email: "belova@example.ru" },
     amount: 2_100_000,
     created: "2026-08-01",
+    share: 0.48,
+    score: 3,
     region: "Санкт-Петербург",
     status: "на проверке",
     urgent: true,
@@ -192,6 +212,7 @@ export const ROWS: Row[] = [
     inn: "770778899001",
     amount: 760_000,
     created: "2026-06-18",
+    score: 2.5,
     region: "Москва",
     status: "новая",
     comment: "запросить учредительные",

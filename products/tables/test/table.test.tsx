@@ -1,0 +1,292 @@
+// Таблица проверяется РЕНДЕРОМ в документ: нажали на заголовок — посмотрели, что состояние
+// вида изменилось, порядок строк поехал, а `aria-sort` сказал об этом вслух.
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createSignal } from "solid-js";
+
+import { ColumnControls, DataTable } from "../src/table/table.jsx";
+import type { CellContext, ColumnDictionary, Row, ViewState } from "../src/table/index.js";
+import { EMPTY_VIEW } from "../src/table/model.js";
+import { all, cleanup, mount, one, press } from "./dom.jsx";
+
+afterEach(cleanup);
+
+const COLUMNS: ColumnDictionary = [
+  { name: "/applicant", label: "заявитель", type: "text" },
+  { name: "/amount", label: "сумма", type: "number" },
+  { name: "/created", label: "заведена", type: "date" },
+  { name: "/urgent", label: "срочная", type: "bool", sortable: false },
+];
+
+const ROWS: Row[] = [
+  { applicant: "Петров", amount: 300, created: "2026-07-01", urgent: true },
+  { applicant: "Иванов", amount: 1000, created: "2026-06-15" },
+  { applicant: "Сидоров", amount: "", urgent: false },
+];
+
+function setup(
+  initial: ViewState = EMPTY_VIEW,
+  extra: Partial<Parameters<typeof DataTable>[0]> = {},
+  rows: Row[] = ROWS,
+) {
+  const [view, setView] = createSignal(initial);
+  const host = mount(() => (
+    <DataTable columns={COLUMNS} rows={rows} view={view()} onViewChange={setView} {...extra} />
+  ));
+  return { host, view };
+}
+
+const texts = (host: ParentNode, selector: string) =>
+  all(host, selector).map((node) => node.textContent?.trim() ?? "");
+
+const columnValues = (host: ParentNode, column: string) =>
+  texts(host, `[data-slot='table-cell'][data-column='${column}']`);
+
+describe("разметка", () => {
+  it("рисует заголовки в порядке словаря", () => {
+    const { host } = setup();
+    expect(texts(host, "[data-slot='table-header']")).toEqual([
+      "заявитель",
+      "сумма",
+      "заведена",
+      "срочная",
+    ]);
+  });
+
+  it("показывает значения по формату колонки", () => {
+    const { host } = setup();
+    // Разделитель разрядов у русского формата — неразрывный пробел; нормализуем перед сверкой.
+    const shown = columnValues(host, "/amount").map((text) => text.replace(/\s/g, " "));
+    expect(shown).toEqual(["300", "1 000", ""]);
+    expect(columnValues(host, "/created")).toEqual(["01.07.2026", "15.06.2026", ""]);
+    expect(columnValues(host, "/urgent")).toEqual(["да", "", "нет"]);
+  });
+
+  it("различает «поля нет» и «поле есть, но пустое» — как фильтр", () => {
+    const { host } = setup();
+
+    const empty = all(host, "[data-slot='table-cell'][data-column='/amount']")[2];
+    expect(empty?.hasAttribute("data-empty")).toBe(true);
+    expect(empty?.hasAttribute("data-missing")).toBe(false);
+
+    const missing = all(host, "[data-slot='table-cell'][data-column='/created']")[2];
+    expect(missing?.hasAttribute("data-missing")).toBe(true);
+  });
+
+  it("без обработчика клика роль `grid` НЕ объявляется", () => {
+    // `grid` обещает вспомогательной технологии клавиатурную модель — объявлять его без неё
+    // значит соврать.
+    const { host } = setup();
+    expect(one(host, "[data-slot='table']").hasAttribute("role")).toBe(false);
+  });
+});
+
+describe("сортировка", () => {
+  it("нажатие на заголовок сортирует по возрастанию и говорит об этом `aria-sort`", () => {
+    const { host, view } = setup();
+
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='header-sort']"));
+
+    expect(view().sorting).toEqual([{ field: "/amount", direction: "asc" }]);
+    expect(
+      one(host, "[data-slot='table-header'][data-column='/amount']").getAttribute("aria-sort"),
+    ).toBe("ascending");
+    expect(columnValues(host, "/applicant")).toEqual(["Петров", "Иванов", "Сидоров"]);
+  });
+
+  it("второе нажатие — по убыванию, третье снимает сортировку", () => {
+    const { host, view } = setup();
+    const button = () =>
+      one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='header-sort']");
+
+    press(button());
+    press(button());
+    expect(view().sorting).toEqual([{ field: "/amount", direction: "desc" }]);
+    // Пустая сумма идёт ПЕРВОЙ: правило «пустое больше непустого» разворачивается вместе с
+    // направлением — это и есть `NULLS FIRST` по умолчанию для убывания в SQL.
+    expect(columnValues(host, "/applicant")).toEqual(["Сидоров", "Иванов", "Петров"]);
+
+    press(button());
+    expect(view().sorting).toEqual([]);
+    expect(
+      one(host, "[data-slot='table-header'][data-column='/amount']").getAttribute("aria-sort"),
+    ).toBe("none");
+  });
+
+  it("пустое значение уходит в конец при «по возрастанию» — умолчание SQL", () => {
+    const { host } = setup({ ...EMPTY_VIEW, sorting: [{ field: "/amount", direction: "asc" }] });
+    expect(columnValues(host, "/applicant")).toEqual(["Петров", "Иванов", "Сидоров"]);
+  });
+
+  it("и в начало при «по убыванию» — второе умолчание SQL, из того же правила", () => {
+    const { host } = setup({ ...EMPTY_VIEW, sorting: [{ field: "/amount", direction: "desc" }] });
+    expect(columnValues(host, "/applicant")).toEqual(["Сидоров", "Иванов", "Петров"]);
+  });
+
+  it("равные значения не скачут: порядок ПОЛНЫЙ, с тай-брейкером", () => {
+    // Устойчивость сортировки рынком не требуется, поэтому её обеспечиваем мы сами.
+    const same: Row[] = [
+      { applicant: "третий", amount: 5 },
+      { applicant: "первый", amount: 5 },
+      { applicant: "второй", amount: 5 },
+    ];
+    const view: ViewState = { ...EMPTY_VIEW, sorting: [{ field: "/amount", direction: "asc" }] };
+
+    const first = setup(view, { rowId: (row: Row) => String(row["applicant"]) }, same);
+    expect(columnValues(first.host, "/applicant")).toEqual(["второй", "первый", "третий"]);
+
+    const second = setup(view, { rowId: (row: Row) => String(row["applicant"]) }, same);
+    expect(columnValues(second.host, "/applicant")).toEqual(columnValues(first.host, "/applicant"));
+  });
+
+  it("колонка, которую сортировать нельзя, не даёт ни кнопки, ни `aria-sort`", () => {
+    const { host } = setup();
+    const header = one(host, "[data-slot='table-header'][data-column='/urgent']");
+
+    expect(header.querySelector("[data-slot='header-sort']")).toBeNull();
+    expect(header.hasAttribute("aria-sort")).toBe(false);
+  });
+
+  it("нажатие с shift копит ключи и нумерует их", () => {
+    const { host, view } = setup();
+
+    press(one(host, "[data-column='/amount'] [data-slot='header-sort']"));
+    const withShift = new MouseEvent("click", { bubbles: true, shiftKey: true });
+    one(host, "[data-column='/applicant'] [data-slot='header-sort']").dispatchEvent(withShift);
+
+    expect(view().sorting).toEqual([
+      { field: "/amount", direction: "asc" },
+      { field: "/applicant", direction: "asc" },
+    ]);
+    // Номера читаются в порядке КОЛОНОК, а не ключей: «заявитель» стоит первым в таблице,
+    // но в сортировке он второй.
+    expect(
+      one(host, "[data-column='/amount'] [data-slot='header-sort-position']").textContent,
+    ).toBe("1");
+    expect(
+      one(host, "[data-column='/applicant'] [data-slot='header-sort-position']").textContent,
+    ).toBe("2");
+  });
+});
+
+describe("колонки: показать/скрыть и порядок", () => {
+  function withControls(initial: ViewState = EMPTY_VIEW) {
+    const [view, setView] = createSignal(initial);
+    const host = mount(() => (
+      <>
+        <ColumnControls columns={COLUMNS} view={view()} onViewChange={setView} />
+        <DataTable columns={COLUMNS} rows={ROWS} view={view()} onViewChange={setView} />
+      </>
+    ));
+    return { host, view };
+  }
+
+  it("флажок убирает колонку из таблицы", () => {
+    const { host, view } = withControls();
+
+    one<HTMLInputElement>(host, "[data-column='/amount'] [data-slot='column-toggle'] input").click();
+
+    expect(view().hidden).toEqual(["/amount"]);
+    expect(texts(host, "[data-slot='table-header']")).toEqual(["заявитель", "заведена", "срочная"]);
+  });
+
+  it("стрелка двигает колонку и в управлении, и в таблице", () => {
+    const { host, view } = withControls();
+
+    press(one(host, "[data-slot='column-control'][data-column='/amount'] [data-slot='column-up']"));
+
+    expect(view().order).toEqual(["/amount", "/applicant", "/created", "/urgent"]);
+    expect(texts(host, "[data-slot='table-header']")).toEqual([
+      "сумма",
+      "заявитель",
+      "заведена",
+      "срочная",
+    ]);
+  });
+
+  it("крайние колонки не двигаются за край", () => {
+    const { host } = withControls();
+    const up = one<HTMLButtonElement>(
+      host,
+      "[data-slot='column-control'][data-column='/applicant'] [data-slot='column-up']",
+    );
+    expect(up.disabled).toBe(true);
+  });
+});
+
+describe("ячейка: клик, клавиатура и разметка потребителя", () => {
+  it("клик отдаёт контекст ячейки", () => {
+    const onCellClick = vi.fn();
+    const { host } = setup(EMPTY_VIEW, { onCellClick });
+
+    press(all(host, "[data-slot='table-cell'][data-column='/amount']")[0]!);
+
+    expect(onCellClick).toHaveBeenCalledTimes(1);
+    const context = onCellClick.mock.calls[0]![0] as CellContext;
+    expect(context.value).toBe(300);
+    expect(context.text).toBe("300");
+    expect(context.present).toBe(true);
+    expect(context.column.name).toBe("/amount");
+    expect(context.rowIndex).toBe(0);
+  });
+
+  it("контекст отличает «поля нет» от пустого значения", () => {
+    const onCellClick = vi.fn();
+    const { host } = setup(EMPTY_VIEW, { onCellClick });
+
+    press(all(host, "[data-slot='table-cell'][data-column='/created']")[2]!);
+
+    const context = onCellClick.mock.calls[0]![0] as CellContext;
+    expect(context.present).toBe(false);
+    expect(context.value).toBeUndefined();
+  });
+
+  it("интерактивная таблица объявляет роль `grid` и держит ОДНУ остановку табуляции", () => {
+    // Роящийся tabindex: иначе таблица на тысячу строк добавила бы тысячи остановок.
+    const { host } = setup(EMPTY_VIEW, { onCellClick: () => {} });
+
+    expect(one(host, "[data-slot='table']").getAttribute("role")).toBe("grid");
+    const tabbable = all(host, "[data-slot='table-cell']").filter(
+      (cell) => cell.getAttribute("tabindex") === "0",
+    );
+    expect(tabbable).toHaveLength(1);
+  });
+
+  it("клавиша Enter на ячейке делает то же, что клик", () => {
+    const onCellClick = vi.fn();
+    const { host } = setup(EMPTY_VIEW, { onCellClick });
+
+    const cell = all(host, "[data-slot='table-cell']")[0]!;
+    cell.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    expect(onCellClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("стрелка переносит фокус на соседнюю ячейку", () => {
+    const { host } = setup(EMPTY_VIEW, { onCellClick: () => {} });
+
+    const first = all<HTMLElement>(host, "[data-slot='table-cell']")[0]!;
+    first.focus();
+    first.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    const focused = document.activeElement as HTMLElement | null;
+    expect(focused?.getAttribute("data-column")).toBe("/amount");
+    expect(focused?.getAttribute("data-row-index")).toBe("0");
+  });
+
+  it("разметка потребителя приезжает атрибутом и классом, а стилей таблица не привозит", () => {
+    const { host } = setup(EMPTY_VIEW, {
+      cellAttrs: (context: CellContext) =>
+        context.column.name === "/amount" && Number(context.value) > 500
+          ? { highlighted: true, class: "big", title: "крупная сумма" }
+          : undefined,
+    });
+
+    const cells = all(host, "[data-slot='table-cell'][data-column='/amount']");
+    expect(cells[0]?.hasAttribute("data-highlighted")).toBe(false);
+    expect(cells[1]?.hasAttribute("data-highlighted")).toBe(true);
+    expect(cells[1]?.getAttribute("class")).toBe("big");
+    expect(cells[1]?.getAttribute("title")).toBe("крупная сумма");
+    expect(one(host, "[data-slot='table']").hasAttribute("class")).toBe(false);
+  });
+});
