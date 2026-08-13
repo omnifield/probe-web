@@ -10,7 +10,8 @@
 // состояния (чужая версия формата, неизвестный оператор) — работа читателя, у него для этого
 // есть `parseFilter`; служба про это не знает.
 
-import { LIMITS } from "./limits.js";
+import { askForPreset, createGuard } from "./agent.js";
+import { AGENT_LIMITS, LIMITS } from "./limits.js";
 import { StorageFull } from "./store.js";
 import { trace } from "./trace.js";
 
@@ -29,6 +30,9 @@ const CORS = {
 };
 
 const ROOT = "/api/presets";
+
+/** Канал к агенту — вторая волна, контракт `kb:PROBEWEB-9`. */
+const AGENT_ROOT = "/api/agent/preset";
 
 /**
  * @param {import("node:http").ServerResponse} res
@@ -168,12 +172,20 @@ function parseEnvelope(body, limits) {
  *
  * @param {Awaited<ReturnType<typeof import("./store.js").openStore>>} store
  * @param {Readonly<import("./limits.js").Limits>} [limits]
+ * @param {{guard?: ReturnType<typeof createGuard>, ask?: typeof askForPreset, apiKey?: string | undefined}} [agent]
  * @returns {import("node:http").RequestListener}
  */
-export function createHandler(store, limits = LIMITS) {
+export function createHandler(store, limits = LIMITS, agent = {}) {
+  // Канал к агенту собирается здесь, а не в обработчике: счётчик обращений обязан жить между
+  // запросами, иначе дневной предел обнуляется на каждом и не значит ничего.
+  const channel = {
+    guard: agent.guard ?? createGuard(),
+    ask: agent.ask ?? askForPreset,
+    apiKey: agent.apiKey ?? process.env["ANTHROPIC_API_KEY"],
+  };
   return (req, res) => {
     const done = trace(`http ${req.method} ${req.url}`);
-    handle(req, res, store, limits)
+    handle(req, res, store, limits, channel)
       .catch((error) => {
         // Неожиданная поломка — единственное место, где уместна пятисотка. Причину пишем в
         // лог целиком, наружу не отдаём: наружу отдаём то, что человеку что-то говорит.
@@ -193,8 +205,9 @@ export function createHandler(store, limits = LIMITS) {
  * @param {import("node:http").ServerResponse} res
  * @param {Awaited<ReturnType<typeof import("./store.js").openStore>>} store
  * @param {Readonly<import("./limits.js").Limits>} limits
+ * @param {{guard: ReturnType<typeof createGuard>, ask: typeof askForPreset, apiKey?: string | undefined}} channel
  */
-async function handle(req, res, store, limits) {
+async function handle(req, res, store, limits, channel) {
   const method = req.method ?? "GET";
   const path = new URL(req.url ?? "/", "http://presets.local").pathname.replace(/\/+$/, "");
 
@@ -230,7 +243,101 @@ async function handle(req, res, store, limits) {
     return methodNotAllowed(res, "GET, DELETE");
   }
 
+  if (path === AGENT_ROOT) {
+    if (method !== "POST") return methodNotAllowed(res, "POST");
+    return askAgent(req, res, channel);
+  }
+
   return notFound(res);
+}
+
+/**
+ * Канал к агенту: описание словами → отбор. Контракт — `kb:PROBEWEB-9`.
+ *
+ * Отказы здесь ВСЕ четырёхсотые, включая «модель не ответила». Причина не в букве кодов, а в
+ * том, как их читает стенд: он различает «отказ по делу» и «сервиса нет» по границе 500 и на
+ * пятисотке молча уходит в память со словами «сохранено только в этой вкладке». Отказ агента,
+ * приехавший пятисоткой, выглядел бы для человека как отказ ХРАНИЛИЩА — при живом хранилище.
+ *
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ * @param {{guard: ReturnType<typeof createGuard>, ask: typeof askForPreset, apiKey?: string | undefined}} channel
+ */
+async function askAgent(req, res, channel) {
+  // Запас к пределу текста: сюда же едет словарь полей, и рубить по длине описания было бы
+  // неверно — отказ должен приходить от проверки ниже, с внятной причиной, а не от чтения.
+  const body = await readBody(req, AGENT_LIMITS.textChars * 8 + 8192);
+  if (!body.ok) {
+    res.setHeader("connection", "close");
+    return fail(res, 413, "too_large", "Запрос к агенту слишком велик.");
+  }
+
+  /** @type {unknown} */
+  let input;
+  try {
+    input = JSON.parse(body.text);
+  } catch {
+    return fail(res, 400, "bad_json", "Тело запроса — не JSON.");
+  }
+
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return fail(res, 400, "bad_envelope", "Ожидался объект с полями text и fields.");
+  }
+
+  const envelope = /** @type {Record<string, unknown>} */ (input);
+
+  const text = envelope["text"];
+  if (typeof text !== "string" || text.trim() === "") {
+    return fail(res, 400, "text_required", "Опишите отбор словами — поле не может быть пустым.");
+  }
+  if (text.length > AGENT_LIMITS.textChars) {
+    return fail(
+      res,
+      400,
+      "text_too_long",
+      `Описание длиннее ${AGENT_LIMITS.textChars} символов. Сформулируйте короче.`,
+    );
+  }
+
+  // Словарь полей НЕОБЯЗАТЕЛЕН, и это уступка факту, а не замысел: контракт канала я дописал
+  // уже после того, как выдал ТЗ клиенту, и клиент шлёт только текст. Требовать словарь значило
+  // бы отказывать на каждом запросе — канал не работал бы вовсе. Без словаря модель угадывает
+  // имена полей хуже, и это доводится отдельной задачей на стороне `tables`.
+  const raw = envelope["fields"];
+  if (
+    raw !== undefined &&
+    (!Array.isArray(raw) || raw.some(/** @param {unknown} name */ (name) => typeof name !== "string"))
+  ) {
+    return fail(res, 400, "bad_fields", "Поля таблицы передаются списком строк.");
+  }
+  /** @type {string[]} */
+  const fields = Array.isArray(raw) ? raw : [];
+  if (fields.length > AGENT_LIMITS.fieldsCount) {
+    return fail(
+      res,
+      400,
+      "fields_too_many",
+      `Полей больше ${AGENT_LIMITS.fieldsCount} — столько модели не передаём.`,
+    );
+  }
+
+  // За дверью адрес соединения один на всех — считать по нему значило бы считать всех как
+  // одного. Берём то, что проставила дверь, и только первый адрес цепочки.
+  const forwarded = req.headers["x-forwarded-for"];
+  const address =
+    (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "неизвестно";
+
+  const allowed = channel.guard.check(address);
+  if (!allowed.ok) return fail(res, 429, allowed.code, allowed.message);
+
+  const answer = await channel.ask({ text, fields, apiKey: channel.apiKey });
+  if (!answer.ok) return fail(res, answer.status, answer.code, answer.message);
+
+  // Отдаём как пришло. Что это за состояние и годится ли оно — решает `parseFilter` у
+  // читателя: ответ модели не привилегированнее файла переходника (`kb:PROBEWEB-9`).
+  return send(res, 200, { state: answer.state });
 }
 
 /**

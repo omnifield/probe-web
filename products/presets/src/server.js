@@ -25,6 +25,8 @@ export const DEFAULT_DIR = "./data";
  * @param {number} [options.port] порт; `0` — любой свободный (так делают пробы)
  * @param {string} [options.host]
  * @param {Readonly<import("./limits.js").Limits>} [options.limits]
+ * @param {{guard?: any, ask?: any, apiKey?: string | undefined}} [options.agent] подмена канала для проб:
+ *   пробы не ходят в сеть и не тратят токены — транспорт подменяется целиком
  */
 export async function start(options = {}) {
   const dir = options.dir ?? process.env["PRESETS_DIR"] ?? DEFAULT_DIR;
@@ -33,7 +35,7 @@ export async function start(options = {}) {
   const limits = options.limits ?? LIMITS;
 
   const store = await openStore(dir, limits);
-  const server = createServer(createHandler(store, limits));
+  const server = createServer(createHandler(store, limits, options.agent));
 
   await new Promise((resolve) => server.listen(port, host, () => resolve(undefined)));
 
