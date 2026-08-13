@@ -179,7 +179,7 @@ describe("поверхность службы", () => {
     );
   });
 
-  it("предел числа записей: отказ 507, и он говорит, что делать", async () => {
+  it("предел числа записей: отказ 409, и он говорит, что делать", async () => {
     const { origin } = await serve({ records: 2 });
 
     /** @param {string} label */
@@ -194,7 +194,9 @@ describe("поверхность службы", () => {
     assert.equal((await post("два")).status, 201);
 
     const full = await post("три");
-    assert.equal(full.status, 507);
+    // Именно 4xx: для читателя 5xx значит «сервиса нет», и отказ по пределу утонул бы в этом.
+    assert.equal(full.status, 409);
+    assert.ok(full.status < 500, "отказ по делу обязан отличаться от поломки службы");
     const failure = await body(full);
     assert.equal(failure.error, "storage_full");
     assert.ok(failure.message.includes("Удалите"), "отказ обязан называть выход");
