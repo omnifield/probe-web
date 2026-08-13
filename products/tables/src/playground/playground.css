@@ -162,6 +162,120 @@
   }
 }
 
+/* ── Запрос к агенту и сохранённые отборы ──────────────────────────────────
+   Обе панели живут в той же колонке, что и кейсы, и выглядят так же: это три
+   способа получить один и тот же отбор — спросить словами, взять готовый,
+   достать сохранённый. Разный вид намекал бы, что они дают разное. */
+
+.page__ask,
+.page__saved {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.page__ask-text {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+
+.page__ask-text:focus-visible,
+.page__save-name:focus-visible,
+.page__save-hint:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.page__ask-run,
+.page__save-run {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.page__ask-run:hover:not([disabled]),
+.page__save-run:hover:not([disabled]) {
+  border-color: var(--ring);
+}
+
+.page__ask-run[disabled],
+.page__save-run[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.page__ask-said,
+.page__saved-notice {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* Отказ — это ответ, а не поломка: цветом отличается, но панель остаётся живой. */
+.page__ask-said[data-failed] {
+  color: var(--destructive);
+}
+
+.page__save-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.page__save-name,
+.page__save-hint {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+/* Удаление стоит рядом со своим отбором, а не в общем меню: спутать нечего. */
+.page__cases li {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.page__saved-drop {
+  all: unset;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.page__saved-drop:hover {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+.page__saved-drop:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
 .page__side-title {
   margin: 0;
   font-size: 0.6875rem;

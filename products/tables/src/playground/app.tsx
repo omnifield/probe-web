@@ -12,18 +12,31 @@
 //
 // Оформление живёт ЗДЕСЬ, в потребителе: компоненты безголовые и ни одного класса не привозят.
 
-import { For, Match, Show, Switch } from "solid-js";
+import { For, Match, onMount, Show, Switch } from "solid-js";
 
 import { AdapterPage } from "./pages/adapter-page.jsx";
 import { FiltersPage } from "./pages/filters-page.jsx";
+import type { StandStore } from "./remote-store.js";
 import { createRoute, PAGES, pageMeta } from "./route.js";
+import { createSaved } from "./saved.js";
 import { Sidebar } from "./sidebar.jsx";
 import { createStand } from "./stand.js";
 
-export function App() {
+export interface AppProps {
+  /** Хранилище пресетов; по умолчанию наш сервис с откатом в память. В пробах подменяется. */
+  store?: StandStore;
+}
+
+export function App(props: AppProps = {}) {
   const stand = createStand();
   const route = createRoute();
   const meta = () => pageMeta(route.page());
+
+  const saved = props.store === undefined ? createSaved(stand) : createSaved(stand, props.store);
+
+  // Список тянем один раз на старте. Сервиса может не быть — тогда `saved` сам съедет в память
+  // и скажет об этом; падать тут нечему.
+  onMount(() => void saved.refresh());
 
   /** Кейсы — про отбор, поэтому стоят только там, где отбор настраивают. */
   const withCases = () => route.page() === "filters";
@@ -61,7 +74,7 @@ export function App() {
           кейсы и содержимое не уезжают друг относительно друга. */}
       <div class="page__body" data-side={withCases() ? "cases" : "none"}>
         <Show when={withCases()}>
-          <Sidebar stand={stand} />
+          <Sidebar stand={stand} saved={saved} />
         </Show>
 
         <main class="page__main">

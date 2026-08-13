@@ -14,19 +14,28 @@
 //   • сколько оставит — из `applyFilter` на текущих строках.
 // Написанное руками «оставит 7 строк» назавтра стало бы враньём: строки меняются, текст нет.
 
-import { createMemo, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 
 import { applyFilter, applyPreset, describeFilter, labelsOf } from "../filters/index.js";
+import { AskAgent } from "./ask-agent.jsx";
 import { COLUMNS, PRESETS } from "./data.js";
+import type { Saved } from "./saved.js";
+import { SavedPresets } from "./saved-presets.jsx";
 import type { Stand } from "./stand.js";
 
 const LABELS = labelsOf(COLUMNS);
 
 export interface SidebarProps {
   stand: Stand;
+  saved: Saved;
 }
 
 export function Sidebar(props: SidebarProps) {
+  // Заготовка имени для сохранения: удался запрос к агенту — его текст предлагается как имя.
+  // Именно ПРЕДЛАГАЕТСЯ: хранится то, что человек оставил, а сам запрос в пресет не едет
+  // (`kb:PROBEWEB-8`, правило четвёртое).
+  const [draftName, setDraftName] = createSignal("");
+
   /** Что кейс сделает с ТЕКУЩИМ набором строк: считается на тех данных, что сейчас на экране. */
   const preview = createMemo(() => {
     const rows = props.stand.rows();
@@ -43,7 +52,16 @@ export function Sidebar(props: SidebarProps) {
   });
 
   return (
-    <aside class="page__side" aria-label="Готовые отборы">
+    <aside class="page__side" aria-label="Отборы">
+      <AskAgent stand={props.stand} onAnswered={setDraftName} />
+
+      <SavedPresets
+        stand={props.stand}
+        saved={props.saved}
+        draftName={draftName}
+        setDraftName={setDraftName}
+      />
+
       <h2 class="page__side-title">Готовые отборы</h2>
       <p class="page__side-lead">
         Нажми на случай — фильтр соберётся сам. Дальше его можно править как свой: это обычные

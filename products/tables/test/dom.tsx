@@ -36,7 +36,7 @@ export function press(node: Element): void {
 }
 
 /** Ввод текста в поле: значение плюс событие, которое слушает Solid. */
-export function type(node: HTMLInputElement, value: string): void {
+export function type(node: HTMLInputElement | HTMLTextAreaElement, value: string): void {
   node.value = value;
   node.dispatchEvent(new Event("input", { bubbles: true }));
 }
