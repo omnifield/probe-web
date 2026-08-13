@@ -26,3 +26,4 @@ export {
 export { bandScale, type BandScale, linearScale, type LinearScale } from "./scale.js";
 export { type ChartSelection, selectionCondition, seriesCondition } from "./select.js";
 export { buildChart, type ChartData, type ChartPoint, type ChartSeries } from "./transform.js";
+export { type ChartSql, type ChartSqlOptions, chartToSql } from "./sql.js";

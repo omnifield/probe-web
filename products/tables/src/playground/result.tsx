@@ -20,6 +20,7 @@ import {
   visibleColumns,
 } from "../table/index.js";
 import { COLUMNS } from "./data.js";
+import { SqlView } from "./sql-view.jsx";
 import { rowId, type Stand } from "./stand.js";
 
 /**
@@ -247,7 +248,12 @@ export function StandResult(props: { stand: Stand }): ReturnType<typeof Show> {
             )}
           </Show>
         </section>
+
       </Show>
+
+      {/* Под показом — тот же отбор словами бэка. Хвост разный: таблице строки, графику
+          сведение, — и это ровно то, что бэку надо увидеть заранее. */}
+      <SqlView stand={props.stand} />
 
       <Show when={props.stand.result().rows.length === 0 && !props.stand.result().error}>
         <p class="page__empty">

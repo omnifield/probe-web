@@ -54,6 +54,7 @@ export {
   toggleSelected,
 } from "./session.js";
 export { compareValues } from "./sort.js";
+export { type ViewSql, type ViewSqlOptions, viewToSql } from "./sql.js";
 export {
   type CellAttrs,
   type CellContext,

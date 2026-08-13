@@ -74,6 +74,13 @@ export {
 } from "./presets.js";
 export { parseFilter, type ParsedFilter, serializeFilter } from "./serialize.js";
 export {
+  filterToSql,
+  type SqlDialect,
+  type SqlOptions,
+  type SqlQuery,
+  sqlColumn,
+} from "./sql.js";
+export {
   checkPresetInput,
   createMemoryPresetStore,
   PRESET_LIMITS,

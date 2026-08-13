@@ -148,3 +148,37 @@ describe("управление колонками — в самой таблиц
     expect(all(host, '[data-slot="table-header"]').length).toBe(before);
   });
 });
+
+describe("запрос для бэка — под таблицей", () => {
+  it("блок стоит под таблицей и показывает тот же отбор, что применён", () => {
+    const host = mount(() => <App />);
+
+    press(navLink(host, "Фильтры"));
+    press(one(host, ".page__case"));
+
+    const sql = one(host, '[data-stand="sql-text"]').textContent ?? "";
+    expect(sql).toContain("SELECT * FROM applications");
+    expect(sql).toContain("WHERE");
+    // Значения — параметрами, отдельным списком: так они и поедут.
+    expect(all(host, '[data-stand="sql-params"] li').length).toBeGreaterThan(0);
+  });
+
+  it("на графике запрос ДРУГОЙ: тот же отбор, но со сведением", () => {
+    const host = mount(() => <App />);
+    chartRadio(host).click();
+
+    const sql = one(host, '[data-stand="sql-text"]').textContent ?? "";
+    // Графику нужны сведённые величины, а не строки: бэк должен увидеть это заранее.
+    expect(sql).toContain("GROUP BY");
+    expect(sql).toContain("AS value");
+    expect(sql).not.toContain("SELECT *");
+  });
+
+  it("сортировка уезжает в запрос хвостом", () => {
+    const host = mount(() => <App />);
+
+    press(one(host, "[data-slot='table-header'] [data-slot='header-sort']"));
+
+    expect(one(host, '[data-stand="sql-text"]').textContent).toContain("ORDER BY");
+  });
+});
