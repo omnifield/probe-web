@@ -46,6 +46,18 @@ describe("навигация", () => {
     expect(globalThis.location.hash).toBe("#/filters");
   });
 
+  it("шапка одинакова на всех страницах — под ней ничего не прыгает при переходе", () => {
+    const host = mount(() => <App />);
+    const before = one(host, ".page__head").textContent;
+
+    press(navLink(host, "Фильтры"));
+
+    // Заголовок и объяснение страницы живут в содержимом, а не в шапке: иначе шапка меняла бы
+    // высоту на каждом переходе и всё под ней уезжало бы вверх-вниз.
+    expect(one(host, ".page__head").textContent).toBe(before);
+    expect(one(host, ".page__main").textContent).toContain(PAGES[1]!.title);
+  });
+
   it("стенд открывается на той странице, что стоит в адресе", () => {
     globalThis.location.hash = "#/filters";
     const host = mount(() => <App />);

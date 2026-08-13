@@ -2,8 +2,8 @@
 //
 // Проверяется не «список рисуется», а то, ради чего кейсы заведены: человек тыкает в описание
 // случая и получает НАСТОЯЩИЙ фильтр, который дальше видно и можно править. Плюс два свойства,
-// которые ломаются молча: числа на карточке должны быть посчитанными (а не написанными
-// когда-то руками), а сборка — клоном (иначе правка фильтра испортила бы сам кейс).
+// которые ломаются молча: числа на карточке должны быть ПОСЧИТАННЫМИ (а не написанными когда-то
+// руками), а место кейсов — только страница отбора.
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -17,13 +17,19 @@ afterEach(() => {
   globalThis.location.hash = "";
 });
 
+/** Кейсы живут на странице отбора — стенд поднимаем сразу там. */
+function standOnFilters() {
+  globalThis.location.hash = "#/filters";
+  return mount(() => <App />);
+}
+
 const LABELS = labelsOf(COLUMNS);
 
 const card = (host: ParentNode, id: string) => one(host, `[data-case='${id}']`);
 
 describe("список кейсов", () => {
   it("слева стоят все готовые сборки, каждая со своей подписью", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
 
     expect(all(host, ".page__case").length).toBe(PRESETS.length);
     for (const preset of PRESETS) {
@@ -43,7 +49,7 @@ describe("список кейсов", () => {
   });
 
   it("фраза на карточке — та же, что покажет итог, а не отдельный текст", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
 
     for (const preset of PRESETS) {
       expect(card(host, preset.id).textContent).toContain(describeFilter(preset.state, LABELS));
@@ -51,7 +57,7 @@ describe("список кейсов", () => {
   });
 
   it("«оставит N из M» ПОСЧИТАНО на текущих строках, а не написано руками", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
 
     for (const preset of PRESETS) {
       const left = applyFilter(ROWS, preset.state, { fields: COLUMNS }).rows.length;
@@ -60,20 +66,38 @@ describe("список кейсов", () => {
   });
 });
 
-describe("нажатие собирает фильтр", () => {
-  it("простой кейс: условие появилось в конструкторе, и человек стоит там, где это видно", () => {
+describe("место кейсов", () => {
+  it("на странице переходника кейсов НЕТ: разговор про готовые отборы там посторонний", () => {
     const host = mount(() => <App />);
+
+    expect(host.querySelector(".page__case")).toBeNull();
+    expect(host.querySelector(".page__side")).toBeNull();
+  });
+
+  it("колонка кейсов появляется вместе со страницей отбора", () => {
+    const host = mount(() => <App />);
+    expect(one(host, ".page__body").getAttribute("data-side")).toBe("none");
+
+    press(all(host, ".page__nav-link")[1]!);
+
+    expect(one(host, ".page__body").getAttribute("data-side")).toBe("cases");
+    expect(all(host, ".page__case").length).toBe(PRESETS.length);
+  });
+});
+
+describe("нажатие собирает фильтр", () => {
+  it("простой кейс: условие появилось в конструкторе, тут же, где на него нажали", () => {
+    const host = standOnFilters();
     const simple = PRESETS[0]!;
 
     press(card(host, simple.id));
 
-    expect(globalThis.location.hash).toBe("#/filters");
     expect(all(host, "[data-slot='filter-condition']").length).toBe(simple.state.conditions.length);
     expect(one(host, ".page__phrase").textContent).toBe(describeFilter(simple.state, LABELS));
   });
 
   it("сложный кейс приносит формулу, а не просто список условий через И", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
     const hard = PRESETS[PRESETS.length - 1]!;
 
     press(card(host, hard.id));
@@ -84,7 +108,7 @@ describe("нажатие собирает фильтр", () => {
   });
 
   it("отбор доезжает до показа: счётчик итога совпадает с обещанием карточки", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
     const preset = PRESETS[2]!;
     const left = applyFilter(ROWS, preset.state, { fields: COLUMNS }).rows.length;
 
@@ -96,7 +120,7 @@ describe("нажатие собирает фильтр", () => {
   });
 
   it("собранный фильтр правится как свой — условие снимается", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
 
     press(card(host, PRESETS[0]!.id));
     press(one(host, "[data-slot='condition-remove']"));
@@ -105,7 +129,7 @@ describe("нажатие собирает фильтр", () => {
   });
 
   it("повторное нажатие кейса ЗАМЕНЯЕТ сборку, а не копит условия поверх прежних", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
     const hard = PRESETS[PRESETS.length - 1]!;
 
     press(card(host, hard.id));
@@ -115,7 +139,7 @@ describe("нажатие собирает фильтр", () => {
   });
 
   it("формула сложного кейса ссылается на его условия, а не в пустоту", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
 
     press(card(host, PRESETS[PRESETS.length - 1]!.id));
 
@@ -126,7 +150,7 @@ describe("нажатие собирает фильтр", () => {
   });
 
   it("готовых сборок нет второй раз внутри конструктора — одно место, а не два", () => {
-    const host = mount(() => <App />);
+    const host = standOnFilters();
     press(card(host, PRESETS[0]!.id));
 
     expect(host.querySelector("[data-slot='filter-preset']")).toBeNull();

@@ -4,6 +4,10 @@
 // конкретные случаи. Нажал — фильтр собрался сам, и дальше его видно и можно править. Так
 // разговор начинается с «мне нужно вот это», а не с «сначала прочитай, как работают условия».
 //
+// Колонка стоит ТОЛЬКО на странице отбора (решение user): на переходнике разговор про готовые
+// отборы посторонний. Поэтому здесь нет и перехода между страницами — собранный фильтр видно
+// там же, где на него нажали.
+//
 // Три вещи на карточке, и ДВЕ ИЗ НИХ СЧИТАЮТСЯ, а не пишутся руками:
 //   • подпись и что кейс даёт — текст (`data.ts`);
 //   • фраза отбора — из `describeFilter`, той же, что показывает итог;
@@ -12,16 +16,14 @@
 
 import { createMemo, For, Show } from "solid-js";
 
-import { applyFilter, applyPreset, describeFilter, labelsOf, type Preset } from "../filters/index.js";
+import { applyFilter, applyPreset, describeFilter, labelsOf } from "../filters/index.js";
 import { COLUMNS, PRESETS } from "./data.js";
-import type { Route } from "./route.js";
 import type { Stand } from "./stand.js";
 
 const LABELS = labelsOf(COLUMNS);
 
 export interface SidebarProps {
   stand: Stand;
-  route: Route;
 }
 
 export function Sidebar(props: SidebarProps) {
@@ -39,17 +41,6 @@ export function Sidebar(props: SidebarProps) {
       ]),
     );
   });
-
-  /**
-   * Нажали кейс — фильтр собрался и человек оказался ТАМ, ГДЕ ЕГО ВИДНО.
-   *
-   * Перевод на страницу отбора не украшение: собрать фильтр и оставить человека на странице
-   * переходника значит показать изменившийся счётчик и спрятать причину.
-   */
-  const pick = (preset: Preset): void => {
-    props.stand.setFilter(applyPreset(preset));
-    props.route.go("filters");
-  };
 
   return (
     <aside class="page__side" aria-label="Готовые отборы">
@@ -70,7 +61,7 @@ export function Sidebar(props: SidebarProps) {
                   type="button"
                   class="page__case"
                   data-case={preset.id}
-                  onClick={() => pick(preset)}
+                  onClick={() => props.stand.setFilter(applyPreset(preset))}
                 >
                   <span class="page__case-label">{preset.label}</span>
                   <Show when={preset.hint}>

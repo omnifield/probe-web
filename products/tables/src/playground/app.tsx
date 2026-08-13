@@ -12,7 +12,7 @@
 //
 // Оформление живёт ЗДЕСЬ, в потребителе: компоненты безголовые и ни одного класса не привозят.
 
-import { For, Match, Switch } from "solid-js";
+import { For, Match, Show, Switch } from "solid-js";
 
 import { AdapterPage } from "./pages/adapter-page.jsx";
 import { FiltersPage } from "./pages/filters-page.jsx";
@@ -25,10 +25,16 @@ export function App() {
   const route = createRoute();
   const meta = () => pageMeta(route.page());
 
+  /** Кейсы — про отбор, поэтому стоят только там, где отбор настраивают. */
+  const withCases = () => route.page() === "filters";
+
   return (
     <div class="page">
+      {/* Шапка одна на все страницы и НЕ ездит: в ней только имя стенда и переходы. Заголовок
+          и объяснение страницы уехали в содержимое — иначе шапка меняла бы высоту при каждом
+          переходе, и всё под ней прыгало бы. */}
       <header class="page__head">
-        <h1>Стенд зоны tables: данные · отбор · показ</h1>
+        <h1>Стенд зоны tables</h1>
 
         {/* Ссылки, а не кнопки: адрес страницы настоящий — им делятся, и кнопка «назад»
             работает сама. Переход всё равно перехватываем сигналом, чтобы не ждать события. */}
@@ -49,17 +55,21 @@ export function App() {
             )}
           </For>
         </nav>
-
-        <h2 class="page__title">{meta().title}</h2>
-        <p class="page__lead">{meta().lead}</p>
       </header>
 
-      {/* Кейсы стоят слева и не уезжают вместе со страницей: они про то, ЧТО можно спросить
-          у данных, а страница — про то, где это настраивают. */}
-      <div class="page__body">
-        <Sidebar stand={stand} route={route} />
+      {/* Две области со СВОИМ скроллом: страница целиком не прокручивается, поэтому шапка,
+          кейсы и содержимое не уезжают друг относительно друга. */}
+      <div class="page__body" data-side={withCases() ? "cases" : "none"}>
+        <Show when={withCases()}>
+          <Sidebar stand={stand} />
+        </Show>
 
         <main class="page__main">
+          <section class="page__block page__intro">
+            <h2 class="page__title">{meta().title}</h2>
+            <p class="page__lead">{meta().lead}</p>
+          </section>
+
           <Switch>
             <Match when={route.page() === "adapter"}>
               <AdapterPage stand={stand} />
