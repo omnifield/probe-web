@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { ColumnDictionary, ViewState } from "../src/table/model.js";
 import { EMPTY_VIEW } from "../src/table/model.js";
 import {
+  canMoveColumn,
   columnOrder,
   isVisible,
   moveColumn,
@@ -51,12 +52,22 @@ describe("порядок колонок", () => {
     expect(moveColumn(COLUMNS, EMPTY_VIEW, "/created", 1)).toBe(EMPTY_VIEW);
   });
 
-  it("сдвиг считается по ПОЛНОМУ порядку, включая скрытые", () => {
-    // Иначе перенос через скрытую колонку менял бы её место молча, и вид «поехал» бы,
-    // как только её вернут.
+  it("шаг меряется ВИДИМЫМИ соседями: скрытая колонка перешагивается", () => {
+    // Правило сменилось 2026-08-13 вместе с переездом управления в саму колонку. Раньше шаг
+    // считался по полному порядку, и на скрытом соседе нажатие не давало никакого видимого
+    // эффекта — человек жмёт, экран стоит. Скрытая колонка при этом остаётся на своём месте.
     const view: ViewState = { ...EMPTY_VIEW, hidden: ["/amount"] };
     const moved = moveColumn(COLUMNS, view, "/created", -1);
-    expect(columnOrder(COLUMNS, moved)).toEqual(["/applicant", "/created", "/amount"]);
+
+    expect(columnOrder(COLUMNS, moved)).toEqual(["/created", "/applicant", "/amount"]);
+  });
+
+  it("двигать некуда, когда все соседи в эту сторону скрыты", () => {
+    const view: ViewState = { ...EMPTY_VIEW, hidden: ["/applicant"] };
+
+    expect(canMoveColumn(COLUMNS, view, "/amount", -1)).toBe(false);
+    expect(moveColumn(COLUMNS, view, "/amount", -1)).toBe(view);
+    expect(canMoveColumn(COLUMNS, view, "/amount", 1)).toBe(true);
   });
 });
 

@@ -73,5 +73,21 @@ export {
   type TemplateParam,
 } from "./presets.js";
 export { parseFilter, type ParsedFilter, serializeFilter } from "./serialize.js";
+export {
+  filterToSql,
+  type SqlDialect,
+  type SqlOptions,
+  type SqlQuery,
+  sqlColumn,
+} from "./sql.js";
+export {
+  checkPresetInput,
+  createMemoryPresetStore,
+  PRESET_LIMITS,
+  type PresetInfo,
+  type PresetInput,
+  type PresetStore,
+  type StoredPreset,
+} from "./store.js";
 export { and, not, or, passes, type Truth, UNKNOWN } from "./truth.js";
 export { FilterBuilder, type FilterBuilderProps } from "./ui/filter-builder.jsx";

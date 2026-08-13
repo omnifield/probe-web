@@ -54,19 +54,21 @@ export {
   toggleSelected,
 } from "./session.js";
 export { compareValues } from "./sort.js";
+export { type ViewSql, type ViewSqlOptions, viewToSql } from "./sql.js";
 export {
   type CellAttrs,
   type CellContext,
-  ColumnControls,
-  type ColumnControlsProps,
   DataTable,
   type DataTableProps,
   GroupControls,
   type GroupControlsProps,
+  HiddenColumns,
+  type HiddenColumnsProps,
   TablePager,
   type TablePagerProps,
 } from "./table.jsx";
 export {
+  canMoveColumn,
   COLUMN_WIDTH_STEP,
   columnOrder,
   groupableColumns,

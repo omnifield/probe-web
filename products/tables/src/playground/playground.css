@@ -7,18 +7,443 @@
    Ни одного литерального цвета и ни одного селектора по внутренностям kobalte. Отсюда
    свойство: снимут зацепку — вид разъедется целиком и это будет видно, а не «немного поедет». */
 
+/* ── Раскладка: ОКНО, а не длинная лента ───────────────────────────────────
+   Стенд занимает всю ширину и всю высоту окна, а прокручиваются ОБЛАСТИ внутри
+   него — кейсы слева и содержимое справа. Страница целиком не скроллится, и
+   поэтому шапка, кейсы и содержимое не ездят друг относительно друга: отбор
+   поменял число строк — двигается только та область, где строки.
+
+   На узком экране раскладка распускается обратно в ленту: колонок нет, высота
+   не фиксируется, скроллит страница. Окно с двумя скроллами на телефоне — это
+   две щели вместо экрана. */
+
 .page {
-  max-width: 78rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 5rem;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.page__head {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.25rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
 }
 
 .page__head h1 {
-  margin: 0 0 0.375rem;
-  font-size: 1.375rem;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* ── Содержимое собрано БЛОКАМИ ────────────────────────────────────────────
+   Каждый разговор — свой блок с рамкой и своим заголовком: настройка входа,
+   конструктор, показ. Раньше это были полосы без границ, и на переключении
+   «таблица ↔ график» глазу не за что было держаться — казалось, что содержимое
+   ездит. Блок остаётся на месте, меняется его начинка. */
+
+.page__block,
+.page__stand,
+.page__panel,
+.page__adapter,
+.page__chart,
+.page__rows {
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+.page__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+/* ── Навигация по страницам ────────────────────────────────────────────────
+   Текущая страница помечена `aria-current="page"` — тем же признаком, по которому её
+   называет вспомогательная технология. Второго признака «активности» нет намеренно:
+   класс-дубль расходится с разметкой молча. */
+
+.page__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.page__nav-link {
+  padding: 0.3125rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.page__nav-link:hover {
+  color: var(--foreground);
+}
+
+.page__nav-link[aria-current="page"] {
+  border-color: var(--border);
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+.page__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* ── Сайдбар с кейсами ─────────────────────────────────────────────────────
+   Слева — что можно спросить у данных, справа — где это настраивают. Колонка
+   есть только там, где отбор настраивают: на странице переходника разговор про
+   готовые отборы посторонний, и место она занимала бы зря. */
+
+.page__body {
+  display: grid;
+  grid-template-columns: 19rem minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page__body[data-side="none"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.page__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.25rem 4rem;
+}
+
+.page__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  /* Кейсов будет много — список прокручивается сам, а не тянет содержимое. */
+  overflow-y: auto;
+  padding: 1.25rem 1rem;
+  border-right: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+@media (max-width: 64rem) {
+  .page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .page__body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .page__main,
+  .page__side {
+    overflow: visible;
+  }
+
+  .page__side {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+/* ── Запрос для бэка ───────────────────────────────────────────────────────
+   Стоит под таблицей и выглядит как блок с кодом, а не как часть интерфейса:
+   его читают и копируют, а не нажимают. Значения показаны ОТДЕЛЬНО от текста —
+   ровно так они и поедут, параметрами. */
+
+.page__sql {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+}
+
+.page__sql-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.page__sql-head .page__side-title {
+  margin-right: auto;
+}
+
+.page__sql-copy {
+  padding: 0.1875rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.page__sql-copy:hover {
+  border-color: var(--ring);
+  color: var(--foreground);
+}
+
+.page__sql-text {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--muted);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.page__sql-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.page__sql-params li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3125rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+}
+
+.page__sql-place {
+  font-family: var(--font-mono);
+  color: var(--muted-foreground);
+}
+
+.page__sql-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+/* ── Запрос к агенту и сохранённые отборы ──────────────────────────────────
+   Обе панели живут в той же колонке, что и кейсы, и выглядят так же: это три
+   способа получить один и тот же отбор — спросить словами, взять готовый,
+   достать сохранённый. Разный вид намекал бы, что они дают разное. */
+
+.page__ask,
+.page__saved {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.page__ask-text {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+
+.page__ask-text:focus-visible,
+.page__save-name:focus-visible,
+.page__save-hint:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.page__ask-run,
+.page__save-run {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.page__ask-run:hover:not([disabled]),
+.page__save-run:hover:not([disabled]) {
+  border-color: var(--ring);
+}
+
+.page__ask-run[disabled],
+.page__save-run[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.page__ask-said,
+.page__saved-notice {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* Отказ — это ответ, а не поломка: цветом отличается, но панель остаётся живой. */
+.page__ask-said[data-failed] {
+  color: var(--destructive);
+}
+
+.page__save-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.page__save-name,
+.page__save-hint {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+/* Удаление стоит рядом со своим отбором, а не в общем меню: спутать нечего. */
+.page__cases li {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.page__saved-drop {
+  all: unset;
+  padding: 0 0.4375rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.page__saved-drop:hover {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+.page__saved-drop:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.page__side-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.page__side-lead {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.page__cases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+.page__case {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--card);
+  color: var(--card-foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page__case:hover {
+  border-color: var(--ring);
+}
+
+.page__case:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.page__case-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.page__case-hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* Фраза отбора и счётчик считаются, а не пишутся: видно, что именно соберётся. */
+.page__case-phrase {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  border-left: 2px solid var(--border);
+  padding-left: 0.4375rem;
+  margin-top: 0.125rem;
+}
+
+.page__case-count {
+  font-size: 0.6875rem;
+  color: var(--primary);
 }
 
 .page__lead {
@@ -30,11 +455,7 @@
 }
 
 .page__panel {
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background-color: var(--card);
-  color: var(--card-foreground);
+  padding: 1.125rem 1.25rem;
 }
 
 /* --- Конструктор ---------------------------------------------------------------------- */
@@ -327,22 +748,19 @@ select[data-slot^="condition-"]:focus-visible {
 
 /* --- Итог и результат -------------------------------------------------------------------- */
 
-.page__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.75rem 1.25rem;
-  padding: 0.875rem 1rem;
+/* Итог стоит рядом с переключателем показа, в той же полосе: сколько отобрано и чем это
+   показано — один вопрос, и разносить его по разным углам экрана незачем. */
+.page__result {
+  flex: 1 1 22rem;
+  padding-left: 0.75rem;
   border-left: 3px solid var(--primary);
-  border-radius: var(--radius-sm);
-  background-color: var(--muted);
 }
 
 .page__phrase {
   margin: 0;
-  flex: 1 1 24rem;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   line-height: 1.5;
+  color: var(--muted-foreground);
 }
 
 .page__count,
@@ -378,8 +796,12 @@ select[data-slot^="condition-"]:focus-visible {
   gap: 0.625rem;
 }
 
+/* Таблица прокручивается В СВОЁМ окне — по обеим осям. Иначе широкий словарь тянул
+   бы горизонтальную полосу через всю страницу, а длинный набор менял бы высоту блока
+   на каждом отборе. Заголовок при этом липнет к верху окна (`position: sticky` ниже). */
 .page__scroll {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(60vh, 42rem);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
@@ -410,12 +832,16 @@ select[data-slot^="condition-"]:focus-visible {
   white-space: nowrap;
 }
 
+/* Заголовок липнет к верху окна прокрутки таблицы: длинный набор листаешь, а какая это
+   колонка — видно. Слои разведены явно, иначе прижатая ячейка проезжает поверх заголовка:
+   обычная ячейка < прижатая ячейка (1) < заголовок (2) < прижатый заголовок (3). */
 [data-slot="table-header"] {
   background-color: var(--muted);
   color: var(--muted-foreground);
   font-weight: 600;
   position: sticky;
   top: 0;
+  z-index: 2;
 }
 
 [data-slot="header-sort"] {
@@ -509,56 +935,86 @@ select[data-slot^="condition-"]:focus-visible {
   color: var(--destructive);
 }
 
-/* ── Управление колонками ──────────────────────────────────────────────── */
+/* ── Управление колонкой — В САМОЙ КОЛОНКЕ, под названием ──────────────────
+   Ряд приглушён и проявляется, когда до колонки дотянулись мышью или клавиатурой:
+   постоянно яркие шесть кнопок на колонку перебивают собой данные, ради которых
+   таблица и нужна. `opacity`, а не `display`, намеренно — кнопки остаются в обходе
+   с клавиатуры, иначе управление досталось бы только мыши. */
 
-[data-slot="column-controls"] {
+[data-slot="column-menu"] {
+  display: flex;
+  align-items: center;
+  gap: 0.0625rem;
+  margin-top: 0.125rem;
+  opacity: 0.25;
+  transition: opacity 0.12s ease-out;
+}
+
+[data-slot="table-header"]:hover [data-slot="column-menu"],
+[data-slot="column-menu"]:focus-within {
+  opacity: 1;
+}
+
+[data-slot="column-menu"] button {
+  all: unset;
+  padding: 0 0.1875rem;
+  border-radius: var(--radius-sm, 0.25rem);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+[data-slot="column-menu"] button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+[data-slot="column-menu"] button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+[data-slot="column-menu"] button[aria-pressed="true"] {
+  color: var(--primary);
+}
+
+[data-slot="column-menu"] button[disabled] {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Скрытая колонка — единственное, чему нет места в колонке: её на экране нет. */
+[data-slot="hidden-columns"] {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.375rem;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-[data-slot="column-control"] {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.125rem 0.375rem;
+[data-slot="hidden-columns"]::before {
+  content: "скрыто:";
   font-size: 0.75rem;
-}
-
-[data-slot="column-control"][data-hidden] {
-  opacity: 0.55;
-}
-
-[data-slot="column-toggle"] {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  cursor: pointer;
-}
-
-[data-slot="column-up"],
-[data-slot="column-down"] {
-  all: unset;
-  cursor: pointer;
-  padding: 0 0.125rem;
   color: var(--muted-foreground);
 }
 
-[data-slot="column-up"][disabled],
-[data-slot="column-down"][disabled] {
-  opacity: 0.3;
-  cursor: default;
+[data-slot="column-show"] {
+  all: unset;
+  padding: 0.125rem 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-full);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  cursor: pointer;
 }
 
-.page__columns {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+[data-slot="column-show"]:hover {
+  border-style: solid;
+  border-color: var(--ring);
+  color: var(--foreground);
 }
 
 .page__touched {
@@ -606,7 +1062,7 @@ select[data-slot^="condition-"]:focus-visible {
 }
 
 [data-slot="table-header"][data-pinned] {
-  z-index: 2;
+  z-index: 3;
   background-color: var(--muted);
 }
 
@@ -622,15 +1078,9 @@ select[data-slot^="condition-"]:focus-visible {
   box-shadow: -1px 0 0 var(--border);
 }
 
-[data-slot="table-header"] {
-  position: sticky;
-  top: 0;
-}
-
-/* Ручка ширины: узкая полоска у правого края заголовка. */
-[data-slot="table-header"] {
-  position: relative;
-}
+/* Ручка ширины: узкая полоска у правого края заголовка. Отдельного `position: relative`
+   заголовку НЕ ставим — он уже `sticky`, а это тоже containing block для ручки. Раньше
+   `relative` стоял ниже по файлу и молча отменял липкость заголовка. */
 
 [data-slot="column-resize"] {
   position: absolute;
@@ -1024,10 +1474,6 @@ select[data-slot^="condition-"]:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 1.25rem;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background-color: var(--card);
 }
 
 .page__stand-block {

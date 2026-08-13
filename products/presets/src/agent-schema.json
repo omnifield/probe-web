@@ -1,0 +1,93 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "conditions", "logic"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Версия формата отбора. Всегда 1."
+    },
+    "conditions": {
+      "type": "array",
+      "description": "Условия отбора. Каждое ссылается на поле из переданного словаря.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "field", "operator", "value"],
+            "description": "Сравнение поля с одним значением.",
+            "properties": {
+              "id": { "type": "string", "description": "Произвольный короткий идентификатор, уникальный в пределах отбора." },
+              "kind": { "type": "string", "const": "compare" },
+              "field": { "type": "string", "description": "Имя поля ровно как в переданном словаре." },
+              "operator": {
+                "type": "string",
+                "enum": ["eq", "ne", "contains", "gt", "ge", "lt", "le"],
+                "description": "eq равно, ne не равно, contains содержит подстроку, gt больше, ge больше или равно, lt меньше, le меньше или равно."
+              },
+              "value": { "type": "string", "description": "Значение для сравнения, всегда строкой." },
+              "sensitive": { "type": "boolean", "description": "Учитывать регистр. По умолчанию нет." }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "field", "values"],
+            "description": "Поле входит в список значений — «один из».",
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "type": "string", "const": "in" },
+              "field": { "type": "string" },
+              "values": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "field", "from", "to"],
+            "description": "Поле в диапазоне, включая границы.",
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "type": "string", "const": "between" },
+              "field": { "type": "string" },
+              "from": { "type": "string", "description": "Нижняя граница включительно." },
+              "to": { "type": "string", "description": "Верхняя граница включительно." }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "quantifier", "mode", "fields"],
+            "description": "Условие по наличию полей — одно условие на весь набор.",
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "type": "string", "const": "presence" },
+              "quantifier": {
+                "type": "string",
+                "enum": ["all", "any", "none"],
+                "description": "all — все перечисленные, any — хотя бы одно, none — ни одного."
+              },
+              "mode": {
+                "type": "string",
+                "enum": ["exists", "filled"],
+                "description": "exists — поле присутствует, filled — присутствует и не пустое."
+              },
+              "fields": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
+      }
+    },
+    "logic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "description": "Как условия сочетаются. Первая версия канала собирает только режим all — все условия через И.",
+      "properties": {
+        "mode": { "type": "string", "const": "all" }
+      }
+    }
+  }
+}
