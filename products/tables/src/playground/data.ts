@@ -229,12 +229,31 @@ export const ROWS: Row[] = [
 
 /**
  * Пресеты — готовые сборки. Применяются одной кнопкой и ничего не спрашивают.
+ *
+ * На стенде они стоят СЛЕВА, списком кейсов (`sidebar.tsx`): человеку не объясняют, как
+ * устроен конструктор, — ему показывают, что бывает, и он тыкает. Поэтому подпись говорит,
+ * ЧТО отбор даёт, а не какой механикой он собран; механика видна сама — по собравшемуся
+ * фильтру, фразе и счётчику.
+ *
+ * Порядок — от простого к сложному: первый кейс это одно условие, последний — формула с НЕ.
  */
 export const PRESETS: Preset[] = [
   {
+    id: "urgent",
+    label: "Срочные",
+    hint: "заявки с пометкой «срочная» — одно условие, самый простой случай",
+    state: {
+      version: 1,
+      conditions: [
+        { id: "preset-urgent-1", kind: "compare", field: "/urgent", operator: "eq", value: "да" },
+      ],
+      logic: { mode: "all" },
+    },
+  },
+  {
     id: "no-docs",
     label: "Без документов",
-    hint: "ни паспорта, ни СНИЛС, ни ИНН",
+    hint: "заявки, к которым не приложено ни одного документа: ни паспорта, ни СНИЛС, ни ИНН",
     state: {
       version: 1,
       conditions: [
@@ -252,7 +271,7 @@ export const PRESETS: Preset[] = [
   {
     id: "full-package",
     label: "Полный пакет физлица",
-    hint: "паспорт, СНИЛС и ИНН — все заполнены",
+    hint: "заявки, готовые к работе: паспорт, СНИЛС и ИНН заполнены все три",
     state: {
       version: 1,
       conditions: [
@@ -270,7 +289,7 @@ export const PRESETS: Preset[] = [
   {
     id: "big-in-progress",
     label: "Крупные в работе",
-    hint: "сумма больше 500 000 и статус «в работе»",
+    hint: "заявки дороже 500 000, которые сейчас в работе — два условия через И",
     state: {
       version: 1,
       conditions: [
@@ -283,7 +302,7 @@ export const PRESETS: Preset[] = [
   {
     id: "capitals",
     label: "Обе столицы",
-    hint: "регион — одно из двух значений: одним условием, а не двумя и формулой",
+    hint: "заявки из Москвы и Санкт-Петербурга — одним условием на список, а не двумя и формулой",
     state: {
       version: 1,
       conditions: [
@@ -300,7 +319,7 @@ export const PRESETS: Preset[] = [
   {
     id: "summer-window",
     label: "Заведены летом",
-    hint: "диапазон дат, границы включительно",
+    hint: "заявки за июнь–август; границы диапазона входят в отбор",
     state: {
       version: 1,
       conditions: [
@@ -313,6 +332,39 @@ export const PRESETS: Preset[] = [
         },
       ],
       logic: { mode: "all" },
+    },
+  },
+  {
+    id: "risky-big",
+    label: "Крупные с неполными документами, кроме отменённых",
+    hint:
+      "случай посложнее: три условия и формула с «НЕ». Заодно видно трёхзначную логику — " +
+      "заявка без статуса не проходит, потому что «не отменена» на пустом поле это «неизвестно», а не «да»",
+    state: {
+      version: 1,
+      conditions: [
+        { id: "preset-risky-1", kind: "compare", field: "/amount", operator: "gt", value: "500000" },
+        {
+          id: "preset-risky-2",
+          kind: "presence",
+          quantifier: "all",
+          mode: "filled",
+          fields: ["/passport", "/snils"],
+        },
+        { id: "preset-risky-3", kind: "compare", field: "/status", operator: "eq", value: "отменена" },
+      ],
+      logic: {
+        mode: "formula",
+        expr: {
+          t: "and",
+          a: {
+            t: "and",
+            a: { t: "ref", id: "preset-risky-1" },
+            b: { t: "not", a: { t: "ref", id: "preset-risky-2" } },
+          },
+          b: { t: "not", a: { t: "ref", id: "preset-risky-3" } },
+        },
+      },
     },
   },
 ];

@@ -17,6 +17,7 @@ import { For, Match, Switch } from "solid-js";
 import { AdapterPage } from "./pages/adapter-page.jsx";
 import { FiltersPage } from "./pages/filters-page.jsx";
 import { createRoute, PAGES, pageMeta } from "./route.js";
+import { Sidebar } from "./sidebar.jsx";
 import { createStand } from "./stand.js";
 
 export function App() {
@@ -53,14 +54,22 @@ export function App() {
         <p class="page__lead">{meta().lead}</p>
       </header>
 
-      <Switch>
-        <Match when={route.page() === "adapter"}>
-          <AdapterPage stand={stand} />
-        </Match>
-        <Match when={route.page() === "filters"}>
-          <FiltersPage stand={stand} />
-        </Match>
-      </Switch>
+      {/* Кейсы стоят слева и не уезжают вместе со страницей: они про то, ЧТО можно спросить
+          у данных, а страница — про то, где это настраивают. */}
+      <div class="page__body">
+        <Sidebar stand={stand} route={route} />
+
+        <main class="page__main">
+          <Switch>
+            <Match when={route.page() === "adapter"}>
+              <AdapterPage stand={stand} />
+            </Match>
+            <Match when={route.page() === "filters"}>
+              <FiltersPage stand={stand} />
+            </Match>
+          </Switch>
+        </main>
+      </div>
     </div>
   );
 }

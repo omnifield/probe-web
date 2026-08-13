@@ -104,8 +104,8 @@ describe("разрезан экран, а не данные", () => {
     const host = mount(() => <App />);
     press(navLink(host, "Фильтры"));
 
-    // Готовая сборка условий — тот же путь, которым пользуется человек.
-    press(one(host, '[data-slot="filter-preset"]'));
+    // Готовый кейс из сайдбара — тот же путь, которым пользуется человек.
+    press(one(host, ".page__case"));
     const selected = one(host, ".page__result .page__count").textContent;
 
     press(navLink(host, "Переходник"));
