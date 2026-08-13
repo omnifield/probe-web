@@ -65,10 +65,36 @@ export function toggleColumn(view: ViewState, field: FieldRef): ViewState {
 }
 
 /**
- * Подвинуть колонку на шаг влево (`-1`) или вправо (`+1`).
+ * Куда встанет колонка, шагнув влево (`-1`) или вправо (`+1`): позиция ближайшего ВИДИМОГО
+ * соседа в этом направлении. `-1` — идти некуда.
  *
- * Шаг считается по ПОЛНОМУ порядку, включая скрытые: иначе перенос через скрытую колонку
- * менял бы её место молча, и вид «поехал» бы, как только её вернут.
+ * Шаг меряется видимыми соседями, а не полным порядком (правка 2026-08-13, когда управление
+ * переехало в саму колонку). Раньше колонка менялась местами со следующей по полному порядку,
+ * и на скрытом соседе нажатие не давало НИКАКОГО видимого эффекта: человек жмёт, экран стоит.
+ * Молчаливый холостой ход хуже, чем сдвиг мимо скрытой колонки, — тем более что прежний обмен
+ * место скрытой колонки всё равно не сохранял, а менял его на место видимой.
+ */
+function moveTarget(order: readonly FieldRef[], view: ViewState, from: number, step: -1 | 1): number {
+  let to = from + step;
+  while (to >= 0 && to < order.length && !isVisible(view, order[to]!)) to += step;
+  return to >= 0 && to < order.length ? to : -1;
+}
+
+/** Есть ли куда двигать колонку в эту сторону. Управление спрашивает это, чтобы не врать кнопкой. */
+export function canMoveColumn(
+  columns: ColumnDictionary,
+  view: ViewState,
+  field: FieldRef,
+  step: -1 | 1,
+): boolean {
+  const order = columnOrder(columns, view);
+  const from = order.indexOf(field);
+  return from !== -1 && moveTarget(order, view, from, step) !== -1;
+}
+
+/**
+ * Подвинуть колонку на шаг влево (`-1`) или вправо (`+1`) — то есть за ближайшего видимого
+ * соседа. Скрытые колонки при этом остаются на своих местах в порядке, а не тянутся следом.
  */
 export function moveColumn(
   columns: ColumnDictionary,
@@ -80,12 +106,14 @@ export function moveColumn(
   const from = order.indexOf(field);
   if (from === -1) return view;
 
-  const to = from + step;
-  if (to < 0 || to >= order.length) return view;
+  const to = moveTarget(order, view, from, step);
+  if (to === -1) return view;
 
+  // Вырезать и вставить, а не обменять: между колонкой и соседом могут стоять скрытые, и
+  // обмен перебросил бы их через полстроки.
   const next = [...order];
-  next[from] = order[to]!;
-  next[to] = field;
+  next.splice(from, 1);
+  next.splice(to, 0, field);
 
   return { ...view, order: next };
 }

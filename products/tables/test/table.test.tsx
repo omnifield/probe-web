@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSignal } from "solid-js";
 
-import { ColumnControls, DataTable } from "../src/table/table.jsx";
+import { DataTable, HiddenColumns } from "../src/table/table.jsx";
 import type { CellContext, ColumnDictionary, Row, ViewState } from "../src/table/index.js";
 import { EMPTY_VIEW } from "../src/table/model.js";
 import { all, cleanup, mount, one, press } from "./dom.jsx";
@@ -169,48 +169,101 @@ describe("сортировка", () => {
   });
 });
 
-describe("колонки: показать/скрыть и порядок", () => {
-  function withControls(initial: ViewState = EMPTY_VIEW) {
+describe("управление колонкой живёт В КОЛОНКЕ", () => {
+  /** Что за колонки стоят в таблице и в каком порядке — по зацепке, а не по тексту заголовка. */
+  const headers = (host: ParentNode) =>
+    all(host, "[data-slot='table-header']").map((node) => node.getAttribute("data-column"));
+
+  function withMenu(initial: ViewState = EMPTY_VIEW) {
     const [view, setView] = createSignal(initial);
     const host = mount(() => (
       <>
-        <ColumnControls columns={COLUMNS} view={view()} onViewChange={setView} />
-        <DataTable columns={COLUMNS} rows={ROWS} view={view()} onViewChange={setView} />
+        <HiddenColumns columns={COLUMNS} view={view()} onViewChange={setView} />
+        <DataTable
+          columns={COLUMNS}
+          rows={ROWS}
+          view={view()}
+          onViewChange={setView}
+          columnMenu
+        />
       </>
     ));
     return { host, view };
   }
 
-  it("флажок убирает колонку из таблицы", () => {
-    const { host, view } = withControls();
+  it("без спроса ряда управления в заголовке НЕТ — таблица остаётся показом данных", () => {
+    const { host } = setup();
+    expect(host.querySelector("[data-slot='column-menu']")).toBeNull();
+  });
 
-    one<HTMLInputElement>(host, "[data-column='/amount'] [data-slot='column-toggle'] input").click();
+  it("ряд стоит в каждом заголовке и назван колонкой, к которой относится", () => {
+    const { host } = withMenu();
+
+    expect(all(host, "[data-slot='column-menu']").length).toBe(COLUMNS.length);
+    expect(
+      one(
+        host,
+        "[data-slot='table-header'][data-column='/amount'] [data-slot='column-menu']",
+      ).getAttribute("aria-label"),
+    ).toBe("Колонка «сумма»");
+  });
+
+  it("✕ в колонке скрывает её, и вернуть её можно из списка скрытых", () => {
+    const { host, view } = withMenu();
+
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-hide']"));
 
     expect(view().hidden).toEqual(["/amount"]);
-    expect(texts(host, "[data-slot='table-header']")).toEqual(["заявитель", "заведена", "срочная"]);
+    expect(headers(host)).toEqual(["/applicant", "/created", "/urgent"]);
+
+    press(one(host, "[data-slot='hidden-column'][data-column='/amount'] [data-slot='column-show']"));
+
+    expect(view().hidden).toEqual([]);
+    // Колонка вернулась НА СВОЁ МЕСТО, а не в конец: порядок задаёт вид, а не порядок возврата.
+    expect(headers(host)).toEqual(["/applicant", "/amount", "/created", "/urgent"]);
   });
 
-  it("стрелка двигает колонку и в управлении, и в таблице", () => {
-    const { host, view } = withControls();
+  it("списка скрытых нет, пока ничего не скрыто", () => {
+    const { host } = withMenu();
+    expect(host.querySelector("[data-slot='hidden-columns']")).toBeNull();
+  });
 
-    press(one(host, "[data-slot='column-control'][data-column='/amount'] [data-slot='column-up']"));
+  it("стрелка двигает колонку прямо из её заголовка", () => {
+    const { host, view } = withMenu();
+
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-up']"));
 
     expect(view().order).toEqual(["/amount", "/applicant", "/created", "/urgent"]);
-    expect(texts(host, "[data-slot='table-header']")).toEqual([
-      "сумма",
-      "заявитель",
-      "заведена",
-      "срочная",
-    ]);
+    expect(headers(host)).toEqual(["/amount", "/applicant", "/created", "/urgent"]);
   });
 
-  it("крайние колонки не двигаются за край", () => {
-    const { host } = withControls();
+  it("шаг меряется ВИДИМЫМИ соседями: нажатие не бывает холостым", () => {
+    // «сумма» скрыта и стоит между «заявителем» и «заведена».
+    const { host, view } = withMenu({ ...EMPTY_VIEW, hidden: ["/amount"] });
+
+    press(one(host, "[data-slot='table-header'][data-column='/created'] [data-slot='column-up']"));
+
+    // Шагнули ЗА скрытую — через неё, а не в неё: на экране «заведена» ушла влево, и это видно.
+    expect(headers(host)).toEqual(["/created", "/applicant", "/urgent"]);
+    expect(view().order).toEqual(["/created", "/applicant", "/amount", "/urgent"]);
+  });
+
+  it("крайняя колонка не двигается за край", () => {
+    const { host } = withMenu();
     const up = one<HTMLButtonElement>(
       host,
-      "[data-slot='column-control'][data-column='/applicant'] [data-slot='column-up']",
+      "[data-slot='table-header'][data-column='/applicant'] [data-slot='column-up']",
     );
     expect(up.disabled).toBe(true);
+  });
+
+  it("у прижатой колонки стрелок нет: её место задаёт край, а не порядок", () => {
+    const { host } = withMenu({ ...EMPTY_VIEW, pinned: { start: ["/amount"], end: [] } });
+
+    const menu = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-menu']");
+    expect(menu.querySelector("[data-slot='column-up']")).toBeNull();
+    // Кнопка прижатия на месте — иначе колонку было бы не отпустить.
+    expect(menu.querySelector("[data-slot='column-pin']")).not.toBeNull();
   });
 });
 

@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createSignal } from "solid-js";
 
-import { ColumnControls, DataTable, TablePager } from "../src/table/table.jsx";
+import { DataTable, TablePager } from "../src/table/table.jsx";
 import type { ColumnDictionary, Row, SessionState, ViewState } from "../src/table/index.js";
 import { EMPTY_SESSION, EMPTY_VIEW } from "../src/table/model.js";
 import { all, cleanup, mount, one, press } from "./dom.jsx";
@@ -57,9 +57,12 @@ const bodyColumn = (host: ParentNode, column: string) =>
     (node) => node.textContent?.trim() ?? "",
   );
 
-function setupControls(initial: ViewState = EMPTY_VIEW) {
+/** Таблица с рядом управления в заголовках — управление колонкой живёт в самой колонке. */
+function setupMenu(initial: ViewState = EMPTY_VIEW) {
   const [view, setView] = createSignal(initial);
-  const host = mount(() => <ColumnControls columns={COLUMNS} view={view()} onViewChange={setView} />);
+  const host = mount(() => (
+    <DataTable columns={COLUMNS} rows={ROWS} view={view()} onViewChange={setView} columnMenu />
+  ));
   return { host, view };
 }
 
@@ -73,14 +76,16 @@ describe("закрепление колонок", () => {
     ).toBe("start");
   });
 
-  it("кнопка управления прижимает и отпускает", () => {
-    const { host, view } = setupControls();
+  it("кнопка в заголовке прижимает и отпускает", () => {
+    const { host, view } = setupMenu();
 
-    const pin = one(host, "[data-column='/region'] [data-slot='column-pin']");
-    press(pin);
+    const pin = () =>
+      one(host, "[data-slot='table-header'][data-column='/region'] [data-slot='column-pin']");
+
+    press(pin());
     expect(view().pinned).toEqual({ start: ["/region"], end: [] });
 
-    press(one(host, "[data-column='/region'] [data-slot='column-pin']"));
+    press(pin());
     expect(view().pinned).toEqual({ start: [], end: [] });
   });
 });

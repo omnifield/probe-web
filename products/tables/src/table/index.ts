@@ -57,16 +57,17 @@ export { compareValues } from "./sort.js";
 export {
   type CellAttrs,
   type CellContext,
-  ColumnControls,
-  type ColumnControlsProps,
   DataTable,
   type DataTableProps,
   GroupControls,
   type GroupControlsProps,
+  HiddenColumns,
+  type HiddenColumnsProps,
   TablePager,
   type TablePagerProps,
 } from "./table.jsx";
 export {
+  canMoveColumn,
   COLUMN_WIDTH_STEP,
   columnOrder,
   groupableColumns,

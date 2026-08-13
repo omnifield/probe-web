@@ -47,7 +47,6 @@ import {
   type ColumnDictionary,
   type ColumnSpec,
   EMPTY_SESSION,
-  type FieldRef,
   formatOf,
   groupableBy,
   type Row,
@@ -69,6 +68,7 @@ import {
 import { compareValues } from "./sort.js";
 import { trace } from "./trace.js";
 import {
+  canMoveColumn,
   columnOrder,
   COLUMN_WIDTH_STEP,
   isVisible,
@@ -167,6 +167,18 @@ export interface DataTableProps {
   cellAttrs?: (context: CellContext) => CellAttrs | undefined;
   /** Служебная колонка с выделением и закреплением строк. */
   selectable?: boolean;
+  /**
+   * Управление колонкой ПРЯМО В КОЛОНКЕ — ряд кнопок под её названием: подвинуть, прижать к
+   * краю, собрать в группы, скрыть, вернуть ширину.
+   *
+   * Выключено по умолчанию, и это не осторожность, а безголовость: таблица, которая показывает
+   * данные, не обязана везти управление видом. Включает тот, кому оно нужно.
+   *
+   * Цена названа: ряд стоит до шести остановок табуляции НА КОЛОНКУ, и на широком словаре
+   * дорога до первой ячейки становится длинной. Станет больно — ряд свернётся в роящийся
+   * `tabindex`, как это уже сделано для ячеек.
+   */
+  columnMenu?: boolean;
   /** Итоговая строка по колонкам, у которых объявлен метод сведения. */
   totals?: boolean;
   locale?: string;
@@ -421,6 +433,105 @@ export function DataTable(props: DataTableProps) {
                     </button>
                   </Show>
 
+                  {/* Управление колонкой живёт В КОЛОНКЕ, под её названием: то, чем управляют,
+                      и то, чем управляют этим, стоят рядом. Отдельная панель заставляла бы
+                      каждый раз искать нужную строку списка глазами и сверять её с таблицей. */}
+                  <Show when={props.columnMenu}>
+                    <div
+                      data-slot="column-menu"
+                      role="group"
+                      aria-label={`Колонка «${column()?.label ?? columnId}»`}
+                    >
+                      {/* Прижатой колонке двигаться некуда: её место задаёт край, а не порядок.
+                          Кнопок нет вовсе — нажатие, которое ничего не меняет, врёт молча. */}
+                      <Show when={pinnedAt() === null}>
+                        <button
+                          type="button"
+                          data-slot="column-up"
+                          aria-label={`Подвинуть колонку «${column()?.label ?? columnId}» влево`}
+                          disabled={!canMoveColumn(props.columns, props.view, columnId, -1)}
+                          onClick={() =>
+                            props.onViewChange(moveColumn(props.columns, props.view, columnId, -1))
+                          }
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          data-slot="column-down"
+                          aria-label={`Подвинуть колонку «${column()?.label ?? columnId}» вправо`}
+                          disabled={!canMoveColumn(props.columns, props.view, columnId, 1)}
+                          onClick={() =>
+                            props.onViewChange(moveColumn(props.columns, props.view, columnId, 1))
+                          }
+                        >
+                          →
+                        </button>
+                      </Show>
+
+                      <button
+                        type="button"
+                        data-slot="column-pin"
+                        data-pinned={pinnedAt() ?? undefined}
+                        aria-label={`Закрепить колонку «${column()?.label ?? columnId}» слева`}
+                        aria-pressed={pinnedAt() === "start"}
+                        onClick={() =>
+                          props.onViewChange(
+                            pinColumn(props.view, columnId, pinnedAt() === "start" ? null : "start"),
+                          )
+                        }
+                      >
+                        ⇤
+                      </button>
+                      <button
+                        type="button"
+                        data-slot="column-pin-end"
+                        data-pinned={pinnedAt() ?? undefined}
+                        aria-label={`Закрепить колонку «${column()?.label ?? columnId}» справа`}
+                        aria-pressed={pinnedAt() === "end"}
+                        onClick={() =>
+                          props.onViewChange(
+                            pinColumn(props.view, columnId, pinnedAt() === "end" ? null : "end"),
+                          )
+                        }
+                      >
+                        ⇥
+                      </button>
+
+                      <Show when={column() && groupableBy(column()!)}>
+                        <button
+                          type="button"
+                          data-slot="column-group"
+                          aria-label={`Собрать строки в группы по колонке «${column()?.label ?? columnId}»`}
+                          aria-pressed={props.view.grouping.includes(columnId)}
+                          onClick={() => props.onViewChange(toggleGrouping(props.view, columnId))}
+                        >
+                          ⊞
+                        </button>
+                      </Show>
+
+                      <button
+                        type="button"
+                        data-slot="column-hide"
+                        aria-label={`Скрыть колонку «${column()?.label ?? columnId}»`}
+                        onClick={() => props.onViewChange(toggleColumn(props.view, columnId))}
+                      >
+                        ✕
+                      </button>
+
+                      <Show when={width() !== undefined}>
+                        <button
+                          type="button"
+                          data-slot="column-width-reset"
+                          aria-label={`Вернуть ширину колонки «${column()?.label ?? columnId}»`}
+                          onClick={() => props.onViewChange(setColumnWidth(props.view, columnId, null))}
+                        >
+                          ↔
+                        </button>
+                      </Show>
+                    </div>
+                  </Show>
+
                   {/* Ручка ширины — `separator` с клавиатурой: тянуть мышью умеют не все. */}
                   <span
                     data-slot="column-resize"
@@ -672,117 +783,52 @@ export function DataTable(props: DataTableProps) {
   );
 }
 
-export interface ColumnControlsProps {
+export interface HiddenColumnsProps {
   columns: ColumnDictionary;
   view: ViewState;
   onViewChange: (next: ViewState) => void;
 }
 
 /**
- * Управление колонками: показать/скрыть, подвинуть, прижать к краю, собрать в группы.
+ * Скрытые колонки — и кнопка «вернуть» у каждой.
  *
- * Тоже безголовое — кнопки без единого класса и с зацепками `data-slot`. Это НЕ панель
- * настроек: панель со своим видом собирает потребитель, а здесь минимум, которым он
- * пользуется и который проверяется пробой.
+ * Единственная часть управления колонками, которой НЕЛЬЗЯ жить в самой колонке: колонки на
+ * экране больше нет, а значит нет и места, куда нажать. Скрыть без возможности вернуть —
+ * ловушка, поэтому список показывается ровно тогда, когда что-то скрыто, и молчит в остальное
+ * время. Всё прочее управление живёт в заголовке колонки (`columnMenu` у {@link DataTable}).
+ *
+ * Порядок — тот же, что у вида: колонка возвращается на своё место, а не в конец.
  */
-export function ColumnControls(props: ColumnControlsProps) {
-  const order = createMemo(() => columnOrder(props.columns, props.view));
+export function HiddenColumns(props: HiddenColumnsProps) {
   const byName = createMemo(() => new Map(props.columns.map((column) => [column.name, column])));
-
-  const move = (field: FieldRef, step: -1 | 1) =>
-    props.onViewChange(moveColumn(props.columns, props.view, field, step));
+  const hidden = createMemo(() =>
+    columnOrder(props.columns, props.view).filter((name) => !isVisible(props.view, name)),
+  );
 
   return (
-    <ul data-slot="column-controls">
-      <For each={order()}>
-        {(name, index) => {
-          const column = () => byName().get(name);
-          const visible = () => isVisible(props.view, name);
-          const edge = () => pinnedEdgeOf(props.view, name);
-          const label = () => column()?.label ?? name;
+    <Show when={hidden().length > 0}>
+      <ul data-slot="hidden-columns" aria-label="Скрытые колонки">
+        <For each={hidden()}>
+          {(name) => {
+            const label = () => byName().get(name)?.label ?? name;
 
-          return (
-            <li data-slot="column-control" data-column={name} data-hidden={visible() ? undefined : ""}>
-              <label data-slot="column-toggle">
-                <input
-                  type="checkbox"
-                  checked={visible()}
-                  onChange={() => props.onViewChange(toggleColumn(props.view, name))}
-                />
-                {label()}
-              </label>
-
-              <button
-                type="button"
-                data-slot="column-up"
-                aria-label={`Подвинуть колонку «${label()}» влево`}
-                disabled={index() === 0}
-                onClick={() => move(name, -1)}
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                data-slot="column-down"
-                aria-label={`Подвинуть колонку «${label()}» вправо`}
-                disabled={index() === order().length - 1}
-                onClick={() => move(name, 1)}
-              >
-                →
-              </button>
-
-              <button
-                type="button"
-                data-slot="column-pin"
-                data-pinned={edge() ?? undefined}
-                aria-label={`Закрепить колонку «${label()}» слева`}
-                aria-pressed={edge() === "start"}
-                onClick={() =>
-                  props.onViewChange(pinColumn(props.view, name, edge() === "start" ? null : "start"))
-                }
-              >
-                ⇤
-              </button>
-              <button
-                type="button"
-                data-slot="column-pin-end"
-                data-pinned={edge() ?? undefined}
-                aria-label={`Закрепить колонку «${label()}» справа`}
-                aria-pressed={edge() === "end"}
-                onClick={() =>
-                  props.onViewChange(pinColumn(props.view, name, edge() === "end" ? null : "end"))
-                }
-              >
-                ⇥
-              </button>
-
-              <Show when={column() && groupableBy(column()!)}>
+            return (
+              <li data-slot="hidden-column" data-column={name}>
                 <button
                   type="button"
-                  data-slot="column-group"
-                  aria-label={`Собрать строки в группы по колонке «${label()}»`}
-                  aria-pressed={props.view.grouping.includes(name)}
-                  onClick={() => props.onViewChange(toggleGrouping(props.view, name))}
+                  data-slot="column-show"
+                  aria-label={`Вернуть колонку «${label()}»`}
+                  onClick={() => props.onViewChange(toggleColumn(props.view, name))}
                 >
-                  ⊞
+                  {label()}
+                  <span aria-hidden="true"> +</span>
                 </button>
-              </Show>
-
-              <Show when={props.view.widths[name] !== undefined}>
-                <button
-                  type="button"
-                  data-slot="column-width-reset"
-                  aria-label={`Вернуть ширину колонки «${label()}»`}
-                  onClick={() => props.onViewChange(setColumnWidth(props.view, name, null))}
-                >
-                  ↔
-                </button>
-              </Show>
-            </li>
-          );
-        }}
-      </For>
-    </ul>
+              </li>
+            );
+          }}
+        </For>
+      </ul>
+    </Show>
   );
 }
 
