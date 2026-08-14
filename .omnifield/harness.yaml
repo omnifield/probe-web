@@ -75,6 +75,14 @@ zones:
     paths: [products/presets]
     description: хранилище пресетов — кладёт и отдаёт JSON, формата фильтра НЕ понимает (kb:PROBEWEB-8)
 
+  map:
+    paths: [products/map, canons/map]
+    description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера (kb:PROBEWEB-10)
+
+  skin:
+    paths: [products/skin]
+    description: производство оформлений для безголового кита — своя логика, кит остаётся голым (kb:PROBEWEB-11)
+
 # Git-доступ по роли — РАМКА (инвариант shared-policy), приведён для наглядности,
 # выключить нельзя: architect=full; owner=commit-only (gate); layer=none.
 git:
