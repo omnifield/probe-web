@@ -188,6 +188,14 @@
   gap: 1rem;
 }
 
+/* Поля и списки тянутся, кнопки — нет. Раскладку задаёт СТЕНД как потребитель: ширина поля
+   зависит от того, куда его поставили, и поставка её назначать не вправе. */
+.specimen__row > [data-slot="field"],
+.specimen__row > [data-slot="select"] {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
 .specimen__note {
   margin: 0;
   font-size: 0.8125rem;

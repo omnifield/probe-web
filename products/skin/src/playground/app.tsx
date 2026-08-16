@@ -64,36 +64,40 @@ const DENSITIES = [
 
 type ViewMode = "main" | "states";
 
-/** Ставит и снимает оформление одним и тем же тегом: снятие обязано возвращать исходный кит. */
+/**
+ * Ставит и снимает оформление: снятие обязано возвращать исходный кит.
+ *
+ * КАЖДЫЙ ЭКЗЕМПЛЯР ВЛАДЕЕТ СВОИМ ТЕГОМ, и это не мелочь стиля. Прежняя версия искала тег по
+ * `id` — и на горячей перезагрузке получалась гонка: новый экземпляр видел тег, оставшийся от
+ * старого, и свой не вставлял; следом срабатывал `onCleanup` старого и тег удалял. После
+ * первой же правки файла стенд оставался СОВСЕМ без оформления, а панель продолжала показывать
+ * «подключено». Ссылка вместо поиска по документу убирает саму возможность такой гонки:
+ * снимает тег ровно тот, кто его поставил.
+ */
 function useSkin() {
-  const [dressed, setDressed] = createSignal(true);
+  let el: HTMLStyleElement | undefined;
+  const [dressed, setDressed] = createSignal(false);
 
   const apply = (on: boolean) => {
-    const existing = document.getElementById(STYLE_ID);
     if (on) {
-      if (existing) return;
-      const el = document.createElement("style");
-      el.id = STYLE_ID;
-      el.textContent = skinCss;
-      document.head.appendChild(el);
+      if (!el) {
+        el = document.createElement("style");
+        el.dataset.owner = STYLE_ID;
+        el.textContent = skinCss;
+        document.head.append(el);
+      }
     } else {
-      existing?.remove();
+      el?.remove();
+      el = undefined;
     }
+    // Подпись читает ФАКТ, а не намерение: если тег не встал, панель обязана сказать «снято».
+    setDressed(el !== undefined && el.isConnected);
   };
 
   apply(true);
+  onCleanup(() => apply(false));
 
-  // Горячая перезагрузка пересоздаёт площадку: тег обязан уйти вместе с ней, иначе их станет два.
-  onCleanup(() => document.getElementById(STYLE_ID)?.remove());
-
-  return {
-    dressed,
-    toggle: () => {
-      const next = !dressed();
-      setDressed(next);
-      apply(next);
-    },
-  };
+  return { dressed, toggle: () => apply(!dressed()) };
 }
 
 /** Тема — класс `dark` на `<html>`, ровно как у потребителя. Оформление про неё не знает. */
