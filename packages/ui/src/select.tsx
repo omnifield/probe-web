@@ -168,6 +168,12 @@ export type SelectContentComponentProps<T extends ValidComponent = "div"> = Poly
  * Узел приносит сам `@kobalte/core`, снять его обёрткой невозможно, и держать его отдельно
  * правильнее, чем прятать: потребитель, которому нужно попасть в позиционер CSS-ом, должен
  * знать, что тот есть.
+ *
+ * **Опции позиционировщика стоят НЕ здесь, а на корне `Select`** — `placement`, `gutter`
+ * (по умолчанию `8`), `shift`, `flip`, `sameWidth`. Так их разложил kobalte: считает позицию
+ * корень, панель только принимает результат. Оформлению они доезжают насквозь, как и все
+ * остальные пропсы, — задавать зазор отступом в CSS не нужно и вредно: отступ и позиционер
+ * спорили бы за одну величину, а координаты пишет в стиль позиционера floating-ui.
  */
 export function SelectContent<T extends ValidComponent = "div">(
   props: SelectContentComponentProps<T>,

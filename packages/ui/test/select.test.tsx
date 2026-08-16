@@ -29,6 +29,8 @@ function City(props: {
   value?: string;
   onChange?: (value: string | null) => void;
   disabled?: boolean;
+  gutter?: number;
+  placement?: "top-start" | "bottom-start";
 }) {
   return (
     <Select<string>
@@ -37,6 +39,8 @@ function City(props: {
       value={props.value}
       onChange={props.onChange}
       disabled={props.disabled}
+      gutter={props.gutter}
+      placement={props.placement}
       itemComponent={(item) => (
         <SelectItem item={item.item}>
           <SelectItemLabel>{item.item.rawValue}</SelectItemLabel>
@@ -156,6 +160,28 @@ describe("Select — названное отступление от 1-to-1", () 
     // число узлов ещё на один, прогон это заметит.
     expect(content.parentElement?.hasAttribute("data-popper-positioner")).toBe(true);
     expect(content.parentElement?.children.length).toBe(1);
+  });
+});
+
+describe("Select — опции позиционировщика доезжают до корня", () => {
+  it("`gutter` и `placement` принимаются корнем и не текут в разметку атрибутами", () => {
+    // Предмет здесь — ПРОБРОС: опции позиционировщика kobalte разложил на корень (`gutter`,
+    // `placement`, `shift`, `flip`, `sameWidth`), а не на панель, и потребителю это не
+    // очевидно — зазор начинают задавать отступом в CSS, споря с floating-ui за одну и ту же
+    // величину. Что типы пропускают эти пропсы, держит `tsc` по этому же файлу: уберут
+    // проброс из обёртки — прогон типов покраснеет здесь.
+    const host = mount(() => <City gutter={24} placement="top-start" />);
+    press(one(host, "[data-slot='select-trigger']"));
+
+    const content = one(document, "[data-slot='select-content']");
+
+    // Опция — это опция, а не атрибут: настройка позиционера не должна оказаться в DOM ни на
+    // панели, ни на позиционере. Иначе оформление начало бы цепляться за неё как за
+    // состояние, и мы бы это нечаянно пообещали.
+    expect(content.hasAttribute("gutter")).toBe(false);
+    expect(content.parentElement?.hasAttribute("placement")).toBe(false);
+    // Сам позиционер при этом на месте — панель приехала в его поток, а не «куда-нибудь».
+    expect(content.parentElement?.hasAttribute("data-popper-positioner")).toBe(true);
   });
 });
 
