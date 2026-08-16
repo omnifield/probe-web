@@ -7,13 +7,16 @@
 //   1. **Оформление подключается и снимается отдельно** — тумблер «Оформление» добавляет и
 //      удаляет наш CSS живьём. Снял — остались голые примитивы кита, ровно как без нас
 //      (kb:PROBEWEB-11, правило первое).
-//   2. **Вид настраивается значениями, а не переписыванием правил** — ручка «Радиус» меняет
-//      ОДИН токен `--radius`, а вся шкала скруглений производная от него.
+//   2. **Вид настраивается значениями, а не переписыванием правил** — ручки меняют ТОКЕНЫ под
+//      оформлением, и ни одна строка CSS зоны при этом не трогается. «Радиус» — одно семя, из
+//      которого база считает всю шкалу скруглений; «Акцент» — одно семя, из которого база
+//      строит двенадцать ступеней бренда; «Плотность» — множитель интервалов и высот.
 //
-// Чего здесь пока НЕТ и почему: ручек «акцент», «серый», «плотность» и «размер». Для них нужны
-// цветовые шкалы и шкала интервалов, которых в слое `style` сегодня нет; заявка принята,
-// правки делаются. Заглушку, которая крутится и ничего не меняет, не ставлю — она врёт.
+// Ручки живут на контейнере образцов, а не на `<html>`: так видно, что оформление настраивается
+// переопределением переменных в ЛЮБОМ поддереве, и панель стенда остаётся в своём виде, что бы
+// ни было накручено рядом.
 
+import { buildScale } from "@omnifield/probe-web-style";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 // `?inline` — Vite отдаёт содержимое строкой и НЕ подключает его к странице сам. У потребителя
@@ -31,6 +34,28 @@ const RADIUS_STEPS = [
   { id: "medium", label: "средний", value: "0.5rem" },
   { id: "large", label: "крупный", value: "0.75rem" },
   { id: "full", label: "полный", value: "1.5rem" },
+] as const;
+
+/**
+ * Семена акцента. Семя — ВХОД для генератора шкалы, а не значение оформления: из него база
+ * строит все двенадцать ступеней и сама держит обещания контраста. Поэтому здесь литеральный
+ * цвет уместен, а в поставке (`src/skin`) его нет и быть не может.
+ *
+ * `null` — не трогать бренд: показать то, что приехало темой.
+ */
+const ACCENTS = [
+  { id: "default", label: "из темы", seed: null },
+  { id: "violet", label: "фиолетовый", seed: "#7c3aed" },
+  { id: "teal", label: "бирюзовый", seed: "#0d9488" },
+  { id: "amber", label: "янтарный", seed: "#d97706" },
+  { id: "rose", label: "розовый", seed: "#e11d48" },
+] as const;
+
+/** Ступени плотности. Умножают интервалы и высоты контролов; кегль база плотностью не трогает. */
+const DENSITIES = [
+  { id: "compact", label: "плотно", value: "0.8" },
+  { id: "normal", label: "обычно", value: "1" },
+  { id: "roomy", label: "просторно", value: "1.15" },
 ] as const;
 
 type ViewMode = "main" | "states";
@@ -87,11 +112,38 @@ export function App() {
   const mode = useMode();
 
   const [radius, setRadius] = createSignal<string>("medium");
+  const [accent, setAccent] = createSignal<string>("default");
+  const [density, setDensity] = createSignal<string>("normal");
   const [view, setView] = createSignal<ViewMode>("main");
   const [tab, setTab] = createSignal<string>("all");
 
   const radiusValue = () => RADIUS_STEPS.find((s) => s.id === radius())?.value ?? "0.5rem";
+  const densityValue = () => DENSITIES.find((d) => d.id === density())?.value ?? "1";
   const shown = () => (tab() === "all" ? SPECIMENS : SPECIMENS.filter((s) => s.id === tab()));
+
+  /**
+   * Ступени бренда под выбранное семя. Шкалу строит БАЗА (`buildScale`), а не стенд: у неё
+   * назначение ступеней закреплено и обещания контраста проверяются машиной. Стенд только
+   * подставляет результат в переменные.
+   *
+   * Пересчитывается при смене темы, потому что тёмная шкала — своя лестница, а не инверсия
+   * светлой: при инверсии фон элемента стал бы текстом, и назначение ступеней сломалось бы.
+   */
+  const brandVars = () => {
+    const seed = ACCENTS.find((a) => a.id === accent())?.seed;
+    if (!seed) return {};
+
+    const scale = buildScale(seed, mode.dark() ? "dark" : "light");
+    return Object.fromEntries(
+      Object.entries(scale).map(([step, value]) => [`--brand-${step}`, value]),
+    );
+  };
+
+  const stageVars = () => ({
+    "--radius": radiusValue(),
+    "--density": densityValue(),
+    ...brandVars(),
+  });
 
   return (
     <div class="shell">
@@ -153,6 +205,50 @@ export function App() {
         </div>
 
         <div class="panel__group">
+          <span class="panel__label">Акцент</span>
+          <div class="panel__row">
+            <For each={ACCENTS}>
+              {(item) => (
+                <button
+                  class="chip"
+                  type="button"
+                  aria-pressed={accent() === item.id}
+                  onClick={() => setAccent(item.id)}
+                >
+                  {item.label}
+                </button>
+              )}
+            </For>
+          </div>
+          <p class="panel__hint">
+            Из одного семени база строит все двенадцать ступеней (<code>buildScale</code>) и сама
+            держит обещания контраста. Оформление при этом не меняется ни на строку.
+          </p>
+        </div>
+
+        <div class="panel__group">
+          <span class="panel__label">Плотность</span>
+          <div class="panel__row">
+            <For each={DENSITIES}>
+              {(item) => (
+                <button
+                  class="chip"
+                  type="button"
+                  aria-pressed={density() === item.id}
+                  onClick={() => setDensity(item.id)}
+                >
+                  {item.label}
+                </button>
+              )}
+            </For>
+          </div>
+          <p class="panel__hint">
+            Множит интервалы и высоты контролов. Кегль база плотностью не трогает — мелкий текст
+            ломает 1.4.4 Resize Text.
+          </p>
+        </div>
+
+        <div class="panel__group">
           <span class="panel__label">Показ</span>
           <div class="panel__row">
             <button
@@ -178,10 +274,10 @@ export function App() {
         </div>
 
         <div class="panel__group panel__group--pending">
-          <span class="panel__label">Скоро</span>
+          <span class="panel__label">Чего ещё нет</span>
           <p class="panel__hint">
-            Акцент, серый и плотность появятся, когда в слой <code>style</code> приедут цветовые
-            шкалы и шкала интервалов. Ручка, которая крутится и ничего не меняет, здесь не стоит.
+            Нейтральной шкалы отдельной ручкой и своего набора иконок. Ручка, которая крутится и
+            ничего не меняет, здесь не стоит.
           </p>
         </div>
       </aside>
@@ -208,7 +304,7 @@ export function App() {
         {/* Токены-ручки живут ЗДЕСЬ, на контейнере образцов, а не на `<html>`: так видно, что
             оформление настраивается переопределением переменных в любом поддереве, и панель
             стенда остаётся в своём виде независимо от того, что накручено. */}
-        <div class="specimens" style={{ "--radius": radiusValue() }}>
+        <div class="specimens" style={stageVars()}>
           <For each={shown()}>
             {(specimen) => (
               <section class="specimen">
