@@ -1,0 +1,148 @@
+/* Флажок — подпуть `@probe-web/skin/checkbox.css`. Требует `base.css`.
+
+   Семь зацепок: `checkbox` (корень), `checkbox-input` (настоящий ввод), `checkbox-control`
+   (то, что видно), `checkbox-indicator` (галочка), `checkbox-label`, `checkbox-description`,
+   `checkbox-error`.
+
+   ПОЧЕМУ РИСУЕМ НЕ ВВОД. Нативный `<input type="checkbox">` не стилизуется как надо ни в
+   одном браузере: ввод несёт фокус, форму и доступность, а рисуется соседний узел. Так
+   разложил kobalte, и кит это разложение сохранил.
+
+   ФОКУС ЦЕПЛЯЕТСЯ ЧЕРЕЗ КОРЕНЬ, а не через соседство узлов: `:has()` от корня находит
+   сфокусированный ввод где угодно внутри, а `+`/`~` требовали бы знать порядок частей —
+   а порядок задаёт потребитель, и он вправе поставить подпись перед рамкой. */
+
+@layer skin {
+  [data-slot="checkbox"] {
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  /* Ввод убран с глаз, но НЕ из дерева доступности и не из порядка фокуса: `display: none`
+     или `visibility: hidden` убрали бы и то и другое, и флажок перестал бы работать с
+     клавиатуры. Приём стандартный — узел размером в пиксель с обрезкой. */
+  [data-slot="checkbox-input"] {
+    position: absolute;
+    inline-size: var(--border-width-1);
+    block-size: var(--border-width-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  [data-slot="checkbox-control"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+
+    /* Размер по кеглю: флажок сидит на строке текста и обязан следовать за ней, а не за
+       высотой кнопки. */
+    inline-size: 1.15em;
+    block-size: 1.15em;
+
+    border: var(--border-width-1) solid var(--border-strong);
+
+    /* ФОРМА НЕСЁТ СМЫСЛ, и её нельзя терять при смене темы. Квадрат со скруглением отличает
+       «выбери сколько угодно» от круглого «выбери одно»; палитра с крупным семенем скругления
+       (у нашей — 1.3rem) превращала флажок в круг, и он становился неотличим от варианта
+       группы. Поэтому здесь потолок: скругление следует за темой, но не дальше трети своей
+       стороны. */
+    border-radius: min(var(--radius-xs), 0.35em);
+
+    background-color: var(--element);
+    color: var(--on-brand-solid);
+
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="checkbox"]:hover [data-slot="checkbox-control"] {
+    border-color: var(--text-muted);
+  }
+
+  /* Отмечен и «частично отмечен» красятся одинаково — различает их сама фигура внутри. */
+  [data-slot="checkbox-control"][data-checked],
+  [data-slot="checkbox-control"][data-indeterminate] {
+    border-color: transparent;
+    background-color: var(--brand-solid);
+  }
+
+  [data-slot="checkbox"]:has([data-slot="checkbox-input"]:focus-visible)
+    [data-slot="checkbox-control"] {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot="checkbox-control"][data-invalid] {
+    border-color: var(--danger-border);
+  }
+
+  [data-slot="checkbox-control"][data-disabled] {
+    background-color: var(--element);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+
+  /* Галочку рисует потребитель (кит кладёт внутрь то, что ему передали) — мы задаём место и
+     размер. Фигура наследует цвет от рамки, поэтому на брендовом фоне читается сама. */
+  [data-slot="checkbox-indicator"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    inline-size: 100%;
+    block-size: 100%;
+
+    color: currentColor;
+    font-size: 0.75em;
+    line-height: var(--leading-none);
+  }
+
+  [data-slot="checkbox-label"] {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  [data-slot="checkbox"]:has([data-slot="checkbox-control"][data-disabled])
+    [data-slot="checkbox-label"] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Пояснение и ошибка встают под подписью, во вторую колонку сетки: под рамкой их место
+     пустует, и текст выравнивается по началу подписи, а не по краю флажка. */
+  [data-slot="checkbox-description"],
+  [data-slot="checkbox-error"] {
+    grid-column: 2;
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot="checkbox-description"] {
+    color: var(--text-muted);
+  }
+
+  [data-slot="checkbox-error"] {
+    color: var(--danger-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="checkbox-control"] {
+      transition: none;
+    }
+  }
+}

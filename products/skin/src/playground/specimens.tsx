@@ -11,6 +11,13 @@
 
 import {
   Button,
+  Checkbox,
+  CheckboxControl,
+  CheckboxDescription,
+  CheckboxError,
+  CheckboxIndicator,
+  CheckboxInput,
+  CheckboxLabel,
   Field,
   FieldDescription,
   FieldError,
@@ -26,12 +33,26 @@ import {
   SelectPortal,
   SelectTrigger,
   SelectValue,
+  RadioGroup,
+  RadioGroupDescription,
+  RadioGroupItem,
+  RadioGroupItemControl,
+  RadioGroupItemIndicator,
+  RadioGroupItemInput,
+  RadioGroupItemLabel,
+  RadioGroupLabel,
   Separator,
   Spinner,
+  Switch,
+  SwitchControl,
+  SwitchDescription,
+  SwitchInput,
+  SwitchLabel,
+  SwitchThumb,
   Textarea,
   Toggle,
 } from "@omnifield/probe-web-ui";
-import { createSignal, type JSX } from "solid-js";
+import { createSignal, For, type JSX } from "solid-js";
 
 export interface Specimen {
   id: string;
@@ -150,8 +171,165 @@ export const SPECIMENS: Specimen[] = [
     states: () => <SelectSpecimen disabled />,
   },
   {
-    id: "toggle",
+    id: "checkbox",
+    title: "Флажок",
+    slots: [
+      "checkbox",
+      "checkbox-input",
+      "checkbox-control",
+      "checkbox-indicator",
+      "checkbox-label",
+      "checkbox-description",
+      "checkbox-error",
+    ],
+    main: () => (
+      <>
+        <Checkbox defaultChecked>
+          <CheckboxInput />
+          <CheckboxControl>
+            <CheckboxIndicator>✓</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Показывать сетку</CheckboxLabel>
+        </Checkbox>
+        <Checkbox>
+          <CheckboxInput />
+          <CheckboxControl>
+            <CheckboxIndicator>✓</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Подписи осей</CheckboxLabel>
+          <CheckboxDescription>Занимают место на узком экране.</CheckboxDescription>
+        </Checkbox>
+      </>
+    ),
+    states: () => (
+      <>
+        <Checkbox indeterminate>
+          <CheckboxInput />
+          <CheckboxControl>
+            <CheckboxIndicator>–</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Выбраны не все</CheckboxLabel>
+        </Checkbox>
+        <Checkbox disabled defaultChecked>
+          <CheckboxInput />
+          <CheckboxControl>
+            <CheckboxIndicator>✓</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Отключён и отмечен</CheckboxLabel>
+        </Checkbox>
+        <Checkbox validationState="invalid">
+          <CheckboxInput />
+          <CheckboxControl>
+            <CheckboxIndicator>✓</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Согласие обязательно</CheckboxLabel>
+          <CheckboxError>Без согласия не сохранить.</CheckboxError>
+        </Checkbox>
+      </>
+    ),
+  },
+  {
+    id: "switch",
     title: "Переключатель",
+    slots: [
+      "switch",
+      "switch-input",
+      "switch-control",
+      "switch-thumb",
+      "switch-label",
+      "switch-description",
+      "switch-error",
+    ],
+    main: () => (
+      <>
+        <Switch defaultChecked>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>Тёмная тема</SwitchLabel>
+        </Switch>
+        <Switch>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>Автообновление</SwitchLabel>
+          <SwitchDescription>Раз в минуту, пока вкладка открыта.</SwitchDescription>
+        </Switch>
+      </>
+    ),
+    states: () => (
+      <>
+        <Switch disabled>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>Отключён</SwitchLabel>
+        </Switch>
+        <Switch disabled defaultChecked>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>Отключён и включён</SwitchLabel>
+        </Switch>
+      </>
+    ),
+  },
+  {
+    id: "radio-group",
+    title: "Группа выбора",
+    slots: [
+      "radio-group",
+      "radio-group-label",
+      "radio-group-description",
+      "radio-group-error",
+      "radio-group-item",
+      "radio-group-item-input",
+      "radio-group-item-control",
+      "radio-group-item-indicator",
+      "radio-group-item-label",
+      "radio-group-item-description",
+    ],
+    main: () => (
+      <RadioGroup defaultValue="M">
+        <RadioGroupLabel>Плотность строк</RadioGroupLabel>
+        <RadioGroupDescription>Влияет на высоту строки таблицы.</RadioGroupDescription>
+        <For each={["S", "M", "L"]}>
+          {(value) => (
+            <RadioGroupItem value={value}>
+              <RadioGroupItemInput />
+              <RadioGroupItemControl>
+                <RadioGroupItemIndicator />
+              </RadioGroupItemControl>
+              <RadioGroupItemLabel>{value}</RadioGroupItemLabel>
+            </RadioGroupItem>
+          )}
+        </For>
+      </RadioGroup>
+    ),
+    states: () => (
+      <RadioGroup defaultValue="M" disabled>
+        <RadioGroupLabel>Отключённая группа</RadioGroupLabel>
+        <For each={["S", "M"]}>
+          {(value) => (
+            <RadioGroupItem value={value}>
+              <RadioGroupItemInput />
+              <RadioGroupItemControl>
+                <RadioGroupItemIndicator />
+              </RadioGroupItemControl>
+              <RadioGroupItemLabel>{value}</RadioGroupItemLabel>
+            </RadioGroupItem>
+          )}
+        </For>
+      </RadioGroup>
+    ),
+  },
+  {
+    id: "toggle",
+    title: "Кнопка-переключатель",
     slots: ["toggle"],
     main: () => (
       <>

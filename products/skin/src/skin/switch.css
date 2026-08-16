@@ -1,0 +1,127 @@
+/* Переключатель — подпуть `@probe-web/skin/switch.css`. Требует `base.css`.
+
+   Шесть зацепок: `switch` (корень), `switch-input`, `switch-control` (дорожка),
+   `switch-thumb` (бегунок), `switch-label`, `switch-description`, `switch-error`.
+
+   Это НЕ то же, что `toggle`: у переключателя два устойчивых положения и он про состояние
+   («тёмная тема включена»), а двухпозиционная кнопка — про действие («полужирный»). Кит
+   держит их разными примитивами, и оформление тоже разное: здесь дорожка с бегунком.
+
+   Размеры дорожки и бегунка — в `em`: переключатель стоит в строке рядом с подписью и обязан
+   следовать за её кеглем. */
+
+@layer skin {
+  [data-slot="switch"] {
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  /* Ввод убран с глаз, но остаётся в порядке фокуса и в дереве доступности — см. флажок. */
+  [data-slot="switch-input"] {
+    position: absolute;
+    inline-size: var(--border-width-1);
+    block-size: var(--border-width-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  [data-slot="switch-control"] {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+
+    inline-size: 2.2em;
+    block-size: 1.25em;
+    padding: 0.125em;
+
+    border: var(--border-width-1) solid transparent;
+    border-radius: var(--radius-full);
+
+    background-color: var(--element-solid);
+    cursor: pointer;
+
+    transition: background-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="switch-control"][data-checked] {
+    background-color: var(--brand-solid);
+  }
+
+  [data-slot="switch"]:has([data-slot="switch-input"]:focus-visible)
+    [data-slot="switch-control"] {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot="switch-control"][data-invalid] {
+    border-color: var(--danger-border);
+  }
+
+  [data-slot="switch-control"][data-disabled] {
+    background-color: var(--element);
+    cursor: not-allowed;
+  }
+
+  /* Бегунок ездит трансформацией, а не отступом: `transform` не вызывает пересчёта раскладки,
+     и движение остаётся плавным на слабой машине (практика конвейера рендеринга, выписка
+     `web-dev-animation-performance`). */
+  [data-slot="switch-thumb"] {
+    inline-size: 1em;
+    block-size: 1em;
+
+    border-radius: var(--radius-full);
+    background-color: var(--surface);
+
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="switch-thumb"][data-checked] {
+    transform: translateX(0.95em);
+  }
+
+  [data-slot="switch-label"] {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  [data-slot="switch"]:has([data-slot="switch-control"][data-disabled])
+    [data-slot="switch-label"] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot="switch-description"],
+  [data-slot="switch-error"] {
+    grid-column: 2;
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot="switch-description"] {
+    color: var(--text-muted);
+  }
+
+  [data-slot="switch-error"] {
+    color: var(--danger-text);
+  }
+
+  /* Движение бегунка функционально: оно показывает, куда переключилось состояние. При
+     уменьшенном движении убираем именно анимацию, положение остаётся верным. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="switch-control"],
+    [data-slot="switch-thumb"] {
+      transition: none;
+    }
+  }
+}
