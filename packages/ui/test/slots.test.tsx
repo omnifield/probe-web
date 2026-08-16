@@ -34,6 +34,27 @@ import {
   CheckboxInput,
   CheckboxLabel,
 } from "../src/checkbox.jsx";
+import {
+  DropdownMenu,
+  DropdownMenuArrow,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuGroupLabel,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuItemDescription,
+  DropdownMenuItemIndicator,
+  DropdownMenuItemLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, FieldError, Input, Label, Textarea } from "../src/field.jsx";
 import {
   Popover,
@@ -173,6 +194,41 @@ function Scene() {
           </PopoverContent>
         </PopoverPortal>
       </Popover>
+
+      <DropdownMenu open>
+        <DropdownMenuTrigger>
+          Ещё
+          <DropdownMenuIcon>▾</DropdownMenuIcon>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent>
+            <DropdownMenuArrow />
+            <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Правка</DropdownMenuGroupLabel>
+              <DropdownMenuItem>
+                <DropdownMenuItemLabel>Переименовать</DropdownMenuItemLabel>
+                <DropdownMenuItemDescription>F2</DropdownMenuItemDescription>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem checked>
+              Показывать скрытые
+              <DropdownMenuItemIndicator>✓</DropdownMenuItemIndicator>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuRadioGroup value="по имени">
+              <DropdownMenuRadioItem value="по имени">По имени</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSub open>
+              <DropdownMenuSubTrigger>Ещё действия</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem>Архивировать</DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenu>
 
       <Tooltip open>
         <TooltipTrigger>Сохранить</TooltipTrigger>

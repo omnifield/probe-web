@@ -18,11 +18,17 @@
 | **обработчики композируемы** | обработчик потребителя приходит прямо в компонент | `test/contract.test.tsx` |
 | **ноль стилей** | атрибутов `class` и `style` на узле не появляется само | `test/contract.test.tsx` |
 
-Отступление от «ноль стилей» в зоне **одно** и названо ниже — спрятанные вводы флажка,
-переключателя и варианта группы.
+Отступление от принципа допустимо только с явным обоснованием в доке компонента. Все, что есть
+в зоне, названы, и все привезены `@kobalte/core`, а не нами:
 
-Отступление от 1-to-1 допустимо только с явным обоснованием в доке компонента. В этой волне
-оно **одно** и названо ниже — всплывающая панель `SelectContent`.
+| отступление | где | почему не снимается |
+|---|---|---|
+| **не 1-to-1** | всплывающая панель (`*-content`) | координаты пишутся в отдельный узел-позиционер |
+| **не 1-to-1** | стрелка (`*-arrow`) | внутри вектор, иначе её не повернуть за панелью |
+| **есть `style`** | спрятанные вводы (`checkbox-input`, `switch-input`, `radio-group-item-input`) | механика доступности: ввод остаётся ради фокуса и формы, но не виден |
+| **есть `style`** | всплывающие панели и стрелки | позиционирование, переменная начала трансформации, цвет стрелки — **зеркало панели потребителя** |
+
+Разбор каждого — в разделах ниже и в доке соответствующего компонента.
 
 ## Что наружу
 
@@ -44,6 +50,7 @@
 | `FieldError` | `div` | `TextField.ErrorMessage` |
 | `Select*` | составной, 10 частей | `Select.*` |
 | `Popover*` | составной, 9 частей | `Popover.*` |
+| `DropdownMenu*` | составной, 19 частей | `DropdownMenu.*` |
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
@@ -95,6 +102,7 @@
 | составной `Select` | `select`, `select-trigger`, `select-value`, `select-icon`, `select-content`, `select-listbox`, `select-item`, `select-item-label`, `select-item-indicator` |
 | составной `Popover` | `popover-trigger`, `popover-anchor`, `popover-content`, `popover-arrow`, `popover-title`, `popover-description`, `popover-close` |
 | составной `Tooltip` | `tooltip-trigger`, `tooltip-content`, `tooltip-arrow` |
+| составной `DropdownMenu` | `dropdown-menu-trigger`, `dropdown-menu-icon`, `dropdown-menu-content`, `dropdown-menu-arrow`, `dropdown-menu-item`, `dropdown-menu-item-label`, `dropdown-menu-item-description`, `dropdown-menu-item-indicator`, `dropdown-menu-checkbox-item`, `dropdown-menu-radio-group`, `dropdown-menu-radio-item`, `dropdown-menu-group`, `dropdown-menu-group-label`, `dropdown-menu-separator`, `dropdown-menu-sub-trigger`, `dropdown-menu-sub-content` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
@@ -102,10 +110,10 @@
 `Slot` зацепки не ставит **намеренно**: своего имени у него нет, семантику узла задаёт
 потребитель через `as`. Обещать за него нечего — и это часть того же обязательства.
 
-**Зацепок `popover` и `tooltip` не существует, и это тоже намеренно:** их корни узла не
+**Зацепок `popover`, `tooltip` и `dropdown-menu` не существует, и это тоже намеренно:** их корни узла не
 рендерят, а зацепка обязана быть НА узле. Панель ловится по `popover-content`, кнопка — по
-`popover-trigger`. То же у порталов: `PopoverPortal` и `TooltipPortal` переносят содержимое, но
-своего узла не приводят.
+`popover-trigger`. То же у порталов и у `DropdownMenuSub`: они переносят содержимое или заводят
+контекст, но своего узла не приводят.
 
 Перечень стережёт проба, а не только эта страница: `test/slot-list.ts` держит имена явным
 списком, выписанным руками, а `test/slots.test.tsx` сверяет его с фактом **с двух сторон** —
@@ -228,6 +236,61 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
   кнопку, а не оборачивает её.
 - **`PopoverAnchor` нужен**, только когда панель встаёт не у кнопки: строка таблицы, точка на
   карте. Без него зацепкой служит сам `PopoverTrigger`, и лишнего узла не появляется.
+
+## Меню действий: `DropdownMenu`
+
+Девятнадцать частей — самое разложенное семейство зоны, и сокращать нечего: меню это не список
+строк, а набор РАЗНЫХ сущностей. У каждой своя роль, и одним правилом их не одеть.
+
+```tsx
+<DropdownMenu placement="bottom-end" gutter={4}>
+  <DropdownMenuTrigger>
+    Ещё <DropdownMenuIcon>▾</DropdownMenuIcon>
+  </DropdownMenuTrigger>
+  <DropdownMenuPortal>
+    <DropdownMenuContent>
+      <DropdownMenuGroup>
+        <DropdownMenuGroupLabel>Правка</DropdownMenuGroupLabel>
+        <DropdownMenuItem onSelect={rename}>
+          <DropdownMenuItemLabel>Переименовать</DropdownMenuItemLabel>
+          <DropdownMenuItemDescription>F2</DropdownMenuItemDescription>
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuCheckboxItem checked={hidden()} onChange={setHidden}>
+        Показывать скрытые
+        <DropdownMenuItemIndicator>✓</DropdownMenuItemIndicator>
+      </DropdownMenuCheckboxItem>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>Ещё действия</DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>…</DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuContent>
+  </DropdownMenuPortal>
+</DropdownMenu>
+```
+
+| роль в разметке | зацепка |
+|---|---|
+| обычный пункт (`role=menuitem`) | `dropdown-menu-item` |
+| пункт-флажок (`role=menuitemcheckbox`) | `dropdown-menu-checkbox-item` |
+| пункт-переключатель (`role=menuitemradio`) | `dropdown-menu-radio-item` |
+| пункт, открывающий подменю | `dropdown-menu-sub-trigger` |
+
+Четыре РАЗНЫЕ зацепки там, где на вид «просто строка меню», — это не дробление ради дробления:
+у открывашки подменю есть стрелка вбок и состояние раскрытости, у флажка — отметка, у обычного
+пункта нет ни того ни другого.
+
+- **Действие приходит в `onSelect`, а не в `onClick`:** kobalte зовёт его и по клику, и по
+  `Enter`/`Space`, и сам закрывает меню. Закрытие приходит СЛЕДУЮЩЕЙ задачей — обработчику
+  потребителя дают отработать до того, как узлы уедут из документа.
+- **`dropdown-menu-separator` — своя зацепка, а не общий `separator`.** Разделитель в меню и
+  разделитель на странице оформляются по-разному; одно имя на двоих означало бы, что одно из
+  оформлений придётся отменять переопределением.
+- **Модальное меню приносит в панель сторожевые узлы фокуса** (`span[data-focus-trap]`). Они
+  без зацепок и не наши — не удивляйся лишним детям у `dropdown-menu-content`.
 
 ### Что приезжает со стилем — и почему это не «одетый кит»
 

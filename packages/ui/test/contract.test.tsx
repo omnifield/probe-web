@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import { DropdownMenu, DropdownMenuIcon, DropdownMenuTrigger } from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
 import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
 import {
@@ -215,6 +216,26 @@ const PRIMITIVES = [
           <RadioGroupItemLabel {...props} />
         </RadioGroupItem>
       </RadioGroup>
+    ),
+  },
+  {
+    name: "DropdownMenuTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger {...props} />
+      </DropdownMenu>
+    ),
+  },
+  {
+    name: "DropdownMenuIcon",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <DropdownMenuIcon {...props} />
+        </DropdownMenuTrigger>
+      </DropdownMenu>
     ),
   },
   {
