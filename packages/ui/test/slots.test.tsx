@@ -25,7 +25,28 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Button } from "../src/button.jsx";
+import {
+  Checkbox,
+  CheckboxControl,
+  CheckboxDescription,
+  CheckboxError,
+  CheckboxIndicator,
+  CheckboxInput,
+  CheckboxLabel,
+} from "../src/checkbox.jsx";
 import { Field, FieldDescription, FieldError, Input, Label, Textarea } from "../src/field.jsx";
+import {
+  RadioGroup,
+  RadioGroupDescription,
+  RadioGroupError,
+  RadioGroupItem,
+  RadioGroupItemControl,
+  RadioGroupItemDescription,
+  RadioGroupItemIndicator,
+  RadioGroupItemInput,
+  RadioGroupItemLabel,
+  RadioGroupLabel,
+} from "../src/radio-group.jsx";
 import {
   Select,
   SelectContent,
@@ -40,6 +61,15 @@ import {
 } from "../src/select.jsx";
 import { Separator } from "../src/separator.jsx";
 import { Spinner } from "../src/spinner.jsx";
+import {
+  Switch,
+  SwitchControl,
+  SwitchDescription,
+  SwitchError,
+  SwitchInput,
+  SwitchLabel,
+  SwitchThumb,
+} from "../src/switch.jsx";
 import { Toggle } from "../src/toggle.jsx";
 import { cleanup, mount, one, press } from "./dom.jsx";
 import { PROMISED_SLOTS } from "./slot-list.js";
@@ -51,10 +81,11 @@ const CITIES = ["Москва", "Казань", "Пермь"];
 /**
  * Сцена, в которой каждая зацепка зоны оказывается в документе одновременно.
  *
- * Два состояния здесь выставлены НАРОЧНО, потому что иначе их слотов в документе нет вовсе:
- * `validationState="invalid"` — иначе kobalte не рендерит сообщение об ошибке; выбранный
- * город — иначе не рендерится отметка выбранного варианта. Панель списка открывает сам тест:
- * до открытия её узлы живут в портале, которого ещё не существует.
+ * Состояния здесь выставлены НАРОЧНО, потому что иначе этих слотов в документе нет вовсе:
+ * `validationState="invalid"` — иначе kobalte не рендерит сообщение об ошибке; включённое
+ * состояние флажка и выбранный вариант — иначе не рендерятся отметки (`*-indicator`);
+ * выбранный город — то же самое у списка. Панель списка открывает сам тест: до открытия её
+ * узлы живут в портале, которого ещё не существует.
  *
  * `Input` и `Textarea` стоят в РАЗНЫХ полях: у корня `Field` один идентификатор ввода на
  * поле, и два ввода в одном корне спорили бы за связку `for`↔`id`.
@@ -77,6 +108,40 @@ function Scene() {
       <Field>
         <Textarea />
       </Field>
+
+      <Checkbox checked validationState="invalid">
+        <CheckboxInput />
+        <CheckboxControl>
+          <CheckboxIndicator>✓</CheckboxIndicator>
+        </CheckboxControl>
+        <CheckboxLabel>Согласен</CheckboxLabel>
+        <CheckboxDescription>Условия обслуживания</CheckboxDescription>
+        <CheckboxError>Без согласия нельзя</CheckboxError>
+      </Checkbox>
+
+      <Switch checked validationState="invalid">
+        <SwitchInput />
+        <SwitchControl>
+          <SwitchThumb />
+        </SwitchControl>
+        <SwitchLabel>Тёмная тема</SwitchLabel>
+        <SwitchDescription>Переключится сразу</SwitchDescription>
+        <SwitchError>Тема недоступна</SwitchError>
+      </Switch>
+
+      <RadioGroup value="S" validationState="invalid">
+        <RadioGroupLabel>Размер</RadioGroupLabel>
+        <RadioGroupDescription>Как в таблице размеров</RadioGroupDescription>
+        <RadioGroupError>Размер не выбран</RadioGroupError>
+        <RadioGroupItem value="S">
+          <RadioGroupItemInput />
+          <RadioGroupItemControl>
+            <RadioGroupItemIndicator />
+          </RadioGroupItemControl>
+          <RadioGroupItemLabel>S</RadioGroupItemLabel>
+          <RadioGroupItemDescription>до 46</RadioGroupItemDescription>
+        </RadioGroupItem>
+      </RadioGroup>
 
       <Select<string>
         options={CITIES}
@@ -137,11 +202,12 @@ describe("обещанные зацепки доезжают до докумен
     expect(slotsInDocument()).toEqual([...PROMISED_SLOTS].sort());
   });
 
-  it("имён девятнадцать — счёт назван явно, чтобы правка перечня была видна", () => {
-    // Число стоит в контракте зоны `skin` (`kb:PROBEWEB-11`) и в её фонде. Меняется оно —
-    // меняется чужая зона, и это разговор, а не правка на месте.
-    expect(PROMISED_SLOTS).toHaveLength(19);
-    expect(new Set(PROMISED_SLOTS).size).toBe(19);
+  it("в перечне нет повторов — иначе равенство выше сошлось бы вслепую", () => {
+    // Числа слотов здесь СОЗНАТЕЛЬНО нет: оно устаревает при каждом добавлении примитива, а
+    // обещание — нет. Ровно по этой причине architect убрал его и из `kb:PROBEWEB-11`
+    // (2026-08-16): контракт — перечень, а не его длина. Дубль же проверять надо: сравнение
+    // множеств его не заметит, а перечень с повтором врёт про состав.
+    expect(new Set(PROMISED_SLOTS).size).toBe(PROMISED_SLOTS.length);
   });
 });
 
@@ -150,9 +216,11 @@ describe("зацепки исходников не выходят за обещ�
     .filter((name) => name.endsWith(".tsx"))
     .map((name) => ({ name, slots: slotsInSource(readFileSync(join(srcDir, name), "utf8")) }));
 
-  it("файлов с примитивами найдено столько же, сколько их в зоне", () => {
-    // Иначе перебор по пустому списку файлов был бы зелёным и ничего не проверял.
-    expect(sources.length).toBeGreaterThanOrEqual(7);
+  it("файлы с примитивами вообще нашлись", () => {
+    // Иначе перебор по пустому списку файлов был бы зелёным и ничего не проверял. Порог, а не
+    // точное число: файлов прибывает с каждым примитивом, и точное число здесь стало бы тем
+    // самым снимком, который устаревает сам по себе.
+    expect(sources.length).toBeGreaterThanOrEqual(10);
   });
 
   for (const source of sources) {

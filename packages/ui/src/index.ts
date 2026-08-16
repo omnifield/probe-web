@@ -11,6 +11,22 @@
 
 export { Button, type ButtonProps } from "./button.jsx";
 export {
+  Checkbox,
+  CheckboxControl,
+  type CheckboxControlComponentProps,
+  CheckboxDescription,
+  type CheckboxDescriptionComponentProps,
+  CheckboxError,
+  type CheckboxErrorProps,
+  CheckboxIndicator,
+  type CheckboxIndicatorComponentProps,
+  CheckboxInput,
+  type CheckboxInputComponentProps,
+  CheckboxLabel,
+  type CheckboxLabelComponentProps,
+  type CheckboxProps,
+} from "./checkbox.jsx";
+export {
   Field,
   FieldDescription,
   type FieldDescriptionProps,
@@ -24,6 +40,28 @@ export {
   Textarea,
   type TextareaProps,
 } from "./field.jsx";
+export {
+  RadioGroup,
+  RadioGroupDescription,
+  type RadioGroupDescriptionComponentProps,
+  RadioGroupError,
+  type RadioGroupErrorProps,
+  RadioGroupItem,
+  type RadioGroupItemComponentProps,
+  RadioGroupItemControl,
+  type RadioGroupItemControlComponentProps,
+  RadioGroupItemDescription,
+  type RadioGroupItemDescriptionComponentProps,
+  RadioGroupItemIndicator,
+  type RadioGroupItemIndicatorComponentProps,
+  RadioGroupItemInput,
+  type RadioGroupItemInputComponentProps,
+  RadioGroupItemLabel,
+  type RadioGroupItemLabelComponentProps,
+  RadioGroupLabel,
+  type RadioGroupLabelComponentProps,
+  type RadioGroupProps,
+} from "./radio-group.jsx";
 export {
   Select,
   SelectContent,
@@ -48,4 +86,20 @@ export {
 export { Separator, type SeparatorProps } from "./separator.jsx";
 export { Slot, type SlotProps } from "./slot.jsx";
 export { Spinner, type SpinnerProps } from "./spinner.jsx";
+export {
+  Switch,
+  SwitchControl,
+  type SwitchControlComponentProps,
+  SwitchDescription,
+  type SwitchDescriptionComponentProps,
+  SwitchError,
+  type SwitchErrorProps,
+  SwitchInput,
+  type SwitchInputComponentProps,
+  SwitchLabel,
+  type SwitchLabelComponentProps,
+  type SwitchProps,
+  SwitchThumb,
+  type SwitchThumbComponentProps,
+} from "./switch.jsx";
 export { Toggle, type ToggleProps } from "./toggle.jsx";

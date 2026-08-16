@@ -18,6 +18,9 @@
 | **обработчики композируемы** | обработчик потребителя приходит прямо в компонент | `test/contract.test.tsx` |
 | **ноль стилей** | атрибутов `class` и `style` на узле не появляется само | `test/contract.test.tsx` |
 
+Отступление от «ноль стилей» в зоне **одно** и названо ниже — спрятанные вводы флажка,
+переключателя и варианта группы.
+
 Отступление от 1-to-1 допустимо только с явным обоснованием в доке компонента. В этой волне
 оно **одно** и названо ниже — всплывающая панель `SelectContent`.
 
@@ -40,6 +43,9 @@
 | `FieldDescription` | `div` | `TextField.Description` |
 | `FieldError` | `div` | `TextField.ErrorMessage` |
 | `Select*` | составной, 10 частей | `Select.*` |
+| `Checkbox*` | составной, 7 частей | `Checkbox.*` |
+| `Switch*` | составной, 7 частей | `Switch.*` |
+| `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
 
 ## Стилизация: зацепка `data-slot`
 
@@ -74,7 +80,8 @@
 на этих именах стоит целая зона оформлений (`kb:PROBEWEB-11`), и без обещания она держится на
 честном слове.
 
-**Слотов девятнадцать**, в восьми примитивах:
+Числа слотов здесь нет намеренно: оно устаревает при каждом добавлении примитива, а обещание
+— нет. Контракт — сам перечень, а не его длина (решение architect 2026-08-16).
 
 | примитив | слоты |
 |---|---|
@@ -84,6 +91,9 @@
 | `Spinner` | `spinner` |
 | семейство поля | `field`, `label`, `input`, `textarea`, `field-description`, `field-error` |
 | составной `Select` | `select`, `select-trigger`, `select-value`, `select-icon`, `select-content`, `select-listbox`, `select-item`, `select-item-label`, `select-item-indicator` |
+| составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
+| составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
+| составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
 
 `Slot` зацепки не ставит **намеренно**: своего имени у него нет, семантику узла задаёт
 потребитель через `as`. Обещать за него нечего — и это часть того же обязательства.
@@ -174,6 +184,71 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 позиционирования floating-ui, а слить позиционер с панелью нельзя — `transform` анимации и
 `transform` позиционирования оказались бы на одном узле и затирали бы друг друга. Узел
 приносит сам `@kobalte/core`. Отступление держится явным тестом, а не только этим абзацем.
+
+## Флажок, переключатель, группа: почему частей много
+
+`Checkbox`, `Switch` и `RadioGroup` разложены на части ровно как `Select` и семейство поля.
+Причина одна и практическая: **флажок нельзя одеть, не разобрав**. Нативный
+`<input type="checkbox">` не стилизуется, поэтому рынок везде делает одно и то же — настоящий
+ввод прячут (он несёт фокус, форму и доступность), а рисуют СОСЕДНИЙ узел.
+
+```tsx
+<Checkbox checked={agreed()} onChange={setAgreed}>
+  <CheckboxInput />
+  <CheckboxControl>
+    <CheckboxIndicator>✓</CheckboxIndicator>
+  </CheckboxControl>
+  <CheckboxLabel>Согласен</CheckboxLabel>
+</Checkbox>
+
+<Switch checked={dark()} onChange={setDark}>
+  <SwitchInput />
+  <SwitchControl>
+    <SwitchThumb />
+  </SwitchControl>
+  <SwitchLabel>Тёмная тема</SwitchLabel>
+</Switch>
+
+<RadioGroup value={size()} onChange={setSize}>
+  <RadioGroupLabel>Размер</RadioGroupLabel>
+  <For each={["S", "M", "L"]}>
+    {(value) => (
+      <RadioGroupItem value={value}>
+        <RadioGroupItemInput />
+        <RadioGroupItemControl>
+          <RadioGroupItemIndicator />
+        </RadioGroupItemControl>
+        <RadioGroupItemLabel>{value}</RadioGroupItemLabel>
+      </RadioGroupItem>
+    )}
+  </For>
+</RadioGroup>
+```
+
+Части обёрнуты **все**: полусоставной примитив одеть нельзя — у него оказалась бы одета рамка
+и гола отметка. Как и у поля, части читают контекст корня и вне него бросают ошибку.
+
+Три разницы, которые стоит знать заранее:
+
+- **`Switch` — это поле, `Toggle` — кнопка.** У переключателя есть `name`, значение и
+  состояние ошибки, он уезжает в форму; `Toggle` (`button[aria-pressed]`) — действие. Выглядят
+  похоже, но подменять одно другим значит платить доступностью.
+- **Отметка появляется, бегунок ездит.** `CheckboxIndicator` и `RadioGroupItemIndicator`
+  рендерятся ТОЛЬКО в выбранном состоянии (нужен узел всегда — `forceMount` насквозь), а
+  `SwitchThumb` есть всегда: ему нужен переход между положениями.
+- **`RadioGroupLabel` — это `span`, а не `label`.** Подпись группы относится ко всем вариантам
+  сразу и уезжает в `aria-labelledby`; `for` связал бы её с одним.
+
+### Названное отступление: спрятанный ввод несёт стиль
+
+Единственное место, где на узел приезжает `style` не от потребителя, — `checkbox-input`,
+`switch-input` и `radio-group-item-input`. Стиль ставит сам `@kobalte/core`
+(`visuallyHiddenStyles`), и это **не оформление, а механика доступности**: настоящий ввод
+обязан остаться в документе ради фокуса, формы и скринридера, но не должен быть виден.
+
+Отдавать это правило потребителю нельзя: не написав его, он получил бы двойной флажок — свой
+нарисованный и родной браузерный. Стиль потребителя при этом не затирается, а сливается с
+нашим, и это держится тестом, а не обещанием (`test/checkbox.test.tsx`).
 
 ## Что НЕ делает пакет — и почему
 

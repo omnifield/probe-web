@@ -13,10 +13,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Button } from "../src/button.jsx";
+import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
+import {
+  RadioGroup,
+  RadioGroupItem,
+  RadioGroupItemInput,
+  RadioGroupItemLabel,
+  RadioGroupLabel,
+} from "../src/radio-group.jsx";
 import { Separator } from "../src/separator.jsx";
 import { Slot } from "../src/slot.jsx";
 import { Spinner } from "../src/spinner.jsx";
+import { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from "../src/switch.jsx";
 import { Toggle } from "../src/toggle.jsx";
 import { cleanup, mount } from "./dom.jsx";
 
@@ -88,6 +97,125 @@ const PRIMITIVES = [
     ),
   },
   {
+    name: "Checkbox",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Checkbox {...props} />,
+  },
+  {
+    name: "CheckboxInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <Checkbox>
+        <CheckboxInput {...props} />
+      </Checkbox>
+    ),
+  },
+  {
+    // `as="p"` уводит часть от тега корня — иначе селектор `div` поймал бы сам корень.
+    name: "CheckboxControl",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Checkbox>
+        <CheckboxControl as="p" {...props} />
+      </Checkbox>
+    ),
+  },
+  {
+    name: "CheckboxLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <Checkbox>
+        <CheckboxLabel {...props} />
+      </Checkbox>
+    ),
+  },
+  {
+    name: "Switch",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Switch {...props} />,
+  },
+  {
+    name: "SwitchInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <Switch>
+        <SwitchInput {...props} />
+      </Switch>
+    ),
+  },
+  {
+    name: "SwitchControl",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Switch>
+        <SwitchControl as="p" {...props} />
+      </Switch>
+    ),
+  },
+  {
+    name: "SwitchThumb",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Switch>
+        <SwitchThumb as="p" {...props} />
+      </Switch>
+    ),
+  },
+  {
+    name: "SwitchLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <Switch>
+        <SwitchLabel {...props} />
+      </Switch>
+    ),
+  },
+  {
+    name: "RadioGroup",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <RadioGroup {...props} />,
+  },
+  {
+    name: "RadioGroupLabel",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <RadioGroup>
+        <RadioGroupLabel {...props} />
+      </RadioGroup>
+    ),
+  },
+  {
+    name: "RadioGroupItem",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <RadioGroup>
+        <RadioGroupItem as="p" value="S" {...props} />
+      </RadioGroup>
+    ),
+  },
+  {
+    name: "RadioGroupItemInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <RadioGroup>
+        <RadioGroupItem value="S">
+          <RadioGroupItemInput {...props} />
+        </RadioGroupItem>
+      </RadioGroup>
+    ),
+  },
+  {
+    name: "RadioGroupItemLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <RadioGroup>
+        <RadioGroupItem value="S">
+          <RadioGroupItemLabel {...props} />
+        </RadioGroupItem>
+      </RadioGroup>
+    ),
+  },
+  {
     name: "FieldDescription",
     // `as="p"` не только уводит пояснение от тега корня `Field` (иначе селектор `div` ловил
     // бы корень), но и проверяет заодно, что полиморфизм не теряется в обёртке.
@@ -134,6 +262,17 @@ describe("обработчик потребителя доходит до узл
   }
 });
 
+/**
+ * Спрятанные вводы — ЕДИНСТВЕННОЕ отступление от «ноль стилей по умолчанию» во всей зоне.
+ *
+ * Стиль ставит сам `@kobalte/core` (`visuallyHiddenStyles`), и он не про вид, а про механику
+ * доступности: настоящий `<input>` обязан остаться в документе ради фокуса, формы и
+ * скринридера, но не должен быть виден — рисуют соседний `*-control`. Отступление названо
+ * здесь и разобрано отдельными тестами в `test/checkbox.test.tsx`, которые пиняют, ЧТО именно
+ * это за стиль и что стиль потребителя доезжает поверх.
+ */
+const HIDDEN_INPUTS = new Set(["CheckboxInput", "SwitchInput", "RadioGroupItemInput"]);
+
 describe("стилей по умолчанию нет", () => {
   for (const primitive of PRIMITIVES) {
     it(primitive.name, () => {
@@ -144,7 +283,10 @@ describe("стилей по умолчанию нет", () => {
       // Атрибут отсутствует целиком — пустая строка тоже считается провалом, потому что она
       // означает, что кто-то в цепочке всё-таки взялся за `class`.
       expect(node?.hasAttribute("class")).toBe(false);
-      expect(node?.hasAttribute("style")).toBe(false);
+
+      if (!HIDDEN_INPUTS.has(primitive.name)) {
+        expect(node?.hasAttribute("style")).toBe(false);
+      }
     });
   }
 });
