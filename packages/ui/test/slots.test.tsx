@@ -35,6 +35,16 @@ import {
   CheckboxLabel,
 } from "../src/checkbox.jsx";
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from "../src/dialog.jsx";
+import {
   DropdownMenu,
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -102,6 +112,13 @@ import {
   SwitchLabel,
   SwitchThumb,
 } from "../src/switch.jsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsIndicator,
+  TabsList,
+  TabsTrigger,
+} from "../src/tabs.jsx";
 import { Toggle } from "../src/toggle.jsx";
 import {
   Tooltip,
@@ -194,6 +211,26 @@ function Scene() {
           </PopoverContent>
         </PopoverPortal>
       </Popover>
+
+      <Dialog open>
+        <DialogTrigger>Удалить</DialogTrigger>
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
+            <DialogTitle>Удалить запись?</DialogTitle>
+            <DialogDescription>Действие необратимо</DialogDescription>
+            <DialogClose>Отмена</DialogClose>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+
+      <Tabs value="вид">
+        <TabsList>
+          <TabsTrigger value="вид">Вид</TabsTrigger>
+          <TabsIndicator />
+        </TabsList>
+        <TabsContent value="вид">Настройки вида</TabsContent>
+      </Tabs>
 
       <DropdownMenu open>
         <DropdownMenuTrigger>

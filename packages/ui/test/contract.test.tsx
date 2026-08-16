@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import { Dialog, DialogTrigger } from "../src/dialog.jsx";
 import { DropdownMenu, DropdownMenuIcon, DropdownMenuTrigger } from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
 import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
@@ -28,6 +29,7 @@ import { Separator } from "../src/separator.jsx";
 import { Slot } from "../src/slot.jsx";
 import { Spinner } from "../src/spinner.jsx";
 import { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from "../src/switch.jsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../src/tabs.jsx";
 import { Toggle } from "../src/toggle.jsx";
 import { Tooltip, TooltipTrigger } from "../src/tooltip.jsx";
 import { cleanup, mount } from "./dom.jsx";
@@ -216,6 +218,49 @@ const PRIMITIVES = [
           <RadioGroupItemLabel {...props} />
         </RadioGroupItem>
       </RadioGroup>
+    ),
+  },
+  {
+    name: "DialogTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Dialog>
+        <DialogTrigger {...props} />
+      </Dialog>
+    ),
+  },
+  {
+    name: "Tabs",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Tabs {...props} />,
+  },
+  {
+    name: "TabsList",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Tabs>
+        <TabsList as="p" {...props} />
+      </Tabs>
+    ),
+  },
+  {
+    name: "TabsTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Tabs>
+        <TabsList>
+          <TabsTrigger value="вид" {...props} />
+        </TabsList>
+      </Tabs>
+    ),
+  },
+  {
+    name: "TabsContent",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Tabs value="вид">
+        <TabsContent as="p" value="вид" {...props} />
+      </Tabs>
     ),
   },
   {

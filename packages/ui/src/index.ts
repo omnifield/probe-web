@@ -27,6 +27,23 @@ export {
   type CheckboxProps,
 } from "./checkbox.jsx";
 export {
+  Dialog,
+  DialogClose,
+  type DialogCloseProps,
+  DialogContent,
+  type DialogContentComponentProps,
+  DialogDescription,
+  type DialogDescriptionComponentProps,
+  DialogOverlay,
+  type DialogOverlayComponentProps,
+  DialogPortal,
+  type DialogProps,
+  DialogTitle,
+  type DialogTitleComponentProps,
+  DialogTrigger,
+  type DialogTriggerComponentProps,
+} from "./dialog.jsx";
+export {
   DropdownMenu,
   DropdownMenuArrow,
   type DropdownMenuArrowComponentProps,
@@ -160,6 +177,18 @@ export {
   SwitchThumb,
   type SwitchThumbComponentProps,
 } from "./switch.jsx";
+export {
+  Tabs,
+  TabsContent,
+  type TabsContentComponentProps,
+  TabsIndicator,
+  type TabsIndicatorComponentProps,
+  TabsList,
+  type TabsListComponentProps,
+  type TabsProps,
+  TabsTrigger,
+  type TabsTriggerComponentProps,
+} from "./tabs.jsx";
 export { Toggle, type ToggleProps } from "./toggle.jsx";
 export {
   Tooltip,

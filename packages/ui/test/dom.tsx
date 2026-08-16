@@ -8,6 +8,22 @@
 import type { JSX } from "solid-js";
 import { render } from "solid-js/web";
 
+/**
+ * Заглушка `ResizeObserver` — его нет в JSDOM, а `@kobalte/core` его требует.
+ *
+ * Нужна ровно одному примитиву: полоска-указатель вкладок следит за размером активной вкладки
+ * и без наблюдателя падает на монтировании. Заглушка ничего не измеряет и не должна: размеры
+ * в JSDOM всё равно нулевые, а предмет проверок здесь — узлы, зацепки и связи, а не геометрия.
+ * Геометрию проверяют глазами на стенде, и это работа зоны `skin`.
+ */
+if (!("ResizeObserver" in globalThis)) {
+  (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  };
+}
+
 /** Контейнеры и их деструкторы за текущий тест — снимаются в `cleanup()`. */
 const mounted: Array<() => void> = [];
 

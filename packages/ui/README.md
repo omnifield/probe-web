@@ -51,6 +51,8 @@
 | `Select*` | составной, 10 частей | `Select.*` |
 | `Popover*` | составной, 9 частей | `Popover.*` |
 | `DropdownMenu*` | составной, 19 частей | `DropdownMenu.*` |
+| `Dialog*` | составной, 8 частей | `Dialog.*` |
+| `Tabs*` | составной, 5 частей | `Tabs.*` |
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
@@ -103,6 +105,8 @@
 | составной `Popover` | `popover-trigger`, `popover-anchor`, `popover-content`, `popover-arrow`, `popover-title`, `popover-description`, `popover-close` |
 | составной `Tooltip` | `tooltip-trigger`, `tooltip-content`, `tooltip-arrow` |
 | составной `DropdownMenu` | `dropdown-menu-trigger`, `dropdown-menu-icon`, `dropdown-menu-content`, `dropdown-menu-arrow`, `dropdown-menu-item`, `dropdown-menu-item-label`, `dropdown-menu-item-description`, `dropdown-menu-item-indicator`, `dropdown-menu-checkbox-item`, `dropdown-menu-radio-group`, `dropdown-menu-radio-item`, `dropdown-menu-group`, `dropdown-menu-group-label`, `dropdown-menu-separator`, `dropdown-menu-sub-trigger`, `dropdown-menu-sub-content` |
+| составной `Dialog` | `dialog-trigger`, `dialog-overlay`, `dialog-content`, `dialog-title`, `dialog-description`, `dialog-close` |
+| составной `Tabs` | `tabs`, `tabs-list`, `tabs-trigger`, `tabs-indicator`, `tabs-content` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
@@ -110,7 +114,7 @@
 `Slot` зацепки не ставит **намеренно**: своего имени у него нет, семантику узла задаёт
 потребитель через `as`. Обещать за него нечего — и это часть того же обязательства.
 
-**Зацепок `popover`, `tooltip` и `dropdown-menu` не существует, и это тоже намеренно:** их корни узла не
+**Зацепок `popover`, `tooltip`, `dropdown-menu` и `dialog` не существует, и это тоже намеренно:** их корни узла не
 рендерят, а зацепка обязана быть НА узле. Панель ловится по `popover-content`, кнопка — по
 `popover-trigger`. То же у порталов и у `DropdownMenuSub`: они переносят содержимое или заводят
 контекст, но своего узла не приводят.
@@ -308,6 +312,36 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
 фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
+
+## Модальное окно и вкладки
+
+`Dialog` — не «большой `Popover`», и разница не в размере:
+
+| | `Popover` | `Dialog` |
+|---|---|---|
+| место | относительно зацепки, считает floating-ui | задаёт CSS потребителя |
+| позиционер | есть (отступление от 1-to-1) | **нет** — 1-to-1 не нарушено |
+| страница под ним | продолжает работать | заперта: фокус внутри, прокрутка остановлена |
+| подложка | нет | `dialog-overlay`, отдельным узлом |
+
+Подложка — часть, а не псевдоэлемент окна: у неё своё состояние появления, свой переход и свой
+клик «мимо окна». Затемнения по умолчанию у неё нет — без правил CSS она невидима, и это
+осознанно: кит остаётся безголовым и здесь.
+
+Служебный стиль у окна и подложки ровно один — `pointer-events: auto`: страница под окном
+объявлена недоступной для указателя, а они обязаны остаться нажимаемыми.
+
+**`Tabs` — единственный составной этой волны, у которого зацепка есть и у КОРНЯ:** вкладки не
+всплывают и никуда не переносятся, это кусок страницы.
+
+- **Неактивная панель размонтирована, а не спрятана.** Для оформления это важно: её нельзя ни
+  анимировать, ни измерить, потому что её нет. Нужно сохранить состояние внутри или сделать
+  переход — `forceMount` на панели.
+- **`tabs-indicator` несёт измеренные размеры активной вкладки** — их считает kobalte; цвет,
+  толщину и скорость перехода пишет оформление. Полоска необязательна: активность видна по
+  `[data-selected]` на самой вкладке.
+- **`activationMode`** — не косметика: `automatic` переключает вкладку сразу при переходе
+  стрелками, `manual` ждёт `Enter`. Для тяжёлого содержимого верно второе.
 
 ## Флажок, переключатель, группа: почему частей много
 
