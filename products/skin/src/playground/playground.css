@@ -1,0 +1,111 @@
+/* Оформление САМОГО СТЕНДА — раскладка страницы и его собственные кнопки.
+
+   Это НЕ оформление кита: наше производство лежит в `src/skin/` и приезжает потребителю.
+   Разделение несущее — сняв оформление кита, стенд обязан остаться читаемым, иначе
+   переключателем нельзя будет пользоваться.
+
+   Инвариант тот же, что и у поставки: ни одного литерального цвета — только токены слоя
+   `style`, поэтому смена пары красит стенд целиком. */
+
+.page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.page__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.page__head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.page__lead {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.page__lead code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  color: var(--foreground);
+}
+
+.page__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.page__note {
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+/* Кнопки стенда живут своей жизнью: они обязаны работать и тогда, когда оформление кита снято. */
+.control {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--card);
+  color: var(--card-foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--ease-out);
+}
+
+.control:hover {
+  border-color: var(--ring);
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.stand {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--card);
+}
+
+.stand h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--card-foreground);
+}
+
+.stand__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stand__row--stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  align-items: start;
+}

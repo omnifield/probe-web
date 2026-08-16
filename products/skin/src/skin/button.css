@@ -1,0 +1,65 @@
+/* Кнопка — подпуть `@probe-web/skin/button.css`. Требует `base.css` рядом (объявление слоя).
+
+   ЦЕПЛЯЕМСЯ ЗА `[data-slot="button"]`, а не за класс и не за структуру DOM: имена классов и
+   разметка — внутреннее дело кита и меняются без предупреждения, а `data-slot` объявлен его
+   контрактом (kb:PROBEWEB-4, kb:PROBEWEB-11). Атрибут ставится китом ДО спреда, поэтому
+   потребитель может его перебить — это его право, а не наша поломка. */
+
+@layer skin {
+  [data-slot="button"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--radius-xs);
+
+    padding-block: var(--radius-sm);
+    padding-inline: var(--radius-lg);
+
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.25;
+    letter-spacing: var(--tracking-normal);
+
+    cursor: pointer;
+
+    /* Длительность и кривая — тоже токены: движение обязано быть согласованным с первого
+       компонента, иначе каждый примитив анимируется по-своему. */
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="button"]:hover:not(:disabled) {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  /* `:focus-visible`, а не `:focus`: норма отдаёт решение «рисовать ли кольцо» эвристике
+     пользовательского агента (Selectors 4, §9.4), и мышиный клик кольцо не зажигает.
+     Индикатор обязателен — WCAG 2.2, 2.4.7 Focus Visible (AA). */
+  [data-slot="button"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  [data-slot="button"]:disabled {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  /* Уважение системной настройки: норма допускает УБРАТЬ или ЗАМЕНИТЬ движение
+     (Media Queries 5, §12.1) — здесь убираем, заменять нечего. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="button"] {
+      transition: none;
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@probe-web/skin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Зона skin: готовые оформления для безголового кита ui. Приватная — пока стоит в products/, в реестр не едет (kb:PROBEWEB-5).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./base.css": "./src/skin/base.css",
+    "./button.css": "./src/skin/button.css",
+    "./field.css": "./src/skin/field.css",
+    "./skin.css": "./src/skin/skin.css"
+  },
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort --host 0.0.0.0",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@omnifield/probe-web-runtime": "file:../../packages/runtime",
+    "@omnifield/probe-web-style": "file:../../packages/style",
+    "@omnifield/probe-web-ui": "file:../../packages/ui",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "file:../../packages/build",
+    "@omnifield/probe-web-lint": "file:../../packages/lint",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

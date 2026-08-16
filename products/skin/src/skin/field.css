@@ -1,0 +1,84 @@
+/* Поле — подпуть `@probe-web/skin/field.css`. Требует `base.css` рядом (объявление слоя).
+
+   Семейство поля в ките — шесть зацепок: `field` (корень), `label`, `input`, `textarea`,
+   `field-description`, `field-error`. Одеваем все шесть: полуодетое семейство выглядит как
+   поломка, а не как выбор. */
+
+@layer skin {
+  [data-slot="field"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--radius-xs);
+    font-family: var(--font-sans);
+  }
+
+  [data-slot="label"] {
+    color: var(--foreground);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  [data-slot="input"],
+  [data-slot="textarea"] {
+    padding-block: var(--radius-sm);
+    padding-inline: var(--radius-md);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--input);
+    color: var(--foreground);
+
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.4;
+
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="textarea"] {
+    min-height: calc(var(--radius-3xl) * 2);
+    resize: vertical;
+  }
+
+  [data-slot="input"]:focus-visible,
+  [data-slot="textarea"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
+  [data-slot="input"]:disabled,
+  [data-slot="textarea"]:disabled {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  /* Недопустимое значение помечено НЕ ТОЛЬКО цветом рамки: сообщение об ошибке несёт текст,
+     иначе смысл передаётся одним цветом — WCAG 2.2, 1.4.1 Use of Color (A). */
+  [data-slot="input"][data-invalid],
+  [data-slot="textarea"][data-invalid] {
+    border-color: var(--destructive);
+  }
+
+  [data-slot="field-description"] {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  [data-slot="field-error"] {
+    color: var(--destructive);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="input"],
+    [data-slot="textarea"] {
+      transition: none;
+    }
+  }
+}
