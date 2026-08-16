@@ -28,6 +28,10 @@ export default defineConfig({
           environment: "node",
           include: [
             "test/tokens.test.ts",
+            "test/oklch.test.ts",
+            "test/contrast.test.ts",
+            "test/scale.test.ts",
+            "test/dimension.test.ts",
             "test/base-css.test.ts",
             "test/pack.test.ts",
             "test/types.test.ts",

@@ -1,32 +1,62 @@
-// Сборка CSS-артефактов пакета. Запускается ПОСЛЕ `tsc` — читает уже собранные токены,
-// а не исходник: так генератор и рантайм-инжект берут значения из одного и того же модуля.
+// Сборка CSS-артефактов пакета. Запускается ПОСЛЕ `tsc` — читает уже собранные модули,
+// а не исходники: так генератор и рантайм-инжект берут значения из одного и того же места.
 //
-// `themes.css` не лежит в репозитории исходником намеренно. Файл с теми же значениями
-// рядом с `tokens.ts` — это вторая копия правды, и она разъезжается: тест на синхронность
-// ловит расхождение, но чинить его приходится руками при каждой правке темы. Генерация
-// убирает саму возможность расхождения.
+// Что генерируется и почему:
+//   • `themes.css` — значения ступеней дефолтной пары. Файл с теми же числами рядом с
+//     `tokens.ts` был бы второй копией правды, и она разъезжается.
+//   • `base.css` — ручная часть (`src/css/base.css`) ПЛЮС три блока, собранные из данных:
+//     производные размерные шкалы, семантические роли, устаревшие псевдонимы. Перечни ступеней
+//     и ролей уже существуют массивами в TS; переписать их сюда текстом значило бы завести
+//     список, который надо синхронизировать руками при каждой правке.
+//
+// Правка `dist` бесполезна: следующая сборка перезапишет.
 
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = resolve(root, "dist/css");
+const load = (name) => import(pathToFileURL(resolve(root, `dist/${name}.js`)).href);
 
-const { DEFAULT_DARK, DEFAULT_LIGHT, themeToCss } = await import(
-  pathToFileURL(resolve(root, "dist/tokens.js")).href
-);
+const { DEFAULT_DARK, DEFAULT_LIGHT, themeToCss } = await load("tokens");
+const { derivedCss } = await load("dimension");
+const { legacyCss, rolesCss } = await load("roles");
 
 await mkdir(outDir, { recursive: true });
 
-await copyFile(resolve(root, "src/css/base.css"), resolve(outDir, "base.css"));
+const generated = (what) =>
+  `/* ─────────────────────────────────────────────────────────────────────────────
+   ${what}
+   СГЕНЕРИРОВАНО \`scripts/build-css.mjs\`. Править бесполезно — перезапишет.
+   ───────────────────────────────────────────────────────────────────────────── */`;
+
+const base = [
+  await readFile(resolve(root, "src/css/base.css"), "utf8"),
+  generated("Размерные шкалы: производные от семян, ось плотности (`src/dimension.ts`)."),
+  derivedCss(),
+  generated(
+    "Семантические роли: роль ССЫЛАЕТСЯ на ступень, а не хранит цвет (`src/roles.ts`).",
+  ),
+  rolesCss(),
+  generated(
+    "УСТАРЕВШИЕ имена прежнего плоского набора, выраженные через роли (`src/roles.ts`).\n   Удаление — мажорным поднятием версии, не раньше.",
+  ),
+  legacyCss(),
+].join("\n\n");
+
+await writeFile(resolve(outDir, "base.css"), `${base}\n`, "utf8");
 
 const themes = `/* @omnifield/probe-web-style — дефолтная пара тем, подпуть
    \`@omnifield/probe-web-style/themes.css\`. Zero-config: \`:root\` — светлый режим,
    \`.dark\` — тёмный; \`data-theme\` остаётся кастомным палитрам (\`registerTheme()\`).
 
+   Здесь только ЗНАЧЕНИЯ СТУПЕНЕЙ. Роли, которые на эти ступени ссылаются, живут в
+   \`base.css\`: они одинаковы для всех тем, и копия в каждой палитре означала бы, что
+   разделение шкалы и роли объявлено, но не сделано.
+
    ФАЙЛ СГЕНЕРИРОВАН из \`src/tokens.ts\` (\`scripts/build-css.mjs\`) — править его
-   бесполезно, следующая сборка перезапишет. Значения живут в TS. */
+   бесполезно, следующая сборка перезапишет. Значения считаются из семян при сборке. */
 
 ${themeToCss(":root", DEFAULT_LIGHT)}
 
