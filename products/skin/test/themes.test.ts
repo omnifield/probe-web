@@ -31,6 +31,20 @@ const INHERITS_COLOR: Record<string, string> = {
     "и вместе с темой меняется через наследование",
 };
 
+/**
+ * ЧУЖИЕ переменные, на которые оформлению разрешено опираться, и чем это оправдано.
+ *
+ * Это не токены слоя `style` и не наши: их выставляет позиционировщик kobalte на самом узле в
+ * рантайме. Ни кит, ни база их не обещали, поэтому каждая записана поимённо с причиной, а
+ * отдельная проба требует у них запасного значения.
+ */
+const FOREIGN_TOKENS: Record<string, string> = {
+  "--kb-popper-anchor-width":
+    "ширина кнопки-якоря: панель списка обязана совпадать с ней по ширине, иначе читается как съехавшая",
+  "--kb-popper-content-available-height":
+    "сколько места осталось до края экрана: без этого длинный список уезжает за пределы окна",
+};
+
 /** Токен различается между парами, если различаются значения на конце его цепочки. */
 function differsBetweenThemes(name: string): boolean {
   const a = resolveToken(name, ":root");
@@ -83,10 +97,22 @@ describe("обе темы дают разный вид", () => {
       // недействительным, и браузер молча берёт свой дефолт. Ровно поэтому проверяем текстом.
       const SEEDS = new Set(["--radius", "--space", "--font-size", "--control-height", "--border-width", "--tracking", "--density"]);
       const unknown = [...usedTokens(file.text)].filter(
-        (name) => !roles.has(name) && !light.has(name) && !SEEDS.has(name),
+        (name) =>
+          !roles.has(name) && !light.has(name) && !SEEDS.has(name) && !(name in FOREIGN_TOKENS),
       );
 
       expect(unknown, `токены, которых нет в слое style (${file.name})`).toEqual([]);
+    });
+
+    it(`${file.name}: у каждой чужой переменной есть запасное значение`, () => {
+      // Чужая переменная приходит извне нашей поставки и в любой момент может исчезнуть — её
+      // автор нам ничего не обещал. Без запасного значения такое исчезновение делает свойство
+      // недействительным, и вид ломается молча. С запасным — деградирует предсказуемо.
+      const naked = Object.keys(FOREIGN_TOKENS)
+        .filter((name) => file.text.includes(name))
+        .filter((name) => !new RegExp(`var\\(\\s*${name}\\s*,`).test(file.text));
+
+      expect(naked, `чужие переменные без фолбэка в ${file.name}`).toEqual([]);
     });
 
     it(`${file.name}: не цепляется за имена, объявленные устаревшими`, () => {

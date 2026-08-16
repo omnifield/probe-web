@@ -66,28 +66,55 @@
     white-space: nowrap;
   }
 
-  /* Значка нет в разметке — кит его не рисует, как и кольцо спиннера. Рисуем стрелку сами
-     границами: собственного набора иконок зона не привозит, пока нет решения о их поставке. */
+  /* ЗНАЧОК УЖЕ НЕ ПУСТ, и это выяснилось только на живой странице: kobalte кладёт внутрь
+     символ `▼` по умолчанию. Первая редакция чертила поверх него собственный шеврон
+     границами — на экране складывались обе фигуры сразу, и выходил залитый обрубок со
+     «хвостом». Разбор CSS такого не ловит: текст правил безупречен, а лишний глиф приходит
+     из разметки.
+
+     Поэтому здесь мы значок НЕ рисуем, а оформляем: задаём место, кегль, цвет и поворот при
+     раскрытии. Потребитель, передавший свой значок вместо умолчания, получит те же правила —
+     они про контейнер, а не про фигуру. */
   [data-slot="select-icon"] {
-    display: inline-block;
-    inline-size: 0.5em;
-    block-size: 0.5em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
 
-    border-inline-end: var(--border-width-2) solid currentColor;
-    border-block-end: var(--border-width-2) solid currentColor;
+    inline-size: 1em;
+    block-size: 1em;
 
-    /* Стрелка вниз: квадрат из двух границ, повёрнутый на 45°, приподнят на свою четверть. */
-    transform: translateY(-25%) rotate(45deg);
-    transition: transform var(--motion-fast) var(--ease-out);
+    color: var(--text-muted);
+    font-size: 0.7em;
+    line-height: var(--leading-none);
+
+    transition:
+      transform var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="select-trigger"]:hover:not([data-disabled]) [data-slot="select-icon"] {
+    color: var(--text);
   }
 
   [data-slot="select-trigger"][data-expanded] [data-slot="select-icon"] {
-    transform: translateY(25%) rotate(-135deg);
+    transform: rotate(180deg);
   }
 
   [data-slot="select-content"] {
     z-index: 1;
     overflow: hidden;
+
+    /* Ширина панели — по якорю, а не по содержимому: панель уже или шире кнопки читается как
+       съехавшая. Значение даёт позиционировщик kobalte своей переменной; она не наша и китом
+       не обещана, поэтому подстрахована `min-inline-size` по факту содержимого. */
+    min-inline-size: var(--kb-popper-anchor-width, max-content);
+
+    /* Зазор между кнопкой и панелью. Просился пропом позиционировщика (`gutter` у kobalte),
+       но кит его наружу НЕ пробрасывает — уведомление овнеру `ui` отправлено. Пока отступ
+       задаётся здесь: позиционировщик двигает панель трансформацией, и внешний отступ с ним
+       не спорит, а прибавляется. */
+    margin-block-start: var(--space-2);
 
     border: var(--border-width-1) solid var(--border);
     border-radius: var(--radius-md);
@@ -98,8 +125,12 @@
   }
 
   [data-slot="select-listbox"] {
-    /* Высота панели выведена из высоты строки списка: плотный режим сожмёт и её. */
-    max-block-size: calc(var(--control-height-md) * 6);
+    /* Высота панели выведена из высоты строки списка: плотный режим сожмёт и её. Верхняя
+       граница — сколько места реально осталось на экране (переменная позиционировщика). */
+    max-block-size: min(
+      calc(var(--control-height-md) * 6),
+      var(--kb-popper-content-available-height, 100vh)
+    );
     overflow-y: auto;
 
     margin: 0;
