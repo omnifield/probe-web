@@ -16,19 +16,23 @@
 // переопределением переменных в ЛЮБОМ поддереве, и панель стенда остаётся в своём виде, что бы
 // ни было накручено рядом.
 
-import { buildScale } from "@omnifield/probe-web-style";
+import { buildScale, registerTheme } from "@omnifield/probe-web-style";
 import { createSignal, For, onCleanup, Show } from "solid-js";
 
 // `?inline` — Vite отдаёт содержимое строкой и НЕ подключает его к странице сам. У потребителя
 // форма другая: обычный `import "@probe-web/skin/skin.css"` один раз на бутстрапе. Импорт снять
 // живьём нельзя, а стенд обязан показать именно снятие.
 import skinCss from "../skin/skin.css?inline";
+import { TWITTER_THEME, TWITTER_THEME_NAME } from "../theme/twitter.js";
 import { SPECIMENS } from "./specimens.jsx";
 
 const STYLE_ID = "probe-web-skin";
 
 /** Ступени радиуса. Значение уезжает в `--radius`, шкала `--radius-*` считается из него в `style`. */
 const RADIUS_STEPS = [
+  // Первая ступень ничего не задаёт: скругление приходит из палитры, и «из темы» показывает
+  // именно её значение, а не наше представление о нём.
+  { id: "theme", label: "из темы", value: null },
   { id: "none", label: "нет", value: "0rem" },
   { id: "small", label: "малый", value: "0.25rem" },
   { id: "medium", label: "средний", value: "0.5rem" },
@@ -107,17 +111,40 @@ function useMode() {
   };
 }
 
+/**
+ * Палитра зоны. Регистрируется один раз и включается атрибутом `data-theme` — тем же способом,
+ * которым её включит потребитель. Стенд не подменяет значения руками: он ставит палитру.
+ */
+function usePalette() {
+  registerTheme(TWITTER_THEME);
+
+  const root = document.documentElement;
+  const [on, setOn] = createSignal(true);
+  root.dataset.theme = TWITTER_THEME_NAME;
+
+  return {
+    on,
+    toggle: () => {
+      const next = !on();
+      setOn(next);
+      if (next) root.dataset.theme = TWITTER_THEME_NAME;
+      else delete root.dataset.theme;
+    },
+  };
+}
+
 export function App() {
   const skin = useSkin();
   const mode = useMode();
+  const palette = usePalette();
 
-  const [radius, setRadius] = createSignal<string>("medium");
+  const [radius, setRadius] = createSignal<string>("theme");
   const [accent, setAccent] = createSignal<string>("default");
   const [density, setDensity] = createSignal<string>("normal");
   const [view, setView] = createSignal<ViewMode>("main");
   const [tab, setTab] = createSignal<string>("all");
 
-  const radiusValue = () => RADIUS_STEPS.find((s) => s.id === radius())?.value ?? "0.5rem";
+  const radiusValue = () => RADIUS_STEPS.find((s) => s.id === radius())?.value ?? null;
   const densityValue = () => DENSITIES.find((d) => d.id === density())?.value ?? "1";
   const shown = () => (tab() === "all" ? SPECIMENS : SPECIMENS.filter((s) => s.id === tab()));
 
@@ -139,11 +166,16 @@ export function App() {
     );
   };
 
-  const stageVars = () => ({
-    "--radius": radiusValue(),
-    "--density": densityValue(),
-    ...brandVars(),
-  });
+  const stageVars = (): Record<string, string> => {
+    const radiusOverride = radiusValue();
+    return {
+      // Ступень «из темы» не задаёт переменную вовсе: значение приходит из палитры, и подставить
+      // сюда её копию значило бы завести второй источник правды.
+      ...(radiusOverride === null ? {} : { "--radius": radiusOverride }),
+      "--density": densityValue(),
+      ...brandVars(),
+    };
+  };
 
   return (
     <div class="shell">
@@ -172,7 +204,23 @@ export function App() {
         </div>
 
         <div class="panel__group">
-          <span class="panel__label">Тема</span>
+          <span class="panel__label">Палитра</span>
+          <div class="panel__row">
+            <button class="chip" type="button" aria-pressed={palette.on()} onClick={palette.toggle}>
+              Twitter
+            </button>
+            <button class="chip" type="button" aria-pressed={!palette.on()} onClick={palette.toggle}>
+              базовая
+            </button>
+          </div>
+          <p class="panel__hint">
+            Три семени и форма скругления. Тёмная пара смягчена: у источника фон чистый чёрный,
+            и это ровно то, что бьёт по глазам.
+          </p>
+        </div>
+
+        <div class="panel__group">
+          <span class="panel__label">Режим</span>
           <div class="panel__row">
             <button class="chip" type="button" aria-pressed={!mode.dark()} onClick={mode.toggle}>
               светлая
