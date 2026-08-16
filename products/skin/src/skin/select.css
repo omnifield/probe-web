@@ -1,0 +1,167 @@
+/* Список выбора — подпуть `@probe-web/skin/select.css`. Требует `base.css`.
+
+   Составной примитив: девять зацепок — `select` (корень), `select-trigger`, `select-value`,
+   `select-icon`, `select-content`, `select-listbox`, `select-item`, `select-item-label`,
+   `select-item-indicator`. Одеваем все девять.
+
+   Состояния приходят атрибутами kobalte и цепляются напрямую: `data-expanded` (раскрыт),
+   `data-highlighted` (подсвечен клавиатурой или указателем), `data-selected` (выбран),
+   `data-disabled`. Ни одного класса и ни одной опоры на структуру DOM. */
+
+@layer skin {
+  [data-slot="select"] {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+  }
+
+  [data-slot="select-trigger"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-3);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--element);
+    color: var(--text);
+
+    font: inherit;
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    text-align: start;
+
+    cursor: pointer;
+
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="select-trigger"]:hover:not([data-disabled]) {
+    border-color: var(--border-strong);
+  }
+
+  [data-slot="select-trigger"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: calc(var(--border-width-1) * -1);
+  }
+
+  [data-slot="select-trigger"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Выбранное значение. Цвет не назначается: он наследуется от кнопки-триггера, и отключённый
+     триггер приглушает значение заодно — двух источников правды не заводим. */
+  [data-slot="select-value"] {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Значка нет в разметке — кит его не рисует, как и кольцо спиннера. Рисуем стрелку сами
+     границами: собственного набора иконок зона не привозит, пока нет решения о их поставке. */
+  [data-slot="select-icon"] {
+    display: inline-block;
+    inline-size: 0.5em;
+    block-size: 0.5em;
+
+    border-inline-end: var(--border-width-2) solid currentColor;
+    border-block-end: var(--border-width-2) solid currentColor;
+
+    /* Стрелка вниз: квадрат из двух границ, повёрнутый на 45°, приподнят на свою четверть. */
+    transform: translateY(-25%) rotate(45deg);
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="select-trigger"][data-expanded] [data-slot="select-icon"] {
+    transform: translateY(25%) rotate(-135deg);
+  }
+
+  [data-slot="select-content"] {
+    z-index: 1;
+    overflow: hidden;
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-md);
+  }
+
+  [data-slot="select-listbox"] {
+    /* Высота панели выведена из высоты строки списка: плотный режим сожмёт и её. */
+    max-block-size: calc(var(--control-height-md) * 6);
+    overflow-y: auto;
+
+    margin: 0;
+    padding: var(--space-1);
+
+    list-style: none;
+  }
+
+  [data-slot="select-item"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+
+    padding-block: var(--space-2);
+    padding-inline: var(--space-2);
+
+    border-radius: var(--radius-sm);
+
+    color: var(--text);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* `data-highlighted` — одна зацепка и для клавиатуры, и для указателя: kobalte сводит их
+     сам, поэтому `:hover` здесь не нужен и был бы вторым источником правды. */
+  [data-slot="select-item"][data-highlighted] {
+    background-color: var(--element-hover);
+  }
+
+  [data-slot="select-item"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot="select-item-label"] {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Отметка выбранного — галочка из двух границ. Выбранность передана НЕ только галочкой:
+     сам элемент несёт `data-selected`, который озвучивает вспомогательная технология
+     (WCAG 2.2, 1.4.1). */
+  [data-slot="select-item-indicator"] {
+    inline-size: 0.35em;
+    block-size: 0.6em;
+
+    border-inline-end: var(--border-width-2) solid currentColor;
+    border-block-end: var(--border-width-2) solid currentColor;
+
+    transform: translateY(-15%) rotate(45deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="select-trigger"],
+    [data-slot="select-icon"] {
+      transition: none;
+    }
+  }
+}

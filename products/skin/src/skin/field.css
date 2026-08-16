@@ -8,51 +8,63 @@
   [data-slot="field"] {
     display: flex;
     flex-direction: column;
-    gap: var(--radius-xs);
+    gap: var(--space-2);
     font-family: var(--font-sans);
   }
 
   [data-slot="label"] {
-    color: var(--foreground);
-    font-size: 0.875rem;
-    line-height: 1.4;
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
   }
 
   [data-slot="input"],
   [data-slot="textarea"] {
-    padding-block: var(--radius-sm);
-    padding-inline: var(--radius-md);
+    padding-inline: var(--space-3);
 
-    border: 1px solid var(--border);
+    border: var(--border-width-1) solid var(--border);
     border-radius: var(--radius-md);
 
-    background-color: var(--input);
-    color: var(--foreground);
+    background-color: var(--element);
+    color: var(--text);
 
     font-family: inherit;
-    font-size: 1rem;
-    line-height: 1.4;
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
 
     transition:
       border-color var(--motion-fast) var(--ease-out),
       background-color var(--motion-fast) var(--ease-out);
   }
 
+  [data-slot="input"] {
+    block-size: var(--control-height-md);
+  }
+
   [data-slot="textarea"] {
-    min-height: calc(var(--radius-3xl) * 2);
+    /* Высота выведена из высоты контрола, а не назначена числом: плотность подвинет обе
+       одинаково, и поле не разъедется с соседней кнопкой. */
+    min-block-size: calc(var(--control-height-md) * 2);
+    padding-block: var(--space-2);
     resize: vertical;
+  }
+
+  [data-slot="input"]:hover:not(:disabled),
+  [data-slot="textarea"]:hover:not(:disabled) {
+    border-color: var(--border-strong);
   }
 
   [data-slot="input"]:focus-visible,
   [data-slot="textarea"]:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 1px;
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: calc(var(--border-width-1) * -1);
   }
 
   [data-slot="input"]:disabled,
   [data-slot="textarea"]:disabled {
-    background-color: var(--muted);
-    color: var(--muted-foreground);
+    background-color: var(--element);
+    color: var(--text-muted);
     cursor: not-allowed;
   }
 
@@ -60,19 +72,19 @@
      иначе смысл передаётся одним цветом — WCAG 2.2, 1.4.1 Use of Color (A). */
   [data-slot="input"][data-invalid],
   [data-slot="textarea"][data-invalid] {
-    border-color: var(--destructive);
+    border-color: var(--danger-border);
   }
 
   [data-slot="field-description"] {
-    color: var(--muted-foreground);
-    font-size: 0.875rem;
-    line-height: 1.4;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
   }
 
   [data-slot="field-error"] {
-    color: var(--destructive);
-    font-size: 0.875rem;
-    line-height: 1.4;
+    color: var(--danger-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
   }
 
   @media (prefers-reduced-motion: reduce) {

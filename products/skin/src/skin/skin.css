@@ -10,3 +10,7 @@
 @import "./base.css";
 @import "./button.css";
 @import "./field.css";
+@import "./select.css";
+@import "./separator.css";
+@import "./spinner.css";
+@import "./toggle.css";

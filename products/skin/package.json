@@ -9,6 +9,10 @@
     "./base.css": "./src/skin/base.css",
     "./button.css": "./src/skin/button.css",
     "./field.css": "./src/skin/field.css",
+    "./select.css": "./src/skin/select.css",
+    "./separator.css": "./src/skin/separator.css",
+    "./spinner.css": "./src/skin/spinner.css",
+    "./toggle.css": "./src/skin/toggle.css",
     "./skin.css": "./src/skin/skin.css"
   },
   "scripts": {

@@ -3,27 +3,33 @@
    ЦЕПЛЯЕМСЯ ЗА `[data-slot="button"]`, а не за класс и не за структуру DOM: имена классов и
    разметка — внутреннее дело кита и меняются без предупреждения, а `data-slot` объявлен его
    контрактом (kb:PROBEWEB-4, kb:PROBEWEB-11). Атрибут ставится китом ДО спреда, поэтому
-   потребитель может его перебить — это его право, а не наша поломка. */
+   потребитель может его перебить — это его право, а не наша поломка.
+
+   ЗНАЧЕНИЯ — ТОЛЬКО РОЛИ слоя `style`, не ступени и не устаревшие псевдонимы. Роль говорит
+   НАЗНАЧЕНИЕ (`--brand-solid` — сплошной акцент, основная кнопка), ступень говорит номер.
+   Взяв ступень напрямую, мы бы зашили решение «какая ступень тут уместна» в оформление, и
+   смена модели цвета в базе прошла бы мимо нас. */
 
 @layer skin {
   [data-slot="button"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--radius-xs);
+    gap: var(--space-2);
 
-    padding-block: var(--radius-sm);
-    padding-inline: var(--radius-lg);
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-4);
 
-    border: 1px solid transparent;
+    border: var(--border-width-1) solid transparent;
     border-radius: var(--radius-md);
 
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+    background-color: var(--brand-solid);
+    color: var(--on-brand-solid);
 
     font-family: var(--font-sans);
-    font-size: 1rem;
-    line-height: 1.25;
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
     letter-spacing: var(--tracking-normal);
 
     cursor: pointer;
@@ -36,22 +42,25 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
+  /* Наведение — СЛЕДУЮЩАЯ СТУПЕНЬ той же роли, а не другой цвет. До появления шкал здесь
+     стоял `--accent`, то есть подмена назначения: наведение красилось фоном, который для
+     наведения не предназначался. */
   [data-slot="button"]:hover:not(:disabled) {
-    background-color: var(--accent);
-    color: var(--accent-foreground);
+    background-color: var(--brand-solid-hover);
   }
 
   /* `:focus-visible`, а не `:focus`: норма отдаёт решение «рисовать ли кольцо» эвристике
      пользовательского агента (Selectors 4, §9.4), и мышиный клик кольцо не зажигает.
-     Индикатор обязателен — WCAG 2.2, 2.4.7 Focus Visible (AA). */
+     Индикатор обязателен — WCAG 2.2, 2.4.7 Focus Visible (AA); роль `--focus-ring` объявлена
+     базой с обещанием контраста 3:1 к фону (1.4.11). */
   [data-slot="button"]:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
   }
 
   [data-slot="button"]:disabled {
-    background-color: var(--muted);
-    color: var(--muted-foreground);
+    background-color: var(--element);
+    color: var(--text-muted);
     cursor: not-allowed;
   }
 

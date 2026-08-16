@@ -1,0 +1,29 @@
+/* Разделитель — подпуть `@probe-web/skin/separator.css`. Требует `base.css`.
+
+   Кит рендерит `<hr>` и ставит `data-orientation` (вертикальную ориентацию kobalte объявляет
+   явно, горизонтальная подразумевается ролью). Цепляемся за ориентацию атрибутом, а не за две
+   разные разметки: разметка одна, различие только в направлении.
+
+   Цвет — роль `--separator`, а не `--border`: у базы это разные ступени, и разделитель по
+   замыслу тише границы элемента. */
+
+@layer skin {
+  [data-slot="separator"] {
+    border: 0;
+    margin: 0;
+    background-color: var(--separator);
+    flex: none;
+  }
+
+  [data-slot="separator"]:not([data-orientation="vertical"]) {
+    block-size: var(--border-width-1);
+    inline-size: 100%;
+  }
+
+  [data-slot="separator"][data-orientation="vertical"] {
+    inline-size: var(--border-width-1);
+    /* Растягивается по высоте соседей, а не задаёт её: высоту решает раскладка потребителя. */
+    align-self: stretch;
+    block-size: auto;
+  }
+}

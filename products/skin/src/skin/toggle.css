@@ -1,0 +1,68 @@
+/* Двухпозиционная кнопка — подпуть `@probe-web/skin/toggle.css`. Требует `base.css`.
+
+   В ките это ОДИН узел `<button aria-pressed>`, а нажатое состояние отдаётся наружу атрибутом
+   `data-pressed` — за него и цепляемся. Отдельного «бегунка» здесь нет и быть не должно:
+   тумблер с бегунком — другой примитив (`Switch`), и в ките его пока нет. */
+
+@layer skin {
+  [data-slot="toggle"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-3);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: transparent;
+    color: var(--text);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-tight);
+
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="toggle"]:hover:not(:disabled) {
+    background-color: var(--element-hover);
+  }
+
+  /* Нажатое состояние — НЕ только цветом: вместе с заливкой уходит граница, а сам
+     `aria-pressed` остаётся у кита и озвучивается вспомогательной технологией.
+     WCAG 2.2, 1.4.1 Use of Color (A). */
+  [data-slot="toggle"][data-pressed] {
+    border-color: transparent;
+    background-color: var(--brand-solid);
+    color: var(--on-brand-solid);
+  }
+
+  [data-slot="toggle"][data-pressed]:hover:not(:disabled) {
+    background-color: var(--brand-solid-hover);
+  }
+
+  [data-slot="toggle"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot="toggle"]:disabled {
+    background-color: var(--element);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="toggle"] {
+      transition: none;
+    }
+  }
+}
