@@ -43,6 +43,8 @@
 | `FieldDescription` | `div` | `TextField.Description` |
 | `FieldError` | `div` | `TextField.ErrorMessage` |
 | `Select*` | составной, 10 частей | `Select.*` |
+| `Popover*` | составной, 9 частей | `Popover.*` |
+| `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
 | `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
@@ -91,12 +93,19 @@
 | `Spinner` | `spinner` |
 | семейство поля | `field`, `label`, `input`, `textarea`, `field-description`, `field-error` |
 | составной `Select` | `select`, `select-trigger`, `select-value`, `select-icon`, `select-content`, `select-listbox`, `select-item`, `select-item-label`, `select-item-indicator` |
+| составной `Popover` | `popover-trigger`, `popover-anchor`, `popover-content`, `popover-arrow`, `popover-title`, `popover-description`, `popover-close` |
+| составной `Tooltip` | `tooltip-trigger`, `tooltip-content`, `tooltip-arrow` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
 
 `Slot` зацепки не ставит **намеренно**: своего имени у него нет, семантику узла задаёт
 потребитель через `as`. Обещать за него нечего — и это часть того же обязательства.
+
+**Зацепок `popover` и `tooltip` не существует, и это тоже намеренно:** их корни узла не
+рендерят, а зацепка обязана быть НА узле. Панель ловится по `popover-content`, кнопка — по
+`popover-trigger`. То же у порталов: `PopoverPortal` и `TooltipPortal` переносят содержимое, но
+своего узла не приводят.
 
 Перечень стережёт проба, а не только эта страница: `test/slot-list.ts` держит имена явным
 списком, выписанным руками, а `test/slots.test.tsx` сверяет его с фактом **с двух сторон** —
@@ -184,6 +193,58 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 позиционирования floating-ui, а слить позиционер с панелью нельзя — `transform` анимации и
 `transform` позиционирования оказались бы на одном узле и затирали бы друг друга. Узел
 приносит сам `@kobalte/core`. Отступление держится явным тестом, а не только этим абзацем.
+
+## Всплывающее: `Popover` и `Tooltip`
+
+```tsx
+<Popover placement="bottom-start" gutter={8}>
+  <PopoverTrigger>Настройки</PopoverTrigger>
+  <PopoverPortal>
+    <PopoverContent>
+      <PopoverArrow />
+      <PopoverTitle>Вид таблицы</PopoverTitle>
+      <PopoverDescription>Порядок и видимость колонок</PopoverDescription>
+      <PopoverClose>Готово</PopoverClose>
+    </PopoverContent>
+  </PopoverPortal>
+</Popover>
+
+<Tooltip openDelay={300} placement="top">
+  <TooltipTrigger as={Button}>Сохранить</TooltipTrigger>
+  <TooltipPortal>
+    <TooltipContent>
+      <TooltipArrow />
+      Ctrl+S
+    </TooltipContent>
+  </TooltipPortal>
+</Tooltip>
+```
+
+- **Опции позиционировщика — на корне**, как и у `Select`: `placement`, `gutter`, `shift`,
+  `flip`. Задержки подсказки (`openDelay`, `closeDelay`) — там же.
+- **`Tooltip` не заменяет `Popover`.** В подсказке нет фокуса, и содержимое, до которого нужно
+  дотянуться (ссылка, кнопка), окажется недостижимым. Интерактивное — это `Popover`.
+- **`TooltipTrigger as={Button}` не добавляет узла**: поведение надевается на существующую
+  кнопку, а не оборачивает её.
+- **`PopoverAnchor` нужен**, только когда панель встаёт не у кнопки: строка таблицы, точка на
+  карте. Без него зацепкой служит сам `PopoverTrigger`, и лишнего узла не появляется.
+
+### Что приезжает со стилем — и почему это не «одетый кит»
+
+Всплывающие части несут инлайновый `style` от `@kobalte/core`. Это **механика, а не вид**, и
+разбирать её приходится потому, что выглядит она как нарушение «ноль стилей»:
+
+| узел | что на нём | зачем |
+|---|---|---|
+| позиционер (`data-popper-positioner`) | координаты | их каждый кадр пишет floating-ui |
+| `*-content` | `position`, `pointer-events`, `--kb-*-transform-origin` | по переменной потребитель пишет анимацию появления |
+| `*-arrow` | позиция, размер, `fill`, `stroke` | **`fill` и `stroke` СЧИТАНЫ с самой панели** |
+
+Последняя строка — главная: цвет стрелке задаёт не кит, а оформление потребителя. Покрасил
+панель — стрелка пошла следом. Это держится тестом (`test/popover.test.tsx`), а не абзацем.
+
+Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
+фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
 
 ## Флажок, переключатель, группа: почему частей много
 

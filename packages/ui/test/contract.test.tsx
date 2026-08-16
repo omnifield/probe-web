@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
+import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
 import {
   RadioGroup,
   RadioGroupItem,
@@ -27,6 +28,7 @@ import { Slot } from "../src/slot.jsx";
 import { Spinner } from "../src/spinner.jsx";
 import { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from "../src/switch.jsx";
 import { Toggle } from "../src/toggle.jsx";
+import { Tooltip, TooltipTrigger } from "../src/tooltip.jsx";
 import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);
@@ -213,6 +215,36 @@ const PRIMITIVES = [
           <RadioGroupItemLabel {...props} />
         </RadioGroupItem>
       </RadioGroup>
+    ),
+  },
+  {
+    // Части, живущие в портале (панель, стрелка, заголовок), проверяются теми же тремя
+    // проверками в своих файлах: общий перечень смотрит в контейнер монтирования, а портал
+    // выносит узлы в конец документа.
+    name: "PopoverTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Popover>
+        <PopoverTrigger {...props} />
+      </Popover>
+    ),
+  },
+  {
+    name: "PopoverAnchor",
+    tag: "div",
+    render: (props: Record<string, unknown>) => (
+      <Popover>
+        <PopoverAnchor {...props} />
+      </Popover>
+    ),
+  },
+  {
+    name: "TooltipTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Tooltip>
+        <TooltipTrigger {...props} />
+      </Tooltip>
     ),
   },
   {

@@ -36,6 +36,17 @@ import {
 } from "../src/checkbox.jsx";
 import { Field, FieldDescription, FieldError, Input, Label, Textarea } from "../src/field.jsx";
 import {
+  Popover,
+  PopoverAnchor,
+  PopoverArrow,
+  PopoverClose,
+  PopoverContent,
+  PopoverDescription,
+  PopoverPortal,
+  PopoverTitle,
+  PopoverTrigger,
+} from "../src/popover.jsx";
+import {
   RadioGroup,
   RadioGroupDescription,
   RadioGroupError,
@@ -71,6 +82,13 @@ import {
   SwitchThumb,
 } from "../src/switch.jsx";
 import { Toggle } from "../src/toggle.jsx";
+import {
+  Tooltip,
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  TooltipTrigger,
+} from "../src/tooltip.jsx";
 import { cleanup, mount, one, press } from "./dom.jsx";
 import { PROMISED_SLOTS } from "./slot-list.js";
 
@@ -142,6 +160,29 @@ function Scene() {
           <RadioGroupItemDescription>до 46</RadioGroupItemDescription>
         </RadioGroupItem>
       </RadioGroup>
+
+      <Popover open>
+        <PopoverTrigger>Настройки</PopoverTrigger>
+        <PopoverAnchor />
+        <PopoverPortal>
+          <PopoverContent>
+            <PopoverArrow />
+            <PopoverTitle>Вид таблицы</PopoverTitle>
+            <PopoverDescription>Порядок колонок</PopoverDescription>
+            <PopoverClose>Готово</PopoverClose>
+          </PopoverContent>
+        </PopoverPortal>
+      </Popover>
+
+      <Tooltip open>
+        <TooltipTrigger>Сохранить</TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>
+            <TooltipArrow />
+            Ctrl+S
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
 
       <Select<string>
         options={CITIES}

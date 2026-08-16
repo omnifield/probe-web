@@ -41,6 +41,25 @@ export {
   type TextareaProps,
 } from "./field.jsx";
 export {
+  Popover,
+  PopoverAnchor,
+  type PopoverAnchorComponentProps,
+  PopoverArrow,
+  type PopoverArrowComponentProps,
+  PopoverClose,
+  type PopoverCloseProps,
+  PopoverContent,
+  type PopoverContentComponentProps,
+  PopoverDescription,
+  type PopoverDescriptionComponentProps,
+  PopoverPortal,
+  type PopoverProps,
+  PopoverTitle,
+  type PopoverTitleComponentProps,
+  PopoverTrigger,
+  type PopoverTriggerComponentProps,
+} from "./popover.jsx";
+export {
   RadioGroup,
   RadioGroupDescription,
   type RadioGroupDescriptionComponentProps,
@@ -103,3 +122,14 @@ export {
   type SwitchThumbComponentProps,
 } from "./switch.jsx";
 export { Toggle, type ToggleProps } from "./toggle.jsx";
+export {
+  Tooltip,
+  TooltipArrow,
+  type TooltipArrowComponentProps,
+  TooltipContent,
+  type TooltipContentComponentProps,
+  TooltipPortal,
+  type TooltipProps,
+  TooltipTrigger,
+  type TooltipTriggerComponentProps,
+} from "./tooltip.jsx";
