@@ -21,6 +21,7 @@ const load = (name) => import(pathToFileURL(resolve(root, `dist/${name}.js`)).hr
 
 const { DEFAULT_DARK, DEFAULT_LIGHT, themeToCss } = await load("tokens");
 const { derivedCss } = await load("dimension");
+const { layerCss } = await load("layer");
 const { legacyCss, rolesCss } = await load("roles");
 
 await mkdir(outDir, { recursive: true });
@@ -35,6 +36,8 @@ const base = [
   await readFile(resolve(root, "src/css/base.css"), "utf8"),
   generated("Размерные шкалы: производные от семян, ось плотности (`src/dimension.ts`)."),
   derivedCss(),
+  generated("Шкала слоёв: объявленный порядок того, что лежит поверх страницы (`src/layer.ts`)."),
+  layerCss(),
   generated(
     "Семантические роли: роль ССЫЛАЕТСЯ на ступень, а не хранит цвет (`src/roles.ts`).",
   ),

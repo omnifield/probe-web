@@ -129,8 +129,15 @@ const round = (value: number, digits: number): number => {
   return Math.round(value * factor) / factor;
 };
 
-/** OKLCH → строка `oklch(L C H)`. Цвет вне охвата отображается в охват перед записью. */
-export function formatOklch(color: Oklch): string {
+/**
+ * OKLCH → строка `oklch(L C H)`. Цвет вне охвата отображается в охват перед записью.
+ *
+ * @param color цвет
+ * @param alpha прозрачность 0…1; при `undefined` (и при 1) записывается непрозрачный цвет —
+ *   `/ 1` в значении ничего не добавляет, но заставляет каждого читателя проверять, не
+ *   полупрозрачная ли это ступень
+ */
+export function formatOklch(color: Oklch, alpha?: number): string {
   const mapped = toSrgbGamut(color);
 
   // Округление способно вытолкнуть из охвата то, что в него только что вписали: значение на
@@ -142,7 +149,8 @@ export function formatOklch(color: Oklch): string {
   // У ахроматичного цвета тон бессмыслен: печатаем 0, иначе одинаковые серые отличаются
   // текстом и diff темы шумит на пустом месте.
   const h = c === 0 ? 0 : round(mapped.h, 2);
-  return `oklch(${round(mapped.l, 4)} ${c} ${h})`;
+  const opacity = alpha === undefined || alpha >= 1 ? "" : ` / ${round(alpha, 3)}`;
+  return `oklch(${round(mapped.l, 4)} ${c} ${h}${opacity})`;
 }
 
 const OKLCH_RE =

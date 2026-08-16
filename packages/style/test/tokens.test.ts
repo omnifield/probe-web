@@ -55,8 +55,9 @@ describe("токен-контракт", () => {
     }
   });
 
-  it("ядро — это СТУПЕНИ: три шкалы по тринадцать плюс ряд графиков", () => {
-    expect(SCALE_TOKENS.length).toBe(SCALE_NAMES.length * 13 + CHART_TOKENS.length);
+  it("ядро — это СТУПЕНИ: три шкалы по 25, ряд графиков и затемнение", () => {
+    // 25 на шкалу = 12 сплошных + 12 альфа + подпись на сплошном.
+    expect(SCALE_TOKENS.length).toBe(SCALE_NAMES.length * 25 + CHART_TOKENS.length + 1);
     expect(PALETTE_TOKENS).toBe(SCALE_TOKENS); // прежнее имя не отвалилось молча
   });
 

@@ -41,14 +41,19 @@ export {
   NO_PROMISE,
   SCALE_STEPS,
   STEP_PURPOSE,
+  buildAlphaScale,
   buildChartScale,
   buildScale,
+  buildScrim,
+  type AlphaKey,
+  type AlphaValues,
   type ContrastPromise,
   type ScaleKey,
   type ScaleMode,
   type ScaleStep,
   type ScaleValues,
 } from "./scale.js";
+export { LAYERS, LAYER_TOKENS, type Layer } from "./layer.js";
 export {
   LEGACY_ALIASES,
   LEGACY_TOKENS,

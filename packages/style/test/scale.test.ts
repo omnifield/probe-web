@@ -23,6 +23,9 @@ import {
 
 const ALL_KEYS: ScaleKey[] = [...SCALE_STEPS.map((step) => `${step}` as ScaleKey), "contrast"];
 
+/** Все имена ступеней, включая альфа-ряд: про каждую обязано быть сказано. */
+const EVERY_STEP: string[] = [...ALL_KEYS, ...SCALE_STEPS.map((step) => `a${step}`)];
+
 describe("модель ступеней", () => {
   const scale = buildScale(DEFAULT_SEEDS.brand, "light");
 
@@ -37,14 +40,18 @@ describe("модель ступеней", () => {
 
   it("про каждую ступень сказано, есть на ней гарантия контраста или нет", () => {
     // Молчание читается как «гарантия есть», и потребитель узнаёт правду от аудитора.
-    const promised = new Set(CONTRAST_PROMISES.map((promise) => promise.step));
+    const promised = new Set<string>(CONTRAST_PROMISES.map((promise) => promise.step));
     const disclaimed = new Set(
       Object.keys(NO_PROMISE).flatMap((range) => {
-        const [from, to] = range.split("-").map(Number);
-        return Array.from({ length: to - from + 1 }, (_, i) => `${from + i}` as ScaleKey);
+        // Диапазон вида `1-5` или `a1-a12`: префикс `a` — альфа-ряд.
+        const [from, to] = range.split("-");
+        const prefix = from.startsWith("a") ? "a" : "";
+        const start = Number(from.replace("a", ""));
+        const end = Number(to.replace("a", ""));
+        return Array.from({ length: end - start + 1 }, (_, i) => `${prefix}${start + i}`);
       }),
     );
-    const silent = ALL_KEYS.filter((key) => !promised.has(key) && !disclaimed.has(key));
+    const silent = EVERY_STEP.filter((key) => !promised.has(key) && !disclaimed.has(key));
     expect(silent, "ступень, про которую не сказано ничего").toEqual([]);
   });
 
@@ -117,9 +124,10 @@ describe("смена бренда — ОДНО значение", () => {
   const changed = (a: ThemeTokens, b: ThemeTokens, prefix: string): string[] =>
     SCALE_TOKENS.filter((token) => token.startsWith(prefix) && a[token] !== b[token]);
 
-  it("перекрашивает шкалу бренда целиком", () => {
-    expect(changed(before.light, after.light, "brand-").length).toBe(13);
-    expect(changed(before.dark!, after.dark!, "brand-").length).toBe(13);
+  it("перекрашивает шкалу бренда целиком — и сплошной ряд, и альфа-ряд", () => {
+    // 12 сплошных + 12 альфа + подпись на сплошном.
+    expect(changed(before.light, after.light, "brand-").length).toBe(25);
+    expect(changed(before.dark!, after.dark!, "brand-").length).toBe(25);
   });
 
   it("не трогает шкалы, которых не касались", () => {
@@ -138,9 +146,9 @@ describe("смена бренда — ОДНО значение", () => {
 });
 
 describe("семантический слой", () => {
-  it("каждая роль ссылается на СУЩЕСТВУЮЩУЮ ступень существующей шкалы", () => {
+  it("каждая роль ссылается на СУЩЕСТВУЮЩИЙ токен шкалы", () => {
     for (const role of ROLES) {
-      expect(SCALE_TOKENS, `роль --${role.name}`).toContain(`${role.scale}-${role.step}`);
+      expect(SCALE_TOKENS, `роль --${role.name}`).toContain(role.token);
     }
   });
 
@@ -155,7 +163,7 @@ describe("семантический слой", () => {
     const css = rolesCss();
     expect(css.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/oklch\(|#[0-9a-f]{3,8}\b/i);
     for (const role of ROLES) {
-      expect(css).toContain(`--${role.name}: var(--${role.scale}-${role.step});`);
+      expect(css).toContain(`--${role.name}: var(--${role.token});`);
     }
   });
 

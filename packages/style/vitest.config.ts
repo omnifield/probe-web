@@ -30,6 +30,8 @@ export default defineConfig({
             "test/tokens.test.ts",
             "test/oklch.test.ts",
             "test/contrast.test.ts",
+            "test/alpha.test.ts",
+            "test/layer.test.ts",
             "test/scale.test.ts",
             "test/dimension.test.ts",
             "test/base-css.test.ts",

@@ -15,8 +15,10 @@ import {
   CHART_SLOTS,
   SCALE_STEPS,
   type ScaleMode,
+  buildAlphaScale,
   buildChartScale,
   buildScale,
+  buildScrim,
 } from "./scale.js";
 import { trace } from "./trace.js";
 
@@ -24,9 +26,14 @@ import { trace } from "./trace.js";
 export const SCALE_NAMES = ["neutral", "brand", "danger"] as const;
 export type ScaleName = (typeof SCALE_NAMES)[number];
 
-/** Токены одной шкалы: двенадцать ступеней + подпись на сплошной ступени. */
+/**
+ * Токены одной шкалы: двенадцать сплошных ступеней, столько же ПАРАЛЛЕЛЬНЫХ альфа-ступеней
+ * и подпись на сплошной ступени. Альфа-ряд не украшение: сплошная ступень закрывает то, что
+ * под ней, и слоем поверх страницы её не выразить.
+ */
 const scaleTokens = (name: ScaleName): string[] => [
   ...SCALE_STEPS.map((step) => `${name}-${step}`),
+  ...SCALE_STEPS.map((step) => `${name}-a${step}`),
   `${name}-contrast`,
 ];
 
@@ -43,6 +50,10 @@ export const CHART_TOKENS = Array.from(
 export const SCALE_TOKENS = [
   ...SCALE_NAMES.flatMap(scaleTokens),
   ...CHART_TOKENS,
+  // Затемнение под модальным слоем. Не ступень и не роль — самостоятельное назначение,
+  // которое от режима НЕ зависит: осветляющая вуаль в тёмной теме подсвечивает то, что
+  // должна убрать из фокуса.
+  "scrim",
 ] as const;
 
 /**
@@ -146,11 +157,16 @@ export function buildThemeTokens(
   for (const name of SCALE_NAMES) {
     const scale = buildScale(seeds[name], mode);
     for (const [key, value] of Object.entries(scale)) tokens[`${name}-${key}`] = value;
+
+    const alpha = buildAlphaScale(seeds[name], mode);
+    for (const [key, value] of Object.entries(alpha)) tokens[`${name}-${key}`] = value;
   }
 
   buildChartScale(seeds.brand, mode).forEach((value, index) => {
     tokens[CHART_TOKENS[index]] = value;
   });
+
+  tokens.scrim = buildScrim(seeds.neutral);
 
   return { ...tokens, ...SHARED_META, ...meta } as ThemeTokens;
 }
