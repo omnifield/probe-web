@@ -131,19 +131,22 @@ describe("управление колонками — в самой таблиц
   it("ряд управления стоит в заголовках, отдельной панели колонок нет", () => {
     const host = mount(() => <App />);
 
-    expect(all(host, '[data-slot="column-menu"]').length).toBeGreaterThan(0);
+    expect(all(host, '[data-slot="table-column-menu"]').length).toBeGreaterThan(0);
+    // Отдельная панель колонок — отвергнутая раскладка, и сторожим ОБА её имени: то, под
+    // которым она когда-то жила, и то, которое она получила бы в нынешнем пространстве имён.
     expect(host.querySelector('[data-slot="column-controls"]')).toBeNull();
+    expect(host.querySelector('[data-slot="table-column-controls"]')).toBeNull();
   });
 
   it("скрытая колонка возвращается из списка скрытых", () => {
     const host = mount(() => <App />);
 
     const before = all(host, '[data-slot="table-header"]').length;
-    press(one(host, '[data-slot="table-header"] [data-slot="column-hide"]'));
+    press(one(host, '[data-slot="table-header"] [data-slot="table-column-hide"]'));
 
     expect(all(host, '[data-slot="table-header"]').length).toBe(before - 1);
 
-    press(one(host, '[data-slot="column-show"]'));
+    press(one(host, '[data-slot="table-column-show"]'));
 
     expect(all(host, '[data-slot="table-header"]').length).toBe(before);
   });
@@ -177,7 +180,7 @@ describe("запрос для бэка — под таблицей", () => {
   it("сортировка уезжает в запрос хвостом", () => {
     const host = mount(() => <App />);
 
-    press(one(host, "[data-slot='table-header'] [data-slot='header-sort']"));
+    press(one(host, "[data-slot='table-header'] [data-slot='table-header-sort']"));
 
     expect(one(host, '[data-stand="sql-text"]').textContent).toContain("ORDER BY");
   });

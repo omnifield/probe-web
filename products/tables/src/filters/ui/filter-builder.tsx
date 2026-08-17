@@ -253,9 +253,9 @@ export function FilterBuilder(props: FilterBuilderProps) {
 
             return (
               <li data-slot="filter-condition">
-                <span data-slot="condition-number">{index() + 1}</span>
+                <span data-slot="filter-condition-number">{index() + 1}</span>
 
-                <div data-slot="condition-body">
+                <div data-slot="filter-condition-body">
                   <ConditionEditor
                     condition={condition}
                     fields={props.fields}
@@ -263,17 +263,17 @@ export function FilterBuilder(props: FilterBuilderProps) {
                   />
                 </div>
 
-                <span data-slot="condition-count">
+                <span data-slot="filter-condition-count">
                   оставляет {count().matched} из {props.rows.length}
                   <Show when={count().unknown > 0}>
                     {/* Трёхзначность выходит на экран ровно здесь: «неизвестно» — это не
                         «не подошло», а «сравнивать не с чем», и лечится оно другим. */}
-                    <span data-slot="condition-unknown">, неизвестно {count().unknown}</span>
+                    <span data-slot="filter-condition-unknown">, неизвестно {count().unknown}</span>
                   </Show>
                 </span>
 
                 <Button
-                  data-slot="condition-remove"
+                  data-slot="filter-condition-remove"
                   aria-label={`Убрать условие ${index() + 1}`}
                   onClick={() => removeCondition(condition.id)}
                 >
@@ -324,7 +324,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
       </div>
 
       <div data-slot="filter-logic" data-active={props.state.logic.mode === "formula" ? "" : undefined}>
-        <label data-slot="logic-toggle">
+        <label data-slot="filter-logic-toggle">
           <input
             type="checkbox"
             checked={props.state.logic.mode === "formula"}
@@ -342,26 +342,26 @@ export function FilterBuilder(props: FilterBuilderProps) {
 
         <Show
           when={props.state.logic.mode === "formula"}
-          fallback={<span data-slot="logic-hint">все условия через И</span>}
+          fallback={<span data-slot="filter-logic-hint">все условия через И</span>}
         >
           <Field
-            data-slot="logic-field"
+            data-slot="filter-logic-field"
             value={formulaText()}
             validationState={formulaError() ? "invalid" : "valid"}
             onChange={editFormula}
           >
-            <Input data-slot="logic-input" placeholder="например: (1 И 2) ИЛИ 3" />
+            <Input data-slot="filter-logic-input" placeholder="например: (1 И 2) ИЛИ 3" />
           </Field>
         </Show>
 
         <Show when={formulaError()}>
           {(error) => (
-            <p data-slot="logic-error">
+            <p data-slot="filter-logic-error">
               {error()}
               <Show when={suggestion()}>
                 {(fix) => (
                   <Button
-                    data-slot="logic-fix"
+                    data-slot="filter-logic-fix"
                     onClick={() => {
                       setDraft(null);
                       const expr = defaultExpr(ids());
@@ -377,7 +377,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
         </Show>
 
         <Show when={unusedNumbers().length > 0 && !formulaError()}>
-          <p data-slot="logic-unused">
+          <p data-slot="filter-logic-unused">
             в формуле не участвуют условия: {unusedNumbers().join(", ")}
           </p>
         </Show>
@@ -431,7 +431,7 @@ function FieldSelect(props: FieldSelectProps) {
 
   return (
     <select
-      data-slot="condition-field"
+      data-slot="filter-condition-field"
       value={props.value}
       onChange={(event) => props.onChange(event.currentTarget.value)}
     >
@@ -453,11 +453,11 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
   };
 
   return (
-    <div data-slot="condition-compare">
+    <div data-slot="filter-condition-compare">
       <FieldSelect fields={props.fields} value={props.condition.field} onChange={changeField} />
 
       <select
-        data-slot="condition-operator"
+        data-slot="filter-condition-operator"
         value={props.condition.operator}
         onChange={(event) =>
           props.onChange({
@@ -472,7 +472,7 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
       </select>
 
       <Field
-        data-slot="condition-input"
+        data-slot="filter-condition-input"
         value={props.condition.value}
         onChange={(value) => props.onChange({ ...props.condition, value })}
       >
@@ -480,7 +480,7 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
       </Field>
 
       <Show when={type() === "text"}>
-        <label data-slot="condition-sensitive">
+        <label data-slot="filter-condition-sensitive">
           <input
             type="checkbox"
             checked={props.condition.sensitive === true}
@@ -504,22 +504,22 @@ function MemberEditor(props: EditorProps<MemberCondition>) {
   };
 
   return (
-    <div data-slot="condition-in">
+    <div data-slot="filter-condition-in">
       <FieldSelect
         fields={props.fields}
         value={props.condition.field}
         onChange={(name) => props.onChange({ ...props.condition, field: name })}
       />
 
-      <div data-slot="condition-values">
+      <div data-slot="filter-condition-values">
         <For each={props.condition.values}>
           {(value, index) => (
-            <span data-slot="condition-value-row">
+            <span data-slot="filter-condition-value-row">
               <Field value={value} onChange={(next) => replace(index(), next)}>
                 <Input placeholder="значение" />
               </Field>
               <Button
-                data-slot="condition-value-remove"
+                data-slot="filter-condition-value-remove"
                 aria-label={`Убрать значение ${index() + 1}`}
                 onClick={() =>
                   props.onChange({
@@ -534,7 +534,7 @@ function MemberEditor(props: EditorProps<MemberCondition>) {
           )}
         </For>
         <Button
-          data-slot="condition-value-add"
+          data-slot="filter-condition-value-add"
           onClick={() => props.onChange({ ...props.condition, values: [...props.condition.values, ""] })}
         >
           + значение
@@ -546,7 +546,7 @@ function MemberEditor(props: EditorProps<MemberCondition>) {
 
 function RangeEditor(props: EditorProps<RangeCondition>) {
   return (
-    <div data-slot="condition-between">
+    <div data-slot="filter-condition-between">
       <FieldSelect
         fields={props.fields}
         value={props.condition.field}
@@ -555,7 +555,7 @@ function RangeEditor(props: EditorProps<RangeCondition>) {
       />
 
       <Field
-        data-slot="condition-from"
+        data-slot="filter-condition-from"
         value={props.condition.from}
         onChange={(from) => props.onChange({ ...props.condition, from })}
       >
@@ -563,7 +563,7 @@ function RangeEditor(props: EditorProps<RangeCondition>) {
       </Field>
 
       <Field
-        data-slot="condition-to"
+        data-slot="filter-condition-to"
         value={props.condition.to}
         onChange={(to) => props.onChange({ ...props.condition, to })}
       >
@@ -571,17 +571,17 @@ function RangeEditor(props: EditorProps<RangeCondition>) {
       </Field>
 
       {/* Границы ВКЛЮЧИТЕЛЬНЫ — CQL2 говорит это прямо, и пользователю мы говорим тоже. */}
-      <span data-slot="condition-hint">границы включительно</span>
+      <span data-slot="filter-condition-hint">границы включительно</span>
     </div>
   );
 }
 
 function PresenceEditor(props: EditorProps<PresenceCondition>) {
   return (
-    <div data-slot="condition-presence">
-      <div data-slot="condition-presence-head">
+    <div data-slot="filter-condition-presence">
+      <div data-slot="filter-condition-presence-head">
         <select
-          data-slot="condition-mode"
+          data-slot="filter-condition-mode"
           value={props.condition.mode}
           onChange={(event) =>
             props.onChange({ ...props.condition, mode: event.currentTarget.value as PresenceMode })
@@ -593,7 +593,7 @@ function PresenceEditor(props: EditorProps<PresenceCondition>) {
         </select>
 
         <select
-          data-slot="condition-quantifier"
+          data-slot="filter-condition-quantifier"
           value={props.condition.quantifier}
           onChange={(event) =>
             props.onChange({
@@ -632,11 +632,11 @@ interface FieldChipsProps {
 
 function FieldChips(props: FieldChipsProps) {
   return (
-    <div data-slot="field-chips">
+    <div data-slot="filter-field-chips">
       <For each={props.fields}>
         {(field) => (
           <Button
-            data-slot="field-chip"
+            data-slot="filter-field-chip"
             data-selected={props.selected.includes(field.name) ? "" : undefined}
             aria-pressed={props.selected.includes(field.name)}
             onClick={() => props.onToggle(field.name)}

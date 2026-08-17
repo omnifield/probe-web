@@ -52,7 +52,7 @@ describe("разведка источника", () => {
 
   it("пути внутри строки предложены списком — их не набирают руками", () => {
     const { host } = setup();
-    const first = all(host, "[data-slot='rule-from']")[0]!;
+    const first = all(host, "[data-slot='adapter-rule-from']")[0]!;
     const options = all<HTMLOptionElement>(first, "option").map((option) => option.value);
     expect(options).toContain("/client/last");
     expect(options).toContain("/amount_cents");
@@ -63,7 +63,7 @@ describe("правила", () => {
   it("рисует по строке на правило и нумерует их", () => {
     const { host } = setup();
     expect(all(host, "[data-slot='adapter-rule']")).toHaveLength(2);
-    expect(one(host, "[data-slot='rule-number']").textContent).toBe("1");
+    expect(one(host, "[data-slot='adapter-rule-number']").textContent).toBe("1");
   });
 
   it("добавляет правило на свободное поле словаря", () => {
@@ -75,16 +75,16 @@ describe("правила", () => {
 
   it("убирает правило", () => {
     const { host, spec } = setup();
-    press(all(host, "[data-slot='rule-remove']")[0]!);
+    press(all(host, "[data-slot='adapter-rule-remove']")[0]!);
     expect(spec().fields.map((rule) => rule.target)).toEqual(["/amount"]);
   });
 
   it("действия видны цепочкой и снимаются по одному", () => {
     const { host, spec } = setup();
-    const steps = all(host, "[data-slot='adapter-rule'][data-target='/amount'] [data-slot='rule-step']");
+    const steps = all(host, "[data-slot='adapter-rule'][data-target='/amount'] [data-slot='adapter-rule-step']");
     expect(steps).toHaveLength(2);
 
-    press(one(steps[1]!, "[data-slot='rule-step-remove']"));
+    press(one(steps[1]!, "[data-slot='adapter-rule-step-remove']"));
     expect(spec().fields[1]!.steps).toHaveLength(1);
   });
 });
@@ -98,7 +98,7 @@ describe("отчёт и предпросмотр", () => {
   it("у правила видно, что и почему не легло, с примером", () => {
     // Тот же приём, что и счётчик у условия фильтра: ошибку настройки видно сразу.
     const { host } = setup();
-    const issue = one(host, "[data-slot='adapter-rule'][data-target='/amount'] [data-slot='rule-issue']");
+    const issue = one(host, "[data-slot='adapter-rule'][data-target='/amount'] [data-slot='adapter-rule-issue']");
 
     expect(issue.textContent).toContain("не легло 1");
     expect(issue.textContent).toContain("не число");
