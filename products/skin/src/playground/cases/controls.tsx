@@ -48,10 +48,63 @@ export const CONTROL_SPECIMENS: Specimen[] = [
       {
         id: "basic",
         title: "Базовая",
+        note: "Без атрибутов — основное действие. Простая разметка обязана давать рабочий вид сразу, поэтому дефолт живёт у безатрибутной кнопки.",
         render: () => (
           <Box>
             <Button>Сохранить</Button>
-            <Button>Отмена</Button>
+          </Box>
+        ),
+      },
+      {
+        id: "variants",
+        title: "Варианты",
+        note: "Вид выбирает ПОТРЕБИТЕЛЬ атрибутом: кит безголовый и пропов вида не имеет. Перечень вариантов — публичная поверхность зоны, её стережёт проба.",
+        render: () => (
+          <div class="case__stack">
+            <Box>
+              <Button>основная</Button>
+              <Button data-variant="soft">soft</Button>
+              <Button data-variant="outline">outline</Button>
+              <Button data-variant="ghost">ghost</Button>
+            </Box>
+            <Box>
+              <Button data-variant="danger">danger</Button>
+              <Button data-variant="danger-outline">danger-outline</Button>
+            </Box>
+          </div>
+        ),
+      },
+      {
+        id: "pair",
+        title: "Пара действий",
+        note: "Раньше «Сохранить» и «Отмена» выглядели одинаково, и глазу было не за что зацепиться. Основное — сплошное, парное — контуром.",
+        render: () => (
+          <Box>
+            <Button>Сохранить</Button>
+            <Button data-variant="outline">Отмена</Button>
+          </Box>
+        ),
+      },
+      {
+        id: "sizes",
+        title: "Размеры",
+        note: "Высота из шкалы контролов, кегль из типографической. Плотность двигает обе, поэтому ряд не разъезжается.",
+        render: () => (
+          <Box>
+            <Button data-size="sm">маленькая</Button>
+            <Button>обычная</Button>
+            <Button data-size="lg">большая</Button>
+          </Box>
+        ),
+      },
+      {
+        id: "destructive",
+        title: "Необратимое действие",
+        note: "Опасное действие отличается цветом, а не только подписью: «Удалить» рядом с «Отмена» обязано читаться до чтения текста.",
+        render: () => (
+          <Box>
+            <Button data-variant="danger">Удалить набор</Button>
+            <Button data-variant="outline">Отмена</Button>
           </Box>
         ),
       },
@@ -71,10 +124,16 @@ export const CONTROL_SPECIMENS: Specimen[] = [
       {
         id: "disabled",
         title: "Отключена",
-        note: "Курсор меняется, фон уходит в нейтральный — состояние видно без цвета акцента.",
+        note: "Отключённые кнопки выглядят ОДИНАКОВО, чем бы они ни были: отключённый danger остался бы красным и продолжал кричать о действии, которого не совершить.",
         render: () => (
           <Box>
-            <Button disabled>Недоступно</Button>
+            <Button disabled>основная</Button>
+            <Button data-variant="outline" disabled>
+              outline
+            </Button>
+            <Button data-variant="danger" disabled>
+              danger
+            </Button>
           </Box>
         ),
       },
@@ -95,8 +154,10 @@ export const CONTROL_SPECIMENS: Specimen[] = [
         render: () => (
           <Box>
             <Button>Применить</Button>
-            <Button>Сбросить</Button>
-            <Button disabled>Удалить</Button>
+            <Button data-variant="ghost">Сбросить</Button>
+            <Button data-variant="danger-outline" disabled>
+              Удалить
+            </Button>
           </Box>
         ),
       },

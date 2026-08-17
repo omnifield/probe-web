@@ -81,7 +81,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
                   <PopoverArrow />
                   <PopoverTitle>Вид таблицы</PopoverTitle>
                   <PopoverDescription>Порядок и видимость колонок.</PopoverDescription>
-                  <PopoverClose>Готово</PopoverClose>
+                  <PopoverClose data-variant="soft">Готово</PopoverClose>
                 </PopoverContent>
               </PopoverPortal>
             </Popover>
@@ -343,7 +343,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
                     <Label>Имя набора</Label>
                     <Input placeholder="продажи за квартал" />
                   </Field>
-                  <DialogClose>Отмена</DialogClose>
+                  <DialogClose data-variant="outline">Отмена</DialogClose>
                 </DialogContent>
               </DialogPortal>
             </Dialog>
@@ -370,7 +370,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
                       </DialogDescription>
                     )}
                   </For>
-                  <DialogClose>Понятно</DialogClose>
+                  <DialogClose data-variant="outline">Понятно</DialogClose>
                 </DialogContent>
               </DialogPortal>
             </Dialog>

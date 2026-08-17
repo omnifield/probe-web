@@ -84,7 +84,16 @@ export function KnobSelect(props: {
   return (
     <div class="knob">
       <KnobLabel text={props.label} hint={props.hint} />
+      {/* СПИСОК НЕ ЗАКРЫВАЕТСЯ ПОСЛЕ ВЫБОРА (решение user 2026-08-17): здесь варианты
+          ПЕРЕБИРАЮТ — смотрят, как меняется вид, и пробуют следующий; закрытие после каждого
+          выбора заставляло открывать список заново на каждую пробу.
+
+          Делается ПРОПОМ кита (`closeOnSelection`), а не своим состоянием открытости. Первая
+          редакция держала `open` сама и возвращала его в `true` из `onChange` — не работало:
+          компонент присылает закрытие ПОСЛЕ выбора и перебивает нашу правку. Проп существует
+          ровно для этого, и он у kobalte объявлен. */}
       <Select
+        closeOnSelection={false}
         value={props.value}
         onChange={(id) => id !== null && props.onChange(id)}
         options={ids()}

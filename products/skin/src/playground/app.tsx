@@ -78,6 +78,9 @@ export function App() {
       </aside>
 
       <main class="stage">
+        {/* Выбор семейства — табами. Пробовал «Всё» на всю ширину плюс список семейств
+            (решение user 2026-08-17), но по виду откатили: табы читаются одним взглядом, а
+            список требует открыть его, чтобы узнать, что там есть. */}
         <nav class="tabs" aria-label="Семейства">
           <button class="tab" type="button" aria-pressed={tab() === ALL} onClick={() => setTab(ALL)}>
             Всё
