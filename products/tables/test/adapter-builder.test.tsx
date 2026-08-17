@@ -7,7 +7,7 @@ import { createSignal } from "solid-js";
 import { AdapterBuilder } from "../src/adapter/ui/adapter-builder.jsx";
 import type { AdapterSpec } from "../src/adapter/model.js";
 import type { ColumnDictionary } from "../src/table/index.js";
-import { all, cleanup, mount, one, press } from "./dom.jsx";
+import { all, cleanup, mount, one, optionsOf, press } from "./dom.jsx";
 
 afterEach(cleanup);
 
@@ -46,14 +46,14 @@ function setup(initial: AdapterSpec = SPEC) {
 describe("разведка источника", () => {
   it("места, похожие на набор строк, предложены списком", () => {
     const { host } = setup();
-    const options = all<HTMLOptionElement>(host, "[data-slot~='adapter-rows'] option").map((o) => o.value);
-    expect(options).toContain("/data/items");
+    // Список теперь разметкой: предложенное видно ПОДПИСЯМИ, как его видит человек.
+    expect(optionsOf(host, "adapter-rows-select")).toContain("/data/items");
   });
 
   it("пути внутри строки предложены списком — их не набирают руками", () => {
     const { host } = setup();
     const first = all(host, "[data-slot~='adapter-rule-from']")[0]!;
-    const options = all<HTMLOptionElement>(first, "option").map((option) => option.value);
+    const options = optionsOf(first.parentElement ?? host, "adapter-rule-from");
     expect(options).toContain("/client/last");
     expect(options).toContain("/amount_cents");
   });

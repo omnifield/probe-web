@@ -11,7 +11,7 @@ import { FilterBuilder } from "../src/filters/ui/filter-builder.jsx";
 import type { FieldDictionary, FilterState } from "../src/filters/model.js";
 import { EMPTY_FILTER } from "../src/filters/model.js";
 import type { Row } from "../src/filters/field.js";
-import { all, cleanup, mount, one, press, type } from "./dom.jsx";
+import { all, choose, cleanup, mount, one, optionsOf, press, type } from "./dom.jsx";
 
 afterEach(cleanup);
 
@@ -89,18 +89,16 @@ describe("сборка условий", () => {
     const { host } = setup();
     click(host, "+ сравнение");
 
-    const operators = () =>
-      all<HTMLOptionElement>(host, "[data-slot~='filter-condition-operator'] option").map((node) => node.value);
+    // Список теперь разметкой: предложенное видно ПОДПИСЯМИ, как его видит человек.
+    const operators = () => optionsOf(host, "filter-condition-operator");
 
-    expect(operators()).toContain("contains");
+    expect(operators()).toContain("содержит");
 
-    const field = one<HTMLSelectElement>(host, "[data-slot~='filter-condition-field']");
-    field.value = "/amount";
-    field.dispatchEvent(new Event("change", { bubbles: true }));
+    choose(host, "filter-condition-field", "сумма");
 
     // У числа подстроки нет: она сравнивала бы текстовый вид числа.
-    expect(operators()).not.toContain("contains");
-    expect(operators()).toContain("ge");
+    expect(operators()).not.toContain("содержит");
+    expect(operators()).toContain("больше или равно");
   });
 
   it("убирает условие по кнопке", () => {

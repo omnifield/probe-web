@@ -77,6 +77,24 @@ export function choose(host: ParentNode, slot: string, label: string): void {
   press(item);
 }
 
+/**
+ * Что предлагает список — ПОДПИСЯМИ, а не кодами.
+ *
+ * Панель существует только пока список открыт, поэтому его открывают, читают и закрывают
+ * обратно: оставленный открытым он перехватывал бы нажатия следующей проверки.
+ */
+export function optionsOf(host: ParentNode, slot: string): string[] {
+  const trigger = one(host, `[data-slot~="${slot}"] [data-slot~="select-trigger"]`);
+
+  press(trigger);
+  const labels = all(document.body, '[data-slot~="select-item"]').map(
+    (node) => node.textContent?.trim() ?? "",
+  );
+  press(trigger);
+
+  return labels;
+}
+
 /** Все элементы по селектору списком. */
 export function all<E extends Element = HTMLElement>(host: ParentNode, selector: string): E[] {
   return [...host.querySelectorAll<E>(selector)];

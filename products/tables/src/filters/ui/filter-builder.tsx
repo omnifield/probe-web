@@ -15,6 +15,8 @@
 // смысл сохранённой формулы молча (`tasker:TABLES-4`, раздел B).
 
 import { Button, Field, Input } from "@omnifield/probe-web-ui";
+
+import { Choice, Tick } from "../../ui/choice.jsx";
 import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 
 import { countMatching } from "../evaluate.js";
@@ -372,24 +374,26 @@ export function FilterBuilder(props: FilterBuilderProps) {
         data-active={props.state.logic.mode === "formula" ? "" : undefined}
         data-invalid={formulaError() ? "" : undefined}
       >
-        <label data-slot="filter-logic-toggle">
-          {/* Зацепка есть и на подписи, и на самой галке: подпись оденут как подпись, галку
-              как галку, и одеть одну через другую нельзя. */}
-          <input
-            data-slot="filter-logic-toggle-input"
-            type="checkbox"
+        {/* Обёртка — `span`, а не `label`: подпись теперь внутри галки и связана с вводом
+            самим китом, а второй `label` поверх перехватывал бы щелчок на себя. Зацепка есть
+            и на обёртке, и на галке: одеть одну через другую нельзя. */}
+        <span data-slot="filter-logic-toggle">
+          <Tick
+            slot="filter-logic-toggle-input"
+            label="Своя логика"
             checked={props.state.logic.mode === "formula"}
             disabled={props.state.conditions.length === 0}
-            onChange={(event) => {
+            onChange={(checked) => {
               setDraft(null);
               const expr = defaultExpr(ids());
               patch({
-                logic: event.currentTarget.checked && expr !== null ? { mode: "formula", expr } : { mode: "all" },
+                logic: checked && expr !== null ? { mode: "formula", expr } : { mode: "all" },
               });
             }}
-          />
-          Своя логика
-        </label>
+          >
+            Своя логика
+          </Tick>
+        </span>
 
         <Show
           when={props.state.logic.mode === "formula"}
@@ -478,16 +482,20 @@ interface FieldSelectProps {
 }
 
 function FieldSelect(props: FieldSelectProps) {
-  const options = createMemo(() => props.fields.filter((field) => props.only?.(field) ?? true));
+  const options = createMemo(() =>
+    props.fields
+      .filter((field) => props.only?.(field) ?? true)
+      .map((field) => ({ value: field.name, label: field.label })),
+  );
 
   return (
-    <select
-      data-slot="filter-condition-field"
+    <Choice
+      slot="filter-condition-field"
+      label="Поле"
       value={props.value}
-      onChange={(event) => props.onChange(event.currentTarget.value)}
-    >
-      <For each={options()}>{(field) => <option value={field.name}>{field.label}</option>}</For>
-    </select>
+      options={options()}
+      onChange={props.onChange}
+    />
   );
 }
 
@@ -513,20 +521,18 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
     >
       <FieldSelect fields={props.fields} value={props.condition.field} onChange={changeField} />
 
-      <select
-        data-slot="filter-condition-operator"
+      <Choice
+        slot="filter-condition-operator"
+        label="Как сравнивать"
         value={props.condition.operator}
-        onChange={(event) =>
-          props.onChange({
-            ...props.condition,
-            operator: event.currentTarget.value as ComparisonOperator,
-          })
+        options={operators().map((operator) => ({
+          value: operator,
+          label: COMPARISON_OPERATOR_LABELS[operator],
+        }))}
+        onChange={(value) =>
+          props.onChange({ ...props.condition, operator: value as ComparisonOperator })
         }
-      >
-        <For each={operators()}>
-          {(operator) => <option value={operator}>{COMPARISON_OPERATOR_LABELS[operator]}</option>}
-        </For>
-      </select>
+      />
 
       <Field
         data-slot="field filter-condition-input"
@@ -537,17 +543,16 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
       </Field>
 
       <Show when={type() === "text"}>
-        <label data-slot="filter-condition-sensitive">
-          <input
-            data-slot="filter-condition-sensitive-input"
-            type="checkbox"
+        <span data-slot="filter-condition-sensitive">
+          <Tick
+            slot="filter-condition-sensitive-input"
+            label="Учитывать регистр"
             checked={props.condition.sensitive === true}
-            onChange={(event) =>
-              props.onChange({ ...props.condition, sensitive: event.currentTarget.checked })
-            }
-          />
-          учитывать регистр
-        </label>
+            onChange={(checked) => props.onChange({ ...props.condition, sensitive: checked })}
+          >
+            учитывать регистр
+          </Tick>
+        </span>
       </Show>
     </div>
   );
@@ -646,32 +651,23 @@ function PresenceEditor(props: EditorProps<PresenceCondition>) {
       data-quantifier={props.condition.quantifier}
     >
       <div data-slot="filter-condition-presence-head">
-        <select
-          data-slot="filter-condition-mode"
+        <Choice
+          slot="filter-condition-mode"
+          label="Что проверять"
           value={props.condition.mode}
-          onChange={(event) =>
-            props.onChange({ ...props.condition, mode: event.currentTarget.value as PresenceMode })
-          }
-        >
-          <For each={Object.entries(PRESENCE_MODE_LABELS)}>
-            {([value, label]) => <option value={value}>{label}</option>}
-          </For>
-        </select>
+          options={Object.entries(PRESENCE_MODE_LABELS).map(([value, label]) => ({ value, label }))}
+          onChange={(value) => props.onChange({ ...props.condition, mode: value as PresenceMode })}
+        />
 
-        <select
-          data-slot="filter-condition-quantifier"
+        <Choice
+          slot="filter-condition-quantifier"
+          label="Сколько полей должно подойти"
           value={props.condition.quantifier}
-          onChange={(event) =>
-            props.onChange({
-              ...props.condition,
-              quantifier: event.currentTarget.value as Quantifier,
-            })
+          options={Object.entries(QUANTIFIER_LABELS).map(([value, label]) => ({ value, label }))}
+          onChange={(value) =>
+            props.onChange({ ...props.condition, quantifier: value as Quantifier })
           }
-        >
-          <For each={Object.entries(QUANTIFIER_LABELS)}>
-            {([value, label]) => <option value={value}>{label}</option>}
-          </For>
-        </select>
+        />
       </div>
 
       <FieldChips

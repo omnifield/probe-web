@@ -773,8 +773,37 @@ const NOT_A_STATE = new Set([
   "stroke",
 ]);
 
-const notAState = (attr: string): boolean =>
-  NOT_A_STATE.has(attr) || attr.startsWith("aria-label");
+/**
+ * Состояния, которые на нашем узле ставит КИТ, а не мы.
+ *
+ * Тридцать наших частей стоят на его примитивах, и он размечает их своим: открыт ли список,
+ * стоит ли галка, годен ли ввод. Узел несёт наше имя, но контракт этих атрибутов не наш:
+ * меняет их он, по своим правилам.
+ *
+ * Поэтому мы их НЕ обещаем. Обещать чужое значило бы либо переписывать его перечень к себе
+ * (десять раз `data-closed` на десяти списках), либо взять на себя обязательство, которого мы
+ * не контролируем. Потребителю адрес известен и без нас: `kitBacked` говорит, на каком
+ * примитиве стоит наша часть, а состояния этого примитива обещает кит.
+ *
+ * Исключение действует ТОЛЬКО на подпёртых китом зацепках: те же имена на нашем собственном
+ * узле — наши, и они в перечне (`filter-logic[data-invalid]`).
+ */
+const KIT_OWNED_STATES = new Set([
+  "data-closed",
+  "data-expanded",
+  "data-checked",
+  "data-indeterminate",
+  "data-disabled",
+  "data-valid",
+  "data-invalid",
+]);
+
+const KIT_BACKED = new Set(Object.values(KIT_BACKED_SLOTS).flat());
+
+const notAState = (slot: string, attr: string): boolean =>
+  NOT_A_STATE.has(attr) ||
+  attr.startsWith("aria-label") ||
+  (KIT_BACKED.has(slot) && KIT_OWNED_STATES.has(attr));
 
 /**
  * Гейт состояний, один для любого семейства.
@@ -836,7 +865,7 @@ function statesGate(
       for (const slot of slots) {
         for (const node of all(host, `[data-slot~="${slot}"]`)) {
           for (const attr of node.getAttributeNames()) {
-            if (notAState(attr)) continue;
+            if (notAState(slot, attr)) continue;
             const pair = `${slot}[${attr}]`;
             if (!promised.has(pair)) unpromised.push(pair);
           }

@@ -30,6 +30,7 @@ import {
   CheckboxControl,
   CheckboxIndicator,
   CheckboxInput,
+  CheckboxLabel,
   Select,
   SelectContent,
   SelectItem,
@@ -105,6 +106,8 @@ export interface TickProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  /** Выключена — переключить нельзя. Состояние кит отдаёт атрибутом `data-disabled`. */
+  disabled?: boolean;
   /** Показывать подпись рядом с галкой или держать её только для вспомогательной технологии. */
   children?: string;
 }
@@ -122,13 +125,16 @@ export function Tick(props: TickProps) {
       data-slot={`checkbox ${props.slot}`}
       checked={props.checked}
       onChange={props.onChange}
+      disabled={props.disabled}
       aria-label={props.label}
     >
       <CheckboxInput />
       <CheckboxControl>
         <CheckboxIndicator />
       </CheckboxControl>
-      <Show when={props.children}>{(text) => <span>{text()}</span>}</Show>
+      {/* Подпись — `CheckboxLabel` кита, а не свой `span`: она СВЯЗАНА с вводом, и щелчок по
+          ней переключает галку. Свой узел выглядел бы так же и не работал. */}
+      <Show when={props.children}>{(text) => <CheckboxLabel>{text()}</CheckboxLabel>}</Show>
     </Checkbox>
   );
 }

@@ -165,6 +165,7 @@
     "checkbox-control",
     "checkbox-indicator",
     "checkbox-input",
+    "checkbox-label",
     "field",
     "input",
     "select",
@@ -191,6 +192,9 @@
       "filter-template-apply"
     ],
     "checkbox": [
+      "adapter-extra-input",
+      "filter-condition-sensitive-input",
+      "filter-logic-toggle-input",
       "table-select-all",
       "table-select-row"
     ],
@@ -213,6 +217,15 @@
       "filter-logic-input"
     ],
     "select": [
+      "adapter-rows-select",
+      "adapter-rule-from",
+      "adapter-rule-on-fail",
+      "adapter-rule-step-add",
+      "adapter-rule-target",
+      "filter-condition-field",
+      "filter-condition-mode",
+      "filter-condition-operator",
+      "filter-condition-quantifier",
       "table-pager-size-select"
     ]
   },
@@ -504,20 +517,6 @@
         "kind": "identity",
         "values": [],
         "means": "имя скрытой колонки"
-      },
-      {
-        "slot": "table-pager-size-select",
-        "attr": "data-closed",
-        "kind": "flag",
-        "values": [],
-        "means": "список закрыт. Ставит КИТ; парное `data-expanded` он ставит открытому"
-      },
-      {
-        "slot": "table-select-row",
-        "attr": "data-checked",
-        "kind": "flag",
-        "values": [],
-        "means": "строка выделена — на самой галке. Ставит КИТ"
       }
     ],
     "filter": [
@@ -624,34 +623,6 @@
         "kind": "flag",
         "values": [],
         "means": "поле выбрано плашкой"
-      },
-      {
-        "slot": "filter-logic-field",
-        "attr": "data-valid",
-        "kind": "flag",
-        "values": [],
-        "means": "формула разобралась. Ставит кит по `validationState`"
-      },
-      {
-        "slot": "filter-logic-field",
-        "attr": "data-invalid",
-        "kind": "flag",
-        "values": [],
-        "means": "формула не разобралась. Ставит кит; наш собственный признак того же — на `filter-logic`"
-      },
-      {
-        "slot": "filter-logic-input",
-        "attr": "data-valid",
-        "kind": "flag",
-        "values": [],
-        "means": "то же на самом поле ввода — кит переносит признак и туда"
-      },
-      {
-        "slot": "filter-logic-input",
-        "attr": "data-invalid",
-        "kind": "flag",
-        "values": [],
-        "means": "то же на самом поле ввода"
       }
     ],
     "chart": [
