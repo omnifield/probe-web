@@ -1,0 +1,44 @@
+/* Подсказка — подпуть `@probe-web/skin/tooltip.css`. Требует `base.css`.
+
+   Три зацепки: `tooltip-trigger` · `tooltip-content` · `tooltip-arrow`.
+
+   ПОДСКАЗКА — НЕ МАЛЕНЬКИЙ ПОПОВЕР, и вид это показывает. Поповер несёт содержимое, с
+   которым работают: в нём фокус, кнопки, поля. Подсказка только поясняет и исчезает, в неё
+   нельзя увести фокус. Поэтому здесь плотная плашка на сплошном нейтральном фоне, а не
+   панель цвета поверхности: она читается как надпись поверх интерфейса, а не как его часть. */
+
+@layer skin {
+  [data-slot="tooltip-content"] {
+    z-index: var(--z-popover);
+
+    max-inline-size: min(16rem, 80vw);
+    padding-block: var(--space-2);
+    padding-inline: var(--space-3);
+
+    border-radius: var(--radius-md);
+
+    background-color: var(--element-solid);
+    color: var(--on-element-solid);
+    box-shadow: var(--shadow-md);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+
+    /* Указателю панель отдаёт свой цвет сама — kobalte считывает его с этого узла. */
+    transform-origin: var(--kb-tooltip-content-transform-origin, center);
+    animation: probe-web-skin-tip var(--motion-instant) var(--ease-out);
+  }
+
+  @keyframes probe-web-skin-tip {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="tooltip-content"] {
+      animation: none;
+    }
+  }
+}

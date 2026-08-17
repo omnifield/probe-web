@@ -9,13 +9,18 @@
     "./base.css": "./src/skin/base.css",
     "./button.css": "./src/skin/button.css",
     "./checkbox.css": "./src/skin/checkbox.css",
+    "./dialog.css": "./src/skin/dialog.css",
+    "./dropdown-menu.css": "./src/skin/dropdown-menu.css",
     "./field.css": "./src/skin/field.css",
+    "./popover.css": "./src/skin/popover.css",
     "./radio-group.css": "./src/skin/radio-group.css",
     "./select.css": "./src/skin/select.css",
     "./separator.css": "./src/skin/separator.css",
     "./spinner.css": "./src/skin/spinner.css",
     "./switch.css": "./src/skin/switch.css",
+    "./tabs.css": "./src/skin/tabs.css",
     "./toggle.css": "./src/skin/toggle.css",
+    "./tooltip.css": "./src/skin/tooltip.css",
     "./skin.css": "./src/skin/skin.css"
   },
   "scripts": {

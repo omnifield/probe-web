@@ -22,6 +22,26 @@ const EASING_LITERAL = /\b(?:cubic-bezier|steps)\(|\b(?:ease|ease-in|ease-out|ea
 /** Свойства, где значение обязано быть токеном. */
 const COLOR_PROPS = /(?:^|-)color$|^background$|^background-color$|^border(?:-[a-z-]+)?-color$|^outline-color$|^fill$|^stroke$|^box-shadow$/;
 
+/**
+ * ШИРИНЫ ПОВЕРХНОСТЕЙ — единственное место, где оформление задаёт размер абсолютной единицей,
+ * и это названный долг, а не послабление.
+ *
+ * Причина: в слое `style` нет шкалы ширин. Есть шкала интервалов (`--space-*`), высот контролов
+ * и кеглей — но «насколько широкой бывает панель, меню, модальное окно» база не нормирует.
+ * Вывести ширину окна из интервала можно только фикцией вроде `calc(var(--space-10) * 3.5)`:
+ * число то же, а смысла в нём меньше, потому что связь придумана.
+ *
+ * Поэтому каждое такое место записано здесь поимённо с причиной. Новое такое значение роняет
+ * пробу; исчезнувшее — тоже (см. проверку ниже). Заявка на шкалу ширин отправлена в `style`;
+ * когда она приедет, этот список опустеет.
+ */
+const SURFACE_WIDTHS: Record<string, string> = {
+  "dialog.css: inline-size": "ширина модального окна — колонка читаемой длины, около 28rem",
+  "popover.css: max-inline-size": "потолок ширины всплывающей панели",
+  "tooltip.css: max-inline-size": "потолок ширины подсказки — уже панели, это подпись",
+  "dropdown-menu.css: min-inline-size": "минимум ширины меню, чтобы пункты не жались в столбик",
+};
+
 describe("ни одного литерала там, где обязан быть токен", () => {
   for (const file of skinFiles()) {
     it(`${file.name}: цвета только токенами`, () => {
@@ -76,6 +96,7 @@ describe("ни одного литерала там, где обязан быт�
       declarations(file.text)
         .filter(({ property, value }) => {
           if (!SIZE_PROPS.test(property)) return false;
+          if (SURFACE_WIDTHS[`${file.name}: ${property}`] !== undefined) return false;
           const withoutTokens = value.replaceAll(/var\(\s*--[a-z0-9-]+[^)]*\)/gi, "");
           return ABSOLUTE.test(withoutTokens);
         })
@@ -83,5 +104,34 @@ describe("ни одного литерала там, где обязан быт�
     );
 
     expect(bad, "размеры мимо шкал").toEqual([]);
+  });
+
+  it("слои только из шкалы — ни одного z-index числом", () => {
+    // Поймано мутацией: `z-index: 40` вместо `var(--z-dialog)` проходил молча, потому что
+    // проба размеров про слои ничего не знает. А это ровно тот класс ошибки, ради которого
+    // шкала слоёв и вводилась: число из головы спорит с чужими числами, и порядок панелей
+    // рушится там, где встретятся два слоя от разных авторов.
+    const bad = skinFiles().flatMap((file) =>
+      declarations(file.text)
+        .filter(({ property, value }) => property === "z-index" && !value.includes("var(--z-"))
+        .map(({ property, value }) => `${file.name}: ${property}: ${value}`),
+    );
+
+    expect(bad, "слои мимо шкалы").toEqual([]);
+  });
+
+  it("список ширин поверхностей не разошёлся с кодом", () => {
+    // Запись, под которой в файле уже нет абсолютного значения, — забытая: она молча
+    // разрешает то, чего не существует, и завтра прикроет настоящее нарушение.
+    const stale = Object.keys(SURFACE_WIDTHS).filter((key) => {
+      const [name, property] = key.split(": ");
+      const file = skinFiles().find((f) => f.name === name);
+      if (!file) return true;
+      return !declarations(file.text).some(
+        (d) => d.property === property && /\b\d*\.?\d+(?:px|rem)\b/.test(d.value),
+      );
+    });
+
+    expect(stale, "записи в реестре ширин, которым уже нечего разрешать").toEqual([]);
   });
 });

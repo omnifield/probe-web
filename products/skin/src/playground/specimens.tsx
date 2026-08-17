@@ -11,6 +11,30 @@
 
 import {
   Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuGroupLabel,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuItemDescription,
+  DropdownMenuItemIndicator,
+  DropdownMenuItemLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
   Checkbox,
   CheckboxControl,
   CheckboxDescription,
@@ -23,6 +47,14 @@ import {
   FieldError,
   Input,
   Label,
+  Popover,
+  PopoverArrow,
+  PopoverClose,
+  PopoverContent,
+  PopoverDescription,
+  PopoverPortal,
+  PopoverTitle,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectIcon,
@@ -45,12 +77,22 @@ import {
   Spinner,
   Switch,
   SwitchControl,
+  Tabs,
+  TabsContent,
+  TabsIndicator,
+  TabsList,
+  TabsTrigger,
   SwitchDescription,
   SwitchInput,
   SwitchLabel,
   SwitchThumb,
   Textarea,
   Toggle,
+  Tooltip,
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  TooltipTrigger,
 } from "@omnifield/probe-web-ui";
 import { createSignal, For, type JSX } from "solid-js";
 
@@ -344,6 +386,171 @@ export const SPECIMENS: Specimen[] = [
           Нажат и отключён
         </Toggle>
       </>
+    ),
+  },
+  {
+    id: "popover",
+    title: "Всплывающая панель",
+    slots: [
+      "popover-trigger",
+      "popover-content",
+      "popover-arrow",
+      "popover-title",
+      "popover-description",
+      "popover-close",
+    ],
+    main: () => (
+      <Popover placement="bottom-start" gutter={8}>
+        <PopoverTrigger as={Button}>Вид таблицы</PopoverTrigger>
+        <PopoverPortal>
+          <PopoverContent>
+            <PopoverArrow />
+            <PopoverTitle>Вид таблицы</PopoverTitle>
+            <PopoverDescription>Порядок и видимость колонок.</PopoverDescription>
+            <PopoverClose as={Button}>Готово</PopoverClose>
+          </PopoverContent>
+        </PopoverPortal>
+      </Popover>
+    ),
+  },
+  {
+    id: "tooltip",
+    title: "Подсказка",
+    slots: ["tooltip-trigger", "tooltip-content", "tooltip-arrow"],
+    main: () => (
+      <Tooltip openDelay={200}>
+        <TooltipTrigger as={Button}>Наведите или дайте фокус</TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>
+            <TooltipArrow />
+            Пояснение, за которым не идут мышью
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
+    ),
+  },
+  {
+    id: "dropdown-menu",
+    title: "Меню действий",
+    slots: [
+      "dropdown-menu-trigger",
+      "dropdown-menu-icon",
+      "dropdown-menu-content",
+      "dropdown-menu-item",
+      "dropdown-menu-item-label",
+      "dropdown-menu-item-description",
+      "dropdown-menu-item-indicator",
+      "dropdown-menu-checkbox-item",
+      "dropdown-menu-group",
+      "dropdown-menu-group-label",
+      "dropdown-menu-separator",
+      "dropdown-menu-sub-trigger",
+      "dropdown-menu-sub-content",
+    ],
+    main: () => (
+      <DropdownMenu placement="bottom-start" gutter={4}>
+        <DropdownMenuTrigger as={Button}>
+          Ещё <DropdownMenuIcon>▾</DropdownMenuIcon>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Правка</DropdownMenuGroupLabel>
+              <DropdownMenuItem>
+                <DropdownMenuItemLabel>Переименовать</DropdownMenuItemLabel>
+                <DropdownMenuItemDescription>F2</DropdownMenuItemDescription>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <DropdownMenuItemLabel>Дублировать</DropdownMenuItemLabel>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuCheckboxItem checked>
+              <DropdownMenuItemIndicator>✓</DropdownMenuItemIndicator>
+              <DropdownMenuItemLabel>Показывать сетку</DropdownMenuItemLabel>
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuSub>
+              {/* Внутри открывашки подменю НЕТ `ItemLabel`: она не пункт меню, и часть,
+                  требующая контекста пункта, там падает — поймано на живой странице
+                  (`useMenuItemContext must be used within a Menu.Item`). */}
+              <DropdownMenuSubTrigger>
+                Экспорт
+                <DropdownMenuIcon>▸</DropdownMenuIcon>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem>
+                    <DropdownMenuItemLabel>CSV</DropdownMenuItemLabel>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <DropdownMenuItemLabel>JSON</DropdownMenuItemLabel>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem disabled>
+              <DropdownMenuItemLabel>Удалить</DropdownMenuItemLabel>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenu>
+    ),
+  },
+  {
+    id: "dialog",
+    title: "Модальное окно",
+    slots: [
+      "dialog-trigger",
+      "dialog-overlay",
+      "dialog-content",
+      "dialog-title",
+      "dialog-description",
+      "dialog-close",
+    ],
+    main: () => (
+      <Dialog>
+        <DialogTrigger as={Button}>Сохранить набор</DialogTrigger>
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
+            <DialogTitle>Сохранить набор</DialogTitle>
+            <DialogDescription>
+              Набор станет виден всем, кто открыл стенд.
+            </DialogDescription>
+            <Field>
+              <Label>Имя набора</Label>
+              <Input placeholder="продажи за квартал" />
+            </Field>
+            <DialogClose as={Button}>Отмена</DialogClose>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+    ),
+  },
+  {
+    id: "tabs",
+    title: "Вкладки",
+    slots: ["tabs", "tabs-list", "tabs-trigger", "tabs-indicator", "tabs-content"],
+    main: () => (
+      <Tabs defaultValue="colors">
+        <TabsList>
+          <TabsTrigger value="colors">Цвета</TabsTrigger>
+          <TabsTrigger value="sizes">Размеры</TabsTrigger>
+          <TabsTrigger value="motion" disabled>
+            Движение
+          </TabsTrigger>
+          <TabsIndicator />
+        </TabsList>
+        <TabsContent value="colors">Ступени шкал и роли поверх них.</TabsContent>
+        <TabsContent value="sizes">Интервалы, высоты контролов, кегли.</TabsContent>
+        <TabsContent value="motion">Длительности и кривые.</TabsContent>
+      </Tabs>
     ),
   },
   {

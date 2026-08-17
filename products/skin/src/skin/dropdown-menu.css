@@ -1,0 +1,218 @@
+/* Меню действий — подпуть `@probe-web/skin/dropdown-menu.css`. Требует `base.css`.
+
+   Шестнадцать зацепок: `dropdown-menu-trigger` · `-icon` · `-content` · `-arrow` · `-item` ·
+   `-item-label` · `-item-description` · `-item-indicator` · `-checkbox-item` · `-radio-group` ·
+   `-radio-item` · `-group` · `-group-label` · `-separator` · `-sub-trigger` · `-sub-content`.
+
+   ЧЕТЫРЕ РАЗНЫЕ ЗАЦЕПКИ ТАМ, ГДЕ НА ВИД «СТРОКА МЕНЮ»: обычный пункт, пункт-флажок,
+   пункт-переключатель и открывашка подменю. Они разделены не для красоты — у них разные роли
+   доступности, и одеть их одним правилом значило бы сделать вид одинаковым там, где поведение
+   разное. Общее собрано в одном правиле через список селекторов, различия — рядом.
+
+   `dropdown-menu-separator` — СВОЯ зацепка, а не общий `separator`: разделитель внутри меню
+   живёт по своим отступам и не обязан совпадать с чертой на странице.
+
+   Место и зазор — опциями на корне, как у остальных всплывающих. Цвет стрелки панель отдаёт
+   сама. */
+
+@layer skin {
+  /* ТРИГГЕР ОДЕВАЕТСЯ ЗДЕСЬ, И ЭТО ОСОЗНАННЫЙ ПОВТОР. Разметка `<DropdownMenuTrigger as={Button}>`
+     НЕ даёт узлу две зацепки: `data-slot` один, и он достаётся триггеру — проверено на живой
+     странице, кнопка оставалась голой. Значит вид обязан быть у самой зацепки триггера.
+     Повтор правил кнопки — цена независимых подпутей: взявший только `dropdown-menu.css` получает
+     рабочий вид, а не половину. Предложение киту о СПИСКЕ зацепок на узле
+     (`data-slot="button dropdown-menu-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
+     примут — повтор уйдёт сам. */
+  [data-slot="dropdown-menu-trigger"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-4);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--element);
+    color: var(--text);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="dropdown-menu-trigger"]:hover:not([data-disabled]) {
+    background-color: var(--element-hover);
+    border-color: var(--border-strong);
+  }
+
+  [data-slot="dropdown-menu-trigger"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot="dropdown-menu-trigger"][data-expanded] {
+    background-color: var(--element-active);
+  }
+
+  [data-slot="dropdown-menu-icon"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+
+    inline-size: 1em;
+    block-size: 1em;
+
+    color: var(--text-muted);
+    font-size: 0.7em;
+    line-height: var(--leading-none);
+
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="dropdown-menu-trigger"][data-expanded] [data-slot="dropdown-menu-icon"] {
+    transform: rotate(180deg);
+  }
+
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"] {
+    z-index: var(--z-dropdown);
+
+    min-inline-size: 12rem;
+    max-block-size: var(--kb-popper-content-available-height, 100vh);
+    overflow-y: auto;
+
+    padding: var(--space-1);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+
+    transform-origin: var(--kb-menu-content-transform-origin, center);
+    animation: probe-web-skin-menu var(--motion-fast) var(--ease-out);
+  }
+
+  /* Общее для всех четырёх видов строки: раскладка, отступы, форма, курсор. */
+  [data-slot="dropdown-menu-item"],
+  [data-slot="dropdown-menu-checkbox-item"],
+  [data-slot="dropdown-menu-radio-item"],
+  [data-slot="dropdown-menu-sub-trigger"] {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+
+    padding-block: var(--space-2);
+    padding-inline: var(--space-2);
+
+    border-radius: var(--radius-sm);
+
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* `data-highlighted` — одна зацепка и для клавиатуры, и для указателя: kobalte сводит их
+     сам. Подсветка — наложением (`--tint-hover`), а не сплошной ступенью: под пунктом может
+     оказаться любой фон, и наложение ложится на него, не закрашивая. */
+  [data-slot="dropdown-menu-item"][data-highlighted],
+  [data-slot="dropdown-menu-checkbox-item"][data-highlighted],
+  [data-slot="dropdown-menu-radio-item"][data-highlighted],
+  [data-slot="dropdown-menu-sub-trigger"][data-highlighted] {
+    background-color: var(--tint-hover);
+  }
+
+  [data-slot="dropdown-menu-item"][data-disabled],
+  [data-slot="dropdown-menu-checkbox-item"][data-disabled],
+  [data-slot="dropdown-menu-radio-item"][data-disabled],
+  [data-slot="dropdown-menu-sub-trigger"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Отметка занимает место ВСЕГДА — и когда её нет. Иначе строки меню прыгают по горизонтали
+     при переключении флажка, и глаз теряет столбец подписей. */
+  [data-slot="dropdown-menu-item-indicator"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+
+    inline-size: 1em;
+    block-size: 1em;
+
+    color: var(--brand-text);
+    font-size: 0.85em;
+  }
+
+  [data-slot="dropdown-menu-item-label"] {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-slot="dropdown-menu-item-description"] {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot="dropdown-menu-group-label"] {
+    padding-block: var(--space-1);
+    padding-inline: var(--space-2);
+
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    font-weight: var(--weight-medium);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+  }
+
+  [data-slot="dropdown-menu-separator"] {
+    block-size: var(--border-width-1);
+    margin-block: var(--space-1);
+    margin-inline: calc(var(--space-1) * -1);
+
+    border: 0;
+    background-color: var(--separator);
+  }
+
+  /* Открывашка подменю: стрелка вбок в конце строки. Символ рисует потребитель, место и
+     поворот — мы. */
+  [data-slot="dropdown-menu-sub-trigger"][data-expanded] {
+    background-color: var(--tint-active);
+  }
+
+  @keyframes probe-web-skin-menu {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="dropdown-menu-icon"] {
+      animation: none;
+      transition: none;
+    }
+  }
+}
