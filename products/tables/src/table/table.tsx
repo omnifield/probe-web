@@ -820,8 +820,11 @@ export function HiddenColumns(props: HiddenColumnsProps) {
                   aria-label={`Вернуть колонку «${label()}»`}
                   onClick={() => props.onViewChange(toggleColumn(props.view, name))}
                 >
+                  {/* Только название колонки. Плюсика тут больше нет: он был чистым
+                      украшением (`aria-hidden`), то есть видом, поставленным изнутри — а
+                      значит вторым источником вида рядом с оформлением потребителя. Смысл
+                      кнопки несёт `aria-label`, вид — тот, кто одевает. */}
                   {label()}
-                  <span aria-hidden="true"> +</span>
                 </button>
               </li>
             );
@@ -891,7 +894,10 @@ export function TablePager(props: TablePagerProps) {
 
       <label data-slot="table-pager-size">
         строк на странице
+        {/* Зацепка есть и на подписи, и на самом поле: подпись оденут как подпись, поле как
+            поле, и одеть одно через другое нельзя. Полусоставная часть неодеваема. */}
         <select
+          data-slot="table-pager-size-select"
           value={String(props.view.pageSize ?? "")}
           onChange={(event) => {
             const raw = event.currentTarget.value;
@@ -901,9 +907,15 @@ export function TablePager(props: TablePagerProps) {
             props.onSessionChange(goToPage(props.session, 0, props.total, size));
           }}
         >
-          <option value="">все</option>
+          <option data-slot="table-pager-size-option" value="">
+            все
+          </option>
           <For each={props.sizes ?? [10, 25, 50]}>
-            {(size) => <option value={String(size)}>{size}</option>}
+            {(size) => (
+              <option data-slot="table-pager-size-option" value={String(size)}>
+                {size}
+              </option>
+            )}
           </For>
         </select>
       </label>
