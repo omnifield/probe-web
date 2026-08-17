@@ -580,6 +580,20 @@ describe("наше имя стоит РЯДОМ с именем кита, а н�
     }
   });
 
+  it("в значении нет повторов — имя кита не задваивается", () => {
+    // Кит собирает цепочку зацепок при композиции `as={…}`, но ЯВНЫЙ `data-slot` потребителя
+    // перебивает её целиком (`packages/ui/src/slot-chain.ts`: зацепка ставится ДО спреда).
+    // Поэтому «button filter-preset» доезжает как есть. Начни кит однажды не перебиваться, а
+    // дописываться — вышло бы «button button filter-preset», и узнать об этом надо здесь, а
+    // не по странному селектору у потребителя.
+    const host = showEverything();
+
+    for (const node of all(host, "[data-slot]")) {
+      const slots = slotsOf(node);
+      expect(new Set(slots).size, node.getAttribute("data-slot") ?? "").toBe(slots.length);
+    }
+  });
+
   it("перечень пар не выдумывает имён — и наши, и китовы объявлены отдельно", () => {
     for (const [kit, ours] of Object.entries(KIT_BACKED_SLOTS)) {
       expect(FOREIGN_SLOTS as readonly string[], kit).toContain(kit);
