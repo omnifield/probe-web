@@ -54,6 +54,27 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
  * Служба различает виды ярлыком (`kb:PROBEWEB-8`), наш — `skin`. Пока `skin` не научится туда
  * сохранять (`tasker:PROBEWEB-55`), список пуст — и это правильное состояние, а не сбой.
  */
+/**
+ * Спросить службу и отдать ответ как есть.
+ *
+ * @param {import("node:http").ServerResponse} res
+ * @param {string} path
+ */
+function proxyToService(res, path) {
+  const call = httpRequest({ host: "127.0.0.1", port: 8787, path, method: "GET" }, (answer) => {
+    res.writeHead(answer.statusCode ?? 502, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+    answer.pipe(res);
+  });
+  call.on("error", () => {
+    res.writeHead(503, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "service_down", message: "Служба пресетов не отвечает." }));
+  });
+  call.end();
+}
+
 function presets() {
   return new Promise((resolve) => {
     const call = httpRequest(
@@ -164,6 +185,13 @@ const server = createServer(async (req, res) => {
     const file = url.pathname.slice("/__nav/".length);
     const type = file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8";
     return sendBuilt(res, file, type);
+  }
+
+  // Одна запись целиком (в перечне содержимого нет). Панель берёт отсюда МОДЕЛЬ пресета и
+  // собирает из неё CSS. Файлов пресетов не существует: пресеты живут в службе.
+  if (url.pathname.startsWith("/__nav/preset/")) {
+    const id = url.pathname.slice("/__nav/preset/".length);
+    return proxyToService(res, `/api/presets/${encodeURIComponent(id)}`);
   }
 
   if (url.pathname === "/__nav/presets") {

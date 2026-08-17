@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
   Tabs,
+  TabsIndicator,
   TabsList,
   TabsTrigger,
 } from "@omnifield/probe-web-ui";
@@ -68,6 +69,37 @@ export function Panel() {
    * (`tasker:PROBEWEB-52`), где зона читает общий выбор САМА при запуске. Работает только
    * потому, что зоны проксируются через этот же порт — origin общий.
    */
+  /**
+   * Собрать стили выбранного пресета ИЗ СЛУЖБЫ.
+   *
+   * Пресеты живут в службе, а не файлами: панель берёт оттуда модель и превращает её в CSS тем
+   * же генератором, которым это делает `skin`. Без этих стилей `data-theme` ни на что не
+   * указывает — селектор не находит значений, и вид остаётся от умолчаний базы.
+   */
+  async function applyPresetCss(id: string | undefined) {
+    const tag = document.getElementById("preset-css");
+    if (!id) {
+      tag?.remove();
+      return;
+    }
+    try {
+      const record = (await (await fetch(`/__nav/preset/${encodeURIComponent(id)}`)).json()) as {
+        state?: { css?: string };
+      };
+      // Стили приезжают ВМЕСТЕ с записью. Собрать их из модели панель не может: генератор
+      // живёт в `skin` и наружу пакетом не отдан (заявка заведена). Знание о том, как модель
+      // превращается в вид, принадлежит `skin` — дублировать его здесь было бы хуже.
+      const css = record.state?.css;
+      if (!css) return;
+      const style = (tag as HTMLStyleElement | null) ?? document.createElement("style");
+      style.id = "preset-css";
+      style.textContent = css;
+      if (!tag) document.head.append(style);
+    } catch {
+      /* службы нет — панель остаётся на умолчаниях базы, оформление необязательно */
+    }
+  }
+
   function apply(next: Look) {
     // Идемпотентность: `apply` зовётся и на загрузку кадра, поэтому запись сигнала без
     // изменений — лишний повод для перерисовки. Дешевле сравнить, чем ловить последствия.
@@ -76,6 +108,7 @@ export function Panel() {
     if (!same) setLook(next);
 
     const self = document.documentElement;
+    void applyPresetCss(next.preset);
     if (next.preset) self.dataset["theme"] = next.preset;
     self.classList.toggle("dark", next.mode !== "light");
 
@@ -130,6 +163,24 @@ export function Panel() {
     setNonce((n) => n + 1);
   }
 
+  /**
+   * Смотреть, что зона делает со своей темой.
+   *
+   * Обмен идёт через атрибут на корне: панель ставит его зоне, зона читает. Обратного канала
+   * не было — поэтому смена пресета внутри зоны до панели не доходила. Наблюдение закрывает
+   * это тем же способом, каким зона слушает нас, и работает потому, что origin общий.
+   */
+  function watchZone() {
+    const root = frame?.contentDocument?.documentElement;
+    if (!root) return;
+    const watcher = new MutationObserver(() => {
+      const theirs = root.dataset["theme"];
+      if (theirs && theirs !== look().preset) apply({ ...look(), preset: theirs });
+    });
+    watcher.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    onCleanup(() => watcher.disconnect());
+  }
+
   onMount(() => {
     apply(look());
     void refreshZones();
@@ -164,6 +215,7 @@ export function Panel() {
                   </TabsTrigger>
                 )}
               </For>
+              <TabsIndicator />
             </TabsList>
           </Tabs>
         </Show>
@@ -235,7 +287,15 @@ export function Panel() {
             </div>
           }
         >
-          <iframe ref={frame} src={`/?nav=${nonce()}`} title="Зона" onLoad={() => apply(look())} />
+          <iframe
+            ref={frame}
+            src={`/?nav=${nonce()}`}
+            title="Зона"
+            onLoad={() => {
+              apply(look());
+              watchZone();
+            }}
+          />
         </Show>
       </div>
     </div>
