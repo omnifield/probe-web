@@ -58,6 +58,13 @@
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Combobox*` | составной, 18 частей | `Combobox.*` |
 | `NumberField*` | составной, 8 частей | `NumberField.*` |
+| `Accordion*` | составной, 5 частей | `Accordion.*` |
+| `Collapsible*` | составной, 3 части | `Collapsible.*` |
+| `AlertDialog*` | составной, 8 частей | `AlertDialog.*` |
+| `Pagination*` | составной, 6 частей | `Pagination.*` |
+| `Breadcrumbs*` | составной, 3 части | `Breadcrumbs.*` |
+| `Image*` | составной, 3 части | `Image.*` |
+| `Link` | `a` | `Link.Root` |
 | `Slider*` | составной, 9 частей | `Slider.*` |
 | `Progress*` | составной, 5 частей | `Progress.*` |
 | `Skeleton` | `div`-обёртка | `Skeleton.Root` |
@@ -119,6 +126,13 @@
 | составной `Tabs` | `tabs`, `tabs-list`, `tabs-trigger`, `tabs-indicator`, `tabs-content` |
 | составной `Combobox` | `combobox`, `combobox-label`, `combobox-control`, `combobox-input`, `combobox-trigger`, `combobox-icon`, `combobox-hidden-select`, `combobox-content`, `combobox-arrow`, `combobox-listbox`, `combobox-item`, `combobox-item-label`, `combobox-item-description`, `combobox-item-indicator`, `combobox-section`, `combobox-description`, `combobox-error` |
 | составной `NumberField` | `number-field`, `number-field-label`, `number-field-input`, `number-field-hidden-input`, `number-field-increment`, `number-field-decrement`, `number-field-description`, `number-field-error` |
+| составной `Accordion` | `accordion`, `accordion-item`, `accordion-header`, `accordion-trigger`, `accordion-content` |
+| составной `Collapsible` | `collapsible`, `collapsible-trigger`, `collapsible-content` |
+| составной `AlertDialog` | `alert-dialog-trigger`, `alert-dialog-overlay`, `alert-dialog-content`, `alert-dialog-title`, `alert-dialog-description`, `alert-dialog-close` |
+| составной `Pagination` | `pagination`, `pagination-item`, `pagination-ellipsis`, `pagination-previous`, `pagination-next` |
+| составной `Breadcrumbs` | `breadcrumbs`, `breadcrumbs-link`, `breadcrumbs-separator` |
+| составной `Image` | `image`, `image-img`, `image-fallback` |
+| `Link` | `link` |
 | составной `Slider` | `slider`, `slider-label`, `slider-value-label`, `slider-track`, `slider-fill`, `slider-thumb`, `slider-input`, `slider-description`, `slider-error` |
 | составной `Progress` | `progress`, `progress-label`, `progress-value-label`, `progress-track`, `progress-fill` |
 | `Skeleton` | `skeleton` |
@@ -330,6 +344,33 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
 фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
+
+## Раскрывашки, предупреждение, страницы, мелочи навигации
+
+**`Accordion` и `Collapsible` — два примитива, а не один с пропом.** У набора есть заголовок
+`<h3>` вокруг кнопки (без него раскрывашка выпадает из оглавления страницы — скринридер строит
+его по заголовкам), правило «сколько открыто разом» и навигация стрелками. У одиночной
+раскрывашки ничего этого нет и быть не должно.
+
+Закрытый раздел из документа **удаляется**, как и панель вкладок. Высоту kobalte отдаёт
+переменной `--kb-accordion-content-height` — анимацию пишет оформление, кит её не привозит.
+
+**`AlertDialog` — не `Dialog` с другим именем.** Роль `alertdialog` (техника объявляет такое
+окно настойчивее) и клик мимо окна НЕ закрывает: решение нельзя отменить промахом. Оба
+различия в поведении, а не в виде, поэтому пропами `Dialog` их не подменить.
+
+Кнопку ПОДТВЕРЖДЕНИЯ кит не привозит — она делает работу потребителя и остаётся обычным
+`Button` с его обработчиком.
+
+**`Pagination` считает раскладку номеров сам** из правила (`count`, `siblingCount`,
+`showFirst` / `showLast`), включая многоточия — они тоже узлы со своей зацепкой. Текущая
+страница помечена `data-current`, крайние кнопки отключаются примитивом.
+
+**Три мелочи существуют не ради вида, а ради состояния, которого нет у нативного элемента:**
+у `<a>` не бывает `disabled` (`Link` снимает адрес и объявляет состояние, оставаясь `<a>`), у
+`<img>` нет «ещё гружусь» (`Image` показывает `image-fallback`, пока браузер не загрузил
+картинку), а хлебные крошки — объявленная навигация с текущей страницей (`current` снимает
+адрес и ставит `aria-current`), а не список ссылок.
 
 ## Показ состояния: `Slider`, `Progress`, `Skeleton`, `Toast`
 

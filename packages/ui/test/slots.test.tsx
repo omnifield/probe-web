@@ -24,6 +24,26 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionHeader,
+  AccordionItem,
+  AccordionTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../src/accordion.jsx";
+import {
+  AlertDialog,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../src/alert-dialog.jsx";
 import { Button } from "../src/button.jsx";
 import {
   Checkbox,
@@ -96,6 +116,23 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
 } from "../src/number-field.jsx";
+import {
+  Breadcrumbs,
+  BreadcrumbsLink,
+  BreadcrumbsSeparator,
+  Image,
+  ImageFallback,
+  ImageImg,
+  Link,
+} from "../src/navigation.jsx";
+import {
+  Pagination,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationItems,
+  PaginationNext,
+  PaginationPrevious,
+} from "../src/pagination.jsx";
 import {
   Progress,
   ProgressFill,
@@ -323,6 +360,64 @@ function Scene() {
         <NumberFieldDescription>Штук в заказе</NumberFieldDescription>
         <NumberFieldError>Не меньше нуля</NumberFieldError>
       </NumberField>
+
+      <Accordion multiple value={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionHeader>
+            <AccordionTrigger>Доставка</AccordionTrigger>
+          </AccordionHeader>
+          <AccordionContent>Курьером</AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger>Подробнее</CollapsibleTrigger>
+        <CollapsibleContent>Мелкий шрифт</CollapsibleContent>
+      </Collapsible>
+
+      <AlertDialog open>
+        <AlertDialogTrigger>Удалить</AlertDialogTrigger>
+        <AlertDialogPortal>
+          <AlertDialogOverlay />
+          <AlertDialogContent>
+            <AlertDialogTitle>Удалить безвозвратно?</AlertDialogTitle>
+            <AlertDialogDescription>Восстановить нельзя</AlertDialogDescription>
+            <AlertDialogClose>Отмена</AlertDialogClose>
+          </AlertDialogContent>
+        </AlertDialogPortal>
+      </AlertDialog>
+
+      <Breadcrumbs>
+        <ol>
+          <li>
+            <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
+            <BreadcrumbsSeparator />
+          </li>
+        </ol>
+      </Breadcrumbs>
+
+      <Link href="/docs">Документация</Link>
+
+      {/* Две картинки, потому что состояния взаимоисключающие: загруженная показывает
+          `image-img` и убирает заглушку, а картинка без источника — наоборот. */}
+      <Image>
+        <ImageImg src="/avatar.png" alt="Пётр" />
+      </Image>
+
+      <Image>
+        <ImageFallback>П</ImageFallback>
+      </Image>
+
+      <Pagination
+        count={20}
+        page={10}
+        itemComponent={(item) => <PaginationItem page={item.page}>{item.page}</PaginationItem>}
+        ellipsisComponent={() => <PaginationEllipsis>…</PaginationEllipsis>}
+      >
+        <PaginationPrevious>Назад</PaginationPrevious>
+        <PaginationItems />
+        <PaginationNext>Вперёд</PaginationNext>
+      </Pagination>
 
       <Slider value={[10, 90]} minValue={0} maxValue={100} validationState="invalid">
         <SliderLabel>Цена</SliderLabel>

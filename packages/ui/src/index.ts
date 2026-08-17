@@ -9,6 +9,41 @@
 // Стилей отсюда не едет НИЧЕГО: у зоны нет CSS-артефакта, потому что нет и стилей по
 // умолчанию. Оформление приезжает из `@omnifield/probe-web-style` и пишется потребителем.
 
+export {
+  Accordion,
+  AccordionContent,
+  type AccordionContentComponentProps,
+  AccordionHeader,
+  type AccordionHeaderComponentProps,
+  AccordionItem,
+  type AccordionItemComponentProps,
+  type AccordionProps,
+  AccordionTrigger,
+  type AccordionTriggerComponentProps,
+  Collapsible,
+  CollapsibleContent,
+  type CollapsibleContentComponentProps,
+  type CollapsibleProps,
+  CollapsibleTrigger,
+  type CollapsibleTriggerComponentProps,
+} from "./accordion.jsx";
+export {
+  AlertDialog,
+  AlertDialogClose,
+  type AlertDialogCloseProps,
+  AlertDialogContent,
+  type AlertDialogContentComponentProps,
+  AlertDialogDescription,
+  type AlertDialogDescriptionComponentProps,
+  AlertDialogOverlay,
+  type AlertDialogOverlayComponentProps,
+  AlertDialogPortal,
+  type AlertDialogProps,
+  AlertDialogTitle,
+  type AlertDialogTitleComponentProps,
+  AlertDialogTrigger,
+  type AlertDialogTriggerComponentProps,
+} from "./alert-dialog.jsx";
 export { Button, type ButtonProps } from "./button.jsx";
 export {
   Checkbox,
@@ -161,6 +196,35 @@ export {
   ProgressValueLabel,
   type ProgressValueLabelComponentProps,
 } from "./progress.jsx";
+export {
+  Breadcrumbs,
+  BreadcrumbsLink,
+  type BreadcrumbsLinkComponentProps,
+  type BreadcrumbsProps,
+  BreadcrumbsSeparator,
+  type BreadcrumbsSeparatorComponentProps,
+  Image,
+  ImageFallback,
+  type ImageFallbackComponentProps,
+  ImageImg,
+  type ImageImgComponentProps,
+  type ImageProps,
+  Link,
+  type LinkProps,
+} from "./navigation.jsx";
+export {
+  Pagination,
+  PaginationEllipsis,
+  type PaginationEllipsisComponentProps,
+  PaginationItem,
+  type PaginationItemComponentProps,
+  PaginationItems,
+  PaginationNext,
+  type PaginationNextComponentProps,
+  PaginationPrevious,
+  type PaginationPreviousComponentProps,
+  type PaginationProps,
+} from "./pagination.jsx";
 export {
   Popover,
   PopoverAnchor,

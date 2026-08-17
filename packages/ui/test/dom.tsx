@@ -66,6 +66,36 @@ for (const name of ["hasPointerCapture", "setPointerCapture", "releasePointerCap
   }
 }
 
+/**
+ * Заглушка загрузки картинок — JSDOM не грузит их вовсе, а `Image` на этом и держится.
+ *
+ * `@kobalte/core` заводит `new window.Image()`, ставит `src` и ждёт `onload`, чтобы показать
+ * картинку вместо заглушки. В JSDOM события не будет никогда, то есть `image-img` не появился
+ * бы в документе ни при каких условиях — и проверять его было бы нечем.
+ *
+ * Заглушка сообщает об успехе СЛЕДУЮЩЕЙ задачей, а не тем же тактом: так сохраняется настоящий
+ * порядок «сначала заглушка, потом картинка», который и есть предмет проверки. Так же
+ * поступает сам kobalte в своих тестах.
+ */
+class LoadedImage {
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  crossOrigin: string | null = null;
+  referrerPolicy = "";
+  #src = "";
+
+  get src(): string {
+    return this.#src;
+  }
+
+  set src(value: string) {
+    this.#src = value;
+    setTimeout(() => this.onload?.(), 0);
+  }
+}
+
+(globalThis as { Image?: unknown }).Image = LoadedImage;
+
 /** Контейнеры и их деструкторы за текущий тест — снимаются в `cleanup()`. */
 const mounted: Array<() => void> = [];
 

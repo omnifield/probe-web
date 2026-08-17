@@ -12,6 +12,8 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { Accordion, Collapsible, CollapsibleTrigger } from "../src/accordion.jsx";
+import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
 import {
@@ -30,6 +32,8 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
 } from "../src/number-field.jsx";
+import { Breadcrumbs, BreadcrumbsLink, Link } from "../src/navigation.jsx";
+import { Pagination, PaginationNext, PaginationPrevious } from "../src/pagination.jsx";
 import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
 import {
   RadioGroup,
@@ -300,6 +304,63 @@ const PRIMITIVES = [
       <NumberField>
         <NumberFieldLabel {...props} />
       </NumberField>
+    ),
+  },
+  {
+    name: "Accordion",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Accordion {...props} />,
+  },
+  {
+    name: "CollapsibleTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Collapsible>
+        <CollapsibleTrigger {...props} />
+      </Collapsible>
+    ),
+  },
+  {
+    name: "AlertDialogTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <AlertDialog>
+        <AlertDialogTrigger {...props} />
+      </AlertDialog>
+    ),
+  },
+  {
+    name: "Link",
+    tag: "a",
+    render: (props: Record<string, unknown>) => <Link href="/docs" {...props} />,
+  },
+  {
+    name: "BreadcrumbsLink",
+    tag: "a",
+    render: (props: Record<string, unknown>) => (
+      <Breadcrumbs>
+        <BreadcrumbsLink href="/" {...props} />
+      </Breadcrumbs>
+    ),
+  },
+  {
+    name: "PaginationPrevious",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      // `page={10}`, а не первая страница: на первой kobalte отключает «назад» сам, и
+      // проверка обработчика проверяла бы отключённую кнопку.
+      <Pagination count={20} page={10} itemComponent={() => null} ellipsisComponent={() => null}>
+        <PaginationPrevious {...props} />
+      </Pagination>
+    ),
+  },
+  {
+    name: "PaginationNext",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Pagination count={20} page={10} itemComponent={() => null} ellipsisComponent={() => null}>
+        <PaginationNext {...props} />
+      </Pagination>
     ),
   },
   {
