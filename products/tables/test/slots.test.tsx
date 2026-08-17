@@ -52,6 +52,7 @@ import {
   FAMILIES,
   FILTER_SLOTS,
   FOREIGN_SLOTS,
+  PROMISED_CHART_STATES,
   PROMISED_FILTER_STATES,
   PROMISED_SLOTS,
   PROMISED_TABLE_STATES,
@@ -390,7 +391,15 @@ function Scene() {
       <DerivedLogicFilters />
       <BrokenLogicFilters />
 
-      <Chart columns={CHART_COLUMNS} rows={CHART_ROWS} spec={BAR} onSelect={() => undefined} />
+      {/* Выделение задано: у нас это УСЛОВИЕ ОТБОРА, а не подсветка, и без него состояния
+          выделенной величины не увидеть. */}
+      <Chart
+        columns={CHART_COLUMNS}
+        rows={CHART_ROWS}
+        spec={BAR}
+        selected={["Москва"]}
+        onSelect={() => undefined}
+      />
       <Chart columns={CHART_COLUMNS} rows={CHART_ROWS} spec={LINE} />
       <Chart columns={CHART_COLUMNS} rows={[]} spec={BAR} />
       <ChartLegend columns={CHART_COLUMNS} rows={CHART_ROWS} spec={BAR} />
@@ -526,6 +535,7 @@ describe("зацепка стоит на своём узле, а не на со�
     { slot: "chart-series", tag: "g", inside: "chart" },
     { slot: "chart-legend", tag: "UL" },
     { slot: "chart-legend-item", tag: "LI", inside: "chart-legend" },
+    { slot: "chart-legend-label", tag: "SPAN", inside: "chart-legend-item" },
     { slot: "adapter-rules", tag: "OL", inside: "adapter-builder" },
     { slot: "adapter-rule", tag: "LI", inside: "adapter-rules" },
   ];
@@ -635,6 +645,30 @@ const NOT_A_STATE = new Set([
   "aria-labelledby",
   "aria-invalid",
   "aria-required",
+
+  // ГЕОМЕТРИЯ SVG — то же, чем в разметке является `style`: где узел стоит и какого он
+  // размера. Считать её состоянием значило бы обещать координаты, а они пересчитываются от
+  // размера холста при каждой перерисовке.
+  "viewBox",
+  "width",
+  "height",
+  "x",
+  "y",
+  "x1",
+  "x2",
+  "y1",
+  "y2",
+  "cx",
+  "cy",
+  "r",
+  "d",
+  "text-anchor",
+  "dominant-baseline",
+
+  // `fill` и `stroke` — НЕ значения вида: они всегда `currentColor` или `none`, то есть тот
+  // самый рычаг, которым цвет задаёт потребитель. Стережёт это отдельная проба ниже.
+  "fill",
+  "stroke",
 ]);
 
 const notAState = (attr: string): boolean =>
@@ -714,6 +748,49 @@ function statesGate(
 
 statesGate("таблицы", PROMISED_TABLE_STATES, TABLE_SLOTS);
 statesGate("отбора", PROMISED_FILTER_STATES, FILTER_SLOTS);
+statesGate("графика", PROMISED_CHART_STATES, CHART_SLOTS);
+
+describe("ноль значений вида", () => {
+  // Требование 4 канона, и оно машинное, а не на слово. Компонент, выбравший цвет сам, стал бы
+  // ВТОРЫМ источником вида рядом со шкалой потребителя; разъехавшись с ней, он сделал бы
+  // график неодеваемым, и заметить это можно было бы только глазами.
+  it("в графике нет ни одного значения цвета — только `currentColor` и `none`", () => {
+    const host = showEverything();
+    const painted: string[] = [];
+
+    for (const node of all(host, "[data-slot^='chart']")) {
+      for (const attr of ["fill", "stroke"]) {
+        const value = node.getAttribute(attr);
+        if (value !== null && value !== "currentColor" && value !== "none") {
+          painted.push(`${node.getAttribute("data-slot")}[${attr}=${value}]`);
+        }
+      }
+    }
+
+    expect([...new Set(painted)]).toEqual([]);
+  });
+
+  it("ни одна наша зацепка не привозит своего класса", () => {
+    // Класс — уже значение вида. Единственный класс, который вправе доехать, приходит СНАРУЖИ
+    // через `cellAttrs`, и в сцене мы его не задаём.
+    const host = showEverything();
+    const classed = all(host, "[data-slot]")
+      .filter((node) => node.getAttribute("class"))
+      .map((node) => `${node.getAttribute("data-slot")}.${node.getAttribute("class")}`);
+
+    expect([...new Set(classed)]).toEqual([]);
+  });
+
+  it("служебный инлайновый стиль — только ширина колонки, и она названа в доке", () => {
+    const host = showEverything();
+    const styled = all(host, "[data-slot]")
+      .filter((node) => node.getAttribute("style"))
+      .map((node) => (node.getAttribute("style") ?? "").replace(/[\d.]+px/g, "N"));
+
+    // Всё, что не ширина, — незаявленный вид изнутри, и узнать о нём надо здесь.
+    for (const style of new Set(styled)) expect(style).toMatch(/^width:\s*N;?$/);
+  });
+});
 
 describe("объём семейств", () => {
   // Не число ради числа: пустое семейство означало бы, что перечень для него забыли завести,

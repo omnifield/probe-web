@@ -168,6 +168,7 @@ export const CHART_SLOTS = [
   "chart-grid",
   "chart-legend",
   "chart-legend-item",
+  "chart-legend-label",
   "chart-legend-mark",
   "chart-line",
   "chart-mark",
@@ -674,5 +675,90 @@ export const PROMISED_FILTER_STATES: readonly StatePromise[] = [
     kind: "flag",
     values: [],
     means: "то же на самом поле ввода",
+  },
+];
+
+/**
+ * СОСТОЯНИЯ ГРАФИКА.
+ *
+ * Главное здесь — `data-series`: ряд помечен ИНДЕКСОМ, а не цветом. Цвет — работа того, кто
+ * одевает, и палитру зона не выбирает; в компоненте нет ни одного значения цвета, только
+ * `currentColor`. Компонент, выбравший цвет сам, стал бы вторым источником вида рядом со
+ * шкалой, а разъехавшись с ней — неодеваемым.
+ *
+ * `data-key` рядом с индексом — не дубль: индекс говорит, КАКОЙ по счёту ряд (по нему берут
+ * цвет), ключ говорит, ЧТО это за ряд (по нему связывают легенду с величинами и переживают
+ * пересортировку категорий).
+ */
+export const PROMISED_CHART_STATES: readonly StatePromise[] = [
+  {
+    slot: "chart",
+    attr: "data-mark",
+    kind: "enum",
+    values: ["bar", "line", "point"],
+    means: "чем нарисованы величины",
+  },
+  {
+    slot: "chart-tick",
+    attr: "data-value",
+    kind: "value",
+    values: [],
+    means: "величина деления оси, числом",
+  },
+  {
+    slot: "chart-slice-label",
+    attr: "data-key",
+    kind: "identity",
+    values: [],
+    means: "ключ категории, к которой относится подпись",
+  },
+  {
+    slot: "chart-series",
+    attr: "data-series",
+    kind: "identity",
+    values: [],
+    means: "НОМЕР ряда, счёт от нуля. По нему берут цвет из шкалы — цвет зона не выбирает",
+  },
+  {
+    slot: "chart-series",
+    attr: "data-key",
+    kind: "identity",
+    values: [],
+    means: "ключ ряда: что это за ряд, в отличие от того, какой он по счёту",
+  },
+  {
+    slot: "chart-mark",
+    attr: "data-series",
+    kind: "identity",
+    values: [],
+    means: "номер ряда, которому принадлежит величина",
+  },
+  {
+    slot: "chart-mark",
+    attr: "data-key",
+    kind: "identity",
+    values: [],
+    means: "ключ категории, в которой стоит величина",
+  },
+  {
+    slot: "chart-mark",
+    attr: "data-selected",
+    kind: "flag",
+    values: [],
+    means: "величина выделена. Выделение у нас — это условие отбора, а не подсветка",
+  },
+  {
+    slot: "chart-legend-item",
+    attr: "data-series",
+    kind: "identity",
+    values: [],
+    means: "номер ряда — тот же, что у самого ряда: по нему легенда и ряд берут ОДИН цвет",
+  },
+  {
+    slot: "chart-legend-item",
+    attr: "data-key",
+    kind: "identity",
+    values: [],
+    means: "ключ ряда",
   },
 ];
