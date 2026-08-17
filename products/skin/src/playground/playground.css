@@ -130,16 +130,10 @@
 }
 
 .rail__help {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  font-size: 0.5625rem;
-  line-height: 1;
+  /* Значок помощи, а не буква: буква зависит от шрифта и в тёмной паре читается иначе. Размер
+     берётся от кегля подписи — значок это `1em`, и отдельного правила под него не нужно. */
   color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .rail__label--help:hover .rail__help {

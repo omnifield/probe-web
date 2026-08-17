@@ -15,6 +15,14 @@
 // стенд ест свой корм, и криво лёгший селект в узкой колонке я увижу первым.
 
 import {
+  AlertDialog,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Button,
   Dialog,
   DialogClose,
@@ -45,6 +53,7 @@ export function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
   const k = () => props.knobs;
 
   const [open, setOpen] = createSignal(false);
+  const [confirming, setConfirming] = createSignal(false);
   const [name, setName] = createSignal("");
   const [hint, setHint] = createSignal("");
 
@@ -65,20 +74,13 @@ export function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
       <div class="knob">
         <KnobLabel
           text="Вид"
-          hint="Тему задаёт ХОЗЯИН — пульт или приложение, в которое встроена зона: она её читает, а не выбирает. Тронули ручку здесь — зона отвязалась и живёт своим, пока не вернёте. Состояний ровно два, третьего нет."
+          hint="Тему задаёт ХОЗЯИН — пульт или приложение, в которое встроена зона: она её читает, а не выбирает. Тронули ручку здесь — зона отвязалась и живёт своим до перезагрузки страницы. Состояний ровно два, третьего нет."
         />
         <p class="knob__hint">
           <Show when={k().own()} fallback={<>тема хозяина — ручки здесь её перебьют</>}>
             своя тема — хозяин эту зону не перебивает
           </Show>
         </p>
-        <Show when={k().own()}>
-          <div class="knobs__row">
-            <Button data-size="sm" data-variant="outline" onClick={() => k().follow()}>
-              Вернуть к хозяину
-            </Button>
-          </div>
-        </Show>
       </div>
 
       {/* ── пресет ─────────────────────────────────────────────────────────────────────── */}
@@ -88,9 +90,17 @@ export function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
         options={k()
           .presets()
           .map((p) => ({ id: p.id, label: p.origin === "свой" ? `${p.title} (свой)` : p.title }))}
-        value={k().preset().id}
+        value={k().preset()?.id ?? ""}
         onChange={k().usePreset}
       />
+
+      {/* НЕТ ПРЕСЕТА — НЕТ СКИНА, и это рабочее состояние, а не поломка: удалить можно любой,
+          включая семя. Компоненты остаются на умолчаниях базы — оформление необязательно. */}
+      <Show when={k().presets().length === 0 && k().source() === "служба"}>
+        <p class="knobs__refusal">
+          пресетов нет — вид не подключён. Вернуть семя: <code>pnpm run seed:presets</code>
+        </p>
+      </Show>
 
       {/* Откуда перечень — говорится ВСЛУХ. Молчаливая работа на встроенных означала бы, что
           человек сохранит пресет и не поймёт, почему его не видит коллега. */}
@@ -122,7 +132,7 @@ export function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
               data-size="sm"
               disabled={k().source() !== "служба" || k().busy()}
               onClick={() => {
-                setName(`${k().preset().title} — правка`);
+                setName(`${k().preset()?.title ?? ""} — правка`);
                 setOpen(true);
               }}
             >
@@ -135,17 +145,48 @@ export function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
         </div>
       </Show>
 
-      <Show when={k().preset().origin === "свой" && !k().dirty()}>
-        <div class="knobs__row">
-          <Button
+      {/* УДАЛИТЬ МОЖНО ЛЮБОЙ, включая семя (решение user 2026-08-17): «своих» пресетов больше нет,
+          все они общие. Именно поэтому здесь спрашивается подтверждение: удаление стирает пресет
+          У ВСЕХ, а не только на этом экране, и вернуть его можно только сохранив заново. */}
+      <Show when={k().preset() !== undefined && !k().dirty()}>
+        <AlertDialog open={confirming()} onOpenChange={setConfirming}>
+          <AlertDialogTrigger
+            as={Button}
             data-size="sm"
             data-variant="danger-outline"
-            disabled={k().busy()}
-            onClick={() => void k().drop()}
+            disabled={k().busy() || k().source() !== "служба"}
           >
+            <span data-icon="trash-2" aria-hidden="true" />
             Удалить пресет
-          </Button>
-        </div>
+          </AlertDialogTrigger>
+
+          <AlertDialogPortal>
+            <AlertDialogOverlay />
+            <AlertDialogContent>
+              <AlertDialogTitle>Удалить «{k().preset()?.title}»?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Пресет уйдёт из службы у всех, кто ей пользуется. Действие необратимо: вернуть
+                можно только сохранив пресет заново.
+              </AlertDialogDescription>
+
+              <div class="knobs__row">
+                <Button
+                  data-variant="danger"
+                  disabled={k().busy()}
+                  onClick={() => {
+                    void k().drop();
+                    setConfirming(false);
+                  }}
+                >
+                  Удалить
+                </Button>
+                <AlertDialogClose as={Button} data-variant="outline">
+                  Отмена
+                </AlertDialogClose>
+              </div>
+            </AlertDialogContent>
+          </AlertDialogPortal>
+        </AlertDialog>
       </Show>
 
       {/* Отказ службы по делу — не «нет связи», и показывается отдельно: пресет НЕ сохранён. */}

@@ -49,7 +49,7 @@ export function App() {
             aria-label={left() ? "Свернуть список компонентов" : "Показать список компонентов"}
             onClick={() => setLeft(!left())}
           >
-            {left() ? "‹" : "›"}
+            <span data-icon="panel-left" aria-hidden="true" />
           </button>
           <Show when={left()}>
             <span class="rail__title">
@@ -123,7 +123,7 @@ export function App() {
                                 type="button"
                                 onClick={() => setTab(specimen.id)}
                               >
-                                кейсы →
+                                кейсы <span data-icon="chevron-right" aria-hidden="true" />
                               </button>
                             </header>
                             <div class="card__body">{specimen.cases[0]?.render()}</div>
@@ -149,7 +149,7 @@ export function App() {
             aria-label={right() ? "Свернуть настройки вида" : "Показать настройки вида"}
             onClick={() => setRight(!right())}
           >
-            {right() ? "›" : "‹"}
+            <span data-icon="panel-right" aria-hidden="true" />
           </button>
           <Show when={right()}>
             <span class="rail__title">Вид</span>

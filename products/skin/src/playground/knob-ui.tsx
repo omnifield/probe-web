@@ -48,9 +48,7 @@ export function KnobLabel(props: { text: string; hint?: string }) {
       <Tooltip openDelay={200} placement="right">
         <TooltipTrigger as="span" class="rail__label rail__label--help">
           {props.text}
-          <span class="rail__help" aria-hidden="true">
-            ?
-          </span>
+          <span class="rail__help" data-icon="info" aria-hidden="true" />
         </TooltipTrigger>
         <TooltipPortal>
           <TooltipContent>

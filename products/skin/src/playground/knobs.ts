@@ -84,7 +84,8 @@ export type Source = "служба" | "встроенные";
 
 export interface Knobs {
   presets: () => Preset[];
-  preset: () => Preset;
+  /** Показанный пресет; `undefined` — пресетов нет вовсе, и вид не подключён. */
+  preset: () => Preset | undefined;
   usePreset: (id: string) => void;
   dirty: () => boolean;
   reset: () => void;
@@ -180,14 +181,21 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
   const find = (id: string) =>
     presets().find((one) => one.id === id || one.recordId === id);
 
-  const preset = () =>
+  /**
+   * Показанный пресет — ИЛИ НИЧЕГО.
+   *
+   * «Нет пресета — нет скина» (решение user 2026-08-17): удалить можно любой, включая семя, и
+   * тогда вид не подключается вовсе. Это рабочее состояние, а не поломка: компоненты остаются на
+   * умолчаниях базы, оформление необязательно (`kb:SKIN-7`, инвариант 4). Возврат к семени — в
+   * одну команду: `pnpm run seed:presets`.
+   */
+  const preset = (): Preset | undefined =>
     find(own() ? chosenId() : hostId()) ??
     find(chosenId()) ??
     // Хозяин молчит и своего выбора нет — берём семя (`twitter`), а не первый попавшийся: первым
     // из службы приходит самый свежий чужой пресет, и стенд открывался бы каждый раз другим.
     find(DEFAULT_PRESET_ID) ??
-    presets()[0] ??
-    BUILT_IN[0]!;
+    presets()[0];
 
   const [state, setState] = createSignal<PresetState>(stateOf(BUILT_IN[0]!));
   const [dark, setDarkSignal] = createSignal(root.classList.contains("dark"));
@@ -302,13 +310,14 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
   // прежним — и человек увидел бы вид, которого нет ни у кого.
   createEffect(
     on(
-      () => preset().id,
+      () => preset()?.id,
       () => {
-        if (!own()) {
-          setState(stateOf(preset()));
+        const shown = preset();
+        if (!own() && shown !== undefined) {
+          setState(stateOf(shown));
           setAccentId("preset");
           setRadiusId("preset");
-          setDensityId(DENSITIES.find((d) => d.value === preset().density)?.id ?? "normal");
+          setDensityId(DENSITIES.find((d) => d.value === shown.density)?.id ?? "normal");
         }
       },
     ),
@@ -321,6 +330,15 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
   // выбора должны существовать, а взять их можно только из перечня.
   createEffect(() => {
     const current = preset();
+
+    if (current === undefined) {
+      // Нет пресета — снимаем и тему: иначе на корне остался бы атрибут, для которого значений
+      // никто не объявлял, и вид оказался бы «наполовину подключён».
+      if (root.dataset.theme === mine) delete root.dataset.theme;
+      root.style.removeProperty("--density");
+      return;
+    }
+
     const theme = themeOf(current, state());
 
     // Значения регистрируются ПОД ОБОИМИ именами: под своим именем темы и под тем, что стоит на
@@ -350,14 +368,21 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
     presets,
     preset,
     usePreset: (id) => {
-      if (!changed(preset().id, id)) return;
+      if (!changed(preset()?.id, id)) return;
       usePreset(id);
     },
-    dirty: () => isDirty(preset(), state()),
-    reset: () => usePreset(preset().id),
+    dirty: () => {
+      const shown = preset();
+      return shown !== undefined && isDirty(shown, state());
+    },
+    reset: () => {
+      const shown = preset();
+      if (shown !== undefined) usePreset(shown.id);
+    },
 
     save: async (title, description) => {
       const current = preset();
+      if (current === undefined) return;
       const named = title.trim() === "" ? `${current.title} — правка` : title.trim();
       const edited: Preset = {
         // Имя темы производится ОТ НАЗВАНИЯ, а не наследуется: сохранённая правка «Плотного» не
@@ -387,15 +412,19 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
     },
 
     drop: async () => {
+      // Удалить можно ЛЮБОЙ, включая семя: пресеты общие, и «своих» среди них нет — есть те, что
+      // сделал человек, и то, чем засеяли пустую службу. Семя возвращается одной командой.
       const current = preset();
-      if (current.origin !== "свой") return;
+      if (current === undefined) return;
 
       setBusy(true);
       try {
         // Удаляется ЗАПИСЬ службы, а не тема: идентификаторы разные, и путать их нельзя.
         await api.remove(current.recordId ?? current.id);
         await refresh();
-        usePreset(presets()[0]?.id ?? DEFAULT_PRESET_ID);
+        // Список мог опустеть — тогда выбирать нечего, и вид не подключается.
+        const next = presets()[0];
+        if (next !== undefined) usePreset(next.id);
       } catch (error) {
         if (error instanceof PresetRefused) setRefusal(error.message);
         else setTrouble(error instanceof Error ? error.message : String(error));
@@ -424,21 +453,21 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
       if (!changed(accent(), id)) return;
       setAccentId(id);
       const seed = ACCENTS.find((a) => a.id === id)?.seed;
-      setState({ ...state(), brand: seed ?? preset().seeds.brand });
+      setState({ ...state(), brand: seed ?? preset()?.seeds.brand ?? state().brand });
     },
     radius,
     setRadius: (id) => {
       if (!changed(radius(), id)) return;
       setRadiusId(id);
       const step = RADIUS_STEPS.find((s) => s.id === id);
-      setState({ ...state(), radius: step?.value ?? preset().meta?.radius });
+      setState({ ...state(), radius: step?.value ?? preset()?.meta?.radius });
     },
     density,
     setDensity: (id) => {
       if (!changed(density(), id)) return;
       setDensityId(id);
       const step = DENSITIES.find((d) => d.id === id);
-      setState({ ...state(), density: step?.value ?? preset().density });
+      setState({ ...state(), density: step?.value ?? preset()?.density ?? state().density });
     },
   };
 }
