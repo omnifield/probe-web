@@ -1,4 +1,4 @@
-import type { PolymorphicProps } from "@kobalte/core/polymorphic";
+import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import {
   Description as KobalteDescription,
   ErrorMessage as KobalteErrorMessage,
@@ -40,6 +40,19 @@ import { traceLife } from "./trace.js";
 //
 // Отличие от `RadioGroup` — только в показе: варианты стоят в ряд, а под активным ездит
 // полоска-указатель. Поэтому части почти те же, плюс `segmented-control-indicator`.
+//
+// ## Дорожка — НАША часть, а не kobalte'вская, и вот зачем она понадобилась
+//
+// Полоску kobalte двигает трансформацией, считая `offsetLeft` выбранного варианта. Отсчёт идёт
+// от ближайшего позиционированного предка, то есть от узла-обёртки вокруг вариантов. У kobalte
+// такой части НЕТ: обёртку он оставляет потребителю — и оформление, написанное для всех
+// потребителей сразу, не может её ни назвать, ни сделать позиционированной.
+//
+// Поставить `position: relative` на корень не выходит: корень включает подпись группы, и
+// полоска уезжает вниз ровно на её высоту (замерено зоной `skin`).
+//
+// Поэтому `SegmentedControlTrack` — единственная часть семейства, которой у kobalte нет вовсе.
+// Она не привозит ни поведения, ни стилей: это ОДИН узел с зацепкой, и всё.
 
 /**
  * Пропсы `SegmentedControl` — корня.
@@ -82,6 +95,40 @@ export function SegmentedControl<T extends ValidComponent = "div">(
       {...(props as SegmentedControlRootProps)}
     />
   );
+}
+
+/**
+ * Пропсы `SegmentedControlTrack`.
+ *
+ * @typeParam T — что рендерить. По умолчанию `div`.
+ */
+export type SegmentedControlTrackProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+
+/**
+ * Дорожка — ОДИН узел вокруг вариантов и полоски.
+ *
+ * Оформление делает её позиционированной (`position: relative`), и от неё же kobalte считает
+ * смещение полоски. Без этой части полоска отсчитывается от чужого начала координат и сползает.
+ *
+ * Своего поведения у неё нет: это чистая точка опоры для оформления.
+ *
+ * @example
+ * ```tsx
+ * <SegmentedControl value={mode()} onChange={setMode}>
+ *   <SegmentedControlLabel>Показывать</SegmentedControlLabel>
+ *   <SegmentedControlTrack>
+ *     <SegmentedControlIndicator />
+ *     <SegmentedControlItem value="список">…</SegmentedControlItem>
+ *   </SegmentedControlTrack>
+ * </SegmentedControl>
+ * ```
+ */
+export function SegmentedControlTrack<T extends ValidComponent = "div">(
+  props: SegmentedControlTrackProps<T>,
+) {
+  traceLife("ui.segmented-control-track");
+
+  return <Polymorphic as="div" data-slot="segmented-control-track" {...props} />;
 }
 
 /**

@@ -264,8 +264,12 @@ export {
 } from "./navigation-menu.jsx";
 export {
   Breadcrumbs,
+  BreadcrumbsItem,
+  type BreadcrumbsItemProps,
   BreadcrumbsLink,
   type BreadcrumbsLinkComponentProps,
+  BreadcrumbsList,
+  type BreadcrumbsListProps,
   type BreadcrumbsProps,
   BreadcrumbsSeparator,
   type BreadcrumbsSeparatorComponentProps,
@@ -376,6 +380,8 @@ export {
   SegmentedControlLabel,
   type SegmentedControlLabelComponentProps,
   type SegmentedControlProps,
+  SegmentedControlTrack,
+  type SegmentedControlTrackProps,
 } from "./segmented-control.jsx";
 export { Separator, type SeparatorProps } from "./separator.jsx";
 export { Skeleton, type SkeletonProps } from "./skeleton.jsx";

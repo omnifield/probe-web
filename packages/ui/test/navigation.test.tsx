@@ -12,7 +12,9 @@ import {
 } from "../src/alert-dialog.jsx";
 import {
   Breadcrumbs,
+  BreadcrumbsItem,
   BreadcrumbsLink,
+  BreadcrumbsList,
   BreadcrumbsSeparator,
   Image,
   ImageFallback,
@@ -61,15 +63,15 @@ describe("Breadcrumbs", () => {
   it("это объявленная навигация, а не список ссылок", () => {
     const host = mount(() => (
       <Breadcrumbs>
-        <ol>
-          <li>
+        <BreadcrumbsList>
+          <BreadcrumbsItem>
             <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
             <BreadcrumbsSeparator />
-          </li>
-          <li>
+          </BreadcrumbsItem>
+          <BreadcrumbsItem>
             <BreadcrumbsLink current>Отчёт</BreadcrumbsLink>
-          </li>
-        </ol>
+          </BreadcrumbsItem>
+        </BreadcrumbsList>
       </Breadcrumbs>
     ));
 
@@ -81,11 +83,11 @@ describe("Breadcrumbs", () => {
   it("`current` — не оформление: адрес снят, страница объявлена текущей", () => {
     const host = mount(() => (
       <Breadcrumbs>
-        <ol>
-          <li>
+        <BreadcrumbsList>
+          <BreadcrumbsItem>
             <BreadcrumbsLink current>Отчёт</BreadcrumbsLink>
-          </li>
-        </ol>
+          </BreadcrumbsItem>
+        </BreadcrumbsList>
       </Breadcrumbs>
     ));
 
@@ -94,15 +96,39 @@ describe("Breadcrumbs", () => {
     expect(link.hasAttribute("href")).toBe(false);
   });
 
+  it("список и крошка — НАШИ части: у оформления есть имя вместо тега", () => {
+    // До них оформление цеплялось за прямого ребёнка корня и за тег `li` — то есть за
+    // структуру, которую зона вправе поменять молча. Теперь у обоих есть обещанное имя.
+    const host = mount(() => (
+      <Breadcrumbs>
+        <BreadcrumbsList>
+          <BreadcrumbsItem>
+            <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
+          </BreadcrumbsItem>
+        </BreadcrumbsList>
+      </Breadcrumbs>
+    ));
+
+    const list = one(host, "[data-slot='breadcrumbs-list']");
+    const item = one(host, "[data-slot='breadcrumbs-item']");
+
+    expect(list.tagName).toBe("OL");
+    expect(item.tagName).toBe("LI");
+    expect(list.contains(item)).toBe(true);
+    // Ни поведения, ни вида — чистая точка опоры.
+    expect(list.hasAttribute("class")).toBe(false);
+    expect(item.hasAttribute("style")).toBe(false);
+  });
+
   it("разделитель спрятан от вспомогательной техники", () => {
     const host = mount(() => (
       <Breadcrumbs separator="→">
-        <ol>
-          <li>
+        <BreadcrumbsList>
+          <BreadcrumbsItem>
             <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
             <BreadcrumbsSeparator />
-          </li>
-        </ol>
+          </BreadcrumbsItem>
+        </BreadcrumbsList>
       </Breadcrumbs>
     ));
 
@@ -259,5 +285,20 @@ describe("Pagination — раскладку номеров считает kobalt
     for (const node of host.querySelectorAll("[data-slot^='pagination']")) {
       expect(node.hasAttribute("class")).toBe(false);
     }
+  });
+
+  it("список и его пункты — узлы KOBALTE, и структура закреплена здесь", () => {
+    // Зацепки на них нет и быть не может: `<ul>` рендерит корень kobalte, `<li>` — сама
+    // часть, и наружу они не выведены. Оформлению остаётся селектор по структуре
+    // (`[data-slot="pagination"] > ul`), а нам — держать эту структуру проверенной: сменится
+    // она в `@kobalte/core`, прогон покраснеет здесь, а не вёрстка у потребителя.
+    const host = mount(() => <Pages page={10} />);
+
+    const list = one(host, "[data-slot='pagination'] > ul");
+    const item = one(host, "[data-slot='pagination-item']");
+
+    expect(list.tagName).toBe("UL");
+    expect(item.parentElement?.tagName).toBe("LI");
+    expect(item.parentElement?.parentElement).toBe(list);
   });
 });

@@ -9,6 +9,7 @@ import {
   SegmentedControlItemInput,
   SegmentedControlItemLabel,
   SegmentedControlLabel,
+  SegmentedControlTrack,
 } from "../src/segmented-control.jsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/toggle-group.jsx";
 import { cleanup, mount, one, press } from "./dom.jsx";
@@ -22,17 +23,19 @@ function Mode(props: { value?: string; onChange?: (value: string) => void }) {
   return (
     <SegmentedControl value={props.value} onChange={props.onChange}>
       <SegmentedControlLabel>Показывать</SegmentedControlLabel>
-      <SegmentedControlIndicator />
-      <For each={MODES}>
-        {(mode) => (
-          <SegmentedControlItem value={mode}>
-            <SegmentedControlItemInput />
-            <SegmentedControlItemControl>
-              <SegmentedControlItemLabel>{mode}</SegmentedControlItemLabel>
-            </SegmentedControlItemControl>
-          </SegmentedControlItem>
-        )}
-      </For>
+      <SegmentedControlTrack>
+        <SegmentedControlIndicator />
+        <For each={MODES}>
+          {(mode) => (
+            <SegmentedControlItem value={mode}>
+              <SegmentedControlItemInput />
+              <SegmentedControlItemControl>
+                <SegmentedControlItemLabel>{mode}</SegmentedControlItemLabel>
+              </SegmentedControlItemControl>
+            </SegmentedControlItem>
+          )}
+        </For>
+      </SegmentedControlTrack>
     </SegmentedControl>
   );
 }
@@ -87,6 +90,22 @@ describe("SegmentedControl — это ВЫБОР, а не ряд кнопок", 
     for (const node of host.querySelectorAll("[data-slot^='segmented-control']")) {
       expect(node.hasAttribute("class")).toBe(false);
     }
+  });
+
+  it("дорожка — НАША часть: она обнимает варианты и полоску, и в ней нет подписи", () => {
+    // Ради этого она и заведена: полоску kobalte двигает от `offsetLeft` выбранного варианта,
+    // то есть от ближайшего позиционированного предка. Корень на эту роль не годится — в него
+    // входит подпись группы, и полоска уезжает вниз ровно на её высоту.
+    const host = mount(() => <Mode value="список" />);
+    const track = one(host, "[data-slot='segmented-control-track']");
+
+    expect(track.contains(one(host, "[data-slot='segmented-control-indicator']"))).toBe(true);
+    expect(track.contains(one(host, "[data-slot='segmented-control-item']"))).toBe(true);
+    expect(track.contains(one(host, "[data-slot='segmented-control-label']"))).toBe(false);
+
+    // И она пустая по виду: ни класса, ни стиля — позиционирует её оформление.
+    expect(track.hasAttribute("class")).toBe(false);
+    expect(track.hasAttribute("style")).toBe(false);
   });
 });
 

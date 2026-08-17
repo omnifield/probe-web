@@ -33,7 +33,7 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
 } from "../src/number-field.jsx";
-import { Breadcrumbs, BreadcrumbsLink, Link } from "../src/navigation.jsx";
+import { Breadcrumbs, BreadcrumbsLink, BreadcrumbsList, Link } from "../src/navigation.jsx";
 import { Pagination, PaginationNext, PaginationPrevious } from "../src/pagination.jsx";
 import { Menubar, MenubarMenu, MenubarTrigger } from "../src/menubar.jsx";
 import {
@@ -53,6 +53,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
   SegmentedControlItemInput,
+  SegmentedControlTrack,
 } from "../src/segmented-control.jsx";
 import { Separator } from "../src/separator.jsx";
 import { Skeleton } from "../src/skeleton.jsx";
@@ -429,6 +430,24 @@ const PRIMITIVES = [
           <SliderThumb {...props} />
         </SliderTrack>
       </Slider>
+    ),
+  },
+  {
+    name: "SegmentedControlTrack",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <SegmentedControl>
+        <SegmentedControlTrack as="p" {...props} />
+      </SegmentedControl>
+    ),
+  },
+  {
+    name: "BreadcrumbsList",
+    tag: "ol",
+    render: (props: Record<string, unknown>) => (
+      <Breadcrumbs>
+        <BreadcrumbsList {...props} />
+      </Breadcrumbs>
     ),
   },
   {

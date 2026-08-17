@@ -15,7 +15,7 @@ import {
   Root as KobalteImage,
 } from "@kobalte/core/image";
 import { type LinkRootProps, Root as KobalteLink } from "@kobalte/core/link";
-import type { PolymorphicProps } from "@kobalte/core/polymorphic";
+import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
 import { traceLife } from "./trace.js";
@@ -69,10 +69,15 @@ export type BreadcrumbsProps<T extends ValidComponent = "nav"> = PolymorphicProp
  * @example
  * ```tsx
  * <Breadcrumbs>
- *   <ol>
- *     <li><BreadcrumbsLink href="/">Главная</BreadcrumbsLink><BreadcrumbsSeparator /></li>
- *     <li><BreadcrumbsLink current>Отчёт</BreadcrumbsLink></li>
- *   </ol>
+ *   <BreadcrumbsList>
+ *     <BreadcrumbsItem>
+ *       <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
+ *       <BreadcrumbsSeparator />
+ *     </BreadcrumbsItem>
+ *     <BreadcrumbsItem>
+ *       <BreadcrumbsLink current>Отчёт</BreadcrumbsLink>
+ *     </BreadcrumbsItem>
+ *   </BreadcrumbsList>
  * </Breadcrumbs>
  * ```
  */
@@ -80,6 +85,48 @@ export function Breadcrumbs<T extends ValidComponent = "nav">(props: Breadcrumbs
   traceLife("ui.breadcrumbs");
 
   return <KobalteBreadcrumbs data-slot="breadcrumbs" {...(props as BreadcrumbsRootProps)} />;
+}
+
+/**
+ * Пропсы `BreadcrumbsList`.
+ *
+ * @typeParam T — что рендерить. По умолчанию `ol`.
+ */
+export type BreadcrumbsListProps<T extends ValidComponent = "ol"> = PolymorphicProps<T>;
+
+/**
+ * Список крошек — ОДИН узел `<ol>`. **НАША часть, у kobalte её нет:** он рендерит только
+ * `<nav>` и оставляет список потребителю.
+ *
+ * Пока списка не было, оформление цеплялось за прямого ребёнка корня (`[data-slot=…] > *`) —
+ * то есть за структуру, которую мы вправе поменять молча. Теперь у него есть имя.
+ *
+ * Порядковый список, а не `<ul>`: путь это последовательность, и вспомогательная техника
+ * читает её по порядку. Поведения часть не несёт — только зацепку и семантику тега.
+ */
+export function BreadcrumbsList<T extends ValidComponent = "ol">(props: BreadcrumbsListProps<T>) {
+  traceLife("ui.breadcrumbs-list");
+
+  return <Polymorphic as="ol" data-slot="breadcrumbs-list" {...props} />;
+}
+
+/**
+ * Пропсы `BreadcrumbsItem`.
+ *
+ * @typeParam T — что рендерить. По умолчанию `li`.
+ */
+export type BreadcrumbsItemProps<T extends ValidComponent = "li"> = PolymorphicProps<T>;
+
+/**
+ * Одна крошка — ОДИН узел `<li>`, тоже наша часть.
+ *
+ * Внутрь кладут ссылку и разделитель. Отдельной зацепкой, а не тегом `li` в селекторе: тег
+ * это структура, а зацепка — обещание.
+ */
+export function BreadcrumbsItem<T extends ValidComponent = "li">(props: BreadcrumbsItemProps<T>) {
+  traceLife("ui.breadcrumbs-item");
+
+  return <Polymorphic as="li" data-slot="breadcrumbs-item" {...props} />;
 }
 
 /**

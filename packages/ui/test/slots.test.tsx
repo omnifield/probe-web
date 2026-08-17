@@ -184,7 +184,9 @@ import {
 } from "../src/navigation-menu.jsx";
 import {
   Breadcrumbs,
+  BreadcrumbsItem,
   BreadcrumbsLink,
+  BreadcrumbsList,
   BreadcrumbsSeparator,
   Image,
   ImageFallback,
@@ -253,6 +255,7 @@ import {
   SegmentedControlItemInput,
   SegmentedControlItemLabel,
   SegmentedControlLabel,
+  SegmentedControlTrack,
 } from "../src/segmented-control.jsx";
 import { Separator } from "../src/separator.jsx";
 import { Skeleton } from "../src/skeleton.jsx";
@@ -495,12 +498,12 @@ function Scene() {
       </AlertDialog>
 
       <Breadcrumbs>
-        <ol>
-          <li>
+        <BreadcrumbsList>
+          <BreadcrumbsItem>
             <BreadcrumbsLink href="/">Главная</BreadcrumbsLink>
             <BreadcrumbsSeparator />
-          </li>
-        </ol>
+          </BreadcrumbsItem>
+        </BreadcrumbsList>
       </Breadcrumbs>
 
       <Link href="/docs">Документация</Link>
@@ -551,7 +554,9 @@ function Scene() {
 
       <SegmentedControl value="список" validationState="invalid">
         <SegmentedControlLabel>Показывать</SegmentedControlLabel>
-        <SegmentedControlIndicator />
+        <SegmentedControlTrack>
+          <SegmentedControlIndicator />
+        </SegmentedControlTrack>
         <SegmentedControlItem value="список">
           <SegmentedControlItemInput />
           <SegmentedControlItemControl>

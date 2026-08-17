@@ -136,14 +136,14 @@
 | составной `Collapsible` | `collapsible`, `collapsible-trigger`, `collapsible-content` |
 | составной `AlertDialog` | `alert-dialog-trigger`, `alert-dialog-overlay`, `alert-dialog-content`, `alert-dialog-title`, `alert-dialog-description`, `alert-dialog-close` |
 | составной `Pagination` | `pagination`, `pagination-item`, `pagination-ellipsis`, `pagination-previous`, `pagination-next` |
-| составной `Breadcrumbs` | `breadcrumbs`, `breadcrumbs-link`, `breadcrumbs-separator` |
+| составной `Breadcrumbs` | `breadcrumbs`, `breadcrumbs-list`, `breadcrumbs-item`, `breadcrumbs-link`, `breadcrumbs-separator` |
 | составной `Image` | `image`, `image-img`, `image-fallback` |
 | `Link` | `link` |
 | составной `Slider` | `slider`, `slider-label`, `slider-value-label`, `slider-track`, `slider-fill`, `slider-thumb`, `slider-input`, `slider-description`, `slider-error` |
 | составной `Progress` | `progress`, `progress-label`, `progress-value-label`, `progress-track`, `progress-fill` |
 | `Skeleton` | `skeleton` |
 | составной `Toast` | `toast-region`, `toast-list`, `toast`, `toast-title`, `toast-description`, `toast-close`, `toast-progress-track`, `toast-progress-fill` |
-| составной `SegmentedControl` | `segmented-control`, `segmented-control-label`, `segmented-control-indicator`, `segmented-control-item`, `segmented-control-item-input`, `segmented-control-item-control`, `segmented-control-item-indicator`, `segmented-control-item-label`, `segmented-control-item-description`, `segmented-control-description`, `segmented-control-error` |
+| составной `SegmentedControl` | `segmented-control`, `segmented-control-label`, `segmented-control-track`, `segmented-control-indicator`, `segmented-control-item`, `segmented-control-item-input`, `segmented-control-item-control`, `segmented-control-item-indicator`, `segmented-control-item-label`, `segmented-control-item-description`, `segmented-control-description`, `segmented-control-error` |
 | составной `ToggleGroup` | `toggle-group`, `toggle-group-item` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
@@ -388,6 +388,15 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 `showFirst` / `showLast`), включая многоточия — они тоже узлы со своей зацепкой. Текущая
 страница помечена `data-current`, крайние кнопки отключаются примитивом.
 
+**У крошек список и пункт — тоже НАШИ части** (`breadcrumbs-list`, `breadcrumbs-item`): kobalte
+рендерит только `<nav>`. Без них оформлению приходилось цепляться за прямого ребёнка корня и за
+тег `li` — то есть за структуру, которую зона вправе поменять молча.
+
+**А вот у страниц зацепки на список НЕТ и не будет:** `<ul>` рендерит корень kobalte, `<li>` —
+сама часть, наружу они не выведены. Оформлению остаётся `[data-slot="pagination"] > ul`, и это
+безопасно ровно потому, что структура **закреплена пробой** (`test/navigation.test.tsx`):
+сменится она в `@kobalte/core` — покраснеет наш прогон, а не вёрстка у потребителя.
+
 **Три мелочи существуют не ради вида, а ради состояния, которого нет у нативного элемента:**
 у `<a>` не бывает `disabled` (`Link` снимает адрес и объявляет состояние, оставаясь `<a>`), у
 `<img>` нет «ещё гружусь» (`Image` показывает `image-fallback`, пока браузер не загрузил
@@ -430,6 +439,13 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Подменить одно другим — соврать вспомогательной технике: выбор и нажатие она читает
 по-разному. То же различие, что между `Switch` и `Toggle`, только для ряда.
+
+**`SegmentedControlTrack` — единственная часть семейства, которой у kobalte нет.** Полоску он
+двигает трансформацией, считая `offsetLeft` выбранного варианта, а отсчёт идёт от ближайшего
+позиционированного предка. Такой части kobalte не даёт — обёртку вокруг вариантов он оставляет
+потребителю, и оформление, написанное сразу для всех, не может её ни назвать, ни позиционировать.
+Корень на эту роль не годится: в него входит подпись группы, и полоска уезжает вниз ровно на её
+высоту. Своего поведения и вида у дорожки нет — это точка опоры, и только.
 
 ## Поиск по списку и число: `Combobox`, `NumberField`
 
