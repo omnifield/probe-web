@@ -41,6 +41,7 @@ import {
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Меню действий: правка строки таблицы, настройки слоя карты, «ещё» в панели инструментов.
@@ -100,15 +101,17 @@ export type DropdownMenuTriggerComponentProps<T extends ValidComponent = "button
   PolymorphicProps<T, DropdownMenuTriggerProps<T>>;
 
 /** Кнопка, открывающая меню, — ОДИН узел `<button>`; она же зацепка позиционирования. */
-export function DropdownMenuTrigger<T extends ValidComponent = "button">(
+export const DropdownMenuTrigger = slotAware(function DropdownMenuTrigger<T extends ValidComponent = "button">(
   props: DropdownMenuTriggerComponentProps<T>,
 ) {
   traceLife("ui.dropdown-menu-trigger");
 
+  const [slot, rest] = useSlot(props, "dropdown-menu-trigger");
+
   return (
-    <KobalteTrigger data-slot="dropdown-menu-trigger" {...(props as DropdownMenuTriggerProps)} />
+    <KobalteTrigger {...slot} {...(rest as DropdownMenuTriggerProps)} />
   );
-}
+});
 
 /**
  * Пропсы `DropdownMenuIcon`.

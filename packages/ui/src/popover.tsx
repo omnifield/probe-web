@@ -21,6 +21,7 @@ import {
 } from "@kobalte/core/popover";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Всплывающая панель у произвольной зацепки: меню действий, панель настроек, карточка точки.
@@ -87,13 +88,15 @@ export type PopoverTriggerComponentProps<T extends ValidComponent = "button"> = 
  * Она же по умолчанию служит зацепкой позиционирования: панель встаёт относительно неё, пока
  * потребитель не поставил отдельный `PopoverAnchor`.
  */
-export function PopoverTrigger<T extends ValidComponent = "button">(
+export const PopoverTrigger = slotAware(function PopoverTrigger<T extends ValidComponent = "button">(
   props: PopoverTriggerComponentProps<T>,
 ) {
   traceLife("ui.popover-trigger");
 
-  return <KobalteTrigger data-slot="popover-trigger" {...(props as PopoverTriggerProps)} />;
-}
+  const [slot, rest] = useSlot(props, "popover-trigger");
+
+  return <KobalteTrigger {...slot} {...(rest as PopoverTriggerProps)} />;
+});
 
 /**
  * Пропсы `PopoverAnchor`.

@@ -21,6 +21,7 @@ import {
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Раскрывающиеся разделы — и одиночный, и набор. Два семейства в одном файле, потому что
@@ -194,18 +195,17 @@ export type CollapsibleTriggerComponentProps<T extends ValidComponent = "button"
   PolymorphicProps<T, CollapsibleTriggerProps<T>>;
 
 /** Кнопка раскрытия — ОДИН узел; состояние приезжает `data-expanded`. */
-export function CollapsibleTrigger<T extends ValidComponent = "button">(
+export const CollapsibleTrigger = slotAware(function CollapsibleTrigger<T extends ValidComponent = "button">(
   props: CollapsibleTriggerComponentProps<T>,
 ) {
   traceLife("ui.collapsible-trigger");
 
+  const [slot, rest] = useSlot(props, "collapsible-trigger");
+
   return (
-    <KobalteCollapsibleTrigger
-      data-slot="collapsible-trigger"
-      {...(props as CollapsibleTriggerProps)}
-    />
+    <KobalteCollapsibleTrigger {...slot} {...(rest as CollapsibleTriggerProps)} />
   );
-}
+});
 
 /**
  * Пропсы `CollapsibleContent`.

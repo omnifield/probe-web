@@ -13,6 +13,7 @@ import {
 } from "@kobalte/core/tooltip";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Подсказка: короткий текст у элемента, появляющийся по наведению и по фокусу.
@@ -72,13 +73,15 @@ export type TooltipTriggerComponentProps<T extends ValidComponent = "button"> = 
  * надевает поведение на неё. Обёртка вокруг чужого элемента здесь была бы лишним узлом в
  * разметке и лишней целью для оформления.
  */
-export function TooltipTrigger<T extends ValidComponent = "button">(
+export const TooltipTrigger = slotAware(function TooltipTrigger<T extends ValidComponent = "button">(
   props: TooltipTriggerComponentProps<T>,
 ) {
   traceLife("ui.tooltip-trigger");
 
-  return <KobalteTrigger data-slot="tooltip-trigger" {...(props as TooltipTriggerProps)} />;
-}
+  const [slot, rest] = useSlot(props, "tooltip-trigger");
+
+  return <KobalteTrigger {...slot} {...(rest as TooltipTriggerProps)} />;
+});
 
 /** Портал подсказки — узла НЕ рендерит, переносит содержимое в конец документа. */
 export function TooltipPortal(props: TooltipPortalProps) {

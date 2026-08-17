@@ -19,6 +19,7 @@ import {
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Модальное окно: подтверждение, форма поверх страницы, просмотр записи.
@@ -85,13 +86,15 @@ export type DialogTriggerComponentProps<T extends ValidComponent = "button"> = P
  * Необязательна: окном часто управляют извне (`open` из состояния приложения), и тогда кнопки
  * в разметке просто нет.
  */
-export function DialogTrigger<T extends ValidComponent = "button">(
+export const DialogTrigger = slotAware(function DialogTrigger<T extends ValidComponent = "button">(
   props: DialogTriggerComponentProps<T>,
 ) {
   traceLife("ui.dialog-trigger");
 
-  return <KobalteTrigger data-slot="dialog-trigger" {...(props as DialogTriggerProps)} />;
-}
+  const [slot, rest] = useSlot(props, "dialog-trigger");
+
+  return <KobalteTrigger {...slot} {...(rest as DialogTriggerProps)} />;
+});
 
 /** Портал окна — узла НЕ рендерит, переносит содержимое в конец документа. */
 export function DialogPortal(props: DialogPortalProps) {

@@ -769,10 +769,16 @@ function ApartScene() {
   );
 }
 
-/** Имена зацепок, реально доехавшие до документа, — без повторов и по алфавиту. */
+/**
+ * Имена зацепок, реально доехавшие до документа, — без повторов и по алфавиту.
+ *
+ * Значение атрибута разбирается СПИСКОМ через пробел: при композиции `as={…}` на узле их
+ * несколько (`kb:PROBEWEB-4`, форма читается `[data-slot~="…"]`). Взять значение целиком
+ * значило бы считать «button dialog-trigger» одним именем, которого никто не обещал.
+ */
 function slotsInDocument(): string[] {
-  const found = [...document.querySelectorAll("[data-slot]")].map(
-    (node) => node.getAttribute("data-slot") as string,
+  const found = [...document.querySelectorAll("[data-slot]")].flatMap((node) =>
+    (node.getAttribute("data-slot") ?? "").split(/\s+/).filter(Boolean),
   );
 
   return [...new Set(found)].sort();
@@ -790,7 +796,12 @@ const srcDir = resolve(here, "..", "src");
 function slotsInSource(source: string): string[] {
   const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
-  return [...code.matchAll(/data-slot="([^"]+)"/g)].map((match) => match[1]);
+  // Два начертания, и оба обязаны попадать в перечень: атрибутом в разметке и аргументом
+  // `useSlot` у примитивов, которые участвуют в композиции `as={…}`.
+  return [
+    ...[...code.matchAll(/data-slot="([^"]+)"/g)].map((match) => match[1]),
+    ...[...code.matchAll(/useSlot\(props, "([^"]+)"\)/g)].map((match) => match[1]),
+  ];
 }
 
 describe("обещанные зацепки доезжают до документа", () => {

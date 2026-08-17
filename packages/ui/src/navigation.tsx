@@ -18,6 +18,7 @@ import { type LinkRootProps, Root as KobalteLink } from "@kobalte/core/link";
 import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Ссылка, хлебные крошки и картинка — три мелких примитива в одном файле.
@@ -45,11 +46,13 @@ export type LinkProps<T extends ValidComponent = "a"> = PolymorphicProps<T, Link
  * Здесь kobalte снимает `href`, ставит `data-disabled` и `aria-disabled` — узел остаётся тем
  * же, поведение честным.
  */
-export function Link<T extends ValidComponent = "a">(props: LinkProps<T>) {
+export const Link = slotAware(function Link<T extends ValidComponent = "a">(props: LinkProps<T>) {
   traceLife("ui.link");
 
-  return <KobalteLink data-slot="link" {...(props as LinkRootProps)} />;
-}
+  const [slot, rest] = useSlot(props, "link");
+
+  return <KobalteLink {...slot} {...(rest as LinkRootProps)} />;
+});
 
 /**
  * Пропсы `Breadcrumbs`.

@@ -19,6 +19,7 @@ import {
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 // Окно, требующее решения: «удалить безвозвратно?», «выйти без сохранения?».
@@ -70,15 +71,17 @@ export type AlertDialogTriggerComponentProps<T extends ValidComponent = "button"
   PolymorphicProps<T, AlertDialogTriggerProps<T>>;
 
 /** Кнопка, открывающая окно, — ОДИН узел `<button>`. */
-export function AlertDialogTrigger<T extends ValidComponent = "button">(
+export const AlertDialogTrigger = slotAware(function AlertDialogTrigger<T extends ValidComponent = "button">(
   props: AlertDialogTriggerComponentProps<T>,
 ) {
   traceLife("ui.alert-dialog-trigger");
 
+  const [slot, rest] = useSlot(props, "alert-dialog-trigger");
+
   return (
-    <KobalteTrigger data-slot="alert-dialog-trigger" {...(props as AlertDialogTriggerProps)} />
+    <KobalteTrigger {...slot} {...(rest as AlertDialogTriggerProps)} />
   );
-}
+});
 
 /** Портал окна — узла НЕ рендерит, переносит содержимое в конец документа. */
 export function AlertDialogPortal(props: AlertDialogPortalProps) {
