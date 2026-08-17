@@ -59,6 +59,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "popover",
     title: "Всплывающая панель",
+    group: "Всплывающее",
     slots: [
       "popover-trigger",
       "popover-content",
@@ -136,6 +137,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "tooltip",
     title: "Подсказка",
+    group: "Всплывающее",
     slots: ["tooltip-trigger", "tooltip-content", "tooltip-arrow"],
     cases: [
       {
@@ -187,6 +189,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "dropdown-menu",
     title: "Меню действий",
+    group: "Всплывающее",
     slots: [
       "dropdown-menu-trigger",
       "dropdown-menu-icon",
@@ -315,6 +318,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "dialog",
     title: "Модальное окно",
+    group: "Всплывающее",
     slots: [
       "dialog-trigger",
       "dialog-overlay",
@@ -382,6 +386,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "tabs",
     title: "Вкладки",
+    group: "Навигация",
     slots: ["tabs", "tabs-list", "tabs-trigger", "tabs-indicator", "tabs-content"],
     cases: [
       {
@@ -427,6 +432,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "separator",
     title: "Разделитель",
+    group: "Структура",
     slots: ["separator"],
     cases: [
       {
@@ -451,6 +457,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
   {
     id: "spinner",
     title: "Индикатор ожидания",
+    group: "Обратная связь",
     slots: ["spinner"],
     cases: [
       {

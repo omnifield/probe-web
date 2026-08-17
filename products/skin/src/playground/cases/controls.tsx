@@ -43,6 +43,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
   {
     id: "button",
     title: "Кнопка",
+    group: "Действия",
     slots: ["button"],
     cases: [
       {
@@ -166,6 +167,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
   {
     id: "toggle",
     title: "Кнопка-переключатель",
+    group: "Действия",
     slots: ["toggle"],
     cases: [
       {
@@ -218,6 +220,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
   {
     id: "checkbox",
     title: "Флажок",
+    group: "Ввод",
     slots: [
       "checkbox",
       "checkbox-input",
@@ -341,6 +344,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
   {
     id: "switch",
     title: "Переключатель",
+    group: "Ввод",
     slots: [
       "switch",
       "switch-input",
@@ -430,6 +434,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
   {
     id: "radio-group",
     title: "Группа выбора",
+    group: "Ввод",
     slots: [
       "radio-group",
       "radio-group-label",

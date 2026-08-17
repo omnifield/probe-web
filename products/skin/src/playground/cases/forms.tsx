@@ -77,6 +77,7 @@ export const FORM_SPECIMENS: Specimen[] = [
   {
     id: "field",
     title: "Поле",
+    group: "Ввод",
     slots: ["field", "label", "input", "textarea", "field-description", "field-error"],
     cases: [
       {
@@ -167,6 +168,7 @@ export const FORM_SPECIMENS: Specimen[] = [
   {
     id: "select",
     title: "Список выбора",
+    group: "Ввод",
     slots: [
       "select",
       "select-trigger",

@@ -26,7 +26,7 @@ import {
 } from "@omnifield/probe-web-ui";
 import { createSignal, For, Show } from "solid-js";
 
-import { SPECIMENS } from "./cases/index.js";
+import { byGroup, GROUPS, SPECIMENS } from "./cases/index.js";
 import { KnobLabel, KnobSelect } from "./knob-ui.jsx";
 import { ACCENTS, createKnobs, DENSITIES, RADIUS_STEPS } from "./knobs.js";
 
@@ -81,37 +81,61 @@ export function App() {
         {/* Выбор семейства — табами. Пробовал «Всё» на всю ширину плюс список семейств
             (решение user 2026-08-17), но по виду откатили: табы читаются одним взглядом, а
             список требует открыть его, чтобы узнать, что там есть. */}
+        {/* Вкладки сгруппированы по смыслу (решение user 2026-08-17): тридцать семейств в один
+            ряд читались как свалка. Подпись группы — не заголовок, а метка ряда: она объясняет,
+            почему эти вкладки стоят рядом. */}
         <nav class="tabs" aria-label="Семейства">
           <button class="tab" type="button" aria-pressed={tab() === ALL} onClick={() => setTab(ALL)}>
             Всё
           </button>
-          <For each={SPECIMENS}>
-            {(specimen) => (
-              <button
-                class="tab"
-                type="button"
-                aria-pressed={tab() === specimen.id}
-                onClick={() => setTab(specimen.id)}
-              >
-                {specimen.title}
-              </button>
+
+          <For each={GROUPS}>
+            {(group) => (
+              <span class="tabs__group">
+                <span class="tabs__group-label">{group}</span>
+                <For each={byGroup(group)}>
+                  {(specimen) => (
+                    <button
+                      class="tab"
+                      type="button"
+                      aria-pressed={tab() === specimen.id}
+                      onClick={() => setTab(specimen.id)}
+                    >
+                      {specimen.title}
+                    </button>
+                  )}
+                </For>
+              </span>
             )}
           </For>
         </nav>
 
         <div class="scroll">
           <Show when={tab() === ALL} fallback={<CasePage />}>
-            <div class="grid">
-              <For each={SPECIMENS}>
-                {(specimen) => (
-                  <section class="card">
-                    <header class="card__head">
-                      <h2>{specimen.title}</h2>
-                      <button class="card__more" type="button" onClick={() => setTab(specimen.id)}>
-                        кейсы →
-                      </button>
-                    </header>
-                    <div class="card__body">{specimen.cases[0]?.render()}</div>
+            <div class="showcase">
+              <For each={GROUPS}>
+                {(group) => (
+                  <section class="showcase__group">
+                    <h2 class="showcase__title">{group}</h2>
+                    <div class="grid">
+                      <For each={byGroup(group)}>
+                        {(specimen) => (
+                          <section class="card">
+                            <header class="card__head">
+                              <h3>{specimen.title}</h3>
+                              <button
+                                class="card__more"
+                                type="button"
+                                onClick={() => setTab(specimen.id)}
+                              >
+                                кейсы →
+                              </button>
+                            </header>
+                            <div class="card__body">{specimen.cases[0]?.render()}</div>
+                          </section>
+                        )}
+                      </For>
+                    </div>
                   </section>
                 )}
               </For>
