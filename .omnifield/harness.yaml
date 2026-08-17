@@ -68,7 +68,7 @@ zones:
     paths: [products/tables]
     description: таблицы, headless как и кит; фильтры — модуль внутри со своей границей
   studio:
-    paths: [products/studio]
+    paths: [products/studio, canons/studio]
     description: витрина первой волны — что умеет производство; плагинная модель позже
 
   presets:
@@ -80,8 +80,12 @@ zones:
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера (kb:PROBEWEB-10)
 
   skin:
-    paths: [products/skin]
+    paths: [products/skin, canons/ui-skin]
     description: производство оформлений для безголового кита — своя логика, кит остаётся голым (kb:PROBEWEB-11)
+
+  chat:
+    paths: [products/chat, canons/chat]
+    description: чат — каркас фонда уже стоит (canons/chat), предмет обсуждает user с овнером
 
 # Git-доступ по роли — РАМКА (инвариант shared-policy), приведён для наглядности,
 # выключить нельзя: architect=full; owner=commit-only (gate); layer=none.

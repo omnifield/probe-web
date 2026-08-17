@@ -2,56 +2,82 @@
 // в CSS». Оформлен типом намеренно — набор токенов проверяется компилятором и тестом, а не
 // договорённостью на словах.
 //
-// Значения дефолтной пары живут ЗДЕСЬ и только здесь: `dist/css/themes.css` генерируется из
-// них при сборке (`scripts/build-css.mjs`). Второй копии значений в репозитории нет, поэтому
-// рассинхрон TS и CSS невозможен by construction, а не «проверяется тестом на синхронность».
+// ДВА УРОВНЯ (`kb:PROBEWEB-12`, пункты 1–2). Тема несёт ШКАЛЫ — сырьё со ступенями. РОЛИ
+// (`src/roles.ts`) ссылаются на ступени и в тему не входят: они одинаковы для всех тем, и
+// хранить их в каждой значило бы объявить разделение и тут же его отменить.
+//
+// Значения дефолтной пары СЧИТАЮТСЯ здесь из семян (`src/scale.ts`) — вручную записанных
+// цветов в репозитории больше нет. `dist/css/themes.css` генерируется из этого же модуля при
+// сборке (`scripts/build-css.mjs`), поэтому рассинхрон TS и CSS невозможен by construction.
 
-/** Цветовые токены палитры — обязательное ядро любой темы. */
-export const PALETTE_TOKENS = [
-  "background",
-  "foreground",
-  "card",
-  "card-foreground",
-  "popover",
-  "popover-foreground",
-  "primary",
-  "primary-foreground",
-  "secondary",
-  "secondary-foreground",
-  "muted",
-  "muted-foreground",
-  "accent",
-  "accent-foreground",
-  "destructive",
-  "destructive-foreground",
-  "border",
-  "input",
-  "ring",
-  "chart-1",
-  "chart-2",
-  "chart-3",
-  "chart-4",
-  "chart-5",
-  "sidebar",
-  "sidebar-foreground",
-  "sidebar-primary",
-  "sidebar-primary-foreground",
-  "sidebar-accent",
-  "sidebar-accent-foreground",
-  "sidebar-border",
-  "sidebar-ring",
+import { DERIVED_SCALES } from "./dimension.js";
+import {
+  CHART_SLOTS,
+  SCALE_STEPS,
+  type ScaleMode,
+  buildAlphaScale,
+  buildChartScale,
+  buildScale,
+  buildScrim,
+} from "./scale.js";
+import { trace } from "./trace.js";
+
+/** Имена шкал темы. Каждая строится из ОДНОГО значения-семени. */
+export const SCALE_NAMES = ["neutral", "brand", "danger"] as const;
+export type ScaleName = (typeof SCALE_NAMES)[number];
+
+/**
+ * Токены одной шкалы: двенадцать сплошных ступеней, столько же ПАРАЛЛЕЛЬНЫХ альфа-ступеней
+ * и подпись на сплошной ступени. Альфа-ряд не украшение: сплошная ступень закрывает то, что
+ * под ней, и слоем поверх страницы её не выразить.
+ */
+const scaleTokens = (name: ScaleName): string[] => [
+  ...SCALE_STEPS.map((step) => `${name}-${step}`),
+  ...SCALE_STEPS.map((step) => `${name}-a${step}`),
+  `${name}-contrast`,
+];
+
+/** Категориальные цвета данных. Не роль и не ступень — отдельный ряд рядоразличимых тонов. */
+export const CHART_TOKENS = Array.from(
+  { length: CHART_SLOTS },
+  (_, index) => `chart-${index + 1}`,
+);
+
+/**
+ * ЦВЕТОВЫЕ ТОКЕНЫ ТЕМЫ — обязательное ядро. Это СЫРЬЁ (ступени), а не назначения: роли
+ * объявлены отдельно и на тему не ложатся.
+ */
+export const SCALE_TOKENS = [
+  ...SCALE_NAMES.flatMap(scaleTokens),
+  ...CHART_TOKENS,
+  // Затемнение под модальным слоем. Не ступень и не роль — самостоятельное назначение,
+  // которое от режима НЕ зависит: осветляющая вуаль в тёмной теме подсвечивает то, что
+  // должна убрать из фокуса.
+  "scrim",
 ] as const;
 
 /**
- * Мета-токены темы — шрифты, радиус, трекинг, тени. Опциональны: тема, которая их не
- * задала, получает браузерный дефолт, а не сломанную страницу.
+ * Прежнее имя `SCALE_TOKENS`.
+ *
+ * @deprecated с 0.3.0 — набор перестал быть «палитрой ролей» и стал набором ступеней. Имя
+ * оставлено, чтобы поставка не ломала импорт молча; удаление — мажорным поднятием версии.
+ */
+export const PALETTE_TOKENS = SCALE_TOKENS;
+
+/**
+ * Мета-токены темы — шрифты, тени и СЕМЕНА размерных шкал. Опциональны: тема, которая их не
+ * задала, получает значение по умолчанию из `base.css` (`var(--seed, …)`), а не сломанную
+ * страницу.
+ *
+ * Семена перечислены не списком руками, а взяты из описания шкал: список ступеней и список
+ * семян обязаны совпадать по построению, иначе шкала считается от токена, которого в
+ * контракте нет.
  */
 export const THEME_META_TOKENS = [
   "font-sans",
   "font-serif",
   "font-mono",
-  "radius",
-  "tracking-normal",
+  ...DERIVED_SCALES.map((scale) => scale.seed),
   "shadow-2xs",
   "shadow-xs",
   "shadow-sm",
@@ -62,11 +88,18 @@ export const THEME_META_TOKENS = [
   "shadow-2xl",
 ] as const;
 
-export type PaletteToken = (typeof PALETTE_TOKENS)[number];
+export type ScaleToken = (typeof SCALE_TOKENS)[number];
 export type ThemeMetaToken = (typeof THEME_META_TOKENS)[number];
 
+/**
+ * Прежнее имя `ScaleToken`.
+ *
+ * @deprecated с 0.3.0 — см. `PALETTE_TOKENS`.
+ */
+export type PaletteToken = ScaleToken;
+
 /** Тема как данные: полное цветовое ядро обязательно, мета — по желанию. */
-export type ThemeTokens = Record<PaletteToken, string> &
+export type ThemeTokens = Record<ScaleToken, string> &
   Partial<Record<ThemeMetaToken, string>>;
 
 export interface ThemeDefinition {
@@ -77,13 +110,32 @@ export interface ThemeDefinition {
   dark?: ThemeTokens;
 }
 
-// Мета одинакова для обеих половин дефолтной пары: шрифт и геометрия от режима не зависят.
+/**
+ * Семена темы — по одному значению на шкалу. Ровно то, ради чего вводилась модель: смена
+ * бренда это ОДНО изменённое значение, а не тридцать переписанных.
+ */
+export type ThemeSeeds = Record<ScaleName, string>;
+
+/**
+ * Семена дефолтной пары. Бренд намеренно почти ахроматичен: база не имеет права навязывать
+ * потребителю фирменный цвет — свой он ставит одним значением.
+ */
+export const DEFAULT_SEEDS: ThemeSeeds = {
+  // Светлота нейтрального семени выше текстовой ступени намеренно: сплошной нейтральный
+  // (вторичная кнопка) обязан отличаться от второстепенного текста, а ступень 11 решается
+  // из порога и падает примерно на 0.54.
+  neutral: "oklch(0.62 0.004 285)",
+  brand: "oklch(0.28 0.006 285)",
+  danger: "oklch(0.505 0.196 27)",
+};
+
+// Мета одинакова для обеих половин пары: шрифт и геометрия от режима не зависят. Семена
+// размерных шкал берутся из их же описания — второго места, где записан дефолт, нет.
 const SHARED_META: Partial<Record<ThemeMetaToken, string>> = {
   "font-sans": 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
   "font-serif": 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
   "font-mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-  radius: "0.5rem",
-  "tracking-normal": "0em",
+  ...Object.fromEntries(DERIVED_SCALES.map((scale) => [scale.seed, scale.fallback])),
   "shadow-2xs": "0 1px 2px 0px oklch(0 0 0 / 0.03)",
   "shadow-xs": "0 1px 2px 0px oklch(0 0 0 / 0.05)",
   "shadow-sm": "0 1px 2px 0px oklch(0 0 0 / 0.05), 0 1px 3px 0px oklch(0 0 0 / 0.1)",
@@ -94,79 +146,73 @@ const SHARED_META: Partial<Record<ThemeMetaToken, string>> = {
   "shadow-2xl": "0 25px 50px -12px oklch(0 0 0 / 0.25)",
 };
 
-/** Дефолт светлого режима — нейтральная ч/б палитра, oklch. */
-export const DEFAULT_LIGHT: ThemeTokens = {
-  background: "oklch(1 0 0)",
-  foreground: "oklch(0.2138 0.0019 286.2347)",
-  card: "oklch(1 0 0)",
-  "card-foreground": "oklch(0.2138 0.0019 286.2347)",
-  popover: "oklch(1 0 0)",
-  "popover-foreground": "oklch(0.2138 0.0019 286.2347)",
-  primary: "oklch(0.2138 0.0019 286.2347)",
-  "primary-foreground": "oklch(0.9851 0 0)",
-  secondary: "oklch(0.9702 0 0)",
-  "secondary-foreground": "oklch(0.2138 0.0019 286.2347)",
-  muted: "oklch(0.9702 0 0)",
-  "muted-foreground": "oklch(0.5555 0 0)",
-  accent: "oklch(0.9702 0 0)",
-  "accent-foreground": "oklch(0.2138 0.0019 286.2347)",
-  destructive: "oklch(0.5406 0.2164 30.0696)",
-  "destructive-foreground": "oklch(1 0 0)",
-  border: "oklch(0.9219 0 0)",
-  input: "oklch(0.9219 0 0)",
-  ring: "oklch(0.709 0 0)",
-  "chart-1": "oklch(0.762 0.121 268.8807)",
-  "chart-2": "oklch(0.5429 0.2366 268.4747)",
-  "chart-3": "oklch(0.4787 0.2656 267.596)",
-  "chart-4": "oklch(0.4303 0.2586 266.8914)",
-  "chart-5": "oklch(0.3727 0.2109 269.7479)",
-  sidebar: "oklch(0.9851 0 0)",
-  "sidebar-foreground": "oklch(0.2138 0.0019 286.2347)",
-  "sidebar-primary": "oklch(0.2138 0.0019 286.2347)",
-  "sidebar-primary-foreground": "oklch(0.9851 0 0)",
-  "sidebar-accent": "oklch(0.9702 0 0)",
-  "sidebar-accent-foreground": "oklch(0.2138 0.0019 286.2347)",
-  "sidebar-border": "oklch(0.9219 0 0)",
-  "sidebar-ring": "oklch(0.709 0 0)",
-  ...SHARED_META,
-};
+/** Собирает половину темы: три шкалы + ряд графиков + мета. */
+export function buildThemeTokens(
+  seeds: ThemeSeeds,
+  mode: ScaleMode,
+  meta: Partial<Record<ThemeMetaToken, string>> = {},
+): ThemeTokens {
+  const tokens: Record<string, string> = {};
 
-/** Дефолт тёмного режима — инверсия той же нейтральной пары. */
-export const DEFAULT_DARK: ThemeTokens = {
-  background: "oklch(0 0 0)",
-  foreground: "oklch(1 0 0)",
-  card: "oklch(0 0 0)",
-  "card-foreground": "oklch(1 0 0)",
-  popover: "oklch(0 0 0)",
-  "popover-foreground": "oklch(1 0 0)",
-  primary: "oklch(1 0 0)",
-  "primary-foreground": "oklch(0 0 0)",
-  secondary: "oklch(0.1776 0 0)",
-  "secondary-foreground": "oklch(1 0 0)",
-  muted: "oklch(0.1776 0 0)",
-  "muted-foreground": "oklch(0.709 0 0)",
-  accent: "oklch(0.1776 0 0)",
-  "accent-foreground": "oklch(1 0 0)",
-  destructive: "oklch(0.6491 0.2386 33.1474)",
-  "destructive-foreground": "oklch(1 0 0)",
-  border: "oklch(0.1776 0 0)",
-  input: "oklch(0.1776 0 0)",
-  ring: "oklch(0.709 0 0)",
-  "chart-1": "oklch(0.762 0.121 268.8807)",
-  "chart-2": "oklch(0.5429 0.2366 268.4747)",
-  "chart-3": "oklch(0.4787 0.2656 267.596)",
-  "chart-4": "oklch(0.4303 0.2586 266.8914)",
-  "chart-5": "oklch(0.3727 0.2109 269.7479)",
-  sidebar: "oklch(0.1448 0 0)",
-  "sidebar-foreground": "oklch(0.9851 0 0)",
-  "sidebar-primary": "oklch(0.9851 0 0)",
-  "sidebar-primary-foreground": "oklch(0.1448 0 0)",
-  "sidebar-accent": "oklch(0.1776 0 0)",
-  "sidebar-accent-foreground": "oklch(0.9851 0 0)",
-  "sidebar-border": "oklch(0.1776 0 0)",
-  "sidebar-ring": "oklch(0.709 0 0)",
-  ...SHARED_META,
-};
+  for (const name of SCALE_NAMES) {
+    const scale = buildScale(seeds[name], mode);
+    for (const [key, value] of Object.entries(scale)) tokens[`${name}-${key}`] = value;
+
+    const alpha = buildAlphaScale(seeds[name], mode);
+    for (const [key, value] of Object.entries(alpha)) tokens[`${name}-${key}`] = value;
+  }
+
+  buildChartScale(seeds.brand, mode).forEach((value, index) => {
+    tokens[CHART_TOKENS[index]] = value;
+  });
+
+  tokens.scrim = buildScrim(seeds.neutral);
+
+  return { ...tokens, ...SHARED_META, ...meta } as ThemeTokens;
+}
+
+export interface CreateThemeOptions extends Partial<ThemeSeeds> {
+  /** Имя палитры → селектор `[data-theme="<name>"]`. */
+  name: string;
+  /** Переопределение мета-токенов: шрифты, тени, семена размерных шкал. */
+  meta?: Partial<Record<ThemeMetaToken, string>>;
+}
+
+/**
+ * Тема из семян. Обе половины пары считаются СВОИМИ лестницами: тёмная — не инверсия
+ * светлой, иначе фон элемента становится текстом (`kb:PROBEWEB-12`, пункт 1).
+ *
+ * ```ts
+ * registerTheme(createTheme({ name: "ocean", brand: "#0f6fde" }));
+ * ```
+ *
+ * Незаданная шкала берётся из дефолтной пары — сменить один только бренд должно стоить
+ * одного значения, а не переписывания всех трёх.
+ */
+export function createTheme(options: CreateThemeOptions): ThemeDefinition {
+  const done = trace(`createTheme(${options.name})`);
+
+  const seeds: ThemeSeeds = {
+    neutral: options.neutral ?? DEFAULT_SEEDS.neutral,
+    brand: options.brand ?? DEFAULT_SEEDS.brand,
+    danger: options.danger ?? DEFAULT_SEEDS.danger,
+  };
+
+  const theme: ThemeDefinition = {
+    name: options.name,
+    light: buildThemeTokens(seeds, "light", options.meta),
+    dark: buildThemeTokens(seeds, "dark", options.meta),
+  };
+
+  done();
+  return theme;
+}
+
+/** Дефолт светлого режима — нейтральная пара, посчитанная из `DEFAULT_SEEDS`. */
+export const DEFAULT_LIGHT: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "light");
+
+/** Дефолт тёмного режима — СВОЯ шкала того же семени, а не инверсия светлой. */
+export const DEFAULT_DARK: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "dark");
 
 /**
  * Сериализация темы в CSS-блок для селектора. Одна и та же функция обслуживает сборку

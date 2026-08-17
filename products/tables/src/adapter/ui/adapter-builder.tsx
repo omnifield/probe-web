@@ -93,7 +93,9 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
       <div data-slot="adapter-source">
         <label data-slot="adapter-rows">
           набор строк лежит по пути
+          {/* Зацепка и на подписи, и на самом поле: полусоставную часть одеть нельзя. */}
           <select
+            data-slot="adapter-rows-select"
             value={props.spec.rows}
             onChange={(event) => patch({ rows: event.currentTarget.value })}
           >
@@ -104,6 +106,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
 
         <label data-slot="adapter-extra">
           <input
+            data-slot="adapter-extra-input"
             type="checkbox"
             checked={props.spec.extra === "keep"}
             onChange={(event) => patch({ extra: event.currentTarget.checked ? "keep" : "drop" })}
@@ -121,10 +124,10 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
 
             return (
               <li data-slot="adapter-rule" data-target={rule.target}>
-                <span data-slot="rule-number">{index() + 1}</span>
+                <span data-slot="adapter-rule-number">{index() + 1}</span>
 
                 <select
-                  data-slot="rule-target"
+                  data-slot="adapter-rule-target"
                   value={rule.target}
                   onChange={(event) =>
                     replaceRule(index(), { ...rule, target: event.currentTarget.value })
@@ -135,12 +138,12 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                   </For>
                 </select>
 
-                <span data-slot="rule-arrow" aria-hidden="true">
+                <span data-slot="adapter-rule-arrow" aria-hidden="true">
                   ←
                 </span>
 
                 <select
-                  data-slot="rule-from"
+                  data-slot="adapter-rule-from"
                   value={rule.from ?? ""}
                   onChange={(event) => {
                     const value = event.currentTarget.value;
@@ -154,10 +157,10 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                   <For each={sourcePaths()}>{(path) => <option value={path}>{path}</option>}</For>
                 </select>
 
-                <div data-slot="rule-steps">
+                <div data-slot="adapter-rule-steps">
                   <For each={rule.steps ?? []}>
                     {(step, at) => (
-                      <span data-slot="rule-step" data-kind={step.kind}>
+                      <span data-slot="adapter-rule-step" data-kind={step.kind}>
                         {STEP_LABELS[step.kind]}
                         <StepParams
                           step={step}
@@ -169,7 +172,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                           }
                         />
                         <Button
-                          data-slot="rule-step-remove"
+                          data-slot="adapter-rule-step-remove"
                           aria-label={`Убрать действие ${at() + 1}`}
                           onClick={() =>
                             replaceRule(index(), {
@@ -185,7 +188,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                   </For>
 
                   <select
-                    data-slot="rule-step-add"
+                    data-slot="adapter-rule-step-add"
                     value=""
                     onChange={(event) => {
                       const kind = event.currentTarget.value as StepKind;
@@ -210,7 +213,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                 </div>
 
                 <select
-                  data-slot="rule-on-fail"
+                  data-slot="adapter-rule-on-fail"
                   value={rule.onFail ?? "skip"}
                   onChange={(event) =>
                     replaceRule(index(), { ...rule, onFail: event.currentTarget.value as OnFail })
@@ -223,7 +226,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
 
                 <Show when={rule.onFail === "default"}>
                   <Field
-                    data-slot="rule-fallback"
+                    data-slot="adapter-rule-fallback"
                     value={rule.fallback ?? ""}
                     onChange={(value) => replaceRule(index(), { ...rule, fallback: value })}
                   >
@@ -234,10 +237,10 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                 {/* Счётчик у правила — то же, что счётчик у условия фильтра: настройку видно
                     сразу, а не по пропавшим данным через месяц. */}
                 <Show when={failures().length > 0}>
-                  <span data-slot="rule-issues">
+                  <span data-slot="adapter-rule-issues">
                     <For each={failures()}>
                       {(issue) => (
-                        <span data-slot="rule-issue">
+                        <span data-slot="adapter-rule-issue">
                           не легло {issue.count}: {issue.reason}
                           <Show when={issue.examples.length > 0}>
                             {" "}
@@ -250,7 +253,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                 </Show>
 
                 <Button
-                  data-slot="rule-remove"
+                  data-slot="adapter-rule-remove"
                   aria-label={`Убрать правило ${index() + 1}`}
                   onClick={() => patch({ fields: props.spec.fields.filter((_, at) => at !== index()) })}
                 >
@@ -316,14 +319,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="step-separator"
+              data-slot="adapter-step-separator"
               value={step().separator}
               onChange={(value) => props.onChange({ ...step(), separator: value })}
             >
               <Input placeholder="разделитель" />
             </Field>
             <Field
-              data-slot="step-take"
+              data-slot="adapter-step-take"
               value={String(step().take)}
               onChange={(value) => props.onChange({ ...step(), take: Number(value) || 0 })}
             >
@@ -337,14 +340,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="step-find"
+              data-slot="adapter-step-find"
               value={step().find}
               onChange={(value) => props.onChange({ ...step(), find: value })}
             >
               <Input placeholder="найти" />
             </Field>
             <Field
-              data-slot="step-with"
+              data-slot="adapter-step-with"
               value={step().with}
               onChange={(value) => props.onChange({ ...step(), with: value })}
             >
@@ -361,7 +364,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="step-by"
+            data-slot="adapter-step-by"
             value={String(step().by)}
             onChange={(value) => props.onChange({ ...step(), by: Number(value) || 1 })}
           >
@@ -375,7 +378,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="step-value"
+            data-slot="adapter-step-value"
             value={step().value}
             onChange={(value) => props.onChange({ ...step(), value })}
           >

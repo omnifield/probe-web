@@ -1,0 +1,34 @@
+/* Всё оформление разом — подпуть `@probe-web/skin/skin.css`.
+
+   Удобство, а не единственная форма: кто одевает весь кит, берёт этот файл одной строкой;
+   кто хочет только кнопку — берёт `base.css` и `button.css` и не везёт остального.
+   Раздельные подпути существуют ровно ради второго случая.
+
+   ПОРЯДОК ИМПОРТОВ ЗДЕСЬ НЕСУЩИЙ: `base.css` первым — он объявляет слой, а место первого
+   упоминания слоя задаёт его положение в каскаде (CSS Cascade 5, §6.4.3). */
+
+@import "./base.css";
+@import "./accordion.css";
+@import "./button.css";
+@import "./checkbox.css";
+@import "./combobox.css";
+@import "./dialog.css";
+@import "./field.css";
+@import "./menus.css";
+@import "./navigation.css";
+@import "./number-field.css";
+@import "./popover.css";
+@import "./progress.css";
+@import "./radio-group.css";
+@import "./segmented-control.css";
+@import "./select.css";
+@import "./separator.css";
+@import "./skeleton.css";
+@import "./slider.css";
+@import "./spinner.css";
+@import "./switch.css";
+@import "./tabs.css";
+@import "./toast.css";
+@import "./toggle.css";
+@import "./toggle-group.css";
+@import "./tooltip.css";

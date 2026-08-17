@@ -1,0 +1,208 @@
+/* Модальное окно и окно подтверждения — подпуть `@probe-web/skin/dialog.css`. Требует `base.css`.
+
+   Двенадцать зацепок в двух семействах: `dialog-trigger` · `dialog-overlay` · `dialog-content` ·
+   `dialog-title` · `dialog-description` · `dialog-close` и те же шесть с префиксом
+   `alert-dialog-`.
+
+   ОДИН ВИД НА ДВА СЕМЕЙСТВА. Окно подтверждения отличается поведением: его нельзя закрыть мимо
+   окна, потому что ответ обязателен. На вид это не влияет — влияет на то, что в нём написано и
+   какие кнопки стоят, а это дело потребителя. Держать для него копию правил значило бы
+   гарантировать расхождение: поправят одно, забудут другое.
+
+   ОКНО — НЕ БОЛЬШОЙ ПОПОВЕР. Позиционера у него нет вовсе (карта овнера `ui`), значит место
+   задаём мы. Отсюда `position: fixed` и центрирование здесь, а не опции позиционировщика.
+
+   ЗАТЕМНЕНИЕ БЕЗ НАШИХ ПРАВИЛ НЕВИДИМО: `dialog-overlay` — отдельный узел рядом с окном, и
+   собственного вида у него нет. Красим его ролью `--overlay` (она же `--scrim`) — это
+   полупрозрачное наложение из альфа-ступеней базы, а не сплошной цвет: под ним обязана
+   просвечивать страница, иначе модальность читается как переход на другой экран. */
+
+@layer skin {
+  /* ГОЛЫЙ ТРИГГЕР ОДЕВАЕТСЯ ЗДЕСЬ, СОСТАВНОЙ — НЕТ, и `:not([data-slot~="button"])` в
+     селекторах именно об этом.
+
+     `<DialogTrigger>Текст</DialogTrigger>` — законная простая разметка, и узел обязан
+     выглядеть контролом, а не голым текстом: вид повторяет кнопку, потому что это кнопка и
+     есть по смыслу. Повтор — цена независимых подпутей: взявший только этот файл получает
+     рабочий вид, а не половину.
+
+     А `<DialogTrigger as={Button}>` даёт ОДИН узел с обеими зацепками, и вид кнопки у него
+     уже есть — с вариантом, который выбрал потребитель. Без исключения наш нейтральный вид
+     лёг бы ПОВЕРХ: этот файл идёт после `button.css`, специфичность равная, побеждает
+     порядок, — и `data-variant="danger"` на триггере тихо стал бы обычной кнопкой.
+     Стережёт исключение проба `test/hooks.test.ts`. */
+  [data-slot~="dialog-trigger"]:not([data-slot~="button"]),
+  [data-slot~="alert-dialog-trigger"]:not([data-slot~="button"]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-4);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--element);
+    color: var(--text);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="dialog-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="alert-dialog-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]) {
+    background-color: var(--element-hover);
+    border-color: var(--border-strong);
+  }
+
+  [data-slot~="dialog-trigger"]:not([data-slot~="button"]):focus-visible,
+  [data-slot~="alert-dialog-trigger"]:not([data-slot~="button"]):focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot~="dialog-trigger"]:not([data-slot~="button"])[data-expanded],
+  [data-slot~="alert-dialog-trigger"]:not([data-slot~="button"])[data-expanded] {
+    background-color: var(--element-active);
+  }
+
+  [data-slot~="dialog-overlay"],
+  [data-slot~="alert-dialog-overlay"] {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+
+    background-color: var(--overlay);
+
+    animation: probe-web-skin-fade var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="dialog-content"],
+  [data-slot~="alert-dialog-content"] {
+    position: fixed;
+    /* Центр по обеим осям без трансформации: у окна нет позиционировщика, и `translate`
+       остаётся свободным для анимации появления. */
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    translate: -50% -50%;
+
+    z-index: var(--z-dialog);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    inline-size: min(28rem, calc(100vw - var(--space-6)));
+    max-block-size: calc(100vh - var(--space-6));
+    overflow-y: auto;
+
+    padding: var(--space-5);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-xl);
+
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-xl);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+
+    animation: probe-web-skin-dialog var(--motion-normal) var(--ease-out);
+  }
+
+  [data-slot~="dialog-title"],
+  [data-slot~="alert-dialog-title"] {
+    font-size: var(--font-size-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+
+  [data-slot~="dialog-description"],
+  [data-slot~="alert-dialog-description"] {
+    color: var(--text-muted);
+    line-height: var(--leading-normal);
+  }
+
+  /* Кнопка закрытия — тот же случай, что и триггер: `as={Button}` зацепку кнопки не
+     сохраняет, вид обязан быть у своей. `align-self` здесь несущий: окно и панель —
+     колонки, и без него кнопка растягивается во всю ширину, как это и вышло на первом
+     снимке. */
+  [data-slot~="dialog-close"],
+  [data-slot~="alert-dialog-close"] {
+    align-self: flex-end;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-4);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-md);
+
+    background-color: var(--element);
+    color: var(--text);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="dialog-close"]:hover,
+  [data-slot~="alert-dialog-close"]:hover {
+    background-color: var(--element-hover);
+    border-color: var(--border-strong);
+  }
+
+  [data-slot~="dialog-close"]:focus-visible,
+  [data-slot~="alert-dialog-close"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  @keyframes probe-web-skin-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Окно приезжает снизу и чуть уменьшенным — движение показывает, что слой пришёл поверх
+     страницы, а не подменил её. Смещение задано в токене интервалов, а не числом. */
+  @keyframes probe-web-skin-dialog {
+    from {
+      opacity: 0;
+      translate: -50% calc(-50% + var(--space-3));
+      scale: 0.98;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="dialog-overlay"],
+    [data-slot~="alert-dialog-overlay"],
+    [data-slot~="dialog-content"],
+    [data-slot~="alert-dialog-content"] {
+      animation: none;
+    }
+  }
+}

@@ -374,7 +374,7 @@ export function DataTable(props: DataTableProps) {
             <th data-slot="table-service" scope="col">
               <input
                 type="checkbox"
-                data-slot="select-all"
+                data-slot="table-select-all"
                 aria-label="Выделить все строки"
                 checked={allSelected()}
                 onChange={toggleAll}
@@ -414,11 +414,11 @@ export function DataTable(props: DataTableProps) {
                 >
                   <Show
                     when={sortable()}
-                    fallback={<span data-slot="header-label">{column()?.label}</span>}
+                    fallback={<span data-slot="table-header-label">{column()?.label}</span>}
                   >
                     <button
                       type="button"
-                      data-slot="header-sort"
+                      data-slot="table-header-sort"
                       data-direction={direction() ?? undefined}
                       onClick={(event) =>
                         props.onViewChange(toggleSort(props.view, columnId, event.shiftKey))
@@ -428,7 +428,7 @@ export function DataTable(props: DataTableProps) {
                       <Show when={props.view.sorting.length > 1 && position() > 0}>
                         {/* Место ключа в множественной сортировке: без него две стрелки не
                             говорят, какая из них главнее. */}
-                        <span data-slot="header-sort-position">{position()}</span>
+                        <span data-slot="table-header-sort-position">{position()}</span>
                       </Show>
                     </button>
                   </Show>
@@ -438,7 +438,7 @@ export function DataTable(props: DataTableProps) {
                       каждый раз искать нужную строку списка глазами и сверять её с таблицей. */}
                   <Show when={props.columnMenu}>
                     <div
-                      data-slot="column-menu"
+                      data-slot="table-column-menu"
                       role="group"
                       aria-label={`Колонка «${column()?.label ?? columnId}»`}
                     >
@@ -447,7 +447,7 @@ export function DataTable(props: DataTableProps) {
                       <Show when={pinnedAt() === null}>
                         <button
                           type="button"
-                          data-slot="column-up"
+                          data-slot="table-column-up"
                           aria-label={`Подвинуть колонку «${column()?.label ?? columnId}» влево`}
                           disabled={!canMoveColumn(props.columns, props.view, columnId, -1)}
                           onClick={() =>
@@ -458,7 +458,7 @@ export function DataTable(props: DataTableProps) {
                         </button>
                         <button
                           type="button"
-                          data-slot="column-down"
+                          data-slot="table-column-down"
                           aria-label={`Подвинуть колонку «${column()?.label ?? columnId}» вправо`}
                           disabled={!canMoveColumn(props.columns, props.view, columnId, 1)}
                           onClick={() =>
@@ -471,7 +471,7 @@ export function DataTable(props: DataTableProps) {
 
                       <button
                         type="button"
-                        data-slot="column-pin"
+                        data-slot="table-column-pin"
                         data-pinned={pinnedAt() ?? undefined}
                         aria-label={`Закрепить колонку «${column()?.label ?? columnId}» слева`}
                         aria-pressed={pinnedAt() === "start"}
@@ -485,7 +485,7 @@ export function DataTable(props: DataTableProps) {
                       </button>
                       <button
                         type="button"
-                        data-slot="column-pin-end"
+                        data-slot="table-column-pin-end"
                         data-pinned={pinnedAt() ?? undefined}
                         aria-label={`Закрепить колонку «${column()?.label ?? columnId}» справа`}
                         aria-pressed={pinnedAt() === "end"}
@@ -501,7 +501,7 @@ export function DataTable(props: DataTableProps) {
                       <Show when={column() && groupableBy(column()!)}>
                         <button
                           type="button"
-                          data-slot="column-group"
+                          data-slot="table-column-group"
                           aria-label={`Собрать строки в группы по колонке «${column()?.label ?? columnId}»`}
                           aria-pressed={props.view.grouping.includes(columnId)}
                           onClick={() => props.onViewChange(toggleGrouping(props.view, columnId))}
@@ -512,7 +512,7 @@ export function DataTable(props: DataTableProps) {
 
                       <button
                         type="button"
-                        data-slot="column-hide"
+                        data-slot="table-column-hide"
                         aria-label={`Скрыть колонку «${column()?.label ?? columnId}»`}
                         onClick={() => props.onViewChange(toggleColumn(props.view, columnId))}
                       >
@@ -522,7 +522,7 @@ export function DataTable(props: DataTableProps) {
                       <Show when={width() !== undefined}>
                         <button
                           type="button"
-                          data-slot="column-width-reset"
+                          data-slot="table-column-width-reset"
                           aria-label={`Вернуть ширину колонки «${column()?.label ?? columnId}»`}
                           onClick={() => props.onViewChange(setColumnWidth(props.view, columnId, null))}
                         >
@@ -534,7 +534,7 @@ export function DataTable(props: DataTableProps) {
 
                   {/* Ручка ширины — `separator` с клавиатурой: тянуть мышью умеют не все. */}
                   <span
-                    data-slot="column-resize"
+                    data-slot="table-column-resize"
                     role="separator"
                     aria-orientation="vertical"
                     aria-label={`Ширина колонки «${column()?.label ?? columnId}»`}
@@ -598,14 +598,14 @@ export function DataTable(props: DataTableProps) {
                   <td data-slot="table-service">
                     <input
                       type="checkbox"
-                      data-slot="select-row"
+                      data-slot="table-select-row"
                       aria-label={`Выделить строку ${rowIndex() + 1}`}
                       checked={isSelected(session(), row.id)}
                       onChange={() => putSession(toggleSelected(session(), row.id))}
                     />
                     <button
                       type="button"
-                      data-slot="pin-row"
+                      data-slot="table-pin-row"
                       data-pinned={pinnedAt() ?? undefined}
                       aria-label={`Закрепить строку ${rowIndex() + 1}`}
                       aria-pressed={pinnedAt() !== null}
@@ -717,7 +717,7 @@ export function DataTable(props: DataTableProps) {
                         <Show when={isGroupCell()}>
                           <button
                             type="button"
-                            data-slot="group-toggle"
+                            data-slot="table-group-toggle"
                             aria-expanded={row.getIsExpanded()}
                             onClick={() =>
                               putSession(
@@ -737,7 +737,7 @@ export function DataTable(props: DataTableProps) {
 
                         <Show when={isGroupCell()}>
                           {/* Сколько строк в группе — счёт членов, как `$count` у OData. */}
-                          <span data-slot="group-count">{row.subRows.length}</span>
+                          <span data-slot="table-group-count">{row.subRows.length}</span>
                         </Show>
                       </td>
                     );
@@ -807,21 +807,24 @@ export function HiddenColumns(props: HiddenColumnsProps) {
 
   return (
     <Show when={hidden().length > 0}>
-      <ul data-slot="hidden-columns" aria-label="Скрытые колонки">
+      <ul data-slot="table-hidden-columns" aria-label="Скрытые колонки">
         <For each={hidden()}>
           {(name) => {
             const label = () => byName().get(name)?.label ?? name;
 
             return (
-              <li data-slot="hidden-column" data-column={name}>
+              <li data-slot="table-hidden-column" data-column={name}>
                 <button
                   type="button"
-                  data-slot="column-show"
+                  data-slot="table-column-show"
                   aria-label={`Вернуть колонку «${label()}»`}
                   onClick={() => props.onViewChange(toggleColumn(props.view, name))}
                 >
+                  {/* Только название колонки. Плюсика тут больше нет: он был чистым
+                      украшением (`aria-hidden`), то есть видом, поставленным изнутри — а
+                      значит вторым источником вида рядом с оформлением потребителя. Смысл
+                      кнопки несёт `aria-label`, вид — тот, кто одевает. */}
                   {label()}
-                  <span aria-hidden="true"> +</span>
                 </button>
               </li>
             );
@@ -862,10 +865,10 @@ export function TablePager(props: TablePagerProps) {
     props.onSessionChange(goToPage(props.session, next, props.total, props.view.pageSize));
 
   return (
-    <nav data-slot="pager" aria-label="Листание таблицы">
+    <nav data-slot="table-pager" aria-label="Листание таблицы">
       <button
         type="button"
-        data-slot="pager-prev"
+        data-slot="table-pager-prev"
         aria-label="Предыдущая страница"
         disabled={page() === 0 || props.view.pageSize === null}
         onClick={() => go(page() - 1)}
@@ -873,7 +876,7 @@ export function TablePager(props: TablePagerProps) {
         ←
       </button>
 
-      <span data-slot="pager-position" aria-live="polite">
+      <span data-slot="table-pager-position" aria-live="polite">
         <Show when={props.view.pageSize !== null} fallback="без листания">
           страница {page() + 1} из {pages()}
         </Show>
@@ -881,7 +884,7 @@ export function TablePager(props: TablePagerProps) {
 
       <button
         type="button"
-        data-slot="pager-next"
+        data-slot="table-pager-next"
         aria-label="Следующая страница"
         disabled={page() >= pages() - 1 || props.view.pageSize === null}
         onClick={() => go(page() + 1)}
@@ -889,9 +892,12 @@ export function TablePager(props: TablePagerProps) {
         →
       </button>
 
-      <label data-slot="pager-size">
+      <label data-slot="table-pager-size">
         строк на странице
+        {/* Зацепка есть и на подписи, и на самом поле: подпись оденут как подпись, поле как
+            поле, и одеть одно через другое нельзя. Полусоставная часть неодеваема. */}
         <select
+          data-slot="table-pager-size-select"
           value={String(props.view.pageSize ?? "")}
           onChange={(event) => {
             const raw = event.currentTarget.value;
@@ -901,6 +907,9 @@ export function TablePager(props: TablePagerProps) {
             props.onSessionChange(goToPage(props.session, 0, props.total, size));
           }}
         >
+          {/* У `option` зацепки нет намеренно: оформить его браузеры почти не дают, а
+              обещание на нём заморозило бы нативный `select` навсегда — замена его на
+              комбобокс из кита стала бы мажором. Неодеваемые части названы в доке. */}
           <option value="">все</option>
           <For each={props.sizes ?? [10, 25, 50]}>
             {(size) => <option value={String(size)}>{size}</option>}
@@ -919,17 +928,17 @@ export interface GroupControlsProps {
 /** Раскрыть или свернуть все группы разом. */
 export function GroupControls(props: GroupControlsProps) {
   return (
-    <div data-slot="group-controls">
+    <div data-slot="table-group-controls">
       <button
         type="button"
-        data-slot="expand-all"
+        data-slot="table-expand-all"
         onClick={() => props.onSessionChange(expandAll(props.session, true))}
       >
         раскрыть все
       </button>
       <button
         type="button"
-        data-slot="collapse-all"
+        data-slot="table-collapse-all"
         onClick={() => props.onSessionChange(expandAll(props.session, false))}
       >
         свернуть все

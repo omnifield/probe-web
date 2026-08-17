@@ -2,6 +2,7 @@ import { Root as KobalteButton, type ButtonRootProps } from "@kobalte/core/butto
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 /**
@@ -40,10 +41,12 @@ export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
  * <Button ref={setEl} class="my-button">Свой класс</Button>
  * ```
  */
-export function Button<T extends ValidComponent = "button">(props: ButtonProps<T>) {
+export const Button = slotAware(function Button<T extends ValidComponent = "button">(props: ButtonProps<T>) {
   traceLife("ui.button");
+
+  const [slot, rest] = useSlot(props, "button");
 
   // `data-slot` стоит ДО спреда: это ДЕФОЛТ-зацепка, а не наша печать поверх. Потребитель,
   // которому нужна своя, перебивает её своим пропом — иначе «открытый API» был бы на словах.
-  return <KobalteButton data-slot="button" {...(props as ButtonRootProps)} />;
-}
+  return <KobalteButton {...slot} {...(rest as ButtonRootProps)} />;
+});

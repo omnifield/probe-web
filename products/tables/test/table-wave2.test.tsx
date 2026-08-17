@@ -80,7 +80,7 @@ describe("закрепление колонок", () => {
     const { host, view } = setupMenu();
 
     const pin = () =>
-      one(host, "[data-slot='table-header'][data-column='/region'] [data-slot='column-pin']");
+      one(host, "[data-slot='table-header'][data-column='/region'] [data-slot='table-column-pin']");
 
     press(pin());
     expect(view().pinned).toEqual({ start: ["/region"], end: [] });
@@ -100,7 +100,7 @@ describe("ширины колонок", () => {
 
   it("ручка ширины — `separator` и работает с КЛАВИАТУРЫ, а не только мышью", () => {
     const { host, view } = setup();
-    const handle = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-resize']");
+    const handle = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-resize']");
 
     expect(handle.getAttribute("role")).toBe("separator");
     expect(handle.getAttribute("tabindex")).toBe("0");
@@ -126,7 +126,7 @@ describe("группировка", () => {
 
     const groups = all(host, "tbody [data-slot='table-row'][data-group]");
     expect(groups).toHaveLength(3);
-    expect(texts(host, "[data-slot='group-count']")).toEqual(["2", "2", "1"]);
+    expect(texts(host, "[data-slot='table-group-count']")).toEqual(["2", "2", "1"]);
   });
 
   it("группа объявляет своё состояние `aria-expanded`, а не только значком", () => {
@@ -135,7 +135,7 @@ describe("группировка", () => {
 
     expect(group.getAttribute("aria-expanded")).toBe("false");
 
-    press(one(group, "[data-slot='group-toggle']"));
+    press(one(group, "[data-slot='table-group-toggle']"));
 
     expect(session().expanded).toContain("/region:Москва");
     expect(
@@ -178,7 +178,7 @@ describe("листание", () => {
     expect(session().page).toBe(0);
 
     const { host: pagerHost } = setupPager(paged);
-    press(one(pagerHost, "[data-slot='pager-next']"));
+    press(one(pagerHost, "[data-slot='table-pager-next']"));
     expect(host).toBeTruthy();
   });
 
@@ -221,26 +221,26 @@ describe("листание", () => {
 
   it("листалка знает, где мы и сколько всего", () => {
     const { host } = setupPager(paged);
-    expect(one(host, "[data-slot='pager-position']").textContent).toContain("страница 1 из 3");
+    expect(one(host, "[data-slot='table-pager-position']").textContent).toContain("страница 1 из 3");
   });
 
   it("на первой странице «назад» недоступно, на последней — «вперёд»", () => {
     const first = setupPager(paged);
-    expect(one<HTMLButtonElement>(first.host, "[data-slot='pager-prev']").disabled).toBe(true);
+    expect(one<HTMLButtonElement>(first.host, "[data-slot='table-pager-prev']").disabled).toBe(true);
 
     const last = setupPager(paged, { ...EMPTY_SESSION, page: 2 });
-    expect(one<HTMLButtonElement>(last.host, "[data-slot='pager-next']").disabled).toBe(true);
+    expect(one<HTMLButtonElement>(last.host, "[data-slot='table-pager-next']").disabled).toBe(true);
   });
 
   it("переход вперёд двигает страницу", () => {
     const { host, session } = setupPager(paged);
-    press(one(host, "[data-slot='pager-next']"));
+    press(one(host, "[data-slot='table-pager-next']"));
     expect(session().page).toBe(1);
   });
 
   it("смена размера страницы возвращает к началу — иначе человек оказывается неизвестно где", () => {
     const { host, session, view } = setupPager(paged, { ...EMPTY_SESSION, page: 2 });
-    const select = one<HTMLSelectElement>(host, "[data-slot='pager-size'] select");
+    const select = one<HTMLSelectElement>(host, "[data-slot='table-pager-size'] select");
 
     select.value = "";
     select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -260,7 +260,7 @@ describe("выделение и закрепление строк", () => {
   it("выделение строки объявляется `aria-selected`", () => {
     const { host, session } = setup(EMPTY_VIEW, { selectable: true });
 
-    one<HTMLInputElement>(host, "tbody [data-slot='select-row']").click();
+    one<HTMLInputElement>(host, "tbody [data-slot='table-select-row']").click();
 
     expect(session().selected).toEqual(["Иванов"]);
     expect(all(host, "tbody [data-slot='table-row']")[0]?.getAttribute("aria-selected")).toBe("true");
@@ -270,7 +270,7 @@ describe("выделение и закрепление строк", () => {
     // Иначе «выделить все» на второй странице значило бы разное в разные моменты.
     const { host, session } = setup({ ...EMPTY_VIEW, pageSize: 2 }, { selectable: true });
 
-    one<HTMLInputElement>(host, "[data-slot='select-all']").click();
+    one<HTMLInputElement>(host, "[data-slot='table-select-all']").click();
 
     expect(session().selected).toHaveLength(ROWS.length);
   });

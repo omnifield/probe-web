@@ -104,7 +104,7 @@ describe("нажатие собирает фильтр", () => {
 
     expect(all(host, "[data-slot='filter-condition']").length).toBe(hard.state.conditions.length);
     // Строка логики видна: у сложного случая она и есть главное, что нужно разглядеть.
-    expect(host.querySelector("[data-slot='logic-input']")).not.toBeNull();
+    expect(host.querySelector("[data-slot='filter-logic-input']")).not.toBeNull();
   });
 
   it("отбор доезжает до показа: счётчик итога совпадает с обещанием карточки", () => {
@@ -123,7 +123,7 @@ describe("нажатие собирает фильтр", () => {
     const host = standOnFilters();
 
     press(card(host, PRESETS[0]!.id));
-    press(one(host, "[data-slot='condition-remove']"));
+    press(one(host, "[data-slot='filter-condition-remove']"));
 
     expect(all(host, "[data-slot='filter-condition']").length).toBe(0);
   });
@@ -145,8 +145,8 @@ describe("нажатие собирает фильтр", () => {
 
     // Удалённое или ненайденное условие конструктор показывает в формуле как «?» — и это
     // ровно тот след, который оставляет сборка с непереписанными идентификаторами.
-    expect(one<HTMLInputElement>(host, "[data-slot='logic-input']").value).not.toContain("?");
-    expect(host.querySelector("[data-slot='logic-error']")).toBeNull();
+    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']").value).not.toContain("?");
+    expect(host.querySelector("[data-slot='filter-logic-error']")).toBeNull();
   });
 
   it("готовых сборок нет второй раз внутри конструктора — одно место, а не два", () => {

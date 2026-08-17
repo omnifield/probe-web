@@ -1,0 +1,178 @@
+/* Кнопка — подпуть `@probe-web/skin/button.css`. Требует `base.css` рядом (объявление слоя).
+
+   ЦЕПЛЯЕМСЯ ЗА `[data-slot~="button"]`, а не за класс и не за структуру DOM: имена классов и
+   разметка — внутреннее дело кита и меняются без предупреждения, а `data-slot` объявлен его
+   контрактом (kb:PROBEWEB-4, kb:PROBEWEB-11).
+
+   ЗНАЧЕНИЯ — ТОЛЬКО РОЛИ слоя `style`, не ступени и не устаревшие псевдонимы. Роль говорит
+   НАЗНАЧЕНИЕ (`--brand-solid` — сплошной акцент, основная кнопка), ступень говорит номер.
+
+   ── ВАРИАНТЫ И РАЗМЕРЫ ─────────────────────────────────────────────────────────────────
+
+   Кит пропов вида не имеет и иметь не может — он безголовый. Значит вариант выбирает
+   ПОТРЕБИТЕЛЬ атрибутом, а оформление его читает:
+
+       <Button data-variant="outline" data-size="sm">Отмена</Button>
+
+   ПЕРЕЧЕНЬ ВАРИАНТОВ — ПУБЛИЧНАЯ ПОВЕРХНОСТЬ ЗОНЫ. Имя, которое уехало, потребитель ставит в
+   разметку, и удаление имени ломает его вид. Поэтому список закрыт и назван:
+
+   | `data-variant` | когда | чем отличается |
+   |---|---|---|
+   | нет атрибута | основное действие на экране | сплошной акцент; дефолт намеренно у безатрибутной кнопки, чтобы простая разметка сразу давала рабочий вид |
+   | `soft`   | частое, но не главное действие | брендовая подложка вместо сплошной заливки |
+   | `outline`| парное действие рядом с основным («Отмена») | контур без заливки |
+   | `ghost`  | действие в плотном ряду, где рамки создают шум | ни фона, ни рамки до наведения |
+   | `danger` | необратимое действие («Удалить») | сплошной опасный |
+   | `danger-outline` | необратимое, но не главное | контур цветом опасного |
+
+   | `data-size` | высота | где |
+   |---|---|---|
+   | `sm` | `--control-height-sm` | плотные панели, строки таблиц |
+   | нет атрибута | `--control-height-md` | обычные формы |
+   | `lg` | `--control-height-lg` | одиночное действие на пустом экране |
+
+   Неизвестное значение атрибута НЕ ломает кнопку: она остаётся в дефолтном виде. Это выбор
+   в пользу потребителя — опечатка в разметке даёт рабочую кнопку, а не сломанную. */
+
+@layer skin {
+  [data-slot~="button"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+
+    block-size: var(--control-height-md);
+    padding-inline: var(--space-4);
+
+    border: var(--border-width-1) solid transparent;
+    border-radius: var(--radius-md);
+
+    background-color: var(--brand-solid);
+    color: var(--on-brand-solid);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-normal);
+
+    cursor: pointer;
+
+    /* Длительность и кривая — тоже токены: движение обязано быть согласованным с первого
+       компонента, иначе каждый примитив анимируется по-своему. */
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  /* Наведение — СЛЕДУЮЩАЯ СТУПЕНЬ той же роли, а не другой цвет.
+
+     `[data-expanded]` ЗДЕСЬ ЖЕ, и это не мелочь: кнопка бывает триггером всплывающего
+     (`<PopoverTrigger as={Button}>`), и открытая панель обязана быть видна на самой кнопке.
+     Раскрытое состояние показывается ТЕМ ЖЕ цветом, что наведение, — по каждому варианту
+     своим. Иначе его пришлось бы красить нейтральной ролью поверх акцента, то есть выдавать
+     основную кнопку за обычную ровно в тот момент, когда она работает. */
+  [data-slot~="button"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--brand-solid-hover);
+  }
+
+  /* `:focus-visible`, а не `:focus`: норма отдаёт решение «рисовать ли кольцо» эвристике
+     пользовательского агента (Selectors 4, §9.4), и мышиный клик кольцо не зажигает.
+     Индикатор обязателен — WCAG 2.2, 2.4.7 Focus Visible (AA); роль `--focus-ring` объявлена
+     базой с обещанием контраста 3:1 к фону (1.4.11). Кольцо ОДНО на все варианты: оно про
+     фокус, а не про вид кнопки. */
+  [data-slot~="button"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  /* ── варианты ─────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="button"][data-variant="soft"] {
+    background-color: var(--brand-element);
+    color: var(--brand-text);
+  }
+
+  [data-slot~="button"][data-variant="soft"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--brand-element-hover);
+  }
+
+  [data-slot~="button"][data-variant="outline"] {
+    background-color: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  [data-slot~="button"][data-variant="outline"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--element-hover);
+    border-color: var(--border-strong);
+  }
+
+  /* Без фона и рамки — до наведения. Подсветка НАЛОЖЕНИЕМ (`--tint-hover`), а не сплошной
+     ступенью: такая кнопка стоит на произвольном фоне, и заливка ступенью закрасила бы его. */
+  [data-slot~="button"][data-variant="ghost"] {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--text);
+  }
+
+  [data-slot~="button"][data-variant="ghost"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--tint-hover);
+  }
+
+  [data-slot~="button"][data-variant="danger"] {
+    background-color: var(--danger-solid);
+    color: var(--on-danger-solid);
+  }
+
+  [data-slot~="button"][data-variant="danger"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--danger-solid-hover);
+  }
+
+  [data-slot~="button"][data-variant="danger-outline"] {
+    background-color: transparent;
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+  }
+
+  [data-slot~="button"][data-variant="danger-outline"]:is(:hover, [data-expanded]):not(:disabled) {
+    background-color: var(--danger-element);
+  }
+
+  /* ── размеры ──────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="button"][data-size="sm"] {
+    block-size: var(--control-height-sm);
+    padding-inline: var(--space-3);
+    font-size: var(--font-size-sm);
+    gap: var(--space-1);
+  }
+
+  [data-slot~="button"][data-size="lg"] {
+    block-size: var(--control-height-lg);
+    padding-inline: var(--space-5);
+    font-size: var(--font-size-lg);
+  }
+
+  /* ── отключено ────────────────────────────────────────────────────────────────────── */
+
+  /* ОДНО правило на все варианты, и оно последнее: отключённая кнопка обязана выглядеть
+     одинаково независимо от того, чем она была. Иначе «отключённый danger» остаётся красным и
+     продолжает кричать о действии, которого совершить нельзя. */
+  [data-slot~="button"]:disabled {
+    background-color: var(--element);
+    border-color: transparent;
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Уважение системной настройки: норма допускает УБРАТЬ или ЗАМЕНИТЬ движение
+     (Media Queries 5, §12.1) — здесь убираем, заменять нечего. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="button"] {
+      transition: none;
+    }
+  }
+}

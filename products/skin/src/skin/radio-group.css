@@ -1,0 +1,145 @@
+/* Группа переключателей — подпуть `@probe-web/skin/radio-group.css`. Требует `base.css`.
+
+   Восемь зацепок: `radio-group` (корень), `radio-group-label`, `radio-group-description`,
+   `radio-group-error` — и на каждый вариант `radio-group-item`, `radio-group-item-input`,
+   `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`,
+   `radio-group-item-description`.
+
+   Круглая форма — не украшение: она отличает «выбери одно» от «выбери сколько угодно», и
+   рынок держит это различие единообразно. Квадратный радиовариант читается как флажок и
+   врёт о поведении. */
+
+@layer skin {
+  [data-slot~="radio-group"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  [data-slot~="radio-group-label"] {
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  [data-slot~="radio-group-description"] {
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+  }
+
+  [data-slot~="radio-group-error"] {
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+    color: var(--danger-text);
+  }
+
+  [data-slot~="radio-group-item"] {
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  /* Ввод убран с глаз, но остаётся в порядке фокуса и в дереве доступности — см. флажок. */
+  [data-slot~="radio-group-item-input"] {
+    position: absolute;
+    inline-size: var(--border-width-1);
+    block-size: var(--border-width-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  [data-slot~="radio-group-item-control"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+
+    inline-size: 1.15em;
+    block-size: 1.15em;
+
+    border: var(--border-width-1) solid var(--border-strong);
+    border-radius: var(--radius-full);
+
+    background-color: var(--element);
+    cursor: pointer;
+
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="radio-group-item"]:hover [data-slot~="radio-group-item-control"] {
+    border-color: var(--text-muted);
+  }
+
+  /* Выбранный вариант — рамка бренда и точка внутри. Фон НЕ заливаем: точка на светлом круге
+     читается лучше, чем белая точка на сплошном пятне, и различие с флажком остаётся видным. */
+  [data-slot~="radio-group-item-control"][data-checked] {
+    border-color: var(--brand-solid);
+  }
+
+  [data-slot~="radio-group-item"]:has([data-slot~="radio-group-item-input"]:focus-visible)
+    [data-slot~="radio-group-item-control"] {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+  }
+
+  [data-slot~="radio-group-item-control"][data-invalid] {
+    border-color: var(--danger-border);
+  }
+
+  [data-slot~="radio-group-item-control"][data-disabled] {
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+
+  [data-slot~="radio-group-item-indicator"] {
+    inline-size: 0.55em;
+    block-size: 0.55em;
+
+    border-radius: var(--radius-full);
+    background-color: var(--brand-solid);
+  }
+
+  [data-slot~="radio-group-item-control"][data-disabled] [data-slot~="radio-group-item-indicator"] {
+    background-color: var(--text-muted);
+  }
+
+  [data-slot~="radio-group-item-label"] {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  [data-slot~="radio-group-item"]:has([data-slot~="radio-group-item-control"][data-disabled])
+    [data-slot~="radio-group-item-label"] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot~="radio-group-item-description"] {
+    grid-column: 2;
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+    color: var(--text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="radio-group-item-control"] {
+      transition: none;
+    }
+  }
+}

@@ -205,7 +205,10 @@ export function Chart(props: ChartProps) {
                   "data-key": point.key,
                   "data-series": seriesIndex(),
                   "data-selected": isSelected(point.key) ? "" : undefined,
-                  "data-empty": point.value === null ? "" : undefined,
+                  // `data-empty` здесь БЫЛО и было мёртвым: величина рисуется только когда
+                  // значение есть (`Show` ниже), так что признак не мог выставиться никогда.
+                  // Обещать его значило бы дать потребителю селектор, который не сработает.
+                  // Пустое значение видно по тому, что величины на этом месте просто нет.
                   // Отдельная величина — простой смысл, где важен смысл, а не вид.
                   "attr:role": "graphics-symbol",
                   "aria-label": label(),
@@ -280,7 +283,9 @@ export function ChartLegend(props: ChartLegendProps) {
           {(series, index) => (
             <li data-slot="chart-legend-item" data-series={index()} data-key={series.key}>
               <span data-slot="chart-legend-mark" aria-hidden="true" />
-              {series.label}
+              {/* Метка отдельной зацепкой, а не голым текстом: её выравнивают и обрезают
+                  отдельно от значка, и достать её через `chart-legend-item` нельзя. */}
+              <span data-slot="chart-legend-label">{series.label}</span>
             </li>
           )}
         </For>

@@ -254,6 +254,39 @@ export function referencedIds(expr: Expr): Set<string> {
   return found;
 }
 
+/**
+ * Условия, входящие в формулу ПОД ОТРИЦАНИЕМ.
+ *
+ * Отрицание у нас живёт в формуле, а не в самом условии: условие говорит «сумма больше ста»,
+ * а нужно ли обратное — решает логика сборки. Поэтому строка условия сама не знает, что она
+ * отрицаема, и узнать это можно только отсюда.
+ *
+ * Считается ЧЁТНОСТЬ: `НЕ (НЕ 1)` — это 1, а не отрицание. Двойное отрицание пишут редко, но
+ * разбор формулы его допускает, и пометить такое условие отрицаемым значило бы соврать
+ * оформлению, которое эту пометку покажет человеку.
+ */
+export function negatedIds(expr: Expr): Set<string> {
+  const found = new Set<string>();
+
+  const walk = (node: Expr, negated: boolean): void => {
+    switch (node.t) {
+      case "ref":
+        if (negated) found.add(node.id);
+        return;
+      case "not":
+        walk(node.a, !negated);
+        return;
+      case "and":
+      case "or":
+        walk(node.a, negated);
+        walk(node.b, negated);
+    }
+  };
+
+  walk(expr, false);
+  return found;
+}
+
 /** Ссылки на условия, которых больше нет. Пусто — формула цела. */
 export function danglingIds(expr: Expr, ids: readonly string[]): string[] {
   return [...referencedIds(expr)].filter((id) => !ids.includes(id));

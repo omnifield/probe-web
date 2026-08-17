@@ -228,3 +228,32 @@ export function operatorsFor(type: FieldType): readonly ComparisonOperator[] {
 export function supportsRange(type: FieldType): boolean {
   return type === "number" || type === "date";
 }
+
+/**
+ * УСЛОВИЕ НЕДОПИСАНО — форма собрана, а чем её наполнить, ещё не сказано.
+ *
+ * Это не ошибка: недописанное условие законно существует ровно с той секунды, как его
+ * добавили, и ругаться на него сразу значит ругаться на человека за то, что он ещё не
+ * закончил печатать. Но и молчать нельзя — недописанное условие отбирает не то, что от него
+ * ждут, и заметить это по одному счётчику трудно.
+ *
+ * Поэтому наружу это едет ОТДЕЛЬНЫМ состоянием, а не текстом ошибки: показать его — и когда
+ * показать — решает тот, кто одевает.
+ *
+ * Пустое значение сравнения считается недописанным, хотя ищется законно (пустая строка —
+ * значение). Цена принята: «дописать» дешевле, чем не заметить пустую строку в отборе.
+ */
+export function isIncomplete(condition: Condition): boolean {
+  switch (condition.kind) {
+    case "compare":
+      return condition.value.trim() === "";
+    case "in":
+      // Список из одних пустых строк — тот же недописанный список, что и пустой.
+      return condition.values.every((value) => value.trim() === "");
+    case "between":
+      // Достаточно ОДНОЙ границы: полуоткрытый диапазон осмыслен, пустой — нет.
+      return condition.from.trim() === "" && condition.to.trim() === "";
+    case "presence":
+      return condition.fields.length === 0;
+  }
+}

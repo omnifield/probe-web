@@ -85,7 +85,7 @@ describe("сортировка", () => {
   it("нажатие на заголовок сортирует по возрастанию и говорит об этом `aria-sort`", () => {
     const { host, view } = setup();
 
-    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='header-sort']"));
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-header-sort']"));
 
     expect(view().sorting).toEqual([{ field: "/amount", direction: "asc" }]);
     expect(
@@ -97,7 +97,7 @@ describe("сортировка", () => {
   it("второе нажатие — по убыванию, третье снимает сортировку", () => {
     const { host, view } = setup();
     const button = () =>
-      one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='header-sort']");
+      one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-header-sort']");
 
     press(button());
     press(button());
@@ -143,16 +143,16 @@ describe("сортировка", () => {
     const { host } = setup();
     const header = one(host, "[data-slot='table-header'][data-column='/urgent']");
 
-    expect(header.querySelector("[data-slot='header-sort']")).toBeNull();
+    expect(header.querySelector("[data-slot='table-header-sort']")).toBeNull();
     expect(header.hasAttribute("aria-sort")).toBe(false);
   });
 
   it("нажатие с shift копит ключи и нумерует их", () => {
     const { host, view } = setup();
 
-    press(one(host, "[data-column='/amount'] [data-slot='header-sort']"));
+    press(one(host, "[data-column='/amount'] [data-slot='table-header-sort']"));
     const withShift = new MouseEvent("click", { bubbles: true, shiftKey: true });
-    one(host, "[data-column='/applicant'] [data-slot='header-sort']").dispatchEvent(withShift);
+    one(host, "[data-column='/applicant'] [data-slot='table-header-sort']").dispatchEvent(withShift);
 
     expect(view().sorting).toEqual([
       { field: "/amount", direction: "asc" },
@@ -161,10 +161,10 @@ describe("сортировка", () => {
     // Номера читаются в порядке КОЛОНОК, а не ключей: «заявитель» стоит первым в таблице,
     // но в сортировке он второй.
     expect(
-      one(host, "[data-column='/amount'] [data-slot='header-sort-position']").textContent,
+      one(host, "[data-column='/amount'] [data-slot='table-header-sort-position']").textContent,
     ).toBe("1");
     expect(
-      one(host, "[data-column='/applicant'] [data-slot='header-sort-position']").textContent,
+      one(host, "[data-column='/applicant'] [data-slot='table-header-sort-position']").textContent,
     ).toBe("2");
   });
 });
@@ -193,17 +193,17 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
 
   it("без спроса ряда управления в заголовке НЕТ — таблица остаётся показом данных", () => {
     const { host } = setup();
-    expect(host.querySelector("[data-slot='column-menu']")).toBeNull();
+    expect(host.querySelector("[data-slot='table-column-menu']")).toBeNull();
   });
 
   it("ряд стоит в каждом заголовке и назван колонкой, к которой относится", () => {
     const { host } = withMenu();
 
-    expect(all(host, "[data-slot='column-menu']").length).toBe(COLUMNS.length);
+    expect(all(host, "[data-slot='table-column-menu']").length).toBe(COLUMNS.length);
     expect(
       one(
         host,
-        "[data-slot='table-header'][data-column='/amount'] [data-slot='column-menu']",
+        "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-menu']",
       ).getAttribute("aria-label"),
     ).toBe("Колонка «сумма»");
   });
@@ -211,12 +211,12 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
   it("✕ в колонке скрывает её, и вернуть её можно из списка скрытых", () => {
     const { host, view } = withMenu();
 
-    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-hide']"));
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-hide']"));
 
     expect(view().hidden).toEqual(["/amount"]);
     expect(headers(host)).toEqual(["/applicant", "/created", "/urgent"]);
 
-    press(one(host, "[data-slot='hidden-column'][data-column='/amount'] [data-slot='column-show']"));
+    press(one(host, "[data-slot='table-hidden-column'][data-column='/amount'] [data-slot='table-column-show']"));
 
     expect(view().hidden).toEqual([]);
     // Колонка вернулась НА СВОЁ МЕСТО, а не в конец: порядок задаёт вид, а не порядок возврата.
@@ -225,13 +225,13 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
 
   it("списка скрытых нет, пока ничего не скрыто", () => {
     const { host } = withMenu();
-    expect(host.querySelector("[data-slot='hidden-columns']")).toBeNull();
+    expect(host.querySelector("[data-slot='table-hidden-columns']")).toBeNull();
   });
 
   it("стрелка двигает колонку прямо из её заголовка", () => {
     const { host, view } = withMenu();
 
-    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-up']"));
+    press(one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-up']"));
 
     expect(view().order).toEqual(["/amount", "/applicant", "/created", "/urgent"]);
     expect(headers(host)).toEqual(["/amount", "/applicant", "/created", "/urgent"]);
@@ -241,7 +241,7 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
     // «сумма» скрыта и стоит между «заявителем» и «заведена».
     const { host, view } = withMenu({ ...EMPTY_VIEW, hidden: ["/amount"] });
 
-    press(one(host, "[data-slot='table-header'][data-column='/created'] [data-slot='column-up']"));
+    press(one(host, "[data-slot='table-header'][data-column='/created'] [data-slot='table-column-up']"));
 
     // Шагнули ЗА скрытую — через неё, а не в неё: на экране «заведена» ушла влево, и это видно.
     expect(headers(host)).toEqual(["/created", "/applicant", "/urgent"]);
@@ -252,7 +252,7 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
     const { host } = withMenu();
     const up = one<HTMLButtonElement>(
       host,
-      "[data-slot='table-header'][data-column='/applicant'] [data-slot='column-up']",
+      "[data-slot='table-header'][data-column='/applicant'] [data-slot='table-column-up']",
     );
     expect(up.disabled).toBe(true);
   });
@@ -260,10 +260,10 @@ describe("управление колонкой живёт В КОЛОНКЕ", (
   it("у прижатой колонки стрелок нет: её место задаёт край, а не порядок", () => {
     const { host } = withMenu({ ...EMPTY_VIEW, pinned: { start: ["/amount"], end: [] } });
 
-    const menu = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='column-menu']");
-    expect(menu.querySelector("[data-slot='column-up']")).toBeNull();
+    const menu = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-menu']");
+    expect(menu.querySelector("[data-slot='table-column-up']")).toBeNull();
     // Кнопка прижатия на месте — иначе колонку было бы не отпустить.
-    expect(menu.querySelector("[data-slot='column-pin']")).not.toBeNull();
+    expect(menu.querySelector("[data-slot='table-column-pin']")).not.toBeNull();
   });
 });
 

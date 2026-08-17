@@ -1,0 +1,63 @@
+{
+  "name": "@probe-web/skin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Зона skin: готовые оформления для безголового кита ui. Приватная — пока стоит в products/, в реестр не едет (kb:PROBEWEB-5).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./accordion.css": "./src/skin/accordion.css",
+    "./base.css": "./src/skin/base.css",
+    "./button.css": "./src/skin/button.css",
+    "./checkbox.css": "./src/skin/checkbox.css",
+    "./combobox.css": "./src/skin/combobox.css",
+    "./dialog.css": "./src/skin/dialog.css",
+    "./field.css": "./src/skin/field.css",
+    "./menus.css": "./src/skin/menus.css",
+    "./navigation.css": "./src/skin/navigation.css",
+    "./number-field.css": "./src/skin/number-field.css",
+    "./popover.css": "./src/skin/popover.css",
+    "./presets/dense.css": "./src/presets/css/dense.css",
+    "./presets/neutral.css": "./src/presets/css/neutral.css",
+    "./presets/twitter.css": "./src/presets/css/twitter.css",
+    "./progress.css": "./src/skin/progress.css",
+    "./radio-group.css": "./src/skin/radio-group.css",
+    "./segmented-control.css": "./src/skin/segmented-control.css",
+    "./select.css": "./src/skin/select.css",
+    "./separator.css": "./src/skin/separator.css",
+    "./skeleton.css": "./src/skin/skeleton.css",
+    "./slider.css": "./src/skin/slider.css",
+    "./spinner.css": "./src/skin/spinner.css",
+    "./switch.css": "./src/skin/switch.css",
+    "./tabs.css": "./src/skin/tabs.css",
+    "./toast.css": "./src/skin/toast.css",
+    "./toggle-group.css": "./src/skin/toggle-group.css",
+    "./toggle.css": "./src/skin/toggle.css",
+    "./tooltip.css": "./src/skin/tooltip.css",
+    "./skin.css": "./src/skin/skin.css"
+  },
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort --host 0.0.0.0",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run",
+    "build:presets": "node --experimental-strip-types scripts/build-presets.mjs"
+  },
+  "dependencies": {
+    "@omnifield/probe-web-runtime": "file:../../packages/runtime",
+    "@omnifield/probe-web-style": "file:../../packages/style",
+    "@omnifield/probe-web-ui": "file:../../packages/ui",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "file:../../packages/build",
+    "@omnifield/probe-web-lint": "file:../../packages/lint",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

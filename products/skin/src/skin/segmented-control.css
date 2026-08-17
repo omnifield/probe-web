@@ -1,0 +1,175 @@
+/* Сегментированный переключатель — подпуть `@probe-web/skin/segmented-control.css`.
+   Требует `base.css`.
+
+   Одиннадцать зацепок: `segmented-control` (корень), `-label`, `-description`, `-error`,
+   `-indicator`, `-item`, `-item-input`, `-item-control`, `-item-label`, `-item-description`,
+   `-item-indicator`.
+
+   ЭТО ВЫБОР ОДНОГО, А НЕ РЯД НАЖАТЫХ КНОПОК (карта овнера `ui`): внутри настоящие `radio`,
+   роль корня `radiogroup`, значение уезжает в форму. Ряд независимых кнопок — это
+   `toggle-group`, и он одевается иначе. Путать их нельзя: вид обязан говорить о поведении.
+
+   ДОРОЖКА ПОЯВИЛАСЬ ПО ЗАЯВКЕ: кит выпустил `segmented-control-track`. До неё полоска съезжала
+   — она позиционируется от обёртки сегментов, а обёртку без зацепки нельзя было сделать
+   позиционированной; `position: relative` на корне не годился, потому что корень включает
+   подпись, и полоска уезжала вниз на её высоту.
+
+   Теперь дорожка несёт и утопленный фон, и систему координат для полоски.
+
+   Правило «выбранный сегмент красится сам» оставлено для случая, когда полоски в разметке нет:
+   потребитель вправе её не ставить, и выбор обязан быть виден всё равно. */
+
+@layer skin {
+  [data-slot~="segmented-control"] {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  [data-slot~="segmented-control-label"] {
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
+  }
+
+  /* Дорожка: утопленный фон и система координат для полоски. */
+  [data-slot~="segmented-control-track"] {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+
+    padding: var(--space-1);
+    border-radius: var(--radius-md);
+    background-color: var(--element);
+  }
+
+  /* Сегменты лежат ПОВЕРХ полоски — иначе она закрывает подписи (поймано на снимке: выбранный
+     сегмент читался как пустой прямоугольник). Полоска и сегменты стоят в одном слое-основании,
+     поэтому порядок задаётся явно: полоска на самом основании, сегменты на одну ступень выше. */
+  [data-slot~="segmented-control-item"] {
+    position: relative;
+    z-index: calc(var(--z-base) + 1);
+  }
+
+  [data-slot~="segmented-control-indicator"] {
+    position: absolute;
+    z-index: var(--z-base);
+
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    box-shadow: var(--shadow-xs);
+
+    transition:
+      translate var(--motion-fast) var(--ease-out),
+      width var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="segmented-control-item"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ввод спрятан с глаз, но остаётся в порядке фокуса и в дереве доступности. */
+  [data-slot~="segmented-control-item-input"] {
+    position: absolute;
+    inline-size: var(--border-width-1);
+    block-size: var(--border-width-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Сегмент: подпись с отступами, без своей рамки — рамку несёт дорожка. */
+  [data-slot~="segmented-control-item-control"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+
+    block-size: var(--control-height-sm);
+    padding-inline: var(--space-3);
+
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+
+    cursor: pointer;
+    transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="segmented-control-item"]:hover [data-slot~="segmented-control-item-control"] {
+    color: var(--text);
+  }
+
+  /* Выбранный сегмент: текст контрастнее и полужирный. Фон он получает ТОЛЬКО если полоски в
+     разметке нет — потребитель вправе её не ставить, и тогда выбор обязан быть виден всё равно.
+     `:has()` от корня отличает один случай от другого; при наличии полоски фон рисует она,
+     иначе на переезде было бы два прямоугольника. */
+  [data-slot~="segmented-control-item-control"][data-checked] {
+    color: var(--text);
+    font-weight: var(--weight-medium);
+  }
+
+  [data-slot~="segmented-control"]:not(:has([data-slot~="segmented-control-indicator"]))
+    [data-slot~="segmented-control-item-control"][data-checked] {
+    background-color: var(--surface);
+    box-shadow: var(--shadow-xs);
+  }
+
+  [data-slot~="segmented-control-item"]:has([data-slot~="segmented-control-item-input"]:focus-visible)
+    [data-slot~="segmented-control-item-control"] {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-1);
+  }
+
+  [data-slot~="segmented-control-item-control"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot~="segmented-control-item-label"] {
+    white-space: nowrap;
+  }
+
+  [data-slot~="segmented-control-item-description"],
+  [data-slot~="segmented-control-description"] {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot~="segmented-control-error"] {
+    color: var(--danger-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot~="segmented-control-item-indicator"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    inline-size: 1em;
+    block-size: 1em;
+
+    color: var(--brand-text);
+    font-size: 0.85em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="segmented-control-indicator"],
+    [data-slot~="segmented-control-item-control"] {
+      transition: none;
+    }
+  }
+}

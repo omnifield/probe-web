@@ -2,6 +2,7 @@ import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import { Root as KobalteToggleButton, type ToggleButtonRootProps } from "@kobalte/core/toggle-button";
 import type { ValidComponent } from "solid-js";
 
+import { useSlot, slotAware } from "./slot-chain.js";
 import { traceLife } from "./trace.js";
 
 /**
@@ -36,8 +37,10 @@ export type ToggleProps<T extends ValidComponent = "button"> = PolymorphicProps<
  * <Toggle pressed={bold()} onChange={setBold} aria-label="Полужирный" />
  * ```
  */
-export function Toggle<T extends ValidComponent = "button">(props: ToggleProps<T>) {
+export const Toggle = slotAware(function Toggle<T extends ValidComponent = "button">(props: ToggleProps<T>) {
   traceLife("ui.toggle");
 
-  return <KobalteToggleButton data-slot="toggle" {...(props as ToggleButtonRootProps)} />;
-}
+  const [slot, rest] = useSlot(props, "toggle");
+
+  return <KobalteToggleButton {...slot} {...(rest as ToggleButtonRootProps)} />;
+});

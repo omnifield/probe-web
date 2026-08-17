@@ -1,0 +1,94 @@
+/* Вкладки — подпуть `@probe-web/skin/tabs.css`. Требует `base.css`.
+
+   Пять зацепок: `tabs` (корень — он есть, вкладки не всплывают) · `tabs-list` ·
+   `tabs-trigger` · `tabs-indicator` · `tabs-content`.
+
+   НЕАКТИВНАЯ ПАНЕЛЬ УДАЛЕНА ИЗ ДОКУМЕНТА, а не спрятана (карта овнера `ui`). Поэтому здесь
+   нет и не может быть перехода между панелями: анимировать нечего. Понадобится — потребитель
+   ставит `forceMount`, и это его решение, а не наше правило.
+
+   ПОЛОСКА-УКАЗАТЕЛЬ ездит сама: её размер и место считает кит, мы задаём только вид. */
+
+@layer skin {
+  [data-slot~="tabs"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  [data-slot~="tabs-list"] {
+    position: relative;
+    display: flex;
+    gap: var(--space-1);
+
+    border-block-end: var(--border-width-1) solid var(--separator);
+  }
+
+  [data-slot~="tabs-trigger"] {
+    padding-block: var(--space-2);
+    padding-inline: var(--space-3);
+
+    border: 0;
+    background-color: transparent;
+    color: var(--text-muted);
+
+    font: inherit;
+    font-weight: var(--weight-medium);
+
+    cursor: pointer;
+
+    transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="tabs-trigger"]:hover:not([data-disabled]) {
+    color: var(--text);
+  }
+
+  [data-slot~="tabs-trigger"][data-selected] {
+    color: var(--brand-text);
+  }
+
+  [data-slot~="tabs-trigger"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: calc(var(--border-width-2) * -1);
+    border-radius: var(--radius-sm);
+  }
+
+  [data-slot~="tabs-trigger"][data-disabled] {
+    color: var(--text-muted);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Полоска стоит на линии списка, перекрывая её: так активная вкладка выглядит продолжением
+     панели, а не отдельной кнопкой над чертой. */
+  [data-slot~="tabs-indicator"] {
+    position: absolute;
+    inset-block-end: calc(var(--border-width-1) * -1);
+
+    block-size: var(--border-width-2);
+    background-color: var(--brand-solid);
+
+    transition:
+      translate var(--motion-fast) var(--ease-out),
+      width var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="tabs-content"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+    border-radius: var(--radius-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="tabs-trigger"],
+    [data-slot~="tabs-indicator"] {
+      transition: none;
+    }
+  }
+}
