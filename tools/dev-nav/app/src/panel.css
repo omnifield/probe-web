@@ -32,12 +32,15 @@ body {
 /* Вкладки занимают всю свободную ширину и прокручиваются вбок, а не переносятся:
    перенос растит шапку и съедает рабочую область. */
 .panel-tabs { flex: 1; min-width: 0; }
-.panel-tabs [data-slot~="tabs-list"] { overflow-x: auto; scrollbar-width: thin; }
+.panel-tabs [data-slot~="tabs-list"] {
+  overflow-x: auto;
+  /* Вертикальную прокрутку запрещаем ЯВНО: с одним лишь `overflow-x: auto` браузер добавляет
+     и вертикальную полосу, и она висит в шапке поперёк вкладок. */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
 
 .panel-look { display: flex; align-items: center; gap: var(--space-2); flex: none; }
-.panel-look-title {
-  color: var(--muted-foreground); font-size: var(--font-size-xs); white-space: nowrap;
-}
 
 .panel-stage { min-height: 0; }
 .panel-stage iframe {

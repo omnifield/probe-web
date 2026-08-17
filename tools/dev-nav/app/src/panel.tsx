@@ -221,16 +221,14 @@ export function Panel() {
         </Show>
 
         <div class="panel-look">
-          <Show
-            when={presets().length > 0}
-            fallback={<span class="panel-look-title">оформления пока не сохранены</span>}
-          >
-            <span class="panel-look-title">оформление</span>
+          {/* Есть сохранённые оформления — список. Нет — ничего: подпись про пустоту
+              занимает место и ничего не говорит (решение user). */}
+          <Show when={presets().length > 0}>
             <Select<PresetItem>
               options={presets()}
               optionValue="id"
               optionTextValue="label"
-              placeholder="выбрать"
+              placeholder="оформление"
               value={presets().find((item) => item.id === look().preset)}
               onChange={(item: PresetItem | null) =>
                 apply({ ...look(), ...(item ? { preset: item.id } : {}) })
@@ -243,7 +241,7 @@ export function Panel() {
             >
               <SelectTrigger>
                 <SelectValue<PresetItem>>
-                  {(state) => state.selectedOption()?.label ?? "выбрать"}
+                  {(state) => state.selectedOption()?.label ?? "оформление"}
                 </SelectValue>
               </SelectTrigger>
               <SelectPortal>
