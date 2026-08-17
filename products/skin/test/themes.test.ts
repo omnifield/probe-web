@@ -60,6 +60,9 @@ const FOREIGN_TOKENS: Record<string, string> = {
   "--kb-tooltip-content-transform-origin": "то же для подсказки",
   "--kb-menu-content-transform-origin": "то же для меню",
   "--kb-combobox-content-transform-origin": "то же для поиска с подсказками",
+  "--kb-accordion-content-height":
+    "измеренная высота раздела: нужна для перехода, когда потребитель оставил содержимое в документе",
+  "--kb-collapsible-content-height": "то же для раскрывашки",
   "--kb-progress-fill-width":
     "доля выполнения: кит считает её из значения и отдаёт переменной, а чем выразить — ширина, трансформация, маска — решает оформление",
 };

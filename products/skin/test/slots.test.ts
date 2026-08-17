@@ -50,6 +50,16 @@ function dressedSlots(): Set<string> {
  * с кода перечень подтверждал бы сам себя, и полусоставной примитив прошёл бы молча.
  */
 const DRESSED_FAMILIES = [
+  "pagination",
+  "navigation-menu",
+  "menubar",
+  "link",
+  "image",
+  "context-menu",
+  "collapsible",
+  "breadcrumbs",
+  "alert-dialog",
+  "accordion",
   "button",
   "checkbox",
   "combobox",
@@ -114,8 +124,21 @@ const NOT_DRESSED: Record<string, string> = {
 
   // Узлы без собственного вида: существуют ради поведения и семантики.
   "popover-anchor": "точка привязки панели; в потоке не отображается",
+
+  // Указатели и группировки ВСЕХ ЧЕТЫРЁХ меню: причина одна на все, поэтому и запись одна на
+  // семейство. Указатель берёт цвет с панели, группировка существует ради доступности, а вид в
+  // ней несёт подпись группы.
   "dropdown-menu-group": "группировка пунктов для доступности; вид несёт её подпись",
   "dropdown-menu-radio-group": "то же для группы переключателей",
+  "context-menu-arrow": "цвет приходит с панели, размер — пропом size",
+  "context-menu-group": "группировка пунктов; вид несёт подпись группы",
+  "context-menu-radio-group": "то же для группы переключателей",
+  "menubar-arrow": "цвет приходит с панели, размер — пропом size",
+  "menubar-group": "группировка пунктов; вид несёт подпись группы",
+  "menubar-radio-group": "то же для группы переключателей",
+  "navigation-menu-arrow": "цвет приходит с панели, размер — пропом size",
+  "navigation-menu-group": "группировка пунктов; вид несёт подпись группы",
+  "navigation-menu-radio-group": "то же для группы переключателей",
   "tooltip-trigger": "обёртка над элементом, который и так одет; своего вида не имеет",
   "combobox-arrow": "цвет приходит с панели, размер — пропом size",
 

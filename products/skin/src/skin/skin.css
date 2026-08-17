@@ -8,12 +8,14 @@
    упоминания слоя задаёт его положение в каскаде (CSS Cascade 5, §6.4.3). */
 
 @import "./base.css";
+@import "./accordion.css";
 @import "./button.css";
 @import "./checkbox.css";
 @import "./combobox.css";
 @import "./dialog.css";
-@import "./dropdown-menu.css";
 @import "./field.css";
+@import "./menus.css";
+@import "./navigation.css";
 @import "./number-field.css";
 @import "./popover.css";
 @import "./progress.css";

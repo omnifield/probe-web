@@ -1,7 +1,13 @@
-/* Модальное окно — подпуть `@probe-web/skin/dialog.css`. Требует `base.css`.
+/* Модальное окно и окно подтверждения — подпуть `@probe-web/skin/dialog.css`. Требует `base.css`.
 
-   Шесть зацепок: `dialog-trigger` · `dialog-overlay` · `dialog-content` · `dialog-title` ·
-   `dialog-description` · `dialog-close`.
+   Двенадцать зацепок в двух семействах: `dialog-trigger` · `dialog-overlay` · `dialog-content` ·
+   `dialog-title` · `dialog-description` · `dialog-close` и те же шесть с префиксом
+   `alert-dialog-`.
+
+   ОДИН ВИД НА ДВА СЕМЕЙСТВА. Окно подтверждения отличается поведением: его нельзя закрыть мимо
+   окна, потому что ответ обязателен. На вид это не влияет — влияет на то, что в нём написано и
+   какие кнопки стоят, а это дело потребителя. Держать для него копию правил значило бы
+   гарантировать расхождение: поправят одно, забудут другое.
 
    ОКНО — НЕ БОЛЬШОЙ ПОПОВЕР. Позиционера у него нет вовсе (карта овнера `ui`), значит место
    задаём мы. Отсюда `position: fixed` и центрирование здесь, а не опции позиционировщика.
@@ -19,7 +25,8 @@
      рабочий вид, а не половину. Предложение киту о СПИСКЕ зацепок на узле
      (`data-slot="button dialog-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
      примут — повтор уйдёт сам. */
-  [data-slot="dialog-trigger"] {
+  [data-slot="dialog-trigger"],
+  [data-slot="alert-dialog-trigger"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -46,21 +53,25 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="dialog-trigger"]:hover:not([data-disabled]) {
+  [data-slot="dialog-trigger"]:hover:not([data-disabled]),
+  [data-slot="alert-dialog-trigger"]:hover:not([data-disabled]) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="dialog-trigger"]:focus-visible {
+  [data-slot="dialog-trigger"]:focus-visible,
+  [data-slot="alert-dialog-trigger"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="dialog-trigger"][data-expanded] {
+  [data-slot="dialog-trigger"][data-expanded],
+  [data-slot="alert-dialog-trigger"][data-expanded] {
     background-color: var(--element-active);
   }
 
-  [data-slot="dialog-overlay"] {
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"] {
     position: fixed;
     inset: 0;
     z-index: var(--z-overlay);
@@ -70,7 +81,8 @@
     animation: probe-web-skin-fade var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="dialog-content"] {
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"] {
     position: fixed;
     /* Центр по обеим осям без трансформации: у окна нет позиционировщика, и `translate`
        остаётся свободным для анимации появления. */
@@ -104,13 +116,15 @@
     animation: probe-web-skin-dialog var(--motion-normal) var(--ease-out);
   }
 
-  [data-slot="dialog-title"] {
+  [data-slot="dialog-title"],
+  [data-slot="alert-dialog-title"] {
     font-size: var(--font-size-lg);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
   }
 
-  [data-slot="dialog-description"] {
+  [data-slot="dialog-description"],
+  [data-slot="alert-dialog-description"] {
     color: var(--text-muted);
     line-height: var(--leading-normal);
   }
@@ -119,7 +133,8 @@
      сохраняет, вид обязан быть у своей. `align-self` здесь несущий: окно и панель —
      колонки, и без него кнопка растягивается во всю ширину, как это и вышло на первом
      снимке. */
-  [data-slot="dialog-close"] {
+  [data-slot="dialog-close"],
+  [data-slot="alert-dialog-close"] {
     align-self: flex-end;
 
     display: inline-flex;
@@ -148,12 +163,14 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="dialog-close"]:hover {
+  [data-slot="dialog-close"]:hover,
+  [data-slot="alert-dialog-close"]:hover {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="dialog-close"]:focus-visible {
+  [data-slot="dialog-close"]:focus-visible,
+  [data-slot="alert-dialog-close"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
@@ -176,7 +193,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     [data-slot="dialog-overlay"],
-    [data-slot="dialog-content"] {
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="dialog-content"],
+    [data-slot="alert-dialog-content"] {
       animation: none;
     }
   }

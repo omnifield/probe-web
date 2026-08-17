@@ -39,7 +39,7 @@ const SURFACE_WIDTHS: Record<string, string> = {
   "dialog.css: inline-size": "ширина модального окна — колонка читаемой длины, около 28rem",
   "popover.css: max-inline-size": "потолок ширины всплывающей панели",
   "tooltip.css: max-inline-size": "потолок ширины подсказки — уже панели, это подпись",
-  "dropdown-menu.css: min-inline-size": "минимум ширины меню, чтобы пункты не жались в столбик",
+  "menus.css: min-inline-size": "минимум ширины панели меню, чтобы пункты не жались в столбик",
   "toast.css: inline-size": "ширина уведомления — колонка читаемой длины у края экрана",
 };
 
@@ -58,8 +58,10 @@ describe("ни одного литерала там, где обязан быт�
     });
 
     it(`${file.name}: скругления только токенами`, () => {
+      // Ноль — это СБРОС, а не значение вида: панель внутри общей рамки своего скругления иметь
+      // не должна, иначе рамка в рамке. Токена «никакого скругления» не существует и не нужен.
       const bad = declarations(file.text)
-        .filter(({ property, value }) => property.includes("border-radius") && !value.includes("var("))
+        .filter(({ property, value }) => property.includes("border-radius") && !value.includes("var(") && value.trim() !== "0")
         .map(({ property, value }) => `${property}: ${value}`);
 
       expect(bad, `литеральные скругления в ${file.name}`).toEqual([]);

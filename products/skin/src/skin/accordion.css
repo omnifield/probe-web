@@ -1,0 +1,111 @@
+/* Аккордеон и раскрывашка — подпуть `@probe-web/skin/accordion.css`. Требует `base.css`.
+
+   Восемь зацепок в двух семействах: `accordion`, `-item`, `-header`, `-trigger`, `-content` и
+   `collapsible`, `-trigger`, `-content`.
+
+   ПОЧЕМУ В ОДНОМ ФАЙЛЕ. Раскрывашка — это один раздел аккордеона без соседей: вид у них общий, и
+   держать его в двух файлах значит гарантировать расхождение. Разделены они по поведению
+   (аккордеон следит, сколько разделов открыто), а поведение оформления не касается.
+
+   ЗАКРЫТЫЙ РАЗДЕЛ УДАЛЯЕТСЯ ИЗ ДОКУМЕНТА, а не прячется (карта овнера `ui`). Значит перехода
+   «раскрылось» здесь нет и быть не может — анимировать нечего. Потребитель, которому переход
+   нужен, ставит `forceMount` на содержимом; тогда работает высота из переменной кита
+   (`--kb-accordion-content-height`), и правило для этого случая ниже готово. */
+
+@layer skin {
+  [data-slot="accordion"],
+  [data-slot="collapsible"] {
+    display: flex;
+    flex-direction: column;
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  [data-slot="accordion-item"] {
+    border-block-end: var(--border-width-1) solid var(--separator);
+  }
+
+  /* Заголовок раздела — не кнопка сам по себе: кнопка внутри него. Разделение нужно, чтобы
+     заголовок оставался заголовком для вспомогательных технологий. */
+  [data-slot="accordion-header"] {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  [data-slot="accordion-trigger"],
+  [data-slot="collapsible-trigger"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+
+    inline-size: 100%;
+    padding-block: var(--space-3);
+    padding-inline: var(--space-1);
+
+    border: 0;
+    background: none;
+    color: var(--text);
+
+    font: inherit;
+    font-weight: var(--weight-medium);
+    text-align: start;
+
+    cursor: pointer;
+    transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="accordion-trigger"]:hover,
+  [data-slot="collapsible-trigger"]:hover {
+    color: var(--brand-text);
+  }
+
+  [data-slot="accordion-trigger"]:focus-visible,
+  [data-slot="collapsible-trigger"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: calc(var(--border-width-2) * -1);
+    border-radius: var(--radius-sm);
+  }
+
+  [data-slot="accordion-trigger"][data-disabled],
+  [data-slot="collapsible-trigger"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot="accordion-content"],
+  [data-slot="collapsible-content"] {
+    overflow: hidden;
+    padding-block-end: var(--space-3);
+    padding-inline: var(--space-1);
+    color: var(--text-muted);
+  }
+
+  /* Раскрытие анимируется ТОЛЬКО когда потребитель оставил содержимое в документе
+     (`forceMount`). Высота приезжает переменной кита — своей мы её не считаем. */
+  [data-slot="accordion-content"][data-closed],
+  [data-slot="collapsible-content"][data-closed] {
+    block-size: 0;
+    padding-block-end: 0;
+  }
+
+  [data-slot="accordion-content"][data-expanded],
+  [data-slot="collapsible-content"][data-expanded] {
+    block-size: var(--kb-accordion-content-height, auto);
+  }
+
+  [data-slot="collapsible-content"][data-expanded] {
+    block-size: var(--kb-collapsible-content-height, auto);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="accordion-trigger"],
+    [data-slot="collapsible-trigger"] {
+      transition: none;
+    }
+  }
+}
