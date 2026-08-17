@@ -17,10 +17,24 @@
 //     текст, узкая колонка. Ручек здесь нет намеренно: здесь смотрят на компонент, а не крутят
 //     тему (образец — страницы компонентов Ant Design, выбран user).
 
+import {
+  Switch,
+  SwitchControl,
+  SwitchInput,
+  SwitchLabel,
+  SwitchThumb,
+} from "@omnifield/probe-web-ui";
 import { createSignal, For, Show } from "solid-js";
 
 import { SPECIMENS } from "./cases/index.js";
+import { KnobLabel, KnobSelect } from "./knob-ui.jsx";
 import { ACCENTS, createKnobs, DENSITIES, RADIUS_STEPS } from "./knobs.js";
+
+/** Палитры зоны. Вторая — базовая пара слоя `style`, без нашей. */
+const PALETTES = [
+  { id: "twitter", label: "Twitter" },
+  { id: "base", label: "базовая" },
+] as const;
 
 const ALL = "all";
 
@@ -135,91 +149,72 @@ function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
 
   return (
     <div class="knobs">
-      <Group label="Оформление" hint="Снимите — останется голый кит. Это рабочее состояние примитивов.">
-        <button class="chip" type="button" aria-pressed={k().dressed()} onClick={() => k().toggleDressed()}>
-          {k().dressed() ? "подключено" : "снято"}
-        </button>
-      </Group>
+      {/* Два состояния — переключателем: он и показывает состояние, и меняет его одним нажатием.
+          Списком такое делать незачем, а ряд из двух кнопок занимает вдвое больше места. */}
+      <div class="knob">
+        <KnobLabel
+          text="Оформление"
+          hint="Снимите — останется голый кит: примитивы без единого правила вида. Это рабочее состояние, а не поломка; заодно так видно, что панель сделана теми же компонентами."
+        />
+        <Switch checked={k().dressed()} onChange={() => k().toggleDressed()}>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>{k().dressed() ? "подключено" : "снято"}</SwitchLabel>
+        </Switch>
+      </div>
 
-      <Group label="Палитра" hint="Три семени и форма скругления. Тёмная пара смягчена: у источника фон чистый чёрный.">
-        <button class="chip" type="button" aria-pressed={k().palette()} onClick={() => k().setPalette(true)}>
-          Twitter
-        </button>
-        <button class="chip" type="button" aria-pressed={!k().palette()} onClick={() => k().setPalette(false)}>
-          базовая
-        </button>
-      </Group>
+      <div class="knob">
+        <KnobLabel
+          text="Режим"
+          hint="Класс `dark` на корне документа — ровно так его поставит потребитель. Оформление про режим не знает: все значения взяты токенами, и пара меняет их сама."
+        />
+        <Switch checked={k().dark()} onChange={(on) => k().setDark(on)}>
+          <SwitchInput />
+          <SwitchControl>
+            <SwitchThumb />
+          </SwitchControl>
+          <SwitchLabel>{k().dark() ? "тёмная" : "светлая"}</SwitchLabel>
+        </Switch>
+      </div>
 
-      <Group label="Режим">
-        <button class="chip" type="button" aria-pressed={!k().dark()} onClick={() => k().setDark(false)}>
-          светлая
-        </button>
-        <button class="chip" type="button" aria-pressed={k().dark()} onClick={() => k().setDark(true)}>
-          тёмная
-        </button>
-      </Group>
+      <KnobSelect
+        label="Палитра"
+        hint="Три семени и форма скругления. Тёмная пара смягчена: у источника фон чистый чёрный, и это ровно то, что бьёт по глазам."
+        options={PALETTES}
+        value={k().palette() ? "twitter" : "base"}
+        onChange={(id) => k().setPalette(id === "twitter")}
+      />
 
-      <Group label="Акцент" hint="Из одного семени база строит двенадцать ступеней и держит обещания контраста.">
-        <For each={ACCENTS}>
-          {(item) => (
-            <button
-              class="chip"
-              type="button"
-              aria-pressed={k().accent() === item.id}
-              onClick={() => k().setAccent(item.id)}
-            >
-              {item.label}
-            </button>
-          )}
-        </For>
-      </Group>
+      <KnobSelect
+        label="Акцент"
+        hint="Из одного семени база строит двенадцать ступеней и сама держит обещания контраста. Оформление при этом не меняется ни на строку."
+        options={ACCENTS.map((a) => ({ id: a.id, label: a.label }))}
+        value={k().accent()}
+        onChange={k().setAccent}
+      />
 
-      <Group label="Радиус" hint="Меняется один токен --radius, вся шкала скруглений производная от него.">
-        <For each={RADIUS_STEPS}>
-          {(item) => (
-            <button
-              class="chip"
-              type="button"
-              aria-pressed={k().radius() === item.id}
-              onClick={() => k().setRadius(item.id)}
-            >
-              {item.label}
-            </button>
-          )}
-        </For>
-      </Group>
+      <KnobSelect
+        label="Радиус"
+        hint="Меняется один токен --radius, вся шкала скруглений производная от него. Ступень «из темы» не задаёт его вовсе — значение приходит из палитры."
+        options={RADIUS_STEPS.map((s) => ({ id: s.id, label: s.label }))}
+        value={k().radius()}
+        onChange={k().setRadius}
+      />
 
-      <Group label="Плотность" hint="Множит интервалы и высоты контролов. Кегль база плотностью не трогает.">
-        <For each={DENSITIES}>
-          {(item) => (
-            <button
-              class="chip"
-              type="button"
-              aria-pressed={k().density() === item.id}
-              onClick={() => k().setDensity(item.id)}
-            >
-              {item.label}
-            </button>
-          )}
-        </For>
-      </Group>
+      <KnobSelect
+        label="Плотность"
+        hint="Множит интервалы и высоты контролов. Кегль база плотностью не трогает: уменьшенный текст ломает 1.4.4 Resize Text, а плотность нужна ради числа строк на экране."
+        options={DENSITIES.map((d) => ({ id: d.id, label: d.label }))}
+        value={k().density()}
+        onChange={k().setDensity}
+      />
 
       <p class="knobs__note">
         Ручки ставят семена на корень документа — там же, где их поставит потребитель. На
         контейнере они не работают: производные и роли вычисляются там, где объявлены.
       </p>
-    </div>
-  );
-}
-
-function Group(props: { label: string; hint?: string; children: unknown }) {
-  return (
-    <div class="knob">
-      <span class="side__label">{props.label}</span>
-      <div class="knob__row">{props.children as never}</div>
-      <Show when={props.hint}>
-        <p class="knob__hint">{props.hint}</p>
-      </Show>
     </div>
   );
 }
