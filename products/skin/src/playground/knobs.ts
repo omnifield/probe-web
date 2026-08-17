@@ -33,7 +33,7 @@
 // делала». Ровно так их поставит и потребитель.
 
 import { registerTheme } from "@omnifield/probe-web-style";
-import { createEffect, createSignal, onCleanup } from "solid-js";
+import { createEffect, createSignal, on, onCleanup } from "solid-js";
 
 import { BUILT_IN, DEFAULT_PRESET_ID } from "../presets/built-in.js";
 import {
@@ -157,12 +157,37 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
   const [refusal, setRefusal] = createSignal<string | null>(null);
   const [busy, setBusy] = createSignal(false);
 
-  // Встроенные показываются, пока службы нет: иначе стенд без сети пуст и бесполезен. Как только
-  // служба ответила, перечень — её, и семя в ней уже лежит.
-  const presets = () => (source() === "служба" ? fromService() : BUILT_IN);
+  // ПЕРЕЧЕНЬ ТОЛЬКО ИЗ СЛУЖБЫ. Локального запасного нет намеренно (решение user 2026-08-17):
+  // запасной перечень — это второй источник правды, и расходится он молча. Службы нет — список
+  // пуст, об этом сказано человеку, а компоненты продолжают работать на умолчаниях базы:
+  // оформление необязательно (`kb:SKIN-7`, инвариант 4).
+  const presets = () => fromService();
 
-  const [presetId, setPresetId] = createSignal(DEFAULT_PRESET_ID);
-  const preset = () => presets().find((p) => p.id === presetId()) ?? presets()[0] ?? BUILT_IN[0]!;
+  /**
+   * ЧТО ПОСТАВИЛ ХОЗЯИН — пульт или встраивающее приложение.
+   *
+   * Базовая механика такая: тему задаёт ХОЗЯИН, встроенная зона её ЧИТАЕТ. Поэтому здесь лежит
+   * то, что стоит на корне документа, а не наш выбор: пока мы слушаем хозяина, `data-theme`
+   * принадлежит ему, и писать туда своё — значит перебивать того, кого слушаешь. Первая
+   * редакция так и делала: зона молча заменяла выбор пульта своим умолчанием.
+   *
+   * Опознать пресет по этому значению можно двумя способами — по имени темы и по идентификатору
+   * записи службы: пульт сегодня ставит второе. Поэтому сверяем оба.
+   */
+  const [hostId, setHostId] = createSignal(root.dataset.theme ?? "");
+  const [chosenId, setPresetId] = createSignal("");
+
+  const find = (id: string) =>
+    presets().find((one) => one.id === id || one.recordId === id);
+
+  const preset = () =>
+    find(own() ? chosenId() : hostId()) ??
+    find(chosenId()) ??
+    // Хозяин молчит и своего выбора нет — берём семя (`twitter`), а не первый попавшийся: первым
+    // из службы приходит самый свежий чужой пресет, и стенд открывался бы каждый раз другим.
+    find(DEFAULT_PRESET_ID) ??
+    presets()[0] ??
+    BUILT_IN[0]!;
 
   const [state, setState] = createSignal<PresetState>(stateOf(BUILT_IN[0]!));
   const [dark, setDarkSignal] = createSignal(root.classList.contains("dark"));
@@ -238,28 +263,29 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
   const follow = () => {
     setOwn(false);
     delete root.dataset.lookOwn;
+    // Возвращаем на корень то, что стояло у хозяина: наш выбор оттуда уходит вместе с признаком.
+    if (hostId() !== "") root.dataset.theme = hostId();
     readShared();
   };
 
   /**
-   * Прочитать выбор пульта с корня документа: пульт ставит атрибут и класс, мы их читаем.
+   * То, что на корень написали МЫ САМИ. Нужно, чтобы отличить свою запись от хозяйской.
    *
-   * СВОЮ ЖЕ ЗАПИСЬ ПРОПУСКАЕМ, и это не оптимизация. Ниже стоит эффект, который пишет
-   * `data-theme` при каждой смене пресета; наблюдатель ловит эту запись, читает её обратно и
-   * будит эффект снова. Первая редакция без проверки повесила вкладку намертво: страница
-   * загружалась, но главный поток крутил этот цикл и не отвечал вовсе.
+   * Без этого зона, поставившая умолчание в отсутствие хозяина, прочитала бы его обратно как
+   * «выбор хозяина» — и «вернуть к хозяину» возвращало бы к своему же значению.
    */
+  let mine = "";
+
+  /** Прочитать выбор хозяина с корня документа: он ставит атрибут и класс, мы их читаем. */
   const readShared = () => {
-    const shared = root.dataset.theme;
-    if (shared !== undefined && shared !== presetId() && presets().some((p) => p.id === shared)) {
-      usePreset(shared);
-    }
+    const seen = root.dataset.theme ?? "";
+    setHostId(seen === mine ? "" : seen);
     setDarkSignal(root.classList.contains("dark"));
   };
 
-  // Пульт применяет свой выбор ПОСЛЕ загрузки рамки, поэтому мало прочитать его один раз: пока
-  // мы «слушаем панель», мы следим за корнем и повторяем за ним. Иначе смена пресета в панели
-  // не доехала бы до уже открытой зоны.
+  // Хозяин применяет свой выбор ПОСЛЕ загрузки рамки, поэтому мало прочитать его один раз: пока
+  // мы его слушаем, мы следим за корнем и повторяем за ним. Иначе смена пресета в пульте не
+  // доехала бы до уже открытой зоны.
   const watcher = new MutationObserver(() => {
     if (!own()) readShared();
   });
@@ -271,14 +297,47 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
     if (source() === "служба" && !own()) readShared();
   });
 
+  // Пока слушаем хозяина, СОСТОЯНИЕ РУЧЕК следует за показанным пресетом. Иначе к чужому пресету
+  // применились бы наши правки от предыдущего: хозяин переключил тему, а семя бренда осталось
+  // прежним — и человек увидел бы вид, которого нет ни у кого.
+  createEffect(
+    on(
+      () => preset().id,
+      () => {
+        if (!own()) {
+          setState(stateOf(preset()));
+          setAccentId("preset");
+          setRadiusId("preset");
+          setDensityId(DENSITIES.find((d) => d.value === preset().density)?.id ?? "normal");
+        }
+      },
+    ),
+  );
+
   createEffect(() => root.classList.toggle("dark", dark()));
 
   // Тема регистрируется на каждое изменение: пересчёт ступеней делает база, и тёмная лестница у
   // неё своя, а не инверсия светлой. Регистрируем и когда слушаем панель: значения для её
   // выбора должны существовать, а взять их можно только из перечня.
   createEffect(() => {
-    registerTheme(themeOf(preset(), state()));
-    root.dataset.theme = preset().id;
+    const current = preset();
+    const theme = themeOf(current, state());
+
+    // Значения регистрируются ПОД ОБОИМИ именами: под своим именем темы и под тем, что стоит на
+    // корне. Пульт ставит туда идентификатор записи службы, и без второй регистрации правила
+    // `[data-theme="<id записи>"]` не нашли бы значений — вид остался бы от умолчаний базы.
+    registerTheme(theme);
+    const onRoot = own() ? current.id : hostId();
+    if (onRoot !== "" && onRoot !== theme.name) registerTheme({ ...theme, name: onRoot });
+
+    // Атрибут пишем в двух случаях: выбор свой — тогда он наш по праву; либо хозяин НИЧЕГО не
+    // задал (стенд открыли напрямую, без пульта) — тогда без записи зона осталась бы вовсе без
+    // темы, на умолчаниях базы, и человек увидел бы не пресет, а его отсутствие. Хозяин, когда
+    // появится, перепишет: мы за корнем следим и своё от чужого отличаем.
+    if (own() || hostId() === "") {
+      mine = current.id;
+      root.dataset.theme = current.id;
+    }
     root.style.setProperty("--density", state().density);
   });
 
@@ -291,11 +350,11 @@ export function createKnobs(api: PresetsApi = createPresetsApi()): Knobs {
     presets,
     preset,
     usePreset: (id) => {
-      if (!changed(presetId(), id)) return;
+      if (!changed(preset().id, id)) return;
       usePreset(id);
     },
     dirty: () => isDirty(preset(), state()),
-    reset: () => usePreset(presetId()),
+    reset: () => usePreset(preset().id),
 
     save: async (title, description) => {
       const current = preset();

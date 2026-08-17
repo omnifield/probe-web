@@ -18,8 +18,6 @@
     "./navigation.css": "./src/skin/navigation.css",
     "./number-field.css": "./src/skin/number-field.css",
     "./popover.css": "./src/skin/popover.css",
-    "./presets/dense.css": "./src/presets/css/dense.css",
-    "./presets/neutral.css": "./src/presets/css/neutral.css",
     "./presets/twitter.css": "./src/presets/css/twitter.css",
     "./progress.css": "./src/skin/progress.css",
     "./radio-group.css": "./src/skin/radio-group.css",
