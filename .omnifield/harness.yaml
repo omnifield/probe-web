@@ -68,7 +68,7 @@ zones:
     paths: [products/tables]
     description: таблицы, headless как и кит; фильтры — модуль внутри со своей границей
   studio:
-    paths: [products/studio]
+    paths: [products/studio, canons/studio]
     description: витрина первой волны — что умеет производство; плагинная модель позже
 
   presets:
