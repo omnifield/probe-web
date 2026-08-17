@@ -57,9 +57,36 @@ describe("разметка", () => {
     const { host } = setup();
     // Разделитель разрядов у русского формата — неразрывный пробел; нормализуем перед сверкой.
     const shown = columnValues(host, "/amount").map((text) => text.replace(/\s/g, " "));
-    expect(shown).toEqual(["300", "1 000", ""]);
-    expect(columnValues(host, "/created")).toEqual(["01.07.2026", "15.06.2026", ""]);
-    expect(columnValues(host, "/urgent")).toEqual(["да", "", "нет"]);
+
+    // Третье значение — «пусто» СЛОВОМ, а не пустой строкой: текст пустоты теперь живёт в
+    // разметке, а не в `content:` у оформления. Его переводят и читают вслух, и из CSS
+    // нельзя ни того, ни другого.
+    expect(shown).toEqual(["300", "1 000", "пусто"]);
+    expect(columnValues(host, "/created")).toEqual(["01.07.2026", "15.06.2026", "нет поля"]);
+    // У средней строки поля `/urgent` НЕТ вовсе — и это «нет поля», а не «пусто». Ровно та
+    // разница, ради которой два состояния и заведены.
+    expect(columnValues(host, "/urgent")).toEqual(["да", "нет поля", "нет"]);
+  });
+
+  it("оценка рисуется СТУПЕНЯМИ, а не числом", () => {
+    // Значением атрибута её не нарисовать: посчитать «залить три из пяти» по числу в
+    // `data-rating` средствами CSS нельзя. Поэтому ступени — узлы, по одному на деление.
+    const columns: ColumnDictionary = [
+      { name: "/score", label: "оценка", type: "number", format: "rating", formatOptions: { ratingMax: 5 } },
+    ];
+    const rated = mount(() => (
+      <DataTable columns={columns} rows={[{ score: 4 }]} view={EMPTY_VIEW} onViewChange={() => undefined} />
+    ));
+
+    const steps = all(rated, "[data-slot~='table-rating-step']");
+    expect(steps).toHaveLength(5);
+    expect(steps.filter((node) => node.hasAttribute("data-filled"))).toHaveLength(4);
+
+    // Число никуда не делось: оно в атрибутах и в подписи, поэтому смысл ячейки читается
+    // вслух, а не выводится из количества значков.
+    const scale = one(rated, "[data-slot~='table-rating']");
+    expect(scale.getAttribute("aria-label")).toBe("4 из 5");
+    expect(one(rated, "[data-slot~='table-cell']").getAttribute("data-rating")).toBe("4");
   });
 
   it("различает «поля нет» и «поле есть, но пустое» — как фильтр", () => {

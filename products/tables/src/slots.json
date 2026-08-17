@@ -7,6 +7,8 @@
       "table-body",
       "table-caption",
       "table-cell",
+      "table-cell-empty",
+      "table-cell-missing",
       "table-collapse-all",
       "table-column-down",
       "table-column-group",
@@ -31,7 +33,9 @@
       "table-header-sort",
       "table-header-sort-position",
       "table-hidden-column",
+      "table-hidden-column-name",
       "table-hidden-columns",
+      "table-hidden-columns-label",
       "table-pager",
       "table-pager-next",
       "table-pager-position",
@@ -39,6 +43,8 @@
       "table-pager-size",
       "table-pager-size-select",
       "table-pin-row",
+      "table-rating",
+      "table-rating-step",
       "table-row",
       "table-select-all",
       "table-select-row",
@@ -517,6 +523,13 @@
         "kind": "identity",
         "values": [],
         "means": "имя скрытой колонки"
+      },
+      {
+        "slot": "table-rating-step",
+        "attr": "data-filled",
+        "kind": "flag",
+        "values": [],
+        "means": "ступень оценки закрашена. Ступеней столько, сколько `data-rating-max`, и закрашены первые `data-rating` — посчитать это в CSS нельзя, поэтому узлами"
       }
     ],
     "filter": [

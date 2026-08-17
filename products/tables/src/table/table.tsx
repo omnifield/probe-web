@@ -453,9 +453,7 @@ export function DataTable(props: DataTableProps) {
                           onClick={() =>
                             props.onViewChange(moveColumn(props.columns, props.view, columnId, -1))
                           }
-                        >
-                          ←
-                        </button>
+                         />
                         <button
                           type="button"
                           data-slot="table-column-down"
@@ -464,9 +462,7 @@ export function DataTable(props: DataTableProps) {
                           onClick={() =>
                             props.onViewChange(moveColumn(props.columns, props.view, columnId, 1))
                           }
-                        >
-                          →
-                        </button>
+                         />
                       </Show>
 
                       <button
@@ -480,9 +476,7 @@ export function DataTable(props: DataTableProps) {
                             pinColumn(props.view, columnId, pinnedAt() === "start" ? null : "start"),
                           )
                         }
-                      >
-                        ⇤
-                      </button>
+                       />
                       <button
                         type="button"
                         data-slot="table-column-pin-end"
@@ -494,9 +488,7 @@ export function DataTable(props: DataTableProps) {
                             pinColumn(props.view, columnId, pinnedAt() === "end" ? null : "end"),
                           )
                         }
-                      >
-                        ⇥
-                      </button>
+                       />
 
                       <Show when={column() && groupableBy(column()!)}>
                         <button
@@ -505,9 +497,7 @@ export function DataTable(props: DataTableProps) {
                           aria-label={`Собрать строки в группы по колонке «${column()?.label ?? columnId}»`}
                           aria-pressed={props.view.grouping.includes(columnId)}
                           onClick={() => props.onViewChange(toggleGrouping(props.view, columnId))}
-                        >
-                          ⊞
-                        </button>
+                         />
                       </Show>
 
                       <button
@@ -515,9 +505,7 @@ export function DataTable(props: DataTableProps) {
                         data-slot="table-column-hide"
                         aria-label={`Скрыть колонку «${column()?.label ?? columnId}»`}
                         onClick={() => props.onViewChange(toggleColumn(props.view, columnId))}
-                      >
-                        ✕
-                      </button>
+                       />
 
                       <Show when={width() !== undefined}>
                         <button
@@ -525,9 +513,7 @@ export function DataTable(props: DataTableProps) {
                           data-slot="table-column-width-reset"
                           aria-label={`Вернуть ширину колонки «${column()?.label ?? columnId}»`}
                           onClick={() => props.onViewChange(setColumnWidth(props.view, columnId, null))}
-                        >
-                          ↔
-                        </button>
+                         />
                       </Show>
                     </div>
                   </Show>
@@ -611,9 +597,7 @@ export function DataTable(props: DataTableProps) {
                       onClick={() =>
                         putSession(pinRow(session(), row.id, pinnedAt() === null ? "top" : null))
                       }
-                    >
-                      ⌖
-                    </button>
+                     />
                   </td>
                 </Show>
 
@@ -644,6 +628,33 @@ export function DataTable(props: DataTableProps) {
                           : formatValue(value, spec, locale());
                       }
                       return formatValue(found().value, spec, locale());
+                    };
+
+                    /**
+                     * Оценка ступенями — или `null`, если ячейка не про оценку.
+                     *
+                     * Берётся из тех же атрибутов, что уже уезжают наружу (`data-rating`,
+                     * `data-rating-max`), а не считается заново: два счёта одного и того же
+                     * разъехались бы, и разъехались бы молча.
+                     *
+                     * Дробная оценка ОКРУГЛЯЕТСЯ до ступени — ступень неделима. Точное
+                     * значение при этом не теряется: оно в атрибуте и в подписи.
+                     */
+                    const rating = () => {
+                      const attrs = shownValue().attrs;
+                      const value = attrs["data-rating"];
+                      const max = attrs["data-rating-max"];
+                      if (value === undefined || max === undefined) return null;
+
+                      const total = Number(max);
+                      const filled = Math.round(Number(value));
+                      if (!Number.isFinite(total) || total <= 0) return null;
+
+                      return {
+                        value: Number(value),
+                        max: total,
+                        steps: Array.from({ length: total }, (_, step) => step < filled),
+                      };
                     };
 
                     const context = (): CellContext | null => {
@@ -732,7 +743,45 @@ export function DataTable(props: DataTableProps) {
                           </button>
                         </Show>
 
-                        <Show when={!isPlaceholder()}>{shownValue().text}</Show>
+                        {/* ТЕКСТ — В РАЗМЕТКЕ, а не в `content:`. «Нет поля» и «пусто» это
+                            СОДЕРЖИМОЕ: его переводят и читают вслух, а из CSS нельзя ни того,
+                            ни другого. Пока оно рисовалось псевдоэлементом, оно было
+                            непереводимо и невидимо для вспомогательной технологии. */}
+                        <Show when={!isGroupCell() && !isAggregated() && !isPlaceholder()}>
+                          <Show when={!found().found}>
+                            <span data-slot="table-cell-missing">нет поля</span>
+                          </Show>
+                          <Show when={found().found && shownValue().text === ""}>
+                            <span data-slot="table-cell-empty">пусто</span>
+                          </Show>
+                        </Show>
+
+                        <Show
+                          when={!isPlaceholder() && rating()}
+                          fallback={<Show when={!isPlaceholder()}>{shownValue().text}</Show>}
+                        >
+                          {(scale) => (
+                            /* ОЦЕНКА — УЗЛАМИ НА СТУПЕНЬ. Значением атрибута её не нарисовать:
+                               посчитать «залить три из пяти» по числу в `data-rating` в CSS
+                               нельзя. Число при этом никуда не делось — оно в атрибутах и в
+                               подписи, поэтому смысл ячейки читается вслух, а не выводится из
+                               количества значков. */
+                            <span
+                              data-slot="table-rating"
+                              aria-label={`${scale().value} из ${scale().max}`}
+                            >
+                              <For each={scale().steps}>
+                                {(filled) => (
+                                  <span
+                                    data-slot="table-rating-step"
+                                    data-filled={filled ? "" : undefined}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              </For>
+                            </span>
+                          )}
+                        </Show>
 
                         <Show when={isGroupCell()}>
                           {/* Сколько строк в группе — счёт членов, как `$count` у OData. */}
@@ -807,24 +856,24 @@ export function HiddenColumns(props: HiddenColumnsProps) {
   return (
     <Show when={hidden().length > 0}>
       <ul data-slot="table-hidden-columns" aria-label="Скрытые колонки">
+        {/* Подпись — узлом, а не `content:`: её переводят и читают вслух. */}
+        <li data-slot="table-hidden-columns-label">скрыто:</li>
         <For each={hidden()}>
           {(name) => {
             const label = () => byName().get(name)?.label ?? name;
 
             return (
               <li data-slot="table-hidden-column" data-column={name}>
+                {/* Название — СНАРУЖИ кнопки, своим узлом. Внутри оно бы пропало: одевающий
+                    ставит на пустую кнопку значок и уводит её содержимое за край, и вместе с
+                    глифом уехало бы имя колонки — а именно по нему и выбирают, что вернуть. */}
+                <span data-slot="table-hidden-column-name">{label()}</span>
                 <button
                   type="button"
                   data-slot="table-column-show"
                   aria-label={`Вернуть колонку «${label()}»`}
                   onClick={() => props.onViewChange(toggleColumn(props.view, name))}
-                >
-                  {/* Только название колонки. Плюсика тут больше нет: он был чистым
-                      украшением (`aria-hidden`), то есть видом, поставленным изнутри — а
-                      значит вторым источником вида рядом с оформлением потребителя. Смысл
-                      кнопки несёт `aria-label`, вид — тот, кто одевает. */}
-                  {label()}
-                </button>
+                />
               </li>
             );
           }}
@@ -871,9 +920,7 @@ export function TablePager(props: TablePagerProps) {
         aria-label="Предыдущая страница"
         disabled={page() === 0 || props.view.pageSize === null}
         onClick={() => go(page() - 1)}
-      >
-        ←
-      </button>
+       />
 
       <span data-slot="table-pager-position" aria-live="polite">
         <Show when={props.view.pageSize !== null} fallback="без листания">
@@ -887,9 +934,7 @@ export function TablePager(props: TablePagerProps) {
         aria-label="Следующая страница"
         disabled={page() >= pages() - 1 || props.view.pageSize === null}
         onClick={() => go(page() + 1)}
-      >
-        →
-      </button>
+       />
 
       {/* Обёртка — `span`, а не `label`: `label` связывает подпись с НАТИВНЫМ полем, а список
           у нас теперь разметкой, и связывать ей нечего. Подпись списка едет `aria-label`.
@@ -928,20 +973,21 @@ export interface GroupControlsProps {
 export function GroupControls(props: GroupControlsProps) {
   return (
     <div data-slot="table-group-controls">
+      {/* Имя кнопки переехало в `aria-label`: текст внутри был её ЕДИНСТВЕННЫМ именем, и снять
+          его, не назвав кнопку, значило бы оставить её безымянной для того, кто слушает.
+          Значок ставит одевающий. */}
       <button
         type="button"
         data-slot="table-expand-all"
+        aria-label="Раскрыть все группы"
         onClick={() => props.onSessionChange(expandAll(props.session, true))}
-      >
-        раскрыть все
-      </button>
+      />
       <button
         type="button"
         data-slot="table-collapse-all"
+        aria-label="Свернуть все группы"
         onClick={() => props.onSessionChange(expandAll(props.session, false))}
-      >
-        свернуть все
-      </button>
+      />
     </div>
   );
 }

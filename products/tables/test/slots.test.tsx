@@ -938,6 +938,35 @@ describe("ноль значений вида", () => {
   });
 });
 
+describe("кнопка без содержимого названа", () => {
+  // Глифы с кнопок сняты: значок ставит одевающий. Но текст внутри был для части кнопок их
+  // ЕДИНСТВЕННЫМ именем, и, сняв его, легко оставить кнопку безымянной для того, кто слушает.
+  // Ошибка тихая вдвойне: на экране всё хорошо, значок на месте, и заметит её только человек
+  // с экранным диктором.
+  //
+  // Проверка идёт по ПУСТОТЕ, а не по списку кнопок: список пришлось бы помнить, а пустота
+  // видна сама. Появится новая кнопка-значок — сторож заметит её без правки здесь.
+  it("ни одной безымянной", () => {
+    const host = showEverything();
+    const nameless: string[] = [];
+
+    for (const node of all(host, "button[data-slot]")) {
+      const hasText = (node.textContent ?? "").trim() !== "";
+      const hasChildren = node.children.length > 0;
+      if (hasText || hasChildren) continue;
+
+      const named =
+        (node.getAttribute("aria-label") ?? "") !== "" ||
+        (node.getAttribute("aria-labelledby") ?? "") !== "" ||
+        (node.getAttribute("title") ?? "") !== "";
+
+      if (!named) nameless.push(node.getAttribute("data-slot") ?? "");
+    }
+
+    expect([...new Set(nameless)]).toEqual([]);
+  });
+});
+
 describe("объём семейств", () => {
   // Не число ради числа: пустое семейство означало бы, что перечень для него забыли завести,
   // а гейт при этом зелен — сверять было бы нечего.
