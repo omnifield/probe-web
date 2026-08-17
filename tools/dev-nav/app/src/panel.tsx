@@ -20,7 +20,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@omnifield/probe-web-ui";
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 interface Zone {
   id: string;
@@ -59,7 +59,7 @@ export function Panel() {
 
   let frame: HTMLIFrameElement | undefined;
 
-  const live = () => zones().filter((zone) => zone.up);
+  const live = createMemo(() => zones().filter((zone) => zone.up));
 
   /**
    * Применить выбор к себе и к открытой зоне.
@@ -69,8 +69,11 @@ export function Panel() {
    * потому, что зоны проксируются через этот же порт — origin общий.
    */
   function apply(next: Look) {
+    // Идемпотентность: `apply` зовётся и на загрузку кадра, поэтому запись сигнала без
+    // изменений — лишний повод для перерисовки. Дешевле сравнить, чем ловить последствия.
+    const same = next.preset === look().preset && next.mode === look().mode;
     localStorage.setItem(LOOK_KEY, JSON.stringify(next));
-    setLook(next);
+    if (!same) setLook(next);
 
     const self = document.documentElement;
     if (next.preset) self.dataset["theme"] = next.preset;
@@ -90,7 +93,13 @@ export function Panel() {
         current: string;
         zones: Zone[];
       };
-      setZones(said.zones);
+      // Сравниваем по составу, а не по ссылке: свежий массив каждые четыре секунды заставлял
+      // бы вкладки перерисовываться целиком, дёргая фокус и выделение.
+      const before = zones()
+        .map((zone) => `${zone.id}:${zone.up ? 1 : 0}`)
+        .join();
+      const after = said.zones.map((zone) => `${zone.id}:${zone.up ? 1 : 0}`).join();
+      if (before !== after) setZones(said.zones);
       // Держим открытой поднятую зону: если текущая упала, переходим на первую живую.
       const alive = said.zones.filter((zone) => zone.up);
       const stillUp = alive.some((zone) => zone.id === said.current);
@@ -112,7 +121,10 @@ export function Panel() {
   }
 
   async function open(id: string) {
-    if (!id) return;
+    // Ранний выход — НЕ оптимизация, а защита от петли: вкладки контролируются `value`, их
+    // `onChange` срабатывает и при перерисовке, а смена ключа кадра ниже перезагружает зону.
+    // Без этой строки зона перезагружается бесконечно и вешает вкладку браузера.
+    if (!id || id === current()) return;
     await fetch(`/__nav/switch?zone=${encodeURIComponent(id)}`, { method: "POST" });
     setCurrent(id);
     setNonce((n) => n + 1);
