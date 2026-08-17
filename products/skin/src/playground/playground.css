@@ -213,6 +213,19 @@
 }
 
 /* Плашка «изменён»: своя рамка и фон — она сообщение, а не часть панели. */
+/* Отказ службы — не «нет связи», и выглядеть обязан отказом: человек должен понять, что пресет
+   НЕ сохранён. Роли опасного, а не просто серый текст. */
+.knobs__refusal {
+  padding: var(--space-2);
+  border: var(--border-width-1) solid var(--danger-border);
+  border-radius: var(--radius-sm);
+
+  background-color: var(--danger-element);
+  color: var(--danger-text);
+
+  font-size: var(--font-size-sm);
+}
+
 .knobs__dirty {
   display: flex;
   flex-direction: column;

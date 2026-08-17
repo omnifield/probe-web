@@ -44,7 +44,8 @@
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run",
     "build:presets": "node --experimental-strip-types scripts/build-presets.mjs",
-    "build:icons": "node --experimental-strip-types scripts/build-icons.mjs"
+    "build:icons": "node --experimental-strip-types scripts/build-icons.mjs",
+    "seed:presets": "node --experimental-strip-types scripts/seed-presets.mjs"
   },
   "dependencies": {
     "@omnifield/probe-web-runtime": "file:../../packages/runtime",
