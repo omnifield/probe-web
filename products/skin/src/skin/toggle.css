@@ -10,8 +10,17 @@
    тумблер с бегунком — другой примитив (`Switch`), и в ките его пока нет. */
 
 @layer skin {
-  [data-slot~="toggle"],
-  [data-slot~="toggle-group-item"] {
+  /* ИСКЛЮЧЕНИЕ СОСТАВНОГО УЗЛА — вид берётся у кнопки, а НАЖАТОЕ состояние остаётся нашим.
+
+     `<Toggle as={Button} data-variant="outline">` — ОДИН узел с обеими зацепками. Вид на нём
+     даёт кнопка (иначе наш лёг бы поверх: этот файл идёт после `button.css`), а правила
+     `[data-pressed]` исключения НЕ несут намеренно — нажатость это поведение примитива, и
+     показывать её обязаны мы.
+
+     Вариант при композиции берите НЕ дефолтный: дефолтная кнопка сама сплошная брендовая и
+     читалась бы нажатой всегда. */
+  [data-slot~="toggle"]:not([data-slot~="button"]),
+  [data-slot~="toggle-group-item"]:not([data-slot~="button"]) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -38,8 +47,8 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot~="toggle"]:hover:not(:disabled),
-  [data-slot~="toggle-group-item"]:hover:not(:disabled) {
+  [data-slot~="toggle"]:not([data-slot~="button"]):hover:not(:disabled),
+  [data-slot~="toggle-group-item"]:not([data-slot~="button"]):hover:not(:disabled) {
     background-color: var(--element-hover);
   }
 
@@ -58,22 +67,22 @@
     background-color: var(--brand-solid-hover);
   }
 
-  [data-slot~="toggle"]:focus-visible,
-  [data-slot~="toggle-group-item"]:focus-visible {
+  [data-slot~="toggle"]:not([data-slot~="button"]):focus-visible,
+  [data-slot~="toggle-group-item"]:not([data-slot~="button"]):focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot~="toggle"]:disabled,
-  [data-slot~="toggle-group-item"]:disabled {
+  [data-slot~="toggle"]:not([data-slot~="button"]):disabled,
+  [data-slot~="toggle-group-item"]:not([data-slot~="button"]):disabled {
     background-color: var(--element);
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot~="toggle"],
-    [data-slot~="toggle-group-item"] {
+    [data-slot~="toggle"]:not([data-slot~="button"]),
+    [data-slot~="toggle-group-item"]:not([data-slot~="button"]) {
       transition: none;
     }
   }

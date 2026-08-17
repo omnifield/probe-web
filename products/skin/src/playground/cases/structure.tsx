@@ -202,6 +202,22 @@ export const STRUCTURE_SPECIMENS: Specimen[] = [
           </div>
         ),
       },
+      {
+        id: "composed",
+        title: "Ссылка кнопкой",
+        note: "`as={Button}` собирает один узел с двумя зацепками — `data-slot=\"button link\"`. Вид даёт кнопка вместе с вариантом, а наш вид ссылки уступает: иначе брендовый текст с подчёркиванием лёг бы на сплошную заливку и подпись стала бы нечитаемой.",
+        render: () => (
+          <div class="case__row">
+            <Link as={Button} href="#">
+              Перейти к отчёту
+            </Link>
+            <Link as={Button} data-variant="outline" href="#">
+              Открыть в новой вкладке
+            </Link>
+            <Link href="#">обычная ссылка рядом</Link>
+          </div>
+        ),
+      },
     ],
   },
   {
