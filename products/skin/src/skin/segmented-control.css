@@ -1,0 +1,148 @@
+/* Сегментированный переключатель — подпуть `@probe-web/skin/segmented-control.css`.
+   Требует `base.css`.
+
+   Одиннадцать зацепок: `segmented-control` (корень), `-label`, `-description`, `-error`,
+   `-indicator`, `-item`, `-item-input`, `-item-control`, `-item-label`, `-item-description`,
+   `-item-indicator`.
+
+   ЭТО ВЫБОР ОДНОГО, А НЕ РЯД НАЖАТЫХ КНОПОК (карта овнера `ui`): внутри настоящие `radio`,
+   роль корня `radiogroup`, значение уезжает в форму. Ряд независимых кнопок — это
+   `toggle-group`, и он одевается иначе. Путать их нельзя: вид обязан говорить о поведении.
+
+   Отсюда решение по виду: сегменты стоят в общей утопленной дорожке, а активный обозначен
+   ПОДВИЖНОЙ ПОЛОСКОЙ (`-indicator`), которая переезжает между ними. Так читается «одно из», а
+   не «несколько нажатых». Размеры и положение полоски считает кит — это измеренные значения. */
+
+@layer skin {
+  [data-slot="segmented-control"] {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+
+  [data-slot="segmented-control-label"] {
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
+  }
+
+  /* Дорожка: утопленный фон, в котором лежат сегменты. Позиционирование относительное —
+     подвижная полоска встаёт по нему. */
+  [data-slot="segmented-control"] > [data-slot="segmented-control-item"],
+  [data-slot="segmented-control-item"] {
+    position: relative;
+    z-index: var(--z-base);
+  }
+
+  [data-slot="segmented-control-indicator"] {
+    position: absolute;
+    z-index: var(--z-base);
+
+    border-radius: var(--radius-sm);
+    background-color: var(--surface);
+    box-shadow: var(--shadow-xs);
+
+    transition:
+      translate var(--motion-fast) var(--ease-out),
+      width var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="segmented-control-item"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ввод спрятан с глаз, но остаётся в порядке фокуса и в дереве доступности. */
+  [data-slot="segmented-control-item-input"] {
+    position: absolute;
+    inline-size: var(--border-width-1);
+    block-size: var(--border-width-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Сегмент: подпись с отступами, без своей рамки — рамку несёт дорожка. */
+  [data-slot="segmented-control-item-control"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+
+    block-size: var(--control-height-sm);
+    padding-inline: var(--space-3);
+
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+
+    cursor: pointer;
+    transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="segmented-control-item"]:hover [data-slot="segmented-control-item-control"] {
+    color: var(--text);
+  }
+
+  /* Выбранный сегмент — тёмный текст поверх переехавшей полоски. Фон сегменту НЕ назначается:
+     фон рисует полоска, иначе при переезде было бы два прямоугольника. */
+  [data-slot="segmented-control-item-control"][data-checked] {
+    color: var(--text);
+    font-weight: var(--weight-medium);
+  }
+
+  [data-slot="segmented-control-item"]:has([data-slot="segmented-control-item-input"]:focus-visible)
+    [data-slot="segmented-control-item-control"] {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-1);
+  }
+
+  [data-slot="segmented-control-item-control"][data-disabled] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  [data-slot="segmented-control-item-label"] {
+    white-space: nowrap;
+  }
+
+  [data-slot="segmented-control-item-description"],
+  [data-slot="segmented-control-description"] {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot="segmented-control-error"] {
+    color: var(--danger-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  [data-slot="segmented-control-item-indicator"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    inline-size: 1em;
+    block-size: 1em;
+
+    color: var(--brand-text);
+    font-size: 0.85em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="segmented-control-indicator"],
+    [data-slot="segmented-control-item-control"] {
+      transition: none;
+    }
+  }
+}

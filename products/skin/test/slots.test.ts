@@ -52,20 +52,28 @@ function dressedSlots(): Set<string> {
 const DRESSED_FAMILIES = [
   "button",
   "checkbox",
+  "combobox",
   "dialog",
   "dropdown-menu",
   "field",
   "input",
   "label",
+  "number-field",
   "popover",
+  "progress",
   "radio-group",
+  "segmented-control",
   "select",
   "separator",
+  "skeleton",
+  "slider",
   "spinner",
   "switch",
   "tabs",
   "textarea",
+  "toast",
   "toggle",
+  "toggle-group",
   "tooltip",
 ];
 
@@ -77,7 +85,7 @@ const DRESSED_FAMILIES = [
  * Поймано на живом случае: кит выпустил `ToggleGroup`, и проба потребовала одеть его как часть
  * нашего `toggle`. Пустой список тут был бы не «чисто», а «ждём ложного срабатывания».
  */
-const FOREIGN_FAMILIES = ["toggle-group"];
+const FOREIGN_FAMILIES: string[] = [];
 
 /** Относится ли зацепка к объявленному нами семейству. */
 function inDressedFamily(slot: string): boolean {
@@ -109,6 +117,12 @@ const NOT_DRESSED: Record<string, string> = {
   "dropdown-menu-group": "группировка пунктов для доступности; вид несёт её подпись",
   "dropdown-menu-radio-group": "то же для группы переключателей",
   "tooltip-trigger": "обёртка над элементом, который и так одет; своего вида не имеет",
+  "combobox-arrow": "цвет приходит с панели, размер — пропом size",
+
+  // Спрятанные вводы для формы: их сокрытие — служебный стиль кита, и он стоит на ОБЁРТКЕ, а
+  // не на зацепке. Оформлять здесь нечего, а трогать — значит спорить с китом за сокрытие.
+  "combobox-hidden-select": "спрятанный select для формы; сокрытие держит кит на обёртке",
+  "number-field-hidden-input": "спрятанный ввод для формы; сокрытие держит кит",
 };
 
 describe("реестр зацепок", () => {

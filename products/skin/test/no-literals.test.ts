@@ -40,6 +40,7 @@ const SURFACE_WIDTHS: Record<string, string> = {
   "popover.css: max-inline-size": "потолок ширины всплывающей панели",
   "tooltip.css: max-inline-size": "потолок ширины подсказки — уже панели, это подпись",
   "dropdown-menu.css: min-inline-size": "минимум ширины меню, чтобы пункты не жались в столбик",
+  "toast.css: inline-size": "ширина уведомления — колонка читаемой длины у края экрана",
 };
 
 describe("ни одного литерала там, где обязан быть токен", () => {

@@ -1,0 +1,131 @@
+/* Уведомления — подпуть `@probe-web/skin/toast.css`. Требует `base.css`.
+
+   Восемь зацепок: `toast-region` (область на экране), `toast-list` (стопка), `toast` (одно
+   уведомление), `-title`, `-description`, `-close`, `-progress-track`, `-progress-fill`.
+
+   ЗОВУТСЯ КОДОМ (карта овнера `ui`): область и стопка ставятся один раз в скелете приложения,
+   дальше уведомления добавляются вызовом. Значит место стопки на экране — часть оформления, а
+   не разметки страницы: его задаём мы.
+
+   `toast-progress-*` — ТАЙМЕР ЖИЗНИ уведомления, а не полоса выполнения задачи. Отсюда и вид:
+   тонкая нить у края, а не полноценная дорожка с подписью. Спутать их дорого — пользователь
+   решит, что закрытие уведомления отменит работу. */
+
+@layer skin {
+  /* Область не перехватывает нажатия: она накрывает угол экрана, и клики по странице под ней
+     обязаны доходить. Нажимаемы только сами уведомления. */
+  [data-slot="toast-region"] {
+    position: fixed;
+    inset-block-end: var(--space-4);
+    inset-inline-end: var(--space-4);
+    z-index: var(--z-toast);
+
+    pointer-events: none;
+  }
+
+  [data-slot="toast-list"] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  [data-slot="toast"] {
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    inline-size: min(22rem, calc(100vw - var(--space-6)));
+    padding: var(--space-3) var(--space-4);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-lg);
+
+    background-color: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-snug);
+
+    animation: probe-web-skin-toast var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot="toast-title"] {
+    font-size: var(--font-size-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+
+  [data-slot="toast-description"] {
+    color: var(--text-muted);
+  }
+
+  [data-slot="toast-close"] {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-end: var(--space-2);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    inline-size: 1.5em;
+    block-size: 1.5em;
+
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text-muted);
+
+    font: inherit;
+    cursor: pointer;
+  }
+
+  [data-slot="toast-close"]:hover {
+    background-color: var(--tint-hover);
+    color: var(--text);
+  }
+
+  [data-slot="toast-close"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-1);
+  }
+
+  /* Нить таймера — у самого края и тонкая. Ей не нужна ни подпись, ни скругление: это не
+     показатель работы, а остаток времени. */
+  [data-slot="toast-progress-track"] {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+
+    block-size: var(--border-width-2);
+    background-color: var(--element);
+  }
+
+  [data-slot="toast-progress-fill"] {
+    block-size: 100%;
+    background-color: var(--brand-solid);
+  }
+
+  @keyframes probe-web-skin-toast {
+    from {
+      opacity: 0;
+      translate: 0 var(--space-3);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot="toast"] {
+      animation: none;
+    }
+  }
+}
