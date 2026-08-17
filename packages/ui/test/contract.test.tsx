@@ -14,9 +14,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import {
+  Combobox,
+  ComboboxControl,
+  ComboboxInput,
+  ComboboxLabel,
+  ComboboxTrigger,
+} from "../src/combobox.jsx";
 import { Dialog, DialogTrigger } from "../src/dialog.jsx";
 import { DropdownMenu, DropdownMenuIcon, DropdownMenuTrigger } from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
+import {
+  NumberField,
+  NumberFieldIncrement,
+  NumberFieldInput,
+  NumberFieldLabel,
+} from "../src/number-field.jsx";
 import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
 import {
   RadioGroup,
@@ -221,6 +234,67 @@ const PRIMITIVES = [
     ),
   },
   {
+    name: "ComboboxInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <Combobox<string> options={[]}>
+        <ComboboxControl>
+          <ComboboxInput {...props} />
+        </ComboboxControl>
+      </Combobox>
+    ),
+  },
+  {
+    name: "ComboboxTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Combobox<string> options={[]}>
+        <ComboboxTrigger {...props} />
+      </Combobox>
+    ),
+  },
+  {
+    name: "ComboboxLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <Combobox<string> options={[]}>
+        <ComboboxLabel {...props} />
+      </Combobox>
+    ),
+  },
+  {
+    name: "NumberField",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <NumberField {...props} />,
+  },
+  {
+    name: "NumberFieldInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <NumberField>
+        <NumberFieldInput {...props} />
+      </NumberField>
+    ),
+  },
+  {
+    name: "NumberFieldIncrement",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <NumberField>
+        <NumberFieldIncrement {...props} />
+      </NumberField>
+    ),
+  },
+  {
+    name: "NumberFieldLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <NumberField>
+        <NumberFieldLabel {...props} />
+      </NumberField>
+    ),
+  },
+  {
     name: "DialogTrigger",
     tag: "button",
     render: (props: Record<string, unknown>) => (
@@ -361,15 +435,22 @@ describe("обработчик потребителя доходит до узл
 });
 
 /**
- * Спрятанные вводы — ЕДИНСТВЕННОЕ отступление от «ноль стилей по умолчанию» во всей зоне.
+ * Части, на которых `@kobalte/core` держит СВОЙ служебный стиль. Ни одна строка в нём не про
+ * вид — это механика, и каждый случай разобран отдельным тестом в файле своего примитива:
  *
- * Стиль ставит сам `@kobalte/core` (`visuallyHiddenStyles`), и он не про вид, а про механику
- * доступности: настоящий `<input>` обязан остаться в документе ради фокуса, формы и
- * скринридера, но не должен быть виден — рисуют соседний `*-control`. Отступление названо
- * здесь и разобрано отдельными тестами в `test/checkbox.test.tsx`, которые пиняют, ЧТО именно
- * это за стиль и что стиль потребителя доезжает поверх.
+ *   • спрятанные вводы — `visuallyHiddenStyles`: настоящий `<input>` обязан остаться в
+ *     документе ради фокуса, формы и скринридера, но не должен быть виден (`checkbox.test.tsx`);
+ *   • числовой ввод — `touch-action: none`: иначе жест прокрутки по полю менял бы значение
+ *     (`number-field.test.tsx`).
+ *
+ * Список ЯВНЫЙ: проверка не ослаблена, у неё названы исключения.
  */
-const HIDDEN_INPUTS = new Set(["CheckboxInput", "SwitchInput", "RadioGroupItemInput"]);
+const WITH_SERVICE_STYLE = new Set([
+  "CheckboxInput",
+  "SwitchInput",
+  "RadioGroupItemInput",
+  "NumberFieldInput",
+]);
 
 describe("стилей по умолчанию нет", () => {
   for (const primitive of PRIMITIVES) {
@@ -382,7 +463,7 @@ describe("стилей по умолчанию нет", () => {
       // означает, что кто-то в цепочке всё-таки взялся за `class`.
       expect(node?.hasAttribute("class")).toBe(false);
 
-      if (!HIDDEN_INPUTS.has(primitive.name)) {
+      if (!WITH_SERVICE_STYLE.has(primitive.name)) {
         expect(node?.hasAttribute("style")).toBe(false);
       }
     });

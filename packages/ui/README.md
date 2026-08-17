@@ -26,6 +26,8 @@
 | **не 1-to-1** | всплывающая панель (`*-content`) | координаты пишутся в отдельный узел-позиционер |
 | **не 1-to-1** | стрелка (`*-arrow`) | внутри вектор, иначе её не повернуть за панелью |
 | **есть `style`** | спрятанные вводы (`checkbox-input`, `switch-input`, `radio-group-item-input`) | механика доступности: ввод остаётся ради фокуса и формы, но не виден |
+| **есть `style`** | числовой ввод (`number-field-input`) | `touch-action: none` — иначе жест прокрутки менял бы значение |
+| **не 1-to-1** | скрытый `<select>` поиска (`combobox-hidden-select`) | обёртка и технический ввод — обход особенностей Safari и Firefox |
 | **есть `style`** | всплывающие панели и стрелки | позиционирование, переменная начала трансформации, цвет стрелки — **зеркало панели потребителя** |
 
 Разбор каждого — в разделах ниже и в доке соответствующего компонента.
@@ -54,6 +56,8 @@
 | `Dialog*` | составной, 8 частей | `Dialog.*` |
 | `Tabs*` | составной, 5 частей | `Tabs.*` |
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
+| `Combobox*` | составной, 18 частей | `Combobox.*` |
+| `NumberField*` | составной, 8 частей | `NumberField.*` |
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
 | `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
@@ -107,6 +111,8 @@
 | составной `DropdownMenu` | `dropdown-menu-trigger`, `dropdown-menu-icon`, `dropdown-menu-content`, `dropdown-menu-arrow`, `dropdown-menu-item`, `dropdown-menu-item-label`, `dropdown-menu-item-description`, `dropdown-menu-item-indicator`, `dropdown-menu-checkbox-item`, `dropdown-menu-radio-group`, `dropdown-menu-radio-item`, `dropdown-menu-group`, `dropdown-menu-group-label`, `dropdown-menu-separator`, `dropdown-menu-sub-trigger`, `dropdown-menu-sub-content` |
 | составной `Dialog` | `dialog-trigger`, `dialog-overlay`, `dialog-content`, `dialog-title`, `dialog-description`, `dialog-close` |
 | составной `Tabs` | `tabs`, `tabs-list`, `tabs-trigger`, `tabs-indicator`, `tabs-content` |
+| составной `Combobox` | `combobox`, `combobox-label`, `combobox-control`, `combobox-input`, `combobox-trigger`, `combobox-icon`, `combobox-hidden-select`, `combobox-content`, `combobox-arrow`, `combobox-listbox`, `combobox-item`, `combobox-item-label`, `combobox-item-description`, `combobox-item-indicator`, `combobox-section`, `combobox-description`, `combobox-error` |
+| составной `NumberField` | `number-field`, `number-field-label`, `number-field-input`, `number-field-hidden-input`, `number-field-increment`, `number-field-decrement`, `number-field-description`, `number-field-error` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
@@ -312,6 +318,36 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
 фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
+
+## Поиск по списку и число: `Combobox`, `NumberField`
+
+**`Combobox` — не «`Select` с полем ввода».** У списка кнопка, здесь настоящий `<input>`, в
+который печатают. Отсюда части, которых у `Select` нет: `combobox-control` (рамка вокруг ввода
+и кнопки — она обязана реагировать на фокус ВНУТРИ себя) и `combobox-hidden-select` (форма
+отправляет выбранное значение, а не текст запроса).
+
+**Фильтрация встроена, и это надо знать заранее.** `@kobalte/core` фильтрует сам —
+`defaultFilter: "contains"` поверх `Intl.Collator` с `sensitivity: "base"`: без учёта регистра
+и диакритики, по правилам локали, на кириллице тоже. Потребитель, который начнёт фильтровать
+`options` сам по `onInputChange`, получит ДВОЙНУЮ фильтрацию. Нужен свой поиск — либо
+`defaultFilter` своей функцией, либо считать `options` снаружи, зная про встроенный.
+
+`combobox-hidden-select` — **названное отступление от 1-to-1**: зацепка стоит на `<select>`, но
+kobalte заворачивает его в скрытую обёртку и кладёт рядом технический `<input>`. Оба узла —
+обход особенностей Safari (автозаполнение не работает при `display: none`) и Firefox. Стиль
+поэтому на обёртке, а не на зацепке; оформлению здесь делать нечего.
+
+**`NumberField` существует, потому что `<input type="number">` не стилизуется.** Стрелки
+браузера заменены обычными `<button>`, значение считает kobalte, формат разбирает
+`Intl.NumberFormat` (`formatOptions`). Вводов два и оба настоящие: видимый показывает формат
+(«1 234,50»), скрытый уносит в форму сырое `1234.5`.
+
+Имена `number-field-increment` и `-decrement` — без слова `trigger`: действие уже названо, а
+лишнее слово в зацепке ничего не различает (та же причина, что у `popover-close`).
+
+**На границе `minValue` кнопка НЕ отключается**, и обработчик всё равно зовётся — значением
+границы, а не запретным. Оформление, рисующее «упёрлись», должно смотреть на значение, а не на
+`disabled`.
 
 ## Модальное окно и вкладки
 

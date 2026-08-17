@@ -35,6 +35,26 @@ import {
   CheckboxLabel,
 } from "../src/checkbox.jsx";
 import {
+  Combobox,
+  ComboboxArrow,
+  ComboboxContent,
+  ComboboxControl,
+  ComboboxDescription,
+  ComboboxError,
+  ComboboxHiddenSelect,
+  ComboboxIcon,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemDescription,
+  ComboboxItemIndicator,
+  ComboboxItemLabel,
+  ComboboxLabel,
+  ComboboxListbox,
+  ComboboxPortal,
+  ComboboxSection,
+  ComboboxTrigger,
+} from "../src/combobox.jsx";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -66,6 +86,16 @@ import {
   DropdownMenuTrigger,
 } from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, FieldError, Input, Label, Textarea } from "../src/field.jsx";
+import {
+  NumberField,
+  NumberFieldDecrement,
+  NumberFieldDescription,
+  NumberFieldError,
+  NumberFieldHiddenInput,
+  NumberFieldIncrement,
+  NumberFieldInput,
+  NumberFieldLabel,
+} from "../src/number-field.jsx";
 import {
   Popover,
   PopoverAnchor,
@@ -198,6 +228,51 @@ function Scene() {
           <RadioGroupItemDescription>до 46</RadioGroupItemDescription>
         </RadioGroupItem>
       </RadioGroup>
+
+      <Combobox<string, { край: string; города: string[] }>
+        open
+        value="Казань"
+        validationState="invalid"
+        options={[{ край: "Поволжье", города: ["Казань", "Пермь"] }]}
+        optionGroupChildren="города"
+        itemComponent={(item) => (
+          <ComboboxItem item={item.item}>
+            <ComboboxItemLabel>{item.item.rawValue}</ComboboxItemLabel>
+            <ComboboxItemDescription>город</ComboboxItemDescription>
+            <ComboboxItemIndicator>✓</ComboboxItemIndicator>
+          </ComboboxItem>
+        )}
+        sectionComponent={(section) => (
+          <ComboboxSection>{section.section.rawValue.край}</ComboboxSection>
+        )}
+      >
+        <ComboboxLabel>Город</ComboboxLabel>
+        <ComboboxControl>
+          <ComboboxInput />
+          <ComboboxTrigger>
+            <ComboboxIcon>▾</ComboboxIcon>
+          </ComboboxTrigger>
+        </ComboboxControl>
+        <ComboboxHiddenSelect />
+        <ComboboxDescription>Начните печатать</ComboboxDescription>
+        <ComboboxError>Город не найден</ComboboxError>
+        <ComboboxPortal>
+          <ComboboxContent>
+            <ComboboxArrow />
+            <ComboboxListbox />
+          </ComboboxContent>
+        </ComboboxPortal>
+      </Combobox>
+
+      <NumberField rawValue={2} validationState="invalid">
+        <NumberFieldLabel>Количество</NumberFieldLabel>
+        <NumberFieldDecrement>−</NumberFieldDecrement>
+        <NumberFieldInput />
+        <NumberFieldIncrement>+</NumberFieldIncrement>
+        <NumberFieldHiddenInput />
+        <NumberFieldDescription>Штук в заказе</NumberFieldDescription>
+        <NumberFieldError>Не меньше нуля</NumberFieldError>
+      </NumberField>
 
       <Popover open>
         <PopoverTrigger>Настройки</PopoverTrigger>
