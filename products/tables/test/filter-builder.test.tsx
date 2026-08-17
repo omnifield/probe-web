@@ -46,8 +46,8 @@ describe("сборка условий", () => {
   it("рисует корень с зацепкой и пустым списком", () => {
     const { host } = setup();
 
-    expect(one(host, "[data-slot='filter-builder']")).toBeTruthy();
-    expect(all(host, "[data-slot='filter-condition']")).toHaveLength(0);
+    expect(one(host, "[data-slot~='filter-builder']")).toBeTruthy();
+    expect(all(host, "[data-slot~='filter-condition']")).toHaveLength(0);
   });
 
   it("добавляет условие сравнения и нумерует его", () => {
@@ -57,7 +57,7 @@ describe("сборка условий", () => {
 
     expect(state().conditions).toHaveLength(1);
     expect(state().conditions[0]!.kind).toBe("compare");
-    expect(one(host, "[data-slot='filter-condition-number']").textContent).toBe("1");
+    expect(one(host, "[data-slot~='filter-condition-number']").textContent).toBe("1");
   });
 
   it("добавляет остальные виды условий", () => {
@@ -90,11 +90,11 @@ describe("сборка условий", () => {
     click(host, "+ сравнение");
 
     const operators = () =>
-      all<HTMLOptionElement>(host, "[data-slot='filter-condition-operator'] option").map((node) => node.value);
+      all<HTMLOptionElement>(host, "[data-slot~='filter-condition-operator'] option").map((node) => node.value);
 
     expect(operators()).toContain("contains");
 
-    const field = one<HTMLSelectElement>(host, "[data-slot='filter-condition-field']");
+    const field = one<HTMLSelectElement>(host, "[data-slot~='filter-condition-field']");
     field.value = "/amount";
     field.dispatchEvent(new Event("change", { bubbles: true }));
 
@@ -107,7 +107,7 @@ describe("сборка условий", () => {
     const { host, state } = setup();
     click(host, "+ сравнение");
 
-    press(one(host, "[data-slot='filter-condition-remove']"));
+    press(one(host, "[data-slot~='filter-condition-remove']"));
 
     expect(state().conditions).toHaveLength(0);
   });
@@ -123,10 +123,10 @@ describe("счётчик условия", () => {
       logic: { mode: "all" },
     });
 
-    const count = one(host, "[data-slot='filter-condition-count']");
+    const count = one(host, "[data-slot~='filter-condition-count']");
     expect(count.textContent).toContain("оставляет 2 из 3");
     // Третья строка без поля — это НЕ «не подошла», и на экране это разные вещи.
-    expect(one(host, "[data-slot='filter-condition-unknown']").textContent).toBe(", неизвестно 1");
+    expect(one(host, "[data-slot~='filter-condition-unknown']").textContent).toBe(", неизвестно 1");
   });
 
   it("без неизвестных отдельной строки нет", () => {
@@ -136,8 +136,8 @@ describe("счётчик условия", () => {
       logic: { mode: "all" },
     });
 
-    expect(one(host, "[data-slot='filter-condition-count']").textContent).toContain("оставляет 2 из 3");
-    expect(host.querySelector("[data-slot='filter-condition-unknown']")).toBeNull();
+    expect(one(host, "[data-slot~='filter-condition-count']").textContent).toContain("оставляет 2 из 3");
+    expect(host.querySelector("[data-slot~='filter-condition-unknown']")).toBeNull();
   });
 });
 
@@ -154,23 +154,23 @@ describe("своя логика", () => {
   it("включается флажком и заполняется формулой по умолчанию", () => {
     const { host, state } = setup(withTwo());
 
-    const toggle = one<HTMLInputElement>(host, "[data-slot='filter-logic-toggle'] input");
+    const toggle = one<HTMLInputElement>(host, "[data-slot~='filter-logic-toggle'] input");
     toggle.click();
 
     expect(state().logic.mode).toBe("formula");
-    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']").value).toBe("1 И 2");
+    expect(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']").value).toBe("1 И 2");
   });
 
   it("флажок недоступен, пока условий нет", () => {
     const { host } = setup();
-    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-toggle'] input").disabled).toBe(true);
+    expect(one<HTMLInputElement>(host, "[data-slot~='filter-logic-toggle'] input").disabled).toBe(true);
   });
 
   it("разобранная формула уезжает в состояние деревом по идентификаторам", () => {
     const { host, state } = setup(withTwo());
-    one<HTMLInputElement>(host, "[data-slot='filter-logic-toggle'] input").click();
+    one<HTMLInputElement>(host, "[data-slot~='filter-logic-toggle'] input").click();
 
-    type(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']"), "1 ИЛИ 2");
+    type(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']"), "1 ИЛИ 2");
 
     expect(state().logic).toEqual({
       mode: "formula",
@@ -180,12 +180,12 @@ describe("своя логика", () => {
 
   it("сломанная формула названа ТЕКСТОМ и помечена недействительной (WCAG 3.3.1)", () => {
     const { host, state } = setup(withTwo());
-    one<HTMLInputElement>(host, "[data-slot='filter-logic-toggle'] input").click();
+    one<HTMLInputElement>(host, "[data-slot~='filter-logic-toggle'] input").click();
 
-    type(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']"), "(1 И 2");
+    type(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']"), "(1 И 2");
 
-    expect(one(host, "[data-slot='filter-logic-error']").textContent).toContain("не хватает закрывающей скобки");
-    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']").getAttribute("aria-invalid")).toBe("true");
+    expect(one(host, "[data-slot~='filter-logic-error']").textContent).toContain("не хватает закрывающей скобки");
+    expect(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']").getAttribute("aria-invalid")).toBe("true");
     // Недописанная формула в состояние НЕ уезжает: там лежит последнее разобранное дерево.
     expect(state().logic).toEqual({
       mode: "formula",
@@ -195,15 +195,15 @@ describe("своя логика", () => {
 
   it("известная поправка предложена кнопкой (WCAG 3.3.3)", () => {
     const { host, state } = setup(withTwo());
-    one<HTMLInputElement>(host, "[data-slot='filter-logic-toggle'] input").click();
-    type(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']"), "1 И");
+    one<HTMLInputElement>(host, "[data-slot~='filter-logic-toggle'] input").click();
+    type(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']"), "1 И");
 
-    const fix = one(host, "[data-slot='filter-logic-fix']");
+    const fix = one(host, "[data-slot~='filter-logic-fix']");
     expect(fix.textContent).toBe("подставить «1 И 2»");
 
     press(fix);
 
-    expect(host.querySelector("[data-slot='filter-logic-error']")).toBeNull();
+    expect(host.querySelector("[data-slot~='filter-logic-error']")).toBeNull();
     expect(state().logic).toEqual({
       mode: "formula",
       expr: { t: "and", a: { t: "ref", id: "c1" }, b: { t: "ref", id: "c2" } },
@@ -216,7 +216,7 @@ describe("своя логика", () => {
       logic: { mode: "formula", expr: { t: "ref", id: "c1" } },
     });
 
-    expect(one(host, "[data-slot='filter-logic-unused']").textContent).toContain("2");
+    expect(one(host, "[data-slot~='filter-logic-unused']").textContent).toContain("2");
   });
 
   it("удаление условия, на которое ссылается формула, — видимое событие, а не сдвиг номеров", () => {
@@ -230,11 +230,11 @@ describe("своя логика", () => {
       logic: { mode: "formula", expr: { t: "or", a: { t: "ref", id: "c1" }, b: { t: "ref", id: "c2" } } },
     });
 
-    press(all(host, "[data-slot='filter-condition-remove']")[0]!);
+    press(all(host, "[data-slot~='filter-condition-remove']")[0]!);
 
     expect(state().conditions).toHaveLength(1);
-    expect(one(host, "[data-slot='filter-logic-error']").textContent).toContain("удалено");
+    expect(one(host, "[data-slot~='filter-logic-error']").textContent).toContain("удалено");
     // Второе условие стало первым НА ЭКРАНЕ, но формула про это знает и показывает пропажу.
-    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']").value).toBe("? ИЛИ 1");
+    expect(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']").value).toBe("? ИЛИ 1");
   });
 });

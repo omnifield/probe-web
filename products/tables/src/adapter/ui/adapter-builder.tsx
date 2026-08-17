@@ -172,7 +172,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                           }
                         />
                         <Button
-                          data-slot="adapter-rule-step-remove"
+                          data-slot="button adapter-rule-step-remove"
                           aria-label={`Убрать действие ${at() + 1}`}
                           onClick={() =>
                             replaceRule(index(), {
@@ -226,7 +226,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
 
                 <Show when={rule.onFail === "default"}>
                   <Field
-                    data-slot="adapter-rule-fallback"
+                    data-slot="field adapter-rule-fallback"
                     value={rule.fallback ?? ""}
                     onChange={(value) => replaceRule(index(), { ...rule, fallback: value })}
                   >
@@ -253,7 +253,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                 </Show>
 
                 <Button
-                  data-slot="adapter-rule-remove"
+                  data-slot="button adapter-rule-remove"
                   aria-label={`Убрать правило ${index() + 1}`}
                   onClick={() => patch({ fields: props.spec.fields.filter((_, at) => at !== index()) })}
                 >
@@ -265,7 +265,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
         </For>
       </ol>
 
-      <Button data-slot="adapter-add" onClick={addRule}>
+      <Button data-slot="button adapter-add" onClick={addRule}>
         + правило
       </Button>
 
@@ -319,14 +319,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="adapter-step-separator"
+              data-slot="field adapter-step-separator"
               value={step().separator}
               onChange={(value) => props.onChange({ ...step(), separator: value })}
             >
               <Input placeholder="разделитель" />
             </Field>
             <Field
-              data-slot="adapter-step-take"
+              data-slot="field adapter-step-take"
               value={String(step().take)}
               onChange={(value) => props.onChange({ ...step(), take: Number(value) || 0 })}
             >
@@ -340,14 +340,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="adapter-step-find"
+              data-slot="field adapter-step-find"
               value={step().find}
               onChange={(value) => props.onChange({ ...step(), find: value })}
             >
               <Input placeholder="найти" />
             </Field>
             <Field
-              data-slot="adapter-step-with"
+              data-slot="field adapter-step-with"
               value={step().with}
               onChange={(value) => props.onChange({ ...step(), with: value })}
             >
@@ -364,7 +364,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="adapter-step-by"
+            data-slot="field adapter-step-by"
             value={String(step().by)}
             onChange={(value) => props.onChange({ ...step(), by: Number(value) || 1 })}
           >
@@ -378,7 +378,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="adapter-step-value"
+            data-slot="field adapter-step-value"
             value={step().value}
             onChange={(value) => props.onChange({ ...step(), value })}
           >

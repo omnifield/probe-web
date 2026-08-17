@@ -53,7 +53,7 @@ const texts = (host: ParentNode, selector: string) =>
   all(host, selector).map((node) => node.textContent?.trim() ?? "");
 
 const bodyColumn = (host: ParentNode, column: string) =>
-  all(host, `tbody [data-slot='table-cell'][data-column='${column}']`).map(
+  all(host, `tbody [data-slot~='table-cell'][data-column='${column}']`).map(
     (node) => node.textContent?.trim() ?? "",
   );
 
@@ -70,9 +70,9 @@ describe("закрепление колонок", () => {
   it("прижатая колонка уезжает к краю и помечается атрибутом", () => {
     const { host } = setup({ ...EMPTY_VIEW, pinned: { start: ["/amount"], end: [] } });
 
-    expect(texts(host, "[data-slot='table-header']")).toEqual(["сумма", "заявитель", "регион"]);
+    expect(texts(host, "[data-slot~='table-header']")).toEqual(["сумма", "заявитель", "регион"]);
     expect(
-      one(host, "[data-slot='table-header'][data-column='/amount']").getAttribute("data-pinned"),
+      one(host, "[data-slot~='table-header'][data-column='/amount']").getAttribute("data-pinned"),
     ).toBe("start");
   });
 
@@ -80,7 +80,7 @@ describe("закрепление колонок", () => {
     const { host, view } = setupMenu();
 
     const pin = () =>
-      one(host, "[data-slot='table-header'][data-column='/region'] [data-slot='table-column-pin']");
+      one(host, "[data-slot~='table-header'][data-column='/region'] [data-slot~='table-column-pin']");
 
     press(pin());
     expect(view().pinned).toEqual({ start: ["/region"], end: [] });
@@ -94,13 +94,13 @@ describe("ширины колонок", () => {
   it("заданная ширина уезжает в разметку", () => {
     const { host } = setup({ ...EMPTY_VIEW, widths: { "/amount": 240 } });
     expect(
-      one<HTMLElement>(host, "[data-slot='table-header'][data-column='/amount']").style.width,
+      one<HTMLElement>(host, "[data-slot~='table-header'][data-column='/amount']").style.width,
     ).toBe("240px");
   });
 
   it("ручка ширины — `separator` и работает с КЛАВИАТУРЫ, а не только мышью", () => {
     const { host, view } = setup();
-    const handle = one(host, "[data-slot='table-header'][data-column='/amount'] [data-slot='table-column-resize']");
+    const handle = one(host, "[data-slot~='table-header'][data-column='/amount'] [data-slot~='table-column-resize']");
 
     expect(handle.getAttribute("role")).toBe("separator");
     expect(handle.getAttribute("tabindex")).toBe("0");
@@ -124,22 +124,22 @@ describe("группировка", () => {
   it("строки собираются в группы, и группа знает, сколько в ней строк", () => {
     const { host } = setup(groupedView);
 
-    const groups = all(host, "tbody [data-slot='table-row'][data-group]");
+    const groups = all(host, "tbody [data-slot~='table-row'][data-group]");
     expect(groups).toHaveLength(3);
-    expect(texts(host, "[data-slot='table-group-count']")).toEqual(["2", "2", "1"]);
+    expect(texts(host, "[data-slot~='table-group-count']")).toEqual(["2", "2", "1"]);
   });
 
   it("группа объявляет своё состояние `aria-expanded`, а не только значком", () => {
     const { host, session } = setup(groupedView);
-    const group = all(host, "tbody [data-slot='table-row'][data-group]")[0]!;
+    const group = all(host, "tbody [data-slot~='table-row'][data-group]")[0]!;
 
     expect(group.getAttribute("aria-expanded")).toBe("false");
 
-    press(one(group, "[data-slot='table-group-toggle']"));
+    press(one(group, "[data-slot~='table-group-toggle']"));
 
     expect(session().expanded).toContain("/region:Москва");
     expect(
-      all(host, "tbody [data-slot='table-row'][data-group]")[0]!.getAttribute("aria-expanded"),
+      all(host, "tbody [data-slot~='table-row'][data-group]")[0]!.getAttribute("aria-expanded"),
     ).toBe("true");
   });
 
@@ -147,13 +147,13 @@ describe("группировка", () => {
     const { host } = setup(groupedView, {}, { ...EMPTY_SESSION, expanded: "all" });
 
     // Три группы плюс пять строк под ними.
-    expect(all(host, "tbody [data-slot='table-row']")).toHaveLength(8);
+    expect(all(host, "tbody [data-slot~='table-row']")).toHaveLength(8);
     expect(bodyColumn(host, "/applicant")).toContain("Иванов");
   });
 
   it("в свёрнутой группе колонка со сведением показывает ИТОГ группы, а не пустоту", () => {
     const { host } = setup(groupedView);
-    const sums = all(host, "tbody [data-slot='table-cell'][data-column='/amount'][data-aggregated]");
+    const sums = all(host, "tbody [data-slot~='table-cell'][data-column='/amount'][data-aggregated]");
 
     expect(sums).toHaveLength(3);
     expect(sums.map((node) => node.textContent?.replace(/\s/g, " ").trim())).toEqual(["400", "250", "700"]);
@@ -161,7 +161,7 @@ describe("группировка", () => {
 
   it("группировка меняет роль на `treegrid` — грид с раскрытием, а не просто грид", () => {
     const { host } = setup(groupedView, { onCellClick: () => {} });
-    expect(one(host, "[data-slot='table']").getAttribute("role")).toBe("treegrid");
+    expect(one(host, "[data-slot~='table']").getAttribute("role")).toBe("treegrid");
   });
 });
 
@@ -178,7 +178,7 @@ describe("листание", () => {
     expect(session().page).toBe(0);
 
     const { host: pagerHost } = setupPager(paged);
-    press(one(pagerHost, "[data-slot='table-pager-next']"));
+    press(one(pagerHost, "[data-slot~='table-pager-next']"));
     expect(host).toBeTruthy();
   });
 
@@ -187,21 +187,21 @@ describe("листание", () => {
     // лежит не весь набор.
     const { host } = setup(paged, {}, { ...EMPTY_SESSION, page: 1 });
 
-    expect(one(host, "[data-slot='table']").getAttribute("aria-rowcount")).toBe("6");
-    const rows = all(host, "tbody [data-slot='table-row']");
+    expect(one(host, "[data-slot~='table']").getAttribute("aria-rowcount")).toBe("6");
+    const rows = all(host, "tbody [data-slot~='table-row']");
     expect(rows[0]?.getAttribute("aria-rowindex")).toBe("4");
     expect(rows[1]?.getAttribute("aria-rowindex")).toBe("5");
   });
 
   it("без листания номера строк НЕ объявляются — в DOM и так весь набор", () => {
     const { host } = setup();
-    expect(one(host, "[data-slot='table']").hasAttribute("aria-rowcount")).toBe(false);
-    expect(all(host, "tbody [data-slot='table-row']")[0]?.hasAttribute("aria-rowindex")).toBe(false);
+    expect(one(host, "[data-slot~='table']").hasAttribute("aria-rowcount")).toBe(false);
+    expect(all(host, "tbody [data-slot~='table-row']")[0]?.hasAttribute("aria-rowindex")).toBe(false);
   });
 
   it("при группировке номера НЕ объявляются: позиция в дереве неопределена", () => {
     const { host } = setup({ ...paged, grouping: ["/region"] });
-    expect(one(host, "[data-slot='table']").hasAttribute("aria-rowcount")).toBe(false);
+    expect(one(host, "[data-slot~='table']").hasAttribute("aria-rowcount")).toBe(false);
   });
 
   function setupPager(view: ViewState, initial: SessionState = EMPTY_SESSION) {
@@ -221,26 +221,26 @@ describe("листание", () => {
 
   it("листалка знает, где мы и сколько всего", () => {
     const { host } = setupPager(paged);
-    expect(one(host, "[data-slot='table-pager-position']").textContent).toContain("страница 1 из 3");
+    expect(one(host, "[data-slot~='table-pager-position']").textContent).toContain("страница 1 из 3");
   });
 
   it("на первой странице «назад» недоступно, на последней — «вперёд»", () => {
     const first = setupPager(paged);
-    expect(one<HTMLButtonElement>(first.host, "[data-slot='table-pager-prev']").disabled).toBe(true);
+    expect(one<HTMLButtonElement>(first.host, "[data-slot~='table-pager-prev']").disabled).toBe(true);
 
     const last = setupPager(paged, { ...EMPTY_SESSION, page: 2 });
-    expect(one<HTMLButtonElement>(last.host, "[data-slot='table-pager-next']").disabled).toBe(true);
+    expect(one<HTMLButtonElement>(last.host, "[data-slot~='table-pager-next']").disabled).toBe(true);
   });
 
   it("переход вперёд двигает страницу", () => {
     const { host, session } = setupPager(paged);
-    press(one(host, "[data-slot='table-pager-next']"));
+    press(one(host, "[data-slot~='table-pager-next']"));
     expect(session().page).toBe(1);
   });
 
   it("смена размера страницы возвращает к началу — иначе человек оказывается неизвестно где", () => {
     const { host, session, view } = setupPager(paged, { ...EMPTY_SESSION, page: 2 });
-    const select = one<HTMLSelectElement>(host, "[data-slot='table-pager-size'] select");
+    const select = one<HTMLSelectElement>(host, "[data-slot~='table-pager-size'] select");
 
     select.value = "";
     select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -252,25 +252,25 @@ describe("листание", () => {
 
 describe("выделение и закрепление строк", () => {
   it("служебная колонка появляется только когда её просят", () => {
-    expect(all(setup().host, "[data-slot='table-service']")).toHaveLength(0);
-    expect(all(setup(EMPTY_VIEW, { selectable: true }).host, "[data-slot='table-service']").length)
+    expect(all(setup().host, "[data-slot~='table-service']")).toHaveLength(0);
+    expect(all(setup(EMPTY_VIEW, { selectable: true }).host, "[data-slot~='table-service']").length)
       .toBeGreaterThan(0);
   });
 
   it("выделение строки объявляется `aria-selected`", () => {
     const { host, session } = setup(EMPTY_VIEW, { selectable: true });
 
-    one<HTMLInputElement>(host, "tbody [data-slot='table-select-row']").click();
+    one<HTMLInputElement>(host, "tbody [data-slot~='table-select-row']").click();
 
     expect(session().selected).toEqual(["Иванов"]);
-    expect(all(host, "tbody [data-slot='table-row']")[0]?.getAttribute("aria-selected")).toBe("true");
+    expect(all(host, "tbody [data-slot~='table-row']")[0]?.getAttribute("aria-selected")).toBe("true");
   });
 
   it("«выделить все» выделяет весь НАБОР, а не видимую страницу", () => {
     // Иначе «выделить все» на второй странице значило бы разное в разные моменты.
     const { host, session } = setup({ ...EMPTY_VIEW, pageSize: 2 }, { selectable: true });
 
-    one<HTMLInputElement>(host, "[data-slot='table-select-all']").click();
+    one<HTMLInputElement>(host, "[data-slot~='table-select-all']").click();
 
     expect(session().selected).toHaveLength(ROWS.length);
   });
@@ -283,7 +283,7 @@ describe("выделение и закрепление строк", () => {
     );
 
     expect(bodyColumn(host, "/applicant")[0]).toBe("Белова");
-    expect(all(host, "tbody [data-slot='table-row']")[0]?.getAttribute("data-pinned")).toBe("top");
+    expect(all(host, "tbody [data-slot~='table-row']")[0]?.getAttribute("data-pinned")).toBe("top");
     expect(session().pinnedRows.top).toEqual(["Белова"]);
   });
 });
@@ -293,21 +293,21 @@ describe("итоговая строка", () => {
     // Итог по одной странице — не итог, а сумма того, что попалось на глаза.
     const { host } = setup({ ...EMPTY_VIEW, pageSize: 2 }, { totals: true });
 
-    const sum = one(host, "[data-slot='table-total'][data-column='/amount']");
+    const sum = one(host, "[data-slot~='table-total'][data-column='/amount']");
     expect(sum.textContent?.replace(/\s/g, " ").trim()).toBe("1 350");
   });
 
   it("счётчик показывается числом, а не форматом колонки", () => {
     const { host } = setup(EMPTY_VIEW, { totals: true });
-    expect(one(host, "[data-slot='table-total'][data-column='/region']").textContent?.trim()).toBe("3");
+    expect(one(host, "[data-slot~='table-total'][data-column='/region']").textContent?.trim()).toBe("3");
   });
 
   it("у колонки без метода сведения итога нет", () => {
     const { host } = setup(EMPTY_VIEW, { totals: true });
-    expect(one(host, "[data-slot='table-total'][data-column='/applicant']").textContent?.trim()).toBe("");
+    expect(one(host, "[data-slot~='table-total'][data-column='/applicant']").textContent?.trim()).toBe("");
   });
 
   it("без просьбы итоговой строки нет вовсе", () => {
-    expect(all(setup().host, "[data-slot='table-total']")).toHaveLength(0);
+    expect(all(setup().host, "[data-slot~='table-total']")).toHaveLength(0);
   });
 });

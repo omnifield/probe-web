@@ -241,15 +241,25 @@ export const PROMISED_SLOTS: readonly string[] = [
 ];
 
 /**
+ * `data-slot` — СПИСОК ИМЁН через пробел, как `class`, а не одно имя.
+ *
+ * Отсюда следует то, что потребителю важнее всего: **цепляться надо через `~=`**, а не через
+ * `=`. Селектор `[data-slot="button"]` не совпадёт со значением `"button filter-preset"`, и
+ * не совпадёт молча — оформление просто не применится.
+ *
+ * Зачем список. Конструкторы стоят на примитивах кита (`Button`, `Field`, `Input`), и раньше
+ * мы ПЕРЕКРЫВАЛИ его зацепку своей: узел с `data-slot="filter-preset"` переставал быть
+ * кнопкой для оформления кита и оставался с браузерным умолчанием. Своё имя нужно рядом с
+ * чужим, а не вместо него, — иначе оформление кнопки пришлось бы писать заново под каждым из
+ * тридцати наших имён, то есть завести ВТОРОЙ источник вида кнопки. Найдено owner-skin
+ * 2026-08-17; перекрытие писалось до того, как кит выпустил цепочку зацепок.
+ */
+export const SLOT_SEPARATOR = " ";
+
+/**
  * ЧУЖИЕ зацепки, доезжающие до нашего документа, — кита, не наши.
  *
- * Конструкторы стоят на примитивах кита (`Button`, `Field`, `Input`). Корень каждого мы
- * перекрываем своим именем — кнопка добавления условия это `filter-add-compare`, а не «ещё
- * одна кнопка». Не перекрыт один `input`: это ПОЛЕ ВВОДА, и одевать все поля ввода зоны
- * одинаково, правилом кита, — то, чего от него и ждут. Перекрыть его значило бы заставить
- * потребителя писать то же правило заново под каждым нашим именем.
- *
- * Обещаем это имя НЕ мы: его обещает кит (`packages/ui/test/slot-list.ts`), и меняется оно по
+ * Обещаем эти имена НЕ мы: их обещает кит (`packages/ui/test/slot-list.ts`), и меняются они по
  * его правилам, не по нашим.
  *
  * Перечень нужен, чтобы равенство в пробе было ТОЧНЫМ. Без него пришлось бы проверять
@@ -257,7 +267,55 @@ export const PROMISED_SLOTS: readonly string[] = [
  * молча. Покраснеет этот перечень тогда, когда кит сменит то, что кладёт в наш документ:
  * это ровно то событие, о котором нам надо узнать сразу, а не у потребителя.
  */
-export const FOREIGN_SLOTS = ["input"] as const;
+export const FOREIGN_SLOTS = ["button", "field", "input"] as const;
+
+/**
+ * НАШЕ ИМЯ РЯДОМ С ИМЕНЕМ КИТА: какая наша зацепка на каком его примитиве стоит.
+ *
+ * Это обязательство, а не описание, и стережётся оно с двух сторон: имя из этого перечня
+ * обязано ехать в паре с названным примитивом, и наоборот — узел, несущий имя кита вместе с
+ * нашим, обязан быть здесь. Пропажа пары не ломает ничего видимого прогону: разметка цела,
+ * поведение цело, а узел просто теряет оформление кита.
+ *
+ * Порядок внутри значения — сначала кит, потом наше. Для `~=` порядок безразличен; он нужен
+ * глазу, чтобы `data-slot` читался единообразно во всех тридцати местах.
+ */
+export const KIT_BACKED_SLOTS: Readonly<Record<string, readonly string[]>> = {
+  button: [
+    "adapter-add",
+    "adapter-rule-remove",
+    "adapter-rule-step-remove",
+    "filter-add-between",
+    "filter-add-compare",
+    "filter-add-in",
+    "filter-add-presence",
+    "filter-condition-remove",
+    "filter-condition-value-add",
+    "filter-condition-value-remove",
+    "filter-field-chip",
+    "filter-logic-fix",
+    "filter-preset",
+    "filter-secondary",
+    "filter-template",
+    "filter-template-apply",
+  ],
+  field: [
+    "adapter-rule-fallback",
+    "adapter-step-by",
+    "adapter-step-find",
+    "adapter-step-separator",
+    "adapter-step-take",
+    "adapter-step-value",
+    "adapter-step-with",
+    "filter-condition-from",
+    "filter-condition-input",
+    "filter-condition-to",
+    "filter-condition-value",
+    "filter-logic-field",
+    "filter-template-param-input",
+  ],
+  input: ["filter-logic-input"],
+};
 
 /** Чем состояние является для того, кто одевает. */
 export type StateKind =

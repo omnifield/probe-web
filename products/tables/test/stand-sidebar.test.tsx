@@ -92,7 +92,7 @@ describe("нажатие собирает фильтр", () => {
 
     press(card(host, simple.id));
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(simple.state.conditions.length);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(simple.state.conditions.length);
     expect(one(host, ".page__phrase").textContent).toBe(describeFilter(simple.state, LABELS));
   });
 
@@ -102,9 +102,9 @@ describe("нажатие собирает фильтр", () => {
 
     press(card(host, hard.id));
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(hard.state.conditions.length);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(hard.state.conditions.length);
     // Строка логики видна: у сложного случая она и есть главное, что нужно разглядеть.
-    expect(host.querySelector("[data-slot='filter-logic-input']")).not.toBeNull();
+    expect(host.querySelector("[data-slot~='filter-logic-input']")).not.toBeNull();
   });
 
   it("отбор доезжает до показа: счётчик итога совпадает с обещанием карточки", () => {
@@ -123,9 +123,9 @@ describe("нажатие собирает фильтр", () => {
     const host = standOnFilters();
 
     press(card(host, PRESETS[0]!.id));
-    press(one(host, "[data-slot='filter-condition-remove']"));
+    press(one(host, "[data-slot~='filter-condition-remove']"));
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(0);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(0);
   });
 
   it("повторное нажатие кейса ЗАМЕНЯЕТ сборку, а не копит условия поверх прежних", () => {
@@ -135,7 +135,7 @@ describe("нажатие собирает фильтр", () => {
     press(card(host, hard.id));
     press(card(host, hard.id));
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(hard.state.conditions.length);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(hard.state.conditions.length);
   });
 
   it("формула сложного кейса ссылается на его условия, а не в пустоту", () => {
@@ -145,16 +145,16 @@ describe("нажатие собирает фильтр", () => {
 
     // Удалённое или ненайденное условие конструктор показывает в формуле как «?» — и это
     // ровно тот след, который оставляет сборка с непереписанными идентификаторами.
-    expect(one<HTMLInputElement>(host, "[data-slot='filter-logic-input']").value).not.toContain("?");
-    expect(host.querySelector("[data-slot='filter-logic-error']")).toBeNull();
+    expect(one<HTMLInputElement>(host, "[data-slot~='filter-logic-input']").value).not.toContain("?");
+    expect(host.querySelector("[data-slot~='filter-logic-error']")).toBeNull();
   });
 
   it("готовых сборок нет второй раз внутри конструктора — одно место, а не два", () => {
     const host = standOnFilters();
     press(card(host, PRESETS[0]!.id));
 
-    expect(host.querySelector("[data-slot='filter-preset']")).toBeNull();
+    expect(host.querySelector("[data-slot~='filter-preset']")).toBeNull();
     // Шаблоны остаются: они спрашивают значения, и без конструктора им негде это сделать.
-    expect(host.querySelector("[data-slot='filter-template']")).not.toBeNull();
+    expect(host.querySelector("[data-slot~='filter-template']")).not.toBeNull();
   });
 });

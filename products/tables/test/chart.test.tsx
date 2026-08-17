@@ -40,19 +40,19 @@ describe("доступность", () => {
     // Роли нормированы отдельным модулем W3C именно для того, чтобы график можно было
     // ПРОЙТИ, а не увидеть непрозрачной картинкой.
     const host = setup(SPEC, { title: "Сумма по регионам" });
-    const svg = one(host, "[data-slot='chart']");
+    const svg = one(host, "[data-slot~='chart']");
 
     expect(svg.getAttribute("role")).toBe("graphics-document");
     expect(svg.getAttribute("aria-label")).toBe("Сумма по регионам");
-    expect(one(host, "[data-slot='chart-summary']").textContent).toContain("столбики");
+    expect(one(host, "[data-slot~='chart-summary']").textContent).toContain("столбики");
   });
 
   it("серия — `graphics-object`, величина — `graphics-symbol` со сказанным значением", () => {
     const host = setup();
 
-    expect(one(host, "[data-slot='chart-series']").getAttribute("role")).toBe("graphics-object");
+    expect(one(host, "[data-slot~='chart-series']").getAttribute("role")).toBe("graphics-object");
 
-    const marks = all(host, "[data-slot='chart-mark']");
+    const marks = all(host, "[data-slot~='chart-mark']");
     expect(marks).toHaveLength(3);
     expect(marks[0]?.getAttribute("role")).toBe("graphics-symbol");
     expect(marks[0]?.getAttribute("aria-label")?.replace(/\s/g, " ")).toBe("Москва: 400");
@@ -60,13 +60,13 @@ describe("доступность", () => {
 
   it("оси спрятаны от вспомогательной технологии — их числа уже сказаны в величинах", () => {
     const host = setup();
-    expect(one(host, "[data-slot='chart-value-axis']").getAttribute("aria-hidden")).toBe("true");
-    expect(one(host, "[data-slot='chart-slice-axis']").getAttribute("aria-hidden")).toBe("true");
+    expect(one(host, "[data-slot~='chart-value-axis']").getAttribute("aria-hidden")).toBe("true");
+    expect(one(host, "[data-slot~='chart-slice-axis']").getAttribute("aria-hidden")).toBe("true");
   });
 
   it("серия названа в подписи величины, когда серий несколько", () => {
     const host = setup({ ...SPEC, series: "/status" });
-    const label = one(host, "[data-slot='chart-mark']").getAttribute("aria-label") ?? "";
+    const label = one(host, "[data-slot~='chart-mark']").getAttribute("aria-label") ?? "";
     expect(label).toContain("серия «новая»");
   });
 });
@@ -74,7 +74,7 @@ describe("доступность", () => {
 describe("геометрия", () => {
   it("столбик от нуля: величина втрое больше — и столбик втрое длиннее", () => {
     const host = setup();
-    const marks = all<SVGRectElement>(host, "[data-slot='chart-mark']");
+    const marks = all<SVGRectElement>(host, "[data-slot~='chart-mark']");
     const height = (index: number) => Number(marks[index]!.getAttribute("height"));
 
     // Москва 400, Тула 50, Казань 700 — отношения длин обязаны совпасть с отношениями величин.
@@ -84,15 +84,15 @@ describe("геометрия", () => {
 
   it("столбики серий стоят РЯДОМ, а не друг на друге", () => {
     const host = setup({ ...SPEC, series: "/status" });
-    const first = all<SVGRectElement>(host, "[data-slot='chart-series'][data-series='0'] [data-slot='chart-mark']");
-    const second = all<SVGRectElement>(host, "[data-slot='chart-series'][data-series='1'] [data-slot='chart-mark']");
+    const first = all<SVGRectElement>(host, "[data-slot~='chart-series'][data-series='0'] [data-slot~='chart-mark']");
+    const second = all<SVGRectElement>(host, "[data-slot~='chart-series'][data-series='1'] [data-slot~='chart-mark']");
 
     expect(Number(first[0]!.getAttribute("x"))).toBeLessThan(Number(second[0]!.getAttribute("x")));
   });
 
   it("линия рисуется одним путём и пропускает пустые точки", () => {
     const host = setup({ ...SPEC, mark: "line", series: "/status" });
-    const path = one(host, "[data-slot='chart-line']");
+    const path = one(host, "[data-slot~='chart-line']");
 
     expect(path.getAttribute("d")).toMatch(/^M/);
     expect(path.getAttribute("fill")).toBe("none");
@@ -100,12 +100,12 @@ describe("геометрия", () => {
 
   it("точка вместо столбика, когда марка того просит", () => {
     const host = setup({ ...SPEC, mark: "point" });
-    expect(all(host, "circle[data-slot='chart-mark']")).toHaveLength(3);
+    expect(all(host, "circle[data-slot~='chart-mark']")).toHaveLength(3);
   });
 
   it("считать нечего — так и написано", () => {
     const host = mount(() => <Chart columns={COLUMNS} rows={[]} spec={SPEC} />);
-    expect(one(host, "[data-slot='chart-empty']").textContent).toBe("Считать нечего");
+    expect(one(host, "[data-slot~='chart-empty']").textContent).toBe("Считать нечего");
   });
 });
 
@@ -113,22 +113,22 @@ describe("ничего своего не раскрашивает", () => {
   it("цвет берётся у потребителя через `currentColor`", () => {
     // Кит безголовый: привези график свою палитру — половина базы стала бы оформленной.
     const host = setup();
-    expect(one(host, "[data-slot='chart-mark']").getAttribute("fill")).toBe("currentColor");
-    expect(one(host, "[data-slot='chart']").hasAttribute("class")).toBe(false);
+    expect(one(host, "[data-slot~='chart-mark']").getAttribute("fill")).toBe("currentColor");
+    expect(one(host, "[data-slot~='chart']").hasAttribute("class")).toBe(false);
   });
 });
 
 describe("выделение — запрос к данным", () => {
   it("без обработчика величины не попадают в обход клавиатурой", () => {
     const host = setup();
-    expect(one(host, "[data-slot='chart-mark']").hasAttribute("tabindex")).toBe(false);
+    expect(one(host, "[data-slot~='chart-mark']").hasAttribute("tabindex")).toBe(false);
   });
 
   it("клик отдаёт категорию", () => {
     const onSelect = vi.fn();
     const host = setup(SPEC, { onSelect });
 
-    press(all(host, "[data-slot='chart-mark']")[1]!);
+    press(all(host, "[data-slot~='chart-mark']")[1]!);
 
     expect(onSelect).toHaveBeenCalledWith({ key: "Тула", label: "Тула" });
   });
@@ -137,7 +137,7 @@ describe("выделение — запрос к данным", () => {
     const onSelect = vi.fn();
     const host = setup(SPEC, { onSelect });
 
-    const mark = all(host, "[data-slot='chart-mark']")[0]!;
+    const mark = all(host, "[data-slot~='chart-mark']")[0]!;
     expect(mark.getAttribute("tabindex")).toBe("0");
     mark.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
@@ -146,7 +146,7 @@ describe("выделение — запрос к данным", () => {
 
   it("выделение видно и глазом, и вспомогательной технологии", () => {
     const host = setup(SPEC, { onSelect: () => {}, selected: ["Москва"] });
-    const mark = all(host, "[data-slot='chart-mark']")[0]!;
+    const mark = all(host, "[data-slot~='chart-mark']")[0]!;
 
     expect(mark.hasAttribute("data-selected")).toBe(true);
     expect(mark.getAttribute("aria-label")).toContain("выделено");
@@ -156,7 +156,7 @@ describe("выделение — запрос к данным", () => {
     const onSelect = vi.fn();
     const host = setup({ ...SPEC, series: "/status" }, { onSelect });
 
-    press(all(host, "[data-slot='chart-mark']")[0]!);
+    press(all(host, "[data-slot~='chart-mark']")[0]!);
 
     expect(onSelect.mock.calls[0]![0]).toMatchObject({ key: "Москва", seriesKey: "новая" });
   });
@@ -196,9 +196,9 @@ describe("легенда", () => {
     const withSeries = mount(() => (
       <ChartLegend columns={COLUMNS} rows={ROWS} spec={{ ...SPEC, series: "/status" }} />
     ));
-    expect(all(withSeries, "[data-slot='chart-legend-item']")).toHaveLength(2);
+    expect(all(withSeries, "[data-slot~='chart-legend-item']")).toHaveLength(2);
 
     const without = mount(() => <ChartLegend columns={COLUMNS} rows={ROWS} spec={SPEC} />);
-    expect(without.querySelector("[data-slot='chart-legend']")).toBeNull();
+    expect(without.querySelector("[data-slot~='chart-legend']")).toBeNull();
   });
 });

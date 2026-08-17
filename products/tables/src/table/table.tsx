@@ -309,7 +309,7 @@ export function DataTable(props: DataTableProps) {
     setActive({ row: limitRow, column: limitColumn });
     root
       ?.querySelector<HTMLElement>(
-        `[data-slot='table-cell'][data-row-index='${limitRow}'][data-column-index='${limitColumn}']`,
+        `[data-slot~='table-cell'][data-row-index='${limitRow}'][data-column-index='${limitColumn}']`,
       )
       ?.focus();
   };

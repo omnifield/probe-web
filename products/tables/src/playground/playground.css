@@ -460,13 +460,13 @@
 
 /* --- Конструктор ---------------------------------------------------------------------- */
 
-[data-slot="filter-builder"] {
+[data-slot~="filter-builder"] {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-[data-slot="filter-toolbar"] {
+[data-slot~="filter-toolbar"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -474,8 +474,8 @@
   border-bottom: 1px dashed var(--border);
 }
 
-[data-slot="filter-preset"],
-[data-slot="filter-template"] {
+[data-slot~="filter-preset"],
+[data-slot~="filter-template"] {
   padding: 0.3125rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -486,21 +486,21 @@
   cursor: pointer;
 }
 
-[data-slot="filter-template"] {
+[data-slot~="filter-template"] {
   border-style: dashed;
   background-color: transparent;
   color: var(--muted-foreground);
 }
 
-[data-slot="filter-preset"]:hover,
-[data-slot="filter-template"]:hover {
+[data-slot~="filter-preset"]:hover,
+[data-slot~="filter-template"]:hover {
   border-color: var(--ring);
   color: var(--foreground);
 }
 
 /* --- Форма шаблона -------------------------------------------------------------------- */
 
-[data-slot="filter-template-form"] {
+[data-slot~="filter-template-form"] {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -510,31 +510,31 @@
   background-color: var(--muted);
 }
 
-[data-slot="filter-template-title"] {
+[data-slot~="filter-template-title"] {
   margin: 0;
   font-weight: 600;
   font-size: 0.9375rem;
 }
 
-[data-slot="filter-template-param"] {
+[data-slot~="filter-template-param"] {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
 }
 
-[data-slot="filter-template-param-label"] {
+[data-slot~="filter-template-param-label"] {
   font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 
-[data-slot="filter-template-actions"] {
+[data-slot~="filter-template-actions"] {
   display: flex;
   gap: 0.5rem;
 }
 
 /* --- Список условий ------------------------------------------------------------------- */
 
-[data-slot="filter-conditions"] {
+[data-slot~="filter-conditions"] {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -543,7 +543,7 @@
   gap: 0.5rem;
 }
 
-[data-slot="filter-condition"] {
+[data-slot~="filter-condition"] {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   align-items: start;
@@ -554,7 +554,7 @@
   background-color: var(--background);
 }
 
-[data-slot="filter-condition-number"] {
+[data-slot~="filter-condition-number"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -567,30 +567,30 @@
   font-variant-numeric: tabular-nums;
 }
 
-[data-slot="filter-condition-body"] {
+[data-slot~="filter-condition-body"] {
   min-width: 0;
 }
 
-[data-slot="filter-condition-value"] {
+[data-slot~="filter-condition-value"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
 
-[data-slot="filter-condition-presence"] {
+[data-slot~="filter-condition-presence"] {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-[data-slot="filter-condition-presence-head"] {
+[data-slot~="filter-condition-presence-head"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-[data-slot="filter-condition-count"] {
+[data-slot~="filter-condition-count"] {
   align-self: center;
   color: var(--muted-foreground);
   font-size: 0.75rem;
@@ -598,7 +598,7 @@
   white-space: nowrap;
 }
 
-[data-slot="filter-condition-remove"] {
+[data-slot~="filter-condition-remove"] {
   align-self: center;
   width: 1.75rem;
   height: 1.75rem;
@@ -612,7 +612,7 @@
   cursor: pointer;
 }
 
-[data-slot="filter-condition-remove"]:hover {
+[data-slot~="filter-condition-remove"]:hover {
   border-color: var(--destructive);
   color: var(--destructive);
 }
@@ -629,7 +629,7 @@ select[data-slot^="filter-condition-"] {
   font-size: 0.875rem;
 }
 
-[data-slot="input"] {
+[data-slot~="input"] {
   padding: 0.3125rem 0.5rem;
   border: 1px solid var(--input);
   border-radius: var(--radius-sm);
@@ -640,7 +640,7 @@ select[data-slot^="filter-condition-"] {
   min-width: 12rem;
 }
 
-[data-slot="input"]:focus-visible,
+[data-slot~="input"]:focus-visible,
 select[data-slot^="filter-condition-"]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
@@ -648,13 +648,13 @@ select[data-slot^="filter-condition-"]:focus-visible {
 
 /* --- Фишки полей ----------------------------------------------------------------------- */
 
-[data-slot="filter-field-chips"] {
+[data-slot~="filter-field-chips"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-[data-slot="filter-field-chip"] {
+[data-slot~="filter-field-chip"] {
   padding: 0.1875rem 0.625rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
@@ -665,7 +665,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="filter-field-chip"][data-selected] {
+[data-slot~="filter-field-chip"][data-selected] {
   border-color: var(--primary);
   background-color: var(--primary);
   color: var(--primary-foreground);
@@ -673,13 +673,13 @@ select[data-slot^="filter-condition-"]:focus-visible {
 
 /* --- Добавление условий и логика -------------------------------------------------------- */
 
-[data-slot="filter-add"] {
+[data-slot~="filter-add"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-[data-slot="filter-add"] [data-slot="button"] {
+[data-slot~="filter-add"] [data-slot~="button"] {
   padding: 0.3125rem 0.75rem;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
@@ -690,12 +690,12 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="filter-add"] [data-slot="button"]:hover {
+[data-slot~="filter-add"] [data-slot~="button"]:hover {
   border-color: var(--ring);
   border-style: solid;
 }
 
-[data-slot="filter-logic"] {
+[data-slot~="filter-logic"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -704,7 +704,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   border-top: 1px dashed var(--border);
 }
 
-[data-slot="filter-logic-toggle"] {
+[data-slot~="filter-logic-toggle"] {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -712,24 +712,24 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="filter-logic-hint"] {
+[data-slot~="filter-logic-hint"] {
   color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
-[data-slot="filter-logic-input"] {
+[data-slot~="filter-logic-input"] {
   min-width: 20rem;
   font-variant-numeric: tabular-nums;
 }
 
-[data-slot="filter-logic-error"] {
+[data-slot~="filter-logic-error"] {
   margin: 0;
   color: var(--destructive);
   font-size: 0.8125rem;
 }
 
-[data-slot="filter-template-actions"] [data-slot="button"],
-[data-slot="filter-template-form"] [data-slot="button"] {
+[data-slot~="filter-template-actions"] [data-slot~="button"],
+[data-slot~="filter-template-form"] [data-slot~="button"] {
   padding: 0.3125rem 0.875rem;
   border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
@@ -740,7 +740,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="filter-secondary"] {
+[data-slot~="filter-secondary"] {
   border-color: var(--border) !important;
   background-color: transparent !important;
   color: var(--foreground) !important;
@@ -810,13 +810,13 @@ select[data-slot^="filter-condition-"]:focus-visible {
    Компонент безголовый: ни одного класса он не привозит, и всё, что ниже, —
    работа ПОТРЕБИТЕЛЯ. Цепляемся за `data-slot` и состояния-атрибуты. */
 
-[data-slot="table"] {
+[data-slot~="table"] {
   border-collapse: collapse;
   width: 100%;
   font-size: 0.8125rem;
 }
 
-[data-slot="table-caption"] {
+[data-slot~="table-caption"] {
   caption-side: top;
   text-align: left;
   padding: 0.5rem 0.625rem;
@@ -824,8 +824,8 @@ select[data-slot^="filter-condition-"]:focus-visible {
   font-size: 0.75rem;
 }
 
-[data-slot="table-header"],
-[data-slot="table-cell"] {
+[data-slot~="table-header"],
+[data-slot~="table-cell"] {
   padding: 0.375rem 0.625rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
@@ -835,7 +835,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
 /* Заголовок липнет к верху окна прокрутки таблицы: длинный набор листаешь, а какая это
    колонка — видно. Слои разведены явно, иначе прижатая ячейка проезжает поверх заголовка:
    обычная ячейка < прижатая ячейка (1) < заголовок (2) < прижатый заголовок (3). */
-[data-slot="table-header"] {
+[data-slot~="table-header"] {
   background-color: var(--muted);
   color: var(--muted-foreground);
   font-weight: 600;
@@ -844,7 +844,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   z-index: 2;
 }
 
-[data-slot="table-header-sort"] {
+[data-slot~="table-header-sort"] {
   all: unset;
   cursor: pointer;
   display: inline-flex;
@@ -852,21 +852,21 @@ select[data-slot^="filter-condition-"]:focus-visible {
   gap: 0.25rem;
 }
 
-[data-slot="table-header-sort"]:focus-visible {
+[data-slot~="table-header-sort"]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
 /* Направление рисуется стрелкой, но объявлено оно `aria-sort` — атрибут первичен. */
-[data-slot="table-header-sort"][data-direction="asc"]::after {
+[data-slot~="table-header-sort"][data-direction="asc"]::after {
   content: "↑";
 }
 
-[data-slot="table-header-sort"][data-direction="desc"]::after {
+[data-slot~="table-header-sort"][data-direction="desc"]::after {
   content: "↓";
 }
 
-[data-slot="table-header-sort-position"] {
+[data-slot~="table-header-sort-position"] {
   font-size: 0.6875rem;
   color: var(--primary);
   border: 1px solid currentcolor;
@@ -874,56 +874,56 @@ select[data-slot^="filter-condition-"]:focus-visible {
   padding: 0 0.25rem;
 }
 
-[data-slot="table-cell"][data-missing] {
+[data-slot~="table-cell"][data-missing] {
   color: var(--destructive);
   font-style: italic;
   opacity: 0.75;
 }
 
-[data-slot="table-cell"][data-missing]::before {
+[data-slot~="table-cell"][data-missing]::before {
   content: "нет поля";
 }
 
-[data-slot="table-cell"][data-empty]::before {
+[data-slot~="table-cell"][data-empty]::before {
   content: "пусто";
   color: var(--muted-foreground);
   font-style: italic;
 }
 
-[data-slot="table-cell"][data-highlighted] {
+[data-slot~="table-cell"][data-highlighted] {
   background-color: color-mix(in oklch, var(--primary) 12%, transparent);
 }
 
-[data-slot="table-cell"][data-clickable] {
+[data-slot~="table-cell"][data-clickable] {
   cursor: pointer;
 }
 
-[data-slot="table-cell"]:focus-visible {
+[data-slot~="table-cell"]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
 
 /* Числа и проценты — по правому краю: так разряды сравниваются глазом. */
-[data-slot="table-cell"][data-format="number"],
-[data-slot="table-cell"][data-format="percent"] {
+[data-slot~="table-cell"][data-format="number"],
+[data-slot~="table-cell"][data-format="percent"] {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 /* Рейтинг: компонент отдал число и зацепки, звёзды рисует потребитель. */
-[data-slot="table-cell"][data-format="rating"] {
+[data-slot~="table-cell"][data-format="rating"] {
   color: transparent;
   position: relative;
 }
 
-[data-slot="table-cell"][data-format="rating"]::before {
+[data-slot~="table-cell"][data-format="rating"]::before {
   content: "★★★★★";
   position: absolute;
   color: var(--muted-foreground);
   opacity: 0.35;
 }
 
-[data-slot="table-cell"][data-format="rating"]::after {
+[data-slot~="table-cell"][data-format="rating"]::after {
   content: attr(data-value);
   position: absolute;
   left: 5.5rem;
@@ -931,7 +931,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   font-size: 0.75rem;
 }
 
-[data-slot="table-cell"][data-unformatted] {
+[data-slot~="table-cell"][data-unformatted] {
   color: var(--destructive);
 }
 
@@ -941,7 +941,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
    таблица и нужна. `opacity`, а не `display`, намеренно — кнопки остаются в обходе
    с клавиатуры, иначе управление досталось бы только мыши. */
 
-[data-slot="table-column-menu"] {
+[data-slot~="table-column-menu"] {
   display: flex;
   align-items: center;
   gap: 0.0625rem;
@@ -950,12 +950,12 @@ select[data-slot^="filter-condition-"]:focus-visible {
   transition: opacity 0.12s ease-out;
 }
 
-[data-slot="table-header"]:hover [data-slot="table-column-menu"],
-[data-slot="table-column-menu"]:focus-within {
+[data-slot~="table-header"]:hover [data-slot~="table-column-menu"],
+[data-slot~="table-column-menu"]:focus-within {
   opacity: 1;
 }
 
-[data-slot="table-column-menu"] button {
+[data-slot~="table-column-menu"] button {
   all: unset;
   padding: 0 0.1875rem;
   border-radius: var(--radius-sm, 0.25rem);
@@ -965,27 +965,27 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="table-column-menu"] button:hover {
+[data-slot~="table-column-menu"] button:hover {
   background-color: var(--accent);
   color: var(--accent-foreground);
 }
 
-[data-slot="table-column-menu"] button:focus-visible {
+[data-slot~="table-column-menu"] button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
 
-[data-slot="table-column-menu"] button[aria-pressed="true"] {
+[data-slot~="table-column-menu"] button[aria-pressed="true"] {
   color: var(--primary);
 }
 
-[data-slot="table-column-menu"] button[disabled] {
+[data-slot~="table-column-menu"] button[disabled] {
   opacity: 0.3;
   cursor: default;
 }
 
 /* Скрытая колонка — единственное, чему нет места в колонке: её на экране нет. */
-[data-slot="table-hidden-columns"] {
+[data-slot~="table-hidden-columns"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -995,13 +995,13 @@ select[data-slot^="filter-condition-"]:focus-visible {
   padding: 0;
 }
 
-[data-slot="table-hidden-columns"]::before {
+[data-slot~="table-hidden-columns"]::before {
   content: "скрыто:";
   font-size: 0.75rem;
   color: var(--muted-foreground);
 }
 
-[data-slot="table-column-show"] {
+[data-slot~="table-column-show"] {
   all: unset;
   padding: 0.125rem 0.5rem;
   border: 1px dashed var(--border);
@@ -1011,7 +1011,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   cursor: pointer;
 }
 
-[data-slot="table-column-show"]:hover {
+[data-slot~="table-column-show"]:hover {
   border-style: solid;
   border-color: var(--ring);
   color: var(--foreground);
@@ -1054,26 +1054,26 @@ select[data-slot^="filter-condition-"]:focus-visible {
    Прижатие к краю — `position: sticky` у потребителя: компонент отдал только
    `data-pinned`, где именно липнуть, решает разметка. */
 
-[data-slot="table-header"][data-pinned],
-[data-slot="table-cell"][data-pinned] {
+[data-slot~="table-header"][data-pinned],
+[data-slot~="table-cell"][data-pinned] {
   position: sticky;
   z-index: 1;
   background-color: var(--background);
 }
 
-[data-slot="table-header"][data-pinned] {
+[data-slot~="table-header"][data-pinned] {
   z-index: 3;
   background-color: var(--muted);
 }
 
-[data-slot="table-header"][data-pinned="start"],
-[data-slot="table-cell"][data-pinned="start"] {
+[data-slot~="table-header"][data-pinned="start"],
+[data-slot~="table-cell"][data-pinned="start"] {
   left: 0;
   box-shadow: 1px 0 0 var(--border);
 }
 
-[data-slot="table-header"][data-pinned="end"],
-[data-slot="table-cell"][data-pinned="end"] {
+[data-slot~="table-header"][data-pinned="end"],
+[data-slot~="table-cell"][data-pinned="end"] {
   right: 0;
   box-shadow: -1px 0 0 var(--border);
 }
@@ -1082,7 +1082,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
    заголовку НЕ ставим — он уже `sticky`, а это тоже containing block для ручки. Раньше
    `relative` стоял ниже по файлу и молча отменял липкость заголовка. */
 
-[data-slot="table-column-resize"] {
+[data-slot~="table-column-resize"] {
   position: absolute;
   top: 0;
   right: 0;
@@ -1092,24 +1092,24 @@ select[data-slot^="filter-condition-"]:focus-visible {
   touch-action: none;
 }
 
-[data-slot="table-column-resize"]:hover,
-[data-slot="table-column-resize"]:focus-visible {
+[data-slot~="table-column-resize"]:hover,
+[data-slot~="table-column-resize"]:focus-visible {
   background-color: var(--primary);
   outline: none;
 }
 
 /* ── Группы ─────────────────────────────────────────────────────────────── */
 
-[data-slot="table-row"][data-group] {
+[data-slot~="table-row"][data-group] {
   background-color: var(--muted);
   font-weight: 600;
 }
 
-[data-slot="table-row"][data-depth="1"] [data-slot="table-cell"]:first-of-type {
+[data-slot~="table-row"][data-depth="1"] [data-slot~="table-cell"]:first-of-type {
   padding-left: 1.75rem;
 }
 
-[data-slot="table-group-toggle"] {
+[data-slot~="table-group-toggle"] {
   all: unset;
   cursor: pointer;
   display: inline-flex;
@@ -1118,29 +1118,29 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="table-group-toggle"]:focus-visible {
+[data-slot~="table-group-toggle"]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-[data-slot="table-group-count"] {
+[data-slot~="table-group-count"] {
   margin-left: 0.375rem;
   font-size: 0.6875rem;
   font-weight: 400;
   color: var(--muted-foreground);
 }
 
-[data-slot="table-cell"][data-aggregated] {
+[data-slot~="table-cell"][data-aggregated] {
   color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
 }
 
-[data-slot="table-group-controls"] {
+[data-slot~="table-group-controls"] {
   display: flex;
   gap: 0.375rem;
 }
 
-[data-slot="table-group-controls"] button {
+[data-slot~="table-group-controls"] button {
   all: unset;
   cursor: pointer;
   font-size: 0.75rem;
@@ -1150,34 +1150,34 @@ select[data-slot^="filter-condition-"]:focus-visible {
 
 /* ── Служебная колонка: выделение и закрепление строк ───────────────────── */
 
-[data-slot="table-service"] {
+[data-slot~="table-service"] {
   padding: 0.375rem 0.5rem;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
-[data-slot="table-pin-row"] {
+[data-slot~="table-pin-row"] {
   all: unset;
   cursor: pointer;
   margin-left: 0.25rem;
   color: var(--muted-foreground);
 }
 
-[data-slot="table-pin-row"][data-pinned] {
+[data-slot~="table-pin-row"][data-pinned] {
   color: var(--primary);
 }
 
-[data-slot="table-row"][data-pinned] {
+[data-slot~="table-row"][data-pinned] {
   background-color: color-mix(in oklch, var(--primary) 8%, transparent);
 }
 
-[data-slot="table-row"][aria-selected="true"] {
+[data-slot~="table-row"][aria-selected="true"] {
   background-color: color-mix(in oklch, var(--primary) 14%, transparent);
 }
 
 /* ── Итоги и листание ───────────────────────────────────────────────────── */
 
-[data-slot="table-total"] {
+[data-slot~="table-total"] {
   padding: 0.375rem 0.625rem;
   border-top: 2px solid var(--border);
   font-weight: 600;
@@ -1185,7 +1185,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   white-space: nowrap;
 }
 
-[data-slot="table-pager"] {
+[data-slot~="table-pager"] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1193,7 +1193,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="table-pager"] button {
+[data-slot~="table-pager"] button {
   all: unset;
   cursor: pointer;
   padding: 0 0.375rem;
@@ -1201,31 +1201,31 @@ select[data-slot^="filter-condition-"]:focus-visible {
   border-radius: var(--radius-md);
 }
 
-[data-slot="table-pager"] button:disabled {
+[data-slot~="table-pager"] button:disabled {
   opacity: 0.35;
   cursor: default;
 }
 
-[data-slot="table-pager-size"] {
+[data-slot~="table-pager-size"] {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   margin-left: auto;
 }
 
-[data-slot="table-column-pin"],
-[data-slot="table-column-pin-end"],
-[data-slot="table-column-group"],
-[data-slot="table-column-width-reset"] {
+[data-slot~="table-column-pin"],
+[data-slot~="table-column-pin-end"],
+[data-slot~="table-column-group"],
+[data-slot~="table-column-width-reset"] {
   all: unset;
   cursor: pointer;
   padding: 0 0.125rem;
   color: var(--muted-foreground);
 }
 
-[data-slot="table-column-pin"][aria-pressed="true"],
-[data-slot="table-column-pin-end"][aria-pressed="true"],
-[data-slot="table-column-group"][aria-pressed="true"] {
+[data-slot~="table-column-pin"][aria-pressed="true"],
+[data-slot~="table-column-pin-end"][aria-pressed="true"],
+[data-slot~="table-column-group"][aria-pressed="true"] {
   color: var(--primary);
 }
 
@@ -1253,62 +1253,62 @@ select[data-slot^="filter-condition-"]:focus-visible {
   gap: 0.25rem;
 }
 
-[data-slot="chart"] {
+[data-slot~="chart"] {
   max-width: 100%;
   height: auto;
   color: var(--primary);
   overflow: visible;
 }
 
-[data-slot="chart-grid"] {
+[data-slot~="chart-grid"] {
   color: var(--border);
   stroke-width: 1;
 }
 
-[data-slot="chart-tick-label"],
-[data-slot="chart-slice-label"] {
+[data-slot~="chart-tick-label"],
+[data-slot~="chart-slice-label"] {
   fill: var(--muted-foreground);
   font-size: 0.6875rem;
 }
 
-[data-slot="chart-empty"] {
+[data-slot~="chart-empty"] {
   fill: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
 /* Палитра серий: цвет назначает потребитель, компонент только пронумеровал их. */
-[data-slot="chart-series"][data-series="1"] {
+[data-slot~="chart-series"][data-series="1"] {
   color: var(--destructive);
 }
 
-[data-slot="chart-series"][data-series="2"] {
+[data-slot~="chart-series"][data-series="2"] {
   color: color-mix(in oklch, var(--primary) 50%, var(--muted-foreground));
 }
 
-[data-slot="chart-mark"] {
+[data-slot~="chart-mark"] {
   transition: opacity 0.1s ease-out;
 }
 
-[data-slot="chart-mark"]:hover {
+[data-slot~="chart-mark"]:hover {
   opacity: 0.75;
   cursor: pointer;
 }
 
-[data-slot="chart-mark"][data-selected] {
+[data-slot~="chart-mark"][data-selected] {
   stroke: var(--foreground);
   stroke-width: 2;
 }
 
-[data-slot="chart-mark"]:focus-visible {
+[data-slot~="chart-mark"]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-[data-slot="chart-line"] {
+[data-slot~="chart-line"] {
   stroke-width: 2;
 }
 
-[data-slot="chart-legend"] {
+[data-slot~="chart-legend"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -1319,22 +1319,22 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="chart-legend-item"] {
+[data-slot~="chart-legend-item"] {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   color: var(--primary);
 }
 
-[data-slot="chart-legend-item"][data-series="1"] {
+[data-slot~="chart-legend-item"][data-series="1"] {
   color: var(--destructive);
 }
 
-[data-slot="chart-legend-item"][data-series="2"] {
+[data-slot~="chart-legend-item"][data-series="2"] {
   color: color-mix(in oklch, var(--primary) 50%, var(--muted-foreground));
 }
 
-[data-slot="chart-legend-mark"] {
+[data-slot~="chart-legend-mark"] {
   width: 0.625rem;
   height: 0.625rem;
   border-radius: 2px;
@@ -1357,7 +1357,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   font-size: 0.8125rem;
 }
 
-[data-slot="adapter-builder"] {
+[data-slot~="adapter-builder"] {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -1367,7 +1367,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   background-color: var(--card);
 }
 
-[data-slot="adapter-source"] {
+[data-slot~="adapter-source"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -1375,14 +1375,14 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="adapter-rows"],
-[data-slot="adapter-extra"] {
+[data-slot~="adapter-rows"],
+[data-slot~="adapter-extra"] {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
 }
 
-[data-slot="adapter-rules"] {
+[data-slot~="adapter-rules"] {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -1391,7 +1391,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   padding: 0;
 }
 
-[data-slot="adapter-rule"] {
+[data-slot~="adapter-rule"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1402,24 +1402,24 @@ select[data-slot^="filter-condition-"]:focus-visible {
   font-size: 0.75rem;
 }
 
-[data-slot="adapter-rule-number"] {
+[data-slot~="adapter-rule-number"] {
   min-width: 1.25rem;
   color: var(--muted-foreground);
   text-align: right;
 }
 
-[data-slot="adapter-rule-arrow"] {
+[data-slot~="adapter-rule-arrow"] {
   color: var(--muted-foreground);
 }
 
-[data-slot="adapter-rule-steps"] {
+[data-slot~="adapter-rule-steps"] {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
 }
 
-[data-slot="adapter-rule-step"] {
+[data-slot~="adapter-rule-step"] {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -1429,13 +1429,13 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="adapter-rule-issues"] {
+[data-slot~="adapter-rule-issues"] {
   display: inline-flex;
   flex-direction: column;
   color: var(--destructive);
 }
 
-[data-slot="adapter-report"] {
+[data-slot~="adapter-report"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -1443,18 +1443,18 @@ select[data-slot^="filter-condition-"]:focus-visible {
   color: var(--muted-foreground);
 }
 
-[data-slot="adapter-error"] {
+[data-slot~="adapter-error"] {
   color: var(--destructive);
 }
 
-[data-slot="adapter-pair"] {
+[data-slot~="adapter-pair"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
 }
 
-[data-slot="adapter-before"],
-[data-slot="adapter-after"] {
+[data-slot~="adapter-before"],
+[data-slot~="adapter-after"] {
   margin: 0;
   padding: 0.5rem;
   border: 1px solid var(--border);
@@ -1464,7 +1464,7 @@ select[data-slot^="filter-condition-"]:focus-visible {
   overflow-x: auto;
 }
 
-[data-slot="adapter-after"] {
+[data-slot~="adapter-after"] {
   border-color: var(--primary);
 }
 

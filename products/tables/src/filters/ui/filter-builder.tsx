@@ -186,7 +186,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
           <For each={props.presets ?? []}>
             {(preset) => (
               <Button
-                data-slot="filter-preset"
+                data-slot="button filter-preset"
                 title={preset.hint}
                 onClick={() => props.onChange(applyPreset(preset))}
               >
@@ -197,7 +197,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
           <For each={props.templates ?? []}>
             {(template) => (
               <Button
-                data-slot="filter-template"
+                data-slot="button filter-template"
                 title={template.hint}
                 onClick={() => {
                   setTemplateValues({});
@@ -223,7 +223,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
                     when={param.kind === "fields"}
                     fallback={
                       <Field
-                        data-slot="filter-template-param-input"
+                        data-slot="field filter-template-param-input"
                         value={String(templateValues()[param.key] ?? "")}
                         onChange={(value) =>
                           setTemplateValues((current) => ({ ...current, [param.key]: value }))
@@ -254,7 +254,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
             </For>
             <div data-slot="filter-template-actions">
               <Button
-                data-slot="filter-template-apply"
+                data-slot="button filter-template-apply"
                 onClick={() => {
                   props.onChange(applyTemplate(template(), templateValues()));
                   setOpenTemplate(null);
@@ -262,7 +262,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
               >
                 Применить
               </Button>
-              <Button data-slot="filter-secondary" onClick={() => setOpenTemplate(null)}>
+              <Button data-slot="button filter-secondary" onClick={() => setOpenTemplate(null)}>
                 Отмена
               </Button>
             </div>
@@ -310,7 +310,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
                 </span>
 
                 <Button
-                  data-slot="filter-condition-remove"
+                  data-slot="button filter-condition-remove"
                   aria-label={`Убрать условие ${index() + 1}`}
                   onClick={() => removeCondition(condition.id)}
                 >
@@ -325,11 +325,11 @@ export function FilterBuilder(props: FilterBuilderProps) {
       {/* У каждой кнопки добавления своя зацепка: они добавляют РАЗНОЕ, и одеть их одним
           правилом значит лишить человека возможности отличить их взглядом. */}
       <div data-slot="filter-add">
-        <Button data-slot="filter-add-compare" onClick={() => addCondition(newComparison())}>
+        <Button data-slot="button filter-add-compare" onClick={() => addCondition(newComparison())}>
           + сравнение
         </Button>
         <Button
-          data-slot="filter-add-in"
+          data-slot="button filter-add-in"
           onClick={() =>
             addCondition({ id: nextConditionId(), kind: "in", field: firstField(), values: [""] })
           }
@@ -337,7 +337,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
           + одно из списка
         </Button>
         <Button
-          data-slot="filter-add-between"
+          data-slot="button filter-add-between"
           onClick={() =>
             addCondition({
               id: nextConditionId(),
@@ -352,7 +352,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
           + диапазон
         </Button>
         <Button
-          data-slot="filter-add-presence"
+          data-slot="button filter-add-presence"
           onClick={() =>
             addCondition({
               id: nextConditionId(),
@@ -396,12 +396,12 @@ export function FilterBuilder(props: FilterBuilderProps) {
           fallback={<span data-slot="filter-logic-hint">все условия через И</span>}
         >
           <Field
-            data-slot="filter-logic-field"
+            data-slot="field filter-logic-field"
             value={formulaText()}
             validationState={formulaError() ? "invalid" : "valid"}
             onChange={editFormula}
           >
-            <Input data-slot="filter-logic-input" placeholder="например: (1 И 2) ИЛИ 3" />
+            <Input data-slot="input filter-logic-input" placeholder="например: (1 И 2) ИЛИ 3" />
           </Field>
         </Show>
 
@@ -412,7 +412,7 @@ export function FilterBuilder(props: FilterBuilderProps) {
               <Show when={suggestion()}>
                 {(fix) => (
                   <Button
-                    data-slot="filter-logic-fix"
+                    data-slot="button filter-logic-fix"
                     onClick={() => {
                       setDraft(null);
                       const expr = defaultExpr(ids());
@@ -529,7 +529,7 @@ function ComparisonEditor(props: EditorProps<ComparisonCondition>) {
       </select>
 
       <Field
-        data-slot="filter-condition-input"
+        data-slot="field filter-condition-input"
         value={props.condition.value}
         onChange={(value) => props.onChange({ ...props.condition, value })}
       >
@@ -574,14 +574,14 @@ function MemberEditor(props: EditorProps<MemberCondition>) {
           {(value, index) => (
             <span data-slot="filter-condition-value-row">
               <Field
-                data-slot="filter-condition-value"
+                data-slot="field filter-condition-value"
                 value={value}
                 onChange={(next) => replace(index(), next)}
               >
                 <Input placeholder="значение" />
               </Field>
               <Button
-                data-slot="filter-condition-value-remove"
+                data-slot="button filter-condition-value-remove"
                 aria-label={`Убрать значение ${index() + 1}`}
                 onClick={() =>
                   props.onChange({
@@ -596,7 +596,7 @@ function MemberEditor(props: EditorProps<MemberCondition>) {
           )}
         </For>
         <Button
-          data-slot="filter-condition-value-add"
+          data-slot="button filter-condition-value-add"
           onClick={() => props.onChange({ ...props.condition, values: [...props.condition.values, ""] })}
         >
           + значение
@@ -617,7 +617,7 @@ function RangeEditor(props: EditorProps<RangeCondition>) {
       />
 
       <Field
-        data-slot="filter-condition-from"
+        data-slot="field filter-condition-from"
         value={props.condition.from}
         onChange={(from) => props.onChange({ ...props.condition, from })}
       >
@@ -625,7 +625,7 @@ function RangeEditor(props: EditorProps<RangeCondition>) {
       </Field>
 
       <Field
-        data-slot="filter-condition-to"
+        data-slot="field filter-condition-to"
         value={props.condition.to}
         onChange={(to) => props.onChange({ ...props.condition, to })}
       >
@@ -702,7 +702,7 @@ function FieldChips(props: FieldChipsProps) {
       <For each={props.fields}>
         {(field) => (
           <Button
-            data-slot="filter-field-chip"
+            data-slot="button filter-field-chip"
             data-selected={props.selected.includes(field.name) ? "" : undefined}
             aria-pressed={props.selected.includes(field.name)}
             onClick={() => props.onToggle(field.name)}

@@ -52,6 +52,7 @@ import {
   FAMILIES,
   FILTER_SLOTS,
   FOREIGN_SLOTS,
+  KIT_BACKED_SLOTS,
   PROMISED_CHART_STATES,
   PROMISED_FILTER_STATES,
   PROMISED_SLOTS,
@@ -418,14 +419,20 @@ function Scene() {
  */
 function showEverything(): HTMLElement {
   const host = mount(() => <Scene />);
-  press(one(host, '[data-slot="filter-template"]'));
+  press(one(host, '[data-slot~="filter-template"]'));
   return host;
 }
 
-/** Имена зацепок, реально доехавшие до документа, — без повторов и по алфавиту. */
+/**
+ * Имена зацепок, реально доехавшие до документа, — без повторов и по алфавиту.
+ *
+ * `data-slot` — СПИСОК имён через пробел, как `class`, а не одно имя. Узел, стоящий на
+ * примитиве кита, несёт два: имя кита и наше. Читать значение целиком значило бы получить
+ * «button filter-preset» как одно несуществующее имя.
+ */
 function slotsInDocument(host: ParentNode): string[] {
-  const found = [...host.querySelectorAll("[data-slot]")].map(
-    (node) => node.getAttribute("data-slot") as string,
+  const found = [...host.querySelectorAll("[data-slot]")].flatMap((node) =>
+    (node.getAttribute("data-slot") ?? "").split(/\s+/).filter(Boolean),
   );
 
   return [...new Set(found)].sort();
@@ -452,7 +459,9 @@ const DELIVERED = ["table", "filters", "chart", "adapter", "dataset"];
 function slotsInSource(source: string): string[] {
   const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
-  return [...code.matchAll(/"?data-slot"?\s*[:=]\s*"([^"]+)"/g)].map((match) => match[1]!);
+  return [...code.matchAll(/"?data-slot"?\s*[:=]\s*"([^"]+)"/g)].flatMap((match) =>
+    match[1]!.split(/\s+/).filter(Boolean),
+  );
 }
 
 /** Все файлы модуля, включая вложенные `ui/`. */
@@ -504,6 +513,81 @@ describe("обещанные зацепки доезжают до докумен
   });
 });
 
+describe("наше имя стоит РЯДОМ с именем кита, а не вместо него", () => {
+  // Находка owner-skin 2026-08-17. Перекрыв зацепку кита своей, узел переставал быть кнопкой
+  // для его оформления и оставался с браузерным умолчанием. Ошибка молчаливая: разметка цела,
+  // поведение цело, ни одна проба поведения не краснеет — просто кнопка выглядит не кнопкой.
+  //
+  // Стережём с двух сторон. Односторонняя проверка тут бесполезна: список, сверяемый только
+  // «сверху вниз», не заметит новую кнопку, которую опять перекрыли вместо дополнения.
+  const slotsOf = (node: Element): string[] =>
+    (node.getAttribute("data-slot") ?? "").split(/\s+/).filter(Boolean);
+
+  for (const [kit, ours] of Object.entries(KIT_BACKED_SLOTS)) {
+    describe(kit, () => {
+      for (const mine of ours) {
+        it(mine, () => {
+          const host = showEverything();
+          const nodes = all(host, `[data-slot~="${mine}"]`);
+
+          expect(nodes.length, "зацепки нет в документе").toBeGreaterThan(0);
+          for (const node of nodes) {
+            expect(slotsOf(node), `${mine} потеряла имя кита`).toContain(kit);
+          }
+        });
+      }
+    });
+  }
+
+  it("пары объявлены ПОЛНОСТЬЮ — ни одной незаявленной", () => {
+    // Вторая сторона: узел, несущий имя кита вместе с нашим, обязан быть в перечне. Иначе
+    // пара заведётся молча и так же молча однажды распадётся.
+    const host = showEverything();
+    const foreign = new Set<string>(FOREIGN_SLOTS);
+    const declared = new Set(
+      Object.entries(KIT_BACKED_SLOTS).flatMap(([kit, ours]) =>
+        ours.map((mine) => `${kit} ${mine}`),
+      ),
+    );
+
+    const undeclared: string[] = [];
+    for (const node of all(host, "[data-slot]")) {
+      const slots = slotsOf(node);
+      const kit = slots.filter((slot) => foreign.has(slot));
+      const ours = slots.filter((slot) => !foreign.has(slot));
+      if (kit.length === 0 || ours.length === 0) continue;
+
+      for (const one of kit) {
+        for (const mine of ours) {
+          if (!declared.has(`${one} ${mine}`)) undeclared.push(`${one} ${mine}`);
+        }
+      }
+    }
+
+    expect([...new Set(undeclared)]).toEqual([]);
+  });
+
+  it("порядок в значении — сначала кит, потом наше", () => {
+    // Для `~=` порядок безразличен; он нужен глазу, чтобы `data-slot` читался единообразно во
+    // всех тридцати местах. Разнобой здесь — первый шаг к тому, что имя кита где-то забудут.
+    const host = showEverything();
+    const foreign = new Set<string>(FOREIGN_SLOTS);
+
+    for (const node of all(host, "[data-slot]")) {
+      const slots = slotsOf(node);
+      if (slots.length < 2) continue;
+      expect(foreign.has(slots[0]!), node.getAttribute("data-slot") ?? "").toBe(true);
+    }
+  });
+
+  it("перечень пар не выдумывает имён — и наши, и китовы объявлены отдельно", () => {
+    for (const [kit, ours] of Object.entries(KIT_BACKED_SLOTS)) {
+      expect(FOREIGN_SLOTS as readonly string[], kit).toContain(kit);
+      for (const mine of ours) expect(PROMISED_SLOTS, mine).toContain(mine);
+    }
+  });
+});
+
 describe("зацепка стоит на своём узле, а не на соседнем", () => {
   // Сверка множеств выше слепа к ОБМЕНУ: поставь `table-body` на шапку, а `table-head` на
   // тело — имена все на месте, множество то же, прогон зелен, а оформление у потребителя
@@ -543,14 +627,14 @@ describe("зацепка стоит на своём узле, а не на со�
   for (const part of SKELETON) {
     it(`${part.slot} — ${part.tag}${part.inside ? ` внутри ${part.inside}` : ""}`, () => {
       const host = showEverything();
-      const nodes = all(host, `[data-slot="${part.slot}"]`);
+      const nodes = all(host, `[data-slot~="${part.slot}"]`);
 
       expect(nodes.length, "части нет в документе").toBeGreaterThan(0);
       for (const node of nodes) expect(node.tagName).toBe(part.tag);
 
       if (part.inside !== undefined) {
         for (const node of nodes) {
-          expect(node.closest(`[data-slot="${part.inside}"]`), part.slot).not.toBeNull();
+          expect(node.closest(`[data-slot~="${part.inside}"]`), part.slot).not.toBeNull();
         }
       }
     });
@@ -581,7 +665,11 @@ describe("зацепки исходников не выходят за обещ�
     describe(module, () => {
       for (const source of sources) {
         it(source.name, () => {
-          for (const slot of source.slots) expect(PROMISED_SLOTS).toContain(slot);
+          // Обещанное ЛИБО чужое: имя кита в нашем исходнике законно — оно стоит рядом с
+          // нашим, чтобы узел не потерял его оформление. Что именно с чем стоит в паре,
+          // стережёт отдельная проба; здесь предмет только один — не выдумано ли имя.
+          const allowed = [...PROMISED_SLOTS, ...FOREIGN_SLOTS];
+          for (const slot of source.slots) expect(allowed).toContain(slot);
         });
       }
     });
@@ -690,7 +778,7 @@ function statesGate(
 ): void {
   describe(`состояния ${family} объявлены и совпадают с документом`, () => {
     const observed = (host: ParentNode, slot: string, attr: string): string[] =>
-      all(host, `[data-slot="${slot}"][${attr}]`).map((node) => node.getAttribute(attr) ?? "");
+      all(host, `[data-slot~="${slot}"][${attr}]`).map((node) => node.getAttribute(attr) ?? "");
 
     for (const state of states) {
       it(`${state.slot}[${state.attr}]`, () => {
@@ -732,7 +820,7 @@ function statesGate(
 
       const unpromised: string[] = [];
       for (const slot of slots) {
-        for (const node of all(host, `[data-slot="${slot}"]`)) {
+        for (const node of all(host, `[data-slot~="${slot}"]`)) {
           for (const attr of node.getAttributeNames()) {
             if (notAState(attr)) continue;
             const pair = `${slot}[${attr}]`;
@@ -758,7 +846,8 @@ describe("ноль значений вида", () => {
     const host = showEverything();
     const painted: string[] = [];
 
-    for (const node of all(host, "[data-slot^='chart']")) {
+    for (const slot of CHART_SLOTS)
+      for (const node of all(host, `[data-slot~="${slot}"]`)) {
       for (const attr of ["fill", "stroke"]) {
         const value = node.getAttribute(attr);
         if (value !== null && value !== "currentColor" && value !== "none") {
