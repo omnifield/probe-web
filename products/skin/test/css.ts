@@ -55,17 +55,42 @@ export function stripComments(css: string): string {
  *
  * Разбор нарочно простой: у нас нет вложенности глубже `@layer`/`@media`, и полноценный
  * парсер здесь стоил бы зависимости в пробах ради того же ответа.
+ *
+ * Запятые делятся ТОЛЬКО на верхнем уровне: внутри `:is(…)`, `:not(…)` и скобок атрибута
+ * запятая — часть одного селектора. Наивный `split(",")` разрезал
+ * `[data-slot~="button"]:is(:hover, [data-expanded])` пополам, и проба «в селекторе есть
+ * зацепка» падала на половинке без неё, то есть на здоровом CSS.
  */
 export function selectors(css: string): string[] {
   const out: string[] = [];
   for (const [, head] of stripComments(css).matchAll(/([^{}]+)\{/g)) {
     const text = head.trim();
     if (!text || text.startsWith("@")) continue;
-    for (const part of text.split(",")) {
+    for (const part of splitTopLevel(text)) {
       const one = part.trim();
       if (one) out.push(one);
     }
   }
+  return out;
+}
+
+/** Делит список селекторов по запятым вне скобок. */
+function splitTopLevel(text: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let from = 0;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === "(" || char === "[") depth += 1;
+    else if (char === ")" || char === "]") depth -= 1;
+    else if (char === "," && depth === 0) {
+      out.push(text.slice(from, i));
+      from = i + 1;
+    }
+  }
+
+  out.push(text.slice(from));
   return out;
 }
 

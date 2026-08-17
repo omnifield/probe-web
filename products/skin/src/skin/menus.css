@@ -19,17 +19,23 @@
    правилом значило бы сделать вид одинаковым там, где поведение разное. */
 
 @layer skin {
-  /* ТРИГГЕР ОДЕВАЕТСЯ ЗДЕСЬ, И ЭТО ОСОЗНАННЫЙ ПОВТОР. Разметка `<DropdownMenuTrigger as={Button}>`
-     НЕ даёт узлу две зацепки: `data-slot` один, и он достаётся триггеру — проверено на живой
-     странице, кнопка оставалась голой. Значит вид обязан быть у самой зацепки триггера.
-     Повтор правил кнопки — цена независимых подпутей: взявший только `dropdown-menu.css` получает
-     рабочий вид, а не половину. Предложение киту о СПИСКЕ зацепок на узле
-     (`data-slot~="button dropdown-menu-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
-     примут — повтор уйдёт сам. */
-  [data-slot~="dropdown-menu-trigger"],
-  [data-slot~="context-menu-trigger"],
-  [data-slot~="menubar-trigger"],
-  [data-slot~="navigation-menu-trigger"] {
+  /* ГОЛЫЙ ТРИГГЕР ОДЕВАЕТСЯ ЗДЕСЬ, СОСТАВНОЙ — НЕТ, и `:not([data-slot~="button"])` в
+     селекторах именно об этом.
+
+     `<DropdownMenuTrigger>Текст</DropdownMenuTrigger>` — законная простая разметка, и узел обязан
+     выглядеть контролом, а не голым текстом: вид повторяет кнопку, потому что это кнопка и
+     есть по смыслу. Повтор — цена независимых подпутей: взявший только этот файл получает
+     рабочий вид, а не половину.
+
+     А `<DropdownMenuTrigger as={Button}>` даёт ОДИН узел с обеими зацепками, и вид кнопки у него
+     уже есть — с вариантом, который выбрал потребитель. Без исключения наш нейтральный вид
+     лёг бы ПОВЕРХ: этот файл идёт после `button.css`, специфичность равная, побеждает
+     порядок, — и `data-variant="danger"` на триггере тихо стал бы обычной кнопкой.
+     Стережёт исключение проба `test/hooks.test.ts`. */
+  [data-slot~="dropdown-menu-trigger"]:not([data-slot~="button"]),
+  [data-slot~="context-menu-trigger"]:not([data-slot~="button"]),
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"]),
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"]) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -56,26 +62,26 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot~="dropdown-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot~="context-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot~="menubar-trigger"]:hover:not([data-disabled]),
-  [data-slot~="navigation-menu-trigger"]:hover:not([data-disabled]) {
+  [data-slot~="dropdown-menu-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="context-menu-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot~="dropdown-menu-trigger"]:focus-visible,
-  [data-slot~="context-menu-trigger"]:focus-visible,
-  [data-slot~="menubar-trigger"]:focus-visible,
-  [data-slot~="navigation-menu-trigger"]:focus-visible {
+  [data-slot~="dropdown-menu-trigger"]:not([data-slot~="button"]):focus-visible,
+  [data-slot~="context-menu-trigger"]:not([data-slot~="button"]):focus-visible,
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"]):focus-visible,
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"]):focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot~="dropdown-menu-trigger"][data-expanded],
-  [data-slot~="context-menu-trigger"][data-expanded],
-  [data-slot~="menubar-trigger"][data-expanded],
-  [data-slot~="navigation-menu-trigger"][data-expanded] {
+  [data-slot~="dropdown-menu-trigger"]:not([data-slot~="button"])[data-expanded],
+  [data-slot~="context-menu-trigger"]:not([data-slot~="button"])[data-expanded],
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"])[data-expanded],
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"])[data-expanded] {
     background-color: var(--element-active);
   }
 
@@ -321,7 +327,7 @@
   }
 
   /* Открывашка в строке меню — не кнопка с рамкой, а пункт: рамка есть у самой строки. */
-  [data-slot~="menubar-trigger"] {
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"]) {
     block-size: var(--control-height-sm);
     padding-inline: var(--space-3);
     border-color: transparent;
@@ -329,8 +335,8 @@
     font-weight: var(--weight-normal);
   }
 
-  [data-slot~="menubar-trigger"]:hover:not([data-disabled]),
-  [data-slot~="menubar-trigger"][data-expanded] {
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="menubar-trigger"]:not([data-slot~="button"])[data-expanded] {
     background-color: var(--tint-hover);
   }
 
@@ -341,7 +347,7 @@
     gap: var(--space-1);
   }
 
-  [data-slot~="navigation-menu-trigger"] {
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"]) {
     block-size: var(--control-height-sm);
     padding-inline: var(--space-3);
     border-color: transparent;
@@ -349,8 +355,8 @@
     font-weight: var(--weight-normal);
   }
 
-  [data-slot~="navigation-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot~="navigation-menu-trigger"][data-expanded] {
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"]):hover:not([data-disabled]),
+  [data-slot~="navigation-menu-trigger"]:not([data-slot~="button"])[data-expanded] {
     background-color: var(--tint-hover);
   }
 

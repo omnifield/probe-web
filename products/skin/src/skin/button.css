@@ -67,8 +67,14 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  /* Наведение — СЛЕДУЮЩАЯ СТУПЕНЬ той же роли, а не другой цвет. */
-  [data-slot~="button"]:hover:not(:disabled) {
+  /* Наведение — СЛЕДУЮЩАЯ СТУПЕНЬ той же роли, а не другой цвет.
+
+     `[data-expanded]` ЗДЕСЬ ЖЕ, и это не мелочь: кнопка бывает триггером всплывающего
+     (`<PopoverTrigger as={Button}>`), и открытая панель обязана быть видна на самой кнопке.
+     Раскрытое состояние показывается ТЕМ ЖЕ цветом, что наведение, — по каждому варианту
+     своим. Иначе его пришлось бы красить нейтральной ролью поверх акцента, то есть выдавать
+     основную кнопку за обычную ровно в тот момент, когда она работает. */
+  [data-slot~="button"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--brand-solid-hover);
   }
 
@@ -89,7 +95,7 @@
     color: var(--brand-text);
   }
 
-  [data-slot~="button"][data-variant="soft"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="soft"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--brand-element-hover);
   }
 
@@ -99,7 +105,7 @@
     color: var(--text);
   }
 
-  [data-slot~="button"][data-variant="outline"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="outline"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
@@ -112,7 +118,7 @@
     color: var(--text);
   }
 
-  [data-slot~="button"][data-variant="ghost"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="ghost"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--tint-hover);
   }
 
@@ -121,7 +127,7 @@
     color: var(--on-danger-solid);
   }
 
-  [data-slot~="button"][data-variant="danger"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="danger"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--danger-solid-hover);
   }
 
@@ -131,7 +137,7 @@
     color: var(--danger-text);
   }
 
-  [data-slot~="button"][data-variant="danger-outline"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="danger-outline"]:is(:hover, [data-expanded]):not(:disabled) {
     background-color: var(--danger-element);
   }
 

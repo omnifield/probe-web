@@ -113,6 +113,38 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
         ),
       },
       {
+        id: "composed",
+        title: "Триггер из кнопки",
+        note: "Один узел, две зацепки: `as={Button}` даёт `data-slot=\"button popover-trigger\"`. Вид берётся у кнопки вместе с вариантом, а нейтральный повтор триггера себя исключает — иначе он лёг бы поверх и `danger` стал бы обычной кнопкой. Рядом голый триггер: ему повтор и нужен.",
+        render: () => (
+          <div class="case__row">
+            <Popover placement="bottom-start" gutter={8}>
+              <PopoverTrigger as={Button} data-variant="danger">
+                Удалить набор
+              </PopoverTrigger>
+              <PopoverPortal>
+                <PopoverContent>
+                  <PopoverArrow />
+                  <PopoverTitle>Удалить набор?</PopoverTitle>
+                  <PopoverDescription>Действие необратимо.</PopoverDescription>
+                  <PopoverClose data-variant="danger">Удалить</PopoverClose>
+                </PopoverContent>
+              </PopoverPortal>
+            </Popover>
+
+            <Popover placement="bottom-start" gutter={8}>
+              <PopoverTrigger>Голый триггер</PopoverTrigger>
+              <PopoverPortal>
+                <PopoverContent>
+                  <PopoverArrow />
+                  <PopoverDescription>Вид повторяет кнопку, зацепка одна.</PopoverDescription>
+                </PopoverContent>
+              </PopoverPortal>
+            </Popover>
+          </div>
+        ),
+      },
+      {
         id: "placement",
         title: "Сверху",
         note: "Место задаётся опцией на корне, а не отступом в оформлении: координаты пишет позиционировщик.",
