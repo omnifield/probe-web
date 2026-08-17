@@ -140,8 +140,19 @@ function sendBuilt(res, file, type) {
   }
 }
 
+/** Счётчик обращений: петля в панели видна здесь раньше, чем в браузере. */
+const hits = new Map();
+setInterval(() => {
+  if (hits.size === 0) return;
+  const top = [...hits.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  console.log("[пульт] за 5 с:", top.map(([path, n]) => `${path}×${n}`).join(" · "));
+  hits.clear();
+}, 5000).unref();
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://nav.local");
+  const key = url.pathname.startsWith("/__nav/") ? url.pathname : "→зона";
+  hits.set(key, (hits.get(key) ?? 0) + 1);
 
   if (url.pathname === "/__nav/" || url.pathname === "/__nav") {
     return sendBuilt(res, "index.html", "text/html; charset=utf-8");
