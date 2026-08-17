@@ -58,6 +58,9 @@
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Combobox*` | составной, 18 частей | `Combobox.*` |
 | `NumberField*` | составной, 8 частей | `NumberField.*` |
+| `ContextMenu*` | составной, 19 частей | `ContextMenu.*` |
+| `Menubar*` | составной, 20 частей | `Menubar.*` |
+| `NavigationMenu*` | составной, 21 часть | `NavigationMenu.*` |
 | `Accordion*` | составной, 5 частей | `Accordion.*` |
 | `Collapsible*` | составной, 3 части | `Collapsible.*` |
 | `AlertDialog*` | составной, 8 частей | `AlertDialog.*` |
@@ -126,6 +129,9 @@
 | составной `Tabs` | `tabs`, `tabs-list`, `tabs-trigger`, `tabs-indicator`, `tabs-content` |
 | составной `Combobox` | `combobox`, `combobox-label`, `combobox-control`, `combobox-input`, `combobox-trigger`, `combobox-icon`, `combobox-hidden-select`, `combobox-content`, `combobox-arrow`, `combobox-listbox`, `combobox-item`, `combobox-item-label`, `combobox-item-description`, `combobox-item-indicator`, `combobox-section`, `combobox-description`, `combobox-error` |
 | составной `NumberField` | `number-field`, `number-field-label`, `number-field-input`, `number-field-hidden-input`, `number-field-increment`, `number-field-decrement`, `number-field-description`, `number-field-error` |
+| составной `ContextMenu` | `context-menu-trigger`, `-content`, `-arrow`, `-item`, `-item-label`, `-item-description`, `-item-indicator`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-group`, `-group-label`, `-separator`, `-sub-trigger`, `-sub-content`, `-icon` |
+| составной `Menubar` | `menubar`, `menubar-trigger`, `-content`, `-arrow`, `-item`, `-item-label`, `-item-description`, `-item-indicator`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-group`, `-group-label`, `-separator`, `-sub-trigger`, `-sub-content`, `-icon` |
+| составной `NavigationMenu` | `navigation-menu`, `navigation-menu-viewport`, `-trigger`, `-content`, `-arrow`, `-item`, `-item-label`, `-item-description`, `-item-indicator`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-group`, `-group-label`, `-separator`, `-sub-trigger`, `-sub-content`, `-icon` |
 | составной `Accordion` | `accordion`, `accordion-item`, `accordion-header`, `accordion-trigger`, `accordion-content` |
 | составной `Collapsible` | `collapsible`, `collapsible-trigger`, `collapsible-content` |
 | составной `AlertDialog` | `alert-dialog-trigger`, `alert-dialog-overlay`, `alert-dialog-content`, `alert-dialog-title`, `alert-dialog-description`, `alert-dialog-close` |
@@ -344,6 +350,22 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
 фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
+
+## Четыре меню, и почему их четыре
+
+Части у них одинаковые — пункты, группы, подменю, разделители, — а различия в том, ЧЕМ
+открывают и как ведут себя дальше. Одинаковые части при разном поведении оформляются
+по-разному, поэтому у каждого меню свои имена зацепок.
+
+| | открывается | особенность |
+|---|---|---|
+| `DropdownMenu` | нажатием на кнопку | кнопка уже стоит в разметке |
+| `ContextMenu` | ПРАВЫМ кликом | зацепка — ОБЛАСТЬ (строка, ячейка), и она видна; позиция от указателя, поэтому `placement` и `gutter` не работают |
+| `Menubar` | нажатием на заголовок в строке | открыто одно — наведение переключает соседнее без клика; лишняя часть `MenubarMenu` (узла не рендерит) |
+| `NavigationMenu` | нажатием на раздел | панель ОДНА и переезжает в окно-приёмник `navigation-menu-viewport`; разметка списком: корень `<ul>`, пункт `<a>` |
+
+Три независимых `DropdownMenu` в ряд не заменяют `Menubar`: они не переключаются наведением и
+не ходят стрелками между заголовками. Это поведение, а не вид.
 
 ## Раскрывашки, предупреждение, страницы, мелочи навигации
 

@@ -75,6 +75,27 @@ import {
   ComboboxTrigger,
 } from "../src/combobox.jsx";
 import {
+  ContextMenu,
+  ContextMenuArrow,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuGroupLabel,
+  ContextMenuIcon,
+  ContextMenuItem,
+  ContextMenuItemDescription,
+  ContextMenuItemIndicator,
+  ContextMenuItemLabel,
+  ContextMenuPortal,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "../src/context-menu.jsx";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -116,6 +137,51 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
 } from "../src/number-field.jsx";
+import {
+  Menubar,
+  MenubarArrow,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarGroup,
+  MenubarGroupLabel,
+  MenubarIcon,
+  MenubarItem,
+  MenubarItemDescription,
+  MenubarItemIndicator,
+  MenubarItemLabel,
+  MenubarMenu,
+  MenubarPortal,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "../src/menubar.jsx";
+import {
+  NavigationMenu,
+  NavigationMenuArrow,
+  NavigationMenuCheckboxItem,
+  NavigationMenuContent,
+  NavigationMenuGroup,
+  NavigationMenuGroupLabel,
+  NavigationMenuIcon,
+  NavigationMenuItem,
+  NavigationMenuItemDescription,
+  NavigationMenuItemIndicator,
+  NavigationMenuItemLabel,
+  NavigationMenuMenu,
+  NavigationMenuPortal,
+  NavigationMenuRadioGroup,
+  NavigationMenuRadioItem,
+  NavigationMenuSeparator,
+  NavigationMenuSub,
+  NavigationMenuSubContent,
+  NavigationMenuSubTrigger,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
+} from "../src/navigation-menu.jsx";
 import {
   Breadcrumbs,
   BreadcrumbsLink,
@@ -361,6 +427,47 @@ function Scene() {
         <NumberFieldError>Не меньше нуля</NumberFieldError>
       </NumberField>
 
+
+
+      <Menubar>
+        <MenubarMenu open>
+          <MenubarTrigger>
+            Файл
+            <MenubarIcon>▾</MenubarIcon>
+          </MenubarTrigger>
+          <MenubarPortal>
+            <MenubarContent>
+            <MenubarArrow />
+            <MenubarGroup>
+              <MenubarGroupLabel>Правка</MenubarGroupLabel>
+              <MenubarItem>
+                <MenubarItemLabel>Переименовать</MenubarItemLabel>
+                <MenubarItemDescription>F2</MenubarItemDescription>
+              </MenubarItem>
+            </MenubarGroup>
+            <MenubarSeparator />
+            <MenubarCheckboxItem checked>
+              Скрытые
+              <MenubarItemIndicator>✓</MenubarItemIndicator>
+            </MenubarCheckboxItem>
+            <MenubarRadioGroup value="имя">
+              <MenubarRadioItem value="имя">По имени</MenubarRadioItem>
+            </MenubarRadioGroup>
+            <MenubarSub open>
+              <MenubarSubTrigger>Ещё</MenubarSubTrigger>
+              <MenubarPortal>
+                <MenubarSubContent>
+                  <MenubarItem>Архивировать</MenubarItem>
+                </MenubarSubContent>
+              </MenubarPortal>
+            </MenubarSub>
+            </MenubarContent>
+          </MenubarPortal>
+        </MenubarMenu>
+      </Menubar>
+
+
+
       <Accordion multiple value={["доставка"]}>
         <AccordionItem value="доставка">
           <AccordionHeader>
@@ -375,7 +482,7 @@ function Scene() {
         <CollapsibleContent>Мелкий шрифт</CollapsibleContent>
       </Collapsible>
 
-      <AlertDialog open>
+      <AlertDialog open modal={false}>
         <AlertDialogTrigger>Удалить</AlertDialogTrigger>
         <AlertDialogPortal>
           <AlertDialogOverlay />
@@ -465,7 +572,7 @@ function Scene() {
         <ToastList />
       </ToastRegion>
 
-      <Popover open>
+      <Popover open modal={false}>
         <PopoverTrigger>Настройки</PopoverTrigger>
         <PopoverAnchor />
         <PopoverPortal>
@@ -478,7 +585,10 @@ function Scene() {
         </PopoverPortal>
       </Popover>
 
-      <Dialog open>
+      {/* `modal={false}` в сцене НЕ случайность: модальное окно объявляет остальную страницу
+          недоступной для указателя, и открыть после него меню нажатием уже нельзя. Предмет
+          этой пробы — наличие зацепок, а модальность проверяется в `dialog.test.tsx`. */}
+      <Dialog open modal={false}>
         <DialogTrigger>Удалить</DialogTrigger>
         <DialogPortal>
           <DialogOverlay />
@@ -498,7 +608,7 @@ function Scene() {
         <TabsContent value="вид">Настройки вида</TabsContent>
       </Tabs>
 
-      <DropdownMenu open>
+      <DropdownMenu open modal={false}>
         <DropdownMenuTrigger>
           Ещё
           <DropdownMenuIcon>▾</DropdownMenuIcon>
@@ -568,6 +678,92 @@ function Scene() {
   );
 }
 
+/**
+ * Два меню живут в ОТДЕЛЬНОЙ сцене, и это не прихоть.
+ *
+ * Ни навигацию, ни контекстное меню нельзя открыть пропом: у первой активный раздел ставит сам
+ * компонент по нажатию, второе открывается только правой кнопкой. А в общей сцене нажатие до
+ * них не доходит — рядом уже открыты окно, панель и меню, и любое из них держит фокус и
+ * указатель. Ситуация искусственная (в живом интерфейсе так не бывает), поэтому разводим
+ * сцены, а не подгоняем компоненты.
+ */
+function ApartScene() {
+  return (
+    <>
+      <ContextMenu modal={false}>
+        <ContextMenuTrigger>Строка таблицы</ContextMenuTrigger>
+        <ContextMenuPortal>
+          <ContextMenuContent>
+            <ContextMenuIcon>▾</ContextMenuIcon>
+            <ContextMenuArrow />
+            <ContextMenuGroup>
+              <ContextMenuGroupLabel>Правка</ContextMenuGroupLabel>
+              <ContextMenuItem>
+                <ContextMenuItemLabel>Переименовать</ContextMenuItemLabel>
+                <ContextMenuItemDescription>F2</ContextMenuItemDescription>
+              </ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuCheckboxItem checked>
+              Скрытые
+              <ContextMenuItemIndicator>✓</ContextMenuItemIndicator>
+            </ContextMenuCheckboxItem>
+            <ContextMenuRadioGroup value="имя">
+              <ContextMenuRadioItem value="имя">По имени</ContextMenuRadioItem>
+            </ContextMenuRadioGroup>
+            <ContextMenuSub open>
+              <ContextMenuSubTrigger>Ещё</ContextMenuSubTrigger>
+              <ContextMenuPortal>
+                <ContextMenuSubContent>
+                  <ContextMenuItem>Архивировать</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuPortal>
+            </ContextMenuSub>
+          </ContextMenuContent>
+        </ContextMenuPortal>
+      </ContextMenu>
+
+      <NavigationMenu>
+        <NavigationMenuMenu>
+          <NavigationMenuTrigger>
+            Продукты
+            <NavigationMenuIcon>▾</NavigationMenuIcon>
+          </NavigationMenuTrigger>
+          <NavigationMenuPortal>
+            <NavigationMenuContent>
+            <NavigationMenuArrow />
+            <NavigationMenuGroup>
+              <NavigationMenuGroupLabel>Правка</NavigationMenuGroupLabel>
+              <NavigationMenuItem href="/tables">
+                <NavigationMenuItemLabel>Переименовать</NavigationMenuItemLabel>
+                <NavigationMenuItemDescription>F2</NavigationMenuItemDescription>
+              </NavigationMenuItem>
+            </NavigationMenuGroup>
+            <NavigationMenuSeparator />
+            <NavigationMenuCheckboxItem checked>
+              Скрытые
+              <NavigationMenuItemIndicator>✓</NavigationMenuItemIndicator>
+            </NavigationMenuCheckboxItem>
+            <NavigationMenuRadioGroup value="имя">
+              <NavigationMenuRadioItem value="имя">По имени</NavigationMenuRadioItem>
+            </NavigationMenuRadioGroup>
+            <NavigationMenuSub open>
+              <NavigationMenuSubTrigger>Ещё</NavigationMenuSubTrigger>
+              <NavigationMenuPortal>
+                <NavigationMenuSubContent>
+                  <NavigationMenuItem href="/tables">Архивировать</NavigationMenuItem>
+                </NavigationMenuSubContent>
+              </NavigationMenuPortal>
+            </NavigationMenuSub>
+            </NavigationMenuContent>
+          </NavigationMenuPortal>
+        </NavigationMenuMenu>
+        <NavigationMenuViewport />
+      </NavigationMenu>
+    </>
+  );
+}
+
 /** Имена зацепок, реально доехавшие до документа, — без повторов и по алфавиту. */
 function slotsInDocument(): string[] {
   const found = [...document.querySelectorAll("[data-slot]")].map(
@@ -594,6 +790,17 @@ function slotsInSource(source: string): string[] {
 
 describe("обещанные зацепки доезжают до документа", () => {
   it("перечень в документе совпадает с обещанным — ровно, без лишних и без пропавших", async () => {
+    const apart = mount(() => <ApartScene />);
+    press(one(apart, "[data-slot='navigation-menu-trigger']"));
+
+    const area = one(apart, "[data-slot='context-menu-trigger']");
+    area.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 2 }));
+    area.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, button: 2 }));
+
+    // Снимаем их зацепки СРАЗУ: следующая сцена приводит в документ окно и панель, и
+    // раскрытое меню закроется, отдав им фокус.
+    const fromApart = slotsInDocument();
+
     const host = mount(() => <Scene />);
 
     // Уведомление — единственная часть зоны, которую нельзя поставить в разметку: она
@@ -616,7 +823,9 @@ describe("обещанные зацепки доезжают до докумен
 
     // Сравнение РАВЕНСТВОМ, а не вхождением: «содержит обещанные» пропустило бы зацепку,
     // которую в перечень не внесли, и обещание разъехалось бы с поставкой в другую сторону.
-    expect(slotsInDocument()).toEqual([...PROMISED_SLOTS].sort());
+    const found = [...new Set([...fromApart, ...slotsInDocument()])].sort();
+
+    expect(found).toEqual([...PROMISED_SLOTS].sort());
   });
 
   it("в перечне нет повторов — иначе равенство выше сошлось бы вслепую", () => {

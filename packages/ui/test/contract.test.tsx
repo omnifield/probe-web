@@ -23,6 +23,7 @@ import {
   ComboboxLabel,
   ComboboxTrigger,
 } from "../src/combobox.jsx";
+import { ContextMenu, ContextMenuTrigger } from "../src/context-menu.jsx";
 import { Dialog, DialogTrigger } from "../src/dialog.jsx";
 import { DropdownMenu, DropdownMenuIcon, DropdownMenuTrigger } from "../src/dropdown-menu.jsx";
 import { Field, FieldDescription, Input, Label, Textarea } from "../src/field.jsx";
@@ -34,6 +35,12 @@ import {
 } from "../src/number-field.jsx";
 import { Breadcrumbs, BreadcrumbsLink, Link } from "../src/navigation.jsx";
 import { Pagination, PaginationNext, PaginationPrevious } from "../src/pagination.jsx";
+import { Menubar, MenubarMenu, MenubarTrigger } from "../src/menubar.jsx";
+import {
+  NavigationMenu,
+  NavigationMenuMenu,
+  NavigationMenuTrigger,
+} from "../src/navigation-menu.jsx";
 import { Popover, PopoverAnchor, PopoverTrigger } from "../src/popover.jsx";
 import {
   RadioGroup,
@@ -304,6 +311,37 @@ const PRIMITIVES = [
       <NumberField>
         <NumberFieldLabel {...props} />
       </NumberField>
+    ),
+  },
+  {
+    name: "ContextMenuTrigger",
+    tag: "div",
+    render: (props: Record<string, unknown>) => (
+      <ContextMenu>
+        <ContextMenuTrigger {...props} />
+      </ContextMenu>
+    ),
+  },
+  {
+    name: "MenubarTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <Menubar>
+        <MenubarMenu>
+          <MenubarTrigger {...props} />
+        </MenubarMenu>
+      </Menubar>
+    ),
+  },
+  {
+    name: "NavigationMenuTrigger",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <NavigationMenu>
+        <NavigationMenuMenu>
+          <NavigationMenuTrigger {...props} />
+        </NavigationMenuMenu>
+      </NavigationMenu>
     ),
   },
   {
