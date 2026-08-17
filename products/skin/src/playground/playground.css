@@ -1,91 +1,127 @@
-/* Оформление САМОГО СТЕНДА — раскладка, панель ручек, вкладки.
+/* Оформление САМОГО СТЕНДА: раскладка, панель, вкладки, карточки кейсов.
 
    Это НЕ оформление кита: наше производство лежит в `src/skin/` и приезжает потребителю.
-   Разделение несущее: сняв оформление кита, стенд обязан остаться читаемым и управляемым,
+   Разделение несущее — сняв оформление кита, стенд обязан остаться читаемым и управляемым,
    иначе тумблером нельзя будет пользоваться. Поэтому у стенда свои классы, а у поставки —
    только зацепки `data-slot`, и пересечения между ними нет.
 
    Инвариант тот же, что и у поставки: ни одного литерального цвета — только токены слоя
-   `style`, поэтому смена темы красит стенд целиком. */
+   `style`, поэтому смена палитры красит стенд целиком.
 
-/* Во всю ширину окна (решение user 2026-08-16): стенд показывает плотные поверхности, и
-   колонка посреди пустого экрана врёт о том, как компоненты поведут себя у потребителя.
-   Панель ручек фиксированной ширины, образцы забирают остальное. */
+   СКРОЛЛ (решение user 2026-08-17). Страница целиком НЕ прокручивается: `.shell` занимает
+   высоту окна и прячет перелив, а прокручиваются две области по отдельности — панель слева и
+   поле кейсов справа. Полоса вкладок стоит в сетке `.stage` отдельной строкой, поэтому она не
+   уезжает вместе с содержимым. Раньше скроллилось всё вместе, и на длинной странице ни панелью,
+   ни вкладками пользоваться было нельзя. */
+
 .shell {
   display: grid;
-  grid-template-columns: minmax(15rem, 17rem) 1fr;
-  gap: 1.5rem;
-  align-items: start;
-  padding: 1.5rem;
+  grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  block-size: 100dvh;
+  overflow: hidden;
 }
 
-@media (width < 60rem) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
+/* ── левая колонка ────────────────────────────────────────────────────────────────────── */
+
+.side {
+  block-size: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  border-inline-end: 1px solid var(--separator);
+  background-color: var(--surface-subtle);
 }
 
-/* ── панель ручек ─────────────────────────────────────────────────────────────────────── */
-
-.panel {
-  position: sticky;
-  top: 1.5rem;
+.side__inner {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background-color: var(--card);
-  color: var(--card-foreground);
 }
 
-.panel__title {
+.side__title {
   margin: 0;
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.2;
+  color: var(--text);
 }
 
-.panel__group {
+.side__label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.side__cases {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.panel__group--pending {
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+/* Оглавление кейсов — ссылки на разделы: адрес настоящий, им можно поделиться. */
+.side__case {
+  padding: 0.3125rem 0.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
 }
 
-.panel__label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted-foreground);
+.side__case:hover {
+  background-color: var(--tint-hover);
 }
 
-.panel__row {
+.side__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.side__slots code,
+.knob__hint code,
+.knobs__note code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}
+
+/* ── ручки ────────────────────────────────────────────────────────────────────────────── */
+
+.knobs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.knob__row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-.panel__hint {
+.knob__hint,
+.knobs__note,
+.case__note,
+.case__hint {
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.45;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
-.panel__hint code,
-.specimen__slots code {
-  font-family: var(--font-mono);
-  font-size: 0.95em;
-  color: var(--foreground);
+.knobs__note {
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--separator);
 }
-
-/* ── ручки и вкладки ──────────────────────────────────────────────────────────────────── */
 
 .chip,
 .tab {
@@ -93,7 +129,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background-color: transparent;
-  color: var(--foreground);
+  color: var(--text);
   font: inherit;
   font-size: 0.8125rem;
   line-height: 1.3;
@@ -105,112 +141,180 @@
 
 .chip:hover,
 .tab:hover {
-  border-color: var(--ring);
+  border-color: var(--border-strong);
 }
 
 .chip[aria-pressed="true"],
 .tab[aria-pressed="true"] {
   border-color: transparent;
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: var(--brand-solid);
+  color: var(--on-brand-solid);
 }
 
 .chip:focus-visible,
-.tab:focus-visible {
-  outline: 2px solid var(--ring);
+.tab:focus-visible,
+.side__case:focus-visible,
+.card__more:focus-visible {
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-/* ── сцена с образцами ────────────────────────────────────────────────────────────────── */
+/* ── правая колонка ───────────────────────────────────────────────────────────────────── */
 
 .stage {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  block-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
 }
 
+/* Полоса вкладок — отдельная строка сетки: она не уезжает вместе с кейсами. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-  padding-bottom: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-block-end: 1px solid var(--separator);
+  background-color: var(--surface);
 }
 
-/* На широком экране образцы ложатся в несколько колонок, а не тянутся одной лентой: пустая
-   строка шириной в монитор ничего не показывает, а сравнивать примитивы рядом удобнее. */
-.specimens {
+.scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem;
+}
+
+/* ── витрина «Всё» ────────────────────────────────────────────────────────────────────── */
+
+.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
   gap: 1rem;
   align-items: start;
 }
 
-.specimen {
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-subtle);
+}
+
+.card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.card__head h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.card__more {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--brand-text);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.card__body,
+.case__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+
+/* ── страница кейсов ──────────────────────────────────────────────────────────────────── */
+
+.cases {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-inline-size: 60rem;
+}
+
+.case {
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
   padding: 1.25rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background-color: var(--card);
+  background-color: var(--surface-subtle);
+  /* Кейс — цель ссылки из оглавления: отступ, чтобы заголовок не прилипал к верхнему краю. */
+  scroll-margin-block-start: 1rem;
 }
 
-.specimen__head {
+.case__head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.375rem;
 }
 
-.specimen__head h2 {
+.case__head h2 {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.2;
-  color: var(--card-foreground);
+  color: var(--text);
 }
 
-/* Перечень зацепок у заголовка — не украшение: видно, за что цепляется оформление, и сразу
-   заметно, если примитив показан, а слот не покрыт. */
-.specimen__slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  font-size: 0.6875rem;
-  color: var(--muted-foreground);
-}
+/* ── раскладки внутри кейсов ──────────────────────────────────────────────────────────── */
 
-.specimen__row {
+.case__row {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 1rem;
 }
 
-/* Поля и списки тянутся, кнопки — нет. Раскладку задаёт СТЕНД как потребитель: ширина поля
-   зависит от того, куда его поставили, и поставка её назначать не вправе. */
-.specimen__row > [data-slot="field"],
-.specimen__row > [data-slot="select"] {
-  flex: 1 1 14rem;
-  min-inline-size: 0;
-}
-
-.specimen__note {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-
-.specimen__stack {
+.case__stack {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-width: 12rem;
+  min-inline-size: 12rem;
 }
 
-.specimen__inline {
+.case__inline {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.case__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Узкая колонка — отдельный кейс: в ней проверяется обрезка длинного текста. */
+.case__narrow {
+  max-inline-size: 14rem;
+}
+
+@media (width < 60rem) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .side {
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--separator);
+    max-block-size: 40dvh;
+  }
 }
