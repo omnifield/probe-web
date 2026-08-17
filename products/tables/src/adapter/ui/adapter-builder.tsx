@@ -93,7 +93,9 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
       <div data-slot="adapter-source">
         <label data-slot="adapter-rows">
           набор строк лежит по пути
+          {/* Зацепка и на подписи, и на самом поле: полусоставную часть одеть нельзя. */}
           <select
+            data-slot="adapter-rows-select"
             value={props.spec.rows}
             onChange={(event) => patch({ rows: event.currentTarget.value })}
           >
@@ -104,6 +106,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
 
         <label data-slot="adapter-extra">
           <input
+            data-slot="adapter-extra-input"
             type="checkbox"
             checked={props.spec.extra === "keep"}
             onChange={(event) => patch({ extra: event.currentTarget.checked ? "keep" : "drop" })}

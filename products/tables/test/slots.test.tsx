@@ -52,8 +52,10 @@ import {
   FAMILIES,
   FILTER_SLOTS,
   FOREIGN_SLOTS,
+  PROMISED_FILTER_STATES,
   PROMISED_SLOTS,
   PROMISED_TABLE_STATES,
+  type StatePromise,
   TABLE_SLOTS,
 } from "./slot-list.js";
 
@@ -180,36 +182,64 @@ const FILTER_ROWS: Row[] = [
   { amount: 500 },
 ];
 
-const COMPARE_ID = nextConditionId();
-const MEMBER_ID = nextConditionId();
-
-/** Все четыре вида условия разом плюс логика «все через И». */
+/**
+ * Все четыре вида условия разом плюс логика «все через И».
+ *
+ * Сравнение стоит С УЧЁТОМ РЕГИСТРА и по полю, которого у одной строки нет: первое даёт
+ * состояние «учитывать регистр», второе — счётчик «неизвестно», то есть третье значение
+ * трёхзначной логики, единственное место, где оно выходит на экран.
+ */
 const EVERY_CONDITION: FilterState = {
   version: 1,
   conditions: [
-    { id: COMPARE_ID, kind: "compare", field: "/applicant", operator: "contains", value: "ив" },
-    { id: MEMBER_ID, kind: "in", field: "/applicant", values: ["Иванов", ""] },
+    {
+      id: nextConditionId(),
+      kind: "compare",
+      field: "/applicant",
+      operator: "contains",
+      value: "ив",
+      sensitive: true,
+    },
+    { id: nextConditionId(), kind: "in", field: "/applicant", values: ["Иванов", ""] },
     { id: nextConditionId(), kind: "between", field: "/amount", from: "1", to: "9" },
     { id: nextConditionId(), kind: "presence", quantifier: "any", mode: "exists", fields: ["/applicant"] },
   ],
   logic: { mode: "all" },
 };
 
-/** Своя логика, в которой второе условие не участвует. */
-const UNUSED_LOGIC: FilterState = {
+const NEGATED_ID = nextConditionId();
+const KEPT_ID = nextConditionId();
+const UNUSED_ID = nextConditionId();
+
+/**
+ * Своя логика: первое условие взято с ОТРИЦАНИЕМ, третье формулой не упомянуто вовсе.
+ *
+ * Оба состояния живут не в условии, а в формуле, и вывести их можно только разбором дерева —
+ * поэтому без этого экземпляра их вообще не увидеть. Второе условие вдобавок недописано:
+ * список из одной пустой строки.
+ */
+const DERIVED_LOGIC: FilterState = {
   version: 1,
   conditions: [
-    { id: COMPARE_ID, kind: "compare", field: "/applicant", operator: "contains", value: "ив" },
-    { id: MEMBER_ID, kind: "in", field: "/applicant", values: [""] },
+    { id: NEGATED_ID, kind: "compare", field: "/applicant", operator: "eq", value: "Иванов" },
+    { id: KEPT_ID, kind: "in", field: "/applicant", values: [""] },
+    { id: UNUSED_ID, kind: "between", field: "/amount", from: "1", to: "9" },
   ],
-  logic: { mode: "formula", expr: { t: "ref", id: COMPARE_ID } },
+  logic: {
+    mode: "formula",
+    expr: {
+      t: "and",
+      a: { t: "not", a: { t: "ref", id: NEGATED_ID } },
+      b: { t: "ref", id: KEPT_ID },
+    },
+  },
 };
 
 /** Своя логика, ссылающаяся на условие, которого нет: ошибка и предложенная поправка. */
 const BROKEN_LOGIC: FilterState = {
   version: 1,
   conditions: [
-    { id: COMPARE_ID, kind: "compare", field: "/applicant", operator: "contains", value: "ив" },
+    { id: nextConditionId(), kind: "compare", field: "/applicant", operator: "contains", value: "ив" },
   ],
   logic: { mode: "formula", expr: { t: "ref", id: "нет-такого-условия" } },
 };
@@ -255,7 +285,7 @@ const filters = (initial: FilterState, toolbar = false) =>
   };
 
 const EveryConditionFilters = filters(EVERY_CONDITION, true);
-const UnusedLogicFilters = filters(UNUSED_LOGIC);
+const DerivedLogicFilters = filters(DERIVED_LOGIC);
 const BrokenLogicFilters = filters(BROKEN_LOGIC);
 
 // ─── график ───────────────────────────────────────────────────────────────────────────────
@@ -357,7 +387,7 @@ function Scene() {
       <PinnedRowTable />
 
       <EveryConditionFilters />
-      <UnusedLogicFilters />
+      <DerivedLogicFilters />
       <BrokenLogicFilters />
 
       <Chart columns={CHART_COLUMNS} rows={CHART_ROWS} spec={BAR} onSelect={() => undefined} />
@@ -490,7 +520,6 @@ describe("зацепка стоит на своём узле, а не на со�
     { slot: "table-hidden-column", tag: "LI", inside: "table-hidden-columns" },
     { slot: "table-pager", tag: "NAV" },
     { slot: "table-pager-size-select", tag: "SELECT", inside: "table-pager-size" },
-    { slot: "table-pager-size-option", tag: "OPTION", inside: "table-pager-size-select" },
     { slot: "filter-conditions", tag: "OL", inside: "filter-builder" },
     { slot: "filter-condition", tag: "LI", inside: "filter-conditions" },
     { slot: "chart", tag: "svg" },
@@ -565,90 +594,126 @@ describe("зацепки исходников не выходят за обещ�
   });
 });
 
-describe("состояния таблицы объявлены и совпадают с документом", () => {
-  // Требование 5 канона: состояния — атрибутами, и перечислены. Класс как контракт не годится
-  // — он уже значение вида, и, поставленный изнутри, стал бы вторым источником оформления.
-  const observed = (host: ParentNode, slot: string, attr: string): string[] =>
-    all(host, `[data-slot="${slot}"][${attr}]`).map((node) => node.getAttribute(attr) ?? "");
+/**
+ * Атрибуты, которые состояниями НЕ являются и потому в перечень не входят.
+ *
+ * Три разных причины, и их стоит различать:
+ *
+ *   • служебное разметочное (`data-slot` — сама зацепка; `style` — ширина колонки, названа в
+ *     доке; `class`/`title` — то, что привозит потребитель через `cellAttrs`);
+ *   • нормированное СНАРУЖИ: роли и подписи доступности живут по WAI-ARIA, а не по нашему
+ *     обещанию, и переобещать их значило бы завести второй свод рядом с первым;
+ *   • свойства органов управления (`type`, `value`, `checked`, `disabled`) — это HTML, а не
+ *     наше состояние. Исключение — те, что несут смысл сборки: они в перечне есть.
+ *
+ * Список закрытый, и это важно: любой НОВЫЙ атрибут обязан пройти через перечень состояний
+ * или через эту оговорку, то есть через решение, а не молча.
+ */
+const NOT_A_STATE = new Set([
+  "data-slot",
+  "style",
+  "class",
+  "title",
+  "role",
+  "scope",
+  "type",
+  "value",
+  "checked",
+  "disabled",
+  "placeholder",
+  "tabindex",
+  "id",
+  "for",
+  "name",
+  "aria-hidden",
+  "aria-live",
+  "aria-orientation",
+  "aria-pressed",
+  "aria-rowcount",
+  "aria-rowindex",
+  "aria-describedby",
+  "aria-labelledby",
+  "aria-invalid",
+  "aria-required",
+]);
 
-  for (const state of PROMISED_TABLE_STATES) {
-    it(`${state.slot}[${state.attr}]`, () => {
-      const host = showEverything();
-      const values = observed(host, state.slot, state.attr);
+const notAState = (attr: string): boolean =>
+  NOT_A_STATE.has(attr) || attr.startsWith("aria-label");
 
-      // Обещанное состояние обязано БЫВАТЬ: атрибут, которого сцена не показала ни разу, — это
-      // либо мёртвое обещание, либо непокрытая сценой часть, и различить их надо сейчас.
-      expect(values.length, "состояния нет в документе").toBeGreaterThan(0);
+/**
+ * Гейт состояний, один для любого семейства.
+ *
+ * Требование 5 канона: состояния — атрибутами, и перечислены. Класс как контракт не годится —
+ * он уже значение вида, и, поставленный изнутри, зона стала бы вторым источником оформления.
+ *
+ * Механика одна на все семейства сознательно: предметов у зоны будет больше, и своя проверка
+ * у каждого разъехалась бы с остальными на первой правке.
+ */
+function statesGate(
+  family: string,
+  states: readonly StatePromise[],
+  slots: readonly string[],
+): void {
+  describe(`состояния ${family} объявлены и совпадают с документом`, () => {
+    const observed = (host: ParentNode, slot: string, attr: string): string[] =>
+      all(host, `[data-slot="${slot}"][${attr}]`).map((node) => node.getAttribute(attr) ?? "");
 
-      if (state.kind === "enum") {
-        // Закрытый набор закрыт с двух сторон: значение мимо набора ломает оформление молча.
-        for (const value of values) expect(state.values).toContain(value);
-      }
+    for (const state of states) {
+      it(`${state.slot}[${state.attr}]`, () => {
+        const host = showEverything();
+        const values = observed(host, state.slot, state.attr);
 
-      if (state.kind === "flag") {
-        // Признак стоит ПУСТЫМ и снимается совсем. `data-empty="false"` сломало бы селектор
-        // `[data-empty]`, который по смыслу значит «пусто».
-        expect([...new Set(values)]).toEqual([""]);
-      }
-    });
-  }
+        // Обещанное состояние обязано БЫВАТЬ: атрибут, которого сцена не показала ни разу, —
+        // это либо мёртвое обещание, либо непокрытая сценой часть, и различить их надо сейчас.
+        expect(values.length, "состояния нет в документе").toBeGreaterThan(0);
 
-  it("каждое перечисленное состояние стоит на ОБЕЩАННОЙ зацепке", () => {
-    for (const state of PROMISED_TABLE_STATES) {
-      expect(TABLE_SLOTS as readonly string[], state.slot).toContain(state.slot);
+        if (state.kind === "enum") {
+          // Закрытый набор закрыт с двух сторон: значение мимо набора ломает оформление молча.
+          for (const value of values) expect(state.values).toContain(value);
+        }
+
+        if (state.kind === "flag") {
+          // Признак стоит ПУСТЫМ и снимается совсем. `data-empty="false"` сломало бы селектор
+          // `[data-empty]`, который по смыслу значит «пусто».
+          expect([...new Set(values)]).toEqual([""]);
+        }
+      });
     }
-  });
 
-  it("в перечне состояний нет повторов пары «зацепка + атрибут»", () => {
-    const pairs = PROMISED_TABLE_STATES.map((state) => `${state.slot}[${state.attr}]`);
-    expect(new Set(pairs).size).toBe(pairs.length);
-  });
+    it("каждое перечисленное состояние стоит на ОБЕЩАННОЙ зацепке", () => {
+      for (const state of states) expect(slots, state.slot).toContain(state.slot);
+    });
 
-  it("состояния таблицы объявлены ПОЛНОСТЬЮ — ни одного атрибута мимо перечня", () => {
-    // Вторая сторона: атрибут, доехавший до документа на зацепке таблицы, но не объявленный,
-    // — это то же молчаливое обещание, что и незаявленная зацепка. Потребитель оденется по
-    // нему, а мы его не обещали.
-    const host = showEverything();
-    const promised = new Set(
-      PROMISED_TABLE_STATES.map((state) => `${state.slot}[${state.attr}]`),
-    );
+    it("в перечне состояний нет повторов пары «зацепка + атрибут»", () => {
+      const pairs = states.map((state) => `${state.slot}[${state.attr}]`);
+      expect(new Set(pairs).size).toBe(pairs.length);
+    });
 
-    // Служебное и общеразметочное: `data-slot` — сама зацепка, `style` названы в доке
-    // (ширина колонки), остальное — роли и подписи доступности, они нормированы снаружи.
-    const skip = (attr: string) =>
-      attr === "data-slot" ||
-      attr === "style" ||
-      attr === "class" ||
-      attr === "title" ||
-      attr === "role" ||
-      attr === "scope" ||
-      attr === "type" ||
-      attr === "value" ||
-      attr === "checked" ||
-      attr === "disabled" ||
-      attr === "tabindex" ||
-      attr.startsWith("aria-label") ||
-      attr === "aria-hidden" ||
-      attr === "aria-live" ||
-      attr === "aria-orientation" ||
-      attr === "aria-pressed" ||
-      attr === "aria-rowcount" ||
-      attr === "aria-rowindex";
+    it("объявлены ПОЛНОСТЬЮ — ни одного атрибута мимо перечня", () => {
+      // Вторая сторона: атрибут, доехавший до документа на нашей зацепке, но не объявленный,
+      // — это то же молчаливое обещание, что и незаявленная зацепка. Потребитель оденется по
+      // нему, а мы его не обещали.
+      const host = showEverything();
+      const promised = new Set(states.map((state) => `${state.slot}[${state.attr}]`));
 
-    const unpromised: string[] = [];
-    for (const slot of TABLE_SLOTS) {
-      for (const node of all(host, `[data-slot="${slot}"]`)) {
-        for (const attr of node.getAttributeNames()) {
-          if (skip(attr)) continue;
-          const pair = `${slot}[${attr}]`;
-          if (!promised.has(pair)) unpromised.push(pair);
+      const unpromised: string[] = [];
+      for (const slot of slots) {
+        for (const node of all(host, `[data-slot="${slot}"]`)) {
+          for (const attr of node.getAttributeNames()) {
+            if (notAState(attr)) continue;
+            const pair = `${slot}[${attr}]`;
+            if (!promised.has(pair)) unpromised.push(pair);
+          }
         }
       }
-    }
 
-    expect([...new Set(unpromised)]).toEqual([]);
+      expect([...new Set(unpromised)]).toEqual([]);
+    });
   });
-});
+}
+
+statesGate("таблицы", PROMISED_TABLE_STATES, TABLE_SLOTS);
+statesGate("отбора", PROMISED_FILTER_STATES, FILTER_SLOTS);
 
 describe("объём семейств", () => {
   // Не число ради числа: пустое семейство означало бы, что перечень для него забыли завести,

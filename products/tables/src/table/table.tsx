@@ -907,15 +907,12 @@ export function TablePager(props: TablePagerProps) {
             props.onSessionChange(goToPage(props.session, 0, props.total, size));
           }}
         >
-          <option data-slot="table-pager-size-option" value="">
-            все
-          </option>
+          {/* У `option` зацепки нет намеренно: оформить его браузеры почти не дают, а
+              обещание на нём заморозило бы нативный `select` навсегда — замена его на
+              комбобокс из кита стала бы мажором. Неодеваемые части названы в доке. */}
+          <option value="">все</option>
           <For each={props.sizes ?? [10, 25, 50]}>
-            {(size) => (
-              <option data-slot="table-pager-size-option" value={String(size)}>
-                {size}
-              </option>
-            )}
+            {(size) => <option value={String(size)}>{size}</option>}
           </For>
         </select>
       </label>

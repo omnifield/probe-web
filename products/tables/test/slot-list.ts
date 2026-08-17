@@ -78,7 +78,6 @@ export const TABLE_SLOTS = [
   "table-pager-position",
   "table-pager-prev",
   "table-pager-size",
-  "table-pager-size-option",
   "table-pager-size-select",
   "table-pin-row",
   "table-row",
@@ -99,6 +98,10 @@ export const TABLE_SLOTS = [
  */
 export const FILTER_SLOTS = [
   "filter-add",
+  "filter-add-between",
+  "filter-add-compare",
+  "filter-add-in",
+  "filter-add-presence",
   "filter-builder",
   "filter-condition",
   "filter-condition-between",
@@ -118,8 +121,10 @@ export const FILTER_SLOTS = [
   "filter-condition-quantifier",
   "filter-condition-remove",
   "filter-condition-sensitive",
+  "filter-condition-sensitive-input",
   "filter-condition-to",
   "filter-condition-unknown",
+  "filter-condition-value",
   "filter-condition-value-add",
   "filter-condition-value-remove",
   "filter-condition-value-row",
@@ -134,13 +139,16 @@ export const FILTER_SLOTS = [
   "filter-logic-hint",
   "filter-logic-input",
   "filter-logic-toggle",
+  "filter-logic-toggle-input",
   "filter-logic-unused",
   "filter-preset",
   "filter-secondary",
   "filter-template",
   "filter-template-actions",
+  "filter-template-apply",
   "filter-template-form",
   "filter-template-param",
+  "filter-template-param-input",
   "filter-template-param-label",
   "filter-template-title",
   "filter-toolbar",
@@ -186,10 +194,12 @@ export const ADAPTER_SLOTS = [
   "adapter-count",
   "adapter-error",
   "adapter-extra",
+  "adapter-extra-input",
   "adapter-pair",
   "adapter-preview",
   "adapter-report",
   "adapter-rows",
+  "adapter-rows-select",
   "adapter-rule",
   "adapter-rule-arrow",
   "adapter-rule-fallback",
@@ -232,16 +242,21 @@ export const PROMISED_SLOTS: readonly string[] = [
 /**
  * ЧУЖИЕ зацепки, доезжающие до нашего документа, — кита, не наши.
  *
- * Конструкторы стоят на примитивах кита (`Button`, `Field`, `Input`), и там, где мы не
- * перекрываем зацепку своей, в документ едет его имя. Обещаем эти имена НЕ мы: их обещает
- * кит (`packages/ui/test/slot-list.ts`), и меняются они по его правилам, не по нашим.
+ * Конструкторы стоят на примитивах кита (`Button`, `Field`, `Input`). Корень каждого мы
+ * перекрываем своим именем — кнопка добавления условия это `filter-add-compare`, а не «ещё
+ * одна кнопка». Не перекрыт один `input`: это ПОЛЕ ВВОДА, и одевать все поля ввода зоны
+ * одинаково, правилом кита, — то, чего от него и ждут. Перекрыть его значило бы заставить
+ * потребителя писать то же правило заново под каждым нашим именем.
+ *
+ * Обещаем это имя НЕ мы: его обещает кит (`packages/ui/test/slot-list.ts`), и меняется оно по
+ * его правилам, не по нашим.
  *
  * Перечень нужен, чтобы равенство в пробе было ТОЧНЫМ. Без него пришлось бы проверять
  * вхождение вместо равенства — а вхождение не заметит зацепку, появившуюся в документе
  * молча. Покраснеет этот перечень тогда, когда кит сменит то, что кладёт в наш документ:
  * это ровно то событие, о котором нам надо узнать сразу, а не у потребителя.
  */
-export const FOREIGN_SLOTS = ["button", "field", "input"] as const;
+export const FOREIGN_SLOTS = ["input"] as const;
 
 /** Чем состояние является для того, кто одевает. */
 export type StateKind =
@@ -519,5 +534,145 @@ export const PROMISED_TABLE_STATES: readonly StatePromise[] = [
     kind: "identity",
     values: [],
     means: "имя скрытой колонки",
+  },
+];
+
+/**
+ * СОСТОЯНИЯ ОТБОРА.
+ *
+ * Строка условия — самая ветвистая часть зоны, и без перечня одеть её можно только по
+ * догадкам. Четыре состояния из пяти ВЫВОДИМЫ, а не хранятся:
+ *
+ *   • `data-negated` — отрицание живёт в ФОРМУЛЕ, а не в условии: условие говорит «сумма
+ *     больше ста», а нужно ли обратное — решает логика сборки. Считается чётность отрицаний,
+ *     `НЕ (НЕ 1)` отрицанием не является;
+ *   • `data-unused` — формула условие не упоминает, значит в отборе он не участвует. Раньше
+ *     это было видно только общей строчкой под формулой, то есть не там, где смотрят;
+ *   • `data-incomplete` — форма собрана, чем наполнить, ещё не сказано. Это НЕ ошибка:
+ *     недописанное условие законно существует с секунды добавления, и ругаться на него сразу
+ *     значит ругаться на человека за то, что он не закончил печатать. Когда и как это
+ *     показать — решает тот, кто одевает;
+ *   • `data-invalid` на логике — формула не разобралась или ссылается на удалённое условие.
+ *     Верхний комментарий конструктора обещал этот атрибут и раньше, но не ставил его: то
+ *     самое молчаливое расхождение доки с разметкой, которое канон и закрывает.
+ */
+export const PROMISED_FILTER_STATES: readonly StatePromise[] = [
+  {
+    slot: "filter-condition",
+    attr: "data-kind",
+    kind: "enum",
+    values: ["compare", "in", "between", "presence"],
+    means: "вид условия. Каждый вид — своя раскладка, и одеть их одним правилом нельзя",
+  },
+  {
+    slot: "filter-condition",
+    attr: "data-incomplete",
+    kind: "flag",
+    values: [],
+    means: "условие недописано: значения, списка, границ или полей ещё нет",
+  },
+  {
+    slot: "filter-condition",
+    attr: "data-negated",
+    kind: "flag",
+    values: [],
+    means: "формула берёт это условие с отрицанием",
+  },
+  {
+    slot: "filter-condition",
+    attr: "data-unused",
+    kind: "flag",
+    values: [],
+    means: "формула условие не упоминает — в отборе он не участвует",
+  },
+  {
+    slot: "filter-condition-count",
+    attr: "data-unknown",
+    kind: "flag",
+    values: [],
+    means:
+      "у условия есть строки, про которые ответа НЕТ: «неизвестно» — это не «не подошло», " +
+      "и лечится оно другим",
+  },
+  {
+    slot: "filter-condition-compare",
+    attr: "data-operator",
+    kind: "enum",
+    values: ["eq", "ne", "contains", "gt", "ge", "lt", "le"],
+    means: "режим сравнения",
+  },
+  {
+    slot: "filter-condition-compare",
+    attr: "data-sensitive",
+    kind: "flag",
+    values: [],
+    means: "сравнение учитывает регистр",
+  },
+  {
+    slot: "filter-condition-presence",
+    attr: "data-mode",
+    kind: "enum",
+    values: ["exists", "filled"],
+    means: "про что условие: поле присутствует или поле заполнено — это разные вопросы",
+  },
+  {
+    slot: "filter-condition-presence",
+    attr: "data-quantifier",
+    kind: "enum",
+    values: ["all", "any", "none"],
+    means: "сколько из перечисленных полей должно подойти",
+  },
+  {
+    slot: "filter-logic",
+    attr: "data-active",
+    kind: "flag",
+    values: [],
+    means: "логика своя, формулой, а не «все условия через И»",
+  },
+  {
+    slot: "filter-logic",
+    attr: "data-invalid",
+    kind: "flag",
+    values: [],
+    means: "формула не разобралась или ссылается на условие, которого больше нет",
+  },
+  {
+    slot: "filter-field-chip",
+    attr: "data-selected",
+    kind: "flag",
+    values: [],
+    means: "поле выбрано плашкой",
+  },
+
+  // Ниже — состояния, которые ставит КИТ, а не мы: поле формулы это его `Field`, и годность
+  // ввода он выражает сам. Они объявлены, потому что доезжают до НАШЕЙ зацепки и потребитель
+  // оденется по ним; но менять их вправе кит, и покраснеет здесь именно его правка.
+  {
+    slot: "filter-logic-field",
+    attr: "data-valid",
+    kind: "flag",
+    values: [],
+    means: "формула разобралась. Ставит кит по `validationState`",
+  },
+  {
+    slot: "filter-logic-field",
+    attr: "data-invalid",
+    kind: "flag",
+    values: [],
+    means: "формула не разобралась. Ставит кит; наш собственный признак того же — на `filter-logic`",
+  },
+  {
+    slot: "filter-logic-input",
+    attr: "data-valid",
+    kind: "flag",
+    values: [],
+    means: "то же на самом поле ввода — кит переносит признак и туда",
+  },
+  {
+    slot: "filter-logic-input",
+    attr: "data-invalid",
+    kind: "flag",
+    values: [],
+    means: "то же на самом поле ввода",
   },
 ];
