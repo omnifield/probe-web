@@ -19,6 +19,7 @@ import {
   SelectContent,
   SelectIcon,
   SelectItem,
+  SelectItemIndicator,
   SelectItemLabel,
   SelectListbox,
   SelectPortal,
@@ -91,6 +92,9 @@ export function KnobSelect(props: {
         itemComponent={(itemProps) => (
           <SelectItem item={itemProps.item}>
             <SelectItemLabel>{labelOf(itemProps.item.rawValue)}</SelectItemLabel>
+            {/* Отметка выбранного обязательна: без неё в открытом списке не видно, что стоит
+                сейчас, — подсветка показывает лишь то, на чём курсор или клавиатура. */}
+            <SelectItemIndicator />
           </SelectItem>
         )}
       >
