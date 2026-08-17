@@ -24,6 +24,48 @@ if (!("ResizeObserver" in globalThis)) {
   };
 }
 
+/**
+ * JSDOM бросает исключение на невалидном значении CSS — браузер такое молча отбрасывает.
+ *
+ * Ловится на ползунке: до первой раскладки доля бегунка ещё не посчитана, и `@kobalte/core`
+ * успевает выставить `left: calc(NaN%)`. В браузере объявление просто игнорируется и следующим
+ * тактом заменяется верным; в JSDOM (`cssstyle` поверх `css-tree`) оно роняет РЕНДЕР целиком,
+ * и падает не проверка стиля, а вообще всё, что рисует ползунок.
+ *
+ * Поэтому приводим поведение к браузерному: неразобранное значение не ставится и молчит.
+ * Проверять ЗНАЧЕНИЯ стилей это не мешает — верные значения ставятся как прежде.
+ */
+const style = globalThis.CSSStyleDeclaration?.prototype;
+
+if (style) {
+  const setProperty = style.setProperty;
+
+  style.setProperty = function (...args: Parameters<CSSStyleDeclaration["setProperty"]>) {
+    try {
+      setProperty.apply(this, args);
+    } catch {
+      // Браузер здесь молчит — молчим и мы.
+    }
+  };
+}
+
+/**
+ * Захват указателя — в JSDOM его нет вовсе, а `@kobalte/core` им пользуется.
+ *
+ * Ловится на уведомлении: обработчик `pointerup` спрашивает `hasPointerCapture`, получает
+ * `undefined is not a function` и роняет прогон необработанной ошибкой — при том, что сам тест
+ * зелёный. Заглушка отвечает «не захвачен» и ничего не делает: захват указателя это работа
+ * браузера с настоящим вводом, и проверять его в JSDOM всё равно нечем.
+ */
+for (const name of ["hasPointerCapture", "setPointerCapture", "releasePointerCapture"] as const) {
+  if (!(name in Element.prototype)) {
+    Object.defineProperty(Element.prototype, name, {
+      configurable: true,
+      value: name === "hasPointerCapture" ? () => false : () => undefined,
+    });
+  }
+}
+
 /** Контейнеры и их деструкторы за текущий тест — снимаются в `cleanup()`. */
 const mounted: Array<() => void> = [];
 

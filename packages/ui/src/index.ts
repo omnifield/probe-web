@@ -150,6 +150,18 @@ export {
   type NumberFieldProps,
 } from "./number-field.jsx";
 export {
+  Progress,
+  ProgressFill,
+  type ProgressFillComponentProps,
+  ProgressLabel,
+  type ProgressLabelComponentProps,
+  type ProgressProps,
+  ProgressTrack,
+  type ProgressTrackComponentProps,
+  ProgressValueLabel,
+  type ProgressValueLabelComponentProps,
+} from "./progress.jsx";
+export {
   Popover,
   PopoverAnchor,
   type PopoverAnchorComponentProps,
@@ -211,7 +223,51 @@ export {
   SelectValue,
   type SelectValueComponentProps,
 } from "./select.jsx";
+export {
+  SegmentedControl,
+  SegmentedControlDescription,
+  type SegmentedControlDescriptionComponentProps,
+  SegmentedControlError,
+  type SegmentedControlErrorProps,
+  SegmentedControlIndicator,
+  type SegmentedControlIndicatorComponentProps,
+  SegmentedControlItem,
+  type SegmentedControlItemComponentProps,
+  SegmentedControlItemControl,
+  type SegmentedControlItemControlComponentProps,
+  SegmentedControlItemDescription,
+  type SegmentedControlItemDescriptionComponentProps,
+  SegmentedControlItemIndicator,
+  type SegmentedControlItemIndicatorComponentProps,
+  SegmentedControlItemInput,
+  type SegmentedControlItemInputComponentProps,
+  SegmentedControlItemLabel,
+  type SegmentedControlItemLabelComponentProps,
+  SegmentedControlLabel,
+  type SegmentedControlLabelComponentProps,
+  type SegmentedControlProps,
+} from "./segmented-control.jsx";
 export { Separator, type SeparatorProps } from "./separator.jsx";
+export { Skeleton, type SkeletonProps } from "./skeleton.jsx";
+export {
+  Slider,
+  SliderDescription,
+  type SliderDescriptionComponentProps,
+  SliderError,
+  type SliderErrorProps,
+  SliderFill,
+  type SliderFillComponentProps,
+  SliderInput,
+  SliderLabel,
+  type SliderLabelComponentProps,
+  type SliderProps,
+  SliderThumb,
+  type SliderThumbComponentProps,
+  SliderTrack,
+  type SliderTrackComponentProps,
+  SliderValueLabel,
+  type SliderValueLabelComponentProps,
+} from "./slider.jsx";
 export { Slot, type SlotProps } from "./slot.jsx";
 export { Spinner, type SpinnerProps } from "./spinner.jsx";
 export {
@@ -242,7 +298,32 @@ export {
   TabsTrigger,
   type TabsTriggerComponentProps,
 } from "./tabs.jsx";
+export {
+  Toast,
+  ToastClose,
+  type ToastCloseProps,
+  ToastDescription,
+  type ToastDescriptionComponentProps,
+  ToastList,
+  type ToastListComponentProps,
+  ToastProgressFill,
+  type ToastProgressFillComponentProps,
+  ToastProgressTrack,
+  type ToastProgressTrackComponentProps,
+  type ToastProps,
+  ToastRegion,
+  type ToastRegionComponentProps,
+  ToastTitle,
+  type ToastTitleComponentProps,
+  toaster,
+} from "./toast.jsx";
 export { Toggle, type ToggleProps } from "./toggle.jsx";
+export {
+  ToggleGroup,
+  ToggleGroupItem,
+  type ToggleGroupItemComponentProps,
+  type ToggleGroupProps,
+} from "./toggle-group.jsx";
 export {
   Tooltip,
   TooltipArrow,

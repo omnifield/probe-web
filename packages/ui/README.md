@@ -58,6 +58,12 @@
 | `Tooltip*` | составной, 5 частей | `Tooltip.*` |
 | `Combobox*` | составной, 18 частей | `Combobox.*` |
 | `NumberField*` | составной, 8 частей | `NumberField.*` |
+| `Slider*` | составной, 9 частей | `Slider.*` |
+| `Progress*` | составной, 5 частей | `Progress.*` |
+| `Skeleton` | `div`-обёртка | `Skeleton.Root` |
+| `Toast*` | составной, 8 частей + `toaster` | `Toast.*` |
+| `SegmentedControl*` | составной, 11 частей | `SegmentedControl.*` |
+| `ToggleGroup*` | составной, 2 части | `ToggleGroup.*` |
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
 | `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
@@ -113,6 +119,12 @@
 | составной `Tabs` | `tabs`, `tabs-list`, `tabs-trigger`, `tabs-indicator`, `tabs-content` |
 | составной `Combobox` | `combobox`, `combobox-label`, `combobox-control`, `combobox-input`, `combobox-trigger`, `combobox-icon`, `combobox-hidden-select`, `combobox-content`, `combobox-arrow`, `combobox-listbox`, `combobox-item`, `combobox-item-label`, `combobox-item-description`, `combobox-item-indicator`, `combobox-section`, `combobox-description`, `combobox-error` |
 | составной `NumberField` | `number-field`, `number-field-label`, `number-field-input`, `number-field-hidden-input`, `number-field-increment`, `number-field-decrement`, `number-field-description`, `number-field-error` |
+| составной `Slider` | `slider`, `slider-label`, `slider-value-label`, `slider-track`, `slider-fill`, `slider-thumb`, `slider-input`, `slider-description`, `slider-error` |
+| составной `Progress` | `progress`, `progress-label`, `progress-value-label`, `progress-track`, `progress-fill` |
+| `Skeleton` | `skeleton` |
+| составной `Toast` | `toast-region`, `toast-list`, `toast`, `toast-title`, `toast-description`, `toast-close`, `toast-progress-track`, `toast-progress-fill` |
+| составной `SegmentedControl` | `segmented-control`, `segmented-control-label`, `segmented-control-indicator`, `segmented-control-item`, `segmented-control-item-input`, `segmented-control-item-control`, `segmented-control-item-indicator`, `segmented-control-item-label`, `segmented-control-item-description`, `segmented-control-description`, `segmented-control-error` |
+| составной `ToggleGroup` | `toggle-group`, `toggle-group-item` |
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
@@ -318,6 +330,43 @@ import { Button, Field, FieldError, Input, Label, Spinner } from "@omnifield/pro
 
 Стрелка при этом **не 1-to-1**: внутри `<svg>` с контурами, иначе её не повернуть вслед за
 фактическим положением панели. Отступление названо здесь, как того требует контракт зоны.
+
+## Показ состояния: `Slider`, `Progress`, `Skeleton`, `Toast`
+
+**`Slider` — дорожка, заливка и бегунок тремя частями.** Свести их в один узел нельзя: заливка
+меняет длину, бегунок ездит, дорожка стоит. **Диапазон — это два `SliderThumb` внутри одного
+корня**, поэтому фильтр «от и до» собирается без второго примитива. Внутри бегунка живёт
+настоящий `input[type=range]` — он несёт фокус и клавиатуру.
+
+Положение бегунка и длину заливки kobalte пишет инлайновым стилем: их знает только он.
+`aria-valuemax` у бегунка — граница ВСЕГО ползунка, а не соседнего бегунка.
+
+**`Progress` — это не `Spinner`.** Первый говорит «сделано столько-то», второй — «идёт
+работа». Доля неизвестна — это `indeterminate`, а НЕ ноль процентов: разные утверждения, и
+читаются они по-разному. Долю kobalte отдаёт переменной `--kb-progress-fill-width`, а не
+шириной — оформление вправе выразить её чем угодно.
+
+**`Skeleton` оборачивает содержимое, а не заменяет его размером из головы.** Мерцания по
+умолчанию нет: анимация это вид, и пишет её оформление по `[data-slot="skeleton"][data-visible]`.
+
+**`Toast` — единственный примитив зоны, который зовут кодом.** Две половины: `ToastRegion` +
+`ToastList` ставятся один раз в скелете, а `toaster.show(…)` вызывается в момент события.
+`toaster` отдан наружу как есть — своей обёртки нет, иначе появился бы второй источник правды
+о том, что сейчас на экране.
+
+`toast-progress-track` и `-fill` — это таймер ЖИЗНИ уведомления, а не полоса выполнения задачи.
+
+## Два ряда кнопок, которые нельзя путать
+
+| | `SegmentedControl` | `ToggleGroup` |
+|---|---|---|
+| что это | выбор одного из нескольких | набор нажатых кнопок |
+| роль | `radiogroup` + настоящие `radio` | `group` + `button[aria-pressed]` |
+| форма | значение уезжает | не уезжает |
+| сколько активных | ровно одно | любое (`multiple`) |
+
+Подменить одно другим — соврать вспомогательной технике: выбор и нажатие она читает
+по-разному. То же различие, что между `Switch` и `Toggle`, только для ряда.
 
 ## Поиск по списку и число: `Combobox`, `NumberField`
 

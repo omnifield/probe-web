@@ -14,9 +14,21 @@ describe("поверхность", () => {
     expect(Object.keys(ui).sort()).toEqual(EXPECTED_SURFACE);
   });
 
-  it("каждая точка — функция-компонент, а не значение", () => {
+  it("каждая точка — функция-компонент, кроме одной названной", () => {
+    // `toaster` — очередь уведомлений: объект с `show` / `update` / `dismiss` / `clear`.
+    // Это единственная точка поверхности, которую не ставят в разметку, а зовут из кода
+    // (`src/toast.tsx`). Исключение названо ЯВНО, чтобы вторая такая не проехала молча.
+    const NOT_A_COMPONENT = new Set(["toaster"]);
+
     for (const name of EXPECTED_SURFACE) {
-      expect(typeof ui[name as keyof typeof ui]).toBe("function");
+      const value = ui[name as keyof typeof ui];
+
+      if (NOT_A_COMPONENT.has(name)) {
+        expect(typeof value).toBe("object");
+        continue;
+      }
+
+      expect(typeof value).toBe("function");
     }
   });
 

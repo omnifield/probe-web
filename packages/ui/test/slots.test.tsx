@@ -97,6 +97,13 @@ import {
   NumberFieldLabel,
 } from "../src/number-field.jsx";
 import {
+  Progress,
+  ProgressFill,
+  ProgressLabel,
+  ProgressTrack,
+  ProgressValueLabel,
+} from "../src/progress.jsx";
+import {
   Popover,
   PopoverAnchor,
   PopoverArrow,
@@ -131,7 +138,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../src/select.jsx";
+import {
+  SegmentedControl,
+  SegmentedControlDescription,
+  SegmentedControlError,
+  SegmentedControlIndicator,
+  SegmentedControlItem,
+  SegmentedControlItemControl,
+  SegmentedControlItemDescription,
+  SegmentedControlItemIndicator,
+  SegmentedControlItemInput,
+  SegmentedControlItemLabel,
+  SegmentedControlLabel,
+} from "../src/segmented-control.jsx";
 import { Separator } from "../src/separator.jsx";
+import { Skeleton } from "../src/skeleton.jsx";
+import {
+  Slider,
+  SliderDescription,
+  SliderError,
+  SliderFill,
+  SliderInput,
+  SliderLabel,
+  SliderThumb,
+  SliderTrack,
+  SliderValueLabel,
+} from "../src/slider.jsx";
 import { Spinner } from "../src/spinner.jsx";
 import {
   Switch,
@@ -142,6 +174,21 @@ import {
   SwitchLabel,
   SwitchThumb,
 } from "../src/switch.jsx";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastList,
+  ToastProgressFill,
+  ToastProgressTrack,
+  ToastRegion,
+  ToastTitle,
+  toaster,
+} from "../src/toast.jsx";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "../src/toggle-group.jsx";
 import {
   Tabs,
   TabsContent,
@@ -157,10 +204,13 @@ import {
   TooltipPortal,
   TooltipTrigger,
 } from "../src/tooltip.jsx";
-import { cleanup, mount, one, press } from "./dom.jsx";
+import { cleanup, mount, nextTask, one, press } from "./dom.jsx";
 import { PROMISED_SLOTS } from "./slot-list.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  toaster.clear();
+  cleanup();
+});
 
 const CITIES = ["Москва", "Казань", "Пермь"];
 
@@ -273,6 +323,52 @@ function Scene() {
         <NumberFieldDescription>Штук в заказе</NumberFieldDescription>
         <NumberFieldError>Не меньше нуля</NumberFieldError>
       </NumberField>
+
+      <Slider value={[10, 90]} minValue={0} maxValue={100} validationState="invalid">
+        <SliderLabel>Цена</SliderLabel>
+        <SliderValueLabel />
+        <SliderTrack>
+          <SliderFill />
+          <SliderThumb>
+            <SliderInput />
+          </SliderThumb>
+        </SliderTrack>
+        <SliderDescription>В рублях</SliderDescription>
+        <SliderError>Границы разошлись</SliderError>
+      </Slider>
+
+      <Progress value={15} minValue={0} maxValue={30}>
+        <ProgressLabel>Загрузка</ProgressLabel>
+        <ProgressValueLabel />
+        <ProgressTrack>
+          <ProgressFill />
+        </ProgressTrack>
+      </Progress>
+
+      <Skeleton visible>содержимое</Skeleton>
+
+      <SegmentedControl value="список" validationState="invalid">
+        <SegmentedControlLabel>Показывать</SegmentedControlLabel>
+        <SegmentedControlIndicator />
+        <SegmentedControlItem value="список">
+          <SegmentedControlItemInput />
+          <SegmentedControlItemControl>
+            <SegmentedControlItemIndicator />
+            <SegmentedControlItemLabel>список</SegmentedControlItemLabel>
+          </SegmentedControlItemControl>
+          <SegmentedControlItemDescription>строками</SegmentedControlItemDescription>
+        </SegmentedControlItem>
+        <SegmentedControlDescription>как показывать записи</SegmentedControlDescription>
+        <SegmentedControlError>режим недоступен</SegmentedControlError>
+      </SegmentedControl>
+
+      <ToggleGroup multiple value={["bold"]}>
+        <ToggleGroupItem value="bold">Ж</ToggleGroupItem>
+      </ToggleGroup>
+
+      <ToastRegion>
+        <ToastList />
+      </ToastRegion>
 
       <Popover open>
         <PopoverTrigger>Настройки</PopoverTrigger>
@@ -402,8 +498,25 @@ function slotsInSource(source: string): string[] {
 }
 
 describe("обещанные зацепки доезжают до документа", () => {
-  it("перечень в документе совпадает с обещанным — ровно, без лишних и без пропавших", () => {
+  it("перечень в документе совпадает с обещанным — ровно, без лишних и без пропавших", async () => {
     const host = mount(() => <Scene />);
+
+    // Уведомление — единственная часть зоны, которую нельзя поставить в разметку: она
+    // появляется вызовом из кода. Поэтому сцена его показывает, а не рисует.
+    toaster.show((props) => (
+      <Toast toastId={props.toastId}>
+        <ToastTitle>Сохранено</ToastTitle>
+        <ToastDescription>Изменения уехали</ToastDescription>
+        <ToastClose>×</ToastClose>
+        <ToastProgressTrack>
+          <ToastProgressFill />
+        </ToastProgressTrack>
+      </Toast>
+    ));
+    await nextTask();
+
+    // Панель списка открывается ПОСЛЕ показа уведомления: ожидание такта отдаёт управление
+    // kobalte, и открытая до него панель успела бы закрыться сама.
     press(one(host, "[data-slot='select-trigger']"));
 
     // Сравнение РАВЕНСТВОМ, а не вхождением: «содержит обещанные» пропустило бы зацепку,

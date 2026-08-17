@@ -38,11 +38,19 @@ import {
   RadioGroupItemLabel,
   RadioGroupLabel,
 } from "../src/radio-group.jsx";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+  SegmentedControlItemInput,
+} from "../src/segmented-control.jsx";
 import { Separator } from "../src/separator.jsx";
+import { Skeleton } from "../src/skeleton.jsx";
+import { Slider, SliderThumb, SliderTrack } from "../src/slider.jsx";
 import { Slot } from "../src/slot.jsx";
 import { Spinner } from "../src/spinner.jsx";
 import { Switch, SwitchControl, SwitchInput, SwitchLabel, SwitchThumb } from "../src/switch.jsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../src/tabs.jsx";
+import { ToggleGroup, ToggleGroupItem } from "../src/toggle-group.jsx";
 import { Toggle } from "../src/toggle.jsx";
 import { Tooltip, TooltipTrigger } from "../src/tooltip.jsx";
 import { cleanup, mount } from "./dom.jsx";
@@ -295,6 +303,56 @@ const PRIMITIVES = [
     ),
   },
   {
+    name: "Skeleton",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Skeleton {...props} />,
+  },
+  {
+    name: "Slider",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Slider {...props} />,
+  },
+  {
+    name: "SliderTrack",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <Slider>
+        <SliderTrack as="p" {...props} />
+      </Slider>
+    ),
+  },
+  {
+    name: "SliderThumb",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <Slider>
+        <SliderTrack>
+          <SliderThumb {...props} />
+        </SliderTrack>
+      </Slider>
+    ),
+  },
+  {
+    name: "SegmentedControlItemInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <SegmentedControl>
+        <SegmentedControlItem value="список">
+          <SegmentedControlItemInput {...props} />
+        </SegmentedControlItem>
+      </SegmentedControl>
+    ),
+  },
+  {
+    name: "ToggleGroupItem",
+    tag: "button",
+    render: (props: Record<string, unknown>) => (
+      <ToggleGroup>
+        <ToggleGroupItem value="bold" {...props} />
+      </ToggleGroup>
+    ),
+  },
+  {
     name: "DialogTrigger",
     tag: "button",
     render: (props: Record<string, unknown>) => (
@@ -449,7 +507,12 @@ const WITH_SERVICE_STYLE = new Set([
   "CheckboxInput",
   "SwitchInput",
   "RadioGroupItemInput",
+  "SegmentedControlItemInput",
   "NumberFieldInput",
+  // Бегунок ползунка: положение считает kobalte и пишет его сюда (`test/slider.test.tsx`).
+  "SliderThumb",
+  // Заглушка: `width`/`height` — это пропы размера kobalte, а не вид (`test/progress.test.tsx`).
+  "Skeleton",
 ]);
 
 describe("стилей по умолчанию нет", () => {
