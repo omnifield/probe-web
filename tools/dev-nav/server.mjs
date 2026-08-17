@@ -291,7 +291,7 @@ const PAGE = `<!doctype html>
       button.setAttribute("data-variant", preset.id === chosen ? "solid" : "outline");
       button.setAttribute("data-size", "sm");
       button.textContent = preset.title;
-      button.title = preset.origin + " · data-theme=\"" + preset.id + "\"";
+      button.title = preset.origin + ' · data-theme="' + preset.id + '"';
       button.onclick = () => { setLook({ preset: preset.id }); drawPresets(); };
       presetsEl.append(button);
     }
