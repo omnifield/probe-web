@@ -98,6 +98,7 @@ const DRESSED_FAMILIES = [
   // Тяжёлые компоненты зоны `tables`. Одевается по одному семейству за заход: `filter` и
   // `chart` встанут сюда, когда будут одеты, — до тех пор они честно висят в долге.
   "table",
+  "filter",
   "pagination",
   "navigation-menu",
   "menubar",

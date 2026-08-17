@@ -13,6 +13,7 @@
     "./combobox.css": "./src/skin/combobox.css",
     "./dialog.css": "./src/skin/dialog.css",
     "./field.css": "./src/skin/field.css",
+    "./filter.css": "./src/skin/filter.css",
     "./icons.css": "./src/skin/icons.css",
     "./menus.css": "./src/skin/menus.css",
     "./navigation.css": "./src/skin/navigation.css",
