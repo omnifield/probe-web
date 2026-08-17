@@ -175,9 +175,9 @@ export const STRUCTURE_SPECIMENS: Specimen[] = [
             itemComponent={(props) => <PaginationItem page={props.page}>{props.page}</PaginationItem>}
             ellipsisComponent={() => <PaginationEllipsis>…</PaginationEllipsis>}
           >
-            <PaginationPrevious>←</PaginationPrevious>
+            <PaginationPrevious><span data-icon="chevron-left" aria-hidden="true" /></PaginationPrevious>
             <PaginationItems />
-            <PaginationNext>→</PaginationNext>
+            <PaginationNext><span data-icon="chevron-right" aria-hidden="true" /></PaginationNext>
           </Pagination>
         ),
       },

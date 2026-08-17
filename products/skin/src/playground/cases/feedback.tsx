@@ -32,7 +32,7 @@ function ToastStand() {
       <Toast toastId={props.toastId}>
         <ToastTitle>{title}</ToastTitle>
         <ToastDescription>{description}</ToastDescription>
-        <ToastClose aria-label="Закрыть">×</ToastClose>
+        <ToastClose aria-label="Закрыть"><span data-icon="x" aria-hidden="true" /></ToastClose>
         <ToastProgressTrack>
           <ToastProgressFill />
         </ToastProgressTrack>

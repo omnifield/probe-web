@@ -54,7 +54,7 @@ function OneCombobox(props: { label?: string; disabled?: boolean }) {
       itemComponent={(itemProps) => (
         <ComboboxItem item={itemProps.item}>
           <ComboboxItemLabel>{itemProps.item.rawValue}</ComboboxItemLabel>
-          <ComboboxItemIndicator>✓</ComboboxItemIndicator>
+          <ComboboxItemIndicator><span data-icon="check" aria-hidden="true" /></ComboboxItemIndicator>
         </ComboboxItem>
       )}
     >
@@ -62,7 +62,7 @@ function OneCombobox(props: { label?: string; disabled?: boolean }) {
       <ComboboxControl>
         <ComboboxInput />
         <ComboboxTrigger>
-          <ComboboxIcon>▾</ComboboxIcon>
+          <ComboboxIcon><span data-icon="chevron-down" aria-hidden="true" /></ComboboxIcon>
         </ComboboxTrigger>
       </ComboboxControl>
       <ComboboxPortal>
@@ -116,9 +116,9 @@ export const INPUT2_SPECIMENS: Specimen[] = [
             <NumberField defaultValue={12}>
               <NumberFieldLabel>Строк на странице</NumberFieldLabel>
               <div class="case__inline">
-                <NumberFieldDecrement>−</NumberFieldDecrement>
+                <NumberFieldDecrement><span data-icon="minus" aria-hidden="true" /></NumberFieldDecrement>
                 <NumberFieldInput />
-                <NumberFieldIncrement>+</NumberFieldIncrement>
+                <NumberFieldIncrement><span data-icon="plus" aria-hidden="true" /></NumberFieldIncrement>
               </div>
             </NumberField>
           </div>
@@ -133,9 +133,9 @@ export const INPUT2_SPECIMENS: Specimen[] = [
             <NumberField defaultValue={10} minValue={0} maxValue={10}>
               <NumberFieldLabel>Максимум достигнут</NumberFieldLabel>
               <div class="case__inline">
-                <NumberFieldDecrement>−</NumberFieldDecrement>
+                <NumberFieldDecrement><span data-icon="minus" aria-hidden="true" /></NumberFieldDecrement>
                 <NumberFieldInput />
-                <NumberFieldIncrement>+</NumberFieldIncrement>
+                <NumberFieldIncrement><span data-icon="plus" aria-hidden="true" /></NumberFieldIncrement>
               </div>
               <NumberFieldDescription>Значение от 0 до 10.</NumberFieldDescription>
             </NumberField>
@@ -150,9 +150,9 @@ export const INPUT2_SPECIMENS: Specimen[] = [
             <NumberField defaultValue={5} disabled>
               <NumberFieldLabel>Недоступно</NumberFieldLabel>
               <div class="case__inline">
-                <NumberFieldDecrement>−</NumberFieldDecrement>
+                <NumberFieldDecrement><span data-icon="minus" aria-hidden="true" /></NumberFieldDecrement>
                 <NumberFieldInput />
-                <NumberFieldIncrement>+</NumberFieldIncrement>
+                <NumberFieldIncrement><span data-icon="plus" aria-hidden="true" /></NumberFieldIncrement>
               </div>
             </NumberField>
           </div>

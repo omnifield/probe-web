@@ -38,6 +38,9 @@ const LAYOUT_ONLY: Record<string, string> = {
 };
 
 const INHERITS_COLOR: Record<string, string> = {
+  "icons.css":
+    "значок это МАСКА: маска несёт форму, а цвет приходит от currentColor — значок берёт роль " +
+    "у того, внутри чего стоит, и вместе с темой меняется через наследование",
   "spinner.css":
     "кольцо рисуется currentColor — цвет приходит от места установки (кнопка, текст, поле), " +
     "и вместе с темой меняется через наследование",
@@ -126,9 +129,21 @@ describe("обе темы дают разный вид", () => {
       // Опечатка в имени не роняет страницу: неразрешённый `var()` делает свойство
       // недействительным, и браузер молча берёт свой дефолт. Ровно поэтому проверяем текстом.
       const SEEDS = new Set(["--radius", "--space", "--font-size", "--control-height", "--border-width", "--tracking", "--density"]);
+      // СВОИ токены — те, что файл объявляет сам, — чужими не считаются. Так набор значков
+      // объявляет `--icon-check` и тут же его читает: это один источник, а не опора на чужое
+      // обещание. Проверка при этом не ослабляется: объявить у себя `--brand-solid` и читать
+      // его как свой не выйдет — имя роли база объявляет первой, и она в `roles`.
+      const declaredHere = new Set(
+        [...file.text.matchAll(/(--[a-z0-9-]+)\s*:/g)].map(([, name]) => name),
+      );
+
       const unknown = [...usedTokens(file.text)].filter(
         (name) =>
-          !roles.has(name) && !light.has(name) && !SEEDS.has(name) && !(name in FOREIGN_TOKENS),
+          !roles.has(name) &&
+          !light.has(name) &&
+          !SEEDS.has(name) &&
+          !(name in FOREIGN_TOKENS) &&
+          !declaredHere.has(name),
       );
 
       expect(unknown, `токены, которых нет в слое style (${file.name})`).toEqual([]);

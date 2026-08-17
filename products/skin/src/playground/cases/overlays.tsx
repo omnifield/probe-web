@@ -245,7 +245,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
           <div class="case__row">
             <DropdownMenu placement="bottom-start" gutter={4}>
               <DropdownMenuTrigger>
-                Действия <DropdownMenuIcon>▾</DropdownMenuIcon>
+                Действия <DropdownMenuIcon><span data-icon="chevron-down" aria-hidden="true" /></DropdownMenuIcon>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent>
@@ -274,18 +274,18 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
           <div class="case__row">
             <DropdownMenu placement="bottom-start" gutter={4}>
               <DropdownMenuTrigger>
-                Ещё <DropdownMenuIcon>▾</DropdownMenuIcon>
+                Ещё <DropdownMenuIcon><span data-icon="chevron-down" aria-hidden="true" /></DropdownMenuIcon>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent>
                   <DropdownMenuGroup>
                     <DropdownMenuGroupLabel>Вид</DropdownMenuGroupLabel>
                     <DropdownMenuCheckboxItem checked>
-                      <DropdownMenuItemIndicator>✓</DropdownMenuItemIndicator>
+                      <DropdownMenuItemIndicator><span data-icon="check" aria-hidden="true" /></DropdownMenuItemIndicator>
                       <DropdownMenuItemLabel>Сетка</DropdownMenuItemLabel>
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem>
-                      <DropdownMenuItemIndicator>✓</DropdownMenuItemIndicator>
+                      <DropdownMenuItemIndicator><span data-icon="check" aria-hidden="true" /></DropdownMenuItemIndicator>
                       <DropdownMenuItemLabel>Легенда</DropdownMenuItemLabel>
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuGroup>
@@ -322,7 +322,7 @@ export const OVERLAY_SPECIMENS: Specimen[] = [
           <div class="case__row">
             <DropdownMenu placement="bottom-start" gutter={4}>
               <DropdownMenuTrigger>
-                Колонки <DropdownMenuIcon>▾</DropdownMenuIcon>
+                Колонки <DropdownMenuIcon><span data-icon="chevron-down" aria-hidden="true" /></DropdownMenuIcon>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent>

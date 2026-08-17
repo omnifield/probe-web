@@ -476,10 +476,68 @@
   max-inline-size: 14rem;
 }
 
+/* Узкий экран: три колонки в ряд не живут — рельсы уезжают под содержимое полосами, а не
+   исчезают. Схлопнутая рельса на узком экране это та же полоса с кнопкой, что и на широком:
+   способ вернуть её обязан быть один. */
 @media (width < 60rem) {
   .shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
+    /* Три ряда: левая полоса, содержимое, правая полоса. Содержимое забирает остаток. */
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
-  
+  .rail {
+    /* Рельса больше не колонка: высота по содержимому, но не выше трети экрана — иначе список
+       семейств отжимает то, на что смотрят. */
+    block-size: auto;
+    max-block-size: 33dvh;
+  }
+
+  .rail--right {
+    /* Правая рельса уходит вниз: настройки нужны реже, чем сам компонент. */
+    order: 1;
+  }
+}
+
+/* ── витрина значков ─────────────────────────────────────────────────────────────────────── */
+
+/* СВОЯ ИКОНКА СТЕНДА — доказательство того, что чужой значок встаёт наравне со встроенными.
+   Объявлена ЗДЕСЬ, в стенде, а не в поставке: ровно так её объявит потребитель. Картинка своя,
+   не из Lucide, — иначе доказательство было бы поддельным. */
+[data-icon="своя-метка"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2 3 20h18L12 2Zm0 6 4.5 9h-9L12 8Z'/%3E%3C/svg%3E");
+}
+
+/* Плитка 2×2 для витрины: ровно столько, чтобы показать механику и не занять экран. */
+.icon-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  max-inline-size: 22rem;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-2);
+}
+
+.icon-cell {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+
+  padding: var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-sm);
+
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.icon-cell [data-icon] {
+  font-size: var(--font-size-lg);
+  color: var(--text);
+}

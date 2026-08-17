@@ -255,7 +255,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox defaultChecked>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Показывать сетку</CheckboxLabel>
             </Checkbox>
@@ -271,7 +271,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Подписи осей</CheckboxLabel>
               <CheckboxDescription>Занимают место на узком экране.</CheckboxDescription>
@@ -304,7 +304,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox validationState="invalid">
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Согласие обязательно</CheckboxLabel>
               <CheckboxError>Без согласия не сохранить.</CheckboxError>
@@ -323,7 +323,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
                 <Checkbox defaultChecked={i() === 0}>
                   <CheckboxInput />
                   <CheckboxControl>
-                    <CheckboxIndicator>✓</CheckboxIndicator>
+                    <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
                   </CheckboxControl>
                   <CheckboxLabel>{label}</CheckboxLabel>
                 </Checkbox>
@@ -340,14 +340,14 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox disabled>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Недоступно</CheckboxLabel>
             </Checkbox>
             <Checkbox disabled defaultChecked>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Отмечено и недоступно</CheckboxLabel>
             </Checkbox>
