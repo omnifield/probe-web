@@ -28,12 +28,14 @@
     "./slider.css": "./src/skin/slider.css",
     "./spinner.css": "./src/skin/spinner.css",
     "./switch.css": "./src/skin/switch.css",
+    "./table.css": "./src/skin/table.css",
     "./tabs.css": "./src/skin/tabs.css",
     "./toast.css": "./src/skin/toast.css",
     "./toggle-group.css": "./src/skin/toggle-group.css",
     "./toggle.css": "./src/skin/toggle.css",
     "./tooltip.css": "./src/skin/tooltip.css",
-    "./skin.css": "./src/skin/skin.css"
+    "./skin.css": "./src/skin/skin.css",
+    "./tables.css": "./src/skin/tables.css"
   },
   "scripts": {
     "dev": "vite --port 5174 --strictPort --host 0.0.0.0",

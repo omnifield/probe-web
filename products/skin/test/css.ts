@@ -22,10 +22,19 @@ export const ZONE = join(here, "..");
 /** Папка с поставляемым оформлением. */
 export const SKIN_DIR = join(ZONE, "src", "skin");
 
-/** Файлы оформления, кроме сборного `skin.css` (в нём только импорты). */
+/**
+ * СБОРНЫЕ ФАЙЛЫ — в них только импорты, своих правил нет.
+ *
+ * Их два, и это не дубль: `skin.css` собирает оформление КИТА, `tables.css` — тяжёлых
+ * компонентов зоны `tables`. Разделены потому, что взявший только кит не должен получать
+ * килобайты правил таблицы, которой у него нет.
+ */
+export const AGGREGATES = ["skin.css", "tables.css"];
+
+/** Файлы оформления, кроме сборных (в них только импорты). */
 export function skinFiles(): { name: string; text: string }[] {
   return readdirSync(SKIN_DIR)
-    .filter((name) => name.endsWith(".css") && name !== "skin.css")
+    .filter((name) => name.endsWith(".css") && !AGGREGATES.includes(name))
     .sort()
     .map((name) => ({ name, text: readFileSync(join(SKIN_DIR, name), "utf8") }));
 }
