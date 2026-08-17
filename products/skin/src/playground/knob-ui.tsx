@@ -44,11 +44,11 @@ export interface Option {
  */
 export function KnobLabel(props: { text: string; hint?: string }) {
   return (
-    <Show when={props.hint} fallback={<span class="side__label">{props.text}</span>}>
+    <Show when={props.hint} fallback={<span class="rail__label">{props.text}</span>}>
       <Tooltip openDelay={200} placement="right">
-        <TooltipTrigger as="span" class="side__label side__label--help">
+        <TooltipTrigger as="span" class="rail__label rail__label--help">
           {props.text}
-          <span class="side__help" aria-hidden="true">
+          <span class="rail__help" aria-hidden="true">
             ?
           </span>
         </TooltipTrigger>

@@ -1,114 +1,109 @@
-// Стенд зоны `skin`.
+// Стенд зоны `skin` — РАСКЛАДКА. Содержимое панели вида живёт в `knobs-panel.tsx`, кейсы — в
+// `cases/`; здесь только то, где что стоит и что прокручивается.
 //
-// РАСКЛАДКА (решение user 2026-08-17): три области, каждая со СВОИМ скроллом, и ни одна не
-// уезжает вместе с содержимым. Прежняя версия скроллила страницу целиком — вместе с панелью
-// ручек и полосой вкладок, и пользоваться ими на длинной странице было нельзя.
+// ТРИ КОЛОНКИ, каждая со своим скроллом (решение user 2026-08-17):
 //
-//   ┌──────────┬──────────────────────────────┐
-//   │ панель   │ вкладки (не двигаются)       │
-//   │ (свой    ├──────────────────────────────┤
-//   │  скролл) │ кейсы (свой скролл)          │
-//   └──────────┴──────────────────────────────┘
+//   ┌──────────────┬──────────────────────────┬──────────────┐
+//   │ компоненты   │ кейсы                    │ настройки    │
+//   │ по группам   │                          │ вида         │
+//   └──────────────┴──────────────────────────┴──────────────┘
+//
+// Полосы вкладок сверху больше нет: тридцать с лишним семейств в неё не влезали, занимали три
+// строки и отжимали содержимое вниз. Список слева растёт вертикально — там место есть, и группы
+// читаются столбцом лучше, чем вперемешку в строку.
+//
+// ОБЕ КОЛОНКИ СХЛОПЫВАЮТСЯ. Когда смотришь на компонент, ни список, ни ручки не нужны, а место
+// нужно — плотные поверхности требуют ширины. Схлопнутая колонка оставляет узкую полосу с
+// кнопкой: видно, что она есть, и возврат в один щелчок. Убирать её совсем нельзя — тогда
+// способ вернуть придётся угадывать.
 //
 // ЧТО ГДЕ ПОКАЗЫВАЕТСЯ:
-//   • «Всё» — по одному базовому кейсу на семейство ПЛЮС панель настройки скина. Это витрина:
-//     видно весь набор сразу и то, как он отзывается на ручки.
-//   • вкладка семейства — только кейсы: базовый, отключённый, недопустимое значение, длинный
-//     текст, узкая колонка. Ручек здесь нет намеренно: здесь смотрят на компонент, а не крутят
-//     тему (образец — страницы компонентов Ant Design, выбран user).
+//   • «Всё» — витрина: по одному базовому кейсу на семейство, разделами по группам;
+//   • семейство — только его кейсы, каждый с подписью и пояснением, зачем случай показан.
 
-import {
-  Switch,
-  SwitchControl,
-  SwitchInput,
-  SwitchLabel,
-  SwitchThumb,
-} from "@omnifield/probe-web-ui";
 import { createSignal, For, Show } from "solid-js";
 
 import { byGroup, GROUPS, SPECIMENS } from "./cases/index.js";
-import { KnobLabel, KnobSelect } from "./knob-ui.jsx";
-import { ACCENTS, createKnobs, DENSITIES, RADIUS_STEPS } from "./knobs.js";
-
-/** Палитры зоны. Вторая — базовая пара слоя `style`, без нашей. */
-const PALETTES = [
-  { id: "twitter", label: "Twitter" },
-  { id: "base", label: "базовая" },
-] as const;
+import { createKnobs } from "./knobs.js";
+import { Knobs } from "./knobs-panel.jsx";
 
 const ALL = "all";
 
 export function App() {
   const knobs = createKnobs();
   const [tab, setTab] = createSignal<string>(ALL);
+  const [left, setLeft] = createSignal(true);
+  const [right, setRight] = createSignal(true);
 
   const current = () => SPECIMENS.find((s) => s.id === tab());
 
   return (
-    <div class="shell">
-      <aside class="side">
-        <div class="side__inner">
-          <h1 class="side__title">
-            Стенд зоны <b>skin</b>
-          </h1>
-
-          <Show
-            when={tab() === ALL}
-            fallback={
-              <nav class="side__cases" aria-label="Кейсы">
-                <span class="side__label">Кейсы</span>
-                <For each={current()?.cases ?? []}>
-                  {(item) => (
-                    <a class="side__case" href={`#${current()?.id}-${item.id}`}>
-                      {item.title}
-                    </a>
-                  )}
-                </For>
-
-                <span class="side__label">Зацепки</span>
-                <div class="side__slots">
-                  <For each={current()?.slots ?? []}>{(slot) => <code>{slot}</code>}</For>
-                </div>
-              </nav>
-            }
+    <div class="shell" data-left={left() ? "on" : "off"} data-right={right() ? "on" : "off"}>
+      {/* ── компоненты ────────────────────────────────────────────────────────────────── */}
+      <aside class="rail rail--left">
+        <div class="rail__bar">
+          <button
+            class="rail__toggle"
+            type="button"
+            aria-expanded={left()}
+            aria-label={left() ? "Свернуть список компонентов" : "Показать список компонентов"}
+            onClick={() => setLeft(!left())}
           >
-            <Knobs knobs={knobs} />
+            {left() ? "‹" : "›"}
+          </button>
+          <Show when={left()}>
+            <span class="rail__title">
+              Стенд зоны <b>skin</b>
+            </span>
           </Show>
         </div>
+
+        <Show when={left()}>
+          <nav class="rail__body" aria-label="Компоненты">
+            <button
+              class="pick"
+              type="button"
+              aria-current={tab() === ALL ? "true" : undefined}
+              onClick={() => setTab(ALL)}
+            >
+              Всё
+            </button>
+
+            <For each={GROUPS}>
+              {(group) => (
+                <div class="pick__group">
+                  <span class="rail__label">{group}</span>
+                  <For each={byGroup(group)}>
+                    {(specimen) => (
+                      <button
+                        class="pick"
+                        type="button"
+                        aria-current={tab() === specimen.id ? "true" : undefined}
+                        onClick={() => setTab(specimen.id)}
+                      >
+                        {specimen.title}
+                      </button>
+                    )}
+                  </For>
+                </div>
+              )}
+            </For>
+          </nav>
+        </Show>
       </aside>
 
+      {/* ── содержимое ────────────────────────────────────────────────────────────────── */}
       <main class="stage">
-        {/* Выбор семейства — табами. Пробовал «Всё» на всю ширину плюс список семейств
-            (решение user 2026-08-17), но по виду откатили: табы читаются одним взглядом, а
-            список требует открыть его, чтобы узнать, что там есть. */}
-        {/* Вкладки сгруппированы по смыслу (решение user 2026-08-17): тридцать семейств в один
-            ряд читались как свалка. Подпись группы — не заголовок, а метка ряда: она объясняет,
-            почему эти вкладки стоят рядом. */}
-        <nav class="tabs" aria-label="Семейства">
-          <button class="tab" type="button" aria-pressed={tab() === ALL} onClick={() => setTab(ALL)}>
-            Всё
-          </button>
-
-          <For each={GROUPS}>
-            {(group) => (
-              <span class="tabs__group">
-                <span class="tabs__group-label">{group}</span>
-                <For each={byGroup(group)}>
-                  {(specimen) => (
-                    <button
-                      class="tab"
-                      type="button"
-                      aria-pressed={tab() === specimen.id}
-                      onClick={() => setTab(specimen.id)}
-                    >
-                      {specimen.title}
-                    </button>
-                  )}
-                </For>
-              </span>
-            )}
-          </For>
-        </nav>
+        <header class="stage__head">
+          <h1 class="stage__title">{current()?.title ?? "Всё"}</h1>
+          {/* Перечень зацепок стоит у заголовка семейства: видно, за что цепляется оформление, и
+              сразу заметно, если часть показана, а зацепка не покрыта. */}
+          <Show when={current()}>
+            <span class="stage__slots">
+              <For each={current()?.slots ?? []}>{(slot) => <code>{slot}</code>}</For>
+            </span>
+          </Show>
+        </header>
 
         <div class="scroll">
           <Show when={tab() === ALL} fallback={<CasePage />}>
@@ -143,6 +138,30 @@ export function App() {
           </Show>
         </div>
       </main>
+
+      {/* ── настройки вида ────────────────────────────────────────────────────────────── */}
+      <aside class="rail rail--right">
+        <div class="rail__bar">
+          <button
+            class="rail__toggle"
+            type="button"
+            aria-expanded={right()}
+            aria-label={right() ? "Свернуть настройки вида" : "Показать настройки вида"}
+            onClick={() => setRight(!right())}
+          >
+            {right() ? "›" : "‹"}
+          </button>
+          <Show when={right()}>
+            <span class="rail__title">Вид</span>
+          </Show>
+        </div>
+
+        <Show when={right()}>
+          <div class="rail__body">
+            <Knobs knobs={knobs} />
+          </div>
+        </Show>
+      </aside>
     </div>
   );
 
@@ -166,82 +185,4 @@ export function App() {
       </div>
     );
   }
-}
-
-/** Панель настройки скина. Живёт только на «Всё» — на странице семейства ручек нет. */
-function Knobs(props: { knobs: ReturnType<typeof createKnobs> }) {
-  // Читаем через функцию, а не выдёргиваем в переменную: `props` реактивны, и снятое из них
-  // значение перестало бы обновляться. Правило `solid/reactivity` пресета `lint` это поймало.
-  const k = () => props.knobs;
-
-  return (
-    <div class="knobs">
-      {/* Два состояния — переключателем: он и показывает состояние, и меняет его одним нажатием.
-          Списком такое делать незачем, а ряд из двух кнопок занимает вдвое больше места. */}
-      <div class="knob">
-        <KnobLabel
-          text="Оформление"
-          hint="Снимите — останется голый кит: примитивы без единого правила вида. Это рабочее состояние, а не поломка; заодно так видно, что панель сделана теми же компонентами."
-        />
-        <Switch checked={k().dressed()} onChange={() => k().toggleDressed()}>
-          <SwitchInput />
-          <SwitchControl>
-            <SwitchThumb />
-          </SwitchControl>
-          <SwitchLabel>{k().dressed() ? "подключено" : "снято"}</SwitchLabel>
-        </Switch>
-      </div>
-
-      <div class="knob">
-        <KnobLabel
-          text="Режим"
-          hint="Класс `dark` на корне документа — ровно так его поставит потребитель. Оформление про режим не знает: все значения взяты токенами, и пара меняет их сама."
-        />
-        <Switch checked={k().dark()} onChange={(on) => k().setDark(on)}>
-          <SwitchInput />
-          <SwitchControl>
-            <SwitchThumb />
-          </SwitchControl>
-          <SwitchLabel>{k().dark() ? "тёмная" : "светлая"}</SwitchLabel>
-        </Switch>
-      </div>
-
-      <KnobSelect
-        label="Палитра"
-        hint="Три семени и форма скругления. Тёмная пара смягчена: у источника фон чистый чёрный, и это ровно то, что бьёт по глазам."
-        options={PALETTES}
-        value={k().palette() ? "twitter" : "base"}
-        onChange={(id) => k().setPalette(id === "twitter")}
-      />
-
-      <KnobSelect
-        label="Акцент"
-        hint="Из одного семени база строит двенадцать ступеней и сама держит обещания контраста. Оформление при этом не меняется ни на строку."
-        options={ACCENTS.map((a) => ({ id: a.id, label: a.label }))}
-        value={k().accent()}
-        onChange={k().setAccent}
-      />
-
-      <KnobSelect
-        label="Радиус"
-        hint="Меняется один токен --radius, вся шкала скруглений производная от него. Ступень «из темы» не задаёт его вовсе — значение приходит из палитры."
-        options={RADIUS_STEPS.map((s) => ({ id: s.id, label: s.label }))}
-        value={k().radius()}
-        onChange={k().setRadius}
-      />
-
-      <KnobSelect
-        label="Плотность"
-        hint="Множит интервалы и высоты контролов. Кегль база плотностью не трогает: уменьшенный текст ломает 1.4.4 Resize Text, а плотность нужна ради числа строк на экране."
-        options={DENSITIES.map((d) => ({ id: d.id, label: d.label }))}
-        value={k().density()}
-        onChange={k().setDensity}
-      />
-
-      <p class="knobs__note">
-        Ручки ставят семена на корень документа — там же, где их поставит потребитель. На
-        контейнере они не работают: производные и роли вычисляются там, где объявлены.
-      </p>
-    </div>
-  );
 }

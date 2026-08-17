@@ -38,10 +38,9 @@
     color: var(--text-muted);
   }
 
-  /* Список внутри пути и страниц зацепки НЕ имеет — кит её не завёл, и опираться на имя тега
-     (`ol`, `ul`) нельзя: разметку он вправе сменить. Поэтому цепляемся за прямого ребёнка. Это
-     опора на структуру, и она названа: уведомление киту о зацепке для списка отправлено. */
-  [data-slot="breadcrumbs"] > * {
+  /* Зацепка списка ПОЯВИЛАСЬ (кит выпустил `breadcrumbs-list` и `-item` по заявке) — опора на
+     прямого ребёнка снята. У страниц зацепки списка пока нет, там опора осталась и названа. */
+  [data-slot="breadcrumbs-list"] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -50,6 +49,13 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  /* Звено пути: своя зацепка, поэтому разделитель и ссылка внутри держатся вместе. */
+  [data-slot="breadcrumbs-item"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
   }
 
   [data-slot="breadcrumbs-link"] {
@@ -91,6 +97,8 @@
     font-size: var(--font-size-sm);
   }
 
+  /* У страниц зацепки списка ещё нет: цепляемся за прямого ребёнка. Это опора на структуру,
+     заявка киту отправлена — появится `pagination-list`, правило переедет на него. */
   [data-slot="pagination"] > * {
     display: flex;
     flex-wrap: wrap;

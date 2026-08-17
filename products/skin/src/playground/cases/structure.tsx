@@ -16,7 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Breadcrumbs,
+  BreadcrumbsItem,
   BreadcrumbsLink,
+  BreadcrumbsList,
   BreadcrumbsSeparator,
   Button,
   Collapsible,
@@ -131,7 +133,7 @@ export const STRUCTURE_SPECIMENS: Specimen[] = [
     id: "breadcrumbs",
     title: "Путь",
     group: "Навигация",
-    slots: ["breadcrumbs", "breadcrumbs-link", "breadcrumbs-separator"],
+    slots: ["breadcrumbs", "breadcrumbs-list", "breadcrumbs-item", "breadcrumbs-link", "breadcrumbs-separator"],
     cases: [
       {
         id: "basic",
@@ -139,19 +141,19 @@ export const STRUCTURE_SPECIMENS: Specimen[] = [
         note: "Текущая страница — не ссылка, и это объявлено атрибутом, а не только видом.",
         render: () => (
           <Breadcrumbs>
-            <ol>
-              <li>
+            <BreadcrumbsList>
+              <BreadcrumbsItem>
                 <BreadcrumbsLink href="#">Наборы</BreadcrumbsLink>
                 <BreadcrumbsSeparator />
-              </li>
-              <li>
+              </BreadcrumbsItem>
+              <BreadcrumbsItem>
                 <BreadcrumbsLink href="#">Продажи</BreadcrumbsLink>
                 <BreadcrumbsSeparator />
-              </li>
-              <li>
+              </BreadcrumbsItem>
+              <BreadcrumbsItem>
                 <BreadcrumbsLink current>За квартал</BreadcrumbsLink>
-              </li>
-            </ol>
+              </BreadcrumbsItem>
+            </BreadcrumbsList>
           </Breadcrumbs>
         ),
       },

@@ -21,11 +21,13 @@ import {
   NumberFieldInput,
   NumberFieldLabel,
   SegmentedControl,
+  SegmentedControlIndicator,
   SegmentedControlItem,
   SegmentedControlItemControl,
   SegmentedControlItemInput,
   SegmentedControlItemLabel,
   SegmentedControlLabel,
+  SegmentedControlTrack,
   Slider,
   SliderDescription,
   SliderFill,
@@ -284,6 +286,7 @@ export const INPUT2_SPECIMENS: Specimen[] = [
       "segmented-control-item-label",
       "segmented-control-description",
       "segmented-control-error",
+      "segmented-control-track",
       "segmented-control-item-description",
       "segmented-control-item-indicator",
     ],
@@ -296,7 +299,7 @@ export const INPUT2_SPECIMENS: Specimen[] = [
           <div class="case__row">
             <SegmentedControl defaultValue="day">
               <SegmentedControlLabel>Период</SegmentedControlLabel>
-              <div class="case__inline">
+              <SegmentedControlTrack>
                 <For each={[
                   { v: "day", l: "День" },
                   { v: "week", l: "Неделя" },
@@ -311,10 +314,11 @@ export const INPUT2_SPECIMENS: Specimen[] = [
                     </SegmentedControlItem>
                   )}
                 </For>
-                {/* Полоска-указатель здесь НЕ ставится: кит считает её положение от обёртки
-                    сегментов, а зацепки у обёртки нет — оформление не может её позиционировать,
-                    и полоска съезжает. Заявка киту отправлена; пока выбор виден фоном сегмента. */}
-              </div>
+                {/* Полоска ставится ПОСЛЕ сегментов: кит измеряет активный и переносит её на
+                    его место. Дорожка (`SegmentedControlTrack`) даёт ей систему координат — до
+                    появления этой зацепки полоска съезжала. */}
+                <SegmentedControlIndicator />
+              </SegmentedControlTrack>
             </SegmentedControl>
           </div>
         ),
@@ -326,7 +330,7 @@ export const INPUT2_SPECIMENS: Specimen[] = [
           <div class="case__row">
             <SegmentedControl defaultValue="week" disabled>
               <SegmentedControlLabel>Недоступно</SegmentedControlLabel>
-              <div class="case__inline">
+              <SegmentedControlTrack>
                 <For each={[{ v: "day", l: "День" }, { v: "week", l: "Неделя" }]}>
                   {(item) => (
                     <SegmentedControlItem value={item.v}>
@@ -337,7 +341,8 @@ export const INPUT2_SPECIMENS: Specimen[] = [
                     </SegmentedControlItem>
                   )}
                 </For>
-              </div>
+                <SegmentedControlIndicator />
+              </SegmentedControlTrack>
             </SegmentedControl>
           </div>
         ),
