@@ -9,6 +9,7 @@
     "./accordion.css": "./src/skin/accordion.css",
     "./base.css": "./src/skin/base.css",
     "./button.css": "./src/skin/button.css",
+    "./chart.css": "./src/skin/chart.css",
     "./checkbox.css": "./src/skin/checkbox.css",
     "./combobox.css": "./src/skin/combobox.css",
     "./dialog.css": "./src/skin/dialog.css",
