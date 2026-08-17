@@ -65,6 +65,7 @@ import {
   toggleExpanded,
   toggleSelected,
 } from "./session.js";
+import { Choice, Tick } from "../ui/choice.jsx";
 import { compareValues } from "./sort.js";
 import { trace } from "./trace.js";
 import {
@@ -372,10 +373,9 @@ export function DataTable(props: DataTableProps) {
         <tr data-slot="table-head-row" aria-rowindex={numbering() ? 1 : undefined}>
           <Show when={props.selectable}>
             <th data-slot="table-service" scope="col">
-              <input
-                type="checkbox"
-                data-slot="table-select-all"
-                aria-label="Выделить все строки"
+              <Tick
+                slot="table-select-all"
+                label="Выделить все строки"
                 checked={allSelected()}
                 onChange={toggleAll}
               />
@@ -596,10 +596,9 @@ export function DataTable(props: DataTableProps) {
               >
                 <Show when={props.selectable}>
                   <td data-slot="table-service">
-                    <input
-                      type="checkbox"
-                      data-slot="table-select-row"
-                      aria-label={`Выделить строку ${rowIndex() + 1}`}
+                    <Tick
+                      slot="table-select-row"
+                      label={`Выделить строку ${rowIndex() + 1}`}
                       checked={isSelected(session(), row.id)}
                       onChange={() => putSession(toggleSelected(session(), row.id))}
                     />
@@ -892,30 +891,30 @@ export function TablePager(props: TablePagerProps) {
         →
       </button>
 
-      <label data-slot="table-pager-size">
+      {/* Обёртка — `span`, а не `label`: `label` связывает подпись с НАТИВНЫМ полем, а список
+          у нас теперь разметкой, и связывать ей нечего. Подпись списка едет `aria-label`.
+          Зацепка есть и на обёртке, и на самом списке: полусоставную часть одеть нельзя. */}
+      <span data-slot="table-pager-size">
         строк на странице
-        {/* Зацепка есть и на подписи, и на самом поле: подпись оденут как подпись, поле как
-            поле, и одеть одно через другое нельзя. Полусоставная часть неодеваема. */}
-        <select
-          data-slot="table-pager-size-select"
+        <Choice
+          slot="table-pager-size-select"
+          label="Строк на странице"
           value={String(props.view.pageSize ?? "")}
-          onChange={(event) => {
-            const raw = event.currentTarget.value;
+          options={[
+            { value: "", label: "все" },
+            ...(props.sizes ?? [10, 25, 50]).map((size) => ({
+              value: String(size),
+              label: String(size),
+            })),
+          ]}
+          onChange={(raw) => {
             const size = raw === "" ? null : Number(raw);
             props.onViewChange({ ...props.view, pageSize: size });
             // Размер сменился — держим начало списка, иначе человек оказывается неизвестно где.
             props.onSessionChange(goToPage(props.session, 0, props.total, size));
           }}
-        >
-          {/* У `option` зацепки нет намеренно: оформить его браузеры почти не дают, а
-              обещание на нём заморозило бы нативный `select` навсегда — замена его на
-              комбобокс из кита стала бы мажором. Неодеваемые части названы в доке. */}
-          <option value="">все</option>
-          <For each={props.sizes ?? [10, 25, 50]}>
-            {(size) => <option value={String(size)}>{size}</option>}
-          </For>
-        </select>
-      </label>
+        />
+      </span>
     </nav>
   );
 }

@@ -48,6 +48,35 @@ export function one<E extends Element = HTMLElement>(host: ParentNode, selector:
   return node;
 }
 
+/**
+ * Переключить галку кита.
+ *
+ * Жать надо по НАСТОЯЩЕМУ `<input type="checkbox">` внутри: корень галки — `div`, он несёт
+ * наше имя и состояние, но щелчок по нему ничего не переключает. Прячут ввод оформлением, а
+ * не отсутствием, — значит он на месте и по нему же жмут.
+ */
+export function tick(host: ParentNode, slot: string): void {
+  one<HTMLInputElement>(host, `[data-slot~="${slot}"] [data-slot~="checkbox-input"]`).click();
+}
+
+/**
+ * Выбрать значение в списке кита — по ПОДПИСИ, как это делает человек.
+ *
+ * Список открывается нажатием и рисует панель в ПОРТАЛЕ, то есть вне поддерева, куда мы
+ * монтировали сцену. Поэтому пункт ищется по всему документу: искать его внутри `host` значит
+ * не найти никогда.
+ */
+export function choose(host: ParentNode, slot: string, label: string): void {
+  press(one(host, `[data-slot~="${slot}"] [data-slot~="select-trigger"]`));
+
+  const item = all(document.body, '[data-slot~="select-item"]').find(
+    (node) => node.textContent?.trim() === label,
+  );
+  if (!item) throw new Error(`в списке ${slot} нет пункта «${label}»`);
+
+  press(item);
+}
+
 /** Все элементы по селектору списком. */
 export function all<E extends Element = HTMLElement>(host: ParentNode, selector: string): E[] {
   return [...host.querySelectorAll<E>(selector)];

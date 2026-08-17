@@ -626,7 +626,7 @@ describe("зацепка стоит на своём узле, а не на со�
     { slot: "table-hidden-columns", tag: "UL" },
     { slot: "table-hidden-column", tag: "LI", inside: "table-hidden-columns" },
     { slot: "table-pager", tag: "NAV" },
-    { slot: "table-pager-size-select", tag: "SELECT", inside: "table-pager-size" },
+    { slot: "table-pager-size-select", tag: "DIV", inside: "table-pager-size" },
     { slot: "filter-conditions", tag: "OL", inside: "filter-builder" },
     { slot: "filter-condition", tag: "LI", inside: "filter-conditions" },
     { slot: "chart", tag: "svg" },
@@ -852,6 +852,20 @@ statesGate("таблицы", PROMISED_TABLE_STATES, TABLE_SLOTS);
 statesGate("отбора", PROMISED_FILTER_STATES, FILTER_SLOTS);
 statesGate("графика", PROMISED_CHART_STATES, CHART_SLOTS);
 
+/**
+ * Узлы, несущие ХОТЯ БЫ ОДНО наше имя.
+ *
+ * «Ноль значений вида» — обещание про НАШУ разметку. Узлы кита в нашем документе тоже есть, и
+ * вид на них — его дело: скрытый ввод галки он прячет инлайном (`clip: rect(…)`, норма рынка),
+ * и требовать от него нашей чистоты значило бы одевать чужую зону.
+ */
+function ours(host: ParentNode): Element[] {
+  const mine = new Set(PROMISED_SLOTS);
+  return all(host, "[data-slot]").filter((node) =>
+    (node.getAttribute("data-slot") ?? "").split(/\s+/).some((slot) => mine.has(slot)),
+  );
+}
+
 describe("ноль значений вида", () => {
   // Требование 4 канона, и оно машинное, а не на слово. Компонент, выбравший цвет сам, стал бы
   // ВТОРЫМ источником вида рядом со шкалой потребителя; разъехавшись с ней, он сделал бы
@@ -877,7 +891,7 @@ describe("ноль значений вида", () => {
     // Класс — уже значение вида. Единственный класс, который вправе доехать, приходит СНАРУЖИ
     // через `cellAttrs`, и в сцене мы его не задаём.
     const host = showEverything();
-    const classed = all(host, "[data-slot]")
+    const classed = ours(host)
       .filter((node) => node.getAttribute("class"))
       .map((node) => `${node.getAttribute("data-slot")}.${node.getAttribute("class")}`);
 
@@ -886,7 +900,7 @@ describe("ноль значений вида", () => {
 
   it("служебный инлайновый стиль — только ширина колонки, и она названа в доке", () => {
     const host = showEverything();
-    const styled = all(host, "[data-slot]")
+    const styled = ours(host)
       .filter((node) => node.getAttribute("style"))
       .map((node) => (node.getAttribute("style") ?? "").replace(/[\d.]+px/g, "N"));
 

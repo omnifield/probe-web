@@ -7,7 +7,7 @@ import { createSignal } from "solid-js";
 import { DataTable, TablePager } from "../src/table/table.jsx";
 import type { ColumnDictionary, Row, SessionState, ViewState } from "../src/table/index.js";
 import { EMPTY_SESSION, EMPTY_VIEW } from "../src/table/model.js";
-import { all, cleanup, mount, one, press } from "./dom.jsx";
+import { all, choose, cleanup, mount, one, press, tick } from "./dom.jsx";
 
 afterEach(cleanup);
 
@@ -240,10 +240,8 @@ describe("листание", () => {
 
   it("смена размера страницы возвращает к началу — иначе человек оказывается неизвестно где", () => {
     const { host, session, view } = setupPager(paged, { ...EMPTY_SESSION, page: 2 });
-    const select = one<HTMLSelectElement>(host, "[data-slot~='table-pager-size'] select");
-
-    select.value = "";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
+    // Список теперь разметкой, а не нативным полем: выбираем по подписи, как человек.
+    choose(host, "table-pager-size-select", "все");
 
     expect(view().pageSize).toBeNull();
     expect(session().page).toBe(0);
@@ -260,7 +258,7 @@ describe("выделение и закрепление строк", () => {
   it("выделение строки объявляется `aria-selected`", () => {
     const { host, session } = setup(EMPTY_VIEW, { selectable: true });
 
-    one<HTMLInputElement>(host, "tbody [data-slot~='table-select-row']").click();
+    tick(one(host, "tbody"), "table-select-row");
 
     expect(session().selected).toEqual(["Иванов"]);
     expect(all(host, "tbody [data-slot~='table-row']")[0]?.getAttribute("aria-selected")).toBe("true");
@@ -270,7 +268,7 @@ describe("выделение и закрепление строк", () => {
     // Иначе «выделить все» на второй странице значило бы разное в разные моменты.
     const { host, session } = setup({ ...EMPTY_VIEW, pageSize: 2 }, { selectable: true });
 
-    one<HTMLInputElement>(host, "[data-slot~='table-select-all']").click();
+    tick(host, "table-select-all");
 
     expect(session().selected).toHaveLength(ROWS.length);
   });
