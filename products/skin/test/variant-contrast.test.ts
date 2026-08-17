@@ -50,7 +50,7 @@ function pairsFromCss(): Pair[] {
     return found === "transparent" ? SURFACE : undefined;
   };
 
-  const base = ruleOf('[data-slot="button"] {');
+  const base = ruleOf('[data-slot~="button"] {');
   const baseText = valueOf(base, "color");
   const baseBg = valueOf(base, "background-color");
 
@@ -68,7 +68,7 @@ function pairsFromCss(): Pair[] {
     });
   }
 
-  const disabled = ruleOf('[data-slot="button"]:disabled {');
+  const disabled = ruleOf('[data-slot~="button"]:disabled {');
   pairs.push({
     variant: "отключённая",
     text: valueOf(disabled, "color") ?? baseText!,

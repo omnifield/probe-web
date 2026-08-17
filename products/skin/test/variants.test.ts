@@ -60,7 +60,7 @@ describe("варианты и размеры кнопки", () => {
   it("дефолт живёт БЕЗ атрибута", () => {
     // Простая разметка `<Button>` обязана давать рабочий вид сразу. Если бы основной вариант
     // требовал `data-variant="solid"`, каждый потребитель платил бы за это в каждой кнопке.
-    const base = /\[data-slot="button"\]\s*\{([^}]*)\}/.exec(stripComments(button()))?.[1] ?? "";
+    const base = /\[data-slot~="button"\]\s*\{([^}]*)\}/.exec(stripComments(button()))?.[1] ?? "";
 
     expect(base).toContain("background-color: var(--brand-solid)");
     expect(base).toContain("block-size: var(--control-height-md)");
@@ -86,7 +86,7 @@ describe("варианты и размеры кнопки", () => {
     // остаётся красным и продолжает кричать о действии, которого совершить нельзя. Порядок
     // важен — правило обязано идти ПОСЛЕ вариантов, иначе они его перебьют.
     const css = stripComments(button());
-    const disabledAt = css.indexOf('[data-slot="button"]:disabled');
+    const disabledAt = css.indexOf('[data-slot~="button"]:disabled');
     const lastVariantAt = Math.max(
       ...BUTTON_VARIANTS.map((name) => css.lastIndexOf(`[data-variant="${name}"]`)),
     );

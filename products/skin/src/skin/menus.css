@@ -24,12 +24,12 @@
      странице, кнопка оставалась голой. Значит вид обязан быть у самой зацепки триггера.
      Повтор правил кнопки — цена независимых подпутей: взявший только `dropdown-menu.css` получает
      рабочий вид, а не половину. Предложение киту о СПИСКЕ зацепок на узле
-     (`data-slot="button dropdown-menu-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
+     (`data-slot~="button dropdown-menu-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
      примут — повтор уйдёт сам. */
-  [data-slot="dropdown-menu-trigger"],
-  [data-slot="context-menu-trigger"],
-  [data-slot="menubar-trigger"],
-  [data-slot="navigation-menu-trigger"] {
+  [data-slot~="dropdown-menu-trigger"],
+  [data-slot~="context-menu-trigger"],
+  [data-slot~="menubar-trigger"],
+  [data-slot~="navigation-menu-trigger"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -56,33 +56,33 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="dropdown-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot="context-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot="menubar-trigger"]:hover:not([data-disabled]),
-  [data-slot="navigation-menu-trigger"]:hover:not([data-disabled]) {
+  [data-slot~="dropdown-menu-trigger"]:hover:not([data-disabled]),
+  [data-slot~="context-menu-trigger"]:hover:not([data-disabled]),
+  [data-slot~="menubar-trigger"]:hover:not([data-disabled]),
+  [data-slot~="navigation-menu-trigger"]:hover:not([data-disabled]) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="dropdown-menu-trigger"]:focus-visible,
-  [data-slot="context-menu-trigger"]:focus-visible,
-  [data-slot="menubar-trigger"]:focus-visible,
-  [data-slot="navigation-menu-trigger"]:focus-visible {
+  [data-slot~="dropdown-menu-trigger"]:focus-visible,
+  [data-slot~="context-menu-trigger"]:focus-visible,
+  [data-slot~="menubar-trigger"]:focus-visible,
+  [data-slot~="navigation-menu-trigger"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="dropdown-menu-trigger"][data-expanded],
-  [data-slot="context-menu-trigger"][data-expanded],
-  [data-slot="menubar-trigger"][data-expanded],
-  [data-slot="navigation-menu-trigger"][data-expanded] {
+  [data-slot~="dropdown-menu-trigger"][data-expanded],
+  [data-slot~="context-menu-trigger"][data-expanded],
+  [data-slot~="menubar-trigger"][data-expanded],
+  [data-slot~="navigation-menu-trigger"][data-expanded] {
     background-color: var(--element-active);
   }
 
-  [data-slot="dropdown-menu-icon"],
-  [data-slot="context-menu-icon"],
-  [data-slot="menubar-icon"],
-  [data-slot="navigation-menu-icon"] {
+  [data-slot~="dropdown-menu-icon"],
+  [data-slot~="context-menu-icon"],
+  [data-slot~="menubar-icon"],
+  [data-slot~="navigation-menu-icon"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -98,21 +98,21 @@
     transition: transform var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="dropdown-menu-trigger"][data-expanded] [data-slot="dropdown-menu-icon"],
-  [data-slot="context-menu-trigger"][data-expanded] [data-slot="context-menu-icon"],
-  [data-slot="menubar-trigger"][data-expanded] [data-slot="menubar-icon"],
-  [data-slot="navigation-menu-trigger"][data-expanded] [data-slot="navigation-menu-icon"] {
+  [data-slot~="dropdown-menu-trigger"][data-expanded] [data-slot~="dropdown-menu-icon"],
+  [data-slot~="context-menu-trigger"][data-expanded] [data-slot~="context-menu-icon"],
+  [data-slot~="menubar-trigger"][data-expanded] [data-slot~="menubar-icon"],
+  [data-slot~="navigation-menu-trigger"][data-expanded] [data-slot~="navigation-menu-icon"] {
     transform: rotate(180deg);
   }
 
-  [data-slot="dropdown-menu-content"],
-  [data-slot="context-menu-content"],
-  [data-slot="menubar-content"],
-  [data-slot="navigation-menu-content"],
-  [data-slot="dropdown-menu-sub-content"],
-  [data-slot="context-menu-sub-content"],
-  [data-slot="menubar-sub-content"],
-  [data-slot="navigation-menu-sub-content"] {
+  [data-slot~="dropdown-menu-content"],
+  [data-slot~="context-menu-content"],
+  [data-slot~="menubar-content"],
+  [data-slot~="navigation-menu-content"],
+  [data-slot~="dropdown-menu-sub-content"],
+  [data-slot~="context-menu-sub-content"],
+  [data-slot~="menubar-sub-content"],
+  [data-slot~="navigation-menu-sub-content"] {
     z-index: var(--z-dropdown);
 
     min-inline-size: 12rem;
@@ -137,22 +137,22 @@
   }
 
   /* Общее для всех четырёх видов строки: раскладка, отступы, форма, курсор. */
-  [data-slot="dropdown-menu-item"],
-  [data-slot="context-menu-item"],
-  [data-slot="menubar-item"],
-  [data-slot="navigation-menu-item"],
-  [data-slot="dropdown-menu-checkbox-item"],
-  [data-slot="context-menu-checkbox-item"],
-  [data-slot="menubar-checkbox-item"],
-  [data-slot="navigation-menu-checkbox-item"],
-  [data-slot="dropdown-menu-radio-item"],
-  [data-slot="context-menu-radio-item"],
-  [data-slot="menubar-radio-item"],
-  [data-slot="navigation-menu-radio-item"],
-  [data-slot="dropdown-menu-sub-trigger"],
-  [data-slot="context-menu-sub-trigger"],
-  [data-slot="menubar-sub-trigger"],
-  [data-slot="navigation-menu-sub-trigger"] {
+  [data-slot~="dropdown-menu-item"],
+  [data-slot~="context-menu-item"],
+  [data-slot~="menubar-item"],
+  [data-slot~="navigation-menu-item"],
+  [data-slot~="dropdown-menu-checkbox-item"],
+  [data-slot~="context-menu-checkbox-item"],
+  [data-slot~="menubar-checkbox-item"],
+  [data-slot~="navigation-menu-checkbox-item"],
+  [data-slot~="dropdown-menu-radio-item"],
+  [data-slot~="context-menu-radio-item"],
+  [data-slot~="menubar-radio-item"],
+  [data-slot~="navigation-menu-radio-item"],
+  [data-slot~="dropdown-menu-sub-trigger"],
+  [data-slot~="context-menu-sub-trigger"],
+  [data-slot~="menubar-sub-trigger"],
+  [data-slot~="navigation-menu-sub-trigger"] {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -169,51 +169,51 @@
   /* `data-highlighted` — одна зацепка и для клавиатуры, и для указателя: kobalte сводит их
      сам. Подсветка — наложением (`--tint-hover`), а не сплошной ступенью: под пунктом может
      оказаться любой фон, и наложение ложится на него, не закрашивая. */
-  [data-slot="dropdown-menu-item"][data-highlighted],
-  [data-slot="context-menu-item"][data-highlighted],
-  [data-slot="menubar-item"][data-highlighted],
-  [data-slot="navigation-menu-item"][data-highlighted],
-  [data-slot="dropdown-menu-checkbox-item"][data-highlighted],
-  [data-slot="context-menu-checkbox-item"][data-highlighted],
-  [data-slot="menubar-checkbox-item"][data-highlighted],
-  [data-slot="navigation-menu-checkbox-item"][data-highlighted],
-  [data-slot="dropdown-menu-radio-item"][data-highlighted],
-  [data-slot="context-menu-radio-item"][data-highlighted],
-  [data-slot="menubar-radio-item"][data-highlighted],
-  [data-slot="navigation-menu-radio-item"][data-highlighted],
-  [data-slot="dropdown-menu-sub-trigger"][data-highlighted],
-  [data-slot="context-menu-sub-trigger"][data-highlighted],
-  [data-slot="menubar-sub-trigger"][data-highlighted],
-  [data-slot="navigation-menu-sub-trigger"][data-highlighted] {
+  [data-slot~="dropdown-menu-item"][data-highlighted],
+  [data-slot~="context-menu-item"][data-highlighted],
+  [data-slot~="menubar-item"][data-highlighted],
+  [data-slot~="navigation-menu-item"][data-highlighted],
+  [data-slot~="dropdown-menu-checkbox-item"][data-highlighted],
+  [data-slot~="context-menu-checkbox-item"][data-highlighted],
+  [data-slot~="menubar-checkbox-item"][data-highlighted],
+  [data-slot~="navigation-menu-checkbox-item"][data-highlighted],
+  [data-slot~="dropdown-menu-radio-item"][data-highlighted],
+  [data-slot~="context-menu-radio-item"][data-highlighted],
+  [data-slot~="menubar-radio-item"][data-highlighted],
+  [data-slot~="navigation-menu-radio-item"][data-highlighted],
+  [data-slot~="dropdown-menu-sub-trigger"][data-highlighted],
+  [data-slot~="context-menu-sub-trigger"][data-highlighted],
+  [data-slot~="menubar-sub-trigger"][data-highlighted],
+  [data-slot~="navigation-menu-sub-trigger"][data-highlighted] {
     background-color: var(--tint-hover);
   }
 
-  [data-slot="dropdown-menu-item"][data-disabled],
-  [data-slot="context-menu-item"][data-disabled],
-  [data-slot="menubar-item"][data-disabled],
-  [data-slot="navigation-menu-item"][data-disabled],
-  [data-slot="dropdown-menu-checkbox-item"][data-disabled],
-  [data-slot="context-menu-checkbox-item"][data-disabled],
-  [data-slot="menubar-checkbox-item"][data-disabled],
-  [data-slot="navigation-menu-checkbox-item"][data-disabled],
-  [data-slot="dropdown-menu-radio-item"][data-disabled],
-  [data-slot="context-menu-radio-item"][data-disabled],
-  [data-slot="menubar-radio-item"][data-disabled],
-  [data-slot="navigation-menu-radio-item"][data-disabled],
-  [data-slot="dropdown-menu-sub-trigger"][data-disabled],
-  [data-slot="context-menu-sub-trigger"][data-disabled],
-  [data-slot="menubar-sub-trigger"][data-disabled],
-  [data-slot="navigation-menu-sub-trigger"][data-disabled] {
+  [data-slot~="dropdown-menu-item"][data-disabled],
+  [data-slot~="context-menu-item"][data-disabled],
+  [data-slot~="menubar-item"][data-disabled],
+  [data-slot~="navigation-menu-item"][data-disabled],
+  [data-slot~="dropdown-menu-checkbox-item"][data-disabled],
+  [data-slot~="context-menu-checkbox-item"][data-disabled],
+  [data-slot~="menubar-checkbox-item"][data-disabled],
+  [data-slot~="navigation-menu-checkbox-item"][data-disabled],
+  [data-slot~="dropdown-menu-radio-item"][data-disabled],
+  [data-slot~="context-menu-radio-item"][data-disabled],
+  [data-slot~="menubar-radio-item"][data-disabled],
+  [data-slot~="navigation-menu-radio-item"][data-disabled],
+  [data-slot~="dropdown-menu-sub-trigger"][data-disabled],
+  [data-slot~="context-menu-sub-trigger"][data-disabled],
+  [data-slot~="menubar-sub-trigger"][data-disabled],
+  [data-slot~="navigation-menu-sub-trigger"][data-disabled] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   /* Отметка занимает место ВСЕГДА — и когда её нет. Иначе строки меню прыгают по горизонтали
      при переключении флажка, и глаз теряет столбец подписей. */
-  [data-slot="dropdown-menu-item-indicator"],
-  [data-slot="context-menu-item-indicator"],
-  [data-slot="menubar-item-indicator"],
-  [data-slot="navigation-menu-item-indicator"] {
+  [data-slot~="dropdown-menu-item-indicator"],
+  [data-slot~="context-menu-item-indicator"],
+  [data-slot~="menubar-item-indicator"],
+  [data-slot~="navigation-menu-item-indicator"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -226,10 +226,10 @@
     font-size: 0.85em;
   }
 
-  [data-slot="dropdown-menu-item-label"],
-  [data-slot="context-menu-item-label"],
-  [data-slot="menubar-item-label"],
-  [data-slot="navigation-menu-item-label"] {
+  [data-slot~="dropdown-menu-item-label"],
+  [data-slot~="context-menu-item-label"],
+  [data-slot~="menubar-item-label"],
+  [data-slot~="navigation-menu-item-label"] {
     flex: 1 1 auto;
     min-inline-size: 0;
     overflow: hidden;
@@ -237,19 +237,19 @@
     white-space: nowrap;
   }
 
-  [data-slot="dropdown-menu-item-description"],
-  [data-slot="context-menu-item-description"],
-  [data-slot="menubar-item-description"],
-  [data-slot="navigation-menu-item-description"] {
+  [data-slot~="dropdown-menu-item-description"],
+  [data-slot~="context-menu-item-description"],
+  [data-slot~="menubar-item-description"],
+  [data-slot~="navigation-menu-item-description"] {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="dropdown-menu-group-label"],
-  [data-slot="context-menu-group-label"],
-  [data-slot="menubar-group-label"],
-  [data-slot="navigation-menu-group-label"] {
+  [data-slot~="dropdown-menu-group-label"],
+  [data-slot~="context-menu-group-label"],
+  [data-slot~="menubar-group-label"],
+  [data-slot~="navigation-menu-group-label"] {
     padding-block: var(--space-1);
     padding-inline: var(--space-2);
 
@@ -260,10 +260,10 @@
     letter-spacing: var(--tracking-wide);
   }
 
-  [data-slot="dropdown-menu-separator"],
-  [data-slot="context-menu-separator"],
-  [data-slot="menubar-separator"],
-  [data-slot="navigation-menu-separator"] {
+  [data-slot~="dropdown-menu-separator"],
+  [data-slot~="context-menu-separator"],
+  [data-slot~="menubar-separator"],
+  [data-slot~="navigation-menu-separator"] {
     block-size: var(--border-width-1);
     margin-block: var(--space-1);
     margin-inline: calc(var(--space-1) * -1);
@@ -274,10 +274,10 @@
 
   /* Открывашка подменю: стрелка вбок в конце строки. Символ рисует потребитель, место и
      поворот — мы. */
-  [data-slot="dropdown-menu-sub-trigger"][data-expanded],
-  [data-slot="context-menu-sub-trigger"][data-expanded],
-  [data-slot="menubar-sub-trigger"][data-expanded],
-  [data-slot="navigation-menu-sub-trigger"][data-expanded] {
+  [data-slot~="dropdown-menu-sub-trigger"][data-expanded],
+  [data-slot~="context-menu-sub-trigger"][data-expanded],
+  [data-slot~="menubar-sub-trigger"][data-expanded],
+  [data-slot~="navigation-menu-sub-trigger"][data-expanded] {
     background-color: var(--tint-active);
   }
 
@@ -289,18 +289,18 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="dropdown-menu-content"],
-    [data-slot="context-menu-content"],
-    [data-slot="menubar-content"],
-    [data-slot="navigation-menu-content"],
-    [data-slot="dropdown-menu-sub-content"],
-    [data-slot="context-menu-sub-content"],
-    [data-slot="menubar-sub-content"],
-    [data-slot="navigation-menu-sub-content"],
-    [data-slot="dropdown-menu-icon"],
-    [data-slot="context-menu-icon"],
-    [data-slot="menubar-icon"],
-    [data-slot="navigation-menu-icon"] {
+    [data-slot~="dropdown-menu-content"],
+    [data-slot~="context-menu-content"],
+    [data-slot~="menubar-content"],
+    [data-slot~="navigation-menu-content"],
+    [data-slot~="dropdown-menu-sub-content"],
+    [data-slot~="context-menu-sub-content"],
+    [data-slot~="menubar-sub-content"],
+    [data-slot~="navigation-menu-sub-content"],
+    [data-slot~="dropdown-menu-icon"],
+    [data-slot~="context-menu-icon"],
+    [data-slot~="menubar-icon"],
+    [data-slot~="navigation-menu-icon"] {
       animation: none;
       transition: none;
     }
@@ -309,7 +309,7 @@
   /* ── различия, продиктованные поведением ──────────────────────────────────────────── */
 
   /* Строка меню: горизонтальный ряд открывашек. Сам корень — панель, а не всплывающее. */
-  [data-slot="menubar"] {
+  [data-slot~="menubar"] {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
@@ -321,7 +321,7 @@
   }
 
   /* Открывашка в строке меню — не кнопка с рамкой, а пункт: рамка есть у самой строки. */
-  [data-slot="menubar-trigger"] {
+  [data-slot~="menubar-trigger"] {
     block-size: var(--control-height-sm);
     padding-inline: var(--space-3);
     border-color: transparent;
@@ -329,19 +329,19 @@
     font-weight: var(--weight-normal);
   }
 
-  [data-slot="menubar-trigger"]:hover:not([data-disabled]),
-  [data-slot="menubar-trigger"][data-expanded] {
+  [data-slot~="menubar-trigger"]:hover:not([data-disabled]),
+  [data-slot~="menubar-trigger"][data-expanded] {
     background-color: var(--tint-hover);
   }
 
   /* Навигация: тот же ряд, но панель ОДНА и переезжает между пунктами. */
-  [data-slot="navigation-menu"] {
+  [data-slot~="navigation-menu"] {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
   }
 
-  [data-slot="navigation-menu-trigger"] {
+  [data-slot~="navigation-menu-trigger"] {
     block-size: var(--control-height-sm);
     padding-inline: var(--space-3);
     border-color: transparent;
@@ -349,14 +349,14 @@
     font-weight: var(--weight-normal);
   }
 
-  [data-slot="navigation-menu-trigger"]:hover:not([data-disabled]),
-  [data-slot="navigation-menu-trigger"][data-expanded] {
+  [data-slot~="navigation-menu-trigger"]:hover:not([data-disabled]),
+  [data-slot~="navigation-menu-trigger"][data-expanded] {
     background-color: var(--tint-hover);
   }
 
   /* Общая панель навигации: она одна на все пункты, и её размер меняется под содержимое
      активного. Переход по размеру здесь оправдан — иначе панель прыгает при переезде. */
-  [data-slot="navigation-menu-viewport"] {
+  [data-slot~="navigation-menu-viewport"] {
     z-index: var(--z-dropdown);
     overflow: hidden;
 
@@ -371,7 +371,7 @@
   }
 
   /* Панель внутри общей рамки своей рамки и тени не имеет — иначе рамка в рамке. */
-  [data-slot="navigation-menu-content"] {
+  [data-slot~="navigation-menu-content"] {
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -379,12 +379,12 @@
 
   /* Контекстное меню встаёт ОТ УКАЗАТЕЛЯ (карта овнера `ui`): `placement` и `gutter` у него не
      работают, и точки роста для появления нет — поэтому и превращения из точки тоже. */
-  [data-slot="context-menu-content"] {
+  [data-slot~="context-menu-content"] {
     transform-origin: initial;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="navigation-menu-viewport"] {
+    [data-slot~="navigation-menu-viewport"] {
       transition: none;
     }
   }

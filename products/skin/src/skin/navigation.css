@@ -11,7 +11,7 @@
 @layer skin {
   /* ── ссылка ───────────────────────────────────────────────────────────────────────── */
 
-  [data-slot="link"] {
+  [data-slot~="link"] {
     color: var(--brand-text);
     text-decoration-line: underline;
     /* Подчёркивание отодвинуто от буквы: вплотную оно перечёркивает нижние выносные. */
@@ -20,18 +20,18 @@
     border-radius: var(--radius-xs);
   }
 
-  [data-slot="link"]:hover {
+  [data-slot~="link"]:hover {
     color: var(--brand-text-strong);
   }
 
-  [data-slot="link"]:focus-visible {
+  [data-slot~="link"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
   /* ── путь ─────────────────────────────────────────────────────────────────────────── */
 
-  [data-slot="breadcrumbs"] {
+  [data-slot~="breadcrumbs"] {
     font-family: var(--font-sans);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
@@ -40,7 +40,7 @@
 
   /* Зацепка списка ПОЯВИЛАСЬ (кит выпустил `breadcrumbs-list` и `-item` по заявке) — опора на
      прямого ребёнка снята. У страниц зацепки списка пока нет, там опора осталась и названа. */
-  [data-slot="breadcrumbs-list"] {
+  [data-slot~="breadcrumbs-list"] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -52,36 +52,36 @@
   }
 
   /* Звено пути: своя зацепка, поэтому разделитель и ссылка внутри держатся вместе. */
-  [data-slot="breadcrumbs-item"] {
+  [data-slot~="breadcrumbs-item"] {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
   }
 
-  [data-slot="breadcrumbs-link"] {
+  [data-slot~="breadcrumbs-link"] {
     color: var(--text-muted);
     text-decoration-line: none;
     border-radius: var(--radius-xs);
   }
 
-  [data-slot="breadcrumbs-link"]:hover {
+  [data-slot~="breadcrumbs-link"]:hover {
     color: var(--text);
     text-decoration-line: underline;
     text-underline-offset: 0.2em;
   }
 
-  [data-slot="breadcrumbs-link"]:focus-visible {
+  [data-slot~="breadcrumbs-link"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
   /* Текущая страница — не ссылка, и это объявлено атрибутом доступности, а не только видом. */
-  [data-slot="breadcrumbs-link"][data-current] {
+  [data-slot~="breadcrumbs-link"][data-current] {
     color: var(--text);
     font-weight: var(--weight-medium);
   }
 
-  [data-slot="breadcrumbs-separator"] {
+  [data-slot~="breadcrumbs-separator"] {
     display: inline-flex;
     align-items: center;
     color: var(--text-muted);
@@ -92,14 +92,14 @@
 
   /* ── страницы ─────────────────────────────────────────────────────────────────────── */
 
-  [data-slot="pagination"] {
+  [data-slot~="pagination"] {
     font-family: var(--font-sans);
     font-size: var(--font-size-sm);
   }
 
   /* У страниц зацепки списка ещё нет: цепляемся за прямого ребёнка. Это опора на структуру,
      заявка киту отправлена — появится `pagination-list`, правило переедет на него. */
-  [data-slot="pagination"] > * {
+  [data-slot~="pagination"] > * {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -112,9 +112,9 @@
 
   /* Номера, «назад» и «вперёд» — один вид: это кнопки перехода одного ряда. Различаются они
      содержимым и состоянием, а не оформлением. */
-  [data-slot="pagination-item"],
-  [data-slot="pagination-previous"],
-  [data-slot="pagination-next"] {
+  [data-slot~="pagination-item"],
+  [data-slot~="pagination-previous"],
+  [data-slot~="pagination-next"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -138,35 +138,35 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="pagination-item"]:hover:not(:disabled),
-  [data-slot="pagination-previous"]:hover:not(:disabled),
-  [data-slot="pagination-next"]:hover:not(:disabled) {
+  [data-slot~="pagination-item"]:hover:not(:disabled),
+  [data-slot~="pagination-previous"]:hover:not(:disabled),
+  [data-slot~="pagination-next"]:hover:not(:disabled) {
     background-color: var(--tint-hover);
   }
 
-  [data-slot="pagination-item"]:focus-visible,
-  [data-slot="pagination-previous"]:focus-visible,
-  [data-slot="pagination-next"]:focus-visible {
+  [data-slot~="pagination-item"]:focus-visible,
+  [data-slot~="pagination-previous"]:focus-visible,
+  [data-slot~="pagination-next"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
   /* Текущая страница — сплошной акцент: её видно до чтения цифры. */
-  [data-slot="pagination-item"][data-current] {
+  [data-slot~="pagination-item"][data-current] {
     border-color: transparent;
     background-color: var(--brand-solid);
     color: var(--on-brand-solid);
   }
 
-  [data-slot="pagination-item"]:disabled,
-  [data-slot="pagination-previous"]:disabled,
-  [data-slot="pagination-next"]:disabled {
+  [data-slot~="pagination-item"]:disabled,
+  [data-slot~="pagination-previous"]:disabled,
+  [data-slot~="pagination-next"]:disabled {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   /* Пропуск номеров — не кнопка: ни рамки, ни курсора, ни реакции. */
-  [data-slot="pagination-ellipsis"] {
+  [data-slot~="pagination-ellipsis"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -182,7 +182,7 @@
 
   /* Корень держит место: заглушка и картинка занимают его по очереди, и раскладка не прыгает,
      когда картинка приезжает. Размеры задаёт потребитель — он знает пропорции. */
-  [data-slot="image"] {
+  [data-slot~="image"] {
     position: relative;
     display: inline-flex;
     overflow: hidden;
@@ -190,7 +190,7 @@
     background-color: var(--element);
   }
 
-  [data-slot="image-img"] {
+  [data-slot~="image-img"] {
     inline-size: 100%;
     block-size: 100%;
     /* Кадрирование по месту: растянутая пропорция портит лица и графики сильнее, чем обрезка. */
@@ -200,7 +200,7 @@
 
   /* Заглушка видна, пока картинка не загрузилась или не смогла. Она не мерцает: в отличие от
      `skeleton`, здесь неизвестно, приедет ли содержимое вообще. */
-  [data-slot="image-fallback"] {
+  [data-slot~="image-fallback"] {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,9 +215,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="pagination-item"],
-    [data-slot="pagination-previous"],
-    [data-slot="pagination-next"] {
+    [data-slot~="pagination-item"],
+    [data-slot~="pagination-previous"],
+    [data-slot~="pagination-next"] {
       transition: none;
     }
   }

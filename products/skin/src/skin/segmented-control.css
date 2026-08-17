@@ -20,7 +20,7 @@
    потребитель вправе её не ставить, и выбор обязан быть виден всё равно. */
 
 @layer skin {
-  [data-slot="segmented-control"] {
+  [data-slot~="segmented-control"] {
     display: inline-flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -31,14 +31,14 @@
     color: var(--text);
   }
 
-  [data-slot="segmented-control-label"] {
+  [data-slot~="segmented-control-label"] {
     font-size: var(--font-size-sm);
     font-weight: var(--weight-medium);
     line-height: var(--leading-snug);
   }
 
   /* Дорожка: утопленный фон и система координат для полоски. */
-  [data-slot="segmented-control-track"] {
+  [data-slot~="segmented-control-track"] {
     position: relative;
 
     display: inline-flex;
@@ -53,12 +53,12 @@
   /* Сегменты лежат ПОВЕРХ полоски — иначе она закрывает подписи (поймано на снимке: выбранный
      сегмент читался как пустой прямоугольник). Полоска и сегменты стоят в одном слое-основании,
      поэтому порядок задаётся явно: полоска на самом основании, сегменты на одну ступень выше. */
-  [data-slot="segmented-control-item"] {
+  [data-slot~="segmented-control-item"] {
     position: relative;
     z-index: calc(var(--z-base) + 1);
   }
 
-  [data-slot="segmented-control-indicator"] {
+  [data-slot~="segmented-control-indicator"] {
     position: absolute;
     z-index: var(--z-base);
 
@@ -71,14 +71,14 @@
       width var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="segmented-control-item"] {
+  [data-slot~="segmented-control-item"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 
   /* Ввод спрятан с глаз, но остаётся в порядке фокуса и в дереве доступности. */
-  [data-slot="segmented-control-item-input"] {
+  [data-slot~="segmented-control-item-input"] {
     position: absolute;
     inline-size: var(--border-width-1);
     block-size: var(--border-width-1);
@@ -91,7 +91,7 @@
   }
 
   /* Сегмент: подпись с отступами, без своей рамки — рамку несёт дорожка. */
-  [data-slot="segmented-control-item-control"] {
+  [data-slot~="segmented-control-item-control"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -107,7 +107,7 @@
     transition: color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="segmented-control-item"]:hover [data-slot="segmented-control-item-control"] {
+  [data-slot~="segmented-control-item"]:hover [data-slot~="segmented-control-item-control"] {
     color: var(--text);
   }
 
@@ -115,46 +115,46 @@
      разметке нет — потребитель вправе её не ставить, и тогда выбор обязан быть виден всё равно.
      `:has()` от корня отличает один случай от другого; при наличии полоски фон рисует она,
      иначе на переезде было бы два прямоугольника. */
-  [data-slot="segmented-control-item-control"][data-checked] {
+  [data-slot~="segmented-control-item-control"][data-checked] {
     color: var(--text);
     font-weight: var(--weight-medium);
   }
 
-  [data-slot="segmented-control"]:not(:has([data-slot="segmented-control-indicator"]))
-    [data-slot="segmented-control-item-control"][data-checked] {
+  [data-slot~="segmented-control"]:not(:has([data-slot~="segmented-control-indicator"]))
+    [data-slot~="segmented-control-item-control"][data-checked] {
     background-color: var(--surface);
     box-shadow: var(--shadow-xs);
   }
 
-  [data-slot="segmented-control-item"]:has([data-slot="segmented-control-item-input"]:focus-visible)
-    [data-slot="segmented-control-item-control"] {
+  [data-slot~="segmented-control-item"]:has([data-slot~="segmented-control-item-input"]:focus-visible)
+    [data-slot~="segmented-control-item-control"] {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-1);
   }
 
-  [data-slot="segmented-control-item-control"][data-disabled] {
+  [data-slot~="segmented-control-item-control"][data-disabled] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="segmented-control-item-label"] {
+  [data-slot~="segmented-control-item-label"] {
     white-space: nowrap;
   }
 
-  [data-slot="segmented-control-item-description"],
-  [data-slot="segmented-control-description"] {
+  [data-slot~="segmented-control-item-description"],
+  [data-slot~="segmented-control-description"] {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="segmented-control-error"] {
+  [data-slot~="segmented-control-error"] {
     color: var(--danger-text);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="segmented-control-item-indicator"] {
+  [data-slot~="segmented-control-item-indicator"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -167,8 +167,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="segmented-control-indicator"],
-    [data-slot="segmented-control-item-control"] {
+    [data-slot~="segmented-control-indicator"],
+    [data-slot~="segmented-control-item-control"] {
       transition: none;
     }
   }

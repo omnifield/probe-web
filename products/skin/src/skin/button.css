@@ -1,6 +1,6 @@
 /* Кнопка — подпуть `@probe-web/skin/button.css`. Требует `base.css` рядом (объявление слоя).
 
-   ЦЕПЛЯЕМСЯ ЗА `[data-slot="button"]`, а не за класс и не за структуру DOM: имена классов и
+   ЦЕПЛЯЕМСЯ ЗА `[data-slot~="button"]`, а не за класс и не за структуру DOM: имена классов и
    разметка — внутреннее дело кита и меняются без предупреждения, а `data-slot` объявлен его
    контрактом (kb:PROBEWEB-4, kb:PROBEWEB-11).
 
@@ -36,7 +36,7 @@
    в пользу потребителя — опечатка в разметке даёт рабочую кнопку, а не сломанную. */
 
 @layer skin {
-  [data-slot="button"] {
+  [data-slot~="button"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -68,7 +68,7 @@
   }
 
   /* Наведение — СЛЕДУЮЩАЯ СТУПЕНЬ той же роли, а не другой цвет. */
-  [data-slot="button"]:hover:not(:disabled) {
+  [data-slot~="button"]:hover:not(:disabled) {
     background-color: var(--brand-solid-hover);
   }
 
@@ -77,74 +77,74 @@
      Индикатор обязателен — WCAG 2.2, 2.4.7 Focus Visible (AA); роль `--focus-ring` объявлена
      базой с обещанием контраста 3:1 к фону (1.4.11). Кольцо ОДНО на все варианты: оно про
      фокус, а не про вид кнопки. */
-  [data-slot="button"]:focus-visible {
+  [data-slot~="button"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
   /* ── варианты ─────────────────────────────────────────────────────────────────────── */
 
-  [data-slot="button"][data-variant="soft"] {
+  [data-slot~="button"][data-variant="soft"] {
     background-color: var(--brand-element);
     color: var(--brand-text);
   }
 
-  [data-slot="button"][data-variant="soft"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="soft"]:hover:not(:disabled) {
     background-color: var(--brand-element-hover);
   }
 
-  [data-slot="button"][data-variant="outline"] {
+  [data-slot~="button"][data-variant="outline"] {
     background-color: transparent;
     border-color: var(--border);
     color: var(--text);
   }
 
-  [data-slot="button"][data-variant="outline"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="outline"]:hover:not(:disabled) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
   /* Без фона и рамки — до наведения. Подсветка НАЛОЖЕНИЕМ (`--tint-hover`), а не сплошной
      ступенью: такая кнопка стоит на произвольном фоне, и заливка ступенью закрасила бы его. */
-  [data-slot="button"][data-variant="ghost"] {
+  [data-slot~="button"][data-variant="ghost"] {
     background-color: transparent;
     border-color: transparent;
     color: var(--text);
   }
 
-  [data-slot="button"][data-variant="ghost"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="ghost"]:hover:not(:disabled) {
     background-color: var(--tint-hover);
   }
 
-  [data-slot="button"][data-variant="danger"] {
+  [data-slot~="button"][data-variant="danger"] {
     background-color: var(--danger-solid);
     color: var(--on-danger-solid);
   }
 
-  [data-slot="button"][data-variant="danger"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="danger"]:hover:not(:disabled) {
     background-color: var(--danger-solid-hover);
   }
 
-  [data-slot="button"][data-variant="danger-outline"] {
+  [data-slot~="button"][data-variant="danger-outline"] {
     background-color: transparent;
     border-color: var(--danger-border);
     color: var(--danger-text);
   }
 
-  [data-slot="button"][data-variant="danger-outline"]:hover:not(:disabled) {
+  [data-slot~="button"][data-variant="danger-outline"]:hover:not(:disabled) {
     background-color: var(--danger-element);
   }
 
   /* ── размеры ──────────────────────────────────────────────────────────────────────── */
 
-  [data-slot="button"][data-size="sm"] {
+  [data-slot~="button"][data-size="sm"] {
     block-size: var(--control-height-sm);
     padding-inline: var(--space-3);
     font-size: var(--font-size-sm);
     gap: var(--space-1);
   }
 
-  [data-slot="button"][data-size="lg"] {
+  [data-slot~="button"][data-size="lg"] {
     block-size: var(--control-height-lg);
     padding-inline: var(--space-5);
     font-size: var(--font-size-lg);
@@ -155,7 +155,7 @@
   /* ОДНО правило на все варианты, и оно последнее: отключённая кнопка обязана выглядеть
      одинаково независимо от того, чем она была. Иначе «отключённый danger» остаётся красным и
      продолжает кричать о действии, которого совершить нельзя. */
-  [data-slot="button"]:disabled {
+  [data-slot~="button"]:disabled {
     background-color: var(--element);
     border-color: transparent;
     color: var(--text-muted);
@@ -165,7 +165,7 @@
   /* Уважение системной настройки: норма допускает УБРАТЬ или ЗАМЕНИТЬ движение
      (Media Queries 5, §12.1) — здесь убираем, заменять нечего. */
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="button"] {
+    [data-slot~="button"] {
       transition: none;
     }
   }

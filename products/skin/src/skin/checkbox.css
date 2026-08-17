@@ -13,7 +13,7 @@
    а порядок задаёт потребитель, и он вправе поставить подпись перед рамкой. */
 
 @layer skin {
-  [data-slot="checkbox"] {
+  [data-slot~="checkbox"] {
     display: inline-grid;
     grid-template-columns: auto 1fr;
     align-items: center;
@@ -28,7 +28,7 @@
   /* Ввод убран с глаз, но НЕ из дерева доступности и не из порядка фокуса: `display: none`
      или `visibility: hidden` убрали бы и то и другое, и флажок перестал бы работать с
      клавиатуры. Приём стандартный — узел размером в пиксель с обрезкой. */
-  [data-slot="checkbox-input"] {
+  [data-slot~="checkbox-input"] {
     position: absolute;
     inline-size: var(--border-width-1);
     block-size: var(--border-width-1);
@@ -40,7 +40,7 @@
     white-space: nowrap;
   }
 
-  [data-slot="checkbox-control"] {
+  [data-slot~="checkbox-control"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -70,28 +70,28 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="checkbox"]:hover [data-slot="checkbox-control"] {
+  [data-slot~="checkbox"]:hover [data-slot~="checkbox-control"] {
     border-color: var(--text-muted);
   }
 
   /* Отмечен и «частично отмечен» красятся одинаково — различает их сама фигура внутри. */
-  [data-slot="checkbox-control"][data-checked],
-  [data-slot="checkbox-control"][data-indeterminate] {
+  [data-slot~="checkbox-control"][data-checked],
+  [data-slot~="checkbox-control"][data-indeterminate] {
     border-color: transparent;
     background-color: var(--brand-solid);
   }
 
-  [data-slot="checkbox"]:has([data-slot="checkbox-input"]:focus-visible)
-    [data-slot="checkbox-control"] {
+  [data-slot~="checkbox"]:has([data-slot~="checkbox-input"]:focus-visible)
+    [data-slot~="checkbox-control"] {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="checkbox-control"][data-invalid] {
+  [data-slot~="checkbox-control"][data-invalid] {
     border-color: var(--danger-border);
   }
 
-  [data-slot="checkbox-control"][data-disabled] {
+  [data-slot~="checkbox-control"][data-disabled] {
     background-color: var(--element);
     border-color: var(--border);
     cursor: not-allowed;
@@ -99,7 +99,7 @@
 
   /* Галочку рисует потребитель (кит кладёт внутрь то, что ему передали) — мы задаём место и
      размер. Фигура наследует цвет от рамки, поэтому на брендовом фоне читается сама. */
-  [data-slot="checkbox-indicator"] {
+  [data-slot~="checkbox-indicator"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -112,36 +112,36 @@
     line-height: var(--leading-none);
   }
 
-  [data-slot="checkbox-label"] {
+  [data-slot~="checkbox-label"] {
     cursor: pointer;
     user-select: none;
   }
 
-  [data-slot="checkbox"]:has([data-slot="checkbox-control"][data-disabled])
-    [data-slot="checkbox-label"] {
+  [data-slot~="checkbox"]:has([data-slot~="checkbox-control"][data-disabled])
+    [data-slot~="checkbox-label"] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   /* Пояснение и ошибка встают под подписью, во вторую колонку сетки: под рамкой их место
      пустует, и текст выравнивается по началу подписи, а не по краю флажка. */
-  [data-slot="checkbox-description"],
-  [data-slot="checkbox-error"] {
+  [data-slot~="checkbox-description"],
+  [data-slot~="checkbox-error"] {
     grid-column: 2;
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="checkbox-description"] {
+  [data-slot~="checkbox-description"] {
     color: var(--text-muted);
   }
 
-  [data-slot="checkbox-error"] {
+  [data-slot~="checkbox-error"] {
     color: var(--danger-text);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="checkbox-control"] {
+    [data-slot~="checkbox-control"] {
       transition: none;
     }
   }

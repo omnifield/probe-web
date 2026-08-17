@@ -8,7 +8,7 @@
    панель цвета поверхности: она читается как надпись поверх интерфейса, а не как его часть. */
 
 @layer skin {
-  [data-slot="tooltip-content"] {
+  [data-slot~="tooltip-content"] {
     z-index: var(--z-popover);
 
     max-inline-size: min(16rem, 80vw);
@@ -37,7 +37,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="tooltip-content"] {
+    [data-slot~="tooltip-content"] {
       animation: none;
     }
   }

@@ -11,7 +11,7 @@
    перетаскивание значения пальцем, вида не касается и не перебивается. */
 
 @layer skin {
-  [data-slot="number-field"] {
+  [data-slot~="number-field"] {
     display: inline-flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -22,7 +22,7 @@
     color: var(--text);
   }
 
-  [data-slot="number-field-label"] {
+  [data-slot~="number-field-label"] {
     font-size: var(--font-size-sm);
     font-weight: var(--weight-medium);
     line-height: var(--leading-snug);
@@ -30,7 +30,7 @@
 
   /* Ввод и кнопки шага собраны в одну рамку. Кнопки ставит потребитель по краям — порядок
      задаёт он, поэтому здесь ни `order`, ни жёсткой сетки: только вид частей. */
-  [data-slot="number-field-input"] {
+  [data-slot~="number-field-input"] {
     inline-size: 100%;
     min-inline-size: 0;
     block-size: var(--control-height-md);
@@ -48,28 +48,28 @@
     text-align: end;
   }
 
-  [data-slot="number-field-input"]:hover:not(:disabled) {
+  [data-slot~="number-field-input"]:hover:not(:disabled) {
     border-color: var(--border-strong);
   }
 
-  [data-slot="number-field-input"]:focus-visible {
+  [data-slot~="number-field-input"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: calc(var(--border-width-1) * -1);
   }
 
-  [data-slot="number-field-input"]:disabled {
+  [data-slot~="number-field-input"]:disabled {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="number-field-input"][data-invalid] {
+  [data-slot~="number-field-input"][data-invalid] {
     border-color: var(--danger-border);
   }
 
   /* Кнопки шага — одинаковые по виду, различаются только содержимым, которое кладёт
      потребитель. Квадратные по высоте контрола: так они не расширяют строку. */
-  [data-slot="number-field-increment"],
-  [data-slot="number-field-decrement"] {
+  [data-slot~="number-field-increment"],
+  [data-slot~="number-field-decrement"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -92,14 +92,14 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="number-field-increment"]:hover:not(:disabled),
-  [data-slot="number-field-decrement"]:hover:not(:disabled) {
+  [data-slot~="number-field-increment"]:hover:not(:disabled),
+  [data-slot~="number-field-decrement"]:hover:not(:disabled) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="number-field-increment"]:focus-visible,
-  [data-slot="number-field-decrement"]:focus-visible {
+  [data-slot~="number-field-increment"]:focus-visible,
+  [data-slot~="number-field-decrement"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
@@ -107,29 +107,29 @@
   /* НА ГРАНИЦЕ ДИАПАЗОНА КНОПКА НЕ ОТКЛЮЧАЕТСЯ — это факт кита, проверенный его пробой, а не
      наша забывчивость. Значит оформление не вправе рисовать её отключённой: вид соврал бы о
      поведении. Правило ниже сработает только когда отключено само поле. */
-  [data-slot="number-field-increment"]:disabled,
-  [data-slot="number-field-decrement"]:disabled {
+  [data-slot~="number-field-increment"]:disabled,
+  [data-slot~="number-field-decrement"]:disabled {
     background-color: var(--element);
     border-color: transparent;
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="number-field-description"] {
+  [data-slot~="number-field-description"] {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="number-field-error"] {
+  [data-slot~="number-field-error"] {
     color: var(--danger-text);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="number-field-increment"],
-    [data-slot="number-field-decrement"] {
+    [data-slot~="number-field-increment"],
+    [data-slot~="number-field-decrement"] {
       transition: none;
     }
   }

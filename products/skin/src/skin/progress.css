@@ -11,7 +11,7 @@
    Поэтому у неопределённой полосы своя анимация — бегущий отрезок. */
 
 @layer skin {
-  [data-slot="progress"] {
+  [data-slot~="progress"] {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -23,17 +23,17 @@
     color: var(--text);
   }
 
-  [data-slot="progress-label"] {
+  [data-slot~="progress-label"] {
     font-weight: var(--weight-medium);
   }
 
   /* Значение моноширинными цифрами: оно меняется на ходу, и разряды не должны прыгать. */
-  [data-slot="progress-value-label"] {
+  [data-slot~="progress-value-label"] {
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
 
-  [data-slot="progress-track"] {
+  [data-slot~="progress-track"] {
     overflow: hidden;
     block-size: var(--space-2);
 
@@ -41,7 +41,7 @@
     background-color: var(--element-solid);
   }
 
-  [data-slot="progress-fill"] {
+  [data-slot~="progress-fill"] {
     inline-size: var(--kb-progress-fill-width, 0%);
     block-size: 100%;
 
@@ -53,7 +53,7 @@
 
   /* Неопределённое состояние: отрезок бежит по дорожке. Ширина фиксирована долей дорожки —
      переменной доли у неопределённой полосы нет и быть не может. */
-  [data-slot="progress"][data-indeterminate] [data-slot="progress-fill"] {
+  [data-slot~="progress"][data-indeterminate] [data-slot~="progress-fill"] {
     inline-size: 40%;
     transition: none;
     animation: probe-web-skin-progress var(--motion-slow) var(--ease-in-out) infinite alternate;
@@ -72,11 +72,11 @@
   /* При уменьшенном движении бег останавливается, но полоса остаётся ЗАПОЛНЕННОЙ частично:
      пустая дорожка читалась бы как «ничего не происходит», а это ложь о состоянии. */
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="progress-fill"] {
+    [data-slot~="progress-fill"] {
       transition: none;
     }
 
-    [data-slot="progress"][data-indeterminate] [data-slot="progress-fill"] {
+    [data-slot~="progress"][data-indeterminate] [data-slot~="progress-fill"] {
       animation: none;
       inline-size: 100%;
       opacity: 0.5;

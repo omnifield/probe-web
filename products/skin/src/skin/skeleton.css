@@ -12,7 +12,7 @@
    раскладка не прыгнет. Спиннер этого не делает — он про ожидание вообще. */
 
 @layer skin {
-  [data-slot="skeleton"] {
+  [data-slot~="skeleton"] {
     border-radius: var(--radius-sm);
     background-color: var(--element);
 
@@ -32,14 +32,14 @@
   }
 
   /* Скрытая заглушка не мерцает: анимация на невидимом узле продолжает тратить кадры. */
-  [data-slot="skeleton"]:not([data-visible]) {
+  [data-slot~="skeleton"]:not([data-visible]) {
     animation: none;
   }
 
   /* При уменьшенном движении мерцание выключается совсем, а заглушка остаётся видимой: она
      несёт смысл «место занято», и терять его нельзя. */
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="skeleton"] {
+    [data-slot~="skeleton"] {
       animation: none;
     }
   }

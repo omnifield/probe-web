@@ -37,7 +37,7 @@ function promisedSlots(): string[] {
 /** Зацепки, на которые у нас есть правила. */
 function dressedSlots(): Set<string> {
   const out = new Set<string>();
-  for (const [, name] of stripComments(allSkinCss()).matchAll(/\[data-slot="([a-z-]+)"\]/g)) {
+  for (const [, name] of stripComments(allSkinCss()).matchAll(/\[data-slot~="([a-z-]+)"\]/g)) {
     out.add(name);
   }
   return out;

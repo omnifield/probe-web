@@ -11,7 +11,7 @@
    следовать за её кеглем. */
 
 @layer skin {
-  [data-slot="switch"] {
+  [data-slot~="switch"] {
     display: inline-grid;
     grid-template-columns: auto 1fr;
     align-items: center;
@@ -24,7 +24,7 @@
   }
 
   /* Ввод убран с глаз, но остаётся в порядке фокуса и в дереве доступности — см. флажок. */
-  [data-slot="switch-input"] {
+  [data-slot~="switch-input"] {
     position: absolute;
     inline-size: var(--border-width-1);
     block-size: var(--border-width-1);
@@ -36,7 +36,7 @@
     white-space: nowrap;
   }
 
-  [data-slot="switch-control"] {
+  [data-slot~="switch-control"] {
     display: inline-flex;
     align-items: center;
     flex: none;
@@ -54,21 +54,21 @@
     transition: background-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="switch-control"][data-checked] {
+  [data-slot~="switch-control"][data-checked] {
     background-color: var(--brand-solid);
   }
 
-  [data-slot="switch"]:has([data-slot="switch-input"]:focus-visible)
-    [data-slot="switch-control"] {
+  [data-slot~="switch"]:has([data-slot~="switch-input"]:focus-visible)
+    [data-slot~="switch-control"] {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="switch-control"][data-invalid] {
+  [data-slot~="switch-control"][data-invalid] {
     border-color: var(--danger-border);
   }
 
-  [data-slot="switch-control"][data-disabled] {
+  [data-slot~="switch-control"][data-disabled] {
     background-color: var(--element);
     cursor: not-allowed;
   }
@@ -76,7 +76,7 @@
   /* Бегунок ездит трансформацией, а не отступом: `transform` не вызывает пересчёта раскладки,
      и движение остаётся плавным на слабой машине (практика конвейера рендеринга, выписка
      `web-dev-animation-performance`). */
-  [data-slot="switch-thumb"] {
+  [data-slot~="switch-thumb"] {
     inline-size: 1em;
     block-size: 1em;
 
@@ -86,41 +86,41 @@
     transition: transform var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="switch-thumb"][data-checked] {
+  [data-slot~="switch-thumb"][data-checked] {
     transform: translateX(0.95em);
   }
 
-  [data-slot="switch-label"] {
+  [data-slot~="switch-label"] {
     cursor: pointer;
     user-select: none;
   }
 
-  [data-slot="switch"]:has([data-slot="switch-control"][data-disabled])
-    [data-slot="switch-label"] {
+  [data-slot~="switch"]:has([data-slot~="switch-control"][data-disabled])
+    [data-slot~="switch-label"] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="switch-description"],
-  [data-slot="switch-error"] {
+  [data-slot~="switch-description"],
+  [data-slot~="switch-error"] {
     grid-column: 2;
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="switch-description"] {
+  [data-slot~="switch-description"] {
     color: var(--text-muted);
   }
 
-  [data-slot="switch-error"] {
+  [data-slot~="switch-error"] {
     color: var(--danger-text);
   }
 
   /* Движение бегунка функционально: оно показывает, куда переключилось состояние. При
      уменьшенном движении убираем именно анимацию, положение остаётся верным. */
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="switch-control"],
-    [data-slot="switch-thumb"] {
+    [data-slot~="switch-control"],
+    [data-slot~="switch-thumb"] {
       transition: none;
     }
   }

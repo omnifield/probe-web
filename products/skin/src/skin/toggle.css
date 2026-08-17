@@ -10,8 +10,8 @@
    тумблер с бегунком — другой примитив (`Switch`), и в ките его пока нет. */
 
 @layer skin {
-  [data-slot="toggle"],
-  [data-slot="toggle-group-item"] {
+  [data-slot~="toggle"],
+  [data-slot~="toggle-group-item"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -38,42 +38,42 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="toggle"]:hover:not(:disabled),
-  [data-slot="toggle-group-item"]:hover:not(:disabled) {
+  [data-slot~="toggle"]:hover:not(:disabled),
+  [data-slot~="toggle-group-item"]:hover:not(:disabled) {
     background-color: var(--element-hover);
   }
 
   /* Нажатое состояние — НЕ только цветом: вместе с заливкой уходит граница, а сам
      `aria-pressed` остаётся у кита и озвучивается вспомогательной технологией.
      WCAG 2.2, 1.4.1 Use of Color (A). */
-  [data-slot="toggle"][data-pressed],
-  [data-slot="toggle-group-item"][data-pressed] {
+  [data-slot~="toggle"][data-pressed],
+  [data-slot~="toggle-group-item"][data-pressed] {
     border-color: transparent;
     background-color: var(--brand-solid);
     color: var(--on-brand-solid);
   }
 
-  [data-slot="toggle"][data-pressed]:hover:not(:disabled),
-  [data-slot="toggle-group-item"][data-pressed]:hover:not(:disabled) {
+  [data-slot~="toggle"][data-pressed]:hover:not(:disabled),
+  [data-slot~="toggle-group-item"][data-pressed]:hover:not(:disabled) {
     background-color: var(--brand-solid-hover);
   }
 
-  [data-slot="toggle"]:focus-visible,
-  [data-slot="toggle-group-item"]:focus-visible {
+  [data-slot~="toggle"]:focus-visible,
+  [data-slot~="toggle-group-item"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="toggle"]:disabled,
-  [data-slot="toggle-group-item"]:disabled {
+  [data-slot~="toggle"]:disabled,
+  [data-slot~="toggle-group-item"]:disabled {
     background-color: var(--element);
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="toggle"],
-    [data-slot="toggle-group-item"] {
+    [data-slot~="toggle"],
+    [data-slot~="toggle-group-item"] {
       transition: none;
     }
   }

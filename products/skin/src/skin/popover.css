@@ -19,9 +19,9 @@
      странице, кнопка оставалась голой. Значит вид обязан быть у самой зацепки триггера.
      Повтор правил кнопки — цена независимых подпутей: взявший только `popover.css` получает
      рабочий вид, а не половину. Предложение киту о СПИСКЕ зацепок на узле
-     (`data-slot="button popover-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
+     (`data-slot~="button popover-trigger"`, селектор `[data-slot~="button"]`) отправлено уведомлением;
      примут — повтор уйдёт сам. */
-  [data-slot="popover-trigger"] {
+  [data-slot~="popover-trigger"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -48,21 +48,21 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="popover-trigger"]:hover:not([data-disabled]) {
+  [data-slot~="popover-trigger"]:hover:not([data-disabled]) {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="popover-trigger"]:focus-visible {
+  [data-slot~="popover-trigger"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
 
-  [data-slot="popover-trigger"][data-expanded] {
+  [data-slot~="popover-trigger"][data-expanded] {
     background-color: var(--element-active);
   }
 
-  [data-slot="popover-content"] {
+  [data-slot~="popover-content"] {
     z-index: var(--z-popover);
 
     display: flex;
@@ -89,13 +89,13 @@
     animation: probe-web-skin-pop var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="popover-title"] {
+  [data-slot~="popover-title"] {
     font-size: var(--font-size-md);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="popover-description"] {
+  [data-slot~="popover-description"] {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
@@ -105,7 +105,7 @@
      сохраняет, вид обязан быть у своей. `align-self` здесь несущий: окно и панель —
      колонки, и без него кнопка растягивается во всю ширину, как это и вышло на первом
      снимке. */
-  [data-slot="popover-close"] {
+  [data-slot~="popover-close"] {
     align-self: flex-end;
 
     display: inline-flex;
@@ -134,12 +134,12 @@
       border-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="popover-close"]:hover {
+  [data-slot~="popover-close"]:hover {
     background-color: var(--element-hover);
     border-color: var(--border-strong);
   }
 
-  [data-slot="popover-close"]:focus-visible {
+  [data-slot~="popover-close"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-2);
   }
@@ -154,7 +154,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="popover-content"] {
+    [data-slot~="popover-content"] {
       animation: none;
     }
   }

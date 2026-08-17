@@ -5,22 +5,22 @@
    поломка, а не как выбор. */
 
 @layer skin {
-  [data-slot="field"] {
+  [data-slot~="field"] {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     font-family: var(--font-sans);
   }
 
-  [data-slot="label"] {
+  [data-slot~="label"] {
     color: var(--text);
     font-size: var(--font-size-sm);
     font-weight: var(--weight-medium);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="input"],
-  [data-slot="textarea"] {
+  [data-slot~="input"],
+  [data-slot~="textarea"] {
     padding-inline: var(--space-3);
 
     border: var(--border-width-1) solid var(--border);
@@ -38,11 +38,11 @@
       background-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="input"] {
+  [data-slot~="input"] {
     block-size: var(--control-height-md);
   }
 
-  [data-slot="textarea"] {
+  [data-slot~="textarea"] {
     /* Высота выведена из высоты контрола, а не назначена числом: плотность подвинет обе
        одинаково, и поле не разъедется с соседней кнопкой. */
     min-block-size: calc(var(--control-height-md) * 2);
@@ -50,19 +50,19 @@
     resize: vertical;
   }
 
-  [data-slot="input"]:hover:not(:disabled),
-  [data-slot="textarea"]:hover:not(:disabled) {
+  [data-slot~="input"]:hover:not(:disabled),
+  [data-slot~="textarea"]:hover:not(:disabled) {
     border-color: var(--border-strong);
   }
 
-  [data-slot="input"]:focus-visible,
-  [data-slot="textarea"]:focus-visible {
+  [data-slot~="input"]:focus-visible,
+  [data-slot~="textarea"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: calc(var(--border-width-1) * -1);
   }
 
-  [data-slot="input"]:disabled,
-  [data-slot="textarea"]:disabled {
+  [data-slot~="input"]:disabled,
+  [data-slot~="textarea"]:disabled {
     background-color: var(--element);
     color: var(--text-muted);
     cursor: not-allowed;
@@ -70,26 +70,26 @@
 
   /* Недопустимое значение помечено НЕ ТОЛЬКО цветом рамки: сообщение об ошибке несёт текст,
      иначе смысл передаётся одним цветом — WCAG 2.2, 1.4.1 Use of Color (A). */
-  [data-slot="input"][data-invalid],
-  [data-slot="textarea"][data-invalid] {
+  [data-slot~="input"][data-invalid],
+  [data-slot~="textarea"][data-invalid] {
     border-color: var(--danger-border);
   }
 
-  [data-slot="field-description"] {
+  [data-slot~="field-description"] {
     color: var(--text-muted);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
-  [data-slot="field-error"] {
+  [data-slot~="field-error"] {
     color: var(--danger-text);
     font-size: var(--font-size-sm);
     line-height: var(--leading-snug);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="input"],
-    [data-slot="textarea"] {
+    [data-slot~="input"],
+    [data-slot~="textarea"] {
       transition: none;
     }
   }

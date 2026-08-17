@@ -17,12 +17,25 @@ const ALLOWED_WITHOUT_SLOT = new Set([
 
 describe("оформление цепляется за data-slot", () => {
   for (const file of skinFiles()) {
-    it(`${file.name}: каждый селектор содержит [data-slot=…]`, () => {
+    it(`${file.name}: каждый селектор содержит [data-slot~=…]`, () => {
       const bad = selectors(file.text).filter(
-        (s) => !ALLOWED_WITHOUT_SLOT.has(s) && !s.includes("[data-slot="),
+        (s) => !ALLOWED_WITHOUT_SLOT.has(s) && !s.includes("[data-slot~="),
       );
 
       expect(bad, `селекторы без зацепки в ${file.name}`).toEqual([]);
+    });
+
+    it(`${file.name}: зацепка читается списком, а не точным равенством`, () => {
+      // ОПЛАЧЕНО ПОЛОМКОЙ. Кит выпустил цепочку зацепок при композиции: `<DialogTrigger
+      // as={Button}>` рендерит ОДИН узел, и на нём `data-slot="button dialog-trigger"` — оба
+      // имени. Под `[data-slot="button"]` такой узел не попадает, и оформление кнопки тихо
+      // перестаёт применяться: ничего не падает, просто кнопка голая.
+      //
+      // `~=` совпадает со словом в списке, поэтому одиночному значению он не мешает и разбора
+      // формы «одна зацепка или список» нам не требуется вовсе.
+      const exact = [...file.text.matchAll(/\[data-slot=[^\]]*\]/g)].map(([hit]) => hit);
+
+      expect(exact, `точное равенство в ${file.name} — составной узел мимо него`).toEqual([]);
     });
 
     it(`${file.name}: ни один селектор не цепляется за класс`, () => {

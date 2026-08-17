@@ -13,8 +13,8 @@
    (`--kb-accordion-content-height`), и правило для этого случая ниже готово. */
 
 @layer skin {
-  [data-slot="accordion"],
-  [data-slot="collapsible"] {
+  [data-slot~="accordion"],
+  [data-slot~="collapsible"] {
     display: flex;
     flex-direction: column;
 
@@ -24,20 +24,20 @@
     color: var(--text);
   }
 
-  [data-slot="accordion-item"] {
+  [data-slot~="accordion-item"] {
     border-block-end: var(--border-width-1) solid var(--separator);
   }
 
   /* Заголовок раздела — не кнопка сам по себе: кнопка внутри него. Разделение нужно, чтобы
      заголовок оставался заголовком для вспомогательных технологий. */
-  [data-slot="accordion-header"] {
+  [data-slot~="accordion-header"] {
     margin: 0;
     font-size: inherit;
     font-weight: inherit;
   }
 
-  [data-slot="accordion-trigger"],
-  [data-slot="collapsible-trigger"] {
+  [data-slot~="accordion-trigger"],
+  [data-slot~="collapsible-trigger"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -59,26 +59,26 @@
     transition: color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="accordion-trigger"]:hover,
-  [data-slot="collapsible-trigger"]:hover {
+  [data-slot~="accordion-trigger"]:hover,
+  [data-slot~="collapsible-trigger"]:hover {
     color: var(--brand-text);
   }
 
-  [data-slot="accordion-trigger"]:focus-visible,
-  [data-slot="collapsible-trigger"]:focus-visible {
+  [data-slot~="accordion-trigger"]:focus-visible,
+  [data-slot~="collapsible-trigger"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: calc(var(--border-width-2) * -1);
     border-radius: var(--radius-sm);
   }
 
-  [data-slot="accordion-trigger"][data-disabled],
-  [data-slot="collapsible-trigger"][data-disabled] {
+  [data-slot~="accordion-trigger"][data-disabled],
+  [data-slot~="collapsible-trigger"][data-disabled] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="accordion-content"],
-  [data-slot="collapsible-content"] {
+  [data-slot~="accordion-content"],
+  [data-slot~="collapsible-content"] {
     overflow: hidden;
     padding-block-end: var(--space-3);
     padding-inline: var(--space-1);
@@ -87,24 +87,24 @@
 
   /* Раскрытие анимируется ТОЛЬКО когда потребитель оставил содержимое в документе
      (`forceMount`). Высота приезжает переменной кита — своей мы её не считаем. */
-  [data-slot="accordion-content"][data-closed],
-  [data-slot="collapsible-content"][data-closed] {
+  [data-slot~="accordion-content"][data-closed],
+  [data-slot~="collapsible-content"][data-closed] {
     block-size: 0;
     padding-block-end: 0;
   }
 
-  [data-slot="accordion-content"][data-expanded],
-  [data-slot="collapsible-content"][data-expanded] {
+  [data-slot~="accordion-content"][data-expanded],
+  [data-slot~="collapsible-content"][data-expanded] {
     block-size: var(--kb-accordion-content-height, auto);
   }
 
-  [data-slot="collapsible-content"][data-expanded] {
+  [data-slot~="collapsible-content"][data-expanded] {
     block-size: var(--kb-collapsible-content-height, auto);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="accordion-trigger"],
-    [data-slot="collapsible-trigger"] {
+    [data-slot~="accordion-trigger"],
+    [data-slot~="collapsible-trigger"] {
       transition: none;
     }
   }

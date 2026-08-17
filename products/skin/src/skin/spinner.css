@@ -9,7 +9,7 @@
    они следуют за кеглем, который задаёт шкала. */
 
 @layer skin {
-  [data-slot="spinner"] {
+  [data-slot~="spinner"] {
     display: inline-block;
     inline-size: 1em;
     block-size: 1em;
@@ -35,7 +35,7 @@
      (Media Queries 5, §12.1), а неподвижное кольцо стало бы ложным сообщением
      «ничего не происходит». */
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="spinner"] {
+    [data-slot~="spinner"] {
       animation-duration: calc(var(--motion-slow) * 6);
     }
   }

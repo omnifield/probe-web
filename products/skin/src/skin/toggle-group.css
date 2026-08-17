@@ -15,7 +15,7 @@
    честнее, чем копия, которая молча разойдётся. */
 
 @layer skin {
-  [data-slot="toggle-group"] {
+  [data-slot~="toggle-group"] {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
@@ -25,12 +25,12 @@
 
   /* Часть группы одевается правилами кнопки-переключателя: у неё та же природа. Здесь только
      то, что относится к жизни В РЯДУ. */
-  [data-slot="toggle-group-item"] {
+  [data-slot~="toggle-group-item"] {
     flex: none;
   }
 
   /* Вертикальная группа: ориентацию объявляет кит атрибутом, и ряд разворачивается по ней. */
-  [data-slot="toggle-group"][data-orientation="vertical"] {
+  [data-slot~="toggle-group"][data-orientation="vertical"] {
     flex-direction: column;
     align-items: stretch;
   }

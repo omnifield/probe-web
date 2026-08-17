@@ -9,14 +9,14 @@
    `data-disabled`. Ни одного класса и ни одной опоры на структуру DOM. */
 
 @layer skin {
-  [data-slot="select"] {
+  [data-slot~="select"] {
     display: inline-flex;
     flex-direction: column;
     gap: var(--space-2);
     font-family: var(--font-sans);
   }
 
-  [data-slot="select-trigger"] {
+  [data-slot~="select-trigger"] {
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
@@ -43,23 +43,23 @@
       background-color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="select-trigger"]:hover:not([data-disabled]) {
+  [data-slot~="select-trigger"]:hover:not([data-disabled]) {
     border-color: var(--border-strong);
   }
 
-  [data-slot="select-trigger"]:focus-visible {
+  [data-slot~="select-trigger"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: calc(var(--border-width-1) * -1);
   }
 
-  [data-slot="select-trigger"][data-disabled] {
+  [data-slot~="select-trigger"][data-disabled] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
   /* Выбранное значение. Цвет не назначается: он наследуется от кнопки-триггера, и отключённый
      триггер приглушает значение заодно — двух источников правды не заводим. */
-  [data-slot="select-value"] {
+  [data-slot~="select-value"] {
     min-inline-size: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -75,7 +75,7 @@
      Поэтому здесь мы значок НЕ рисуем, а оформляем: задаём место, кегль, цвет и поворот при
      раскрытии. Потребитель, передавший свой значок вместо умолчания, получит те же правила —
      они про контейнер, а не про фигуру. */
-  [data-slot="select-icon"] {
+  [data-slot~="select-icon"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -93,15 +93,15 @@
       color var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="select-trigger"]:hover:not([data-disabled]) [data-slot="select-icon"] {
+  [data-slot~="select-trigger"]:hover:not([data-disabled]) [data-slot~="select-icon"] {
     color: var(--text);
   }
 
-  [data-slot="select-trigger"][data-expanded] [data-slot="select-icon"] {
+  [data-slot~="select-trigger"][data-expanded] [data-slot~="select-icon"] {
     transform: rotate(180deg);
   }
 
-  [data-slot="select-content"] {
+  [data-slot~="select-content"] {
     /* Слой из шкалы базы, а не число из головы: панель списка обязана лежать ниже поповера и
        модального слоя, и порядок этот объявлен один раз на всех. */
     z-index: var(--z-dropdown);
@@ -120,7 +120,7 @@
     box-shadow: var(--shadow-md);
   }
 
-  [data-slot="select-listbox"] {
+  [data-slot~="select-listbox"] {
     /* Высота панели выведена из высоты строки списка: плотный режим сожмёт и её. Верхняя
        граница — сколько места реально осталось на экране (переменная позиционировщика). */
     max-block-size: min(
@@ -135,7 +135,7 @@
     list-style: none;
   }
 
-  [data-slot="select-item"] {
+  [data-slot~="select-item"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -156,7 +156,7 @@
 
   /* `data-highlighted` — одна зацепка и для клавиатуры, и для указателя: kobalte сводит их
      сам, поэтому `:hover` здесь не нужен и был бы вторым источником правды. */
-  [data-slot="select-item"][data-highlighted] {
+  [data-slot~="select-item"][data-highlighted] {
     background-color: var(--element-hover);
   }
 
@@ -165,17 +165,17 @@
      который мы и красим. Дефолтная обводка рисовалась ПОВЕРХ подсветки, тонкой тёмной рамкой
      мимо палитры — на живой странице это читалось как «стили не работают».
      Сам список остаётся с видимым фокусом: кольцо на кнопке-триггере никто не снимал. */
-  [data-slot="select-item"]:focus,
-  [data-slot="select-item"]:focus-visible {
+  [data-slot~="select-item"]:focus,
+  [data-slot~="select-item"]:focus-visible {
     outline: none;
   }
 
-  [data-slot="select-item"][data-disabled] {
+  [data-slot~="select-item"][data-disabled] {
     color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  [data-slot="select-item-label"] {
+  [data-slot~="select-item-label"] {
     min-inline-size: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -185,7 +185,7 @@
   /* Отметка выбранного — галочка из двух границ. Выбранность передана НЕ только галочкой:
      сам элемент несёт `data-selected`, который озвучивает вспомогательная технология
      (WCAG 2.2, 1.4.1). */
-  [data-slot="select-item-indicator"] {
+  [data-slot~="select-item-indicator"] {
     inline-size: 0.35em;
     block-size: 0.6em;
 
@@ -196,8 +196,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="select-trigger"],
-    [data-slot="select-icon"] {
+    [data-slot~="select-trigger"],
+    [data-slot~="select-icon"] {
       transition: none;
     }
   }

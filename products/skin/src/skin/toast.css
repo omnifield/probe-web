@@ -14,7 +14,7 @@
 @layer skin {
   /* Область не перехватывает нажатия: она накрывает угол экрана, и клики по странице под ней
      обязаны доходить. Нажимаемы только сами уведомления. */
-  [data-slot="toast-region"] {
+  [data-slot~="toast-region"] {
     position: fixed;
     inset-block-end: var(--space-4);
     inset-inline-end: var(--space-4);
@@ -23,7 +23,7 @@
     pointer-events: none;
   }
 
-  [data-slot="toast-list"] {
+  [data-slot~="toast-list"] {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -33,7 +33,7 @@
     list-style: none;
   }
 
-  [data-slot="toast"] {
+  [data-slot~="toast"] {
     position: relative;
     overflow: hidden;
     pointer-events: auto;
@@ -59,17 +59,17 @@
     animation: probe-web-skin-toast var(--motion-fast) var(--ease-out);
   }
 
-  [data-slot="toast-title"] {
+  [data-slot~="toast-title"] {
     font-size: var(--font-size-md);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
   }
 
-  [data-slot="toast-description"] {
+  [data-slot~="toast-description"] {
     color: var(--text-muted);
   }
 
-  [data-slot="toast-close"] {
+  [data-slot~="toast-close"] {
     position: absolute;
     inset-block-start: var(--space-2);
     inset-inline-end: var(--space-2);
@@ -90,19 +90,19 @@
     cursor: pointer;
   }
 
-  [data-slot="toast-close"]:hover {
+  [data-slot~="toast-close"]:hover {
     background-color: var(--tint-hover);
     color: var(--text);
   }
 
-  [data-slot="toast-close"]:focus-visible {
+  [data-slot~="toast-close"]:focus-visible {
     outline: var(--border-width-2) solid var(--focus-ring);
     outline-offset: var(--border-width-1);
   }
 
   /* Нить таймера — у самого края и тонкая. Ей не нужна ни подпись, ни скругление: это не
      показатель работы, а остаток времени. */
-  [data-slot="toast-progress-track"] {
+  [data-slot~="toast-progress-track"] {
     position: absolute;
     inset-block-end: 0;
     inset-inline: 0;
@@ -111,7 +111,7 @@
     background-color: var(--element);
   }
 
-  [data-slot="toast-progress-fill"] {
+  [data-slot~="toast-progress-fill"] {
     block-size: 100%;
     background-color: var(--brand-solid);
   }
@@ -124,7 +124,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-slot="toast"] {
+    [data-slot~="toast"] {
       animation: none;
     }
   }
