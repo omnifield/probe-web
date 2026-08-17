@@ -235,12 +235,7 @@ export function Panel() {
             </div>
           }
         >
-          <iframe
-            ref={frame}
-            src={`/?nav=${nonce()}`}
-            title="Зона"
-            onLoad={() => apply(look())}
-          />
+          <iframe ref={frame} src={`/?nav=${nonce()}`} title="Зона" onLoad={() => apply(look())} />
         </Show>
       </div>
     </div>
