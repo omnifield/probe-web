@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { EXPECTED_SURFACE } from "./surface-list.js";
+import { EXPECTED_SURFACE, EXPECTED_TYPE_SURFACE } from "./surface-list.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(here, "..");
@@ -200,10 +200,8 @@ describe("ветка `solid` против ветки `default`", () => {
 });
 
 describe("типы у потребителя", () => {
-  it("разрешаются из тарбола и проверяют полиморфные пропсы", () => {
-    // Самая тихая поломка поставки: `exports.types` указывает в файл, который ссылается на
-    // соседние декларации по расширению `.jsx`. Разрешится ли это у потребителя — вопрос не
-    // к нашему `tsc`, а к его: у нас рядом лежат исходники, у него их нет.
+  /** Кладёт `tsconfig.json` чистой установки. Зовётся перед первым прогоном `tsc`. */
+  function writeConsumerTsconfig(): void {
     writeFileSync(
       join(install, "tsconfig.json"),
       JSON.stringify({
@@ -222,6 +220,27 @@ describe("типы у потребителя", () => {
       }),
       "utf8",
     );
+  }
+
+  /** Кладёт исходник потребителя и просит ЕГО `tsc` его проверить. */
+  function typecheckConsumer(app: string): () => string {
+    writeFileSync(join(install, "app.tsx"), app, "utf8");
+
+    const tsc = join(pkgRoot, "node_modules", "typescript", "bin", "tsc");
+
+    return () =>
+      execFileSync(process.execPath, [tsc, "-p", "tsconfig.json"], {
+        cwd: install,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+  }
+
+  it("разрешаются из тарбола и проверяют полиморфные пропсы", () => {
+    // Самая тихая поломка поставки: `exports.types` указывает в файл, который ссылается на
+    // соседние декларации по расширению `.jsx`. Разрешится ли это у потребителя — вопрос не
+    // к нашему `tsc`, а к его: у нас рядом лежат исходники, у него их нет.
+    writeConsumerTsconfig();
 
     writeFileSync(
       join(install, "app.tsx"),
@@ -265,5 +284,75 @@ export const App = () => <Separator orientation="наискосок" />;
     );
 
     expect(typecheck).toThrow();
+  });
+
+  it("объявленные ТИПЫ доезжают до потребителя — по перечню, а не по памяти", () => {
+    // `EXPECTED_SURFACE` этих имён не поймает: в рантайме типа нет, и равенство с тем, что
+    // торчит из модуля, покраснело бы на пустом месте. Поэтому у типов свой перечень и своя
+    // проверка — здесь, в чистой установке из тарбола.
+    writeConsumerTsconfig();
+
+    expect(EXPECTED_TYPE_SURFACE.length).toBeGreaterThan(0);
+
+    const uses = EXPECTED_TYPE_SURFACE.map(
+      (name, index) => `export type Проба${index} = ${name};`,
+    ).join("\n");
+
+    expect(
+      typecheckConsumer(
+        `import type { ${EXPECTED_TYPE_SURFACE.join(", ")} } from "${PKG}";\n\n${uses}\n`,
+      ),
+    ).not.toThrow();
+  });
+
+  it("значение цветовых собирается, НЕ выходя за кит", () => {
+    // Главное здесь — строка ввоза: `@kobalte/core` в ней не упомянут ни разу, хотя тип
+    // значения приехал именно оттуда. Потребитель, не объявивший его у себя, обязан суметь
+    // всё то же самое (`kb:PROBEWEB-4`, поправка 2026-08-18; `kb:PROBEWEB-17` — почему на
+    // транзитивную установку опираться нельзя).
+    //
+    // Проверка живёт в ЧИСТОЙ установке из тарбола, а не рядом с исходниками: у потребителя
+    // нет ни нашего `src`, ни наших путей, и разрешиться всё обязано по декларациям.
+    writeConsumerTsconfig();
+
+    expect(
+      typecheckConsumer(
+        `import {
+  type Color,
+  ColorArea,
+  ColorAreaBackground,
+  ColorAreaThumb,
+  ColorField,
+  ColorFieldInput,
+  ColorSlider,
+  ColorSliderThumb,
+  ColorSliderTrack,
+  parseColor,
+} from "${PKG}";
+
+// Хекс из поля цвета → значение области и ползунка. Перевод в HSL тоже наш: \`toFormat\`
+// это метод типа \`Color\`, а не вторая зависимость.
+const seed: Color = parseColor("#2f6fed").toFormat("hsl");
+
+export const App = () => (
+  <>
+    <ColorField value={seed.toString("hex")}>
+      <ColorFieldInput />
+    </ColorField>
+    <ColorArea value={seed} xChannel="saturation" yChannel="brightness">
+      <ColorAreaBackground>
+        <ColorAreaThumb />
+      </ColorAreaBackground>
+    </ColorArea>
+    <ColorSlider channel="hue" value={seed} onChange={(next: Color) => next.toString("hex")}>
+      <ColorSliderTrack>
+        <ColorSliderThumb />
+      </ColorSliderTrack>
+    </ColorSlider>
+  </>
+);
+`,
+      ),
+    ).not.toThrow();
   });
 });

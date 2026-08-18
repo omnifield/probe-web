@@ -1,4 +1,3 @@
-import { parseColor } from "@kobalte/core/colors";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -12,6 +11,7 @@ import {
   ColorAreaLabel,
   ColorAreaThumb,
 } from "../src/color-area.jsx";
+import { parseColor } from "../src/colors.js";
 import { cleanup, mount, one } from "./dom.jsx";
 
 afterEach(cleanup);

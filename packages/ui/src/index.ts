@@ -106,6 +106,10 @@ export {
   ColorSliderValueLabel,
   type ColorSliderValueLabelComponentProps,
 } from "./color-slider.jsx";
+// Единственная точка поверхности, которая не рендерит узел, а СТРОИТ значение: тип `Color` уже
+// стоит в публичных пропах `ColorArea` и `ColorSlider`, а собрать его потребителю было нечем.
+// Цена связи с `@kobalte/core` названа в `src/colors.ts` — там же основание (`kb:PROBEWEB-4`).
+export { type Color, parseColor } from "./colors.js";
 export {
   Combobox,
   ComboboxArrow,
