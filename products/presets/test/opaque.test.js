@@ -105,6 +105,35 @@ describe("служба не понимает, что внутри", () => {
     assert.deepEqual(state, alien);
   });
 
+  it("ярлык вида ничего не меняет: под `skin` лежит та же чушь и возвращается неизменной", async () => {
+    const { origin } = await serve();
+
+    // Служба не знает, что значит `skin`, и не проверяет, похоже ли это на оформление. Начни
+    // она смотреть внутрь под ярлыком — перечень видов оказался бы у неё, и знание о каждом
+    // формате пришлось бы держать здесь (`kb:PROBEWEB-8`).
+    const nonsense = { это: "не оформление", шкалы: [null, false, ""], "": { "🙂": 0 } };
+
+    // Третий ярлык — тот, которого сегодня нет ни у кого: новый вид не требует правки службы.
+    for (const kind of ["skin", "filter", "map-2"]) {
+      const created = await fetch(`${origin}/api/presets`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label: `чушь под ${kind}`, kind, state: nonsense }),
+      });
+      assert.equal(created.status, 201);
+
+      const { id } = /** @type {{ id: string }} */ (await created.json());
+      const raw = await (await fetch(`${origin}/api/presets/${id}`)).text();
+      const record = /** @type {{ state: unknown }} */ (JSON.parse(raw));
+
+      assert.deepEqual(record.state, nonsense, `состояние изменилось под ярлыком ${kind}`);
+      assert.ok(
+        raw.includes(JSON.stringify(nonsense)),
+        "состояние обязано лежать в ответе ровно тем же куском JSON",
+      );
+    }
+  });
+
   it("глубокая вложенность не разбирается и не обходится", async () => {
     const { origin } = await serve();
 

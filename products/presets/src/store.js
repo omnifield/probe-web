@@ -28,6 +28,9 @@ import { trace } from "./trace.js";
  * @property {string} id выдан службой, не клиентом
  * @property {string} label обязательное имя
  * @property {string} [description] необязательное пояснение
+ * @property {string} [kind] ярлык вида — НЕПРОЗРАЧНАЯ метка владельца (`filter`, `skin`, …);
+ *   хранилище её не толкует, а только отдаёт по ней перечень. Необязателен: записи, лежащие
+ *   с прошлой версии конверта, его не имеют и читаются как прежде
  * @property {string} savedAt когда сохранён, ISO-8601
  */
 
@@ -179,14 +182,23 @@ export async function openStore(dir, limits = LIMITS) {
      * Перечень — БЕЗ содержимого: список нужен для имён, тянуть ради него все состояния
      * незачем. Новые сверху: сохранённое только что человек ищет первым.
      *
+     * Ярлык отбирает записи СРАВНЕНИЕМ СТРОКИ и ничем больше: хранилище не знает, что значит
+     * `skin`, и не смотрит, что лежит под этим ярлыком внутри. Отбор по непрозрачной метке —
+     * не толкование (`kb:PROBEWEB-8`): так почта различает конверты по адресу, не читая писем.
+     *
+     * Записи БЕЗ ярлыка в отбор по ярлыку не попадают — их вид не назван, и приписывать им
+     * чужой значило бы толковать за отправителя.
+     *
+     * @param {{ kind?: string }} [filter] отбор по ярлыку вида; без него — все записи
      * @returns {PresetMeta[]}
      */
-    list() {
+    list(filter = {}) {
       const done = trace("store.list");
-      const items = [...index.values()].sort(
-        (a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id),
-      );
-      done(`записей ${items.length}`);
+      const wanted = filter.kind;
+      const items = [...index.values()]
+        .filter((item) => wanted === undefined || item.kind === wanted)
+        .sort((a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id));
+      done(`записей ${items.length}${wanted === undefined ? "" : ` по ярлыку ${wanted}`}`);
       return items;
     },
 
@@ -214,7 +226,7 @@ export async function openStore(dir, limits = LIMITS) {
      * `state` уходит на диск КАК ЕСТЬ. Ни одной проверки внутри него здесь нет и быть не
      * должно: это и есть правило зоны.
      *
-     * @param {{ label: string, description?: string, state: unknown }} input
+     * @param {{ label: string, description?: string, kind?: string, state: unknown }} input
      * @returns {Promise<PresetRecord>}
      * @throws {StorageFull} мест больше нет
      */
@@ -231,6 +243,7 @@ export async function openStore(dir, limits = LIMITS) {
           id,
           label: input.label,
           ...(input.description === undefined ? {} : { description: input.description }),
+          ...(input.kind === undefined ? {} : { kind: input.kind }),
           savedAt: new Date().toISOString(),
           state: input.state,
         };
@@ -273,6 +286,7 @@ function meta(record) {
     id: record.id,
     label: record.label,
     ...(record.description === undefined ? {} : { description: record.description }),
+    ...(record.kind === undefined ? {} : { kind: record.kind }),
     savedAt: record.savedAt,
   };
 }
@@ -307,6 +321,11 @@ async function readRecord(dir, name) {
       throw new Error("нет обязательных полей");
     }
     if (typeof record.savedAt !== "string") throw new Error("нет времени сохранения");
+    // Ярлык необязателен — записи прошлого конверта его не имеют. Но если он есть, то это
+    // строка: ярлык-число или ярлык-объект в файле значит, что запись писали не мы.
+    if (record.kind !== undefined && typeof record.kind !== "string") {
+      throw new Error("ярлык вида не строка");
+    }
     return /** @type {PresetRecord} */ (record);
   } catch (error) {
     console.warn(

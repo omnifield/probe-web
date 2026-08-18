@@ -35,6 +35,9 @@ export {
   type ThemeTokens,
   themeToCss,
 } from "./tokens.js";
+// Модель темы и её отрисовка в файл: минимум, который записывают, чтобы вид можно было
+// поставить одним указанием. Живёт здесь, а не в зоне производства оформлений (`kb:PROBEWEB-15`).
+export { themeModelToCss, type ThemeModel } from "./model.js";
 export {
   CHART_SLOTS,
   CONTRAST_PROMISES,

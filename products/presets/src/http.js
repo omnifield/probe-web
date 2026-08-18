@@ -1,11 +1,12 @@
 // Поверхность службы: четыре действия и ни одного больше.
 //
-//   GET    /api/presets       → { items: [{ id, label, description?, savedAt }] }  — без содержимого
-//   GET    /api/presets/{id}  → { id, label, description?, savedAt, state }
-//   POST   /api/presets       → { id, label, description?, savedAt }               — 201
-//   DELETE /api/presets/{id}  → 204
+//   GET    /api/presets           → { items: [{ id, label, description?, kind?, savedAt }] } — без содержимого
+//   GET    /api/presets?kind=skin → то же, но только записи с этим ярлыком вида
+//   GET    /api/presets/{id}      → { id, label, description?, kind?, savedAt, state }
+//   POST   /api/presets           → { id, label, description?, kind?, savedAt }              — 201
+//   DELETE /api/presets/{id}      → 204
 //
-// Проверяется здесь ТОЛЬКО конверт: имя, пояснение, размер. `state` не разбирается вовсе —
+// Проверяется здесь ТОЛЬКО конверт: имя, пояснение, ярлык вида, размер. `state` не разбирается —
 // он уходит в хранилище тем же куском JSON, каким пришёл (`kb:PROBEWEB-8`). Отказ по существу
 // состояния (чужая версия формата, неизвестный оператор) — работа читателя, у него для этого
 // есть `parseFilter`; служба про это не знает.
@@ -30,6 +31,25 @@ const CORS = {
 };
 
 const ROOT = "/api/presets";
+
+/**
+ * Форма ЯРЛЫКА ВИДА (`kind`) — того же строгого покроя, что и идентификатор записи: короткая
+ * строка, годная и для адреса, и для имени. Ярлык ездит в строке запроса (`?kind=skin`) и им же
+ * помечают вид данных, поэтому пробелы, косые, точки и регистр здесь только вредят: адрес
+ * пришлось бы экранировать, а `Skin` и `skin` разошлись бы в два вида, которых один.
+ *
+ * Проверяется ФОРМА, а не смысл. Служба не знает и не хочет знать, что значит `skin`, и не
+ * держит перечня допустимых ярлыков: новый вид заводится владельцем без единой правки здесь
+ * (`kb:PROBEWEB-8`). Тридцать два символа — с запасом на любое осмысленное имя вида.
+ */
+const KIND = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+/**
+ * Текст отказа по ярлыку — один и на запись, и на отбор: причина у них одна, прислана строка,
+ * которой ярлык быть не может.
+ */
+const BAD_KIND =
+  "Вид пресета — короткая метка из строчных латинских букв, цифр и дефисов (до 32 символов), например skin.";
 
 /** Канал к агенту — вторая волна, контракт `kb:PROBEWEB-9`. */
 const AGENT_ROOT = "/api/agent/preset";
@@ -113,7 +133,7 @@ function readBody(req, maxBytes) {
  *
  * @param {unknown} body
  * @param {Readonly<import("./limits.js").Limits>} limits
- * @returns {{ ok: true, value: { label: string, description?: string, state: unknown } }
+ * @returns {{ ok: true, value: { label: string, description?: string, kind?: string, state: unknown } }
  *          | { ok: false, code: string, message: string }}
  */
 function parseEnvelope(body, limits) {
@@ -154,13 +174,31 @@ function parseEnvelope(body, limits) {
     if (raw.trim() !== "") description = raw.trim();
   }
 
+  // Ярлык вида НЕОБЯЗАТЕЛЕН, и это не поблажка, а условие совместимости: то, что уже лежит и
+  // работает у `tables`, приезжает без него и обязано сохраняться как прежде. Проверяем только
+  // форму — что лежит ПОД ярлыком, служба не смотрит.
+  /** @type {string | undefined} */
+  let kind;
+  const rawKind = input["kind"];
+  if (rawKind !== undefined && rawKind !== null) {
+    if (typeof rawKind !== "string" || !KIND.test(rawKind)) {
+      return { ok: false, code: "bad_kind", message: BAD_KIND };
+    }
+    kind = rawKind;
+  }
+
   if (!("state" in input)) {
     return { ok: false, code: "state_required", message: "Не передано состояние пресета." };
   }
 
   return {
     ok: true,
-    value: { label, ...(description === undefined ? {} : { description }), state: input["state"] },
+    value: {
+      label,
+      ...(description === undefined ? {} : { description }),
+      ...(kind === undefined ? {} : { kind }),
+      state: input["state"],
+    },
   };
 }
 
@@ -209,7 +247,8 @@ export function createHandler(store, limits = LIMITS, agent = {}) {
  */
 async function handle(req, res, store, limits, channel) {
   const method = req.method ?? "GET";
-  const path = new URL(req.url ?? "/", "http://presets.local").pathname.replace(/\/+$/, "");
+  const url = new URL(req.url ?? "/", "http://presets.local");
+  const path = url.pathname.replace(/\/+$/, "");
 
   if (method === "OPTIONS") return send(res, 204);
 
@@ -221,7 +260,7 @@ async function handle(req, res, store, limits, channel) {
   }
 
   if (path === ROOT) {
-    if (method === "GET") return send(res, 200, { items: store.list() });
+    if (method === "GET") return list(res, store, url);
     if (method === "POST") return create(req, res, store, limits);
     return methodNotAllowed(res, "GET, POST");
   }
@@ -338,6 +377,27 @@ async function askAgent(req, res, channel) {
   // Отдаём как пришло. Что это за состояние и годится ли оно — решает `parseFilter` у
   // читателя: ответ модели не привилегированнее файла переходника (`kb:PROBEWEB-9`).
   return send(res, 200, { state: answer.state });
+}
+
+/**
+ * Перечень. `?kind=skin` отбирает записи по ЯРЛЫКУ ВИДА — единственное, что служба с ярлыком
+ * делает. Разные виды лежат в одном хранилище (`kb:PROBEWEB-8`), и отдельных путей под них не
+ * заводится: путь под вид означал бы, что перечень видов известен службе, и каждый новый вид
+ * требовал бы её правки.
+ *
+ * Ярлык не той формы — отказ, а НЕ пустой перечень. Пустой список читается как «таких записей
+ * нет», и опечатка в запросе выглядела бы как чистое хранилище — молчаливая неправда вместо
+ * ответа, который говорит, что чинить.
+ *
+ * @param {import("node:http").ServerResponse} res
+ * @param {Awaited<ReturnType<typeof import("./store.js").openStore>>} store
+ * @param {URL} url
+ */
+function list(res, store, url) {
+  const asked = url.searchParams.get("kind");
+  if (asked === null) return send(res, 200, { items: store.list() });
+  if (!KIND.test(asked)) return fail(res, 400, "bad_kind", BAD_KIND);
+  return send(res, 200, { items: store.list({ kind: asked }) });
 }
 
 /**

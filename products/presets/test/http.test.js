@@ -231,3 +231,101 @@ describe("поверхность службы", () => {
     assert.equal(preflight.headers.get("access-control-allow-origin"), "*");
   });
 });
+
+describe("ярлык вида", () => {
+  /**
+   * @param {string} origin
+   * @param {unknown} payload
+   */
+  const post = (origin, payload) =>
+    fetch(`${origin}/api/presets`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+  it("кладётся, отдаётся и отбирает перечень", async () => {
+    const { origin } = await serve();
+
+    const skin = await body(await post(origin, { label: "Twitter", kind: "skin", state: { s: 1 } }));
+    const filter = await body(await post(origin, { label: "Срочные", kind: "filter", state: { f: 1 } }));
+
+    // Ярлык виден там же, где и остальной конверт: в ответе на запись, в перечне и в записи
+    // целиком. Иначе стенд не может показать, какого вида запись, — а он показывает.
+    assert.equal(skin.kind, "skin");
+    assert.equal((await body(await fetch(`${origin}/api/presets/${skin.id}`))).kind, "skin");
+
+    const skins = await body(await fetch(`${origin}/api/presets?kind=skin`));
+    assert.deepEqual(
+      skins.items.map((/** @type {{id: string}} */ item) => item.id),
+      [skin.id],
+      "по ярлыку обязаны приезжать только записи этого вида",
+    );
+    assert.equal(skins.items[0].kind, "skin");
+
+    const filters = await body(await fetch(`${origin}/api/presets?kind=filter`));
+    assert.deepEqual(
+      filters.items.map((/** @type {{id: string}} */ item) => item.id),
+      [filter.id],
+    );
+
+    // Без ярлыка в запросе — перечень целиком: старый вызов работает как прежде.
+    assert.equal((await body(await fetch(`${origin}/api/presets`))).items.length, 2);
+
+    // Ярлык, которым никто не помечался, — пустой перечень, а не отказ: вида просто нет ещё.
+    assert.deepEqual((await body(await fetch(`${origin}/api/presets?kind=map`))).items, []);
+  });
+
+  it("совместимость: запись без ярлыка кладётся и читается как прежде", async () => {
+    const { origin } = await serve();
+
+    // Ровно то, что шлёт зона `tables` сегодня, — конверт прошлой версии, без ярлыка.
+    const created = await post(origin, { label: "Старый конверт", state: { version: 1 } });
+    assert.equal(created.status, 201);
+    const saved = await body(created);
+    assert.equal("kind" in saved, false, "непомеченная запись не обзаводится ярлыком сама");
+
+    const listed = await body(await fetch(`${origin}/api/presets`));
+    assert.deepEqual(listed.items[0], {
+      id: saved.id,
+      label: "Старый конверт",
+      savedAt: saved.savedAt,
+    });
+
+    const one = await body(await fetch(`${origin}/api/presets/${saved.id}`));
+    assert.equal("kind" in one, false);
+    assert.deepEqual(one.state, { version: 1 });
+
+    // В отбор по чужому ярлыку она не попадает: её вид не назван, и приписывать ей чужой
+    // значило бы толковать за отправителя.
+    assert.deepEqual((await body(await fetch(`${origin}/api/presets?kind=skin`))).items, []);
+  });
+
+  it("ярлык не той формы — отказ 400, и на записи, и на отборе", async () => {
+    const { origin } = await serve();
+
+    for (const bad of ["", " ", "Skin", "skin/1", "скин", "a".repeat(33), "-skin"]) {
+      const refused = await post(origin, { label: "Кривой ярлык", kind: bad, state: {} });
+      assert.equal(refused.status, 400, `ожидался отказ на ярлык ${JSON.stringify(bad)}`);
+      const failure = await body(refused);
+      assert.equal(failure.error, "bad_kind");
+      assert.ok(failure.message.length > 0, "отказ обязан говорить человеку, что не так");
+
+      // На отборе — тот же отказ, а НЕ пустой перечень: пустой список читался бы как «таких
+      // записей нет», и опечатка выглядела бы как чистое хранилище.
+      const asked = await fetch(`${origin}/api/presets?kind=${encodeURIComponent(bad)}`);
+      assert.equal(asked.status, 400, `ожидался отказ на отбор по ${JSON.stringify(bad)}`);
+      assert.equal((await body(asked)).error, "bad_kind");
+    }
+
+    // Ярлык-не-строка — тот же отказ: конверт проверяется по форме, а не по вежливости.
+    const notString = await post(origin, { label: "Ярлык числом", kind: 5, state: {} });
+    assert.equal(notString.status, 400);
+    assert.equal((await body(notString)).error, "bad_kind");
+
+    // `null` читается как «ярлыка нет» — так же, как у пояснения.
+    const nulled = await post(origin, { label: "Ярлык null", kind: null, state: {} });
+    assert.equal(nulled.status, 201);
+    assert.equal("kind" in (await body(nulled)), false);
+  });
+});
