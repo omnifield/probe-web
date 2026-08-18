@@ -152,7 +152,7 @@
 
   [data-slot~="button"][data-size="lg"] {
     block-size: var(--control-height-lg);
-    padding-inline: var(--space-5);
+    padding-inline: var(--space-6);
     font-size: var(--font-size-lg);
   }
 
