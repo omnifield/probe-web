@@ -340,8 +340,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lint
       '@probe-web/skin':
-        specifier: file:../skin
-        version: file:products/skin
+        specifier: workspace:*
+        version: link:../skin
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
@@ -373,8 +373,8 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/ui
       '@probe-web/skin':
-        specifier: file:../../../products/skin
-        version: file:products/skin
+        specifier: workspace:*
+        version: link:../../../products/skin
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
@@ -911,9 +911,6 @@ packages:
 
   '@oxc-project/types@0.144.0':
     resolution: {integrity: sha512-nuhZIOLuI6TFQ32I/WnUx+SCPY7SdSKwgnFHydAuoS1+Z4BRcaP+RRJmGzl9lw+0OFF7UmaESf7KQRXaNLHypg==}
-
-  '@probe-web/skin@file:products/skin':
-    resolution: {directory: products/skin, type: directory}
 
   '@rolldown/binding-android-arm64@1.2.4':
     resolution: {integrity: sha512-jHC2cnyKz5xU2fhECtFl8OZ83cYNt13GZQD+0uMJ/X3o+ijmd56okHhTUwxVSHPx1IRVIJEZ1/1pPzeLCU6XKA==}
@@ -2662,13 +2659,6 @@ snapshots:
       solid-js: 1.9.14
 
   '@oxc-project/types@0.144.0': {}
-
-  '@probe-web/skin@file:products/skin':
-    dependencies:
-      '@omnifield/probe-web-runtime': link:packages/runtime
-      '@omnifield/probe-web-style': link:packages/style
-      '@omnifield/probe-web-ui': link:packages/ui
-      solid-js: 1.9.14
 
   '@rolldown/binding-android-arm64@1.2.4':
     optional: true
