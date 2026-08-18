@@ -21,6 +21,7 @@
 // (`VITE_PRESETS_URL`), умолчание — служба на этой машине. На VPS переменная называет её адрес.
 
 import { modelOf, type Preset, type PresetMeta, type PresetSeeds } from "../presets/model.js";
+import { trace } from "./trace.js";
 
 const BASE =
   (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
@@ -158,6 +159,9 @@ export interface PresetsApi {
 export function createPresetsApi(base = BASE, send: typeof fetch = fetch): PresetsApi {
   return {
     list: async () => {
+      // Замер именно здесь: список отдаётся БЕЗ содержимого, и каждая запись докупается своим
+      // запросом — цена растёт с числом пресетов, и увидеть это можно только замером.
+      const done = trace("presets.list");
       const body = (await (await ask(send, `${base}?kind=${KIND}`)).json()) as { items?: unknown };
       const items = Array.isArray(body.items) ? body.items : [];
 
@@ -172,10 +176,13 @@ export function createPresetsApi(base = BASE, send: typeof fetch = fetch): Prese
         }),
       );
 
-      return full.filter((preset): preset is Preset => preset !== null);
+      const ours = full.filter((preset): preset is Preset => preset !== null);
+      done(`${ours.length} из ${items.length}`);
+      return ours;
     },
 
     save: async (preset, description) => {
+      const done = trace("presets.save");
       const wire = (await (
         await ask(send, base, {
           method: "POST",
@@ -193,11 +200,14 @@ export function createPresetsApi(base = BASE, send: typeof fetch = fetch): Prese
       if (saved === null) {
         throw new PresetRefused("служба вернула запись, которую не удалось прочесть");
       }
+      done(saved.recordId);
       return saved;
     },
 
     remove: async (id) => {
+      const done = trace("presets.remove");
       await ask(send, `${base}/${encodeURIComponent(id)}`, { method: "DELETE" });
+      done();
     },
   };
 }
