@@ -303,6 +303,32 @@ describe("сетка 0.25rem", () => {
     }
   });
 
+  it("законен ЛЮБОЙ множитель из диапазона, а не набор ступеней", () => {
+    // Подтверждение данными к тому, что объявлено полем `continuous` в `AXES`: «правильных»
+    // ступеней у базы нет. Множители нарочно неудобные — непериодические и с длинным хвостом;
+    // если бы база втайне ждала «свои» значения, на них бы это и вылезло.
+    const awkward = [0.7654321, 0.8137, 1 / 3 + 0.7, 1.0101, Math.PI / 2.5, DENSITY_CEILING - 1e-9];
+    const control = scaleBySeed("control-height");
+    const smallest = stepByName(control, "control-height-sm");
+    const minRem = Number.parseFloat(
+      FIXED_TOKENS.find((token) => token.name === "control-target-min")!.value,
+    );
+
+    for (const density of awkward) {
+      expect(density, "множитель взят из объявленного диапазона").toBeGreaterThanOrEqual(
+        DENSITY_FLOOR,
+      );
+      for (const scale of DERIVED_SCALES.filter((item) => item.snap)) {
+        for (const step of scale.steps) {
+          const value = valueOf(scale, step, density);
+          expect(onGrid(value), `--${step.name} при плотности ${density} = ${value}rem`).toBe(true);
+        }
+      }
+      expect(valueOf(control, smallest, density), `норма при плотности ${density}`,
+      ).toBeGreaterThanOrEqual(minRem);
+    }
+  });
+
   it("сетка не переворачивает шкалу — ступени не убывают", () => {
     // Соседние ступени на низкой плотности могут сойтись в одно значение: это цена сетки, и
     // она приемлема для ритма. Чего быть не может — старшая ступень мельче младшей.

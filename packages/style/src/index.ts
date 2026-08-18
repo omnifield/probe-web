@@ -65,6 +65,9 @@ export {
   type LegacyAlias,
   type Role,
 } from "./roles.js";
+// Границы осей: где у значения край и есть ли он. Отдельной таблицей, потому что отсутствие
+// границы — тоже ответ, и объявляется он значением, а не умолчанием (`tasker:PROBEWEB-69`).
+export { AXES, axisOf, type Axis, type AxisBound, type BoundKind } from "./axes.js";
 export {
   DENSITY_CEILING,
   DENSITY_DEFAULT,
