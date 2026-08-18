@@ -71,15 +71,15 @@ describe("службы нет — стенд жив, и человеку ска�
     }
   });
 
-  it("стенд НЕ сломан: оформление подключено, ручки живы", async () => {
-    // Главное обещание границы: мёртвая служба не ломает стенд. Компоненты остаются на
-    // умолчаниях базы — оформление необязательно (`kb:SKIN-7`, инвариант 4).
+  it("стенд НЕ сломан: ручки живы, страница работает", async () => {
+    // Главное обещание границы: мёртвая служба не ломает стенд. Оформления при этом нет — пресета
+    // нет, — и это рабочее состояние, а не поломка (`kb:SKIN-7`, инвариант 4).
     const { knobs, dispose } = await knobsOf(deadApi());
 
     try {
-      expect(knobs.dressed(), "скин снялся вместе со службой").toBe(true);
       expect(knobs.dirty(), "нечего сохранять — плашка «изменён» висеть не должна").toBe(false);
       expect(() => knobs.setDensity("compact")).not.toThrow();
+      expect(() => knobs.setDark(true)).not.toThrow();
     } finally {
       dispose();
     }
@@ -138,6 +138,89 @@ describe("служба отвечает", () => {
       await knobs.save("Мой пульт");
       expect(knobs.refusal(), "отказ службы обязан дойти до человека дословно").toContain("64 КиБ");
       expect(knobs.source(), "отказ — не потеря связи").toBe("служба");
+    } finally {
+      dispose();
+    }
+  });
+});
+
+describe("оформление следует за пресетом, а не за своей ручкой", () => {
+  // Решение user 2026-08-18, снятое с живого стенда: пресетов не было ни одного, а скин стоял.
+  // Прежняя редакция вешала `skin.css` при монтировании и снимала отдельным тумблером, поэтому
+  // «правила вида есть, пресета нет» было достижимым состоянием — значения при этом приходили из
+  // умолчаний базы, и человек видел одетые компоненты, которых никто не одевал.
+  //
+  // Проба держит ОБЕ стороны правила: без второй половины «нет пресета — снято» проходило бы
+  // просто «никогда не одеваем».
+
+  it("есть пресет — оформление стоит", async () => {
+    const { knobs, dispose } = await knobsOf(liveApi([FROM_SERVICE]));
+    try {
+      expect(knobs.preset()).toBeDefined();
+      expect(knobs.dressed(), "пресет подключён, а правил вида нет").toBe(true);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("нет пресетов — оформления нет, кит голый", async () => {
+    const { knobs, dispose } = await knobsOf(liveApi([]));
+    try {
+      expect(knobs.preset()).toBeUndefined();
+      expect(knobs.dressed(), "скин стоит без пресета — ровно та поломка, что была видна").toBe(
+        false,
+      );
+    } finally {
+      dispose();
+    }
+  });
+
+  it("удалили последний пресет — оформление СНИМАЕТСЯ, а не остаётся висеть", async () => {
+    // ПЕРЕХОД, а не конечное состояние. Проба выше проходит и в том случае, если оформление не
+    // ставится никогда: «не одет» и «раздет» с одной точки неразличимы. Поймано мутацией — снял
+    // снятие скина, а проба осталась зелёной. Здесь пресет сперва ЕСТЬ, и оформление обязано
+    // уйти вместе с ним.
+    let items = [FROM_SERVICE];
+    const api: PresetsApi = {
+      list: () => Promise.resolve(items),
+      save: (preset) => Promise.resolve(preset),
+      remove: () => {
+        items = [];
+        return Promise.resolve();
+      },
+    };
+
+    const { knobs, dispose } = await knobsOf(api);
+    try {
+      expect(knobs.dressed(), "не с чего начинать — пресет не подключился").toBe(true);
+
+      await knobs.drop();
+      await vi.waitFor(() => expect(knobs.preset()).toBeUndefined());
+
+      expect(knobs.dressed(), "пресетов не осталось, а правила вида висят").toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("службы нет — оформления тоже нет", async () => {
+    const { knobs, dispose } = await knobsOf(deadApi());
+    try {
+      expect(knobs.dressed()).toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("своей ручки у оформления не осталось", () => {
+    // Тумблер убран решением user. Вернувшаяся ручка вернула бы и состояние «скин без пресета»,
+    // поэтому её отсутствие — часть правила, а не следствие уборки.
+    const { knobs, dispose } = createRoot((dispose) => ({
+      knobs: createKnobs(liveApi([FROM_SERVICE])),
+      dispose,
+    }));
+    try {
+      expect(Object.keys(knobs)).not.toContain("toggleDressed");
     } finally {
       dispose();
     }
