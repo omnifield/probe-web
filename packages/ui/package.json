@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-lint": "^0.1.0",
+    "@omnifield/probe-web-lint": "workspace:*",
     "@types/node": "^24.10.1",
     "esbuild": "^0.27.7",
     "esbuild-plugin-solid": "^0.6.0",
