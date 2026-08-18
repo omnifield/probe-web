@@ -10,11 +10,24 @@
 //      скругления, приложение получит половину пресета и не узнает об этом: недостающие значения
 //      молча возьмутся из базы.
 
-import { AA_NON_TEXT, AA_TEXT, CONTRAST_PROMISES, contrastRatio } from "@omnifield/probe-web-style";
+import {
+  AA_NON_TEXT,
+  AA_TEXT,
+  CONTRAST_PROMISES,
+  contrastRatio,
+  themeModelToCss,
+} from "@omnifield/probe-web-style";
 import { describe, expect, it } from "vitest";
 
 import { BUILT_IN, DEFAULT_PRESET_ID } from "../src/presets/built-in.js";
-import { cssOf, isDirty, type Preset, stateOf, themeOf } from "../src/presets/model.js";
+import { isDirty, modelOf, type Preset, type PresetState, stateOf, themeOf } from "../src/presets/model.js";
+
+/**
+ * Пресет как CSS. Строку собирает БАЗА (`kb:PROBEWEB-15`, решение 2), зона даёт ей модель —
+ * поэтому проба зовёт ровно ту же пару, что и генерация файлов, и стенд.
+ */
+const cssOf = (preset: Preset, state?: PresetState): string =>
+  themeModelToCss(modelOf(preset, state));
 
 /** Ступень из половины темы: `neutral`, `1` → значение. */
 function step(tokens: Record<string, string>, scale: string, key: string): string {

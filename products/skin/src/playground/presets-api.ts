@@ -20,7 +20,7 @@
 // относительный `/api/presets` попал бы в наш дев-сервер, а не в службу. Адрес задаётся снаружи
 // (`VITE_PRESETS_URL`), умолчание — служба на этой машине. На VPS переменная называет её адрес.
 
-import type { Preset, PresetMeta, PresetSeeds } from "../presets/model.js";
+import { modelOf, type Preset, type PresetMeta, type PresetSeeds } from "../presets/model.js";
 
 const BASE =
   (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
@@ -28,7 +28,14 @@ const BASE =
 /** Ярлык вида: по нему служба отдаёт только оформления, не толкуя их. */
 const KIND = "skin";
 
-/** Что лежит в конверте под `state`. Наша форма, служба в неё не смотрит. */
+/**
+ * Что лежит в конверте под `state`: МОДЕЛЬ ТЕМЫ (`kb:PROBEWEB-15`, решение 1). Служба в неё не
+ * смотрит — хранит непрозрачный JSON.
+ *
+ * Это тип ПРИЁМА, и он намеренно свободнее модели базы (`ThemeModel`): сюда разбирается чужой
+ * ответ, где правки тёмной пары могут назвать ступень, которой у нас ещё нет. Отправляем мы
+ * ровно `ThemeModel` — асимметрия здесь не небрежность, а разные стороны шва.
+ */
 interface WireState {
   /** Имя ТЕМЫ — то, что уезжает в `data-theme`. Идентификатор записи выдаёт служба отдельно. */
   id: string;
@@ -114,7 +121,15 @@ function toPreset(wire: WirePreset): Preset | null {
   };
 }
 
-/** Пресет → конверт службы. Уезжает МОДЕЛЬ, а не готовый CSS: из модели он всегда соберётся. */
+/**
+ * Пресет → конверт службы. Уезжает МОДЕЛЬ, а не готовый CSS: из модели он всегда соберётся
+ * (`kb:PROBEWEB-15`, решение 1). Модель собирает `modelOf()` — раскладка полей в зоне одна,
+ * и той же моделью рождается файл поставки.
+ *
+ * Тип отправляемого — `ThemeModel` самой базы, а не наш `WireState`: он строже, и проверять
+ * отправку по типу приёма значило бы проверять себя более слабым мерилом. Что уезжает именно
+ * модель, а не CSS, стережёт `test/presets-api.test.ts`.
+ */
 function toWire(preset: Preset, description?: string): unknown {
   return {
     label: preset.title,
@@ -122,13 +137,7 @@ function toWire(preset: Preset, description?: string): unknown {
       ? {}
       : { description: description.trim() }),
     kind: KIND,
-    state: {
-      id: preset.id,
-      seeds: preset.seeds,
-      ...(preset.meta === undefined ? {} : { meta: preset.meta }),
-      ...(preset.darkOverrides === undefined ? {} : { darkOverrides: preset.darkOverrides }),
-      density: preset.density,
-    } satisfies WireState,
+    state: modelOf(preset),
   };
 }
 
