@@ -50,15 +50,15 @@
     "seed:presets": "node --experimental-strip-types scripts/seed-presets.mjs"
   },
   "dependencies": {
-    "@omnifield/probe-web-runtime": "file:../../packages/runtime",
-    "@omnifield/probe-web-style": "file:../../packages/style",
-    "@omnifield/probe-web-ui": "file:../../packages/ui",
+    "@omnifield/probe-web-runtime": "workspace:*",
+    "@omnifield/probe-web-style": "workspace:*",
+    "@omnifield/probe-web-ui": "workspace:*",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.123",
-    "@omnifield/probe-web-build": "file:../../packages/build",
-    "@omnifield/probe-web-lint": "file:../../packages/lint",
+    "@omnifield/probe-web-build": "workspace:*",
+    "@omnifield/probe-web-lint": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
