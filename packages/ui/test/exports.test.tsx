@@ -14,22 +14,34 @@ describe("поверхность", () => {
     expect(Object.keys(ui).sort()).toEqual(EXPECTED_SURFACE);
   });
 
-  it("каждая точка — функция-компонент, кроме одной названной", () => {
-    // `toaster` — очередь уведомлений: объект с `show` / `update` / `dismiss` / `clear`.
-    // Это единственная точка поверхности, которую не ставят в разметку, а зовут из кода
-    // (`src/toast.tsx`). Исключение названо ЯВНО, чтобы вторая такая не проехала молча.
-    const NOT_A_COMPONENT = new Set(["toaster"]);
+  it("каждая точка — функция-компонент, кроме двух названных", () => {
+    // Точки, которые не ставят в разметку, а зовут из кода. Перечень ЯВНЫЙ и с ожидаемым
+    // видом у каждой — иначе третья такая проехала бы молча:
+    //
+    //   • `toaster` — очередь уведомлений, объект с `show` / `update` / `dismiss` / `clear`
+    //     (`src/toast.tsx`);
+    //   • `parseColor` — сборщик значения цветовых примитивов (`src/colors.ts`). Он ФУНКЦИЯ,
+    //     то есть от компонента здешней проверкой неотличим, — поэтому назван поимённо и
+    //     проверен отдельно тем, что он на самом деле делает (проба ниже).
+    const CALLED_FROM_CODE = new Map([
+      ["toaster", "object"],
+      ["parseColor", "function"],
+    ]);
 
     for (const name of EXPECTED_SURFACE) {
       const value = ui[name as keyof typeof ui];
 
-      if (NOT_A_COMPONENT.has(name)) {
-        expect(typeof value).toBe("object");
-        continue;
-      }
-
-      expect(typeof value).toBe("function");
+      expect(typeof value).toBe(CALLED_FROM_CODE.get(name) ?? "function");
     }
+  });
+
+  it("`parseColor` наружу приезжает РАБОЧИМ — иначе точка поверхности мертва", () => {
+    // Проверка того, ради чего он и отдан: собрать значение цветовых примитивов, не выходя за
+    // кит. Сверка `typeof` выше этого не показывает — она зелена и на пустой функции.
+    expect(ui.parseColor("#2f6fed").toString("hex")).toBe("#2F6FED");
+
+    // И обратная сторона: неразобранное обязано БРОСАТЬ, а не возвращать молчаливый чёрный.
+    expect(() => ui.parseColor("зелёный")).toThrow();
   });
 
   it("внутреннего наружу не уехало", () => {

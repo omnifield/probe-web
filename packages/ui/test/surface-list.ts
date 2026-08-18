@@ -38,6 +38,27 @@ export const EXPECTED_SURFACE = [
   "Collapsible",
   "CollapsibleContent",
   "CollapsibleTrigger",
+  "ColorArea",
+  "ColorAreaBackground",
+  "ColorAreaDescription",
+  "ColorAreaError",
+  "ColorAreaHiddenInputX",
+  "ColorAreaHiddenInputY",
+  "ColorAreaLabel",
+  "ColorAreaThumb",
+  "ColorField",
+  "ColorFieldDescription",
+  "ColorFieldError",
+  "ColorFieldInput",
+  "ColorFieldLabel",
+  "ColorSlider",
+  "ColorSliderDescription",
+  "ColorSliderError",
+  "ColorSliderInput",
+  "ColorSliderLabel",
+  "ColorSliderThumb",
+  "ColorSliderTrack",
+  "ColorSliderValueLabel",
   "Combobox",
   "ComboboxArrow",
   "ComboboxContent",
@@ -254,5 +275,23 @@ export const EXPECTED_SURFACE = [
   "TooltipContent",
   "TooltipPortal",
   "TooltipTrigger",
+  "parseColor",
   "toaster",
 ];
+
+/**
+ * Что зона обещает наружу ТИПАМИ — то, чего нет в рантайме и что перечнем выше не поймать.
+ *
+ * Список отдельный не ради красоты: `EXPECTED_SURFACE` сверяется равенством с тем, что реально
+ * торчит из модуля и из обеих веток тарбола, а тип в рантайме не существует вовсе. Внеси `Color`
+ * туда — и оба прогона покраснеют на пустом месте, утверждая расхождение, которого нет.
+ *
+ * Поэтому имя объявлено здесь и стережётся своей проверкой: `test/surface.test.ts` поднимает
+ * ЧИСТУЮ установку из тарбола и просит `tsc` потребителя разрешить это имя. Тип, потерявшийся
+ * по дороге в декларации, роняет прогон у нас, а не сборку у потребителя.
+ *
+ * `Color` попал сюда не по нашему выбору: он уже стоит в публичных пропах `ColorArea` и
+ * `ColorSlider` (`kb:PROBEWEB-4`, поправка 2026-08-18). Цена связи с `@kobalte/core` названа в
+ * `src/colors.ts`.
+ */
+export const EXPECTED_TYPE_SURFACE = ["Color"];

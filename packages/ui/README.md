@@ -29,6 +29,8 @@
 | **есть `style`** | числовой ввод (`number-field-input`) | `touch-action: none` — иначе жест прокрутки менял бы значение |
 | **не 1-to-1** | скрытый `<select>` поиска (`combobox-hidden-select`) | обёртка и технический ввод — обход особенностей Safari и Firefox |
 | **есть `style`** | всплывающие панели и стрелки | позиционирование, переменная начала трансформации, цвет стрелки — **зеркало панели потребителя** |
+| **есть `style`** | подложка области и дорожка ползунка цвета (`color-area-background`, `color-slider-track`) | градиенты СЧИТАНЫ из значения: показывать надо те цвета, между которыми выбирают, а знает их только примитив |
+| **есть `style`** | бегунки цветовых (`color-area-thumb`, `color-slider-thumb`) | координаты плюс `--kb-color-current` — переменная, **которой оформление и красит бегунок** |
 
 Разбор каждого — в разделах ниже и в доке соответствующего компонента.
 
@@ -77,6 +79,10 @@
 | `Checkbox*` | составной, 7 частей | `Checkbox.*` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
 | `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
+| `ColorField*` | составной, 5 частей | `ColorField.*` |
+| `ColorArea*` | составной, 8 частей | `ColorArea.*` |
+| `ColorSlider*` | составной, 8 частей | `ColorSlider.*` |
+| `parseColor`, `Color` | узла не рендерит | `@kobalte/core/colors` — реэкспорт |
 
 ## Стилизация: зацепка `data-slot`
 
@@ -175,6 +181,9 @@
 | составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
+| составной `ColorField` | `color-field`, `color-field-label`, `color-field-input`, `color-field-description`, `color-field-error` |
+| составной `ColorArea` | `color-area`, `color-area-label`, `color-area-background`, `color-area-thumb`, `color-area-hidden-input-x`, `color-area-hidden-input-y`, `color-area-description`, `color-area-error` |
+| составной `ColorSlider` | `color-slider`, `color-slider-label`, `color-slider-value-label`, `color-slider-track`, `color-slider-thumb`, `color-slider-input`, `color-slider-description`, `color-slider-error` |
 
 `Slot` зацепки не ставит **намеренно**: своего имени у него нет, семантику узла задаёт
 потребитель через `as`. Обещать за него нечего — и это часть того же обязательства.
@@ -504,6 +513,130 @@ kobalte заворачивает его в скрытую обёртку и кл
 границы, а не запретным. Оформление, рисующее «упёрлись», должно смотреть на значение, а не на
 `disabled`.
 
+## Ввод цвета: `ColorField`, `ColorArea`, `ColorSlider`
+
+Три примитива, а не один «пикер»: собранный пикер — это уже вид, а вид зона `ui` не привозит.
+Что из чего собрать, решает оформление; шестая часть kobalte (`ColorSwatch`, `ColorWheel`,
+`ColorChannelField`) сюда НЕ портирована — потребителя у неё сегодня нет, а поверхность растёт
+по фактическому спросу, а не впрок.
+
+```tsx
+// Ввод строкой — этого одного хватает, чтобы задать акцент пресета.
+<ColorField value={accent()} onChange={setAccent}>
+  <ColorFieldLabel>Акцент</ColorFieldLabel>
+  <ColorFieldInput />
+</ColorField>
+
+// Подбор мышью: квадрат «насыщенность × яркость» и ползунок тона рядом.
+<ColorArea value={color()} onChange={setColor} xChannel="saturation" yChannel="brightness">
+  <ColorAreaBackground>
+    <ColorAreaThumb>
+      <ColorAreaHiddenInputX />
+      <ColorAreaHiddenInputY />
+    </ColorAreaThumb>
+  </ColorAreaBackground>
+</ColorArea>
+
+<ColorSlider channel="hue" value={color()} onChange={setColor}>
+  <ColorSliderTrack>
+    <ColorSliderThumb>
+      <ColorSliderInput />
+    </ColorSliderThumb>
+  </ColorSliderTrack>
+</ColorSlider>
+```
+
+### Значение: у поля строка, у двух остальных объект цвета
+
+| | значение | чем собрать |
+|---|---|---|
+| `ColorField` | строка `#RRGGBB` | ничем — обычный сигнал потребителя |
+| `ColorArea`, `ColorSlider` | объект `Color` | `parseColor("#2f6fed")` — **из этого же пакета** |
+
+Разделение не наше, а `@kobalte/core`, и порт его не сглаживает: своя обёртка над цветовой
+моделью стала бы вторым источником правды о том, что такое цвет.
+
+А вот **средство собрать значение зона отдаёт сама** — `parseColor` и тип `Color` приезжают из
+`@omnifield/probe-web-ui`, вторая зависимость потребителю не нужна:
+
+```tsx
+import { type Color, ColorSlider, parseColor } from "@omnifield/probe-web-ui";
+```
+
+Причина в том, что тип `Color` **уже стоит в наших публичных пропах** (`value`, `defaultValue`,
+`onChange` у `ColorArea` и `ColorSlider`) — то есть он часть поверхности кита независимо от
+реэкспорта, а собрать такое значение было нечем. Поверхность, которой нельзя пользоваться, не
+поверхность; требовать объявить `@kobalte/core` ради одного примитива значило бы сделать кит
+одним из ДВУХ мест, за которые держатся, а опираться на транзитивную установку нельзя — строгий
+менеджер её не разрешит (`kb:PROBEWEB-17`). Решение и правило шире случая — `kb:PROBEWEB-4`,
+поправка 2026-08-18.
+
+**Цена названа прямо: мажор `@kobalte/core` по типу `Color` становится НАШИМ ломающим
+изменением.** Это уже так — через пропсы примитивов; реэкспорт лишь делает связь видимой вместо
+скрытой, а видимую связь можно посчитать при выпуске.
+
+Наружу идут ровно два имени, а не вся библиотека цвета: `normalizeColor`, `getColorChannels` и
+`normalizeHue` остаются у kobalte — потребителя у них сегодня нет.
+
+Поле цвета всего этого не требует вовсе: `ColorField` работает со строкой от начала до конца, и
+«свой бренд одним значением» вводится, не зная про цветовые модели.
+
+### Мост «хекс → канал»: `#2f6fed` это RGB, и тона в нём НЕТ
+
+Ловушка ровно на шве между полем и двумя остальными, поэтому названа отдельно:
+`parseColor("#2f6fed")` даёт цвет **в RGB**, а `channel="hue"` живёт в HSL/HSB. Без перевода
+`@kobalte/core` бросает `Unknown color channel: hue` — на РЕНДЕРЕ, а не при разборе строки.
+
+Мостов два, и оба целиком внутри нашей поверхности:
+
+```tsx
+<ColorSlider channel="hue" colorSpace="hsl" value={parseColor("#2f6fed")} />   // перевести примитив
+<ColorSlider channel="hue" value={parseColor("#2f6fed").toFormat("hsl")} />    // перевести значение
+```
+
+`toFormat` — метод типа `Color`, то есть тоже наша поверхность. Оба пути дают один и тот же тон,
+и это проба (`test/colors.test.tsx`), а не обещание: расхождение означало бы, что потребителю
+приходится выбирать правильный.
+
+### Что `ColorField` делает за потребителя
+
+Три вещи, которые иначе пришлось бы писать в каждом месте, где вводят цвет:
+
+- **посторонние знаки не попадают в поле** — разрешён `#` и до шести цифр `0-9a-f`; «зелёный»
+  просто не наберётся, а не подсветится ошибкой после;
+- **на уходе фокуса значение приводится к `#RRGGBB`** — «f00» становится `#FF0000`. Буквы
+  ПРОПИСНЫЕ (так пишет `@kobalte/core`): сравнивая значения строкой, регистр учитывать нельзя;
+- **неразобранное откатывается к прежнему**, а не остаётся в поле мусором.
+
+Формат ровно один — HEX. `rgb(…)` и `hsl(…)` в поле не набираются, и порт этого не расширяет.
+
+### Названное отступление: цвет приезжает инлайновым стилем
+
+На подложке области и на дорожке ползунка `@kobalte/core` пишет `background` из градиентов, на
+бегунках — координаты и переменную `--kb-color-current`. Выглядит как нарушение «ноль стилей»,
+но это **само значение примитива**: показать надо те цвета, между которыми выбирают, а знает их
+только он — у ползунка тона это радуга, у ползунка насыщенности градиент зависит от текущего
+тона. Отдать такое оформлению нечем.
+
+Стиль потребителя при этом **сливается** с нашим, а не затирается: размер, скругление и рамка
+пишутся как обычно. Держится это пробой (`test/color-area.test.tsx`,
+`test/color-slider.test.tsx`), а не абзацем.
+
+Красить бегунок оформление тоже может, не разбирая цветовые модели:
+`[data-slot~="color-slider-thumb"] { background: var(--kb-color-current); }`.
+
+### Три разницы с обычным `Slider`
+
+- **Границы и шаг берутся из КАНАЛА**, а не из пропсов: у тона 0…360, у прозрачности 0…1.
+  `minValue` / `maxValue` / `step` здесь не приняты — ошибись потребитель, ползунок молча врал
+  бы на краях.
+- **Заливки (`slider-fill`) нет и не будет**: «пройденной части» у цветового канала не бывает,
+  дорожка значима на всём протяжении.
+- **`aria-valuetext` несёт НАЗВАНИЕ цвета**, а не число: «240» само по себе не сообщает ничего.
+
+Проп `channel` у `ColorSlider` **обязателен** — без него неизвестно, что ползунок меняет.
+Несуществующая пара «пространство + канал» это ошибка на рендере, а не молчаливый ноль.
+
 ## Модальное окно и вкладки
 
 `Dialog` — не «большой `Popover`», и разница не в размере:
@@ -656,6 +789,11 @@ globalThis.__PROBE_WEB_UI_TRACE__ = true;
 `solid-js` и `@kobalte/core` стоят в `peerDependencies`: две копии Solid в дереве ломают
 реактивность, две копии kobalte рассыпают связку `Field` с его частями. Обычных зависимостей
 у пакета нет.
+
+**Одно следствие для выпусков:** зона реэкспортирует `parseColor` и тип `Color`, поэтому мажор
+`@kobalte/core` по этому типу — наше ломающее изменение. Связь существует и без реэкспорта (тип
+стоит в пропсах цветовых примитивов), но теперь она видна и её можно посчитать. Разбор —
+в разделе про ввод цвета.
 
 ## Сборка и проверки
 

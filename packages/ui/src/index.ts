@@ -62,6 +62,55 @@ export {
   type CheckboxProps,
 } from "./checkbox.jsx";
 export {
+  ColorArea,
+  ColorAreaBackground,
+  type ColorAreaBackgroundComponentProps,
+  ColorAreaDescription,
+  type ColorAreaDescriptionComponentProps,
+  ColorAreaError,
+  type ColorAreaErrorProps,
+  ColorAreaHiddenInputX,
+  ColorAreaHiddenInputY,
+  ColorAreaLabel,
+  type ColorAreaLabelComponentProps,
+  type ColorAreaProps,
+  ColorAreaThumb,
+  type ColorAreaThumbComponentProps,
+} from "./color-area.jsx";
+export {
+  ColorField,
+  ColorFieldDescription,
+  type ColorFieldDescriptionComponentProps,
+  ColorFieldError,
+  type ColorFieldErrorProps,
+  ColorFieldInput,
+  type ColorFieldInputComponentProps,
+  ColorFieldLabel,
+  type ColorFieldLabelComponentProps,
+  type ColorFieldProps,
+} from "./color-field.jsx";
+export {
+  ColorSlider,
+  ColorSliderDescription,
+  type ColorSliderDescriptionComponentProps,
+  ColorSliderError,
+  type ColorSliderErrorProps,
+  ColorSliderInput,
+  ColorSliderLabel,
+  type ColorSliderLabelComponentProps,
+  type ColorSliderProps,
+  ColorSliderThumb,
+  type ColorSliderThumbComponentProps,
+  ColorSliderTrack,
+  type ColorSliderTrackComponentProps,
+  ColorSliderValueLabel,
+  type ColorSliderValueLabelComponentProps,
+} from "./color-slider.jsx";
+// Единственная точка поверхности, которая не рендерит узел, а СТРОИТ значение: тип `Color` уже
+// стоит в публичных пропах `ColorArea` и `ColorSlider`, а собрать его потребителю было нечем.
+// Цена связи с `@kobalte/core` названа в `src/colors.ts` — там же основание (`kb:PROBEWEB-4`).
+export { type Color, parseColor } from "./colors.js";
+export {
   Combobox,
   ComboboxArrow,
   type ComboboxArrowComponentProps,
