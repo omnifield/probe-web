@@ -30,7 +30,7 @@
     "./slots.json": "./src/slots.json"
   },
   "scripts": {
-    "dev": "vite --port 5173 --strictPort",
+    "dev": "vite --port 5173 --strictPort --host 0.0.0.0",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
