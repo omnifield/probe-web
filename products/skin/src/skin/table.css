@@ -425,14 +425,24 @@
   }
 
   /* «НЕТ ПОЛЯ» И «ПУСТО» — РАЗНЫЕ ВЕЩИ, и сосед их различает атрибутами. Вид обязан различать
-     тоже: отсутствие поля это вопрос к данным, а пустое значение — обычное состояние. */
+     тоже: отсутствие поля это вопрос к данным, а пустое значение — обычное состояние.
+
+     ТЕКСТ ТЕПЕРЬ УЗЛАМИ, а не `content:` — сосед перенёс его в разметку по нашей заявке, и это
+     правильно: подпись переводят и читают вслух. Одеваем оба — и ячейку (она задаёт настроение
+     всей клетки), и сам узел (он несёт слово). */
   [data-slot~="table-cell"][data-missing] {
+    color: var(--danger-text);
+  }
+
+  [data-slot~="table-cell-missing"] {
     color: var(--danger-text);
     font-style: italic;
   }
 
-  [data-slot~="table-cell"][data-empty] {
+  [data-slot~="table-cell"][data-empty],
+  [data-slot~="table-cell-empty"] {
     color: var(--text-muted);
+    font-style: italic;
   }
 
   /* Сведённое по группе — не значение строки, и читаться должно иначе. */
@@ -454,6 +464,34 @@
 
   [data-slot~="table-cell"][data-clickable]:hover {
     color: var(--brand-text);
+  }
+
+  /* ── оценка ───────────────────────────────────────────────────────────────────────── */
+
+  /* ЗВЁЗДЫ РИСУЕМ МЫ — это вид; ЧИСЛО остаётся у соседа, и это не дублирование, а разные
+     предметы: значки показывают величину глазами, а подпись и атрибуты дают её тому, кто
+     слушает. Ровно поэтому «залить три из пяти» нельзя было сделать из атрибута — нужны были
+     узлы на ступень, и сосед их дал. */
+  [data-slot~="table-rating"] {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  [data-slot~="table-rating-step"] {
+    inline-size: 1em;
+    block-size: 1em;
+
+    /* Незаполненная ступень — та же звезда, но приглушённая: разной формой их различать нельзя,
+       иначе ряд перестаёт читаться как шкала. */
+    background-color: var(--element-active);
+    mask-image: var(--icon-star);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+
+  [data-slot~="table-rating-step"][data-filled] {
+    background-color: var(--brand-solid);
   }
 
   /* ГЛУБИНА ГРУППЫ отступом. Отступ считается от шкалы интервалов, а не «по 16 пикселей на
@@ -543,6 +581,16 @@
 
     color: var(--text-muted);
     font-size: var(--font-size-sm);
+  }
+
+  /* «Скрыто:» — подпись перечня, а не его пункт по смыслу: она приглушена и не носит рамку
+     плашки, иначе читается как ещё одна скрытая колонка. */
+  [data-slot~="table-hidden-columns-label"] {
+    color: var(--text-muted);
+  }
+
+  [data-slot~="table-hidden-column-name"] {
+    color: var(--text);
   }
 
   [data-slot~="table-hidden-column"] {
