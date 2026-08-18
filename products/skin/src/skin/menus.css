@@ -121,7 +121,7 @@
   [data-slot~="navigation-menu-sub-content"] {
     z-index: var(--z-dropdown);
 
-    min-inline-size: 12rem;
+    min-inline-size: var(--column-24);
     max-block-size: var(--kb-popper-content-available-height, 100vh);
     overflow-y: auto;
 
