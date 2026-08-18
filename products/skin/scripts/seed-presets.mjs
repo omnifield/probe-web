@@ -13,25 +13,25 @@
 // кодом, чтобы прогон в конвейере не сделал вид, что всё уехало.
 
 import { BUILT_IN } from "../src/presets/built-in.ts";
+import { modelOf } from "../src/presets/model.ts";
 
 const BASE = process.env["PRESETS_URL"] ?? "http://127.0.0.1:8787/api/presets";
 const KIND = "skin";
 
-/** Что уезжает в конверт: МОДЕЛЬ, а не готовый CSS — из модели он всегда соберётся. */
+/**
+ * Что уезжает в конверт: МОДЕЛЬ, а не готовый CSS — из модели он всегда соберётся
+ * (`kb:PROBEWEB-15`, решение 1). Модель даёт `modelOf()`, второй раскладки полей здесь нет:
+ * поле, забытое в одной из двух, теряется молча.
+ *
+ * Имя ТЕМЫ внутри модели — то, что уедет в `data-theme` и совпадает с именем файла поставки.
+ * Служба выдаёт свой идентификатор записи, но он опознаёт запись, а не тему.
+ */
 function toWire(preset) {
   return {
     label: preset.title,
     description: `Встроенный пресет зоны skin. Подключается файлом presets/${preset.id}.css плюс атрибутом data-theme="${preset.id}".`,
     kind: KIND,
-    state: {
-      // Имя ТЕМЫ — то, что уедет в `data-theme` и совпадает с именем файла поставки. Служба
-      // выдаёт свой идентификатор записи, но он опознаёт запись, а не тему.
-      id: preset.id,
-      seeds: preset.seeds,
-      ...(preset.meta === undefined ? {} : { meta: preset.meta }),
-      ...(preset.darkOverrides === undefined ? {} : { darkOverrides: preset.darkOverrides }),
-      density: preset.density,
-    },
+    state: modelOf(preset),
   };
 }
 

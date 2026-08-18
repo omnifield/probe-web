@@ -21,8 +21,23 @@
 //   • подключено ли оформление вообще — это состояние стенда;
 //   • варианты кнопок и прочая поверхность зоны — они одинаковы для всех пресетов, иначе пресет
 //     менял бы не вид, а поведение.
+//
+// ── ГДЕ ЖИВЁТ ГЕНЕРАТОР CSS ────────────────────────────────────────────────────────────────
+//
+// В БАЗЕ (`themeModelToCss` из `@omnifield/probe-web-style`), а не здесь: решение `kb:PROBEWEB-15`,
+// решение 2. Своей сборки строки в зоне НЕТ и заводить её нельзя — две реализации из одной модели
+// дают два результата, и расходятся они молча, в день улучшения формулы ступеней.
+//
+// Здесь остаётся МОДЕЛЬ ПРЕСЕТА — она про стенд и его ручки: название, происхождение,
+// идентификатор записи службы, состояние ручек и признак «изменён». Базе эти понятия не нужны.
+// Шов между тем и другим — ровно одна функция `modelOf()`: пресет стенда → модель темы базы.
 
-import type { ScaleMode, ThemeDefinition, ThemeMetaToken } from "@omnifield/probe-web-style";
+import type {
+  ThemeDefinition,
+  ThemeMetaToken,
+  ThemeModel,
+  ThemeTokens,
+} from "@omnifield/probe-web-style";
 import { buildThemeTokens } from "@omnifield/probe-web-style";
 
 /** Семена шкал: по одному значению на шкалу. */
@@ -83,58 +98,51 @@ export function isDirty(preset: Preset, state: PresetState): boolean {
 }
 
 /**
+ * ШОВ С БАЗОЙ: пресет стенда (плюс состояние ручек) → модель темы.
+ *
+ * Отсюда берут вид ВСЕ: файл поставки (`themeModelToCss`), конверт службы и семя. Одно место
+ * означает, что «унесённый пресет» и «пресет на экране» собраны из одних и тех же значений —
+ * второе такое место разошлось бы с первым молча.
+ *
+ * Что НЕ уезжает: `title`, `origin`, `recordId` — понятия стенда и записи, а не вида
+ * (`kb:PROBEWEB-15`, решение 2).
+ */
+export function modelOf(preset: Preset, state?: PresetState): ThemeModel {
+  const meta = { ...preset.meta, ...(state?.radius ? { radius: state.radius } : {}) };
+
+  return {
+    id: preset.id,
+    seeds: { ...preset.seeds, brand: state?.brand ?? preset.seeds.brand },
+    ...(Object.keys(meta).length === 0 ? {} : { meta }),
+    // Приведение здесь, а не в типе: модель стенда держит правки тёмной пары свободной картой —
+    // она приходит из чужого JSON службы и разбирается, а не объявляется (`presets-api.ts`).
+    ...(preset.darkOverrides === undefined
+      ? {}
+      : { darkOverrides: preset.darkOverrides as Partial<ThemeTokens> }),
+    density: state?.density ?? preset.density,
+  };
+}
+
+/**
  * Тема пресета для регистрации в слое `style`.
  *
  * Ступени считает БАЗА из семян: у неё закреплено назначение ступеней и проверены обещания
  * контраста. Пресет добавляет только правки тёмной пары, и за них отвечает проба зоны.
+ *
+ * Плотности здесь нет намеренно: она не токен палитры, а ось, и стенд ставит её на корень
+ * отдельно. В ФАЙЛ поставки она попадает — этим занимается генератор базы.
  */
 export function themeOf(preset: Preset, state?: PresetState): ThemeDefinition {
-  const seeds = { ...preset.seeds, brand: state?.brand ?? preset.seeds.brand };
-  const meta = { ...preset.meta, ...(state?.radius ? { radius: state.radius } : {}) };
+  const model = modelOf(preset, state);
 
-  const half = (mode: ScaleMode) => {
-    const tokens = buildThemeTokens(seeds, mode, meta);
-    return mode === "dark" && preset.darkOverrides
-      ? ({ ...tokens, ...preset.darkOverrides } as typeof tokens)
-      : tokens;
+  return {
+    name: model.id,
+    light: buildThemeTokens(model.seeds, "light", model.meta),
+    dark: {
+      ...buildThemeTokens(model.seeds, "dark", model.meta),
+      ...model.darkOverrides,
+    } as ThemeTokens,
   };
-
-  return { name: preset.id, light: half("light"), dark: half("dark") };
-}
-
-/**
- * Пресет как CSS — форма, в которой он уезжает в приложение.
- *
- * ПОЧЕМУ ИМЕННО CSS ПЕРВИЧЕН. «Указать пресет и поставить» должно работать без сборки и без
- * единой строки JS: подключил файл, поставил атрибут — получил вид. JSON-описание остаётся
- * источником, из которого этот файл рождается, но потребителю нужен именно файл.
- *
- * Плотность попадает в тот же блок: она такое же значение вида, как скругление, и разделять их
- * означало бы, что пресет переносится в два приёма и половина может отстать.
- */
-export function cssOf(preset: Preset, state?: PresetState): string {
-  const theme = themeOf(preset, state);
-  const density = state?.density ?? preset.density;
-
-  const block = (selector: string, tokens: Record<string, string>, extra?: string): string => {
-    const lines = Object.entries(tokens).map(([name, value]) => `  --${name}: ${value};`);
-    if (extra) lines.push(extra);
-    return `${selector} {\n${lines.join("\n")}\n}`;
-  };
-
-  return [
-    `/* Пресет «${preset.title}» — оформление probe-web/skin.`,
-    `   Подключение: этот файл плюс атрибут data-theme="${preset.id}" на <html>.`,
-    `   Тёмная пара включается классом dark, как и у базовой темы. */`,
-    "",
-    block(`[data-theme="${preset.id}"]`, theme.light as Record<string, string>, `  --density: ${density};`),
-    "",
-    block(
-      `[data-theme="${preset.id}"].dark, [data-theme="${preset.id}"] .dark`,
-      (theme.dark ?? {}) as Record<string, string>,
-    ),
-    "",
-  ].join("\n");
 }
 
 /**
