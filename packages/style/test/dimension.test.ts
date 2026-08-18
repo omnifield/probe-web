@@ -178,8 +178,8 @@ describe("ось плотности", () => {
   const byDensity = (want: boolean): string[] =>
     DERIVED_SCALES.filter((scale) => scale.density === want).map((scale) => scale.seed);
 
-  it("умножает интервалы, высоты контролов и кегль", () => {
-    expect(byDensity(true).sort()).toEqual(["control-height", "font-size", "space"]);
+  it("умножает интервалы, высоты контролов, кегль и ширины колонок", () => {
+    expect(byDensity(true).sort()).toEqual(["column", "control-height", "font-size", "space"]);
   });
 
   it("НЕ трогает форму — скругления, толщины границ и трекинг", () => {
@@ -229,6 +229,7 @@ describe("ось плотности", () => {
     // `DENSITY_NOTE` уезжает комментарием в поставку. Основание, оставшееся врать, хуже
     // отсутствующего — поэтому перечень в тексте сверяется с данными, а не с памятью.
     const title: Record<string, string> = {
+      column: "ширины колонок",
       space: "интервалы",
       "control-height": "высоты контролов",
       "font-size": "кегль",
@@ -271,7 +272,7 @@ describe("сетка 0.25rem", () => {
   it("на сетку садится ровно то, что должно", () => {
     // Перечень ЯВНЫЙ, а не «те, у кого стоит поле»: иначе снятый флаг просто сузил бы область
     // остальных проб, и шкала уехала бы с сетки при зелёном прогоне.
-    expect(snapped.map((scale) => scale.seed).sort()).toEqual(["control-height", "space"]);
+    expect(snapped.map((scale) => scale.seed).sort()).toEqual(["column", "control-height", "space"]);
   });
 
   it("на сетку садится только то, что умножается плотностью", () => {
@@ -342,6 +343,17 @@ describe("сетка 0.25rem", () => {
     }
   });
 
+  it("посадка на сетку законна только там, где она не схлопывает ступени", () => {
+    // Общее правило, из которого исключение кегля — частный случай (`kb:PROBEWEB-16`): сетка
+    // держит геометрию и разрушает шкалы, чьи ступени сравнимы с её шагом. Проверяется при
+    // плотности 1 — в умолчании, у всех; схождение на КРАЮ диапазона это цена сетки и
+    // отдельная проба ниже.
+    for (const scale of snapped) {
+      const values = scale.steps.map((step) => valueOf(scale, step, 1));
+      expect(new Set(values).size, `шкала ${scale.seed} при плотности 1`).toBe(scale.steps.length);
+    }
+  });
+
   it("сетка схлопнула бы шкалу кегля — потому кегль на неё и не садится", () => {
     // Причина исключения проверяемая, а не вкусовая, и держится пробой: при плотности 1 —
     // у всех, кто плотность не трогал вовсе, — шкала потеряла бы две ступени.
@@ -358,6 +370,62 @@ describe("сетка 0.25rem", () => {
 
   it("сетка объявлена в поставке вместе с причиной", () => {
     expect(derivedCss()).toContain(GRID_NOTE);
+  });
+});
+
+describe("шкала ширин поверхностей", () => {
+  const column = scaleBySeed("column");
+
+  /** Ширина ступени в знаках при заданной плотности — то, чем шкала и задана. */
+  const glyphs = (name: string, density: number): number =>
+    valueOf(column, stepByName(column, name), density) /
+    (Number.parseFloat(column.fallback) * density);
+
+  it("имя ступени равно числу знаков", () => {
+    // Считается из данных, как у интервалов: имя, которое не равно множителю, — это имя,
+    // которое врёт, и врать оно начинает молча.
+    for (const step of column.steps) {
+      expect(step.name, `ступень ${step.name}`).toBe(`column-${factorOf(step)}`);
+    }
+  });
+
+  it("основание — читаемая колонка, а не кратность интервалу", () => {
+    // Требование `kb:PROBEWEB-16`: основание, взятое у соседней шкалы ради красоты вывода, —
+    // фикция, только записанная. `basis` уезжает комментарием в поставку.
+    expect(column.basis).toMatch(/читаемая колонка/);
+    expect(column.basis).toMatch(/знак/);
+    expect(column.basis).not.toMatch(/space|интервал\w* кратн/);
+    // Потолок колонки назван нормой честно — он AAA и он про длину строки, а не про семя.
+    expect(column.basis).toMatch(/1\.4\.8/);
+  });
+
+  it("колонка держит число знаков на любой плотности", () => {
+    // Смысл `density: true` у этой шкалы: кегль едет плотностью, и не поехала бы за ним
+    // колонка — в ту же ширину влезало бы больше знаков, чем названо в имени ступени.
+    for (const density of MULTIPLIERS) {
+      for (const step of column.steps) {
+        // Допуск — половина знака: столько может съесть посадка на сетку (0.125rem), и это
+        // единственное расхождение, которое здесь законно.
+        expect(glyphs(step.name, density), `--${step.name} при плотности ${density}`).toBeCloseTo(
+          factorOf(step),
+          0,
+        );
+      }
+    }
+  });
+
+  it("ряд ровный — ни одна ступень не подогнана под случай", () => {
+    // Шаг лестницы одинаков по всей длине. Ступень, стоящая ближе соседей, — это ступень,
+    // заведённая ради одного места; такая шкала перестаёт быть шкалой на втором случае.
+    const steps = column.steps.map(factorOf);
+    const gaps = steps.slice(1).map((value, index) => value - steps[index]);
+    expect(new Set(gaps).size, `шаги ряда: ${gaps.join("·")}`).toBe(1);
+  });
+
+  it("верхняя ступень укладывается в потолок нормы по длине строки", () => {
+    // 1.4.8 Visual Presentation (AAA): строка не длиннее 80 знаков. Это ПОТОЛОК, а не наш ряд:
+    // из нормы он не выводится, но выходить за неё не должен.
+    expect(Math.max(...column.steps.map(factorOf))).toBeLessThanOrEqual(80);
   });
 });
 
