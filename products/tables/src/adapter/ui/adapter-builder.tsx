@@ -11,6 +11,8 @@
 //   3. видно ДО и ПОСЛЕ на живых данных.
 
 import { Button, Field, Input } from "@omnifield/probe-web-ui";
+
+import { Choice, Tick } from "../../ui/choice.jsx";
 import { createMemo, For, Show } from "solid-js";
 
 import type { ColumnDictionary } from "../../table/index.js";
@@ -91,28 +93,33 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
   return (
     <div data-slot="adapter-builder">
       <div data-slot="adapter-source">
-        <label data-slot="adapter-rows">
+        {/* Обёртки — `span`, а не `label`: список и галка теперь разметкой, подпись связывает
+            с ними кит. Зацепка и на обёртке, и на самом поле: полусоставную часть одеть
+            нельзя. */}
+        <span data-slot="adapter-rows">
           набор строк лежит по пути
-          {/* Зацепка и на подписи, и на самом поле: полусоставную часть одеть нельзя. */}
-          <select
-            data-slot="adapter-rows-select"
+          <Choice
+            slot="adapter-rows-select"
+            label="Где лежит набор строк"
             value={props.spec.rows}
-            onChange={(event) => patch({ rows: event.currentTarget.value })}
-          >
-            <option value="">ответ целиком — это массив</option>
-            <For each={rowSets()}>{(path) => <option value={path}>{path}</option>}</For>
-          </select>
-        </label>
-
-        <label data-slot="adapter-extra">
-          <input
-            data-slot="adapter-extra-input"
-            type="checkbox"
-            checked={props.spec.extra === "keep"}
-            onChange={(event) => patch({ extra: event.currentTarget.checked ? "keep" : "drop" })}
+            options={[
+              { value: "", label: "ответ целиком — это массив" },
+              ...rowSets().map((path) => ({ value: path, label: path })),
+            ]}
+            onChange={(rows) => patch({ rows })}
           />
-          проносить их поля, для которых правил нет
-        </label>
+        </span>
+
+        <span data-slot="adapter-extra">
+          <Tick
+            slot="adapter-extra-input"
+            label="Проносить их поля, для которых правил нет"
+            checked={props.spec.extra === "keep"}
+            onChange={(checked) => patch({ extra: checked ? "keep" : "drop" })}
+          >
+            проносить их поля, для которых правил нет
+          </Tick>
+        </span>
       </div>
 
       <ol data-slot="adapter-rules">
@@ -126,36 +133,36 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
               <li data-slot="adapter-rule" data-target={rule.target}>
                 <span data-slot="adapter-rule-number">{index() + 1}</span>
 
-                <select
-                  data-slot="adapter-rule-target"
+                <Choice
+                  slot="adapter-rule-target"
+                  label={`Наше поле в правиле ${index() + 1}`}
                   value={rule.target}
-                  onChange={(event) =>
-                    replaceRule(index(), { ...rule, target: event.currentTarget.value })
-                  }
-                >
-                  <For each={props.fields}>
-                    {(field) => <option value={field.name}>{field.label}</option>}
-                  </For>
-                </select>
+                  options={props.fields.map((field) => ({
+                    value: field.name,
+                    label: field.label,
+                  }))}
+                  onChange={(target) => replaceRule(index(), { ...rule, target })}
+                />
 
                 <span data-slot="adapter-rule-arrow" aria-hidden="true">
                   ←
                 </span>
 
-                <select
-                  data-slot="adapter-rule-from"
+                <Choice
+                  slot="adapter-rule-from"
+                  label={`Их путь в правиле ${index() + 1}`}
                   value={rule.from ?? ""}
-                  onChange={(event) => {
-                    const value = event.currentTarget.value;
+                  options={[
+                    { value: "", label: "— без источника —" },
+                    ...sourcePaths().map((path) => ({ value: path, label: path })),
+                  ]}
+                  onChange={(value) =>
                     replaceRule(index(), {
                       ...rule,
                       ...(value === "" ? { from: undefined } : { from: value }),
-                    });
-                  }}
-                >
-                  <option value="">— без источника —</option>
-                  <For each={sourcePaths()}>{(path) => <option value={path}>{path}</option>}</For>
-                </select>
+                    })
+                  }
+                />
 
                 <div data-slot="adapter-rule-steps">
                   <For each={rule.steps ?? []}>
@@ -172,7 +179,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                           }
                         />
                         <Button
-                          data-slot="adapter-rule-step-remove"
+                          data-slot="button adapter-rule-step-remove"
                           aria-label={`Убрать действие ${at() + 1}`}
                           onClick={() =>
                             replaceRule(index(), {
@@ -187,46 +194,44 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                     )}
                   </For>
 
-                  <select
-                    data-slot="adapter-rule-step-add"
+                  {/* Список-КОМАНДА: выбранное не остаётся выбранным, а добавляет действие.
+                      Поэтому значение всегда пустое — список сам возвращается к «+ действие»,
+                      и второе одинаковое действие подряд добавляется тем же выбором. */}
+                  <Choice
+                    slot="adapter-rule-step-add"
+                    label={`Добавить действие в правило ${index() + 1}`}
                     value=""
-                    onChange={(event) => {
-                      const kind = event.currentTarget.value as StepKind;
-                      if (kind === ("" as StepKind)) return;
-                      event.currentTarget.value = "";
+                    options={[
+                      { value: "", label: "+ действие" },
+                      ...(Object.keys(STEP_LABELS) as StepKind[]).map((kind) => ({
+                        value: kind,
+                        label: `${STEP_LABELS[kind]}${SIMPLE_STEPS.includes(kind) ? "" : "…"}`,
+                      })),
+                    ]}
+                    onChange={(value) => {
+                      if (value === "") return;
                       replaceRule(index(), {
                         ...rule,
-                        steps: [...(rule.steps ?? []), blankStep(kind)],
+                        steps: [...(rule.steps ?? []), blankStep(value as StepKind)],
                       });
                     }}
-                  >
-                    <option value="">+ действие</option>
-                    <For each={Object.keys(STEP_LABELS) as StepKind[]}>
-                      {(kind) => (
-                        <option value={kind}>
-                          {STEP_LABELS[kind]}
-                          {SIMPLE_STEPS.includes(kind) ? "" : "…"}
-                        </option>
-                      )}
-                    </For>
-                  </select>
+                  />
                 </div>
 
-                <select
-                  data-slot="adapter-rule-on-fail"
+                <Choice
+                  slot="adapter-rule-on-fail"
+                  label={`Что делать при отказе в правиле ${index() + 1}`}
                   value={rule.onFail ?? "skip"}
-                  onChange={(event) =>
-                    replaceRule(index(), { ...rule, onFail: event.currentTarget.value as OnFail })
-                  }
-                >
-                  <For each={Object.entries(ON_FAIL_LABELS)}>
-                    {([value, label]) => <option value={value}>{label}</option>}
-                  </For>
-                </select>
+                  options={Object.entries(ON_FAIL_LABELS).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                  onChange={(value) => replaceRule(index(), { ...rule, onFail: value as OnFail })}
+                />
 
                 <Show when={rule.onFail === "default"}>
                   <Field
-                    data-slot="adapter-rule-fallback"
+                    data-slot="field adapter-rule-fallback"
                     value={rule.fallback ?? ""}
                     onChange={(value) => replaceRule(index(), { ...rule, fallback: value })}
                   >
@@ -253,7 +258,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
                 </Show>
 
                 <Button
-                  data-slot="adapter-rule-remove"
+                  data-slot="button adapter-rule-remove"
                   aria-label={`Убрать правило ${index() + 1}`}
                   onClick={() => patch({ fields: props.spec.fields.filter((_, at) => at !== index()) })}
                 >
@@ -265,7 +270,7 @@ export function AdapterBuilder(props: AdapterBuilderProps) {
         </For>
       </ol>
 
-      <Button data-slot="adapter-add" onClick={addRule}>
+      <Button data-slot="button adapter-add" onClick={addRule}>
         + правило
       </Button>
 
@@ -319,14 +324,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="adapter-step-separator"
+              data-slot="field adapter-step-separator"
               value={step().separator}
               onChange={(value) => props.onChange({ ...step(), separator: value })}
             >
               <Input placeholder="разделитель" />
             </Field>
             <Field
-              data-slot="adapter-step-take"
+              data-slot="field adapter-step-take"
               value={String(step().take)}
               onChange={(value) => props.onChange({ ...step(), take: Number(value) || 0 })}
             >
@@ -340,14 +345,14 @@ function StepParams(props: StepParamsProps) {
         {(step) => (
           <>
             <Field
-              data-slot="adapter-step-find"
+              data-slot="field adapter-step-find"
               value={step().find}
               onChange={(value) => props.onChange({ ...step(), find: value })}
             >
               <Input placeholder="найти" />
             </Field>
             <Field
-              data-slot="adapter-step-with"
+              data-slot="field adapter-step-with"
               value={step().with}
               onChange={(value) => props.onChange({ ...step(), with: value })}
             >
@@ -364,7 +369,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="adapter-step-by"
+            data-slot="field adapter-step-by"
             value={String(step().by)}
             onChange={(value) => props.onChange({ ...step(), by: Number(value) || 1 })}
           >
@@ -378,7 +383,7 @@ function StepParams(props: StepParamsProps) {
       >
         {(step) => (
           <Field
-            data-slot="adapter-step-value"
+            data-slot="field adapter-step-value"
             value={step().value}
             onChange={(value) => props.onChange({ ...step(), value })}
           >

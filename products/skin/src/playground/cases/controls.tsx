@@ -192,6 +192,21 @@ export const CONTROL_SPECIMENS: Specimen[] = [
         ),
       },
       {
+        id: "composed",
+        title: "Переключатель кнопкой",
+        note: "Один узел, две зацепки — `data-slot=\"button toggle\"`. Вид берёт кнопка, а НАЖАТОСТЬ остаётся нашей: это поведение примитива, и показывать его обязано оформление. Вариант тут не дефолтный намеренно — дефолтная кнопка сама сплошная брендовая и читалась бы нажатой всегда.",
+        render: () => (
+          <Box>
+            <Toggle as={Button} data-variant="outline">
+              Кнопкой, не нажат
+            </Toggle>
+            <Toggle as={Button} data-variant="outline" defaultPressed>
+              Кнопкой, нажат
+            </Toggle>
+          </Box>
+        ),
+      },
+      {
         id: "group",
         title: "Панель инструментов",
         note: "Несколько независимых кнопок подряд — типичное место для этого примитива.",
@@ -240,7 +255,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox defaultChecked>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Показывать сетку</CheckboxLabel>
             </Checkbox>
@@ -256,7 +271,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Подписи осей</CheckboxLabel>
               <CheckboxDescription>Занимают место на узком экране.</CheckboxDescription>
@@ -289,7 +304,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox validationState="invalid">
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Согласие обязательно</CheckboxLabel>
               <CheckboxError>Без согласия не сохранить.</CheckboxError>
@@ -308,7 +323,7 @@ export const CONTROL_SPECIMENS: Specimen[] = [
                 <Checkbox defaultChecked={i() === 0}>
                   <CheckboxInput />
                   <CheckboxControl>
-                    <CheckboxIndicator>✓</CheckboxIndicator>
+                    <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
                   </CheckboxControl>
                   <CheckboxLabel>{label}</CheckboxLabel>
                 </Checkbox>
@@ -325,14 +340,14 @@ export const CONTROL_SPECIMENS: Specimen[] = [
             <Checkbox disabled>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Недоступно</CheckboxLabel>
             </Checkbox>
             <Checkbox disabled defaultChecked>
               <CheckboxInput />
               <CheckboxControl>
-                <CheckboxIndicator>✓</CheckboxIndicator>
+                <CheckboxIndicator><span data-icon="check" aria-hidden="true" /></CheckboxIndicator>
               </CheckboxControl>
               <CheckboxLabel>Отмечено и недоступно</CheckboxLabel>
             </Checkbox>

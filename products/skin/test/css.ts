@@ -22,10 +22,19 @@ export const ZONE = join(here, "..");
 /** Папка с поставляемым оформлением. */
 export const SKIN_DIR = join(ZONE, "src", "skin");
 
-/** Файлы оформления, кроме сборного `skin.css` (в нём только импорты). */
+/**
+ * СБОРНЫЕ ФАЙЛЫ — в них только импорты, своих правил нет.
+ *
+ * Их два, и это не дубль: `skin.css` собирает оформление КИТА, `tables.css` — тяжёлых
+ * компонентов зоны `tables`. Разделены потому, что взявший только кит не должен получать
+ * килобайты правил таблицы, которой у него нет.
+ */
+export const AGGREGATES = ["skin.css", "tables.css"];
+
+/** Файлы оформления, кроме сборных (в них только импорты). */
 export function skinFiles(): { name: string; text: string }[] {
   return readdirSync(SKIN_DIR)
-    .filter((name) => name.endsWith(".css") && name !== "skin.css")
+    .filter((name) => name.endsWith(".css") && !AGGREGATES.includes(name))
     .sort()
     .map((name) => ({ name, text: readFileSync(join(SKIN_DIR, name), "utf8") }));
 }
@@ -206,4 +215,23 @@ export function themeValues(selector: string): Map<string, string> {
   }
 
   return values;
+}
+
+/**
+ * ВСЕ CSS зоны, включая стенд.
+ *
+ * Пробы смотрят на поставку (`src/skin`), и это верно: стенд потребителю не уезжает. Но CSS
+ * стенда тоже CSS, и оборвать его на середине блока так же легко — а заметно это не сразу:
+ * сборка проходит, прежний сервер продолжает отдавать старую версию, и поломка всплывает
+ * позже и не там. Поймано на живом случае: `playground.css` уехал в коммит обрезанным на
+ * середине медиа-блока.
+ */
+export function allCssFiles(): { name: string; text: string }[] {
+  const dirs = [SKIN_DIR, join(ZONE, "src", "playground"), join(ZONE, "src", "presets", "css")];
+
+  return dirs.flatMap((dir) =>
+    readdirSync(dir)
+      .filter((name) => name.endsWith(".css"))
+      .map((name) => ({ name, text: readFileSync(join(dir, name), "utf8") })),
+  );
 }

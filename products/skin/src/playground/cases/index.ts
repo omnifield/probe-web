@@ -6,6 +6,7 @@
 import { CONTROL_SPECIMENS } from "./controls.jsx";
 import { FEEDBACK_SPECIMENS } from "./feedback.jsx";
 import { FORM_SPECIMENS } from "./forms.jsx";
+import { ICON_SPECIMENS } from "./icons.jsx";
 import { INPUT2_SPECIMENS } from "./inputs2.jsx";
 import { GROUPS, type Group, type Specimen } from "./model.js";
 import { OVERLAY_SPECIMENS } from "./overlays.jsx";
@@ -21,6 +22,7 @@ const ALL: Specimen[] = [
   ...FEEDBACK_SPECIMENS,
   ...OVERLAY_SPECIMENS,
   ...STRUCTURE_SPECIMENS,
+  ...ICON_SPECIMENS,
 ];
 
 export const SPECIMENS: Specimen[] = GROUPS.flatMap((group) =>

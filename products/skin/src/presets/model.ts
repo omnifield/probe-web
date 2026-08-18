@@ -38,6 +38,15 @@ export type PresetMeta = Partial<Record<ThemeMetaToken, string>>;
 export interface Preset {
   /** Устойчивый идентификатор: он уезжает в атрибут `data-theme` и в имя файла. */
   id: string;
+  /**
+   * Идентификатор ЗАПИСИ в службе, если пресет пришёл оттуда.
+   *
+   * Их двое намеренно. Служба выдаёт свой идентификатор — UUID, и он опознаёт ЗАПИСЬ: по нему её
+   * удаляют и перезаписывают. Но в `data-theme` уезжает имя ТЕМЫ, и оно обязано оставаться
+   * читаемым: `data-theme="twitter"` человек видит в разметке своего приложения, а
+   * `data-theme="5fdbea2d-4afc-..."` не говорит ему ничего.
+   */
+  recordId?: string;
   title: string;
   /** Откуда пресет взялся. Нужно для отчёта и для запрета правки встроенных. */
   origin: "встроенный" | "свой";
@@ -127,3 +136,26 @@ export function cssOf(preset: Preset, state?: PresetState): string {
     "",
   ].join("\n");
 }
+
+/**
+ * Имя темы из человеческого названия: латиница, нижний регистр, дефисы.
+ *
+ * Оно уезжает В ИМЯ ФАЙЛА и в атрибут: «Янтарный пульт» как `data-theme` сработает, а как имя
+ * файла в чужой сборке — уже вопрос удачи. Поэтому название человеческое, а имя темы латинское.
+ */
+export function slugOf(title: string, taken: readonly string[] = []): string {
+  const latin = [...title.toLowerCase()].map((char) => CYRILLIC[char] ?? char).join("");
+  const base = latin.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "preset";
+
+  if (!taken.includes(base)) return base;
+  for (let n = 2; n < 100; n += 1) {
+    if (!taken.includes(`${base}-${n}`)) return `${base}-${n}`;
+  }
+  return `${base}-${taken.length}`;
+}
+
+const CYRILLIC: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "i",
+  к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f",
+  х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya",
+};

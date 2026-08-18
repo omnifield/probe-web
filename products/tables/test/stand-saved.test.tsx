@@ -121,17 +121,17 @@ describe("применение и удаление", () => {
     const host = await standOnFilters();
 
     press(one(host, ".page__case"));
-    const conditions = all(host, "[data-slot='filter-condition']").length;
+    const conditions = all(host, "[data-slot~='filter-condition']").length;
     await saveCurrent(host, "Мой отбор");
 
     // Сбрасываем и применяем сохранённое заново.
     press(one(host, ".page__reset"));
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(0);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(0);
 
     press(one(host, "[data-stand='saved-list'] .page__case"));
     await settle();
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(conditions);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(conditions);
   });
 
   it("удаление убирает отбор из списка", async () => {
@@ -157,7 +157,7 @@ describe("применение и удаление", () => {
 
     expect(one(host, ".page__saved-notice").textContent).toMatch(/не читается/);
     // Стенд жив: конструктор на месте, таблица на месте.
-    expect(host.querySelector("[data-slot='filter-builder']")).not.toBeNull();
+    expect(host.querySelector("[data-slot~='filter-builder']")).not.toBeNull();
     expect(host.querySelector("[data-stand='table']")).not.toBeNull();
   });
 
@@ -174,7 +174,7 @@ describe("применение и удаление", () => {
     press(one(host, "[data-stand='saved-list'] .page__case"));
     await settle();
 
-    expect(all(host, "[data-slot='filter-condition']").length).toBe(1);
+    expect(all(host, "[data-slot~='filter-condition']").length).toBe(1);
   });
 });
 

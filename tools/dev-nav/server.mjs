@@ -13,8 +13,10 @@
 // Ноль зависимостей: голый Node. Это оснастка локации, а не поставка, но тянуть ради неё
 // пакеты незачем — здесь нужен один прокси и одна страница.
 
+import { readFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { connect } from "node:net";
+import { fileURLToPath } from "node:url";
 
 const PORT = Number(process.env["NAV_PORT"] ?? 4100);
 const HOST = process.env["NAV_HOST"] ?? "0.0.0.0";
@@ -38,6 +40,69 @@ const CANDIDATES = [
 
 /** Какая зона показывается сейчас. */
 let current = CANDIDATES[0].id;
+
+/** Корень репозитория: отсюда берётся собранная панель. */
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/**
+ * Перечень пресетов оформления — ИЗ СЛУЖБЫ, и только из неё.
+ *
+ * Файлы пресетов, лежащие в зоне `skin`, панель НЕ показывает: это её встроенные заготовки,
+ * а не то, что кто-то сохранил и чем собирается пользоваться. Решение user 2026-08-17:
+ * нет сохранённых пресетов — нет и выбора, панель живёт на базовом оформлении.
+ *
+ * Служба различает виды ярлыком (`kb:PROBEWEB-8`), наш — `skin`. Пока `skin` не научится туда
+ * сохранять (`tasker:PROBEWEB-55`), список пуст — и это правильное состояние, а не сбой.
+ */
+/**
+ * Спросить службу и отдать ответ как есть.
+ *
+ * @param {import("node:http").ServerResponse} res
+ * @param {string} path
+ */
+function proxyToService(res, path) {
+  const call = httpRequest({ host: "127.0.0.1", port: 8787, path, method: "GET" }, (answer) => {
+    res.writeHead(answer.statusCode ?? 502, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-cache",
+    });
+    answer.pipe(res);
+  });
+  call.on("error", () => {
+    res.writeHead(503, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "service_down", message: "Служба пресетов не отвечает." }));
+  });
+  call.end();
+}
+
+function presets() {
+  return new Promise((resolve) => {
+    const call = httpRequest(
+      { host: "127.0.0.1", port: 8787, path: "/api/presets?kind=skin", method: "GET" },
+      (answer) => {
+        let body = "";
+        answer.on("data", (chunk) => (body += chunk));
+        answer.on("end", () => {
+          try {
+            const said = JSON.parse(body);
+            resolve(Array.isArray(said.items) ? said.items : []);
+          } catch {
+            resolve([]);
+          }
+        });
+      },
+    );
+    // Службы нет — список пуст. Панель от этого не ломается: оформление необязательно.
+    call.on("error", () => resolve([]));
+    call.setTimeout(1500, () => {
+      call.destroy();
+      resolve([]);
+    });
+    call.end();
+  });
+}
+
+
 
 /** @param {number} port */
 function alive(port) {
@@ -66,100 +131,72 @@ function portOf(id) {
   return CANDIDATES.find((zone) => zone.id === id)?.port ?? CANDIDATES[0].port;
 }
 
-const PAGE = `<!doctype html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<title>Пульт — дев-серверы probe-web</title>
-<style>
-  :root { color-scheme: dark; --bg:#14161a; --panel:#1c1f26; --line:#2b2f38; --ink:#e6e8ec; --dim:#9aa2b1; --live:#4ade80; --dead:#4b5563; --pick:#3b82f6; }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink);
-    font: 14px/1.45 ui-sans-serif, system-ui, sans-serif; }
-  body { display: grid; grid-template-rows: auto 1fr; }
-  header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  .brand { font-weight: 600; margin-right: 4px; }
-  .brand small { color: var(--dim); font-weight: 400; margin-left: 6px; }
-  button { font: inherit; color: var(--ink); background: transparent;
-    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 7px; }
-  button:hover { border-color: var(--dim); }
-  button[aria-current="true"] { border-color: var(--pick); background: #1e293b; }
-  button:disabled { cursor: not-allowed; opacity: .5; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dead); flex: none; }
-  .up .dot { background: var(--live); }
-  .spacer { flex: 1; }
-  .hint { color: var(--dim); font-size: 12px; }
-  iframe { width: 100%; height: 100%; border: 0; background: #fff; }
-  .empty { display: grid; place-content: center; gap: 10px; text-align: center; color: var(--dim); padding: 40px; }
-  code { background: #0f1115; padding: 2px 6px; border-radius: 5px; color: var(--ink); }
-</style>
-</head>
-<body>
-<header>
-  <span class="brand">Пульт<small>дев-серверы</small></span>
-  <nav id="zones"></nav>
-  <span class="spacer"></span>
-  <span class="hint" id="hint"></span>
-  <button id="reload" title="Перезагрузить содержимое">↻</button>
-</header>
-<div id="stage"><div class="empty"><p>Ищу дев-серверы…</p></div></div>
-<script>
-  const zones = document.getElementById("zones");
-  const stage = document.getElementById("stage");
-  const hint = document.getElementById("hint");
-  let current = null;
-
-  function frame() {
-    // Ключ по зоне: смена зоны обязана пересоздать окно, иначе показ останется от прежней.
-    stage.innerHTML = '<iframe src="/?nav=' + Date.now() + '" title="Дев-сервер"></iframe>';
+/**
+ * Отдать файл собранной панели.
+ *
+ * Панель собирается (`pnpm --dir tools/dev-nav/app build`) и лежит рядом. Не собрана — сервер
+ * говорит об этом прямо: молчаливый 404 на своей же странице выглядел бы как поломка прокси.
+ *
+ * @param {import("node:http").ServerResponse} res
+ * @param {string} file
+ * @param {string} type
+ */
+function sendBuilt(res, file, type) {
+  if (!/^[a-zA-Z0-9._/-]+$/.test(file) || file.includes("..")) {
+    res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+    res.end("недопустимое имя файла");
+    return;
   }
-
-  async function draw() {
-    const state = await (await fetch("/__nav/status")).json();
-    current = state.current;
-    zones.innerHTML = "";
-    for (const zone of state.zones) {
-      const button = document.createElement("button");
-      button.className = zone.up ? "up" : "";
-      button.setAttribute("aria-current", String(zone.id === current));
-      button.disabled = !zone.up;
-      button.title = zone.up ? "порт " + zone.port : "не поднят (порт " + zone.port + ")";
-      button.innerHTML = '<span class="dot"></span>' + zone.label;
-      button.onclick = async () => {
-        await fetch("/__nav/switch?zone=" + encodeURIComponent(zone.id), { method: "POST" });
-        await draw();
-        frame();
-      };
-      zones.append(button);
-    }
-    const live = state.zones.filter((zone) => zone.up).length;
-    hint.textContent = live === 0
-      ? "ни один дев-сервер не поднят"
-      : live + " из " + state.zones.length + " подняты";
-    if (live === 0) {
-      stage.innerHTML = '<div class="empty"><p>Ни один дев-сервер не отвечает.</p>'
-        + '<p>Подними любой: <code>cd products/tables && npx vite --port 5173</code></p></div>';
-    } else if (!stage.querySelector("iframe")) {
-      frame();
-    }
+  try {
+    const body = readFileSync(`${ROOT}tools/dev-nav/app/dist/${file}`);
+    res.writeHead(200, { "content-type": type, "cache-control": "no-cache" });
+    res.end(body);
+  } catch {
+    res.writeHead(503, { "content-type": "text/html; charset=utf-8" });
+    res.end(
+      `<body style="font:14px system-ui;padding:24px">
+       <p>Панель не собрана.</p>
+       <p><code>pnpm --dir tools/dev-nav/app build</code></p></body>`,
+    );
   }
+}
 
-  document.getElementById("reload").onclick = frame;
-  draw();
-  // Зоны поднимаются и падают по ходу работы — пульт пересматривает их сам.
-  setInterval(draw, 4000);
-</script>
-</body>
-</html>`;
+/** Счётчик обращений: петля в панели видна здесь раньше, чем в браузере. */
+const hits = new Map();
+setInterval(() => {
+  if (hits.size === 0) return;
+  const top = [...hits.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  console.log("[пульт] за 5 с:", top.map(([path, n]) => `${path}×${n}`).join(" · "));
+  hits.clear();
+}, 5000).unref();
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://nav.local");
+  const key = url.pathname.startsWith("/__nav/") ? url.pathname : "→зона";
+  hits.set(key, (hits.get(key) ?? 0) + 1);
 
   if (url.pathname === "/__nav/" || url.pathname === "/__nav") {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(PAGE);
+    return sendBuilt(res, "index.html", "text/html; charset=utf-8");
+  }
+
+  // Собранные файлы панели. Панель — приложение на нашей же базе: вкладки и список выбора
+  // приходят из кита готовыми, а не имитируются разметкой.
+  if (url.pathname.startsWith("/__nav/assets/")) {
+    const file = url.pathname.slice("/__nav/".length);
+    const type = file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8";
+    return sendBuilt(res, file, type);
+  }
+
+  // Одна запись целиком (в перечне содержимого нет). Панель берёт отсюда МОДЕЛЬ пресета и
+  // собирает из неё CSS. Файлов пресетов не существует: пресеты живут в службе.
+  if (url.pathname.startsWith("/__nav/preset/")) {
+    const id = url.pathname.slice("/__nav/preset/".length);
+    return proxyToService(res, `/api/presets/${encodeURIComponent(id)}`);
+  }
+
+  if (url.pathname === "/__nav/presets") {
+    res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ presets: await presets() }));
     return;
   }
 

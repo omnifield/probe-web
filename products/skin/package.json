@@ -9,16 +9,17 @@
     "./accordion.css": "./src/skin/accordion.css",
     "./base.css": "./src/skin/base.css",
     "./button.css": "./src/skin/button.css",
+    "./chart.css": "./src/skin/chart.css",
     "./checkbox.css": "./src/skin/checkbox.css",
     "./combobox.css": "./src/skin/combobox.css",
     "./dialog.css": "./src/skin/dialog.css",
     "./field.css": "./src/skin/field.css",
+    "./filter.css": "./src/skin/filter.css",
+    "./icons.css": "./src/skin/icons.css",
     "./menus.css": "./src/skin/menus.css",
     "./navigation.css": "./src/skin/navigation.css",
     "./number-field.css": "./src/skin/number-field.css",
     "./popover.css": "./src/skin/popover.css",
-    "./presets/dense.css": "./src/presets/css/dense.css",
-    "./presets/neutral.css": "./src/presets/css/neutral.css",
     "./presets/twitter.css": "./src/presets/css/twitter.css",
     "./progress.css": "./src/skin/progress.css",
     "./radio-group.css": "./src/skin/radio-group.css",
@@ -29,12 +30,14 @@
     "./slider.css": "./src/skin/slider.css",
     "./spinner.css": "./src/skin/spinner.css",
     "./switch.css": "./src/skin/switch.css",
+    "./table.css": "./src/skin/table.css",
     "./tabs.css": "./src/skin/tabs.css",
     "./toast.css": "./src/skin/toast.css",
     "./toggle-group.css": "./src/skin/toggle-group.css",
     "./toggle.css": "./src/skin/toggle.css",
     "./tooltip.css": "./src/skin/tooltip.css",
-    "./skin.css": "./src/skin/skin.css"
+    "./skin.css": "./src/skin/skin.css",
+    "./tables.css": "./src/skin/tables.css"
   },
   "scripts": {
     "dev": "vite --port 5174 --strictPort --host 0.0.0.0",
@@ -42,7 +45,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run",
-    "build:presets": "node --experimental-strip-types scripts/build-presets.mjs"
+    "build:presets": "node --experimental-strip-types scripts/build-presets.mjs",
+    "build:icons": "node --experimental-strip-types scripts/build-icons.mjs",
+    "seed:presets": "node --experimental-strip-types scripts/seed-presets.mjs"
   },
   "dependencies": {
     "@omnifield/probe-web-runtime": "file:../../packages/runtime",
@@ -51,6 +56,7 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.123",
     "@omnifield/probe-web-build": "file:../../packages/build",
     "@omnifield/probe-web-lint": "file:../../packages/lint",
     "@types/node": "^24.10.1",

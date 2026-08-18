@@ -1,0 +1,644 @@
+/* ТАБЛИЦА — подпуть `@probe-web/skin/table.css`. Требует `base.css` рядом (объявление слоя).
+
+   ЭТО ПЕРВЫЙ ФАЙЛ ЗОНЫ, ОДЕВАЮЩИЙ НЕ КИТ. Предмет — тяжёлый компонент продукта `tables`, и он
+   пришёл к тому же канону: перечень зацепок выписан руками и уехал в поставку данными
+   (`products/tables/src/slots.json`, подпуть `./slots.json`), состояния объявлены атрибутами и
+   тоже перечислены. Механика одевания от этого не меняется ни на строку — в этом и был смысл
+   канона (`kb:SKIN-1`): компонентов будет много, а производство одно.
+
+   ЧТО ОДЕВАЕТ ЭТОТ ФАЙЛ. Только части семейства `table`. Всё, что стоит на примитивах кита,
+   одето уже: списки — `select.css`, галки — `checkbox.css`, поля — `field.css`. Узел несёт оба
+   имени (`data-slot="select table-pager-size-select"`), и правило кита применяется само —
+   ровно то, ради чего просили цепочку зацепок.
+
+   ТРЕБУЕТ НАБОРА ЗНАЧКОВ (`icons.css`): направление порядка, скрытие колонки, прижатие и
+   листание рисуются значками. Берёте подпутём — берите оба файла; сборный `tables.css` тянет
+   набор сам.
+
+   ЧИТАЕМ СОСТОЯНИЯ, А НЕ СТРУКТУРУ. `aria-sort`, `data-pinned`, `data-format`, `data-missing`,
+   `data-depth` — обещание зоны `tables`. Ни одного `nth-child`, ни одного имени тега: строка
+   таблицы остаётся строкой таблицы, даже если её отрисуют иначе.
+
+   ── ЧЕГО ЗДЕСЬ НЕТ И ПОЧЕМУ ─────────────────────────────────────────────────────────────
+
+   ТЕКСТА. «Нет поля», «пусто», «скрыто:» — это СОДЕРЖИМОЕ: его переводят и читают вслух, а из
+   CSS нельзя ни того, ни другого. Пока текст рисуется у соседа `::before`, мы его не трогаем;
+   переедет в разметку — оденем узел. Договорённость записана в ТЗ соседу.
+
+   ЗВЁЗД РЕЙТИНГА. Их нельзя собрать из атрибута: посчитать «залить три из пяти» по значению
+   `data-rating` в CSS невозможно. Ждём узлы на ступень оценки — тогда рисуем значком `star`. */
+
+@layer skin {
+  /* ── рама ─────────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table"] {
+    inline-size: 100%;
+    /* `separate`, а не `collapse`: только так работают прижатые ячейки — при схлопнутых
+       границах они теряют собственный фон и просвечивают на прокрутке. */
+    border-collapse: separate;
+    border-spacing: 0;
+
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    color: var(--text);
+  }
+
+  [data-slot~="table-caption"] {
+    caption-side: block-start;
+    padding-block-end: var(--space-2);
+
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    text-align: start;
+  }
+
+  /* ── шапка ────────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-head"] {
+    background-color: var(--surface-subtle);
+  }
+
+  [data-slot~="table-header"],
+  [data-slot~="table-head-row"] [data-slot~="table-service"] {
+    /* Шапка держится при прокрутке: в таблице на сотню строк заголовок колонки нужен ровно
+       тогда, когда он уехал за край. Слой из шкалы — над строками, ниже всплывающих. */
+    /* `sticky` заодно служит точкой отсчёта для ручки ширины: она позиционирована абсолютно, и
+       без позиционированного предка встала бы относительно страницы. Отдельного
+       `position: relative` тут БЫТЬ НЕ ДОЛЖНО — оно стоит ниже по файлу и перебивает липкость.
+       Поймано замером на живой таблице: шапка переставала держаться при прокрутке. */
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-base);
+
+    padding: var(--space-2) var(--space-3);
+
+    border-block-end: var(--border-width-1) solid var(--border);
+
+    background-color: var(--surface-subtle);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  [data-slot~="table-header-label"] {
+    color: var(--text);
+  }
+
+  /* Кнопка порядка — не кнопка по виду: она занимает всю подпись колонки, и рамка вокруг
+     каждого заголовка превратила бы шапку в ряд кнопок. */
+  [data-slot~="table-header-sort"] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+
+    padding: 0;
+    border: 0;
+
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: var(--weight-medium);
+
+    cursor: pointer;
+  }
+
+  [data-slot~="table-header-sort"]:hover {
+    color: var(--brand-text);
+  }
+
+  [data-slot~="table-header-sort"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: var(--border-width-2);
+    border-radius: var(--radius-xs);
+  }
+
+  /* НАПРАВЛЕНИЕ РИСУЕМ МЫ. У соседа оно объявлено атрибутом (`data-direction`, и на заголовке
+     `aria-sort`) — значок это ВИД, и его место здесь. Стрелка ставится псевдоэлементом, потому
+     что своего узла под неё нет и заводить его ради значка сосед не должен. */
+  [data-slot~="table-header-sort"][data-direction]::after {
+    content: "";
+
+    inline-size: 1em;
+    block-size: 1em;
+
+    background-color: currentColor;
+    mask-image: var(--icon-arrow-up);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+
+  [data-slot~="table-header-sort"][data-direction="desc"]::after {
+    mask-image: var(--icon-arrow-down);
+  }
+
+  /* Место в порядке — только когда сортировок несколько: одинокая единица рядом со стрелкой
+     сбивает с толку. Ставит его сосед, показываем мелким и приглушённым. */
+  [data-slot~="table-header-sort-position"] {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+  }
+
+  /* ── управление колонкой ──────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-column-menu"] {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+
+    margin-block-start: var(--space-1);
+
+    /* Управление появляется по наведению на колонку и по фокусу внутри неё: постоянный ряд
+       кнопок в каждой шапке — это шум, из-за которого не видно данных. */
+    opacity: 0;
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="table-header"]:hover [data-slot~="table-column-menu"],
+  [data-slot~="table-column-menu"]:focus-within {
+    opacity: 1;
+  }
+
+  [data-slot~="table-column-up"],
+  [data-slot~="table-column-down"],
+  [data-slot~="table-column-pin"],
+  [data-slot~="table-column-pin-end"],
+  [data-slot~="table-column-group"],
+  [data-slot~="table-column-hide"],
+  [data-slot~="table-column-width-reset"],
+  [data-slot~="table-column-show"],
+  [data-slot~="table-pin-row"],
+  [data-slot~="table-group-toggle"],
+  [data-slot~="table-expand-all"],
+  [data-slot~="table-collapse-all"],
+  [data-slot~="table-pager-prev"],
+  [data-slot~="table-pager-next"] {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+
+    inline-size: var(--control-height-sm);
+    block-size: var(--control-height-sm);
+
+    border: var(--border-width-1) solid transparent;
+    border-radius: var(--radius-sm);
+
+    background-color: transparent;
+    color: var(--text-muted);
+
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="table-column-up"]:hover:not(:disabled),
+  [data-slot~="table-column-down"]:hover:not(:disabled),
+  [data-slot~="table-column-pin"]:hover:not(:disabled),
+  [data-slot~="table-column-pin-end"]:hover:not(:disabled),
+  [data-slot~="table-column-group"]:hover:not(:disabled),
+  [data-slot~="table-column-hide"]:hover:not(:disabled),
+  [data-slot~="table-column-width-reset"]:hover:not(:disabled),
+  [data-slot~="table-column-show"]:hover:not(:disabled),
+  [data-slot~="table-pin-row"]:hover:not(:disabled),
+  [data-slot~="table-group-toggle"]:hover:not(:disabled),
+  [data-slot~="table-expand-all"]:hover:not(:disabled),
+  [data-slot~="table-collapse-all"]:hover:not(:disabled),
+  [data-slot~="table-pager-prev"]:hover:not(:disabled),
+  [data-slot~="table-pager-next"]:hover:not(:disabled) {
+    background-color: var(--tint-hover);
+    color: var(--text);
+  }
+
+  [data-slot~="table-column-up"]:focus-visible,
+  [data-slot~="table-column-down"]:focus-visible,
+  [data-slot~="table-column-pin"]:focus-visible,
+  [data-slot~="table-column-pin-end"]:focus-visible,
+  [data-slot~="table-column-group"]:focus-visible,
+  [data-slot~="table-column-hide"]:focus-visible,
+  [data-slot~="table-column-width-reset"]:focus-visible,
+  [data-slot~="table-column-show"]:focus-visible,
+  [data-slot~="table-pin-row"]:focus-visible,
+  [data-slot~="table-group-toggle"]:focus-visible,
+  [data-slot~="table-expand-all"]:focus-visible,
+  [data-slot~="table-collapse-all"]:focus-visible,
+  [data-slot~="table-pager-prev"]:focus-visible,
+  [data-slot~="table-pager-next"]:focus-visible {
+    outline: var(--border-width-2) solid var(--focus-ring);
+    outline-offset: calc(var(--border-width-1) * -1);
+  }
+
+  [data-slot~="table-column-up"]:disabled,
+  [data-slot~="table-column-down"]:disabled,
+  [data-slot~="table-pager-prev"]:disabled,
+  [data-slot~="table-pager-next"]:disabled {
+    color: var(--text-muted);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* НАЖАТОЕ СОСТОЯНИЕ — у прижатия и группировки оно есть (`aria-pressed`), и без вида его не
+     видно: человек нажал «прижать» и не понимает, сработало ли. */
+  [data-slot~="table-column-pin"][aria-pressed="true"],
+  [data-slot~="table-column-pin-end"][aria-pressed="true"],
+  [data-slot~="table-column-group"][aria-pressed="true"] {
+    background-color: var(--brand-element);
+    color: var(--brand-text);
+  }
+
+  /* ЗНАЧКИ ВМЕСТО ГЛИФОВ. Сосед рисует эти кнопки текстом (`←`, `⇤`, `⊞`, `✕`, `↔`) — символы
+     зависят от шрифта, не следуют обводке набора и в тёмной паре выглядят иначе. Правило
+     снимается, как только внутри появится элемент: содержимое потребителя мы не отбираем. */
+  [data-slot~="table-column-up"]:not(:has(*)),
+  [data-slot~="table-column-down"]:not(:has(*)),
+  [data-slot~="table-column-pin"]:not(:has(*)),
+  [data-slot~="table-column-pin-end"]:not(:has(*)),
+  [data-slot~="table-column-group"]:not(:has(*)),
+  [data-slot~="table-column-hide"]:not(:has(*)),
+  [data-slot~="table-column-width-reset"]:not(:has(*)),
+  [data-slot~="table-column-show"]:not(:has(*)),
+  [data-slot~="table-pin-row"]:not(:has(*)),
+  [data-slot~="table-expand-all"]:not(:has(*)),
+  [data-slot~="table-collapse-all"]:not(:has(*)),
+  [data-slot~="table-pager-prev"]:not(:has(*)),
+  [data-slot~="table-pager-next"]:not(:has(*)) {
+    /* Текст уезжает за край, метрики шрифта остаются — на них держится размер значка. */
+    overflow: hidden;
+    text-indent: 2em;
+
+    background-color: currentColor;
+    background-clip: padding-box;
+    mask-size: 1em 1em;
+    mask-position: center;
+    mask-repeat: no-repeat;
+  }
+
+  [data-slot~="table-column-up"]:not(:has(*)) {
+    mask-image: var(--icon-arrow-left);
+  }
+
+  [data-slot~="table-column-down"]:not(:has(*)) {
+    mask-image: var(--icon-arrow-right);
+  }
+
+  [data-slot~="table-column-pin"]:not(:has(*)) {
+    mask-image: var(--icon-chevrons-left);
+  }
+
+  [data-slot~="table-column-pin-end"]:not(:has(*)) {
+    mask-image: var(--icon-chevrons-right);
+  }
+
+  [data-slot~="table-column-group"]:not(:has(*)) {
+    mask-image: var(--icon-group);
+  }
+
+  [data-slot~="table-column-hide"]:not(:has(*)) {
+    mask-image: var(--icon-eye-off);
+  }
+
+  [data-slot~="table-column-width-reset"]:not(:has(*)) {
+    mask-image: var(--icon-move-horizontal);
+  }
+
+  [data-slot~="table-column-show"]:not(:has(*)) {
+    mask-image: var(--icon-eye);
+  }
+
+  [data-slot~="table-pin-row"]:not(:has(*)) {
+    mask-image: var(--icon-pin);
+  }
+
+  [data-slot~="table-expand-all"]:not(:has(*)) {
+    mask-image: var(--icon-chevrons-down);
+  }
+
+  [data-slot~="table-collapse-all"]:not(:has(*)) {
+    mask-image: var(--icon-chevrons-up);
+  }
+
+  [data-slot~="table-pager-prev"]:not(:has(*)) {
+    mask-image: var(--icon-chevron-left);
+  }
+
+  [data-slot~="table-pager-next"]:not(:has(*)) {
+    mask-image: var(--icon-chevron-right);
+  }
+
+  /* Значок закрашивается ролью, поэтому нажатое состояние прижатия должно менять её, а не фон
+     под значком: иначе значок исчезает вместе с цветом. */
+  [data-slot~="table-pin-row"][data-pinned] {
+    color: var(--brand-text);
+  }
+
+  /* Ручка ширины: тонкая полоса на границе колонки. Курсор говорит, что её тянут. */
+  [data-slot~="table-column-resize"] {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+
+    inline-size: var(--space-1);
+
+    background-color: transparent;
+    cursor: col-resize;
+
+    transition: background-color var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="table-column-resize"]:hover,
+  [data-slot~="table-column-resize"]:focus-visible {
+    background-color: var(--brand-solid);
+    outline: none;
+  }
+
+  /* ── тело ─────────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-row"]:hover [data-slot~="table-cell"],
+  [data-slot~="table-row"]:hover [data-slot~="table-service"] {
+    background-color: var(--tint-hover);
+  }
+
+  /* Выделенная строка — подложкой бренда, а не рамкой: рамка в таблице ломает сетку. */
+  [data-slot~="table-row"][aria-selected="true"] [data-slot~="table-cell"],
+  [data-slot~="table-row"][aria-selected="true"] [data-slot~="table-service"] {
+    background-color: var(--brand-element);
+  }
+
+  /* Заголовок группы: тот же ряд, но читается как раздел. */
+  [data-slot~="table-row"][data-group] [data-slot~="table-cell"],
+  [data-slot~="table-row"][data-group] [data-slot~="table-service"] {
+    background-color: var(--surface-subtle);
+    font-weight: var(--weight-medium);
+  }
+
+  /* ЗАКРЕПЛЁННАЯ СТРОКА держится у края: её место задаёт край, а не порядок. */
+  [data-slot~="table-row"][data-pinned="top"] [data-slot~="table-cell"],
+  [data-slot~="table-row"][data-pinned="top"] [data-slot~="table-service"] {
+    position: sticky;
+    inset-block-start: var(--control-height-md);
+    z-index: var(--z-base);
+    background-color: var(--surface);
+  }
+
+  [data-slot~="table-row"][data-pinned="bottom"] [data-slot~="table-cell"],
+  [data-slot~="table-row"][data-pinned="bottom"] [data-slot~="table-service"] {
+    position: sticky;
+    inset-block-end: 0;
+    z-index: var(--z-base);
+    background-color: var(--surface);
+  }
+
+  [data-slot~="table-cell"],
+  [data-slot~="table-service"] {
+    padding: var(--space-2) var(--space-3);
+    /* Линия между строками — та же роль границы, что и везде. Более светлой роли для «тонкой
+       линии в плотной сетке» в базе нет; появится — переедем на неё, а разводить свою тут
+       значило бы завести цвет мимо шкалы. */
+    border-block-end: var(--border-width-1) solid var(--border);
+    vertical-align: middle;
+  }
+
+  /* Служебная колонка — узкая: в ней галка и закрепление, а не данные. */
+  [data-slot~="table-service"] {
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+
+  /* ЧИСЛА ПРИЖИМАЮТСЯ К КОНЦУ, и это не вкус: у выровненных по правому краю чисел разряды
+     стоят под разрядами, и колонку можно читать глазами сверху вниз. */
+  [data-slot~="table-cell"][data-format="number"],
+  [data-slot~="table-cell"][data-format="percent"],
+  [data-slot~="table-total"] {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-slot~="table-cell"][data-format="date"],
+  [data-slot~="table-cell"][data-format="datetime"] {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* «НЕТ ПОЛЯ» И «ПУСТО» — РАЗНЫЕ ВЕЩИ, и сосед их различает атрибутами. Вид обязан различать
+     тоже: отсутствие поля это вопрос к данным, а пустое значение — обычное состояние.
+
+     ТЕКСТ ТЕПЕРЬ УЗЛАМИ, а не `content:` — сосед перенёс его в разметку по нашей заявке, и это
+     правильно: подпись переводят и читают вслух. Одеваем оба — и ячейку (она задаёт настроение
+     всей клетки), и сам узел (он несёт слово). */
+  [data-slot~="table-cell"][data-missing] {
+    color: var(--danger-text);
+  }
+
+  [data-slot~="table-cell-missing"] {
+    color: var(--danger-text);
+    font-style: italic;
+  }
+
+  [data-slot~="table-cell"][data-empty],
+  [data-slot~="table-cell-empty"] {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Сведённое по группе — не значение строки, и читаться должно иначе. */
+  [data-slot~="table-cell"][data-aggregated] {
+    font-weight: var(--weight-medium);
+  }
+
+  [data-slot~="table-cell"][data-group-cell] {
+    font-weight: var(--weight-medium);
+  }
+
+  [data-slot~="table-cell"][data-highlighted] {
+    background-color: var(--brand-element);
+  }
+
+  [data-slot~="table-cell"][data-clickable] {
+    cursor: pointer;
+  }
+
+  [data-slot~="table-cell"][data-clickable]:hover {
+    color: var(--brand-text);
+  }
+
+  /* ── оценка ───────────────────────────────────────────────────────────────────────── */
+
+  /* ЗВЁЗДЫ РИСУЕМ МЫ — это вид; ЧИСЛО остаётся у соседа, и это не дублирование, а разные
+     предметы: значки показывают величину глазами, а подпись и атрибуты дают её тому, кто
+     слушает. Ровно поэтому «залить три из пяти» нельзя было сделать из атрибута — нужны были
+     узлы на ступень, и сосед их дал. */
+  [data-slot~="table-rating"] {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  [data-slot~="table-rating-step"] {
+    inline-size: 1em;
+    block-size: 1em;
+
+    /* Незаполненная ступень — та же звезда, но приглушённая: разной формой их различать нельзя,
+       иначе ряд перестаёт читаться как шкала. */
+    background-color: var(--element-active);
+    mask-image: var(--icon-star);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
+
+  [data-slot~="table-rating-step"][data-filled] {
+    background-color: var(--brand-solid);
+  }
+
+  /* ГЛУБИНА ГРУППЫ отступом. Отступ считается от шкалы интервалов, а не «по 16 пикселей на
+     уровень»: при плотной посадке он обязан сжаться вместе со всем остальным. */
+  [data-slot~="table-row"][data-depth="1"] [data-slot~="table-cell"]:first-child {
+    padding-inline-start: calc(var(--space-3) + var(--space-4));
+  }
+
+  [data-slot~="table-row"][data-depth="2"] [data-slot~="table-cell"]:first-child {
+    padding-inline-start: calc(var(--space-3) + var(--space-4) * 2);
+  }
+
+  [data-slot~="table-row"][data-depth="3"] [data-slot~="table-cell"]:first-child {
+    padding-inline-start: calc(var(--space-3) + var(--space-4) * 3);
+  }
+
+  /* Раскрывашка группы: шеврон поворачивается, как у аккордеона — одно движение на всю базу. */
+  [data-slot~="table-group-toggle"]:not(:has(*)) {
+    overflow: hidden;
+    text-indent: 2em;
+
+    background-color: currentColor;
+    mask-image: var(--icon-chevron-right);
+    mask-size: 1em 1em;
+    mask-position: center;
+    mask-repeat: no-repeat;
+
+    transition: transform var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="table-group-toggle"][aria-expanded="true"]:not(:has(*)) {
+    transform: rotate(90deg);
+  }
+
+  [data-slot~="table-group-count"] {
+    margin-inline-start: var(--space-2);
+
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-full);
+
+    background-color: var(--element);
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-slot~="table-group-controls"] {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+
+    padding-block: var(--space-2);
+  }
+
+  /* ── подвал ───────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-foot"] {
+    background-color: var(--surface-subtle);
+  }
+
+  [data-slot~="table-foot-row"] [data-slot~="table-total"],
+  [data-slot~="table-foot-row"] [data-slot~="table-service"] {
+    position: sticky;
+    inset-block-end: 0;
+    z-index: var(--z-base);
+
+    padding: var(--space-2) var(--space-3);
+    border-block-start: var(--border-width-1) solid var(--border);
+    border-block-end: 0;
+
+    background-color: var(--surface-subtle);
+    font-weight: var(--weight-medium);
+  }
+
+  /* ── скрытые колонки ──────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-hidden-columns"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+
+    margin: 0;
+    padding: var(--space-2) 0;
+
+    list-style: none;
+
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  /* «Скрыто:» — подпись перечня, а не его пункт по смыслу: она приглушена и не носит рамку
+     плашки, иначе читается как ещё одна скрытая колонка. */
+  [data-slot~="table-hidden-columns-label"] {
+    color: var(--text-muted);
+  }
+
+  [data-slot~="table-hidden-column-name"] {
+    color: var(--text);
+  }
+
+  [data-slot~="table-hidden-column"] {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+
+    padding-inline: var(--space-2);
+    padding-block: var(--space-1);
+
+    border: var(--border-width-1) solid var(--border);
+    border-radius: var(--radius-full);
+
+    background-color: var(--element);
+    color: var(--text-muted);
+  }
+
+  /* ── листание ─────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="table-pager"] {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+
+    padding-block: var(--space-2);
+
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  [data-slot~="table-pager-position"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-slot~="table-pager-size"] {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+
+    margin-inline-start: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="table-column-menu"],
+    [data-slot~="table-group-toggle"]:not(:has(*)),
+    [data-slot~="table-column-resize"] {
+      transition: none;
+    }
+  }
+}

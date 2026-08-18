@@ -1,0 +1,205 @@
+/* ГРАФИК — подпуть `@probe-web/skin/chart.css`. Требует `base.css` рядом.
+
+   Предмет рисуется в SVG, и это меняет способ, а не механику: цвет там `fill` и `stroke`, а не
+   `background-color`. Зацепки и состояния читаются те же (`products/tables/src/slots.json`), и
+   ни одного `nth-child` здесь тоже нет.
+
+   ── ЦВЕТ РЯДА БЕРЁТСЯ ИЗ КАТЕГОРИЙНОЙ ШКАЛЫ БАЗЫ ───────────────────────────────────────
+
+   `--chart-1…5` объявлены слоем `style` ровно для этого: ряды надо РАЗЛИЧАТЬ, а не показывать
+   ими величину, поэтому ступени одной шкалы бренда здесь не годятся — соседние ряды слились бы.
+   Номер ряда сосед отдаёт атрибутом (`data-series`, счёт от нуля), мы переводим номер в цвет
+   один раз и складываем в `--series`; линия и величина внутри читают уже его.
+
+   ШКАЛА КОНЕЧНА — пять цветов. Шестой ряд начинает круг заново, и это НЕ недоделка: график,
+   на котором шесть и больше ряда, читать всё равно нельзя, и решать это надо не палитрой, а
+   отбором. Чтобы круг не превращался в путаницу, вторая пятёрка отличается ПУНКТИРОМ.
+
+   ── ЦВЕТА ОДНОГО МАЛО (WCAG 2.2, 1.4.1) ────────────────────────────────────────────────
+
+   Различать ряды только цветом нельзя: у части людей они совпадут. Поэтому линии получают ещё и
+   рисунок штриха, а имя ряда всегда стоит в легенде рядом с его метиной. */
+
+@layer skin {
+  [data-slot~="chart"] {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+
+    /* Величины у края не обрезаются: точка на крайнем делении выходит за рамку на свой радиус. */
+    overflow: visible;
+  }
+
+  /* ── номер ряда → цвет ────────────────────────────────────────────────────────────── */
+
+  [data-slot~="chart-series"][data-series="0"],
+  [data-slot~="chart-legend-item"][data-series="0"] {
+    --series: var(--chart-1);
+  }
+
+  [data-slot~="chart-series"][data-series="1"],
+  [data-slot~="chart-legend-item"][data-series="1"] {
+    --series: var(--chart-2);
+  }
+
+  [data-slot~="chart-series"][data-series="2"],
+  [data-slot~="chart-legend-item"][data-series="2"] {
+    --series: var(--chart-3);
+  }
+
+  [data-slot~="chart-series"][data-series="3"],
+  [data-slot~="chart-legend-item"][data-series="3"] {
+    --series: var(--chart-4);
+  }
+
+  [data-slot~="chart-series"][data-series="4"],
+  [data-slot~="chart-legend-item"][data-series="4"] {
+    --series: var(--chart-5);
+  }
+
+  /* Шестой ряд и дальше — круг заново, но пунктиром: цвет повторился, рисунок штриха нет. */
+  [data-slot~="chart-series"][data-series="5"],
+  [data-slot~="chart-legend-item"][data-series="5"] {
+    --series: var(--chart-1);
+    --series-dash: var(--space-2) var(--space-1);
+  }
+
+  [data-slot~="chart-series"][data-series="6"],
+  [data-slot~="chart-legend-item"][data-series="6"] {
+    --series: var(--chart-2);
+    --series-dash: var(--space-2) var(--space-1);
+  }
+
+  [data-slot~="chart-series"][data-series="7"],
+  [data-slot~="chart-legend-item"][data-series="7"] {
+    --series: var(--chart-3);
+    --series-dash: var(--space-2) var(--space-1);
+  }
+
+  /* ── величины ─────────────────────────────────────────────────────────────────────── */
+
+  /* Столбик и точка — заливкой, линия — обводкой. Различие не декоративное: у линии заливка
+     закрасила бы всю область под ней. Чем нарисованы величины, говорит сам сосед (`data-mark`
+     на корне), но правило здесь работает и без него — по тому, ЧТО перед нами. */
+  [data-slot~="chart-mark"] {
+    fill: var(--series, var(--chart-1));
+    stroke: none;
+
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+
+  [data-slot~="chart-line"] {
+    fill: none;
+    stroke: var(--series, var(--chart-1));
+    stroke-width: var(--border-width-2);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: var(--series-dash, none);
+  }
+
+  /* ВЫДЕЛЕННАЯ ВЕЛИЧИНА — это условие отбора, а не украшение: по ней собран показ. Обводка
+     цветом текста, потому что она обязана быть видна на любом цвете ряда. */
+  [data-slot~="chart-mark"][data-selected] {
+    stroke: var(--text);
+    stroke-width: var(--border-width-2);
+  }
+
+  /* Наведение на ряд приглушает остальные: так видно, какая линия чья, когда их несколько. */
+  [data-slot~="chart"]:has([data-slot~="chart-series"]:hover)
+    [data-slot~="chart-series"]:not(:hover) {
+    opacity: 0.35;
+  }
+
+  /* ── оси и сетка ──────────────────────────────────────────────────────────────────── */
+
+  /* Сетка — самая тихая вещь на графике: она нужна, чтобы сверить величину с делением, и не
+     должна спорить с данными. */
+  [data-slot~="chart-grid"] {
+    stroke: var(--border);
+    stroke-width: var(--border-width-1);
+  }
+
+  [data-slot~="chart-tick-label"],
+  [data-slot~="chart-slice-label"] {
+    fill: var(--text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Подписи ОСИ ВЕЛИЧИН стоят слева от делений, поэтому прижимаются к концу строки; подписи
+     ОСИ КАТЕГОРИЙ — под своим срезом, поэтому по центру. Без этого обе группы подписей съезжают
+     относительно того, что подписывают, и график читается неверно на пиксель. */
+  [data-slot~="chart-value-axis"] [data-slot~="chart-tick-label"] {
+    text-anchor: end;
+  }
+
+  [data-slot~="chart-slice-axis"] [data-slot~="chart-slice-label"] {
+    text-anchor: middle;
+  }
+
+  /* ── пусто ────────────────────────────────────────────────────────────────────────── */
+
+  /* «Нечего показать» — состояние, а не поломка, и выглядеть должно спокойно: паника на пустом
+     наборе заставляет искать ошибку там, где её нет. */
+  [data-slot~="chart-empty"] {
+    fill: var(--text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  /* ── легенда ──────────────────────────────────────────────────────────────────────── */
+
+  [data-slot~="chart-legend"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  [data-slot~="chart-legend-item"] {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  /* Метина легенды несёт цвет ряда — тот же номер, тот же цвет. Пунктирная метина у второй
+     пятёрки повторяет рисунок штриха линии: легенда обязана совпадать с графиком не только
+     цветом, иначе она врёт. */
+  [data-slot~="chart-legend-mark"] {
+    flex: none;
+
+    inline-size: var(--space-3);
+    block-size: var(--space-3);
+
+    border-radius: var(--radius-xs);
+
+    background-color: var(--series, var(--chart-1));
+  }
+
+  [data-slot~="chart-legend-item"][data-series="5"] [data-slot~="chart-legend-mark"],
+  [data-slot~="chart-legend-item"][data-series="6"] [data-slot~="chart-legend-mark"],
+  [data-slot~="chart-legend-item"][data-series="7"] [data-slot~="chart-legend-mark"] {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--overlay) 0,
+      var(--overlay) var(--border-width-1),
+      transparent var(--border-width-1),
+      transparent var(--border-width-2)
+    );
+  }
+
+  [data-slot~="chart-legend-label"] {
+    color: var(--text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot~="chart-mark"] {
+      transition: none;
+    }
+  }
+}

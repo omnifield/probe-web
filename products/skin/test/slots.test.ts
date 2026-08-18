@@ -27,11 +27,33 @@ import { describe, expect, it } from "vitest";
 
 import { allSkinCss, stripComments, ZONE } from "./css.js";
 
-/** Обещание зоны `ui` — источник истины по именам зацепок. */
+/**
+ * ОБЕЩАНИЯ, за которые зона цепляется. Источников теперь ДВА, и это не временно.
+ *
+ * Кит — не единственный, кого мы одеваем: тяжёлые компоненты зоны `tables` пришли к тому же
+ * канону (`kb:SKIN-1`) и объявили свой перечень. Механика от этого не изменилась — изменилось
+ * только число источников, и проба обязана знать их все: имя, которого нет ни в одном, это
+ * опечатка, а не «наверное, чужое».
+ *
+ * ФОРМЫ РАЗНЫЕ, и это осознанно. Кит держит перечень в `test/slot-list.ts` — файле, который
+ * в его поверхность не входит; читаем по пути в репозитории и знаем, что после разъезда зон
+ * этот путь исчезнет (заявка киту стоит). `tables` уже отдаёт обещание ДАННЫМИ в поставке
+ * (`src/slots.json`, подпуть `./slots.json`) — так и надо, и так читаем.
+ */
 function promisedSlots(): string[] {
-  const text = readFileSync(join(ZONE, "..", "..", "packages", "ui", "test", "slot-list.ts"), "utf8");
-  const body = text.slice(text.indexOf("PROMISED_SLOTS"));
-  return [...body.matchAll(/"([a-z-]+)"/g)].map(([, name]) => name);
+  const kit = readFileSync(join(ZONE, "..", "..", "packages", "ui", "test", "slot-list.ts"), "utf8");
+  const fromKit = [...kit.slice(kit.indexOf("PROMISED_SLOTS")).matchAll(/"([a-z-]+)"/g)].map(
+    ([, name]) => name,
+  );
+
+  const raw = readFileSync(join(ZONE, "..", "tables", "src", "slots.json"), "utf8");
+  const parsed = JSON.parse(raw) as { families?: Record<string, unknown> };
+  const families = parsed.families ?? {};
+  const fromTables = Object.values(families).flatMap((names) =>
+    Array.isArray(names) ? names.filter((one): one is string => typeof one === "string") : [],
+  );
+
+  return [...fromKit, ...fromTables];
 }
 
 /** Зацепки, на которые у нас есть правила. */
@@ -43,6 +65,29 @@ function dressedSlots(): Set<string> {
   return out;
 }
 
+
+/**
+ * ЧАСТИ, КОТОРЫЕ ОДЕВАЕТ КИТ, а не мы.
+ *
+ * Сосед ставит свои имена НА примитивы кита: `data-slot="select table-pager-size-select"`. Узел
+ * несёт оба имени, правило кита применяется само — это и есть цепочка зацепок, ради которой она
+ * просилась. Своего правила такой части не нужно, и требовать его значило бы писать вид кнопки
+ * заново под каждым чужим именем.
+ *
+ * Адрес даёт сам сосед — `kitBacked` в его обещании. Проверка при этом НЕ ослабляется: если
+ * примитив, на котором часть стоит, у нас не одет, часть остаётся голой, и это долг.
+ */
+function backedByKit(): Map<string, string> {
+  const raw = readFileSync(join(ZONE, "..", "tables", "src", "slots.json"), "utf8");
+  const parsed = JSON.parse(raw) as { kitBacked?: Record<string, string[]> };
+  const out = new Map<string, string>();
+
+  for (const [primitive, slots] of Object.entries(parsed.kitBacked ?? {})) {
+    for (const slot of slots) out.set(slot, primitive);
+  }
+  return out;
+}
+
 /**
  * СЕМЕЙСТВА, КОТОРЫЕ ЗОНА ОБЪЯВИЛА ОДЕТЫМИ. Каждое обязано быть одето целиком.
  *
@@ -50,6 +95,11 @@ function dressedSlots(): Set<string> {
  * с кода перечень подтверждал бы сам себя, и полусоставной примитив прошёл бы молча.
  */
 const DRESSED_FAMILIES = [
+  // Тяжёлые компоненты зоны `tables`. Одевается по одному семейству за заход: `filter` и
+  // `chart` встанут сюда, когда будут одеты, — до тех пор они честно висят в долге.
+  "table",
+  "filter",
+  "chart",
   "pagination",
   "navigation-menu",
   "menubar",
@@ -114,7 +164,30 @@ function familyOf(slot: string): string {
  *
  * Запись здесь — утверждение о примитиве, а не способ отвязаться от пробы.
  */
+/**
+ * СЕМЕЙСТВА, КОТОРЫЕ ЗОНА НЕ ОДЕВАЕТ ПО РЕШЕНИЮ, а не «пока не дошла».
+ *
+ * Запись здесь — договорённость с владельцем предмета, и она печатается отдельно от долга.
+ * Смешать их значило бы вечно показывать недоделку там, где решение принято.
+ */
+const BY_DECISION: Record<string, string> = {
+  adapter:
+    "переходник — внутренний инструмент зоны tables, человеку не показывается; состояний он " +
+    "намеренно не обещает, и одевать там нечего (решение owner-tables, принято owner-skin)",
+};
+
 const NOT_DRESSED: Record<string, string> = {
+  // Пояснение графика — узел `<desc>` внутри SVG: он существует для чтения вслух и не рисуется
+  // вовсе. Одевать его нечем, а «одеть» значило бы сделать вид, что он виден.
+  "chart-summary": "<desc> внутри SVG: текст для ассистивных технологий, на экране его нет",
+  // Деление оси — группа из линии сетки и подписи; вид несут они, а сама группа только держит
+  // их вместе. Красить её нечем: у `<g>` нет ни фона, ни рамки.
+  "chart-tick": "группа <g> из линии сетки и подписи: вид несут дети, у группы его нет",
+
+  // Тело таблицы: вид несут строки и ячейки, а сам `tbody` существует ради разметки. Красить его
+  // отдельно значило бы завести фон, который перекрывают все строки до единой.
+  "table-body": "узел разметки без собственного вида: цвет и границы несут строки и ячейки",
+
   // Указатели всплывающих: `fill` и `stroke` kobalte СЧИТЫВАЕТ с панели (покрасили панель —
   // указатель пошёл следом), а размер задаётся пропом `size`, потому что по нему считается
   // смещение панели. Правило здесь было бы вторым источником правды о цвете.
@@ -157,7 +230,12 @@ describe("реестр зацепок", () => {
     const dressed = dressedSlots();
     const promised = promisedSlots();
     const holes = promised.filter(
-      (slot) => inDressedFamily(slot) && !dressed.has(slot) && !(slot in NOT_DRESSED),
+      (slot) =>
+        inDressedFamily(slot) &&
+        !dressed.has(slot) &&
+        !(slot in NOT_DRESSED) &&
+        // Часть на примитиве кита одета правилом кита — но только если сам примитив у нас одет.
+        !(backedByKit().has(slot) && dressed.has(backedByKit().get(slot)!)),
     );
 
     expect(holes, "части объявленных семейств без правил — примитив одет наполовину").toEqual([]);
@@ -194,13 +272,24 @@ describe("реестр зацепок", () => {
     // перестаёт быть долгом и становится забытым.
     const dressed = dressedSlots();
     const promised = promisedSlots();
-    const debt = promised.filter((slot) => !inDressedFamily(slot) && !dressed.has(slot));
+    const undressed = promised.filter((slot) => !inDressedFamily(slot) && !dressed.has(slot));
+
+    // ДОЛГ И РЕШЕНИЕ — РАЗНЫЕ ВЕЩИ, и мешать их в одно число нельзя: долг растёт, пока работа не
+    // сделана, а решение «это не одеваем» закрыто и обсуждению не подлежит, пока его не отменят.
+    // Иначе отчёт вечно показывает недоделку там, где договорённость.
+    const decided = undressed.filter((slot) =>
+      Object.keys(BY_DECISION).some((family) => slot === family || slot.startsWith(`${family}-`)),
+    );
+    const debt = undressed.filter((slot) => !decided.includes(slot));
     const families = [...new Set(debt.map((slot) => familyOf(slot)))];
 
     console.info(
       `долг одевания: ${debt.length} зацепок` +
         (debt.length ? `, семейства: ${families.join(", ")}` : ""),
     );
+    for (const [family, why] of Object.entries(BY_DECISION)) {
+      console.info(`не одевается по решению: ${family} — ${why}`);
+    }
 
     // Утверждение здесь одно и оно про целостность самого подсчёта: в долг не должно попасть
     // то, что уже одето.

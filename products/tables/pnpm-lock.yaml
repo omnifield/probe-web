@@ -33,6 +33,9 @@ importers:
       '@omnifield/probe-web-lint':
         specifier: file:../../packages/lint
         version: file:../../packages/lint(eslint@10.8.1)(typescript@7.0.2)
+      '@probe-web/skin':
+        specifier: file:../skin
+        version: file:../skin(@kobalte/core@0.13.12(solid-js@1.9.14))
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
@@ -385,6 +388,9 @@ packages:
 
   '@oxc-project/types@0.143.0':
     resolution: {integrity: sha512-u6JZdLBTLotrNC9Vd6vPssINdzcCzleKAH6EJKImQb7GtYvX5keN2dxkoK44stCc4tffE6QQRtZTXVSzsLUlWA==}
+
+  '@probe-web/skin@file:../skin':
+    resolution: {directory: ../skin, type: directory}
 
   '@rolldown/binding-android-arm64@1.2.3':
     resolution: {integrity: sha512-zrJtHDcaZJ1Fp7xf4hNl+7seH9Cn/N5TwLYkhgXREtBwAd/jaqW3uqeHxpDugJLVICWg4eW44kOQEGJ1r6jCGw==}
@@ -1953,6 +1959,15 @@ snapshots:
       solid-js: 1.9.14
 
   '@oxc-project/types@0.143.0': {}
+
+  '@probe-web/skin@file:../skin(@kobalte/core@0.13.12(solid-js@1.9.14))':
+    dependencies:
+      '@omnifield/probe-web-runtime': file:../../packages/runtime(solid-js@1.9.14)
+      '@omnifield/probe-web-style': file:../../packages/style(solid-js@1.9.14)
+      '@omnifield/probe-web-ui': file:../../packages/ui(@kobalte/core@0.13.12(solid-js@1.9.14))(solid-js@1.9.14)
+      solid-js: 1.9.14
+    transitivePeerDependencies:
+      - '@kobalte/core'
 
   '@rolldown/binding-android-arm64@1.2.3':
     optional: true
