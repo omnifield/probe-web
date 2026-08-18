@@ -60,6 +60,51 @@ describe("хранилище", () => {
     assert.equal(items.some((item) => item.description === undefined), true);
   });
 
+  it("перечень отбирается по ярлыку — сравнением строки, без взгляда внутрь", async () => {
+    const store = await openStore(await scratch());
+
+    const skin = await store.create({ label: "Twitter", kind: "skin", state: { seeds: {} } });
+    await store.create({ label: "Срочные", kind: "filter", state: { version: 1 } });
+    const unlabelled = await store.create({ label: "Без ярлыка", state: { version: 1 } });
+
+    assert.deepEqual(
+      store.list({ kind: "skin" }).map((item) => item.id),
+      [skin.id],
+    );
+    // Ярлык виден в перечне: без него читатель не знает, какого вида запись.
+    assert.equal(store.list({ kind: "skin" })[0]?.kind, "skin");
+
+    // Отбор без ярлыка — всё, что лежит, включая непомеченное.
+    assert.equal(store.list().length, 3);
+    assert.equal(store.list().some((item) => item.id === unlabelled.id), true);
+
+    // Непомеченная запись не попадает ни в один отбор по ярлыку: её вид не назван.
+    assert.deepEqual(store.list({ kind: "filter" }).map((item) => item.id).includes(unlabelled.id), false);
+
+    // Ярлык, которым никто не помечался, — пусто, а не поломка.
+    assert.deepEqual(store.list({ kind: "map" }), []);
+  });
+
+  it("файл ПРОШЛОГО конверта — без ярлыка — подхватывается как есть", async () => {
+    const dir = await scratch();
+
+    // Ровно то, что уже лежит на томе у `tables`: запись, сохранённая до появления ярлыка.
+    const id = "11111111-2222-3333-4444-555555555555";
+    await writeFile(
+      join(dir, `${id}.json`),
+      JSON.stringify({ id, label: "Лежит с прошлой версии", savedAt: "2026-08-13T10:00:00.000Z", state: { version: 1 } }),
+      "utf8",
+    );
+
+    const store = await openStore(dir);
+
+    assert.equal(store.size, 1);
+    const [item] = store.list();
+    assert.equal(item?.label, "Лежит с прошлой версии");
+    assert.equal("kind" in (item ?? {}), false, "ярлык не выдумывается за отправителя");
+    assert.deepEqual((await store.read(id))?.state, { version: 1 });
+  });
+
   it("данные переживают перезапуск: новое хранилище на том же каталоге видит старое", async () => {
     const dir = await scratch();
 
