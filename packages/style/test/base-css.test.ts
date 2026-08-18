@@ -66,14 +66,20 @@ describe("base.css", () => {
   it("шкалы производны от семени, а не выписаны значениями", () => {
     expect(built).toContain("--radius-lg: var(--radius, 0.5rem);");
     expect(built).toMatch(/--radius-xl:\s*calc\(var\(--radius, 0\.5rem\) \+ 4px\)/);
-    expect(built).toMatch(/--space-4:\s*calc\(var\(--space, 0\.25rem\) \* 4 \* var\(--density/);
+    expect(built).toMatch(
+      /--space-4:\s*round\(nearest, calc\(var\(--space, 0\.25rem\) \* 4 \* var\(--density, 1\)\), 0\.25rem\);/,
+    );
   });
 
-  it("ось плотности объявлена и умножает только то, что должна", () => {
+  it("ось плотности объявлена и умножает то, что должна, включая кегль", () => {
     expect(built).toContain(`--${DENSITY_TOKEN}: 1;`);
-    // Кегль плотностью не масштабируется: 1.4.4 Resize Text и читаемость важнее строк на экране.
+    // Кегль в оси: плотность — равномерное изменение всей вещи (`kb:PROBEWEB-16`, часть А).
     const fontSize = built.match(/--font-size-lg:[^;]+;/)?.[0] ?? "";
-    expect(fontSize).not.toContain(DENSITY_TOKEN);
+    expect(fontSize).toContain(DENSITY_TOKEN);
+    // …но на сетку он не садится — шаг сетки разрушил бы отношения ступеней (`GRID_NOTE`).
+    expect(fontSize).not.toContain("round(");
+    // Геометрия, наоборот, садится: иначе произвольный множитель даёт дробь.
+    expect(built).toMatch(/--control-height-sm:\s*round\(nearest,/);
   });
 
   it("роль ссылается на ступень, а не хранит значение", () => {
