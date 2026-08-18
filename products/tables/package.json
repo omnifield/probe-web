@@ -47,7 +47,7 @@
   "devDependencies": {
     "@omnifield/probe-web-build": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
-    "@probe-web/skin": "file:../skin",
+    "@probe-web/skin": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
