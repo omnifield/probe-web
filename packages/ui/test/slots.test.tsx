@@ -55,6 +55,33 @@ import {
   CheckboxLabel,
 } from "../src/checkbox.jsx";
 import {
+  ColorArea,
+  ColorAreaBackground,
+  ColorAreaDescription,
+  ColorAreaError,
+  ColorAreaHiddenInputX,
+  ColorAreaHiddenInputY,
+  ColorAreaLabel,
+  ColorAreaThumb,
+} from "../src/color-area.jsx";
+import {
+  ColorField,
+  ColorFieldDescription,
+  ColorFieldError,
+  ColorFieldInput,
+  ColorFieldLabel,
+} from "../src/color-field.jsx";
+import {
+  ColorSlider,
+  ColorSliderDescription,
+  ColorSliderError,
+  ColorSliderInput,
+  ColorSliderLabel,
+  ColorSliderThumb,
+  ColorSliderTrack,
+  ColorSliderValueLabel,
+} from "../src/color-slider.jsx";
+import {
   Combobox,
   ComboboxArrow,
   ComboboxContent,
@@ -384,6 +411,37 @@ function Scene() {
           <RadioGroupItemDescription>до 46</RadioGroupItemDescription>
         </RadioGroupItem>
       </RadioGroup>
+
+      <ColorField validationState="invalid">
+        <ColorFieldLabel>Акцент</ColorFieldLabel>
+        <ColorFieldInput />
+        <ColorFieldDescription>Шестнадцатеричный</ColorFieldDescription>
+        <ColorFieldError>Слишком светлый для текста</ColorFieldError>
+      </ColorField>
+
+      <ColorArea validationState="invalid">
+        <ColorAreaLabel>Оттенок</ColorAreaLabel>
+        <ColorAreaBackground>
+          <ColorAreaThumb>
+            <ColorAreaHiddenInputX />
+            <ColorAreaHiddenInputY />
+          </ColorAreaThumb>
+        </ColorAreaBackground>
+        <ColorAreaDescription>Тяните по квадрату</ColorAreaDescription>
+        <ColorAreaError>Слишком тёмный</ColorAreaError>
+      </ColorArea>
+
+      <ColorSlider channel="hue" validationState="invalid">
+        <ColorSliderLabel>Тон</ColorSliderLabel>
+        <ColorSliderValueLabel />
+        <ColorSliderTrack>
+          <ColorSliderThumb>
+            <ColorSliderInput />
+          </ColorSliderThumb>
+        </ColorSliderTrack>
+        <ColorSliderDescription>Цветовой круг</ColorSliderDescription>
+        <ColorSliderError>Тон занят другой ступенью</ColorSliderError>
+      </ColorSlider>
 
       <Combobox<string, { край: string; города: string[] }>
         open

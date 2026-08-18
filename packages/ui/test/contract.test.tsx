@@ -16,6 +16,9 @@ import { Accordion, Collapsible, CollapsibleTrigger } from "../src/accordion.jsx
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button.jsx";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import { ColorArea, ColorAreaBackground, ColorAreaThumb } from "../src/color-area.jsx";
+import { ColorField, ColorFieldInput, ColorFieldLabel } from "../src/color-field.jsx";
+import { ColorSlider, ColorSliderThumb, ColorSliderTrack } from "../src/color-slider.jsx";
 import {
   Combobox,
   ComboboxControl,
@@ -564,6 +567,82 @@ const PRIMITIVES = [
     ),
   },
   {
+    name: "ColorField",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <ColorField {...props} />,
+  },
+  {
+    name: "ColorFieldInput",
+    tag: "input",
+    render: (props: Record<string, unknown>) => (
+      <ColorField>
+        <ColorFieldInput {...props} />
+      </ColorField>
+    ),
+  },
+  {
+    name: "ColorFieldLabel",
+    tag: "label",
+    render: (props: Record<string, unknown>) => (
+      <ColorField>
+        <ColorFieldLabel {...props} />
+      </ColorField>
+    ),
+  },
+  {
+    name: "ColorArea",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <ColorArea {...props} />,
+  },
+  {
+    // `as="p"` уводит подложку от тега корня — иначе селектор `div` поймал бы сам корень.
+    name: "ColorAreaBackground",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <ColorArea>
+        <ColorAreaBackground as="p" {...props} />
+      </ColorArea>
+    ),
+  },
+  {
+    name: "ColorAreaThumb",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <ColorArea>
+        <ColorAreaBackground>
+          <ColorAreaThumb {...props} />
+        </ColorAreaBackground>
+      </ColorArea>
+    ),
+  },
+  {
+    // `channel` обязателен: без него неизвестно, что ползунок меняет, и градиента не
+    // существует. Ставится ДО спреда — потребитель вправе его перебить.
+    name: "ColorSlider",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <ColorSlider channel="hue" {...props} />,
+  },
+  {
+    name: "ColorSliderTrack",
+    tag: "p",
+    render: (props: Record<string, unknown>) => (
+      <ColorSlider channel="hue">
+        <ColorSliderTrack as="p" {...props} />
+      </ColorSlider>
+    ),
+  },
+  {
+    name: "ColorSliderThumb",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <ColorSlider channel="hue">
+        <ColorSliderTrack>
+          <ColorSliderThumb {...props} />
+        </ColorSliderTrack>
+      </ColorSlider>
+    ),
+  },
+  {
     name: "FieldDescription",
     // `as="p"` не только уводит пояснение от тега корня `Field` (иначе селектор `div` ловил
     // бы корень), но и проверяет заодно, что полиморфизм не теряется в обёртке.
@@ -631,6 +710,15 @@ const WITH_SERVICE_STYLE = new Set([
   "SliderThumb",
   // Заглушка: `width`/`height` — это пропы размера kobalte, а не вид (`test/progress.test.tsx`).
   "Skeleton",
+  // Цветовые: на подложке и дорожке — градиенты, посчитанные ИЗ значения, на бегунках —
+  // координаты и переменная `--kb-color-current`. Это не вид, а сами данные примитива:
+  // показывать нужно те цвета, между которыми выбирают, а знает их только он. Разобрано в
+  // `test/color-area.test.tsx` и `test/color-slider.test.tsx` — там же проверено, что стиль
+  // потребителя с нашим СЛИВАЕТСЯ, а не затирается.
+  "ColorAreaBackground",
+  "ColorAreaThumb",
+  "ColorSliderTrack",
+  "ColorSliderThumb",
 ]);
 
 describe("стилей по умолчанию нет", () => {
