@@ -66,6 +66,7 @@ export {
   type Role,
 } from "./roles.js";
 export {
+  DENSITY_CEILING,
   DENSITY_DEFAULT,
   DENSITY_FLOOR,
   DENSITY_NOTE,
@@ -73,6 +74,8 @@ export {
   DERIVED_SCALES,
   DERIVED_TOKENS,
   FIXED_TOKENS,
+  GRID_NOTE,
+  GRID_STEP,
   type DerivedScale,
   type DerivedStep,
 } from "./dimension.js";
