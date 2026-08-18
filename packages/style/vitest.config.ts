@@ -35,6 +35,7 @@ export default defineConfig({
             "test/layer.test.ts",
             "test/scale.test.ts",
             "test/dimension.test.ts",
+            "test/axes.test.ts",
             "test/base-css.test.ts",
             "test/pack.test.ts",
             "test/types.test.ts",

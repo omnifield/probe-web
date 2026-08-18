@@ -11,7 +11,7 @@
   [data-slot~="tooltip-content"] {
     z-index: var(--z-popover);
 
-    max-inline-size: min(16rem, 80vw);
+    max-inline-size: min(var(--column-32), 80vw);
     padding-block: var(--space-2);
     padding-inline: var(--space-3);
 
