@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { readdirSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { PKG, installFromTarball } from "./helpers/install.js";
+import { PKG, installFromTarball, pkgRoot } from "./helpers/install.js";
 
 // Гейт ПОСТАВКИ: что окажется в тарболе и разрешится ли из него подпуть. Проверять это по
 // полям манифеста бессмысленно — `files` и `exports` расходятся с фактом молча, и узнаёт
@@ -78,6 +78,25 @@ describe("разрешение из установки", () => {
 
   it("внутренние файлы наружу не торчат — только объявленные подпути", () => {
     expect(() => req().resolve(`${PKG}/dist/tokens.js`)).toThrow();
+  });
+
+  it("установка значений не привозит зависимостей инструментов", () => {
+    // Разрез считается сделанным не тогда, когда `cn` исчез с поверхности, а когда его
+    // зависимости перестали приезжать вместе со значениями. Пока `clsx`, `tailwind-merge`
+    // и `cva` стоят в манифесте, «инструменты необязательны» неправда: их ставит каждый,
+    // кто взял значения (`PWEB-3`).
+    const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+    const declared = [
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ];
+
+    for (const tool of ["clsx", "tailwind-merge", "class-variance-authority"]) {
+      expect(declared, `${tool} — зависимость инструментов, а не значений`).not.toContain(tool);
+    }
   });
 
   it("установка состоит только из поставки", () => {

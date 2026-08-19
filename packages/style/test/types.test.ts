@@ -70,9 +70,8 @@ beforeAll(() => {
     [
       `import "${PKG}/base.css";`,
       `import "${PKG}/themes.css";`,
-      `import { cn, themeModelToCss, type ThemeModel, type ThemeTokens } from "${PKG}";`,
+      `import { themeModelToCss, type ThemeModel, type ThemeTokens } from "${PKG}";`,
       "",
-      "export const cls: string = cn('p-2', 'p-4');",
       "export type Tokens = ThemeTokens;",
       "",
       "// Генератор — обычный публичный вход, без подпутей во внутренности: у потребителя",
@@ -95,6 +94,16 @@ beforeAll(() => {
     tsconfig(["no-extension.ts"]),
     "utf8",
   );
+
+  // Инструменты стилизации с поверхности СНЯТЫ (`PWEB-3`): они уехали в отдельную
+  // необязательную поставку. Держим это гейтом, а не памятью — вернувшийся реэкспорт
+  // выглядит удобством и молча возвращает инструменты в каждую установку значений.
+  writeFileSync(
+    join(install, "tools.ts"),
+    `import { cn, createStyle, cva } from "${PKG}";\nexport { cn, createStyle, cva };\n`,
+    "utf8",
+  );
+  writeFileSync(join(install, "tsconfig.tools.json"), tsconfig(["tools.ts"]), "utf8");
 });
 
 afterAll(() => {
@@ -104,6 +113,13 @@ afterAll(() => {
 describe("типизация у потребителя", () => {
   it("оба CSS-подпутя и корень проходят `tsc` из чистой установки", () => {
     expect(typecheck("tsconfig.json")).toBe("");
+  });
+
+  it("инструментов стилизации на поверхности нет — они отдельная поставка", () => {
+    // `TS2305` — «модуль не экспортирует такого имени». Ровно то, что обязан увидеть тот,
+    // кто по привычке возьмёт `cn` из набора значений: подсказка ведёт в другую поставку,
+    // а не молча привозит инструменты вместе со значениями.
+    expect(typecheck("tsconfig.tools.json")).toMatch(/TS2305/);
   });
 
   it("имя без расширения не типизируется — то, из-за чего подпуть переименован", () => {

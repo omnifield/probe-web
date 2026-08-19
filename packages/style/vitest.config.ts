@@ -1,8 +1,8 @@
 import { defineConfig } from "vitest/config";
 
 // Два проекта, потому что тесты живут в разных мирах:
-//   • dom — механика тем и реактивность: нужен документ (JSDOM) и браузерная ветка
-//     разрешения `solid-js`, иначе приедет серверная сборка ядра;
+//   • dom — механика тем: нужен документ (JSDOM) и браузерная ветка разрешения `solid-js`,
+//     иначе приедет серверная сборка ядра;
 //   • node — контракт токенов, инвариант base.css и упаковка: тут работают файловая
 //     система, `pnpm pack`, разрешение по `exports` и прогон `tsc`
 //     в установке потребителя, и браузерные условия им мешают.
@@ -14,12 +14,7 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
-          include: [
-            "test/cn.test.ts",
-            "test/create-style.test.ts",
-            "test/theme.test.ts",
-            "test/trace.test.ts",
-          ],
+          include: ["test/theme.test.ts", "test/trace.test.ts"],
         },
       },
       {

@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-style",
   "version": "0.1.0",
-  "description": "Стилевой слой probe-web: токен-контракт, cn/createStyle, дефолтная пара тем. Ноль зависимостей на кит и рантайм (kb:PROBEWEB-4).",
+  "description": "Набор значений probe-web: токен-контракт, шкалы, роли, дефолтная пара тем. Один из поставщиков значений, а не фундамент; инструменты стилизации — отдельная поставка (PWEB-3).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -25,11 +25,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
     "test": "pnpm run build && vitest run"
-  },
-  "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.4.0"
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
