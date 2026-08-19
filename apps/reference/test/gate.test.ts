@@ -11,6 +11,8 @@
 
 import { defineConfig } from "@omnifield/probe-web-build/vite";
 import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
+import * as values from "@omnifield/probe-web-style";
+import * as tools from "@omnifield/probe-web-style-tools";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,5 +69,44 @@ describe("оснастка приложения ничего не добавля
     const raw: unknown = JSON.parse(readFileSync(join(ROOT, "tsconfig.json"), "utf8"));
     expect(raw).toMatchObject({ extends: "@omnifield/probe-web-build/tsconfig" });
     expect(raw).not.toHaveProperty("compilerOptions");
+  });
+});
+
+describe("значения и инструменты — две разные поставки (`PWEB-3`)", () => {
+  // Разрез между набором значений и ящиком инструментов держится не намерением, а тем, что
+  // потребитель ОБЪЯВЛЯЕТ обе поставки и берёт из каждой своё. Вернуть реэкспорт инструментов
+  // в набор значений можно молча: приложение продолжит собираться, а свойство «инструменты
+  // необязательны» станет ложью, потому что их снова привозит одна установка.
+
+  /** Манифест зоны — то, что видно потребителю до всякой сборки. */
+  function manifest(): { dependencies?: Record<string, string> } {
+    return JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+    };
+  }
+
+  it("в манифесте зоны объявлены обе, и одна не приезжает следом за другой", () => {
+    const dependencies = manifest().dependencies ?? {};
+
+    expect(dependencies).toHaveProperty("@omnifield/probe-web-style");
+    expect(dependencies).toHaveProperty("@omnifield/probe-web-style-tools");
+  });
+
+  it("набор значений инструментов не отдаёт", () => {
+    // Здесь краснеет возвращённый реэкспорт: приложение от него не сломается, а разрез —
+    // сломается. Имена перечислены поштучно, потому что стережём именно их переезд.
+    expect(values).not.toHaveProperty("createStyle");
+    expect(values).not.toHaveProperty("cva");
+    expect(values).not.toHaveProperty("cn");
+  });
+
+  it("ящик инструментов значений не отдаёт", () => {
+    // Обратная сторона того же разреза: инструменты не знают ни одного нашего токена, иначе
+    // взять их «у кого-то ещё» стало бы невозможно.
+    expect(tools).toHaveProperty("createStyle");
+    expect(tools).toHaveProperty("cva");
+    expect(tools).toHaveProperty("cn");
+    expect(tools).not.toHaveProperty("createThemeController");
+    expect(tools).not.toHaveProperty("DEFAULT_PALETTE");
   });
 });
