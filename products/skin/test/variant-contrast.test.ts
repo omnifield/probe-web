@@ -91,8 +91,8 @@ describe("контраст подписи в каждом варианте", () 
     }
   });
 
-  for (const mode of [":root", ".dark"] as const) {
-    const modeName = mode === ":root" ? "светлая" : "тёмная";
+  for (const mode of ["light", "dark"] as const) {
+    const modeName = mode === "light" ? "светлая" : "тёмная";
 
     for (const pair of pairs) {
       it(`${modeName}: ${pair.variant} — подпись на фоне ≥ ${AA_TEXT}`, () => {

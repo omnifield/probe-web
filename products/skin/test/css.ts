@@ -14,6 +14,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { DEFAULT_PALETTE, type ScaleMode } from "@omnifield/probe-web-style";
+
 const here = dirname(fileURLToPath(import.meta.url));
 
 /** Корень зоны. */
@@ -170,12 +172,40 @@ export function deprecatedTokens(): Set<string> {
 }
 
 /**
- * Значение токена в заданном режиме — по цепочке роль → … → ступень → значение темы.
+ * СЕЛЕКТОР ПАЛИТРЫ — форма шва, записанная здесь СОЗНАТЕЛЬНО.
+ *
+ * Палитра цепляется к документу атрибутом `data-theme="<имя>"`, тёмная половина — тем же
+ * атрибутом плюс класс `dark`. Это пункт 4 перечня шва (`kb:SKIN-5`) — то, что пересекает
+ * границу владений, и потому известно обеим сторонам: по той же причине атрибут и класс
+ * зашиты у `runtime`, который их СТАВИТ.
+ *
+ * Мы палитру только ЧИТАЕМ. Объявить её мимо общего пути (`paletteCss()` слоя `style`)
+ * отсюда нельзя, второго генератора из этой строки не заводится (`kb:PROBEWEB-18`). ИМЯ при
+ * этом не переписываем — оно принадлежит `style` и приезжает `DEFAULT_PALETTE`: вторая копия
+ * имени разъехалась бы молча.
+ *
+ * Сменится форма — пробы, читающие палитру, покраснеют. Это сработавшая сигнализация, а не
+ * поломка: ровно так она и сработала, когда палитры перевели на имя, `:root` красить
+ * перестал, и резолвер перестал находить значения вовсе.
+ *
+ * @param name имя палитры
+ * @param mode половина пары, для которой нужен селектор
+ */
+function paletteSelector(name: string, mode: ScaleMode): string {
+  const attribute = `[data-theme="${name}"]`;
+  // Заголовок тёмного блока несёт ДВЕ формы через запятую — на самом носителе и на потомке.
+  // `themeValues()` делит заголовок по запятой и сверяет вхождение, поэтому достаточно той
+  // формы, что стоит на носителе: блок по ней находится целиком.
+  return mode === "dark" ? `${attribute}.dark` : attribute;
+}
+
+/**
+ * Значение токена в заданной половине пары — по цепочке роль → … → ступень → значение темы.
  *
  * @returns значение или `undefined`, если цепочка никуда не привела
  */
-export function resolveToken(name: string, mode: ":root" | ".dark"): string | undefined {
-  const steps = mode === ":root" ? themeValues(":root") : themeValues(".dark");
+export function resolveToken(name: string, mode: ScaleMode): string | undefined {
+  const steps = themeValues(mode);
   const roles = roleLinks();
 
   let current = name;
@@ -196,11 +226,16 @@ export function resolveToken(name: string, mode: ":root" | ".dark"): string | un
 }
 
 /**
- * Значения токенов в одном блоке темы.
+ * Значения токенов дефолтной палитры в одной половине пары.
  *
- * @param selector селектор блока — `:root` для светлой пары, `.dark` для тёмной
+ * Читается ИМЕННО дефолтная палитра: `themes.css` слоя `style` объявляет её тем же
+ * генератором, что и любой пресет, и цепляется она своим селектором, а не корнем документа
+ * (`kb:PROBEWEB-18`).
+ *
+ * @param mode половина пары — светлая или тёмная
  */
-export function themeValues(selector: string): Map<string, string> {
+export function themeValues(mode: ScaleMode): Map<string, string> {
+  const selector = paletteSelector(DEFAULT_PALETTE, mode);
   const css = stripComments(themesCss());
   const values = new Map<string, string>();
 

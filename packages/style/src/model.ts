@@ -12,13 +12,14 @@
 // в службе: это понятия стенда и хранилища, а не вида. Светлого/тёмного режима тоже нет —
 // режим выбирает пользователь, и одна и та же модель обязана работать в обоих.
 
-import { DENSITY_TOKEN } from "./dimension.js";
+import { DENSITY_DEFAULT, DENSITY_TOKEN } from "./dimension.js";
+import { DEFAULT_PALETTE, PALETTE_ATTRIBUTE, paletteCss } from "./palette.js";
 import {
+  DEFAULT_SEEDS,
   type ThemeMetaToken,
   type ThemeSeeds,
   type ThemeTokens,
   buildThemeTokens,
-  themeToCss,
 } from "./tokens.js";
 import { trace } from "./trace.js";
 
@@ -71,8 +72,6 @@ export interface ThemeModel {
 export function themeModelToCss(model: ThemeModel): string {
   const done = trace(`themeModelToCss(${model.id})`);
 
-  const selector = `[data-theme="${model.id}"]`;
-
   // Плотность в контракт темы не входит (это ось, а не токен палитры — `DENSITY_NOTE`),
   // поэтому в набор значений она добавляется здесь и приведением, а не расширением типа.
   const light = {
@@ -87,15 +86,33 @@ export function themeModelToCss(model: ThemeModel): string {
 
   const css = [
     `/* Тема «${model.id}» — значения вида, отчуждаемые файлом.`,
-    `   Подключение: этот файл плюс атрибут data-theme="${model.id}" на <html>.`,
-    `   Тёмная пара включается классом dark, как и у базовой темы. */`,
+    `   Подключение: этот файл плюс атрибут ${PALETTE_ATTRIBUTE}="${model.id}" на <html>.`,
+    `   Тёмная пара включается классом dark, как и у любой другой темы. */`,
     "",
-    themeToCss(selector, light),
+    paletteCss(model.id, "light", light),
     "",
-    themeToCss(`${selector}.dark, ${selector} .dark`, dark),
+    paletteCss(model.id, "dark", dark),
     "",
   ].join("\n");
 
   done();
   return css;
 }
+
+/**
+ * ДЕФОЛТНАЯ ПАЛИТРА КАК МОДЕЛЬ. Из неё сборка делает `dist/css/themes.css` — тем же
+ * вызовом `themeModelToCss()`, каким рождается любой пресет, а не похожим на него.
+ *
+ * Ради этого модель и объявлена значением: пока «дефолт» собирался отдельной веткой в
+ * скрипте сборки, он был не палитрой, а привилегией — красил `:root` и перебивался
+ * пресетом вместо того, чтобы им БЫТЬ (`kb:PROBEWEB-18`). Второго места, где записано,
+ * из чего состоит дефолт, теперь нет: скрипт сборки берёт эту запись, проба — её же.
+ *
+ * Мета не задана намеренно: значения по умолчанию приходят из описания шкал
+ * (`SHARED_META`), и повторить их здесь значило бы завести вторую копию дефолтов.
+ */
+export const DEFAULT_THEME_MODEL: ThemeModel = {
+  id: DEFAULT_PALETTE,
+  seeds: DEFAULT_SEEDS,
+  density: DENSITY_DEFAULT,
+};

@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DERIVED_TOKENS, FIXED_TOKENS } from "../src/dimension.js";
@@ -18,24 +16,12 @@ import {
   themeToCss,
 } from "../src/tokens.js";
 
-// Тесты этого файла — гейт КОНТРАКТА: они держат обещание «тема = данные полного набора»
-// и «сгенерированный CSS = те же данные». Без них набор токенов расползается молча.
+// Тесты этого файла — гейт КОНТРАКТА: они держат обещание «тема = данные полного набора».
+// Собранный CSS проверяется отдельно (`test/themes-css.test.ts`): там же живёт правило,
+// ради которого палитра принимает имя, а не селектор (`kb:PROBEWEB-18`), и держать его
+// рядом с контрактом токенов значило бы смешать два разных вопроса в одном файле.
 
 const CONTRACT = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS]);
-
-/** Парс CSS-блока в карту токенов: `selector { --k: v; }` → `{ k: v }`. */
-const parseBlock = (css: string, selector: string): Record<string, string> => {
-  const start = css.indexOf(`${selector} {`);
-  expect(start, `селектор «${selector}» найден в themes.css`).toBeGreaterThanOrEqual(0);
-
-  const body = css.slice(start + selector.length + 2, css.indexOf("}", start));
-  const out: Record<string, string> = {};
-  for (const line of body.split(";")) {
-    const match = line.match(/--([\w-]+):\s*([\s\S]+)/);
-    if (match) out[match[1]] = match[2].trim();
-  }
-  return out;
-};
 
 describe("токен-контракт", () => {
   it("обе дефолтные темы покрывают ПОЛНОЕ цветовое ядро", () => {
@@ -93,11 +79,14 @@ describe("токен-контракт", () => {
   });
 
   it("themeToCss отдаёт блок для селектора, по строке на токен", () => {
-    const css = themeToCss(":root", {
+    // Форматирование блока и только оно. КАКОЙ селектор получает палитра, решает
+    // `paletteSelector()` (`src/palette.ts`), и на поверхность эта функция не выходит:
+    // свободный селектор снаружи — второй способ объявить палитру (`kb:PROBEWEB-18`).
+    const css = themeToCss('[data-theme="ocean"]', {
       "neutral-1": "red",
       "neutral-12": "blue",
     } as ThemeTokens);
-    expect(css).toBe(":root {\n  --neutral-1: red;\n  --neutral-12: blue;\n}");
+    expect(css).toBe('[data-theme="ocean"] {\n  --neutral-1: red;\n  --neutral-12: blue;\n}');
   });
 });
 
@@ -126,31 +115,5 @@ describe("тема из семян", () => {
     const theme = createTheme({ name: "dense", meta: { space: "0.2rem" } });
     expect(theme.light.space).toBe("0.2rem");
     expect(theme.light.radius).toBe(DEFAULT_LIGHT.radius);
-  });
-});
-
-describe("сгенерированный themes.css", () => {
-  // Файл собирается из tokens.ts (`scripts/build-css.mjs`), поэтому расходиться с TS ему
-  // не с чем — тест проверяет, что генератор ДОЕХАЛ и обе половины пары на месте.
-  const css = readFileSync(resolve(import.meta.dirname, "../dist/css/themes.css"), "utf8");
-
-  it("светлый режим на `:root` — токен-в-токен с DEFAULT_LIGHT", () => {
-    expect(parseBlock(css, ":root")).toEqual(DEFAULT_LIGHT);
-  });
-
-  it("тёмный режим на `.dark` — токен-в-токен с DEFAULT_DARK", () => {
-    expect(parseBlock(css, ":root.dark, .dark")).toEqual(DEFAULT_DARK);
-  });
-
-  it("ролей и устаревших псевдонимов в теме нет — они живут в base.css", () => {
-    const body = css.replace(/\/\*[\s\S]*?\*\//g, "");
-    for (const role of ROLE_TOKENS) expect(body).not.toContain(`--${role}:`);
-    for (const legacy of LEGACY_TOKENS) expect(body).not.toContain(`--${legacy}:`);
-  });
-
-  it("кастомные палитры в дефолтный файл не попадают", () => {
-    // Сравниваем тело без комментариев: шапка про `data-theme` рассказывает, и гейт по
-    // всему файлу спотыкался бы о собственную документацию.
-    expect(css.replace(/\/\*[\s\S]*?\*\//g, "")).not.toContain("data-theme");
   });
 });
