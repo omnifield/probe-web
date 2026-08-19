@@ -110,8 +110,21 @@ afterAll(() => {
 });
 
 describe("манифест", () => {
-  it("объявляет ровно один вход — подпутей у зоны нет", () => {
-    expect(Object.keys(manifest.exports)).toEqual(["."]);
+  it("объявляет вход примитивов и ОДИН подпуть — паспорт", () => {
+    // Подпуть заводится не «на всякий случай», а под появившегося потребителя: паспорт читают
+    // механика скина и редактор, и им нужны ДАННЫЕ, а не примитивы (`tasker:PWEB-2`). Равенство,
+    // а не вхождение: каждая точка `exports` замерзает выпуском, и появление новой обязано быть
+    // решением, а не побочным следствием правки.
+    expect(Object.keys(manifest.exports)).toEqual([".", "./passport"]);
+  });
+
+  it("у паспорта две ветки — типы и код; ветки `solid` у него нет", () => {
+    const passport = manifest.exports["./passport"] as Record<string, string>;
+
+    // JSX внутри нет, и условие `solid` означало бы, что потребителю есть что трансформировать.
+    expect(Object.keys(passport)).toEqual(["types", "default"]);
+    expect(passport.types).toBe("./dist/passport.d.ts");
+    expect(passport.default).toBe("./dist/passport.js");
   });
 
   it("вход разложен на три ветки, и `solid` стоит ПЕРЕД `default`", () => {
@@ -286,6 +299,37 @@ export const App = () => <Separator orientation="наискосок" />;
     expect(typecheck).toThrow();
   });
 
+  it("паспорт разрешается подпутём и приезжает типизированным", () => {
+    // Гейт `tasker:PWEB-2` со стороны типов: читатель паспорта — чужой инструмент, у него нет
+    // наших исходников, и форма обязана разрешиться по декларациям из тарбола.
+    writeConsumerTsconfig();
+
+    expect(
+      typecheckConsumer(
+        `import { type ComponentPassport, passportOf } from "${PKG}/passport";
+
+const кнопка: ComponentPassport | undefined = passportOf("button");
+
+export const части: string[] = кнопка?.parts.map((часть) => часть.name) ?? [];
+export const состояния: string[] =
+  кнопка?.parts.flatMap((часть) => часть.states.map((состояние) => состояние.name)) ?? [];
+export const намерения: string[] = кнопка?.variants.map((вариант) => вариант.name) ?? [];
+`,
+      ),
+    ).not.toThrow();
+
+    // Живость проверки: поле, которого в форме нет, обязано ронять `tsc` потребителя — иначе
+    // зелёный прогон подтверждал бы что угодно, включая `any` из ниоткуда.
+    expect(
+      typecheckConsumer(
+        `import { passportOf } from "${PKG}/passport";
+
+export const вид = passportOf("button")?.parts[0].color;
+`,
+      ),
+    ).toThrow();
+  });
+
   it("объявленные ТИПЫ доезжают до потребителя — по перечню, а не по памяти", () => {
     // `EXPECTED_SURFACE` этих имён не поймает: в рантайме типа нет, и равенство с тем, что
     // торчит из модуля, покраснело бы на пустом месте. Поэтому у типов свой перечень и своя
@@ -354,5 +398,62 @@ export const App = () => (
 `,
       ),
     ).not.toThrow();
+  });
+});
+
+// ГЕЙТ задачи `tasker:PWEB-2`: «сторонний потребитель читает паспорт кнопки из поставки, не
+// заглядывая в исходники». Поэтому проба живёт здесь, в чистой установке из тарбола, и читает
+// паспорт ИСПОЛНЕНИЕМ — тем же импортом, каким его прочтут механика скина и редактор.
+describe("паспорт из поставки", () => {
+  /** Исполняет фрагмент в чистой установке и отдаёт то, что он напечатал. */
+  function runInConsumer(code: string): unknown {
+    const out = execFileSync(process.execPath, ["--input-type=module", "-e", code], {
+      cwd: install,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    return JSON.parse(out) as unknown;
+  }
+
+  it("читается импортом подпути — без исходников и без сборки", () => {
+    const passport = runInConsumer(
+      `import { passportOf } from "${PKG}/passport";
+console.log(JSON.stringify(passportOf("button")));`,
+    ) as {
+      component: string;
+      package: string;
+      root: string;
+      parts: Array<{ name: string; states: Array<{ name: string }> }>;
+      variants: Array<{ name: string }>;
+    };
+
+    expect(passport.component).toBe("button");
+    expect(passport.package).toBe(PKG);
+    expect(passport.root).toBe("button");
+    expect(passport.parts.map((part) => part.name)).toEqual(["button"]);
+
+    // Состояния и намерения — то, ради чего паспорт и заводился: без них скину нечего
+    // адресовать, кроме покоя, а редактору нечего предложить.
+    expect(passport.parts[0].states.map((state) => state.name)).toContain("disabled");
+    expect(passport.variants.map((variant) => variant.name).length).toBeGreaterThan(0);
+  });
+
+  it("компонент без паспорта отдаёт `undefined`, а не заглушку", () => {
+    expect(
+      runInConsumer(
+        `import { passportOf } from "${PKG}/passport";
+console.log(JSON.stringify(passportOf("такого-компонента-нет") ?? null));`,
+      ),
+    ).toBeNull();
+  });
+
+  it("не тянет за собой ни Solid, ни `@kobalte/core`", () => {
+    // Ради этого подпуть и отдельный. Утечка импорта означала бы, что чужой инструмент,
+    // которому нужен перечень частей, обязан поставить себе весь рантайм примитивов.
+    const bundle = readFileSync(join(install, "node_modules", PKG, "dist", "passport.js"), "utf8");
+
+    expect(bundle).not.toContain("solid-js");
+    expect(bundle).not.toContain("@kobalte/core");
   });
 });

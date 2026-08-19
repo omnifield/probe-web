@@ -43,6 +43,7 @@ import { solidPlugin } from "esbuild-plugin-solid";
 
 const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const entry = join(pkgRoot, "src", "index.ts");
+const passportEntry = join(pkgRoot, "src", "passport.ts");
 const outDir = join(pkgRoot, "dist");
 
 /** Общее для обеих веток. */
@@ -76,6 +77,15 @@ await build({
   ...shared,
   plugins: [solidPlugin()],
   outfile: join(outDir, "index.js"),
+});
+
+// Подпуть `./passport` — ДАННЫЕ, а не разметка: JSX внутри нет, поэтому ветка одна.
+// Отдельный выход, а не кусок корневого бандла: читатель паспорта (механика скина, редактор,
+// чужой инструмент) не должен тянуть за собой ни Solid, ни `@kobalte/core` ради перечня частей.
+await build({
+  ...shared,
+  entryPoints: [passportEntry],
+  outfile: join(outDir, "passport.js"),
 });
 
 // Декларации. Отдельным процессом, потому что это другой инструмент и другой предмет:

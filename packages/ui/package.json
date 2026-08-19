@@ -10,6 +10,10 @@
       "solid": "./dist/index.jsx",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./passport": {
+      "types": "./dist/passport.d.ts",
+      "default": "./dist/passport.js"
     }
   },
   "files": [
