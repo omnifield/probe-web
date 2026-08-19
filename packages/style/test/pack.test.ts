@@ -31,6 +31,8 @@ describe("pnpm pack", () => {
         "dist/index.d.ts",
         "dist/css/base.css",
         "dist/css/themes.css",
+        "dist/css/generate.js",
+        "dist/css/generate.d.ts",
         "package.json",
         "README.md",
       ]),
@@ -68,6 +70,15 @@ describe("разрешение из установки", () => {
     // Два имени одного файла = второй источник правды: через месяц не сказать, какое
     // каноническое, и в скелетах разъедутся оба.
     expect(() => req().resolve(`${PKG}/css`)).toThrow();
+  });
+
+  it("подпуть `/generate` резолвится в порождение CSS", () => {
+    // Подпуть объявлен ради того, чтобы CSS порождался ПО ТРЕБОВАНИЮ (`PWEB-20`): зовёт его
+    // дев-сервер, живущий в другой зоне, и знать нашу раскладку он при этом не должен —
+    // спецификатор пакета вместо пути внутрь.
+    expect(req().resolve(`${PKG}/generate`)).toBe(
+      join(install, "node_modules", PKG, "dist", "css", "generate.js"),
+    );
   });
 
   it("подпуть `/themes.css` резолвится в дефолтную пару тем", () => {

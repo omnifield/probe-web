@@ -83,10 +83,27 @@ beforeAll(() => {
       "};",
       "export const css: string = themeModelToCss(model);",
       "",
+      "// Порождение CSS по требованию — тоже публичный вход (`PWEB-20`): его зовёт",
+      "// дев-сервер, живущий в другой зоне, и типы обязаны складываться у него так же,",
+      "// как у любого потребителя поставки.",
+      "",
     ].join("\n"),
     "utf8",
   );
   writeFileSync(join(install, "tsconfig.json"), tsconfig(["consumer.ts"]), "utf8");
+
+  writeFileSync(
+    join(install, "generate.ts"),
+    [
+      `import { baseCss, themesCss } from "${PKG}/generate";`,
+      "",
+      "export const base: string = baseCss();",
+      "export const themes: string = themesCss();",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  writeFileSync(join(install, "tsconfig.generate.json"), tsconfig(["generate.ts"]), "utf8");
 
   writeFileSync(join(install, "no-extension.ts"), `import "${PKG}/css";\n`, "utf8");
   writeFileSync(
@@ -113,6 +130,13 @@ afterAll(() => {
 describe("типизация у потребителя", () => {
   it("оба CSS-подпутя и корень проходят `tsc` из чистой установки", () => {
     expect(typecheck("tsconfig.json")).toBe("");
+  });
+
+  it("подпуть `/generate` типизируется — порождение зовёт чужая зона", () => {
+    // Порождение по требованию (`PWEB-20`) зовёт дев-сервер зоны `build`. Он такой же
+    // потребитель поставки, как приложение: несложившиеся типы здесь означают, что зацеп
+    // придётся писать «на любых», а это ровно тот шов, который потом молча разъедется.
+    expect(typecheck("tsconfig.generate.json")).toBe("");
   });
 
   it("инструментов стилизации на поверхности нет — они отдельная поставка", () => {

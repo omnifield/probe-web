@@ -35,6 +35,7 @@ export default defineConfig({
             "test/dimension.test.ts",
             "test/axes.test.ts",
             "test/base-css.test.ts",
+            "test/generate.test.ts",
             "test/pack.test.ts",
             "test/types.test.ts",
           ],

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { WRITTEN_BASE } from "../src/css/written.js";
 import { DENSITY_TOKEN, DERIVED_TOKENS, FIXED_TOKENS } from "../src/dimension.js";
 import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
@@ -14,7 +15,10 @@ import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 // собирается из исходника и трёх сгенерированных блоков, и инвариант обязан держаться на
 // том, что уезжает потребителю.
 
-const source = readFileSync(resolve(import.meta.dirname, "../src/css/base.css"), "utf8");
+// Ручная часть берётся МОДУЛЕМ, а не файлом с диска: она и есть модуль (`PWEB-20`), и
+// читать её вторым способом значило бы завести второй ответ на вопрос, что именно написано
+// руками.
+const source = WRITTEN_BASE;
 const built = readFileSync(resolve(import.meta.dirname, "../dist/css/base.css"), "utf8");
 
 /** Тело файла без комментариев — иначе гейт спотыкается о примеры в тексте. */
