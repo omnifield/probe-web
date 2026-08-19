@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -109,12 +109,54 @@ describe("тарбол pnpm pack", () => {
   });
 });
 
-describe("собранные декларации", () => {
-  it("объявляют ровно один экспорт — mount", () => {
-    const dts = readFileSync(join(pkgRoot, "dist/index.d.ts"), "utf8");
-    const exported = [...dts.matchAll(/^export\s+declare\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
+describe("импорт пакета", () => {
+  // `sideEffects: false` в манифесте — не украшение, а обещание трясуну. Механика скина не
+  // смеет ничего делать на импорте: самоинициализация сделала бы обещание ложью, а трясун
+  // вырезал бы то, на что кто-то рассчитывает. Проверяем это средой БЕЗ DOM: любое обращение
+  // к `document` на уровне модуля здесь упало бы.
+  it("поднимается там, где DOM'а нет вовсе — самоинициализации на уровне модуля нет", async () => {
+    expect(globalThis.document).toBeUndefined();
 
-    expect(exported).toEqual(["mount"]);
-    expect(dts).not.toMatch(/^export\s+\{/m);
+    const loaded = (await import(
+      pathToFileURL(join(pkgRoot, "dist/index.js")).href
+    )) as Record<string, unknown>;
+
+    expect(Object.keys(loaded).sort()).toEqual(
+      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"].sort(),
+    );
+  });
+});
+
+describe("собранные декларации", () => {
+  const dts = () => readFileSync(join(pkgRoot, "dist/index.d.ts"), "utf8");
+
+  // Перечень ЯВНЫЙ, а не «содержит»: смысл пробы в том, что лишний экспорт замерзает навсегда.
+  // Список расширен по разрешению architect от 2026-08-19 (`tasker:PROBEWEB-52`): заморожена
+  // СИГНАТУРА `mount()` и идентификатор `#root`, а не запрет на соседние экспорты. Механика
+  // скина едет именованными экспортами ТОЙ ЖЕ точки — подпуть остаётся один.
+  it("объявляют ровно тот перечень значений, который мы называли", () => {
+    const exported = [...dts().matchAll(/^export\s+declare\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
+
+    expect(exported).toEqual(["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"]);
+  });
+
+  it("объявляют ровно тот перечень типов, который мы называли", () => {
+    const exported = [...dts().matchAll(/^export\s+(?:interface|type)\s+(\w+)/gm)].map(
+      (m) => m[1],
+    );
+
+    expect(exported).toEqual([
+      "SkinMode",
+      "SkinChoice",
+      "SkinPatch",
+      "RestoreSkinOptions",
+      "StyleOrderOptions",
+      "StyleOrderStatus",
+      "StyleOrderReport",
+    ]);
+  });
+
+  it("не собраны реэкспорт-бочкой", () => {
+    expect(dts()).not.toMatch(/^export\s+\{/m);
   });
 });
