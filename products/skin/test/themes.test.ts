@@ -14,8 +14,8 @@ import { describe, expect, it } from "vitest";
 
 import { deprecatedTokens, resolveToken, roleLinks, skinFiles, themeValues, usedTokens } from "./css.js";
 
-const light = themeValues(":root");
-const dark = themeValues(".dark");
+const light = themeValues("light");
+const dark = themeValues("dark");
 const roles = roleLinks();
 const deprecated = deprecatedTokens();
 
@@ -72,8 +72,8 @@ const FOREIGN_TOKENS: Record<string, string> = {
 
 /** Токен различается между парами, если различаются значения на конце его цепочки. */
 function differsBetweenThemes(name: string): boolean {
-  const a = resolveToken(name, ":root");
-  const b = resolveToken(name, ".dark");
+  const a = resolveToken(name, "light");
+  const b = resolveToken(name, "dark");
   return a !== undefined && b !== undefined && a !== b;
 }
 
