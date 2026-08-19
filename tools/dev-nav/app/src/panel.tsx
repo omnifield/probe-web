@@ -7,6 +7,8 @@
 // ЗОНЫ ПОКАЗЫВАЮТСЯ ТОЛЬКО ПОДНЯТЫЕ (решение user): вкладка, которую нельзя открыть, — это шум.
 // Поднявшаяся зона появляется сама в течение нескольких секунд.
 
+import { applySkin, readSkin, restoreSkin, type SkinChoice } from "@omnifield/probe-web-runtime";
+import { DEFAULT_PALETTE, themeModelToCss, type ThemeModel } from "@omnifield/probe-web-style";
 import {
   Select,
   SelectContent,
@@ -35,27 +37,15 @@ interface PresetItem {
   label: string;
 }
 
-/** Общий выбор панели. Зона со своим выбором его не слушает (`kb:PROBEWEB-13`). */
-interface Look {
-  preset?: string;
-  mode?: "light" | "dark";
-}
-
-const LOOK_KEY = "probe-web-dev-look";
-
-function readLook(): Look {
-  try {
-    return JSON.parse(localStorage.getItem(LOOK_KEY) ?? "{}") as Look;
-  } catch {
-    return {};
-  }
-}
+// ВЫБОР ДЕРЖИТ РАНТАЙМ, а не панель. Своего хранилища здесь больше нет: запоминание выбора —
+// часть механики (`kb:PROBEWEB-13`), и второй ключ рядом означал бы два места, где живёт ответ
+// на вопрос «чем страница одета». Панель — первый живой потребитель этой механики.
 
 export function Panel() {
   const [zones, setZones] = createSignal<Zone[]>([]);
   const [current, setCurrent] = createSignal<string>("");
   const [presets, setPresets] = createSignal<PresetItem[]>([]);
-  const [look, setLook] = createSignal<Look>(readLook());
+  const [look, setLook] = createSignal<SkinChoice>({ preset: null, mode: "dark" });
   const [nonce, setNonce] = createSignal(0);
 
   let frame: HTMLIFrameElement | undefined;
@@ -72,25 +62,27 @@ export function Panel() {
   /**
    * Собрать стили выбранного пресета ИЗ СЛУЖБЫ.
    *
-   * Пресеты живут в службе, а не файлами: панель берёт оттуда модель и превращает её в CSS тем
-   * же генератором, которым это делает `skin`. Без этих стилей `data-theme` ни на что не
-   * указывает — селектор не находит значений, и вид остаётся от умолчаний базы.
+   * Служба хранит МОДЕЛЬ, а не готовый файл (`kb:PROBEWEB-8`: бэк хранит, зона понимает).
+   * Собирает из неё вид генератор БАЗЫ — `themeModelToCss` переехал в `style` (`kb:PROBEWEB-15`),
+   * и своего пути сборки у панели быть не должно.
+   *
+   * Прежде здесь читалось поле `record.state.css`, которого в записи нет и не было: пресет
+   * выбирался и молча не применялся.
    */
-  async function applyPresetCss(id: string | undefined) {
+  async function applyPresetCss(id: string | null) {
     const tag = document.getElementById("preset-css");
-    if (!id) {
+    // Дефолтная палитра приезжает файлом `themes.css` — собирать её нечего.
+    if (!id || id === DEFAULT_PALETTE) {
       tag?.remove();
       return;
     }
     try {
       const record = (await (await fetch(`/__nav/preset/${encodeURIComponent(id)}`)).json()) as {
-        state?: { css?: string };
+        state?: ThemeModel;
       };
-      // Стили приезжают ВМЕСТЕ с записью. Собрать их из модели панель не может: генератор
-      // живёт в `skin` и наружу пакетом не отдан (заявка заведена). Знание о том, как модель
-      // превращается в вид, принадлежит `skin` — дублировать его здесь было бы хуже.
-      const css = record.state?.css;
-      if (!css) return;
+      const model = record.state;
+      if (!model) return;
+      const css = themeModelToCss(model);
       const style = (tag as HTMLStyleElement | null) ?? document.createElement("style");
       style.id = "preset-css";
       style.textContent = css;
@@ -100,24 +92,27 @@ export function Panel() {
     }
   }
 
-  function apply(next: Look) {
+  function apply(next: SkinChoice, remember = true) {
     // Идемпотентность: `apply` зовётся и на загрузку кадра, поэтому запись сигнала без
     // изменений — лишний повод для перерисовки. Дешевле сравнить, чем ловить последствия.
     const same = next.preset === look().preset && next.mode === look().mode;
-    localStorage.setItem(LOOK_KEY, JSON.stringify(next));
     if (!same) setLook(next);
 
-    const self = document.documentElement;
+    // СВОЯ страница — штатной механикой рантайма, а не своим атрибутом: второй способ надеть
+    // скин означал бы второе место, где живёт это знание (`kb:PROBEWEB-13`).
+    applySkin({ preset: next.preset, mode: next.mode, remember });
     void applyPresetCss(next.preset);
-    if (next.preset) self.dataset["theme"] = next.preset;
-    self.classList.toggle("dark", next.mode !== "light");
 
     const inner = frame?.contentDocument?.documentElement;
     if (!inner) return;
+    // Кадр — ЧУЖОЙ документ, и механика до него не дотягивается: она работает с `document`
+    // своей страницы. Здесь атрибут ставится руками не как второй путь применения, а как
+    // единственный способ дотянуться до соседнего документа.
+    //
     // Своё берёт верх над общим: зону, поставившую собственный выбор, панель не перебивает.
     if (inner.dataset["lookOwn"] === "true") return;
     if (next.preset) inner.dataset["theme"] = next.preset;
-    inner.classList.toggle("dark", next.mode !== "light");
+    inner.classList.toggle("dark", next.mode === "dark");
   }
 
   async function refreshZones() {
@@ -148,6 +143,14 @@ export function Panel() {
     try {
       const said = (await (await fetch("/__nav/presets")).json()) as { presets: PresetItem[] };
       setPresets(said.presets);
+      // Перечень приехал — теперь запомненный выбор можно восстановить целиком: до этого
+      // момента сохранённый пресет не проходил проверку «есть ли он в перечне» и отбрасывался.
+      // `restoreSkin()` ничего не запоминает, поэтому повтор безопасен.
+      const back = restoreSkin({
+        presets: [DEFAULT_PALETTE, ...said.presets.map((item) => item.id)],
+        fallback: { preset: DEFAULT_PALETTE, mode: "dark" },
+      });
+      if (back.preset !== look().preset || back.mode !== look().mode) apply(back, false);
     } catch {
       setPresets([]);
     }
@@ -182,7 +185,11 @@ export function Panel() {
   }
 
   onMount(() => {
-    apply(look());
+    // Палитру назвала точка входа — до первой отрисовки, иначе вспышка. Здесь только читаем,
+    // что встало: восстановление с ПОЛНЫМ перечнем сделает `refreshPresets()`, когда список
+    // сохранённых приедет из службы.
+    setLook(readSkin());
+    void applyPresetCss(look().preset);
     void refreshZones();
     void refreshPresets();
     // Опрос вместо канала — сознательно: канал заводится, когда задержка начнёт мешать.
@@ -231,7 +238,7 @@ export function Panel() {
               placeholder="оформление"
               value={presets().find((item) => item.id === look().preset)}
               onChange={(item: PresetItem | null) =>
-                apply({ ...look(), ...(item ? { preset: item.id } : {}) })
+                apply({ ...look(), preset: item?.id ?? null })
               }
               itemComponent={(itemProps) => (
                 <SelectItem item={itemProps.item}>
@@ -290,7 +297,7 @@ export function Panel() {
             src={`/?nav=${nonce()}`}
             title="Зона"
             onLoad={() => {
-              apply(look());
+              apply(look(), false);
               watchZone();
             }}
           />
