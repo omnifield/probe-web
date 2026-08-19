@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Accordion, Collapsible, CollapsibleTrigger } from "../src/accordion.jsx";
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
-import { Button } from "../src/button.jsx";
+import { Button } from "../src/button/index.js";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
 import { ColorArea, ColorAreaBackground, ColorAreaThumb } from "../src/color-area.jsx";
 import { ColorField, ColorFieldInput, ColorFieldLabel } from "../src/color-field.jsx";

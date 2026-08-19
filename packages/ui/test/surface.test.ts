@@ -9,6 +9,7 @@
 
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -94,12 +95,15 @@ beforeAll(() => {
   execFileSync("tar", ["-xzf", join(workDir, tarball), "-C", workDir]);
   execFileSync("mv", [join(workDir, "package"), join(install, "node_modules", PKG)]);
 
-  // Peer-зависимости приносит потребитель — здесь их роль играют ссылки на уже поставленные
-  // копии. Без них ветка `default` не разрешится, и тест «пакет поднимается из тарбола»
-  // проверял бы не пакет, а отсутствие Solid в пустой папке.
-  for (const peer of Object.keys(manifest.peerDependencies ?? {})) {
-    const target = join(pkgRoot, "node_modules", peer);
-    const link = join(install, "node_modules", peer);
+  // Peer-зависимости приносит потребитель, обычные ставит менеджер пакетов — здесь роль обоих
+  // играют ссылки на уже поставленные копии. Без них ветка `default` не разрешится, и тест
+  // «пакет поднимается из тарбола» проверял бы не пакет, а отсутствие Solid в пустой папке.
+  for (const dep of [
+    ...Object.keys(manifest.peerDependencies ?? {}),
+    ...Object.keys(manifest.dependencies ?? {}),
+  ]) {
+    const target = join(pkgRoot, "node_modules", dep);
+    const link = join(install, "node_modules", dep);
     mkdirSync(dirname(link), { recursive: true });
     symlinkSync(target, link, "dir");
   }
@@ -112,7 +116,7 @@ afterAll(() => {
 describe("манифест", () => {
   it("объявляет вход примитивов и ОДИН подпуть — паспорт", () => {
     // Подпуть заводится не «на всякий случай», а под появившегося потребителя: паспорт читают
-    // механика скина и редактор, и им нужны ДАННЫЕ, а не примитивы (`tasker:PWEB-2`). Равенство,
+    // механика скина и редактор, и им нужны ДАННЫЕ, а не примитивы (`PWEB-2`). Равенство,
     // а не вхождение: каждая точка `exports` замерзает выпуском, и появление новой обязано быть
     // решением, а не побочным следствием правки.
     expect(Object.keys(manifest.exports)).toEqual([".", "./passport"]);
@@ -143,7 +147,7 @@ describe("манифест", () => {
     expect(manifest.sideEffects).toBe(false);
   });
 
-  it("`solid-js` и `@kobalte/core` — в peer, обычных зависимостей нет вовсе", () => {
+  it("`solid-js` и `@kobalte/core` — в peer; обычная зависимость ровно одна", () => {
     // Две копии Solid в дереве ломают реактивность, и ядро предупреждает об этом только в
     // dev-сборке (норма фонда). У kobalte та же причина: он держит СВОЙ контекст, и вторая
     // копия рассыпала бы связку `Field` ↔ его частей.
@@ -151,7 +155,14 @@ describe("манифест", () => {
       "@kobalte/core": expect.any(String),
       "solid-js": expect.any(String),
     });
-    expect(manifest.dependencies).toBeUndefined();
+
+    // `@zag-js/anatomy` — единственная обычная зависимость поставки, и она названа задачей
+    // `PWEB-2`: паспорт объявляется ВЗЯТОЙ функцией, той же, которой объявлены 69 компонентов
+    // Ark. Пакет самостоятельный (три десятка строк, своих зависимостей нет) и приезжает тем
+    // же деревом, что Ark, — второй копии в дереве потребителя не появляется. Равенство, а не
+    // вхождение: каждая новая зависимость поставки становится зависимостью КАЖДОГО
+    // потребителя, и появиться она обязана решением architect, а не побочно.
+    expect(manifest.dependencies).toEqual({ "@zag-js/anatomy": expect.any(String) });
   });
 });
 
@@ -300,8 +311,10 @@ export const App = () => <Separator orientation="наискосок" />;
   });
 
   it("паспорт разрешается подпутём и приезжает типизированным", () => {
-    // Гейт `tasker:PWEB-2` со стороны типов: читатель паспорта — чужой инструмент, у него нет
-    // наших исходников, и форма обязана разрешиться по декларациям из тарбола.
+    // Гейт `PWEB-2` со стороны типов: читатель паспорта — чужой инструмент, у него нет наших
+    // исходников, и форма обязана разрешиться по декларациям из тарбола. Заодно проверяется,
+    // что типы взятой анатомии доезжают до него ЖИВЫМИ: `build()` и `keys()` — это то, чем
+    // скин строит адрес, и приехать они обязаны не как `any`.
     writeConsumerTsconfig();
 
     expect(
@@ -310,10 +323,14 @@ export const App = () => <Separator orientation="наискосок" />;
 
 const кнопка: ComponentPassport | undefined = passportOf("button");
 
-export const части: string[] = кнопка?.parts.map((часть) => часть.name) ?? [];
+export const части: string[] = кнопка?.anatomy.keys() ?? [];
+export const адреса: string[] = Object.values(кнопка?.anatomy.build() ?? {}).map(
+  (часть) => часть.selector,
+);
+export const назначения: string[] = кнопка?.parts.map((часть) => часть.means) ?? [];
 export const состояния: string[] =
   кнопка?.parts.flatMap((часть) => часть.states.map((состояние) => состояние.name)) ?? [];
-export const намерения: string[] = кнопка?.variants.map((вариант) => вариант.name) ?? [];
+export const ось: string | undefined = кнопка?.variantAxis.mark.name;
 `,
       ),
     ).not.toThrow();
@@ -401,9 +418,10 @@ export const App = () => (
   });
 });
 
-// ГЕЙТ задачи `tasker:PWEB-2`: «сторонний потребитель читает паспорт кнопки из поставки, не
-// заглядывая в исходники». Поэтому проба живёт здесь, в чистой установке из тарбола, и читает
-// паспорт ИСПОЛНЕНИЕМ — тем же импортом, каким его прочтут механика скина и редактор.
+// ГЕЙТ задачи `PWEB-2`: «сторонний потребитель читает паспорт кнопки из поставки, отдельным
+// подпутём, не заглядывая в исходники». Поэтому проба живёт здесь, в чистой установке из
+// тарбола, и читает паспорт ИСПОЛНЕНИЕМ — тем же импортом, каким его прочтут механика скина и
+// редактор.
 describe("паспорт из поставки", () => {
   /** Исполняет фрагмент в чистой установке и отдаёт то, что он напечатал. */
   function runInConsumer(code: string): unknown {
@@ -417,26 +435,73 @@ describe("паспорт из поставки", () => {
   }
 
   it("читается импортом подпути — без исходников и без сборки", () => {
+    // Читаем ровно то, чем скин строит правило: перечень частей и АДРЕСА из анатомии. Оба
+    // приезжают вызовом, а не полем: `@zag-js/anatomy` порождает атрибуты узла и селектор
+    // стиля из одного объявления, и разъехаться им негде по построению.
     const passport = runInConsumer(
       `import { passportOf } from "${PKG}/passport";
-console.log(JSON.stringify(passportOf("button")));`,
+
+const кнопка = passportOf("button");
+
+console.log(JSON.stringify({
+  component: кнопка.component,
+  package: кнопка.package,
+  root: кнопка.root,
+  keys: кнопка.anatomy.keys(),
+  attrs: кнопка.anatomy.build()[кнопка.root].attrs,
+  selector: кнопка.anatomy.build()[кнопка.root].selector,
+  parts: кнопка.parts.map((часть) => часть.name),
+  states: кнопка.parts.flatMap((часть) => часть.states.map((с) => с.name)),
+  axis: кнопка.variantAxis.mark,
+}));`,
     ) as {
       component: string;
       package: string;
       root: string;
-      parts: Array<{ name: string; states: Array<{ name: string }> }>;
-      variants: Array<{ name: string }>;
+      keys: string[];
+      attrs: Record<string, string>;
+      selector: string;
+      parts: string[];
+      states: string[];
+      axis: { kind: string; name: string; value?: string };
     };
 
     expect(passport.component).toBe("button");
     expect(passport.package).toBe(PKG);
-    expect(passport.root).toBe("button");
-    expect(passport.parts.map((part) => part.name)).toEqual(["button"]);
+    expect(passport.root).toBe("root");
+    expect(passport.keys).toEqual(["root"]);
+    expect(passport.parts).toEqual(["root"]);
 
-    // Состояния и намерения — то, ради чего паспорт и заводился: без них скину нечего
-    // адресовать, кроме покоя, а редактору нечего предложить.
-    expect(passport.parts[0].states.map((state) => state.name)).toContain("disabled");
-    expect(passport.variants.map((variant) => variant.name).length).toBeGreaterThan(0);
+    // Обе стороны обещания из одного объявления: атрибуты для узла и селектор для стиля.
+    expect(passport.attrs).toEqual({ "data-scope": "button", "data-part": "root" });
+    expect(passport.selector).toContain('[data-scope="button"][data-part="root"]');
+
+    // Состояния — то, ради чего добавка сверху и нужна: без них скину нечего адресовать,
+    // кроме покоя, а редактору нечего предложить.
+    expect(passport.states).toContain("disabled");
+
+    // Ось вариаций объявлена, а имён у неё нет: их создаёт человек в редакторе вместе со
+    // скином. Приехало бы отсюда имя — паспорт объявил бы то, чего нельзя проверить.
+    expect(passport.axis).toEqual({ kind: "attribute", name: "data-variant" });
+  });
+
+  it("перечень паспортов порождён сборкой — по папкам компонентов, а не руками", () => {
+    // Гейт `PWEB-2`: файла, в который дописывает строку каждый новый компонент, быть не
+    // должно. Проверяется это единственным честным способом — сверкой того, что уехало в
+    // поставку, с тем, что лежит в исходниках: папка с анатомией обязана дать паспорт, и
+    // паспорт обязан иметь папку.
+    const declared = readdirSync(join(pkgRoot, "src"), { withFileTypes: true })
+      .filter((item) => item.isDirectory())
+      .map((item) => item.name)
+      .filter((name) => existsSync(join(pkgRoot, "src", name, `${name}.anatomy.ts`)));
+
+    const shipped = runInConsumer(
+      `import { PASSPORTS } from "${PKG}/passport";
+console.log(JSON.stringify(Object.keys(PASSPORTS)));`,
+    ) as string[];
+
+    expect(declared.length).toBeGreaterThan(0);
+    expect([...shipped].sort()).toEqual([...declared].sort());
   });
 
   it("компонент без паспорта отдаёт `undefined`, а не заглушку", () => {
@@ -451,9 +516,11 @@ console.log(JSON.stringify(passportOf("такого-компонента-нет"
   it("не тянет за собой ни Solid, ни `@kobalte/core`", () => {
     // Ради этого подпуть и отдельный. Утечка импорта означала бы, что чужой инструмент,
     // которому нужен перечень частей, обязан поставить себе весь рантайм примитивов.
+    // `@zag-js/anatomy` тут исключение и названо им: это и есть предмет чтения.
     const bundle = readFileSync(join(install, "node_modules", PKG, "dist", "passport.js"), "utf8");
 
     expect(bundle).not.toContain("solid-js");
     expect(bundle).not.toContain("@kobalte/core");
+    expect(bundle).toContain("@zag-js/anatomy");
   });
 });

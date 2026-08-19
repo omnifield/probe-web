@@ -13,7 +13,7 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Button } from "../src/button.jsx";
+import { Button } from "../src/button/index.js";
 import { Dialog, DialogTrigger } from "../src/dialog.jsx";
 import { Popover, PopoverTrigger } from "../src/popover.jsx";
 import { Tooltip, TooltipTrigger } from "../src/tooltip.jsx";

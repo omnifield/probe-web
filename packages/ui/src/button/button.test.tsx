@@ -1,0 +1,331 @@
+// Пробы кнопки — поведение И паспорт, рядом с самим компонентом (`PWEB-2`).
+//
+// Компонент это не только разметка, а набор: разметка, анатомия, пробы. Пока они лежали по
+// параллельным папкам, «что такое кнопка» приходилось собирать в голове по четырём адресам, а
+// увидеть, чего компоненту не хватает, было нельзя вовсе. Теперь неполнота видна в дереве.
+//
+// ГЛАВНОЕ ПРАВИЛО ПАСПОРТА: он не объявляет ненаблюдаемого. Всё записанное в
+// `button.anatomy.ts` проверяется здесь на ЖИВОМ компоненте — поставили в разметку, посмотрели.
+// Поэтому проверка двусторонняя:
+//
+//   1. объявленная часть появляется в разметке с адресными атрибутами ИЗ АНАТОМИИ;
+//   2. адресный атрибут, найденный в разметке, есть в анатомии.
+//
+// Односторонней такой пробе быть нельзя: первая сторона ловит обещание без узла (правило скина
+// есть, цеплять нечего), вторая — узел без обещания (часть останется голой при полностью
+// «одетом» компоненте).
+
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { cleanup, mount, one } from "../../test/dom.jsx";
+import { anatomy, parts, passport } from "./button.anatomy.js";
+import { Button } from "./button.jsx";
+
+afterEach(cleanup);
+
+const here = dirname(fileURLToPath(import.meta.url));
+const manifest = JSON.parse(
+  readFileSync(resolve(here, "..", "..", "package.json"), "utf8"),
+) as { name: string };
+
+/** Сцена, в которой видны ВСЕ части компонента разом. У кнопки часть одна. */
+const scene = () => <Button>Отправить</Button>;
+
+/** Адресные атрибуты, реально доехавшие до узлов: `data-part` вместе со своим `data-scope`. */
+function addressesInDocument(host: ParentNode): Array<{ scope: string; part: string }> {
+  return [...host.querySelectorAll("[data-part]")].map((node) => ({
+    scope: node.getAttribute("data-scope") ?? "",
+    part: node.getAttribute("data-part") ?? "",
+  }));
+}
+
+describe("Button", () => {
+  it("рендерит ОДИН узел `<button>` и ничего вокруг", () => {
+    const host = mount(() => <Button>Сохранить</Button>);
+
+    expect(host.children.length).toBe(1);
+    expect(host.firstElementChild?.tagName).toBe("BUTTON");
+    expect(host.textContent).toBe("Сохранить");
+  });
+
+  it("ставит `type=button` — кнопка в форме не отправляет её нажатием", () => {
+    const host = mount(() => <Button>Показать</Button>);
+
+    expect(one<HTMLButtonElement>(host, "button").type).toBe("button");
+  });
+
+  it("`type` потребителя выигрывает — кнопку отправки собрать можно", () => {
+    const host = mount(() => <Button type="submit">Отправить</Button>);
+
+    expect(one<HTMLButtonElement>(host, "button").type).toBe("submit");
+  });
+
+  it("отключённая кнопка несёт и нативный `disabled`, и `data-disabled`", () => {
+    const host = mount(() => <Button disabled>Нельзя</Button>);
+    const node = one<HTMLButtonElement>(host, "button");
+
+    expect(node.disabled).toBe(true);
+    // `data-disabled` — зацепка для CSS: у отключённой кнопки нет ни `:hover`, ни своего
+    // класса, и без атрибута состояние снаружи не видно.
+    expect(node.hasAttribute("data-disabled")).toBe(true);
+  });
+
+  it("отключённая кнопка не зовёт обработчик", () => {
+    const onClick = vi.fn();
+    const host = mount(() => (
+      <Button disabled onClick={onClick}>
+        Нельзя
+      </Button>
+    ));
+
+    one<HTMLButtonElement>(host, "button").click();
+
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("при `as='a'` остаётся ссылкой — без подмены роли", () => {
+    const host = mount(() => (
+      <Button as="a" href="/docs">
+        Документация
+      </Button>
+    ));
+    const node = one<HTMLAnchorElement>(host, "a");
+
+    expect(host.children.length).toBe(1);
+    expect(node.getAttribute("href")).toBe("/docs");
+    // У `<a href>` роль ссылки уже есть; `role="button"` тут был бы враньём скринридеру.
+    expect(node.hasAttribute("role")).toBe(false);
+    expect(node.hasAttribute("type")).toBe(false);
+  });
+
+  it("при `as='div'` дописывает роль и фокусируемость, которых у div нет", () => {
+    const host = mount(() => <Button as="div">Псевдокнопка</Button>);
+    const node = one(host, "div");
+
+    expect(node.getAttribute("role")).toBe("button");
+    expect(node.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("отключённая НЕнативная кнопка объявляет это через `aria-disabled`", () => {
+    const host = mount(() => (
+      <Button as="div" disabled>
+        Нельзя
+      </Button>
+    ));
+    const node = one(host, "div");
+
+    // У `<div>` нет атрибута `disabled` — без `aria-disabled` состояние не озвучивается.
+    expect(node.getAttribute("aria-disabled")).toBe("true");
+    expect(node.hasAttribute("data-disabled")).toBe(true);
+  });
+
+  it("несёт зацепку `data-slot=button` по умолчанию", () => {
+    // Обязательство зоны по именам слотов (`kb:PROBEWEB-12`, п.7) переезд на анатомию не
+    // отменяет: снятие имени — мажор и решение architect, а не следствие правки кита.
+    const host = mount(() => <Button>Ок</Button>);
+
+    expect(one(host, "button").getAttribute("data-slot")).toBe("button");
+  });
+
+  it("состояние загрузки собирается из готового, без пропа-сахара", () => {
+    // Проверяем ровно то, что обещано в доке компонента: сборка из `disabled` + `aria-busy`
+    // + вложенного индикатора даёт то же, ради чего в оракуле был проп `loading`.
+    const host = mount(() => (
+      <Button disabled aria-busy="true">
+        <span data-testid="индикатор" />
+      </Button>
+    ));
+    const node = one<HTMLButtonElement>(host, "button");
+
+    expect(node.disabled).toBe(true);
+    expect(node.getAttribute("aria-busy")).toBe("true");
+    expect(node.querySelector('[data-testid="индикатор"]')).not.toBeNull();
+  });
+});
+
+describe("паспорт: часть ↔ разметка", () => {
+  it("каждая часть анатомии появляется в документе — её же атрибутами", () => {
+    const host = mount(scene);
+
+    expect(anatomy.keys().length).toBeGreaterThan(0);
+
+    for (const part of anatomy.keys()) {
+      const { attrs } = parts[part];
+      const node = one(
+        host,
+        `[data-scope="${attrs["data-scope"]}"][data-part="${attrs["data-part"]}"]`,
+      );
+
+      // Именно `attrs` из анатомии, а не похожие атрибуты: скин цепляется селектором из того
+      // же объявления, и совпадать они обязаны посимвольно.
+      for (const [name, value] of Object.entries(attrs)) {
+        expect(node.getAttribute(name)).toBe(value);
+      }
+    }
+  });
+
+  it("каждый адресный атрибут из разметки объявлен анатомией", () => {
+    const host = mount(scene);
+    const found = addressesInDocument(host);
+    const declared = anatomy.keys().map((part) => parts[part].attrs);
+
+    // Обратная сторона: узел, подписанный адресом, которого нет в анатомии, скину не виден —
+    // он останется голым при полностью «одетом» компоненте.
+    expect(found.length).toBe(declared.length);
+
+    for (const address of found) {
+      expect(declared).toContainEqual({
+        "data-scope": address.scope,
+        "data-part": address.part,
+      });
+    }
+  });
+
+  it("селектор части находит узел — иначе правило скина мёртвое", () => {
+    const host = mount(scene);
+
+    for (const part of anatomy.keys()) {
+      // `selector` анатомии написан для вложенности (`&[…], & […]`) — берём ту его половину,
+      // которая адресует сам узел. Неразбираемый селектор уронил бы `matches`.
+      const own = parts[part].selector.split(",")[0].replace("&", "").trim();
+
+      expect(() => one(host, own)).not.toThrow();
+    }
+  });
+});
+
+describe("паспорт: состояния", () => {
+  const states = passport.parts.flatMap((part) =>
+    part.states.map((state) => ({ part: part.name, ...state })),
+  );
+
+  it("словарь не пуст — иначе скину нечего одевать, кроме покоя", () => {
+    expect(states.length).toBeGreaterThan(0);
+  });
+
+  it.each(states.filter((state) => state.mark.kind === "pseudo"))(
+    "`$name` — настоящий псевдокласс, а не слово",
+    (state) => {
+      const name = state.mark.kind === "pseudo" ? state.mark.name : "";
+      const host = mount(scene);
+      const node = one(host, `[data-part="${parts[state.part].attrs["data-part"]}"]`);
+
+      // Псевдоэлемент — не состояние: `::before` рисует УЗЕЛ, которого нет в разметке, и
+      // адресовать его как состояние части значило бы обещать несуществующее место.
+      expect(name.startsWith(":")).toBe(true);
+      expect(name.startsWith("::")).toBe(false);
+
+      // Выдуманный псевдокласс роняет разбор селектора — ровно то, что нужно: скин порождает
+      // селектор из адреса, и неразбираемый селектор стал бы мёртвым правилом.
+      expect(() => node.matches(name)).not.toThrow();
+    },
+  );
+
+  /** Объявленная разметка состояния — то, за что зацепится скин. */
+  function markOf(name: string): { name: string; value?: string } {
+    const state = states.find((entry) => entry.name === name);
+    if (!state || state.mark.kind !== "attribute") {
+      throw new Error(`состояние ${name} объявлено не атрибутом — проба смотрит не туда`);
+    }
+
+    return { name: state.mark.name, value: state.mark.value };
+  }
+
+  it("`disabled` — кнопка САМА показывает его тем атрибутом, что объявлен", () => {
+    const mark = markOf("disabled");
+    const host = mount(() => <Button disabled>Нельзя</Button>);
+
+    expect(one(host, "button").hasAttribute(mark.name)).toBe(true);
+
+    // И обратная сторона: у обычной кнопки атрибута быть не должно — иначе состояние
+    // «отключена» стояло бы всегда, и скин красил бы серым живую кнопку.
+    const idle = mount(() => <Button>Можно</Button>);
+
+    expect(one(idle, "button").hasAttribute(mark.name)).toBe(false);
+  });
+
+  it("`busy` — атрибут ставит потребитель, и он доезжает как объявлено", () => {
+    // Пропа-сахара `loading` в ките нет намеренно: занятая кнопка собирается из готового.
+    // Паспорт поэтому называет ЧЕМ выражено состояние — иначе договориться об этом негде, и
+    // скин не смог бы одеть занятую кнопку вовсе.
+    const mark = markOf("busy");
+    const host = mount(() => (
+      <Button disabled {...{ [mark.name]: mark.value }}>
+        Отправляем
+      </Button>
+    ));
+
+    expect(one(host, "button").getAttribute(mark.name)).toBe(mark.value);
+  });
+});
+
+describe("паспорт: ось вариаций", () => {
+  it("ось выражена ОДНИМ атрибутом и имён не называет", () => {
+    const { mark } = passport.variantAxis;
+
+    expect(mark.kind).toBe("attribute");
+    // Значения у оси нет намеренно: значение — это ИМЯ вариации, а имена создаёт человек в
+    // редакторе вместе со скином. Объяви кит хоть одно — паспорт объявил бы ненаблюдаемое.
+    expect(mark.kind === "attribute" && mark.value).toBeUndefined();
+  });
+
+  it("имя, которого кит не знает, доезжает до узла", () => {
+    const { mark } = passport.variantAxis;
+    // Имя нарочно произвольное и человеческое: кит не должен знать НИ ОДНОГО имени вариации,
+    // и проверяется здесь прозрачность кита, а не существование вариации.
+    const host = mount(() => <Button {...{ [mark.name]: "главная" }}>Сохранить</Button>);
+
+    expect(one(host, "button").getAttribute(mark.name)).toBe("главная");
+  });
+
+  it("голая кнопка атрибут оси не несёт — умолчание называет скин, а не кит", () => {
+    const host = mount(scene);
+
+    expect(one(host, "button").hasAttribute(passport.variantAxis.mark.name)).toBe(false);
+  });
+});
+
+describe("паспорт: форма", () => {
+  const declared = passport.parts.map((part) => part.name);
+
+  it("добавка покрывает РОВНО части анатомии — ни больше, ни меньше", () => {
+    // Часть анатомии без добавки не имеет ни состояний, ни назначения: редактору нечего
+    // показать. Добавка без части анатомии адресует то, чего в разметке нет.
+    expect([...declared].sort()).toEqual([...anatomy.keys()].sort());
+  });
+
+  it("корень назван и есть среди частей", () => {
+    expect(anatomy.keys()).toContain(passport.root);
+  });
+
+  it("имя компонента снято с анатомии, а не написано рядом", () => {
+    expect(passport.component).toBe(parts[passport.root].attrs["data-scope"]);
+  });
+
+  it("правила вложенности ссылаются на существующие части", () => {
+    for (const part of passport.parts) {
+      for (const child of part.children) expect(declared).toContain(child);
+    }
+  });
+
+  it("имена состояний внутри части не повторяются", () => {
+    // Повтор ломает адресацию молча: правило скина цепляется за имя, а какое из двух
+    // состояний имелось в виду — неизвестно.
+    for (const part of passport.parts) {
+      const names = part.states.map((state) => state.name);
+
+      expect(new Set(names).size).toBe(names.length);
+    }
+  });
+
+  it("поставщик назван и совпадает с манифестом", () => {
+    // Форма одна на всех поставщиков, поэтому читатель обязан узнать поставщика ДАННЫМИ, не
+    // зная имён пакетов заранее. Строка написана в паспорте руками — сверяем с манифестом,
+    // иначе она разъедется с ним молча.
+    expect(passport.package).toBe(manifest.name);
+  });
+});
