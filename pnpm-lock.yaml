@@ -366,6 +366,9 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
+      '@omnifield/probe-web-runtime':
+        specifier: workspace:*
+        version: link:../../../packages/runtime
       '@omnifield/probe-web-style':
         specifier: workspace:*
         version: link:../../../packages/style

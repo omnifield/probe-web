@@ -10,13 +10,20 @@
 // — абсолютные пути уедут мимо. Поэтому проксируется ВСЁ, кроме собственных страниц пульта,
 // и уходит на ту зону, что выбрана сейчас.
 //
-// Ноль зависимостей: голый Node. Это оснастка локации, а не поставка, но тянуть ради неё
-// пакеты незачем — здесь нужен один прокси и одна страница.
+// Прокси, опрос зон и служба — голый Node. А САМУ ПАНЕЛЬ держит дев-сервер vite в
+// middleware-режиме: панель — такой же фронт, как зоны, и требовать собирать её руками, чтобы
+// увидеть собственную правку, незачем.
+//
+// Раньше здесь лежала собранная копия (`app/dist`), закоммиченная в репозиторий, и сервер
+// читал её с диска. Копия молча отставала от исходников — ровно так пульт и оказался без
+// палитры, добавленной в базу неделей раньше. Сборку в репозитории не держим: у панели теперь
+// горячая перезагрузка, как у любой зоны.
 
 import { readFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
+import { createRequire } from "node:module";
 import { connect } from "node:net";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const PORT = Number(process.env["NAV_PORT"] ?? 4100);
 const HOST = process.env["NAV_HOST"] ?? "0.0.0.0";
@@ -41,8 +48,14 @@ const CANDIDATES = [
 /** Какая зона показывается сейчас. */
 let current = CANDIDATES[0].id;
 
-/** Корень репозитория: отсюда берётся собранная панель. */
+/** Корень репозитория. */
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/** Каталог панели — корень её дев-сервера. */
+const APP = `${ROOT}tools/dev-nav/app`;
+
+/** Префикс, под которым панель живёт на общем порту. Он же база для vite. */
+const BASE = "/__nav/";
 
 /**
  * Перечень пресетов оформления — ИЗ СЛУЖБЫ, и только из неё.
@@ -132,33 +145,46 @@ function portOf(id) {
 }
 
 /**
- * Отдать файл собранной панели.
+ * Дев-сервер панели.
  *
- * Панель собирается (`pnpm --dir tools/dev-nav/app build`) и лежит рядом. Не собрана — сервер
- * говорит об этом прямо: молчаливый 404 на своей же странице выглядел бы как поломка прокси.
+ * `middlewareMode` — штатный способ vite встроиться в чужой HTTP-сервер: он отдаёт свои
+ * middlewares, а слушает порт по-прежнему наш сервер. Так панель и зоны живут на одном порту,
+ * и наружу по-прежнему торчит один.
+ *
+ * Резолвим vite ОТ КАТАЛОГА ПАНЕЛИ: этот файл лежит вне пакетов, и от корня репозитория vite
+ * не разрешается — в pnpm-воркспейсе он стоит у того, кто его объявил.
+ */
+async function startPanel(httpServer) {
+  const require = createRequire(`${APP}/package.json`);
+  const { createServer: createVite } = await import(
+    pathToFileURL(require.resolve("vite")).href
+  );
+  return createVite({
+    root: APP,
+    base: BASE,
+    // `custom` — «страницу отдаю я сам»: индекс ниже прогоняется через `transformIndexHtml`,
+    // иначе в него не попадут ни клиент горячей перезагрузки, ни преобразование модулей.
+    appType: "custom",
+    server: {
+      middlewareMode: true,
+      // Вебсокет перезагрузки садится на НАШ сервер: своего порта у него нет, а значит и
+      // пробрасывать наружу нечего.
+      hmr: { server: httpServer },
+    },
+  });
+}
+
+/**
+ * Отдать страницу панели.
  *
  * @param {import("node:http").ServerResponse} res
- * @param {string} file
- * @param {string} type
+ * @param {string} path
  */
-function sendBuilt(res, file, type) {
-  if (!/^[a-zA-Z0-9._/-]+$/.test(file) || file.includes("..")) {
-    res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
-    res.end("недопустимое имя файла");
-    return;
-  }
-  try {
-    const body = readFileSync(`${ROOT}tools/dev-nav/app/dist/${file}`);
-    res.writeHead(200, { "content-type": type, "cache-control": "no-cache" });
-    res.end(body);
-  } catch {
-    res.writeHead(503, { "content-type": "text/html; charset=utf-8" });
-    res.end(
-      `<body style="font:14px system-ui;padding:24px">
-       <p>Панель не собрана.</p>
-       <p><code>pnpm --dir tools/dev-nav/app build</code></p></body>`,
-    );
-  }
+async function sendPanel(res, path) {
+  const raw = readFileSync(`${APP}/index.html`, "utf-8");
+  const html = await panel.transformIndexHtml(path, raw);
+  res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
+  res.end(html);
 }
 
 /** Счётчик обращений: петля в панели видна здесь раньше, чем в браузере. */
@@ -176,15 +202,7 @@ const server = createServer(async (req, res) => {
   hits.set(key, (hits.get(key) ?? 0) + 1);
 
   if (url.pathname === "/__nav/" || url.pathname === "/__nav") {
-    return sendBuilt(res, "index.html", "text/html; charset=utf-8");
-  }
-
-  // Собранные файлы панели. Панель — приложение на нашей же базе: вкладки и список выбора
-  // приходят из кита готовыми, а не имитируются разметкой.
-  if (url.pathname.startsWith("/__nav/assets/")) {
-    const file = url.pathname.slice("/__nav/".length);
-    const type = file.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8";
-    return sendBuilt(res, file, type);
+    return sendPanel(res, url.pathname);
   }
 
   // Одна запись целиком (в перечне содержимого нет). Панель берёт отсюда МОДЕЛЬ пресета и
@@ -215,6 +233,15 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Остальное под префиксом — исходники панели, её зависимости и клиент горячей перезагрузки.
+  // Стоит ПОСЛЕ собственных маршрутов: иначе vite ответил бы на них 404 раньше нас.
+  if (url.pathname.startsWith(BASE)) {
+    return panel.middlewares(req, res, () => {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      res.end("нет такой страницы панели");
+    });
+  }
+
   // Всё остальное — выбранной зоне, путь как есть.
   const proxy = httpRequest(
     { host: "127.0.0.1", port: portOf(current), path: req.url, method: req.method, headers: req.headers },
@@ -238,6 +265,10 @@ const server = createServer(async (req, res) => {
 // Горячая перезагрузка держится вебсокетом на том же адресе — без этого правка в редакторе
 // не доезжает до окна, и пульт превращается в способ смотреть на устаревшую страницу.
 server.on("upgrade", (req, socket, head) => {
+  // Перезагрузка САМОЙ панели — забота её дев-сервера, он уже сидит на этом же сервере.
+  // Без этой строки её вебсокет уехал бы в зону и там оборвался.
+  if ((req.url ?? "").startsWith(BASE)) return;
+
   const upstream = connect({ host: "127.0.0.1", port: portOf(current) }, () => {
     upstream.write(
       `${req.method} ${req.url} HTTP/1.1\r\n` +
@@ -254,6 +285,8 @@ server.on("upgrade", (req, socket, head) => {
   upstream.on("error", drop);
   socket.on("error", () => upstream.destroy());
 });
+
+const panel = await startPanel(server);
 
 server.listen(PORT, HOST, () => {
   console.log(`[пульт] http://localhost:${PORT}/__nav/`);
