@@ -1,10 +1,13 @@
-// Механика тем. Дефолт работает БЕЗ единой строки JS: `themes.css` красит `:root` в
-// светлую пару, `.dark` — в тёмную. Всё, что здесь есть, нужно ровно для двух вещей поверх
-// этого: подключить палитру, которой в пакете нет, и переключить режим в рантайме.
+// Механика тем. Палитра работает БЕЗ единой строки JS: подключил файл, поставил
+// `data-theme` — получил вид; дефолтная палитра приезжает `themes.css` и включается тем же
+// атрибутом, что и любая другая (`kb:PROBEWEB-18`). Всё, что здесь есть, нужно ровно для
+// двух вещей поверх этого: подключить палитру, которой в пакете нет, и переключить режим в
+// рантайме.
 
 import { type Accessor, createSignal } from "solid-js";
 
-import { type ThemeDefinition, themeToCss } from "./tokens.js";
+import { PALETTE_ATTRIBUTE, paletteCss } from "./palette.js";
+import type { ThemeDefinition } from "./tokens.js";
 import { trace } from "./trace.js";
 
 const STYLE_ID_PREFIX = "probe-web-theme-";
@@ -29,14 +32,12 @@ export function registerTheme(theme: ThemeDefinition, doc?: Document): void {
 
   const done = trace(`registerTheme(${theme.name})`);
 
+  // Селектор выводится из имени, и выводит его одна функция на зону (`src/palette.ts`):
+  // инжект и генератор файла обязаны цеплять палитру к документу ОДИНАКОВО, иначе
+  // «поставить тему» и «зарегистрировать тему» дадут разный вид на одной и той же палитре.
   const css = [
-    themeToCss(`[data-theme="${theme.name}"]`, theme.light),
-    theme.dark
-      ? themeToCss(
-          `[data-theme="${theme.name}"].dark, [data-theme="${theme.name}"] .dark`,
-          theme.dark,
-        )
-      : "",
+    paletteCss(theme.name, "light", theme.light),
+    theme.dark ? paletteCss(theme.name, "dark", theme.dark) : "",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -58,7 +59,11 @@ export type ThemeMode = "light" | "dark";
 export interface ThemeControllerOptions {
   /** Кастомные палитры, которые нужно зарегистрировать на старте. */
   themes?: ThemeDefinition[];
-  /** Стартовая палитра; `undefined` — дефолтная пара, без атрибута `data-theme`. */
+  /**
+   * Стартовая палитра; `undefined` — палитры нет вовсе: атрибут `data-theme` не ставится,
+   * страница остаётся нецветной (геометрия при этом работает). Прежний вид «из коробки» —
+   * это `DEFAULT_PALETTE`, названный явно, как и любой другой (`kb:PROBEWEB-18`).
+   */
   initialTheme?: string;
   initialMode?: ThemeMode;
   /** Элемент-носитель `data-theme` и класса `dark`; по умолчанию `documentElement`. */
@@ -66,7 +71,7 @@ export interface ThemeControllerOptions {
 }
 
 export interface ThemeController {
-  /** Имя активной палитры; `undefined` — дефолтная пара. */
+  /** Имя активной палитры; `undefined` — палитра не выбрана, красить нечем. */
   theme: Accessor<string | undefined>;
   setTheme(name: string | undefined): void;
   mode: Accessor<ThemeMode>;
@@ -100,8 +105,8 @@ export function createThemeController(
   const applyTheme = (name: string | undefined): void => {
     const el = element();
     if (!el) return;
-    if (name) el.setAttribute("data-theme", name);
-    else el.removeAttribute("data-theme");
+    if (name) el.setAttribute(PALETTE_ATTRIBUTE, name);
+    else el.removeAttribute(PALETTE_ATTRIBUTE);
   };
 
   const applyMode = (value: ThemeMode): void => {

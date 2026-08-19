@@ -33,11 +33,14 @@ export {
   type ThemeMetaToken,
   type ThemeSeeds,
   type ThemeTokens,
-  themeToCss,
 } from "./tokens.js";
+// Имя дефолтной палитры. `themeToCss` отсюда УБРАН намеренно (`kb:PROBEWEB-18`, следствие 4):
+// свободный селектор снаружи — это второй способ объявить палитру, и правило «палитра
+// принимает имя» держалось бы при нём обещанием. Публичная дорога ровно одна — имя.
+export { DEFAULT_PALETTE } from "./palette.js";
 // Модель темы и её отрисовка в файл: минимум, который записывают, чтобы вид можно было
 // поставить одним указанием. Живёт здесь, а не в зоне производства оформлений (`kb:PROBEWEB-15`).
-export { themeModelToCss, type ThemeModel } from "./model.js";
+export { DEFAULT_THEME_MODEL, themeModelToCss, type ThemeModel } from "./model.js";
 export {
   CHART_SLOTS,
   CONTRAST_PROMISES,

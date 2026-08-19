@@ -215,8 +215,14 @@ export const DEFAULT_LIGHT: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "light
 export const DEFAULT_DARK: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "dark");
 
 /**
- * Сериализация темы в CSS-блок для селектора. Одна и та же функция обслуживает сборку
- * `themes.css` и рантайм-инжект `registerTheme()` — форма блока у них обязана совпадать.
+ * Сериализация набора значений в CSS-блок для селектора. Форматирование блока — и только
+ * оно: КАКОЙ селектор получает палитра, решает `paletteSelector()` (`src/palette.ts`), и
+ * единственный вызывающий здесь — `paletteCss()` оттуда же.
+ *
+ * НА ПОВЕРХНОСТЬ НЕ ВЫХОДИТ (`kb:PROBEWEB-18`, следствие 4): свободный селектор, доступный
+ * снаружи, — это второй способ объявить палитру, и правило «палитра принимает имя»
+ * держалось бы при нём обещанием, а не машиной. Внутри зоны функция живёт дальше: запрет
+ * касается поверхности и вызывающих, а не самого форматирования.
  */
 export function themeToCss(selector: string, tokens: ThemeTokens): string {
   const lines = Object.entries(tokens)

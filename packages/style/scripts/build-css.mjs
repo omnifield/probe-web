@@ -2,7 +2,10 @@
 // а не исходники: так генератор и рантайм-инжект берут значения из одного и того же места.
 //
 // Что генерируется и почему:
-//   • `themes.css` — значения ступеней дефолтной пары. Файл с теми же числами рядом с
+//   • `themes.css` — ДЕФОЛТНАЯ ПАЛИТРА, собранная тем же вызовом `themeModelToCss()`, каким
+//     рождается любой пресет (`kb:PROBEWEB-18`). Своей ветки у дефолта здесь больше нет: пока
+//     она была, дефолт красил `:root` и оказывался не палитрой, а привилегией — снять все
+//     пресеты и получить голый кит было нельзя в принципе. Файл с теми же числами рядом с
 //     `tokens.ts` был бы второй копией правды, и она разъезжается.
 //   • `base.css` — ручная часть (`src/css/base.css`) ПЛЮС блоки, собранные из данных:
 //     производные размерные шкалы с подстраховкой `@supports` для `round()`, границы осей,
@@ -23,7 +26,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = resolve(root, "dist/css");
 const load = (name) => import(pathToFileURL(resolve(root, `dist/${name}.js`)).href);
 
-const { DEFAULT_DARK, DEFAULT_LIGHT, themeToCss } = await load("tokens");
+const { DEFAULT_THEME_MODEL, themeModelToCss } = await load("model");
 const { derivedCss } = await load("dimension");
 const { axesCss } = await load("axes");
 const { layerCss } = await load("layer");
@@ -59,20 +62,22 @@ const base = [
 
 await writeFile(resolve(outDir, "base.css"), `${base}\n`, "utf8");
 
-const themes = `/* @omnifield/probe-web-style — дефолтная пара тем, подпуть
-   \`@omnifield/probe-web-style/themes.css\`. Zero-config: \`:root\` — светлый режим,
-   \`.dark\` — тёмный; \`data-theme\` остаётся кастомным палитрам (\`registerTheme()\`).
+const themes = `/* @omnifield/probe-web-style — ДЕФОЛТНАЯ ПАЛИТРА, подпуть
+   \`@omnifield/probe-web-style/themes.css\`. Подключается как любая другая палитра —
+   атрибутом \`data-theme="${DEFAULT_THEME_MODEL.id}"\` на \`<html>\`; без атрибута страница
+   остаётся нецветной, и это объявленное поведение, а не поломка (\`kb:PROBEWEB-18\`).
+   Геометрия работает и без палитры: её дефолты подставлены в \`var(--семя, …)\` базового слоя.
 
-   Здесь только ЗНАЧЕНИЯ СТУПЕНЕЙ. Роли, которые на эти ступени ссылаются, живут в
-   \`base.css\`: они одинаковы для всех тем, и копия в каждой палитре означала бы, что
-   разделение шкалы и роли объявлено, но не сделано.
+   \`:root\` палитрой НЕ красится — ни этой, ни какой-либо ещё: покрашенный корень означал бы,
+   что пресет не источник вида, а перебивка поверх уже покрашенного.
 
-   ФАЙЛ СГЕНЕРИРОВАН из \`src/tokens.ts\` (\`scripts/build-css.mjs\`) — править его
-   бесполезно, следующая сборка перезапишет. Значения считаются из семян при сборке. */
+   Здесь только ЗНАЧЕНИЯ СТУПЕНЕЙ и плотность. Роли, которые на эти ступени ссылаются, живут в
+   \`base.css\`: они одинаковы для всех палитр, и копия в каждой означала бы, что разделение
+   шкалы и роли объявлено, но не сделано.
 
-${themeToCss(":root", DEFAULT_LIGHT)}
+   ФАЙЛ СГЕНЕРИРОВАН из \`DEFAULT_THEME_MODEL\` (\`src/model.ts\`) тем же \`themeModelToCss()\`,
+   что и любой пресет — править его бесполезно, следующая сборка перезапишет. */
 
-${themeToCss(":root.dark, .dark", DEFAULT_DARK)}
-`;
+${themeModelToCss(DEFAULT_THEME_MODEL)}`;
 
 await writeFile(resolve(outDir, "themes.css"), themes, "utf8");
