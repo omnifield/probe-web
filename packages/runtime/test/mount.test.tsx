@@ -12,12 +12,15 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as runtime from "../src/index.js";
-import { mount } from "../src/index.js";
+import { applySkin, mount } from "../src/index.js";
 
 const FLAG = "__PROBE_WEB_RUNTIME_TRACE__";
 
 afterEach(() => {
   document.body.innerHTML = "";
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.classList.remove("dark");
+  localStorage.clear();
   delete (globalThis as Record<string, unknown>)[FLAG];
   vi.restoreAllMocks();
 });
@@ -31,8 +34,14 @@ function givenRoot(): HTMLElement {
 }
 
 describe("поверхность", () => {
-  it("наружу торчит ровно одна точка", () => {
-    expect(Object.keys(runtime)).toEqual(["mount"]);
+  // Перечень сортируется с обеих сторон намеренно: порядок ключей у пространства имён модуля
+  // задаёт СРЕДА (настоящий ESM отдаёт их по алфавиту, трансформ стенда — в порядке
+  // объявления), и утверждать здесь порядок значило бы утверждать свойство стенда. Порядок
+  // объявления стережёт `surface.test.ts` по собранному `dist/index.d.ts` — там он наш.
+  it("наружу торчит ровно названный перечень", () => {
+    expect(Object.keys(runtime).sort()).toEqual(
+      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"].sort(),
+    );
   });
 });
 
@@ -148,5 +157,48 @@ describe("perf-трейсы", () => {
 
     expect(debug).toHaveBeenCalledTimes(1);
     expect(debug.mock.calls[0]?.[0]).toMatch(/\[probe-web-runtime] mount — [\d.]+ms/);
+  });
+});
+
+describe("механика скина и живое дерево", () => {
+  // Единственное место, где механика встречается с настоящим Solid-приложением. Оба
+  // утверждения — про ГРАНИЦУ механики, и оба названы в `kb:PROBEWEB-13` главным условием.
+
+  it("смена пресета не перемонтирует поддерево (инвариант 9)", () => {
+    givenRoot();
+    let disposed = 0;
+
+    function Panel() {
+      onCleanup(() => {
+        disposed += 1;
+      });
+      return <p data-testid="panel">открытая панель</p>;
+    }
+
+    mount(() => <Panel />);
+    const node = document.querySelector('[data-testid="panel"]');
+    expect(node).not.toBeNull();
+
+    applySkin({ preset: "twitter", mode: "dark" });
+    applySkin({ preset: "dense" });
+
+    // Тот же САМЫЙ узел, а не такой же: пересозданное поддерево сломало бы открытые панели,
+    // фокус и ввод ради того, что делается сменой атрибута на корне.
+    expect(document.querySelector('[data-testid="panel"]')).toBe(node);
+    expect(disposed).toBe(0);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dense");
+  });
+
+  it("приложение, НЕ позвавшее механику, поднимается и работает как раньше", () => {
+    givenRoot();
+    const [count, setCount] = createSignal(0);
+
+    mount(() => <span data-testid="count">{count()}</span>);
+    setCount(1);
+
+    expect(document.querySelector('#root [data-testid="count"]')?.textContent).toBe("1");
+    // И документ остался нетронутым: механика не навязывает себя самим фактом поставки.
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+    expect(document.documentElement.className).toBe("");
   });
 });
