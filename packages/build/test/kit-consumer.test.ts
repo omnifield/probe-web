@@ -17,6 +17,13 @@
 // Тарбол (а не `workspace:*`, как в `test/fixture`) — потому что предмет пробы это поставка:
 // потребитель получает `dist` пакета и его `exports`, а не наши исходники (образец — `surface`-
 // пробы зоны `ui`).
+//
+// РАСКЛАДКУ ЗДЕСЬ ДЕЛАЕТ ПРОБА, а не менеджер пакетов, и отсюда её обязанность: положить всё,
+// что положил бы менеджер. Собственные зависимости кита — тоже: потребитель их не объявляет и
+// знать о них не обязан, но у него они есть. Пока проба клала только peer'ы, новая зависимость
+// кита красила её отказом разрешения — то есть сообщением не о предмете (`PWEB-17`). Перечни
+// берутся из манифеста кита; списков имён здесь нет нигде, кроме одного — `TRANSITIVE_PEERS`,
+// где важно не имя пакета, а то, что потребитель его НЕ объявляет.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -48,6 +55,7 @@ const CONSUMER_TEST = "рендерит примитив кита из тарб�
 const kitManifest = JSON.parse(readFileSync(join(kitDir, "package.json"), "utf8")) as {
   name: string;
   version: string;
+  dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
 };
 
@@ -139,6 +147,15 @@ beforeAll(() => {
   );
   for (const peer of declaredPeers) link(kitDir, peer);
   for (const peer of TRANSITIVE_PEERS) link(kitDir, peer, join(install, "node_modules", KIT));
+
+  // СОБСТВЕННЫЕ зависимости кита ставит менеджер — потребитель их не объявляет и о них не знает
+  // (`@zag-js/anatomy`: анатомия нужна и паспорту, и самим компонентам). Раскладываем их
+  // ВЛОЖЕННО в кит, как это делает строгая раскладка pnpm, и берём перечень ИЗ МАНИФЕСТА, а не
+  // списком имён: список молча отстаёт от кита, и следующая его зависимость снова покрасила бы
+  // пробу отказом разрешения вместо предмета (`PWEB-17`).
+  for (const dep of Object.keys(kitManifest.dependencies ?? {})) {
+    link(kitDir, dep, join(install, "node_modules", KIT));
+  }
   for (const dep of RUNNER_DEPS) {
     if (!existsSync(join(install, "node_modules", dep))) link(pkgRoot, dep);
   }
@@ -260,6 +277,24 @@ describe("раскладка потребителя — на ней держит
       expect(Object.keys(manifest.dependencies)).not.toContain(peer);
       expect(existsSync(join(install, "node_modules", KIT, "node_modules", peer))).toBe(true);
       expect(existsSync(join(install, "node_modules", peer))).toBe(false);
+    }
+  });
+
+  it("собственные зависимости кита разложены при нём, а не объявлены потребителем", () => {
+    // Утверждение стоит здесь, а не в комментарии, потому что именно этой раскладки в пробе не
+    // было: кит объявил `@zag-js/anatomy`, менеджер у мира её ставит, а проба — нет, и
+    // потребитель падал на разрешении импорта (`PWEB-17`). Перечень берётся из манифеста кита,
+    // поэтому утверждение накрывает и следующую его зависимость, а не только эту.
+    const declared = Object.keys(kitManifest.dependencies ?? {});
+    expect(declared.length).toBeGreaterThan(0);
+
+    const manifest = JSON.parse(readFileSync(join(install, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+
+    for (const dep of declared) {
+      expect(Object.keys(manifest.dependencies)).not.toContain(dep);
+      expect(existsSync(join(install, "node_modules", KIT, "node_modules", dep))).toBe(true);
     }
   });
 });
