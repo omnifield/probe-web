@@ -14,7 +14,7 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
-          include: ["test/theme.test.ts", "test/trace.test.ts"],
+          include: ["test/theme.test.ts", "test/trace.test.ts", "test/foreign-values.test.ts"],
         },
       },
       {

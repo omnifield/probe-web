@@ -98,16 +98,30 @@ export type ThemeMetaToken = (typeof THEME_META_TOKENS)[number];
  */
 export type PaletteToken = ScaleToken;
 
-/** Тема как данные: полное цветовое ядро обязательно, мета — по желанию. */
+/** НАШ набор значений как данные: полное цветовое ядро обязательно, мета — по желанию. */
 export type ThemeTokens = Record<ScaleToken, string> &
   Partial<Record<ThemeMetaToken, string>>;
+
+/**
+ * Значения палитры: имя кастом-свойства БЕЗ `--` → значение. Состав любой.
+ *
+ * Тип широкий НАМЕРЕННО (`PWEB-3`). Наш набор значений — один из поставщиков, а не
+ * фундамент: палитрой вправе быть чужой набор со своими именами, и механика тем обязана
+ * возить его так же, как наш. Пока здесь стоял `ThemeTokens`, «мы один из поставщиков» было
+ * словом — чужую палитру не пропускал ТИП, хотя отрисовка её печатала без единой правки.
+ *
+ * Строгость от этого не теряется, она переезжает туда, где ей место: наш собственный набор
+ * остаётся `ThemeTokens` — полное ядро обязательно, и генератор шкал отдаёт именно его.
+ * Проверять чужой состав нашим контрактом бессмысленно: это чужой товар.
+ */
+export type PaletteValues = Record<string, string>;
 
 export interface ThemeDefinition {
   /** Имя палитры → селектор `[data-theme="<name>"]`. */
   name: string;
-  light: ThemeTokens;
+  light: PaletteValues;
   /** Без dark-варианта палитра работает только в светлом режиме. */
-  dark?: ThemeTokens;
+  dark?: PaletteValues;
 }
 
 /**
@@ -224,7 +238,7 @@ export const DEFAULT_DARK: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "dark")
  * держалось бы при нём обещанием, а не машиной. Внутри зоны функция живёт дальше: запрет
  * касается поверхности и вызывающих, а не самого форматирования.
  */
-export function themeToCss(selector: string, tokens: ThemeTokens): string {
+export function themeToCss(selector: string, tokens: PaletteValues): string {
   const lines = Object.entries(tokens)
     .map(([key, value]) => `  --${key}: ${value};`)
     .join("\n");

@@ -31,6 +31,7 @@ export {
   createTheme,
   type CreateThemeOptions,
   type PaletteToken,
+  type PaletteValues,
   type ScaleName,
   type ScaleToken,
   type ThemeDefinition,
