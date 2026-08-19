@@ -79,6 +79,8 @@ export {
   FIXED_TOKENS,
   GRID_NOTE,
   GRID_STEP,
+  ROUND_FALLBACK_NOTE,
+  ROUND_SUPPORT_TEST,
   type DerivedScale,
   type DerivedStep,
 } from "./dimension.js";

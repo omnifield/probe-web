@@ -11,7 +11,10 @@ import {
   FIXED_TOKENS,
   GRID_NOTE,
   GRID_STEP,
+  ROUND_FALLBACK_NOTE,
+  ROUND_SUPPORT_TEST,
   derivedCss,
+  snappedValue,
   stepValue,
   type DerivedScale,
   type DerivedStep,
@@ -67,8 +70,19 @@ const evaluate = (expr: string, density: number): number => {
   return toRem(text);
 };
 
+/**
+ * Выражение, которое достаётся браузеру С поддержкой `round()`: второе объявление, если оно
+ * есть, иначе единственное. Это и есть «поставляемое значение» для всех проб ниже.
+ */
+const deliveredValue = (scale: DerivedScale, step: DerivedStep): string =>
+  snappedValue(scale, step) ?? stepValue(scale, step);
+
 /** Значение ступени в `rem` при заданной плотности — из выражения, а не из формулы. */
 const valueOf = (scale: DerivedScale, step: DerivedStep, density: number): number =>
+  evaluate(deliveredValue(scale, step), density);
+
+/** То же, но из ПЕРВОГО объявления — что получает браузер без `round()`. */
+const fallbackOf = (scale: DerivedScale, step: DerivedStep, density: number): number =>
   evaluate(stepValue(scale, step), density);
 
 /** Значение ДО округления — им проверяется вывод границы, а не поставка. */
@@ -286,7 +300,7 @@ describe("сетка 0.25rem", () => {
   it("выражение ступени возвращает значение на сетку", () => {
     for (const scale of snapped) {
       for (const step of scale.steps) {
-        expect(stepValue(scale, step), `--${step.name}`).toMatch(
+        expect(snappedValue(scale, step), `--${step.name}`).toMatch(
           new RegExp(`^round\\(nearest, .+, ${GRID_STEP.replace(".", "\\.")}\\)$`),
         );
       }
@@ -370,6 +384,155 @@ describe("сетка 0.25rem", () => {
 
   it("сетка объявлена в поставке вместе с причиной", () => {
     expect(derivedCss()).toContain(GRID_NOTE);
+  });
+});
+
+describe("подстраховка @supports для round()", () => {
+  // Браузер без `round()` не ухудшает геометрию, а ТЕРЯЕТ её: недействительное значение делает
+  // свойство невычислимым. Поэтому значение объявляется дважды, и порядок объявлений — часть
+  // решения, а не оформление (`kb:PROBEWEB-16`, «Открытый вопрос»; `tasker:PROBEWEB-63`).
+  //
+  // Проверяется СГЕНЕРИРОВАННЫЙ CSS, а не намерение: порядок блоков виден только в нём.
+
+  const css = derivedCss();
+  // Ищем САМО правило, а не слово: `@supports` упоминается и в комментариях выше — и в
+  // объяснении у плотной шкалы, и в шапке блока. Правило стоит на своей строке с нулевого
+  // отступа, комментарии — нет.
+  const guardStart = css.search(/^@supports /m);
+  const baseBlock = css.slice(0, guardStart);
+  const guardBlock = css.slice(guardStart);
+
+  /** Объявления блока без комментариев — иначе проба спотыкается о `round()` в тексте. */
+  const declarations = (block: string): Map<string, string> =>
+    new Map(
+      [...block.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/^\s*--([\w-]+):\s*([^;]+);/gm)].map(
+        (match) => [match[1], match[2].trim()],
+      ),
+    );
+
+  const base = declarations(baseBlock);
+  const guarded = declarations(guardBlock);
+  const snappedSteps = DERIVED_SCALES.filter((scale) => scale.snap).flatMap((scale) =>
+    scale.steps.map((step) => ({ scale, step })),
+  );
+
+  it("подстраховка объявлена первой, посадка на сетку — второй", () => {
+    // Порядок и есть механика: `@supports` специфичности не добавляет, побеждает объявление,
+    // стоящее ПОЗЖЕ. Переставь блоки местами — сетки не станет ни у кого, а прогон обязан
+    // покраснеть именно здесь.
+    expect(guardStart, "блока @supports в поставке нет вовсе").toBeGreaterThan(0);
+
+    for (const { scale, step } of snappedSteps) {
+      const fallback = stepValue(scale, step);
+      const snapped = snappedValue(scale, step)!;
+
+      expect(base.get(step.name), `первое объявление --${step.name}`).toBe(fallback);
+      expect(fallback, `первое объявление --${step.name} округляет`).not.toContain("round(");
+      expect(guarded.get(step.name), `второе объявление --${step.name}`).toBe(snapped);
+
+      expect(
+        css.indexOf(`--${step.name}: ${snapped};`),
+        `посадка на сетку --${step.name} стоит РАНЬШЕ подстраховки`,
+      ).toBeGreaterThan(css.indexOf(`--${step.name}: ${fallback};`));
+    }
+  });
+
+  it("перечень подстраховки совпадает с перечнем `snap: true`", () => {
+    // Расходиться молча этот перечень не может: второго списка нет, он считается из данных.
+    // Шкала, у которой сняли `snap`, теряет и второе объявление — а не остаётся в блоке
+    // сиротой, которую никто не заметит.
+    expect([...guarded.keys()].sort()).toEqual(snappedSteps.map(({ step }) => step.name).sort());
+
+    for (const scale of DERIVED_SCALES) {
+      if (scale.snap) continue;
+      expect(snappedValue(scale, scale.steps[0]), `шкала ${scale.seed} без snap`).toBeNull();
+      for (const step of scale.steps) {
+        expect(guarded.has(step.name), `--${step.name} попал под @supports без snap`).toBe(false);
+      }
+    }
+  });
+
+  it("проверяется именно `round()` и в том виде, в каком он используется", () => {
+    // Условие обязано ловить ту самую возможность, а не соседнюю: проба на `calc()` или на
+    // «математические функции вообще» включала бы подстраховку не по тому признаку.
+    expect(css).toContain(`@supports ${ROUND_SUPPORT_TEST} {`);
+    expect(ROUND_SUPPORT_TEST).toContain(GRID_STEP);
+
+    const tested = /^\(([\w-]+): ([a-z]+)\(nearest, /.exec(ROUND_SUPPORT_TEST);
+    expect(tested, `условие не проверяет функцию со стратегией nearest: ${ROUND_SUPPORT_TEST}`)
+      .not.toBeNull();
+
+    // Кастомное свойство принимает почти любой поток токенов — такая проба истинна всегда.
+    expect(tested![1].startsWith("--"), "проба стоит на кастомном свойстве").toBe(false);
+    // Объявление с `var()` считается действительным на разборе — проба снова была бы вечной.
+    expect(ROUND_SUPPORT_TEST, "в пробе есть var()").not.toContain("var(");
+
+    // И это ровно та функция, которой пользуются ступени.
+    for (const { scale, step } of snappedSteps) {
+      expect(snappedValue(scale, step), `--${step.name}`).toContain(`${tested![2]}(nearest, `);
+    }
+  });
+
+  it("подстраховка сохраняет отношения ступеней — она значение, а не заглушка", () => {
+    // Без округления ступень остаётся произведением семени, множителя и плотности. Значит
+    // отношения ряда целы: вид у браузера без `round()` не садится на сетку, но остаётся
+    // тем же видом, а не набором случайных чисел.
+    for (const scale of DERIVED_SCALES.filter((item) => item.snap)) {
+      const first = scale.steps[0];
+      for (const density of MULTIPLIERS) {
+        for (const step of scale.steps) {
+          const ratio = fallbackOf(scale, step, density) / fallbackOf(scale, first, density);
+          expect(ratio, `--${step.name} при плотности ${density}`).toBeCloseTo(
+            factorOf(step) / factorOf(first),
+            10,
+          );
+        }
+      }
+    }
+  });
+
+  it("пол оси не пересматривается: без округления норма тоже держится", () => {
+    // Там, где округления нет, значение не может оказаться НИЖЕ выведенного порога: округление
+    // вниз съедало запас, а без него запас остаётся. `DENSITY_FLOOR` вычислен после округления
+    // и потому строже — подстраховка его не трогает (`tasker:PROBEWEB-63`, «Границы»).
+    const control = scaleBySeed("control-height");
+    const smallest = stepByName(control, "control-height-sm");
+    const minRem = Number.parseFloat(
+      FIXED_TOKENS.find((token) => token.name === "control-target-min")!.value,
+    );
+
+    for (const density of MULTIPLIERS) {
+      expect(
+        fallbackOf(control, smallest, density),
+        `подстраховка нижней ступени контрола при плотности ${density}`,
+      ).toBeGreaterThanOrEqual(minRem);
+    }
+  });
+
+  it("в умолчании браузер без `round()` не расходится с остальными ни на пиксель", () => {
+    // Семена и множители подобраны так, что при плотности 1 значение уже лежит на сетке.
+    // Отсюда честная граница риска: подстраховка видна только тому, кто крутил плотность.
+    for (const { scale, step } of snappedSteps) {
+      expect(fallbackOf(scale, step, 1), `--${step.name} при плотности 1`).toBeCloseTo(
+        valueOf(scale, step, 1),
+        10,
+      );
+    }
+  });
+
+  it("поставка называет, что именно теряет браузер без round()", () => {
+    // Комментарий уезжает в `base.css` рядом с подстраховкой: тот, кто читает CSS, не пойдёт
+    // за причиной в TS-модуль — он подставит свою догадку.
+    expect(css).toContain(ROUND_FALLBACK_NOTE);
+    expect(ROUND_FALLBACK_NOTE, "не сказано, что свойство становится невычислимым").toMatch(
+      /невычислим/,
+    );
+    expect(ROUND_FALLBACK_NOTE, "не сказано, что геометрия исчезает, а не ухудшается").toMatch(
+      /исчеза/,
+    );
+    expect(ROUND_FALLBACK_NOTE, "не сказано, почему порядок объявлений обязателен").toMatch(
+      /порядок/i,
+    );
   });
 });
 
