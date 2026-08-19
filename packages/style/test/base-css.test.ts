@@ -71,6 +71,32 @@ describe("base.css", () => {
     );
   });
 
+  it("у плотной шкалы в поставке два объявления, и подстраховка стоит первой", () => {
+    // Порядок проверяется на СОБРАННОМ файле, а не только на генераторе: между блоками в
+    // `base.css` приклеиваются другие куски, и переехавший блок сломал бы решение молча.
+    // Браузер без `round()` берёт первое объявление, с поддержкой — второе, потому что
+    // `@supports` специфичности не добавляет (`tasker:PROBEWEB-63`).
+    const plain = built.indexOf("--space-4: calc(var(--space, 0.25rem) * 4 * var(--density, 1));");
+    const guard = built.indexOf("@supports (width: round(nearest, 1rem, 0.25rem)) {");
+    const snapped = built.indexOf(
+      "--space-4: round(nearest, calc(var(--space, 0.25rem) * 4 * var(--density, 1)), 0.25rem);",
+    );
+
+    expect(plain, "первого объявления --space-4 в поставке нет").toBeGreaterThan(-1);
+    expect(guard, "блока @supports в поставке нет").toBeGreaterThan(plain);
+    expect(snapped, "посадка на сетку стоит раньше подстраховки").toBeGreaterThan(guard);
+  });
+
+  it("подстраховка накрывает ровно плотные шкалы, а кегль в неё не попадает", () => {
+    // Кегль на сетку не садится вовсе — значит и второго объявления у него быть не может.
+    const guard = built.slice(built.indexOf("@supports (width: round("));
+    for (const token of ["space-4", "column-40", "control-height-sm"]) {
+      expect(guard, `--${token} не подстрахован`).toContain(`--${token}: round(nearest,`);
+    }
+    expect(guard, "кегль попал под @supports").not.toContain("--font-size-");
+    expect(guard, "скругление попало под @supports").not.toContain("--radius-");
+  });
+
   it("в поставке нет ни одного старого имени ступени интервалов", () => {
     // Реестр с двух сторон: всё объявленное шкалой доехало (проба выше) — и в файле нет
     // ничего сверх неё. Без второй стороны переименование прошло бы «зелёным» с обоими
@@ -80,7 +106,13 @@ describe("base.css", () => {
     );
     const expected = DERIVED_TOKENS.filter((token) => token.startsWith("space-"));
 
-    expect([...declared].sort()).toEqual([...expected].sort());
+    // Имя интервала объявлено ДВАЖДЫ — подстраховка и посадка на сетку (`PROBEWEB-63`), —
+    // поэтому реестр сверяется по именам, а число объявлений проверяется отдельно: иначе
+    // третье объявление, взявшееся неизвестно откуда, прошло бы незамеченным.
+    expect([...new Set(declared)].sort()).toEqual([...expected].sort());
+    expect(declared.length, "у ступени интервалов не ровно два объявления").toBe(
+      expected.length * 2,
+    );
     // Порядковые имена значили ДРУГИЕ кратности (`--space-5` был множителем 6): останься
     // такое имя в файле — потребитель получил бы прежнее имя с новым значением.
     for (const stale of ["space-5", "space-7", "space-9", "space-10"]) {
