@@ -29,6 +29,7 @@ export default defineConfig({
           include: [
             "test/tokens.test.ts",
             "test/palette.test.ts",
+            "test/marker.test.ts",
             "test/themes-css.test.ts",
             "test/model.test.ts",
             "test/oklch.test.ts",

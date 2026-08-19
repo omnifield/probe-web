@@ -216,6 +216,17 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
  * заданы нормой (CSS Fonts 4, §2.3, ряд 100…900). Выводить их из семени значило бы придумать
  * шкалу там, где значения не наши.
  */
+/**
+ * Пол нормы для размера цели. Вынесен отдельной записью не ради красоты: из его ИМЕНИ
+ * собирается маркер приезда базы (`src/marker.ts`), и второй копии имени быть не должно —
+ * переименование обязано двигать маркер само, а не по памяти.
+ */
+export const CONTROL_TARGET_MIN = {
+  name: "control-target-min",
+  value: "1.5rem",
+  note: "минимальный размер цели 24×24 CSS-пикселя — WCAG 2.2, 2.5.8 Target Size (Minimum), AA. Не масштабируется ничем: это пол нормы, а не наша ступень",
+} as const;
+
 export const FIXED_TOKENS: readonly { name: string; value: string; note: string }[] = [
   { name: "leading-none", value: "1", note: "высота строки — безразмерное отношение" },
   { name: "leading-tight", value: "1.25", note: "заголовки" },
@@ -226,11 +237,7 @@ export const FIXED_TOKENS: readonly { name: string; value: string; note: string 
   { name: "weight-medium", value: "500", note: "" },
   { name: "weight-semibold", value: "600", note: "" },
   { name: "weight-bold", value: "700", note: "" },
-  {
-    name: "control-target-min",
-    value: "1.5rem",
-    note: "минимальный размер цели 24×24 CSS-пикселя — WCAG 2.2, 2.5.8 Target Size (Minimum), AA. Не масштабируется ничем: это пол нормы, а не наша ступень",
-  },
+  CONTROL_TARGET_MIN,
 ];
 
 /** Имя токена-оси плотности. */

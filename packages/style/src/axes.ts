@@ -17,11 +17,11 @@
 // бы об этом. Наше дело — сказать, где край; решение остаётся его.
 
 import {
+  CONTROL_TARGET_MIN,
   DENSITY_CEILING,
   DENSITY_FLOOR,
   DENSITY_TOKEN,
   DERIVED_SCALES,
-  FIXED_TOKENS,
 } from "./dimension.js";
 
 /**
@@ -76,8 +76,6 @@ export interface Axis {
   continuous: boolean;
 }
 
-const targetMin = FIXED_TOKENS.find((token) => token.name === "control-target-min")!;
-
 /** Нижняя ступень контрола — та, которую связывает 2.5.8. */
 const controlSmallest = DERIVED_SCALES.find((scale) => scale.seed === "control-height")!.steps.find(
   (step) => step.name === "control-height-sm",
@@ -91,7 +89,7 @@ const CONTROL_FACTOR = "factor" in controlSmallest ? controlSmallest.factor : Nu
  *
  * Считается из данных шкалы, чтобы не разъехаться с ними молча.
  */
-const CONTROL_SEED_FLOOR = Number.parseFloat(targetMin.value) / CONTROL_FACTOR;
+const CONTROL_SEED_FLOOR = Number.parseFloat(CONTROL_TARGET_MIN.value) / CONTROL_FACTOR;
 
 /** Границы нет — связывающей нормы не существует. Причина у каждой оси своя, текст свой. */
 const unbounded = (why: string): AxisBound => ({ value: null, kind: "границы нет", norm: null, why });
