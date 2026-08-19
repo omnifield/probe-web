@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DENSITY_DEFAULT, DENSITY_TOKEN, DERIVED_TOKENS, FIXED_TOKENS } from "../src/dimension.js";
@@ -7,50 +5,22 @@ import { DEFAULT_THEME_MODEL, themeModelToCss } from "../src/model.js";
 import { DEFAULT_PALETTE, paletteSelector } from "../src/palette.js";
 import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import { DEFAULT_DARK, DEFAULT_LIGHT, SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
+import { readBuilt, rules, stripComments, unthemedRules } from "./helpers/css.js";
 
 // ГЕЙТ ПОСТАВЛЯЕМОЙ ПАЛИТРЫ и документа БЕЗ неё (`kb:PROBEWEB-18`).
 //
 // Проверяем СОБРАННЫЕ `dist/css/*.css`, а не исходники: правило «`:root` палитрой не
 // красится» нарушается сборкой, а не намерением, — ровно так оно и было нарушено, когда
-// дефолт собирался отдельной веткой скрипта.
-//
-// Читаем текстом, но по правилам, а не подстрокой: заголовок файла сам рассказывает про
-// `:root` и про `data-theme`, и наивный `grep` спотыкался бы о собственную документацию.
-// У потребителя этот заголовок к тому же срежет минификатор.
+// дефолт собирался отдельной веткой скрипта. Как читается собранный файл — `helpers/css.ts`.
 
-const read = (name: string): string =>
-  readFileSync(resolve(import.meta.dirname, `../dist/css/${name}`), "utf8");
+const themes = readBuilt("themes.css");
+const base = readBuilt("base.css");
 
-const themes = read("themes.css");
-const base = read("base.css");
-
-const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
-
-interface Rule {
-  selector: string;
-  declarations: Map<string, string>;
-}
-
-/**
- * Правила файла: внутренние блоки со своим селектором. Обёртки вроде `@supports` при этом
- * не теряются — правило внутри разбирается само по себе, а обёртка на то, КУДА оно целится,
- * не влияет.
- */
-const rules = (css: string): Rule[] =>
-  [...strip(css).matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => {
-    const declarations = new Map<string, string>();
-    for (const line of match[2].split(";")) {
-      const [, name, value] = /^\s*--([\w-]+):\s*([\s\S]+)$/.exec(line) ?? [];
-      if (name) declarations.set(name, (value as string).trim());
-    }
-    return { selector: match[1].trim().replace(/^@supports[^{]*$/, "@supports"), declarations };
-  });
-
-/** Значения блока по его селектору. */
+/** Значения блока по селектору; блока нет — проба падает здесь, а не на сравнении. */
 const block = (css: string, selector: string): Record<string, string> => {
   const rule = rules(css).find((item) => item.selector === selector);
   expect(rule, `блок «${selector}» найден`).toBeDefined();
-  return Object.fromEntries((rule as Rule).declarations);
+  return Object.fromEntries((rule as { declarations: Map<string, string> }).declarations);
 };
 
 const PALETTE_CONTRACT = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS]);
@@ -100,7 +70,7 @@ describe("собранный themes.css", () => {
   });
 
   it("ролей и устаревших псевдонимов в палитре нет — они живут в base.css", () => {
-    const body = strip(themes);
+    const body = stripComments(themes);
     for (const role of ROLE_TOKENS) expect(body).not.toContain(`--${role}:`);
     for (const legacy of LEGACY_TOKENS) expect(body).not.toContain(`--${legacy}:`);
   });
@@ -108,9 +78,7 @@ describe("собранный themes.css", () => {
 
 describe("документ без `data-theme`", () => {
   /** Правила обоих поставляемых файлов, которые подходят документу БЕЗ имени палитры. */
-  const unthemed = [...rules(base), ...rules(themes)].filter(
-    (rule) => !rule.selector.includes("data-theme"),
-  );
+  const unthemed = unthemedRules(base, themes);
 
   it("не получает НИ ОДНОГО токена палитры", () => {
     // Это и есть «нет выбранного пресета → нет оформления»: не потому, что мы где-то это
