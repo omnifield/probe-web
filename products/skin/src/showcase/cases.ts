@@ -16,14 +16,15 @@
 // Состояние и содержимое — на узле; окружение (узкое место, тёмный режим, соседство) — вокруг
 // него, и его задаёт страница компонента, а не случай.
 //
-// ## Почему сейчас все случаи выглядят одинаково
+// ## Когда все случаи выглядят одинаково
 //
-// Скина в зоне ещё нет: он делается следующим шагом. Голый кит с адресными атрибутами — это
-// законное рабочее состояние продукта, а не поломка витрины (`kb:PROBEWEB-11`). Вид появится,
-// когда появится скин, и ни одна строка отсюда для этого не изменится.
+// Значит скин снят — и это законное рабочее состояние продукта, а не поломка витрины
+// (`kb:PROBEWEB-11`). Голый кит с адресными атрибутами жив и адресуем; наденьте скин, и ни одна
+// строка отсюда для этого не изменится.
 
 import { sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
+import { passportOf, type PassportMark } from "@omnifield/probe-web-ui/passport";
 
 import { REGISTRY } from "./registry.js";
 
@@ -140,6 +141,87 @@ export const BUTTON_CASES: readonly ShowcaseCase[] = [
 export const CASES: Readonly<Record<string, readonly ShowcaseCase[]>> = {
   button: BUTTON_CASES,
 };
+
+/** Клетка сетки: компонент в одной вариации и одном состоянии. */
+export interface MatrixCell {
+  /** Вариация; пусто — атрибут не поставлен, действует умолчание скина. */
+  readonly variant: string | null;
+  /** Состояние; пусто — обычное. */
+  readonly state: string | null;
+  /** Координата человеческими словами — то, чем это адресует скин. */
+  readonly address: string;
+  /** Дерево клетки. */
+  readonly tree: AssemblyTree;
+}
+
+/**
+ * Как выставить состояние В РАЗМЕТКЕ — по тому, чем его объявил паспорт.
+ *
+ * Атрибутные состояния ставятся атрибутом, псевдоклассовые — признаком принуждения. Это показ
+ * ВИДА, а не проверка поведения: что кит действительно ставит `data-disabled` от своего пропа,
+ * проверяют его собственные пробы, и повторять их здесь нечем и незачем.
+ *
+ * Знание о том, каким пропом включается состояние, паспорту не принадлежит: он объявляет
+ * наблюдаемую поверхность для вида, а не сигнатуру вызова. Поэтому витрина идёт от разметки —
+ * ровно оттуда же, откуда идёт скин.
+ */
+function stateProps(mark: PassportMark): Record<string, unknown> {
+  return mark.kind === "pseudo"
+    ? { [FORCE_ATTRIBUTE]: mark.name.replace(/^:/, "") }
+    : { [mark.name]: mark.value ?? "" };
+}
+
+/**
+ * СЕТКА: каждая вариация в каждом состоянии.
+ *
+ * Ради этого витрина и существует. Вариации по одной оси, состояния по другой — так делают
+ * дизайн-системы, и по названной причине: сетка сообщает, что перечень многомерен, а колонка
+ * этого не сообщает. Одевающий видит не «кнопку», а все места, которые ему предстоит одеть, — и
+ * сразу видит дыры: клетка, ничем не отличающаяся от соседней, значит правило не написано.
+ *
+ * Первая строка — БЕЗ имени вариации: умолчание скина и «атрибут не поставлен» это один адрес, и
+ * показывать его надо тем, чем он и является, — отсутствием атрибута.
+ *
+ * @param component адрес компонента в реестре
+ * @param variants имена вариаций из записи надетого скина
+ */
+export function matrixOf(component: string, variants: readonly string[]): MatrixCell[] {
+  const passport = passportOf(component);
+  const part = passport?.parts.find((item) => item.name === passport.root);
+  const states = part?.states ?? [];
+  const axis = passport?.variantAxis.mark;
+
+  const cells: MatrixCell[] = [];
+
+  for (const variant of [null, ...variants]) {
+    const variantProps =
+      variant === null || axis?.kind !== "attribute" ? {} : { [axis.name]: variant };
+
+    for (const state of [null, ...states]) {
+      const sketch = sketchOf(REGISTRY, component);
+      if (!sketch) continue;
+
+      const edited = updateNode(sketch, sketch.components.root, {
+        props: {
+          children: "Кнопка",
+          ...variantProps,
+          ...(state === null ? {} : stateProps(state.mark)),
+        },
+      });
+
+      if (!edited.ok) continue;
+
+      cells.push({
+        variant,
+        state: state?.name ?? null,
+        address: [component, variant ?? "умолчание", state?.name ?? "обычное"].join(" · "),
+        tree: edited.tree,
+      });
+    }
+  }
+
+  return cells;
+}
 
 /**
  * Случаи вариаций — по одному на каждое имя, объявленное СКИНОМ.

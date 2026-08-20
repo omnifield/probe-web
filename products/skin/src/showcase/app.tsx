@@ -21,8 +21,16 @@
 // бы с первой ровно тогда, когда одна из них научится чему-то новому.
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
-import { makeSkinSwitch } from "@omnifield/probe-web-runtime";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
+// `readSkin` из механики приложения читает КОРЕНЬ (что надето и в каком режиме), а одноимённая
+// функция хранилища читает ЗАПИСЬ. Предметы разные, имена совпали — развожу их псевдонимом, а не
+// переименованием чужого.
+import {
+  applySkin,
+  makeSkinSwitch,
+  readSkin as readRoot,
+  type SkinMode,
+} from "@omnifield/probe-web-runtime";
+import { PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
 import {
@@ -33,7 +41,9 @@ import {
   SKIN_SOURCE,
   type SkinRecord,
 } from "../skins/index.js";
-import { CASES, variantCases, type ShowcaseCase } from "./cases.js";
+import { skinGaps, type SkinGap } from "@omnifield/probe-web-skin/model";
+
+import { CASES, matrixOf, type MatrixCell, type ShowcaseCase } from "./cases.js";
 import { REGISTRY } from "./registry.js";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
@@ -62,6 +72,14 @@ function Case(props: { item: ShowcaseCase }) {
   );
 }
 
+/** Имена состояний корневой части — из паспорта, для заголовков сетки. */
+function statesOf(component: string): string[] {
+  const passport = passportOf(component);
+  const root = passport?.parts.find((part) => part.name === passport.root);
+
+  return (root?.states ?? []).map((state) => state.name);
+}
+
 /** Части компонента — из анатомии, а не из нашего представления о нём. */
 function Parts(props: { component: string }) {
   const passport = () => passportOf(props.component);
@@ -87,8 +105,51 @@ function Parts(props: { component: string }) {
   );
 }
 
+/**
+ * СЕТКА: вариации по строкам, состояния по колонкам.
+ *
+ * То, ради чего одевающий сюда приходит. Клетка, ничем не отличающаяся от соседней, — это дыра
+ * в скине: правило на этот адрес не написано. Пустая сетка значит, что скин снят или вариаций у
+ * него нет, и об этом сказано словами рядом.
+ *
+ * Подпись клетки называет КООРДИНАТУ, а не описывает вид: «умолчание · hover», а не «серая при
+ * наведении». Это тот же адрес, которым правило адресует скин, — и тот, которым его будет
+ * адресовать редактор.
+ */
+function Matrix(props: { cells: readonly MatrixCell[]; states: readonly string[] }) {
+  const rows = () => [...new Set(props.cells.map((cell) => cell.variant))];
+
+  return (
+    <div class="matrix" style={{ "--matrix-columns": String(props.states.length + 1) }}>
+      <span class="matrix__corner" />
+      <For each={props.states}>
+        {(state) => <b class="matrix__head">{state === "" ? "обычное" : state}</b>}
+      </For>
+
+      <For each={rows()}>
+        {(variant) => (
+          <>
+            <b class="matrix__side">{variant ?? "умолчание"}</b>
+            <For each={props.cells.filter((cell) => cell.variant === variant)}>
+              {(cell) => (
+                <div class="matrix__cell" title={cell.address}>
+                  <RenderTree tree={cell.tree} registry={REGISTRY} />
+                </div>
+              )}
+            </For>
+          </>
+        )}
+      </For>
+    </div>
+  );
+}
+
 /** Страница компонента: что он объявил о себе и как держится в случаях. */
-function ComponentPage(props: { component: string; variants: readonly string[] }) {
+function ComponentPage(props: {
+  component: string;
+  variants: readonly string[];
+  gaps: readonly SkinGap[];
+}) {
   const cases = () => CASES[props.component] ?? [];
 
   return (
@@ -107,20 +168,43 @@ function ComponentPage(props: { component: string; variants: readonly string[] }
       </section>
 
       <section class="page__section">
-        <h2 class="page__subtitle">Вариации</h2>
+        <h2 class="page__subtitle">Вариации и состояния</h2>
         <Show
           when={props.variants.length > 0}
           fallback={
             <p class="page__empty">
-              Скин не надет — имён вариаций нет. Они принадлежат скину, а не компоненту.
+              Скин не надет — имён вариаций нет. Они принадлежат скину, а не компоненту, и
+              называть их за него витрина не вправе.
             </p>
           }
         >
-          <div class="cases">
-            <For each={variantCases(props.component, props.variants)}>
-              {(item) => <Case item={item} />}
+          <Matrix
+            cells={matrixOf(props.component, props.variants)}
+            states={["", ...statesOf(props.component)]}
+          />
+        </Show>
+      </section>
+
+      <section class="page__section">
+        <h2 class="page__subtitle">Долг одевания</h2>
+        <Show
+          when={props.gaps.length > 0}
+          fallback={
+            <p class="page__empty">
+              Всё объявленное одето: ни одной части и ни одного состояния без правила.
+            </p>
+          }
+        >
+          <ul class="gaps">
+            <For each={props.gaps}>
+              {(gap) => (
+                <li class="gaps__item">
+                  <code class="gaps__kind">{gap.kind}</code>
+                  <span class="gaps__means">{gap.means}</span>
+                </li>
+              )}
             </For>
-          </div>
+          </ul>
         </Show>
       </section>
 
@@ -217,6 +301,15 @@ export function App() {
   const [current, setCurrent] = createSignal(COMPONENTS[0] ?? "");
   const [worn, setWorn] = createSignal<string | null>(null);
 
+  // РЕЖИМ переключается механикой приложения, а не классом в разметке: пара для тёмного —
+  // ответственность скина, и проверять её надо тем же путём, которым режим меняет потребитель.
+  const [mode, setModeSignal] = createSignal<SkinMode>(readRoot().mode);
+
+  const setMode = (value: SkinMode) => {
+    applySkin({ mode: value });
+    setModeSignal(readRoot().mode);
+  };
+
   // Перечень — из СЛУЖБЫ. Запасного списка нет: витрина без службы показывает голый кит и
   // называет причину с адресом, а не подсовывает встроенное под видом хранимого.
   const [records] = createResource(() => listSkins());
@@ -231,6 +324,20 @@ export function App() {
   /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */
   const variants = (): readonly string[] =>
     Object.keys(wornSkin()?.recipes[current()]?.variants ?? {});
+
+  /**
+   * ДОЛГ ОДЕВАНИЯ показанного компонента — считает МЕХАНИКА, а не витрина.
+   *
+   * Свой подсчёт здесь стал бы вторым ответом на один вопрос: у редактора появился бы третий, и
+   * разошлись бы они в тот день, когда показали бы разное про один скин.
+   */
+  const gaps = (): readonly SkinGap[] => {
+    const skin = wornSkin();
+
+    return skin === undefined
+      ? []
+      : skinGaps(skin, Object.values(PASSPORTS)).filter((gap) => gap.component === current());
+  };
 
   // Первый заход: восстанавливаем запомненный выбор, а если его нет — надеваем первый скин
   // службы и НЕ запоминаем. Витрина существует, чтобы смотреть на одетое, но чужое умолчание
@@ -270,6 +377,21 @@ export function App() {
           <b class="rail__title">Витрина</b>
           <span class="rail__note">перечень — из реестра паспортов</span>
         </div>
+
+        <div class="modes">
+          <For each={["light", "dark"] as const}>
+            {(value) => (
+              <button
+                class="modes__item"
+                type="button"
+                aria-pressed={mode() === value}
+                onClick={() => setMode(value)}
+              >
+                {value === "light" ? "светлый" : "тёмный"}
+              </button>
+            )}
+          </For>
+        </div>
         <nav class="rail__list">
           <For each={COMPONENTS}>
             {(component) => (
@@ -295,7 +417,9 @@ export function App() {
 
       <main class="main">
         <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
-          {(component) => <ComponentPage component={component()} variants={variants()} />}
+          {(component) => (
+            <ComponentPage component={component()} variants={variants()} gaps={gaps()} />
+          )}
         </Show>
       </main>
     </div>

@@ -260,3 +260,108 @@ body {
   margin: 0;
   color: var(--text-muted);
 }
+
+/* ── переключатель режима ─────────────────────────────────────────────────────────────── */
+
+.modes {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.modes__item {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.modes__item:hover {
+  background: var(--tint-hover);
+}
+
+.modes__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.modes__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-text);
+}
+
+.skins__cmd {
+  display: block;
+  margin-block-start: var(--space-1);
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+/* ── сетка: вариации × состояния ──────────────────────────────────────────────────────── */
+
+.matrix {
+  display: grid;
+  grid-template-columns: auto repeat(calc(var(--matrix-columns) - 1), minmax(7rem, 1fr));
+  gap: var(--space-2);
+  align-items: center;
+  overflow-x: auto;
+}
+
+.matrix__head,
+.matrix__side {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}
+
+.matrix__head {
+  text-align: center;
+}
+
+.matrix__side {
+  padding-inline-end: var(--space-2);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.matrix__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 3.5rem;
+  padding: var(--space-2);
+  border: var(--border-width-1) dashed var(--separator);
+  border-radius: var(--radius-md);
+}
+
+/* ── долг одевания ────────────────────────────────────────────────────────────────────── */
+
+.gaps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gaps__item {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid var(--danger-border);
+  border-radius: var(--radius-md);
+}
+
+.gaps__kind {
+  color: var(--danger-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
