@@ -55,6 +55,14 @@ zones:
   runtime:
     paths: [packages/runtime]
     description: mount() и контракт #root — то, что зовёт скелет у потребителя
+
+  assembly:
+    paths: [packages/assembly]
+    description: >-
+      механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка
+      вложенности, отрисовка по данным. Одна на редактор скинов и конструктор страниц:
+      различие в охвате дерева, а не в устройстве. Средство, а не решение — своего вида
+      не приносит.
   build:
     paths: [packages/build]
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest
