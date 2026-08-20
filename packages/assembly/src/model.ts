@@ -39,6 +39,12 @@ export {
   possibleOwnersOf,
 } from "./nesting.js";
 
+export type { Coordinate } from "./coordinate.js";
+export { coordinateOf, nodesByCoordinate, nodesSharingCoordinate } from "./coordinate.js";
+
+export type { SketchNaming } from "./sketch.js";
+export { sketchOf } from "./sketch.js";
+
 export type { TreeFlaw, TreeFlawName } from "./integrity.js";
 export { checkTree } from "./integrity.js";
 
