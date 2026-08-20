@@ -25,7 +25,14 @@ import { makeSkinSwitch } from "@omnifield/probe-web-runtime";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
-import { SKIN_SOURCE, SKINS, skinOf } from "../skins/index.js";
+import {
+  listSkins,
+  readSkin,
+  SEED_HINT,
+  SERVICE_HINT,
+  SKIN_SOURCE,
+  type SkinRecord,
+} from "../skins/index.js";
 import { CASES, variantCases, type ShowcaseCase } from "./cases.js";
 import { REGISTRY } from "./registry.js";
 
@@ -81,17 +88,8 @@ function Parts(props: { component: string }) {
 }
 
 /** Страница компонента: что он объявил о себе и как держится в случаях. */
-function ComponentPage(props: { component: string; worn: string | null }) {
+function ComponentPage(props: { component: string; variants: readonly string[] }) {
   const cases = () => CASES[props.component] ?? [];
-
-  /**
-   * Имена вариаций — из записи НАДЕТОГО скина. Ни паспорт, ни витрина их не знают: имена
-   * принадлежат скину, и без него называть нечего.
-   */
-  const variants = () => {
-    const skin = props.worn === null ? undefined : skinOf(props.worn);
-    return Object.keys(skin?.recipes[props.component]?.variants ?? {});
-  };
 
   return (
     <article class="page">
@@ -111,7 +109,7 @@ function ComponentPage(props: { component: string; worn: string | null }) {
       <section class="page__section">
         <h2 class="page__subtitle">Вариации</h2>
         <Show
-          when={variants().length > 0}
+          when={props.variants.length > 0}
           fallback={
             <p class="page__empty">
               Скин не надет — имён вариаций нет. Они принадлежат скину, а не компоненту.
@@ -119,7 +117,7 @@ function ComponentPage(props: { component: string; worn: string | null }) {
           }
         >
           <div class="cases">
-            <For each={variantCases(props.component, variants())}>
+            <For each={variantCases(props.component, props.variants)}>
               {(item) => <Case item={item} />}
             </For>
           </div>
@@ -141,39 +139,74 @@ function ComponentPage(props: { component: string; worn: string | null }) {
  *
  * Снятие — отдельная кнопка, а не «пустой» пункт перечня: голый кит это законное рабочее
  * состояние продукта, и обращаться с ним как с отсутствием выбора значило бы прятать его.
+ *
+ * ТРИ СОСТОЯНИЯ ХРАНИЛИЩА говорятся врозь, потому что лечатся разным: перечень есть · служба
+ * пуста (засеять) · службы нет (поднять, адрес назван). Слепи их в одно «ничего нет» — человек
+ * пойдёт чинить не то, а пустой список прочтёт как «скинов не существует».
  */
-function SkinChoice(props: { worn: string | null; onWear: (name: string) => void; onTakeOff: () => void }) {
-  const [names] = createResource(() => SKIN.names());
-
+function SkinChoice(props: {
+  worn: string | null;
+  records: readonly SkinRecord[] | undefined;
+  failure: unknown;
+  onWear: (name: string) => void;
+  onTakeOff: () => void;
+}) {
   return (
     <div class="skins">
       <b class="skins__title">Скин</b>
-      <For each={names() ?? Object.keys(SKINS)}>
-        {(name) => (
+
+      <For each={props.records ?? []}>
+        {(record) => (
           <button
             class="skins__item"
             type="button"
-            aria-pressed={name === props.worn}
-            onClick={() => props.onWear(name)}
+            aria-pressed={record.name === props.worn}
+            onClick={() => props.onWear(record.name)}
           >
-            {name}
+            {record.label}
           </button>
         )}
       </For>
-      <button
-        class="skins__item skins__item--off"
-        type="button"
-        aria-pressed={props.worn === null}
-        onClick={() => props.onTakeOff()}
-      >
-        снять
-      </button>
+
+      <Show when={props.records && props.records.length > 0}>
+        <button
+          class="skins__item skins__item--off"
+          type="button"
+          aria-pressed={props.worn === null}
+          onClick={() => props.onTakeOff()}
+        >
+          снять
+        </button>
+      </Show>
+
       <p class="skins__state">
         <Show
-          when={props.worn}
-          fallback="Скин снят — кит показан голым. Рабочее состояние продукта, а не поломка витрины."
+          when={props.failure}
+          fallback={
+            <Show
+              when={props.records && props.records.length > 0}
+              fallback={
+                <>
+                  Служба отвечает, но скинов в ней нет. Засеять первым:
+                  <code class="skins__cmd">{SEED_HINT}</code>
+                </>
+              }
+            >
+              <Show
+                when={props.worn}
+                fallback="Скин снят — кит показан голым. Рабочее состояние продукта, а не поломка витрины."
+              >
+                {(name) => `Надет «${name()}». Снимите — останется голый кит: это проверка, а не поломка.`}
+              </Show>
+            </Show>
+          }
         >
-          {(name) => `Надет «${name()}». Снимите — останется голый кит, и это проверка, а не поломка.`}
+          {(failure) => (
+            <>
+              {String((failure() as Error).message)}
+              <code class="skins__cmd">{SERVICE_HINT}</code>
+            </>
+          )}
         </Show>
       </p>
     </div>
@@ -184,19 +217,40 @@ export function App() {
   const [current, setCurrent] = createSignal(COMPONENTS[0] ?? "");
   const [worn, setWorn] = createSignal<string | null>(null);
 
-  // Первый заход: восстанавливаем запомненный выбор, а если его нет — надеваем первый скин зоны
-  // и НЕ запоминаем. Витрина существует, чтобы смотреть на одетое, но чужое умолчание выбором
-  // человека не является, и памятью оно не становится.
+  // Перечень — из СЛУЖБЫ. Запасного списка нет: витрина без службы показывает голый кит и
+  // называет причину с адресом, а не подсовывает встроенное под видом хранимого.
+  const [records] = createResource(() => listSkins());
+
+  // ЗАПИСЬ надетого скина — тоже из службы: имена вариаций живут в ней, и взять их больше
+  // неоткуда. Паспорт их не знает, витрина не придумывает.
+  const [wornSkin] = createResource(worn, async (name: string) => {
+    const record = (await listSkins()).find((item) => item.name === name);
+    return record === undefined ? undefined : readSkin(record.id);
+  });
+
+  /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */
+  const variants = (): readonly string[] =>
+    Object.keys(wornSkin()?.recipes[current()]?.variants ?? {});
+
+  // Первый заход: восстанавливаем запомненный выбор, а если его нет — надеваем первый скин
+  // службы и НЕ запоминаем. Витрина существует, чтобы смотреть на одетое, но чужое умолчание
+  // выбором человека не является, и памятью оно не становится.
+  //
+  // Службы нет — не надеваем ничего и не падаем: остаётся голый кит, причина названа рядом.
   onMount(() => {
     void (async () => {
-      const restored = await SKIN.restore();
-      if (restored !== null) {
-        setWorn(restored);
-        return;
-      }
+      try {
+        const restored = await SKIN.restore();
+        if (restored !== null) {
+          setWorn(restored);
+          return;
+        }
 
-      const [first] = await SKIN.names();
-      if (first !== undefined) setWorn(await SKIN.wear(first, { remember: false }));
+        const [first] = await SKIN.names();
+        if (first !== undefined) setWorn(await SKIN.wear(first, { remember: false }));
+      } catch (cause) {
+        console.debug("скин не надет на первом заходе", cause);
+      }
     })();
   });
 
@@ -230,12 +284,18 @@ export function App() {
             )}
           </For>
         </nav>
-        <SkinChoice worn={worn()} onWear={wear} onTakeOff={takeOff} />
+        <SkinChoice
+          worn={worn()}
+          records={records()}
+          failure={records.error}
+          onWear={wear}
+          onTakeOff={takeOff}
+        />
       </aside>
 
       <main class="main">
         <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
-          {(component) => <ComponentPage component={component()} worn={worn()} />}
+          {(component) => <ComponentPage component={component()} variants={variants()} />}
         </Show>
       </main>
     </div>

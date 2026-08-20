@@ -15,12 +15,13 @@
 // то, что делает кнопку одетой; как оно выглядит — смотрит человек в живом браузере.
 
 import { RenderTree } from "@omnifield/probe-web-assembly";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { BUTTON_CASES } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
-import { SKIN_SOURCE } from "../src/skins/index.js";
+import { SEED, SKIN_SOURCE, StoreDown } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
+import { dropStore, restoreStore, serveSkins } from "./store-stub.js";
 
 /** Переключатель заводится на КАЖДУЮ пробу свой: память выбора общая на документ. */
 async function wearing() {
@@ -28,7 +29,15 @@ async function wearing() {
   return makeSkinSwitch(SKIN_SOURCE);
 }
 
+beforeEach(() => {
+  // Скины приходят из СЛУЖБЫ, и проба идёт тем же путём: перечень, потом запись по
+  // идентификатору. Подменяется `fetch`, а не наш клиент, — проверяется шов, а не то, что мы
+  // умеем звать сами себя.
+  serveSkins(SEED);
+});
+
 afterEach(() => {
+  restoreStore();
   cleanup();
   document.documentElement.removeAttribute("data-skin");
   for (const sheet of document.querySelectorAll("style")) sheet.remove();
@@ -111,6 +120,24 @@ describe("скин снимается", () => {
   });
 });
 
+describe("хранилище", () => {
+  it("перечень имён приходит из службы, а не из кода зоны", async () => {
+    expect([...(await SKIN_SOURCE.names())]).toEqual(["graphite"]);
+  });
+
+  it("службы нет — отказ, названный своим именем, а не пустой перечень", async () => {
+    dropStore();
+
+    await expect(SKIN_SOURCE.names()).rejects.toBeInstanceOf(StoreDown);
+  });
+
+  it("служба пуста — перечень пуст, и это другое состояние", async () => {
+    serveSkins();
+
+    expect([...(await SKIN_SOURCE.names())]).toEqual([]);
+  });
+});
+
 describe("источник зоны", () => {
   it("отдаёт текст стилей, а не адрес файла", async () => {
     const css = await SKIN_SOURCE.css("graphite");
@@ -123,7 +150,4 @@ describe("источник зоны", () => {
     await expect(async () => SKIN_SOURCE.css("нет-такого")).rejects.toThrow();
   });
 
-  it("перечень имён — из записей зоны", async () => {
-    expect([...(await SKIN_SOURCE.names())]).toEqual(["graphite"]);
-  });
 });

@@ -10,7 +10,8 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:skins": "node --experimental-strip-types scripts/seed-skins.mjs"
   },
   "dependencies": {
     "@omnifield/probe-web-assembly": "workspace:*",

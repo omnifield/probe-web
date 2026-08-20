@@ -18,7 +18,7 @@ import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { describe, expect, it } from "vitest";
 
 import { GRAPHITE } from "../src/skins/graphite.js";
-import { SKINS, skinOf } from "../src/skins/index.js";
+import { SEED } from "../src/skins/index.js";
 
 /** Текст порождается один раз: он один и тот же для всех проверок ниже. */
 const css = generateSkinCss(GRAPHITE, passportOf);
@@ -41,9 +41,15 @@ describe("запись собирается", () => {
     expect(() => generateSkinCss(GRAPHITE, passportOf)).not.toThrow();
   });
 
-  it("скин лежит в источнике зоны под своим именем", () => {
-    expect(skinOf(GRAPHITE.name)).toBe(GRAPHITE);
-    expect(Object.keys(SKINS)).toContain("graphite");
+  it("в коде зоны он — СЕМЯ, а не перечень", () => {
+    // Семя одно и вывозится под своим именем: им засевают пустую службу командой. Локального
+    // перечня скинов в зоне нет вовсе — два перечня расходятся молча, и это уже оплачено.
+    expect(SEED).toBe(GRAPHITE);
+
+    const index = readFileSync(resolve(process.cwd(), "src/skins/index.ts"), "utf8");
+
+    expect(index).toContain("listSkins");
+    expect(index).not.toMatch(/const SKINS|Record<string, Skin>/);
   });
 
   it("умолчание объявлено — вариации без него были бы двумя адресами", () => {

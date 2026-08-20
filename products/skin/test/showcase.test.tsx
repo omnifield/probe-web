@@ -11,14 +11,24 @@
 
 import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/showcase/app.jsx";
 import { BUTTON_CASES, CASES } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
+import { SEED } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
+import { restoreStore, serveSkins } from "./store-stub.js";
 
-afterEach(cleanup);
+beforeEach(() => serveSkins(SEED));
+
+afterEach(() => {
+  restoreStore();
+  cleanup();
+  document.documentElement.removeAttribute("data-skin");
+  for (const sheet of document.querySelectorAll("style")) sheet.remove();
+  localStorage.clear();
+});
 
 describe("перечень", () => {
   it("приходит из реестра", () => {
@@ -105,6 +115,22 @@ describe("отрисовка", () => {
     );
 
     expect(forced).toEqual(expect.arrayContaining(["hover", "focus-visible", "active"]));
+  });
+
+  it("имена вариаций приходят из записи НАДЕТОГО скина, а не из паспорта", async () => {
+    const host = mount(() => <App />);
+
+    // Ждём службу: перечень и запись приезжают запросами, и до их прихода вариаций нет
+    // законно — называть нечего.
+    await vi.waitFor(() => {
+      const shown = host.textContent ?? "";
+      for (const name of Object.keys(SEED.recipes.button?.variants ?? {})) {
+        expect(shown).toContain(name);
+      }
+    });
+
+    // Обратная сторона того же: паспорт имён не знает и знать не должен.
+    expect(JSON.stringify(passportOf("button"))).not.toContain("главная");
   });
 
   it("части и состояния на странице — из паспорта, а не из своего перечня", () => {

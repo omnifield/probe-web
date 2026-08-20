@@ -1,0 +1,172 @@
+// ХРАНИЛИЩЕ СКИНОВ — разговор со службой (`PWEB-13`).
+//
+// ## Почему скины живут в службе, а не в коде зоны
+//
+// Правило оплачено прошлым поколением этой же зоны: **два перечня расходятся молча**. Локальный
+// список рядом со служебным означает, что скин, сделанный коллегой, у него есть, а у нас нет, —
+// и никто не может сказать, какой из списков настоящий. Витрина уезжает на общий стенд, и
+// «сделал у себя» там ничего не значит.
+//
+// Поэтому здесь нет ни одного скина. В коде остаётся **семя** (`graphite.ts`) — то, чем
+// засевается ПУСТАЯ служба, и рождается оно один раз командой, а не читается витриной как
+// запасной перечень.
+//
+// ## Служба формата не понимает — и это её свойство, а не пробел
+//
+// Под `state` лежит непрозрачный кусок: служба хранит и отдаёт его, не заглядывая внутрь.
+// Понимание формата принадлежит владельцу вида, то есть нам. Отсюда две обязанности на нашей
+// стороне: разбирать чужой ответ (а не приводить его типом) и помечать свой вид ярлыком.
+//
+// ## Три состояния, и они говорятся врозь
+//
+// Служба ответила и перечень есть · служба ответила, но пуста · службы нет. Лечатся они разным,
+// поэтому и называются разно: пустой перечень чинится засевом, отсутствие службы — её подъёмом.
+// Слепи их в одно «ничего нет» — человек пойдёт чинить не то.
+
+import type { Skin } from "@omnifield/probe-web-skin/model";
+
+/**
+ * Адрес службы.
+ *
+ * Задаётся снаружи, умолчание — служба на этой машине. Относительный путь здесь не годится:
+ * через пульт разработки всё, кроме его собственных путей, уезжает в зону, и `/api/presets`
+ * попал бы в наш дев-сервер, а не в службу.
+ */
+const BASE =
+  (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
+
+/** Ярлык вида: по нему служба отдаёт только скины, не толкуя их. */
+const KIND = "skin";
+
+/** Команда, которой поднимают службу. Человеку нужен адрес и команда, а не текст ошибки движка. */
+export const SERVICE_HINT = "pnpm --filter @probe-web/presets start";
+
+/** Команда засева пустой службы семенем. */
+export const SEED_HINT = "pnpm --filter @probe-web/skin seed:skins";
+
+/**
+ * Служба ОТВЕТИЛА и отказала: имя занято, предел, кривой конверт.
+ *
+ * Отличать от «службы нет» обязательно. Спутай их — и человеку покажут «сохранено» там, где
+ * служба как раз отказалась: он уйдёт, считая скин общим, а тот не сохранён нигде.
+ */
+export class StoreRefused extends Error {}
+
+/** Службы нет: обрыв связи или пятисотка. Витрина это переживает и говорит человеку. */
+export class StoreDown extends Error {}
+
+/** Запись в перечне: то, что служба отдаёт БЕЗ содержимого. */
+export interface SkinRecord {
+  /** Идентификатор записи — им её читают и удаляют. Выдаёт служба. */
+  readonly id: string;
+  /** Имя для человека. */
+  readonly label: string;
+  /** Имя для машины — оно же имя скина, оно же уезжает на корень. */
+  readonly name: string;
+}
+
+/** Чужой ответ разбирается, а не приводится типом. */
+interface WireRecord {
+  id?: unknown;
+  label?: unknown;
+  name?: unknown;
+  state?: unknown;
+}
+
+const text = (value: unknown): string => (typeof value === "string" ? value : "");
+
+async function ask(url: string, init?: RequestInit): Promise<Response> {
+  let response: Response;
+
+  try {
+    response = await fetch(url, init);
+  } catch (cause) {
+    // Обрыв связи — не отказ: службы просто нет по этому адресу. Человеку показывается АДРЕС, а
+    // не текст ошибки движка: «Failed to fetch» не говорит ему, что делать, а адрес говорит.
+    console.debug("служба скинов недоступна", cause);
+    throw new StoreDown(`служба не отвечает по адресу ${new URL(url).origin}`);
+  }
+
+  if (response.ok) return response;
+
+  // Граница ровно на 500: ниже — ответ по делу, выше — сломанная служба.
+  if (response.status < 500) {
+    const said = (await response.text().catch(() => "")).trim();
+    throw new StoreRefused(said === "" ? `служба отказала (${response.status})` : said);
+  }
+
+  throw new StoreDown(`служба ответила ${response.status}`);
+}
+
+/**
+ * Перечень скинов службы — без содержимого.
+ *
+ * Записи без машинного имени отбрасываются: имя это то, чем скин зовут на корне и в источнике,
+ * и запись без него надеть нельзя. Молчаливо подставить ей идентификатор значило бы завести
+ * второе имя скина, которого автор не давал.
+ */
+export async function listSkins(): Promise<SkinRecord[]> {
+  const response = await ask(`${BASE}?kind=${KIND}`);
+  const body: unknown = await response.json();
+  const items: unknown = (body as { items?: unknown }).items;
+
+  if (!Array.isArray(items)) throw new StoreRefused("служба ответила не перечнем");
+
+  return items
+    .map((item) => item as WireRecord)
+    .filter((item) => text(item.name) !== "" && text(item.id) !== "")
+    .map((item) => ({
+      id: text(item.id),
+      label: text(item.label) === "" ? text(item.name) : text(item.label),
+      name: text(item.name),
+    }));
+}
+
+/**
+ * Запись скина по идентификатору.
+ *
+ * Разбор здесь минимальный и намеренно такой: под `state` лежит наш формат, и проверять его по
+ * полю — значит завести вторую проверку рядом с той, что делает генератор. Кривая запись
+ * отвергнется им, с именованными изъянами и адресом каждого.
+ */
+export async function readSkin(id: string): Promise<Skin> {
+  const response = await ask(`${BASE}/${encodeURIComponent(id)}`);
+  const body = (await response.json()) as WireRecord;
+
+  if (body.state === null || typeof body.state !== "object") {
+    throw new StoreRefused(`запись «${id}» пуста — скина в ней нет`);
+  }
+
+  return body.state as Skin;
+}
+
+/**
+ * Кладёт скин в службу.
+ *
+ * Имя для машины — имя самого скина: оно уезжает на корень и им же зовётся запись. Уникальность
+ * держит служба, и отказ на занятое имя приходит оттуда: только она видит все записи разом.
+ *
+ * @param skin скин целиком
+ * @param label имя для человека; не названо — берётся машинное
+ */
+export async function saveSkin(skin: Skin, label?: string): Promise<SkinRecord> {
+  const response = await ask(BASE, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      label: label ?? skin.name,
+      name: skin.name,
+      kind: KIND,
+      state: skin,
+    }),
+  });
+
+  const body = (await response.json()) as WireRecord;
+
+  return { id: text(body.id), label: text(body.label), name: text(body.name) };
+}
+
+/** Убирает запись из службы. Скин уходит у ВСЕХ — предупреждение об этом на стороне того, кто зовёт. */
+export async function deleteSkin(id: string): Promise<void> {
+  await ask(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
