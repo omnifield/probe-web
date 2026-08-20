@@ -11,8 +11,10 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createServer, type ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { baseUrl, closeServer, fetchModule, startServer } from "./dev-server.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = resolve(here, "fixture");
@@ -35,58 +37,6 @@ function removeBuilt(): void {
 }
 
 /**
- * Поднимает дев-сервер приложения его собственным конфигом (то есть пресетом из `/vite`).
- *
- * @returns запущенный сервер
- */
-async function startServer(): Promise<ViteDevServer> {
-  const server = await createServer({
-    root: fixtureDir,
-    logLevel: "warn",
-    // Порт свободный: прогон не должен зависеть от того, поднято ли рядом приложение.
-    server: { port: 0 },
-  });
-  await server.listen();
-  return server;
-}
-
-/**
- * Гасит сервер, дав ему сперва доработать начатое.
- *
- * Ответ на запрос НЕ означает, что работа по нему кончилась: за ответом на модуль приложения
- * дев-сервер запускает пребандл зависимостей, и `close()`, вызванный в этот момент, не
- * возвращается ВОВСЕ — висит бесконечно, а не долго (замерено 2026-08-19 на Vite 8.2.1).
- * Штатный способ дождаться — `waitForRequestsIdle()`; после него закрытие занимает единицы
- * миллисекунд, и обрывать соединения проб руками не приходится.
- *
- * @param server запущенный сервер
- */
-async function closeServer(server: ViteDevServer | undefined): Promise<void> {
-  await server?.waitForRequestsIdle?.();
-  await server?.close();
-}
-
-/** Базовый адрес поднятого сервера. */
-function baseUrl(server: ViteDevServer): string {
-  const local = server.resolvedUrls?.local[0];
-  if (!local) throw new Error("дев-сервер не назвал локальный адрес");
-  return local.replace(/\/$/, "");
-}
-
-/**
- * Забирает модуль у дев-сервера так же, как его забрал бы браузер.
- *
- * @param server запущенный сервер
- * @param url путь модуля
- * @returns текст ответа
- */
-async function fetchModule(server: ViteDevServer, url: string): Promise<string> {
-  const response = await fetch(`${baseUrl(server)}${url}`);
-  if (!response.ok) throw new Error(`${url} — ${response.status} ${response.statusText}`);
-  return await response.text();
-}
-
-/**
  * Достаёт из трансформированного модуля адрес, по которому браузер пойдёт за соседом.
  *
  * @param code ответ дев-сервера
@@ -105,7 +55,7 @@ describe("сосед по воркспейсу отдаётся исходник
 
   beforeAll(async () => {
     writeBuilt();
-    server = await startServer();
+    server = await startServer(fixtureDir);
     probe = await fetchModule(server, PROBE);
     neighbour = await fetchModule(server, neighbourImport(probe));
   });
@@ -152,7 +102,7 @@ describe("свежий клон: дев-сервер поднимается бе
   beforeAll(async () => {
     // Ни одного собранного файла у соседа — ровно как после `git clone`, где `dist` не в учёте.
     removeBuilt();
-    server = await startServer();
+    server = await startServer(fixtureDir);
     probe = await fetchModule(server, PROBE);
   });
 
@@ -170,7 +120,7 @@ describe("дев-сервер соседей не пребандлит и дос
 
   beforeAll(async () => {
     removeBuilt();
-    server = await startServer();
+    server = await startServer(fixtureDir);
   });
 
   afterAll(async () => {
