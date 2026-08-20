@@ -23,6 +23,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, mount, one } from "../../test/dom.jsx";
 import { admits } from "../passport-form.js";
+import { Popover, PopoverTrigger } from "../popover.jsx";
+import { Toggle } from "../toggle.jsx";
 import { anatomy, parts, passport } from "./button.anatomy.js";
 import { Button } from "./button.jsx";
 
@@ -261,6 +263,41 @@ describe("паспорт: состояния", () => {
     ));
 
     expect(one(host, "button").getAttribute(mark.name)).toBe(mark.value);
+  });
+
+  it("`expanded` — приходит от окна при композиции, и приходит тем атрибутом, что объявлен", () => {
+    // Состояние кнопке не принадлежит: раскрытость это поведение окна. Но показывать её обязан
+    // ВИД — на узле, который выглядит кнопкой, — значит паспорт кнопки её называет (`PWEB-25`).
+    // Проба идёт через живую композицию: объявить состояние, которого никто не ставит, легко.
+    const mark = markOf("expanded");
+    const host = mount(() => (
+      <Popover open>
+        <PopoverTrigger as={Button}>Настройки</PopoverTrigger>
+      </Popover>
+    ));
+
+    expect(one(host, "button").hasAttribute(mark.name)).toBe(true);
+
+    // И обратная сторона: у кнопки, которая ничем не управляет, состояния нет — иначе скин
+    // красил бы раскрытой каждую кнопку.
+    const idle = mount(scene);
+
+    expect(one(idle, "button").hasAttribute(mark.name)).toBe(false);
+  });
+
+  it("`pressed` — приходит от переключателя, вид при этом кнопкин", () => {
+    const mark = markOf("pressed");
+    const host = mount(() => (
+      <Toggle as={Button} pressed>
+        Жирный
+      </Toggle>
+    ));
+
+    expect(one(host, "button").hasAttribute(mark.name)).toBe(true);
+
+    const idle = mount(scene);
+
+    expect(one(idle, "button").hasAttribute(mark.name)).toBe(false);
   });
 });
 

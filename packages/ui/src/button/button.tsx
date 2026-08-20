@@ -2,7 +2,7 @@ import { Root as KobalteButton, type ButtonRootProps } from "@kobalte/core/butto
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useSlot, slotAware } from "../slot-chain.js";
+import { useAddress, useSlot, slotAware } from "../slot-chain.js";
 import { traceLife } from "../trace.js";
 import { parts } from "./button.anatomy.js";
 
@@ -48,13 +48,18 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   traceLife("ui.button");
 
   const [slot, rest] = useSlot(props, "button");
+  const address = useAddress(props, parts.root.attrs);
 
   // Адресные атрибуты и `data-slot` стоят ДО спреда: это ДЕФОЛТЫ, а не наша печать поверх.
   // Потребитель, которому нужны свои, перебивает их своими пропами — иначе «открытый API» был
   // бы на словах.
   //
+  // Адрес едет через `useAddress`, а не прямым спредом `parts.root.attrs`: кнопка бывает и
+  // ВНЕШНИМ звеном композиции (`<Button as={ToggleGroupItem}>`), и тогда адрес принадлежит
+  // внутреннему — тому, чем узел является визуально (`PWEB-25`).
+  //
   // `data-slot` пока остаётся рядом с адресом анатомии: имена слотов — обязательство зоны
   // (`kb:PROBEWEB-12`, п.7), и снять его без мажора нельзя. Уедет он вместе с переездом
   // оформления на адреса анатомии — это выпуск architect'а, а не побочная правка кита.
-  return <KobalteButton {...parts.root.attrs} {...slot} {...(rest as ButtonRootProps)} />;
+  return <KobalteButton {...address} {...slot} {...(rest as ButtonRootProps)} />;
 });
