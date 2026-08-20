@@ -12,6 +12,19 @@
 /** Атрибут опознания пресета на корне. Шов `kb:SKIN-5`, пункт 4. */
 const PRESET_ATTR = "data-theme";
 
+/**
+ * Атрибут опознания НАДЕТОГО СКИНА на корне.
+ *
+ * Имя объявляем мы, и это не противоречит правилу «чужого не зашиваем»: контракт корня —
+ * владение этой зоны, а `data-theme` рядом принадлежит другому предмету (набору значений) и
+ * снимается вместе с ним, а не переиспользуется под скин.
+ *
+ * Файл стилей скина цепляться за этот атрибут НЕ ОБЯЗАН и по умолчанию не цепляется: скин
+ * подключён ровно тогда, когда его лист в документе. Атрибут отвечает на вопрос «что надето»
+ * — приложению, редактору и человеку в инструментах разработчика.
+ */
+const SKIN_ATTR = "data-skin";
+
 /** Класс тёмной пары. Светлая — ОТСУТСТВИЕ класса, а не второй класс. */
 const DARK_CLASS = "dark";
 
@@ -37,6 +50,18 @@ export function writePreset(id: string | null): void {
   const el = root();
   if (id === null) el.removeAttribute(PRESET_ATTR);
   else el.setAttribute(PRESET_ATTR, id);
+}
+
+/** Скин, надетый на корень сейчас. `null` — не надет никакой, это голый кит. */
+export function readWorn(): string | null {
+  return root().getAttribute(SKIN_ATTR);
+}
+
+/** Ставит опознание скина на корень; `null` — снимает атрибут. */
+export function writeWorn(name: string | null): void {
+  const el = root();
+  if (name === null) el.removeAttribute(SKIN_ATTR);
+  else el.setAttribute(SKIN_ATTR, name);
 }
 
 /** Стоит ли тёмная пара. */

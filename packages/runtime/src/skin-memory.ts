@@ -4,7 +4,20 @@
 // цикла модулей во время выполнения не возникает. Публичная поверхность обязана быть объявлена
 // в одном файле, иначе `dist/index.d.ts` получит реэкспорт, а он в зоне запрещён.
 
-import type { SkinChoice, SkinMode } from "./index.js";
+import type { SkinMode } from "./index.js";
+
+/**
+ * Запомненное — ПО ПОЛЯМ, и отсутствие поля значимо.
+ *
+ * `skin: null` — «человек снял скин», а `skin` отсутствует — «про скин ничего не записано».
+ * Разница несущая: восстановление обязано уважать снятое и не надевать взамен него умолчание
+ * приложения, иначе снять скин между заходами оказалось бы невозможно.
+ */
+export interface Remembered {
+  preset?: string | null;
+  mode?: SkinMode;
+  skin?: string | null;
+}
 
 /**
  * Хранилище выбора. Ключ — наш, потребителю его знать не нужно, поэтому в скелет он не
@@ -37,9 +50,9 @@ function asMode(value: unknown): SkinMode | null {
 
 /**
  * Запомненный выбор. Ничего не запомнено, хранилище недоступно, запись битая или чужая —
- * `null` по каждому полю по отдельности: половина записи лучше, чем выброшенная целиком.
+ * поле просто отсутствует: половина записи лучше, чем выброшенная целиком.
  */
-export function recall(key: string): { preset: string | null; mode: SkinMode | null } | null {
+export function recall(key: string): Remembered | null {
   const store = storage();
   if (!store) return null;
 
@@ -59,20 +72,39 @@ export function recall(key: string): { preset: string | null; mode: SkinMode | n
   }
   if (typeof parsed !== "object" || parsed === null) return null;
 
-  const record = parsed as { preset?: unknown; mode?: unknown };
-  return {
+  const record = parsed as { preset?: unknown; mode?: unknown; skin?: unknown };
+  const kept: Remembered = {
     preset: typeof record.preset === "string" && record.preset !== "" ? record.preset : null,
-    mode: asMode(record.mode),
   };
+
+  const mode = asMode(record.mode);
+  if (mode !== null) kept.mode = mode;
+
+  // Скин отличаем от «про скин не записано»: `null` в записи — это снятый скин, и поле должно
+  // остаться. Отсутствие и мусор — отсутствие.
+  if (record.skin === null) kept.skin = null;
+  else if (typeof record.skin === "string" && record.skin !== "") kept.skin = record.skin;
+
+  return kept;
 }
 
-/** Запоминает выбор целиком. Хранилище недоступно — молча ничего не делает. */
-export function remember(key: string, choice: SkinChoice): void {
+/**
+ * Запоминает НАЗВАННЫЕ поля, не трогая остальные.
+ *
+ * Слияние, а не запись целиком: запись одна на все части выбора, и пресет с режимом ставит
+ * одна механика, а скин — другая. Записывай каждая свою половину целиком — вторая стиралась бы
+ * при каждом чужом вызове, и выбор терялся бы молча, а не заметно.
+ *
+ * Хранилище недоступно — молча ничего не делает.
+ */
+export function remember(key: string, patch: Remembered): void {
   const store = storage();
   if (!store) return;
 
+  const next: Remembered = { ...(recall(key) ?? {}), ...patch };
+
   try {
-    store.setItem(key, JSON.stringify({ preset: choice.preset, mode: choice.mode }));
+    store.setItem(key, JSON.stringify(next));
   } catch {
     // Переполненная или запрещённая квота. Выбор не переживёт заход — вид останется верным.
   }
