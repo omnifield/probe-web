@@ -32,7 +32,7 @@ export default defineConfig({
         test: {
           name: "skin",
           environment: "jsdom",
-          include: ["test/skin.test.ts"],
+          include: ["test/skin.test.ts", "test/skin-switch.test.ts"],
         },
       },
       {

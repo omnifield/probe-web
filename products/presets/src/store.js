@@ -1,6 +1,12 @@
 // Хранилище: кладёт JSON и отдаёт обратно. ЧТО именно лежит внутри `state` — не его дело
 // (`kb:PROBEWEB-8`): оно ни разу не заглядывает в состояние, не проверяет условия и не
-// мигрирует версии. Понимание формата живёт в зоне `tables` и должно жить в одном месте.
+// мигрирует версии. Понимание формата живёт у ВЛАДЕЛЬЦА ВИДА — отбор разбирает `tables`, скин
+// разбирает `skin`, — и у каждого вида оно живёт в одном месте.
+//
+// Из этого же следует, что смена формы хранимого хранилище не задевает. Скин перестал быть
+// набором значений и стал переменными плюс рецептами (`PWEB-13`) — здесь от этого меняются
+// только ПРЕДЕЛЫ (единица стала на порядок крупнее) и ОПОЗНАНИЕ единицы (машинное имя в
+// конверте). Ни одной правки про рецепты тут нет и быть не должно.
 //
 // Устройство: ОДИН ФАЙЛ НА ПРЕСЕТ плюс перечень в памяти.
 //
@@ -26,7 +32,12 @@ import { trace } from "./trace.js";
  *
  * @typedef {object} PresetMeta
  * @property {string} id выдан службой, не клиентом
- * @property {string} label обязательное имя
+ * @property {string} label обязательное имя ДЛЯ ЧЕЛОВЕКА: его читают в списке
+ * @property {string} [name] имя ДЛЯ МАШИНЫ — короткая метка, под которой единицу знает
+ *   приложение (у скина она уезжает на корень и ею же назван порождённый файл стилей).
+ *   Непрозрачна: хранилище её не толкует, но держит УНИКАЛЬНОЙ — два скина под одним именем
+ *   молча переопределили бы друг друга, и разглядеть это могло бы только хранилище, потому что
+ *   только оно видит все записи разом. Необязательно: у отборов имени нет
  * @property {string} [description] необязательное пояснение
  * @property {string} [kind] ярлык вида — НЕПРОЗРАЧНАЯ метка владельца (`filter`, `skin`, …);
  *   хранилище её не толкует, а только отдаёт по ней перечень. Необязателен: записи, лежащие
@@ -40,14 +51,44 @@ import { trace } from "./trace.js";
  * @typedef {PresetMeta & { state: unknown }} PresetRecord
  */
 
-/** Хранилище заполнено: записей столько, сколько разрешено. */
+/**
+ * Хранилище заполнено. Две причины и один отказ: для того, кто читает ответ, действие одно и то
+ * же — удалить ненужное. Причина различается только в тексте для человека, поэтому она поле, а
+ * не отдельный класс.
+ */
 export class StorageFull extends Error {
-  /** @param {number} limit */
-  constructor(limit) {
-    super(`хранилище заполнено: разрешено ${limit} пресетов`);
+  /**
+   * @param {"records" | "bytes"} reason кончились места в перечне или место на диске
+   * @param {number} limit значение упёртого предела
+   */
+  constructor(reason, limit) {
+    super(
+      reason === "records"
+        ? `хранилище заполнено: разрешено ${limit} пресетов`
+        : `хранилище заполнено: разрешено ${limit} байт`,
+    );
     this.name = "StorageFull";
+    /** @type {"records" | "bytes"} */
+    this.reason = reason;
     /** @type {number} */
     this.limit = limit;
+  }
+}
+
+/**
+ * Машинное имя занято другой записью.
+ *
+ * Это НЕ проверка содержимого: хранилище сравнивает строку со строкой и не знает, что под этим
+ * именем лежит. Уникальность держится здесь по единственной причине — только хранилище видит
+ * все записи разом, и больше проверить её негде.
+ */
+export class NameTaken extends Error {
+  /** @param {string} name */
+  constructor(name) {
+    super(`имя ${name} уже занято`);
+    this.name = "NameTaken";
+    /** @type {string} */
+    this.taken = name;
   }
 }
 
@@ -143,12 +184,27 @@ export async function openStore(dir, limits = LIMITS) {
   /** @type {Map<string, PresetMeta>} */
   const index = new Map();
 
+  /** Сколько байт занято на диске записями из перечня. Держим счётчиком, а не обходом каталога. */
+  let used = 0;
+
+  /** @type {Map<string, number>} размер файла каждой записи — чтобы удаление освобождало ровно своё */
+  const sizes = new Map();
+
+  /** @type {Map<string, string>} машинное имя → идентификатор записи, которая его заняла */
+  const names = new Map();
+
   /**
    * Сколько записей уже начали сохраняться, но ещё не попали в перечень. Без этого счётчика
    * два одновременных сохранения на последнем свободном месте оба прошли бы проверку предела:
    * место занимается СРАЗУ, а не после записи на диск.
    */
   let reserved = 0;
+
+  /** То же самое для объёма: байты занимаются до записи, а не после. */
+  let reservedBytes = 0;
+
+  /** @type {Set<string>} имена начатых, но ещё не дописанных записей — иначе двое займут одно */
+  const claimed = new Set();
 
   const entries = await readdir(dir);
   for (const entry of entries) {
@@ -160,17 +216,48 @@ export async function openStore(dir, limits = LIMITS) {
     }
     if (!FILE.test(entry)) continue;
 
-    const record = await readRecord(dir, entry);
-    if (!record) continue;
-    index.set(record.id, meta(record));
+    const found = await readRecord(dir, entry);
+    if (!found) continue;
+    remember(found.record, found.bytes);
   }
 
-  done(`каталог ${dir}, записей ${index.size}`);
+  done(`каталог ${dir}, записей ${index.size}, занято ${used} Б`);
+
+  /**
+   * Внести запись в перечень: мета, размер, имя. Одно место на все три учёта — разъедься они,
+   * и перечень начнёт расходиться с диском молча.
+   *
+   * @param {PresetRecord} record
+   * @param {number} bytes
+   */
+  function remember(record, bytes) {
+    index.set(record.id, meta(record));
+    sizes.set(record.id, bytes);
+    used += bytes;
+    if (record.name === undefined) return;
+    const holder = names.get(record.name);
+    if (holder === undefined) {
+      names.set(record.name, record.id);
+      return;
+    }
+    // Совпадение имён МОЖЕТ лежать на диске: файлы кладут и руками, а прежний конверт имени не
+    // знал вовсе. Отказываться подниматься из-за этого нельзя — служба перестала бы стартовать
+    // на данных, которые сама же и приняла. Говорим вслух и оставляем имя за первым: обе записи
+    // читаются по идентификатору, а чинится это удалением лишней.
+    console.warn(
+      `[probe-web-presets] имя ${record.name} занято записью ${holder}; запись ${record.id} лежит с тем же именем`,
+    );
+  }
 
   return {
     /** Сколько записей лежит сейчас. */
     get size() {
       return index.size;
+    },
+
+    /** Сколько байт занято записями сейчас. */
+    get bytes() {
+      return used;
     },
 
     /** Каталог, в котором лежат записи. */
@@ -215,9 +302,9 @@ export async function openStore(dir, limits = LIMITS) {
         done("не найдено");
         return null;
       }
-      const record = await readRecord(dir, `${id}.json`);
-      done(record ? "отдано" : "файл пропал");
-      return record;
+      const found = await readRecord(dir, `${id}.json`);
+      done(found ? "отдано" : "файл пропал");
+      return found?.record ?? null;
     },
 
     /**
@@ -226,34 +313,58 @@ export async function openStore(dir, limits = LIMITS) {
      * `state` уходит на диск КАК ЕСТЬ. Ни одной проверки внутри него здесь нет и быть не
      * должно: это и есть правило зоны.
      *
-     * @param {{ label: string, description?: string, kind?: string, state: unknown }} input
+     * @param {{ label: string, name?: string, description?: string, kind?: string, state: unknown }} input
      * @returns {Promise<PresetRecord>}
-     * @throws {StorageFull} мест больше нет
+     * @throws {StorageFull} мест больше нет — в перечне или на диске
+     * @throws {NameTaken} машинное имя занято другой записью
      */
     async create(input) {
       const done = trace("store.create");
 
-      if (index.size + reserved >= limits.records) throw new StorageFull(limits.records);
+      if (index.size + reserved >= limits.records) {
+        throw new StorageFull("records", limits.records);
+      }
+
+      // Имя занимается ДО записи, как и место: два одновременных сохранения под одним именем
+      // иначе оба прошли бы проверку и разъехались бы уже на диске.
+      const wanted = input.name;
+      if (wanted !== undefined && (names.has(wanted) || claimed.has(wanted))) {
+        throw new NameTaken(wanted);
+      }
+
+      const id = randomUUID();
+      /** @type {PresetRecord} */
+      const record = {
+        id,
+        label: input.label,
+        ...(input.name === undefined ? {} : { name: input.name }),
+        ...(input.description === undefined ? {} : { description: input.description }),
+        ...(input.kind === undefined ? {} : { kind: input.kind }),
+        savedAt: new Date().toISOString(),
+        state: input.state,
+      };
+
+      // Размер известен ДО записи — считаем его по тому же тексту, который уедет на диск, а не
+      // по телу запроса: на диске лежит запись вместе с выданным конвертом, и учитывать надо её.
+      const text = JSON.stringify(record);
+      const bytes = Buffer.byteLength(text);
+      if (used + reservedBytes + bytes > limits.totalBytes) {
+        throw new StorageFull("bytes", limits.totalBytes);
+      }
+
       reserved += 1;
+      reservedBytes += bytes;
+      if (wanted !== undefined) claimed.add(wanted);
 
       try {
-        const id = randomUUID();
-        /** @type {PresetRecord} */
-        const record = {
-          id,
-          label: input.label,
-          ...(input.description === undefined ? {} : { description: input.description }),
-          ...(input.kind === undefined ? {} : { kind: input.kind }),
-          savedAt: new Date().toISOString(),
-          state: input.state,
-        };
-
-        await writeAtomic(dir, `${id}.json`, JSON.stringify(record));
-        index.set(id, meta(record));
-        done(`записей ${index.size}`);
+        await writeAtomic(dir, `${id}.json`, text);
+        remember(record, bytes);
+        done(`записей ${index.size}, занято ${used} Б`);
         return record;
       } finally {
         reserved -= 1;
+        reservedBytes -= bytes;
+        if (wanted !== undefined) claimed.delete(wanted);
       }
     },
 
@@ -265,13 +376,19 @@ export async function openStore(dir, limits = LIMITS) {
      */
     async remove(id) {
       const done = trace("store.remove");
-      if (!ID.test(id) || !index.delete(id)) {
+      const gone = index.get(id);
+      if (!ID.test(id) || !gone || !index.delete(id)) {
         done("не найдено");
         return false;
       }
+      used -= sizes.get(id) ?? 0;
+      sizes.delete(id);
+      // Имя освобождается, только если его держала ИМЕННО эта запись: при совпадении имён на
+      // диске держателем остаётся первый, и удаление второго не должно отдавать чужое имя.
+      if (gone.name !== undefined && names.get(gone.name) === id) names.delete(gone.name);
       await unlink(join(dir, `${id}.json`)).catch(() => {});
       await syncDir(dir);
-      done(`записей ${index.size}`);
+      done(`записей ${index.size}, занято ${used} Б`);
       return true;
     },
   };
@@ -285,6 +402,7 @@ function meta(record) {
   return {
     id: record.id,
     label: record.label,
+    ...(record.name === undefined ? {} : { name: record.name }),
     ...(record.description === undefined ? {} : { description: record.description }),
     ...(record.kind === undefined ? {} : { kind: record.kind }),
     savedAt: record.savedAt,
@@ -295,9 +413,12 @@ function meta(record) {
  * Прочитать файл записи. Битый файл НЕ роняет службу и не подменяется пустышкой: он
  * пропускается, а событие называется вслух — иначе запись исчезает молча, и никто не узнает.
  *
+ * Отдаёт вместе с РАЗМЕРОМ прочитанного: занятый объём считается по тому, что лежит на диске,
+ * и мерить его отдельным обходом каталога значило бы завести вторую истину о том же.
+ *
  * @param {string} dir
  * @param {string} name
- * @returns {Promise<PresetRecord | null>}
+ * @returns {Promise<{ record: PresetRecord, bytes: number } | null>}
  */
 async function readRecord(dir, name) {
   /** @type {string} */
@@ -326,7 +447,12 @@ async function readRecord(dir, name) {
     if (record.kind !== undefined && typeof record.kind !== "string") {
       throw new Error("ярлык вида не строка");
     }
-    return /** @type {PresetRecord} */ (record);
+    // То же и про машинное имя: необязательно, но если есть — строка. По нему строится перечень
+    // занятых имён, и имя-объект отравило бы его молча.
+    if (record.name !== undefined && typeof record.name !== "string") {
+      throw new Error("машинное имя не строка");
+    }
+    return { record: /** @type {PresetRecord} */ (record), bytes: Buffer.byteLength(text) };
   } catch (error) {
     console.warn(
       `[probe-web-presets] файл ${name} пропущен: ${error instanceof Error ? error.message : String(error)}`,

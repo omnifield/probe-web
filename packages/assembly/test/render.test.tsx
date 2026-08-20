@@ -21,25 +21,34 @@ import { PASSPORTS, RULE } from "./passports.js";
 
 afterEach(cleanup);
 
-const Layout: Component<{ children?: unknown; styles?: Record<string, string> }> = (props) => (
-  <div data-scope="layout" data-styles={props.styles?.root}>
+/**
+ * Раскладка — как настоящий компонент кита: произвольные пропы форвардит в корневой узел.
+ *
+ * Это не удобство пробы, а свойство, на котором держится признак узла: механика ставит его
+ * пропом, и до разметки он доезжает ровно потому, что кит прозрачен.
+ */
+const Layout: Component<Record<string, unknown>> = (props) => (
+  <div data-scope="layout" {...props}>
     {props.children as never}
   </div>
 );
 
-const Button: Component<{
-  children?: unknown;
-  label?: string;
-  meta?: Record<string, unknown>;
-  style?: unknown;
-}> = (props) => (
-  <button type="button" data-scope="button" data-label={props.label} style={props.style as never}>
+/** Кнопка — тоже прозрачная: чужие пропы уезжают на её единственный узел. */
+const Button: Component<Record<string, unknown>> = (props) => (
+  <button type="button" data-scope="button" data-label={props.label as string} {...props}>
     {props.children as never}
   </button>
 );
 
-/** Значок — узел без детей: содержимого потребителя его паспорт не пускает. */
-const Icon: Component = () => <img data-scope="icon" alt="" />;
+/**
+ * Значок — узел без детей: содержимого потребителя его паспорт не пускает.
+ *
+ * Прозрачен так же, как остальные: узел, не принимающий содержимое, всё равно обязан быть
+ * адресуем — правка образца применяется и к нему.
+ */
+const Icon: Component<Record<string, unknown>> = (props) => (
+  <img data-scope="icon" alt="" {...props} />
+);
 
 const Boom: Component = () => {
   throw new Error("узел не собрался");
@@ -91,17 +100,23 @@ describe("отрисовка по данным", () => {
     expect(host.textContent).toBe("Вглубь");
   });
 
-  it("прокидывает пропы и стили узла, не истолковывая стилей", () => {
+  it("прокидывает пропы узла в компонент как есть", () => {
     const host = mount(() => (
       <RenderTree
         tree={tree({
-          page: { id: "page", type: "layout", parentId: null, children: [], styles: { root: "тот" } },
+          page: {
+            id: "page",
+            type: "layout",
+            parentId: null,
+            children: [],
+            props: { "aria-label": "холст" },
+          },
         })}
         registry={registry}
       />
     ));
 
-    expect(host.querySelector("[data-scope=layout]")?.getAttribute("data-styles")).toBe("тот");
+    expect(host.querySelector("[data-scope=layout]")?.getAttribute("aria-label")).toBe("холст");
   });
 
   it("правка узла доезжает до живого компонента, не пересобирая его", () => {
@@ -167,6 +182,77 @@ describe("отрисовка по данным", () => {
   it("дерево пустое — то же самое", () => {
     const host = mount(() => <RenderTree tree={tree({}, "")} registry={registry} />);
     expect(host.innerHTML).toBe("");
+  });
+});
+
+describe("признак узла в разметке", () => {
+  // Вторая область адреса — правка образца по идентификатору узла — существовала только в
+  // записи: разметка о ней ничего не знала. Признак ставит МЕХАНИКА, потому что потребитель о
+  // дереве не знает, а редактор, ставящий его сам, разошёлся бы со вторым редактором.
+
+  it("каждый узел подписан своим именем", () => {
+    const host = mount(() => <RenderTree tree={page} registry={registry} />);
+
+    expect(host.querySelector("[data-scope=layout]")?.getAttribute("data-node")).toBe("page");
+    expect([...host.querySelectorAll("button")].map((node) => node.getAttribute("data-node"))).toEqual(
+      ["one", "two"],
+    );
+  });
+
+  it("признак есть и когда узел украшен — обоими путями", () => {
+    const Overlay: Component<EditOverlayProps> = (props) => <i data-overlay={props.nodeId} />;
+
+    const host = mount(() => (
+      <RenderTree
+        tree={tree({
+          page: { id: "page", type: "layout", parentId: null, children: ["знак"] },
+          знак: { id: "знак", type: "icon", parentId: "page", children: [] },
+        })}
+        registry={registry}
+        editOverlay={Overlay}
+      />
+    ));
+
+    // Путь «украшение внутрь» — раскладка.
+    expect(host.querySelector("[data-scope=layout]")?.getAttribute("data-node")).toBe("page");
+    // Путь «украшение обёрткой» — значок содержимого не пускает, но подписан так же.
+    expect(host.querySelector("img")?.getAttribute("data-node")).toBe("знак");
+  });
+
+  it("собственным пропом признак не перебить — иначе правило промахнулось бы молча", () => {
+    const host = mount(() => (
+      <RenderTree
+        tree={tree({
+          page: {
+            id: "page",
+            type: "layout",
+            parentId: null,
+            children: [],
+            props: { "data-node": "подделка" },
+          },
+        })}
+        registry={registry}
+      />
+    ));
+
+    expect(host.querySelector("[data-scope=layout]")?.getAttribute("data-node")).toBe("page");
+  });
+
+  it("признак следует за именем узла при смене дерева", () => {
+    const [current, setCurrent] = createSignal(
+      tree({ page: { id: "page", type: "layout", parentId: null, children: ["один"] },
+        один: { id: "один", type: "button", parentId: "page", children: [] } }),
+    );
+
+    const host = mount(() => <RenderTree tree={current()} registry={registry} />);
+    expect(host.querySelector("button")?.getAttribute("data-node")).toBe("один");
+
+    setCurrent(
+      tree({ page: { id: "page", type: "layout", parentId: null, children: ["другой"] },
+        другой: { id: "другой", type: "button", parentId: "page", children: [] } }),
+    );
+
+    expect(host.querySelector("button")?.getAttribute("data-node")).toBe("другой");
   });
 });
 

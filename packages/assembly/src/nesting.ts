@@ -193,3 +193,83 @@ export function allowedInside(registry: Registry, parent: string): AllowedInside
 
   return { unrestricted: false, parts, genera };
 }
+
+/** Узел-владелец, найденный обратным чтением: его адрес и что это за часть. */
+export interface PossibleOwner {
+  /** Адрес владельца — тем же видом, каким адресуются узлы дерева. */
+  readonly address: string;
+  /** Компонент, которому владелец принадлежит. */
+  readonly component: string;
+  /** Часть — та, чьи состояния уточняют адрес правила скина. */
+  readonly part: string;
+}
+
+/**
+ * Части, которые пускают внутрь себя названного кандидата, — ОБРАТНЫЙ ход по правилу допуска.
+ *
+ * Форма паспорта обещает, что правило вложенности читается в обе стороны: вперёд — редактором
+ * дерева, назад — механикой скина. Адрес правила скина имеет поле «предок» (часть-владелец и её
+ * состояние), и перечислить его нечем, кроме этого хода: иначе редактор предлагал бы предков
+ * наугад, то есть вернулся бы к свободному селектору, от которого ушли.
+ *
+ * Решение по каждой паре принимает ТО ЖЕ правило допуска (`registry.admits`), что и ход вперёд.
+ * Второго правила для обратного чтения не заводится — иначе «допустимо внутри» и «возможный
+ * предок» разъехались бы, и редактор предлагал бы вложение, которое сам же и отвергнет.
+ *
+ * Обход, а не индекс: реестр собирается один раз при запуске и живёт неизменным, компонентов в
+ * нём десятки, частей у компонента единицы. Индекс здесь стоил бы дороже, чем экономил, и завёл
+ * бы второе состояние, которое надо держать свежим.
+ *
+ * @param registry реестр: паспорта и правило допуска
+ * @param candidate что кладут: часть по имени либо содержимое рода
+ * @param component компонент, среди частей которого ищем; без него — весь реестр. Для кандидата
+ *   вида «часть» указывать обязательно: имя части вне своего компонента ничего не значит
+ * @returns адреса владельцев по возрастанию — порядок устойчив, потому что его показывают человеку
+ */
+export function ownersAdmitting(
+  registry: Registry,
+  candidate: Admission,
+  component?: string,
+): PossibleOwner[] {
+  const scope = component === undefined ? Object.keys(registry.passports) : [component];
+  const found: PossibleOwner[] = [];
+
+  for (const componentAddress of scope) {
+    const passport = registry.passports[componentAddress];
+    if (!passport) continue;
+
+    for (const part of passport.parts) {
+      if (!registry.admits(part, candidate)) continue;
+      found.push({
+        address:
+          part.name === passport.root ? componentAddress : `${componentAddress}.${part.name}`,
+        component: componentAddress,
+        part: part.name,
+      });
+    }
+  }
+
+  return found.sort((left, right) => (left.address < right.address ? -1 : 1));
+}
+
+/**
+ * Возможные владельцы УЗЛА по его адресу.
+ *
+ * Две ветки, и они разные по природе:
+ *
+ *  • **часть** ищет владельцев только среди частей СВОЕГО компонента: часть живёт внутри своего
+ *    компонента и в чужой попадает лишь вместе с ним;
+ *  • **компонент** ищет их по всему реестру — он приходит содержимым, и опознают его родом.
+ *
+ * @param registry реестр
+ * @param child адрес узла, чьих владельцев ищем
+ * @returns владельцы по возрастанию адреса, либо `undefined` — адрес реестру неизвестен
+ */
+export function possibleOwnersOf(registry: Registry, child: string): PossibleOwner[] | undefined {
+  const guest = readAddress(registry, child);
+  if (!guest) return undefined;
+
+  return guest.part === guest.passport.root
+    ? ownersAdmitting(registry, { kind: "content", genus: guest.passport.genus })
+    : ownersAdmitting(registry, { kind: "part", name: guest.part }, guest.component);
+}

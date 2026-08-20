@@ -1,19 +1,20 @@
 // Поверхность службы: четыре действия и ни одного больше.
 //
-//   GET    /api/presets           → { items: [{ id, label, description?, kind?, savedAt }] } — без содержимого
+//   GET    /api/presets           → { items: [{ id, label, name?, description?, kind?, savedAt }] } — без содержимого
 //   GET    /api/presets?kind=skin → то же, но только записи с этим ярлыком вида
-//   GET    /api/presets/{id}      → { id, label, description?, kind?, savedAt, state }
-//   POST   /api/presets           → { id, label, description?, kind?, savedAt }              — 201
+//   GET    /api/presets/{id}      → { id, label, name?, description?, kind?, savedAt, state }
+//   POST   /api/presets           → { id, label, name?, description?, kind?, savedAt }        — 201
 //   DELETE /api/presets/{id}      → 204
 //
-// Проверяется здесь ТОЛЬКО конверт: имя, пояснение, ярлык вида, размер. `state` не разбирается —
+// Проверяется здесь ТОЛЬКО конверт: имя для человека, имя для машины, пояснение, ярлык вида,
+// размер. `state` не разбирается —
 // он уходит в хранилище тем же куском JSON, каким пришёл (`kb:PROBEWEB-8`). Отказ по существу
 // состояния (чужая версия формата, неизвестный оператор) — работа читателя, у него для этого
 // есть `parseFilter`; служба про это не знает.
 
 import { askForPreset, createGuard } from "./agent.js";
 import { AGENT_LIMITS, LIMITS } from "./limits.js";
-import { StorageFull } from "./store.js";
+import { NameTaken, StorageFull } from "./store.js";
 import { trace } from "./trace.js";
 
 /**
@@ -45,11 +46,24 @@ const ROOT = "/api/presets";
 const KIND = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 /**
+ * Форма МАШИННОГО ИМЕНИ (`name`) — та же, что у ярлыка вида, и это не совпадение. Оба поля
+ * едут в местах, где вольная строка не живёт: имя скина уезжает на корень страницы значением
+ * атрибута и им же назван порождённый файл стилей. Пробел, косая, точка и регистр там стоят
+ * экранирования на каждом шаге, а `Twitter` и `twitter` разошлись бы в два имени, которых одно.
+ *
+ * Проверяется ФОРМА, а не смысл: что именно значит имя, знает владелец вида, не служба.
+ */
+const NAME = KIND;
+
+/**
  * Текст отказа по ярлыку — один и на запись, и на отбор: причина у них одна, прислана строка,
  * которой ярлык быть не может.
  */
 const BAD_KIND =
   "Вид пресета — короткая метка из строчных латинских букв, цифр и дефисов (до 32 символов), например skin.";
+
+const BAD_NAME =
+  "Имя — короткая метка из строчных латинских букв, цифр и дефисов (до 32 символов), например twitter-dark.";
 
 /** Канал к агенту — вторая волна, контракт `kb:PROBEWEB-9`. */
 const AGENT_ROOT = "/api/agent/preset";
@@ -133,7 +147,7 @@ function readBody(req, maxBytes) {
  *
  * @param {unknown} body
  * @param {Readonly<import("./limits.js").Limits>} limits
- * @returns {{ ok: true, value: { label: string, description?: string, kind?: string, state: unknown } }
+ * @returns {{ ok: true, value: { label: string, name?: string, description?: string, kind?: string, state: unknown } }
  *          | { ok: false, code: string, message: string }}
  */
 function parseEnvelope(body, limits) {
@@ -153,6 +167,19 @@ function parseEnvelope(body, limits) {
       code: "label_too_long",
       message: `Имя длиннее ${limits.labelChars} символов.`,
     };
+  }
+
+  // Машинное имя НЕОБЯЗАТЕЛЬНО: у отбора его нет и не будет, а скин без него — запись прошлой
+  // формы. Проверяем форму; уникальность проверить здесь нечем — её держит хранилище, потому
+  // что только оно видит все записи разом.
+  /** @type {string | undefined} */
+  let name;
+  const rawName = input["name"];
+  if (rawName !== undefined && rawName !== null) {
+    if (typeof rawName !== "string" || !NAME.test(rawName)) {
+      return { ok: false, code: "bad_name", message: BAD_NAME };
+    }
+    name = rawName;
   }
 
   // Пояснения может не быть вовсе, и это нормальная запись, а не ущербная.
@@ -195,6 +222,7 @@ function parseEnvelope(body, limits) {
     ok: true,
     value: {
       label,
+      ...(name === undefined ? {} : { name }),
       ...(description === undefined ? {} : { description }),
       ...(kind === undefined ? {} : { kind }),
       state: input["state"],
@@ -414,12 +442,7 @@ async function create(req, res, store, limits) {
     res.setHeader("connection", "close");
     // 413 — про размер ОДНОГО запроса; так это и нормировано (RFC 9110 §15.5.14, сверено
     // 2026-08-13). Клиент чинит это сам: сохраняет отбор поменьше.
-    return fail(
-      res,
-      413,
-      "too_large",
-      `Пресет больше ${Math.floor(limits.bodyBytes / 1024)} КБ и не сохранён.`,
-    );
+    return fail(res, 413, "too_large", `Пресет больше ${size(limits.bodyBytes)} и не сохранён.`);
   }
 
   /** @type {unknown} */
@@ -438,6 +461,18 @@ async function create(req, res, store, limits) {
   try {
     record = await store.create(envelope.value);
   } catch (error) {
+    if (error instanceof NameTaken) {
+      // 409, как и переполнение, и по той же причине: конфликт с текущим состоянием хранилища,
+      // который клиент способен разрешить сам — назвать иначе или удалить занявшую запись
+      // (RFC 9110 §15.5.10). Тихо переименовать за него нельзя: он ставит это имя на корень и
+      // им же зовёт файл стилей, и подменённое имя разошлось бы с тем, что у него в руках.
+      return fail(
+        res,
+        409,
+        "name_taken",
+        `Имя ${error.taken} уже занято другим пресетом. Выберите другое.`,
+      );
+    }
     if (error instanceof StorageFull) {
       // 409, а НЕ 507 — и это решение, а не вкусовщина (сверено 2026-08-13).
       //
@@ -452,11 +487,17 @@ async function create(req, res, store, limits) {
       // словами «сохранено только в этой вкладке». Отдай мы 5xx — переполненное хранилище
       // выглядело бы для человека как успешное сохранение. Отказ, которого не видно, — не
       // ограничитель.
+      //
+      // Причин переполнения две — кончились места в перечне или место на диске, — а отказ один:
+      // человек в обоих случаях делает одно и то же. Различается только текст, потому что
+      // «сохранено 200 пресетов» и «занято 64 МБ» подсказывают удалять РАЗНОЕ.
       return fail(
         res,
         409,
         "storage_full",
-        `Сохранено ${error.limit} пресетов — это предел. Удалите ненужные.`,
+        error.reason === "records"
+          ? `Сохранено ${error.limit} пресетов — это предел. Удалите ненужные.`
+          : `Хранилище занято целиком — это предел в ${Math.floor(error.limit / 1024 / 1024)} МБ. Удалите ненужные.`,
       );
     }
     throw error;
@@ -466,6 +507,18 @@ async function create(req, res, store, limits) {
   // Наружу — БЕЗ содержимого: клиент его только что прислал, возвращать незачем.
   const { state: _state, ...meta } = record;
   return send(res, 201, meta);
+}
+
+/**
+ * Размер словами для человека. Пределы выросли на порядок (единица хранения теперь скин целиком),
+ * и «больше 1024 КБ» вместо «больше 1 МБ» заставляло бы читателя делить в уме.
+ *
+ * @param {number} bytes
+ * @returns {string}
+ */
+function size(bytes) {
+  const mb = bytes / 1024 / 1024;
+  return mb >= 1 ? `${Number(mb.toFixed(1))} МБ` : `${Math.floor(bytes / 1024)} КБ`;
 }
 
 /**

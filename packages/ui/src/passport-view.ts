@@ -1,0 +1,204 @@
+// ЧИТАТЕЛЬ паспорта под ВИД — мост от узла к координате (`PWEB-27`, средство 1).
+//
+// ## Что здесь чинится
+//
+// Механика сборки адресует УЗЛЫ: вот этот узел с вот этим идентификатором. Скин адресует
+// КООРДИНАТЫ: все узлы с такой частью, состоянием и вариацией — во всём приложении (страница
+// «Скин», раздел «Узел и координата — разные адреса»). Моста между ними не было, а без него
+// редактор, честно построенный на узлах, произведёт стили экземпляров, а не скин: приложение
+// станет набором единожды покрашенных мест, которые ничем не переодеть.
+//
+// ## Почему это живёт здесь, а не у скина и не в механике
+//
+// Ровно по той же причине, по которой здесь живёт `admits`: правило одно на всех читателей
+// паспорта. Узкая запись формы на стороне скина была бы ТРЕТЬЕЙ копией — после формы и после
+// узкой записи механики сборки, — а копии расходятся молча, оставаясь зелёными.
+//
+// ## Чего здесь НЕТ намеренно
+//
+// Ни второго типа под состояния, ни под ось вариаций, ни под назначения. Всё три уже приезжают
+// ДАННЫМИ вместе с паспортом (`PassportPart.states`, `.means`, `ComponentPassport.variantAxis`)
+// и читаются напрямую. Завести под них «типы для скина» и значило бы сделать ту самую третью
+// копию. Механика сборки объявила свою узкую запись не от хорошей жизни, а потому, что не
+// вправе зависеть на кит в поставке; у читателя под вид такого ограничения нет — он и есть кит.
+//
+// Здесь только то, чего в данных нет: способ дойти до части по имени и превращение живого узла
+// в координату.
+
+import type { ComponentPassport, PassportMark, PassportPart } from "./passport-form.js";
+
+/**
+ * Имена адресных атрибутов. Их даёт `@zag-js/anatomy`, и написаны они здесь по той же причине,
+ * по которой написаны в `definePassport`: чтобы УЗНАТЬ компонент по узлу, надо прочитать
+ * `data-scope` раньше, чем станет известен паспорт, — иначе чтение упирается само в себя.
+ */
+const SCOPE = "data-scope";
+const PART = "data-part";
+
+/**
+ * Как читатель находит паспорт по имени компонента.
+ *
+ * Функцией, а не перечнем кита: форма паспорта одна на всех поставщиков, и редактор держит
+ * компоненты из нескольких пакетов сразу. Прибей читатель сюда `PASSPORTS` кита — продуктовый
+ * пакет со своей таблицей оказался бы не адресуем вовсе.
+ */
+export type PassportLookup = (component: string) => ComponentPassport | undefined;
+
+/**
+ * Предок в координате: часть-владелец и её состояния.
+ *
+ * Уровень ОДИН — «часть-владелец и её состояние» (страница «Скин»). Цепочки предков в адресе
+ * нет: она сделала бы правило зависимым от глубины разметки, то есть вернула бы свободный
+ * селектор, от которого уходили.
+ */
+export interface SkinAncestor {
+  /** Компонент предка — он вправе быть ДРУГИМ: узел лежит в чужом дереве, а не только в своём. */
+  readonly component: string;
+  /** Часть предка — ключ его анатомии. */
+  readonly part: string;
+  /** Состояния предка, действующие сейчас. */
+  readonly states: readonly string[];
+}
+
+/**
+ * Координата правила скина — то, чем адресуется вид.
+ *
+ * Поля ровно те, что названы каноном: компонент, часть, состояние, вариация, предок. Селектор
+ * из координаты порождает механика; руками селекторы не пишутся.
+ */
+export interface SkinCoordinate {
+  /** Имя компонента, оно же `data-scope`. */
+  readonly component: string;
+  /** Часть — КЛЮЧ анатомии (`itemTrigger`), а не его начертание в атрибуте (`item-trigger`). */
+  readonly part: string;
+  /**
+   * Состояния, действующие на узле СЕЙЧАС, — перечнем.
+   *
+   * Правило адресует одно состояние, а узел бывает сразу в нескольких: наведённый раскрытый
+   * триггер — это и `hover`, и `expanded`. Мост отдаёт всё, что нашёл; какое из них человек
+   * одевает, решает редактор. Отдай мост одно — выбор делал бы он, молча и за всех.
+   */
+  readonly states: readonly string[];
+  /** Имя вариации с узла, если оно там стоит. Имена принадлежат скину, кит их не знает. */
+  readonly variant?: string;
+  /** Часть-владелец и её состояния — если над узлом вообще есть адресуемый предок. */
+  readonly ancestor?: SkinAncestor;
+}
+
+/**
+ * Часть паспорта по имени, либо `undefined` — если такой части компонент не объявлял.
+ *
+ * Обход массива, а не карта: частей у компонента единицы, и карта здесь стоила бы дороже, чем
+ * экономила.
+ *
+ * @param passport паспорт компонента
+ * @param name имя части — ключ анатомии
+ */
+export function partOf<Part extends string>(
+  passport: ComponentPassport<Part>,
+  name: string,
+): PassportPart<Part> | undefined {
+  return passport.parts.find((part) => part.name === name);
+}
+
+/** Действует ли разметка состояния на узле СЕЙЧАС. */
+function holds(node: Element, mark: PassportMark): boolean {
+  if (mark.kind === "pseudo") {
+    // Псевдокласс спрашивается у браузера — компонент его не знает. Неразбираемый псевдоклассом
+    // селектор здесь бросит, и это правильно: такое состояние объявлено ложно, и правило скина
+    // по нему всё равно было бы мёртвым. Тихо считать его выключенным значило бы спрятать дефект
+    // паспорта в мост.
+    return node.matches(mark.name);
+  }
+
+  return mark.value === undefined
+    ? node.hasAttribute(mark.name)
+    : node.getAttribute(mark.name) === mark.value;
+}
+
+/** Адрес узла: паспорт компонента и КЛЮЧ части, либо `undefined` — если узел не адресуем. */
+function addressOf(
+  node: Element,
+  lookup: PassportLookup,
+): { passport: ComponentPassport; part: string } | undefined {
+  const scope = node.getAttribute(SCOPE);
+  const partAttr = node.getAttribute(PART);
+
+  if (scope === null || partAttr === null) return undefined;
+
+  const passport = lookup(scope);
+
+  if (!passport) return undefined;
+
+  // Обратное преобразование начертания делает САМА анатомия: `itemTrigger` уезжает в атрибут
+  // как `item-trigger`, и писать здесь второе правило перевода значило бы завести вторую
+  // договорённость о нём — расходящуюся с первой ровно тогда, когда пакет её поменяет.
+  const parts = passport.anatomy.build();
+  const part = Object.keys(parts).find((key) => parts[key].attrs[PART] === partAttr);
+
+  return part === undefined ? undefined : { passport, part };
+}
+
+/** Имена состояний части, действующих на узле сейчас. */
+function statesOn(node: Element, passport: ComponentPassport, part: string): string[] {
+  const declared = partOf(passport, part);
+
+  // Часть анатомии без добавки — пробел паспорта, а не пустой словарь состояний. Мост его не
+  // изобретает: состояний он не назовёт, но и координату не потеряет.
+  return (declared?.states ?? []).filter((state) => holds(node, state.mark)).map((s) => s.name);
+}
+
+/**
+ * Координата правила скина по ЖИВОМУ узлу, либо `undefined` — если узел скином не адресуем.
+ *
+ * `undefined` — не отказ и не пробел, а ответ: узел, на котором нет адресных атрибутов (текст
+ * потребителя, его собственная обёртка) или чей компонент не объявил паспорта, скину не
+ * достанется никогда. Редактор обязан знать это ДО того, как предложит человеку его одеть.
+ *
+ * Подъёма к ближайшему адресуемому узлу здесь нет намеренно: подставить вместо выбранного узла
+ * соседний — решение редактора о том, что человек имел в виду, а мост о намерениях не гадает.
+ *
+ * @param node узел документа — тот, что человек выбрал в предпросмотре
+ * @param lookup чем читатель находит паспорт по имени компонента
+ */
+export function coordinateOf(node: Element, lookup: PassportLookup): SkinCoordinate | undefined {
+  const address = addressOf(node, lookup);
+
+  if (!address) return undefined;
+
+  const { passport, part } = address;
+  const axis = passport.variantAxis.mark;
+  // Ось вариаций выражена атрибутом — псевдоклассом имя вариации быть не может: его пишет
+  // потребитель в разметке, а псевдоклассы ставит браузер.
+  const variant = axis.kind === "attribute" ? (node.getAttribute(axis.name) ?? undefined) : undefined;
+
+  return {
+    component: passport.component,
+    part,
+    states: statesOn(node, passport, part),
+    ...(variant === undefined ? {} : { variant }),
+    ...(ancestorOf(node, lookup) ?? {}),
+  };
+}
+
+/** Ближайший адресуемый предок узла — уже в виде поля координаты. */
+function ancestorOf(
+  node: Element,
+  lookup: PassportLookup,
+): { ancestor: SkinAncestor } | undefined {
+  for (let owner = node.parentElement; owner; owner = owner.parentElement) {
+    const address = addressOf(owner, lookup);
+
+    if (!address) continue;
+
+    return {
+      ancestor: {
+        component: address.passport.component,
+        part: address.part,
+        states: statesOn(owner, address.passport, address.part),
+      },
+    };
+  }
+
+  return undefined;
+}

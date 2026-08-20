@@ -122,7 +122,7 @@ describe("импорт пакета", () => {
     )) as Record<string, unknown>;
 
     expect(Object.keys(loaded).sort()).toEqual(
-      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"].sort(),
+      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder", "makeSkinSwitch"].sort(),
     );
   });
 });
@@ -137,7 +137,14 @@ describe("собранные декларации", () => {
   it("объявляют ровно тот перечень значений, который мы называли", () => {
     const exported = [...dts().matchAll(/^export\s+declare\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
 
-    expect(exported).toEqual(["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"]);
+    expect(exported).toEqual([
+      "mount",
+      "applySkin",
+      "readSkin",
+      "restoreSkin",
+      "checkStyleOrder",
+      "makeSkinSwitch",
+    ]);
   });
 
   it("объявляют ровно тот перечень типов, который мы называли", () => {
@@ -153,6 +160,10 @@ describe("собранные декларации", () => {
       "StyleOrderOptions",
       "StyleOrderStatus",
       "StyleOrderReport",
+      "SkinSource",
+      "SkinSwitchOptions",
+      "SkinWearOptions",
+      "SkinSwitch",
     ]);
   });
 

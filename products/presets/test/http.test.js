@@ -9,6 +9,7 @@ import { after, describe, it } from "node:test";
 
 import { LIMITS } from "../src/limits.js";
 import { start } from "../src/server.js";
+import { skin } from "./skin.fixture.js";
 
 /** @type {Array<() => Promise<void>>} */
 const cleanup = [];
@@ -327,5 +328,106 @@ describe("ярлык вида", () => {
     const nulled = await post(origin, { label: "Ярлык null", kind: null, state: {} });
     assert.equal(nulled.status, 201);
     assert.equal("kind" in (await body(nulled)), false);
+  });
+});
+
+describe("скин как единица хранения", () => {
+  /**
+   * @param {string} origin
+   * @param {unknown} payload
+   */
+  const post = (origin, payload) =>
+    fetch(`${origin}/api/presets`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+  it("ГЕЙТ: скин на весь кит проходит через службу целиком, без потери частей", async () => {
+    const { origin } = await serve();
+
+    // Единица хранения — скин, а не набор значений (`PWEB-13`): переменные плюс рецепты, по
+    // одному на компонент. Кит Ark — 69 компонентов, одеваем все.
+    const state = skin(69);
+    const created = await post(origin, { label: "Тёмный", name: "dark", kind: "skin", state });
+
+    assert.equal(created.status, 201, "скин целиком обязан проходить одной записью");
+    const saved = await body(created);
+
+    const back = await body(await fetch(`${origin}/api/presets/${saved.id}`));
+    assert.deepEqual(back.state, state, "скин обязан вернуться до последнего рецепта");
+  });
+
+  it("приложение получает перечень скинов и выбирает по имени", async () => {
+    const { origin } = await serve();
+
+    await post(origin, { label: "Тёмный", name: "dark", kind: "skin", state: skin(1) });
+    await post(origin, { label: "Светлый", name: "light", kind: "skin", state: skin(1) });
+    await post(origin, { label: "Срочные", kind: "filter", state: { f: 1 } });
+
+    const listed = await body(await fetch(`${origin}/api/presets?kind=skin`));
+
+    // Имя приезжает В ПЕРЕЧНЕ — иначе приложению пришлось бы скачать все скины целиком, чтобы
+    // узнать, как они называются, и выбор стоил бы столько же, сколько применение.
+    assert.deepEqual(
+      listed.items.map((/** @type {{name: string}} */ item) => item.name).sort(),
+      ["dark", "light"],
+    );
+    assert.equal(listed.items.length, 2, "отбор по ярлыку остаётся отбором");
+
+    // Выбрали имя — берём эту запись и получаем скин целиком, одним запросом.
+    const chosen = listed.items.find((/** @type {{name: string}} */ item) => item.name === "dark");
+    const one = await body(await fetch(`${origin}/api/presets/${chosen.id}`));
+    assert.equal(one.name, "dark");
+    assert.ok(one.state.recipes, "по выбранному имени приезжает сам скин");
+  });
+
+  it("имя не той формы — отказ 400: оно уезжает на корень страницы, а не в текст", async () => {
+    const { origin } = await serve();
+
+    for (const bad of ["", " ", "Dark", "dark/1", "тёмный", "a".repeat(33), "-dark"]) {
+      const refused = await post(origin, { label: "Кривое имя", name: bad, state: {} });
+      assert.equal(refused.status, 400, `ожидался отказ на имя ${JSON.stringify(bad)}`);
+      assert.equal((await body(refused)).error, "bad_name");
+    }
+
+    // Имя-не-строка — тот же отказ; `null` читается как «имени нет», как у пояснения и ярлыка.
+    assert.equal((await post(origin, { label: "Имя числом", name: 5, state: {} })).status, 400);
+    const nulled = await post(origin, { label: "Имя null", name: null, state: {} });
+    assert.equal(nulled.status, 201);
+    assert.equal("name" in (await body(nulled)), false);
+  });
+
+  it("занятое имя — отказ 409, и он называет занятое имя", async () => {
+    const { origin } = await serve();
+
+    assert.equal((await post(origin, { label: "Тёмный", name: "dark", state: {} })).status, 201);
+
+    const taken = await post(origin, { label: "Другой тёмный", name: "dark", state: {} });
+    assert.equal(taken.status, 409);
+    assert.ok(taken.status < 500, "конфликт имён — отказ по делу, а не поломка службы");
+    const failure = await body(taken);
+    assert.equal(failure.error, "name_taken");
+    assert.ok(failure.message.includes("dark"), "человеку надо назвать, какое имя занято");
+
+    // Второй записи не появилось: отказ — это отказ, а не «сохранили под другим именем».
+    assert.equal((await body(await fetch(`${origin}/api/presets`))).items.length, 1);
+  });
+
+  it("предел объёма: отказ 409 говорит про место, а не про число записей", async () => {
+    // Записей разрешено двести — упираемся именно в объём.
+    const { origin } = await serve({ totalBytes: 8 * 1024 });
+
+    assert.equal((await post(origin, { label: "Раз", state: { p: "x".repeat(6000) } })).status, 201);
+
+    const full = await post(origin, { label: "Два", state: { p: "y".repeat(6000) } });
+    assert.equal(full.status, 409);
+    const failure = await body(full);
+    assert.equal(failure.error, "storage_full");
+    assert.ok(failure.message.includes("Удалите"), "отказ обязан называть выход");
+    assert.ok(
+      !failure.message.includes("пресетов"),
+      "текст про число записей увёл бы человека удалять не то",
+    );
   });
 });

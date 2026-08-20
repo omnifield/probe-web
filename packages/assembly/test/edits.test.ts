@@ -76,21 +76,28 @@ describe("вставка", () => {
     });
   });
 
-  it("переносит объявленные пропы, стили и редакторское, не выдумывая пустых", () => {
+  it("переносит объявленные пропы и редакторское, не выдумывая пустых", () => {
     const tree = grown(
       insertNode(
         base,
         registry,
-        { id: "rich", type: "button", props: { children: "Сохранить" }, styles: { root: "s" } },
+        { id: "rich", type: "button", props: { children: "Сохранить" }, meta: { свёрнут: true } },
         "page",
       ),
     );
 
     expect(nodeOf(tree, "rich")).toMatchObject({
       props: { children: "Сохранить" },
-      styles: { root: "s" },
+      meta: { свёрнут: true },
     });
-    expect(nodeOf(tree, "rich")).not.toHaveProperty("meta");
+  });
+
+  it("вида у узла нет вовсе — он приходит правилами, а не пропом", () => {
+    const tree = grown(insertNode(base, registry, { id: "плоский", type: "button" }, "page"));
+
+    // Поле `styles` снято (`PWEB-27`): карта по идентификатору узла не рецепт и не скин, а
+    // встроенный стиль перебивал бы любой скин навсегда.
+    expect(nodeOf(tree, "плоский")).not.toHaveProperty("styles");
   });
 });
 
@@ -143,11 +150,11 @@ describe("перенос", () => {
 describe("правка узла", () => {
   it("заменяет названное поле целиком и не трогает остальные", () => {
     const first = grown(updateNode(base, "one", { props: { children: "Да" } }));
-    const second = grown(updateNode(first, "one", { styles: { root: "видный" } }));
+    const second = grown(updateNode(first, "one", { meta: { свёрнут: true } }));
 
     expect(nodeOf(second, "one")).toMatchObject({
       props: { children: "Да" },
-      styles: { root: "видный" },
+      meta: { свёрнут: true },
       children: ["mark"],
       parentId: "page",
     });

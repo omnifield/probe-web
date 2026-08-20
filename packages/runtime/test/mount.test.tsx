@@ -40,7 +40,7 @@ describe("поверхность", () => {
   // объявления стережёт `surface.test.ts` по собранному `dist/index.d.ts` — там он наш.
   it("наружу торчит ровно названный перечень", () => {
     expect(Object.keys(runtime).sort()).toEqual(
-      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder"].sort(),
+      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder", "makeSkinSwitch"].sort(),
     );
   });
 });

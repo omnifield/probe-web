@@ -134,6 +134,31 @@ describe("служба не понимает, что внутри", () => {
     }
   });
 
+  it("имя ничего не меняет: под именем скина лежит та же чушь, и рецепты не разбираются", async () => {
+    const { origin } = await serve();
+
+    // Имя — метка на конверте, а не обещание про содержимое. Служба держит его уникальным и
+    // отдаёт в перечне; проверять, что под именем `dark` лежит настоящий скин, она не станет —
+    // иначе форма скина оказалась бы записана здесь, и каждая её правка требовала бы правки
+    // службы (`kb:PROBEWEB-8`).
+    const nonsense = { recipes: "строкой, а не картой", variables: [1, 2, 3], лишнее: null };
+
+    const created = await fetch(`${origin}/api/presets`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ label: "Тёмный", name: "dark", kind: "skin", state: nonsense }),
+    });
+    assert.equal(created.status, 201, "непохожее на скин — всё равно законная запись");
+
+    const { id } = /** @type {{ id: string }} */ (await created.json());
+    const raw = await (await fetch(`${origin}/api/presets/${id}`)).text();
+    const record = /** @type {{ state: unknown, name: string }} */ (JSON.parse(raw));
+
+    assert.equal(record.name, "dark");
+    assert.deepEqual(record.state, nonsense);
+    assert.ok(raw.includes(JSON.stringify(nonsense)), "состояние обязано лежать тем же куском JSON");
+  });
+
   it("глубокая вложенность не разбирается и не обходится", async () => {
     const { origin } = await serve();
 

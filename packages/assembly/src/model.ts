@@ -25,8 +25,25 @@ export { resolveAddress } from "./resolve.js";
 export type { Address, Registry, RegistrySpec } from "./registry.js";
 export { createRegistry, knownComponents, readAddress, resolveComponent } from "./registry.js";
 
-export type { AllowedInside, NestingRefusal, NestingVerdict } from "./nesting.js";
-export { allowedInside, canAdmit, canContain } from "./nesting.js";
+export type {
+  AllowedInside,
+  NestingRefusal,
+  NestingVerdict,
+  PossibleOwner,
+} from "./nesting.js";
+export {
+  allowedInside,
+  canAdmit,
+  canContain,
+  ownersAdmitting,
+  possibleOwnersOf,
+} from "./nesting.js";
+
+export type { NodeCoordinate } from "./coordinate.js";
+export { coordinateOfType, nodesByCoordinate, nodesSharingCoordinate } from "./coordinate.js";
+
+export type { SketchNaming } from "./sketch.js";
+export { sketchOf } from "./sketch.js";
 
 export type { TreeFlaw, TreeFlawName } from "./integrity.js";
 export { checkTree } from "./integrity.js";
