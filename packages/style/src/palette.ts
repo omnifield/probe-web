@@ -14,7 +14,7 @@
 // селектор, доступный мимо этой функции, вернул бы ровно ту же развилку.
 
 import type { ScaleMode } from "./scale.js";
-import { type ThemeTokens, themeToCss } from "./tokens.js";
+import { type PaletteValues, themeToCss } from "./tokens.js";
 
 /**
  * Имя дефолтной палитры.
@@ -62,6 +62,6 @@ export function paletteSelector(name: string, mode: ScaleMode): string {
  * @param mode половина пары
  * @param tokens значения этой половины
  */
-export function paletteCss(name: string, mode: ScaleMode, tokens: ThemeTokens): string {
+export function paletteCss(name: string, mode: ScaleMode, tokens: PaletteValues): string {
   return themeToCss(paletteSelector(name, mode), tokens);
 }

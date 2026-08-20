@@ -4,7 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Button } from "../src/button.jsx";
+import { Button } from "../src/button/index.js";
 import { cleanup, mount } from "./dom.jsx";
 
 const FLAG = "__PROBE_WEB_UI_TRACE__";

@@ -10,6 +10,10 @@
       "solid": "./dist/index.jsx",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./passport": {
+      "types": "./dist/passport.d.ts",
+      "default": "./dist/passport.js"
     }
   },
   "files": [
@@ -24,6 +28,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
     "@kobalte/core": "^0.13.12",

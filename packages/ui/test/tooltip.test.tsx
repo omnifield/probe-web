@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Button } from "../src/button.jsx";
+import { Button } from "../src/button/index.js";
 import {
   Tooltip,
   TooltipArrow,

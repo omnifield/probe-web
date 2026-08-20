@@ -26,6 +26,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
     "test": "pnpm run build && vitest run"

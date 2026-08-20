@@ -27,7 +27,10 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
-          include: ["test/*.test.tsx"],
+          // Два адреса, потому что компонент — это ПАПКА: его пробы лежат рядом с разметкой и
+          // анатомией (`src/<имя>/<имя>.test.tsx`), а общезонные — в `test/`. Остальные
+          // примитивы переезжают в папки волной разноса (`PWEB-7`).
+          include: ["test/*.test.tsx", "src/*/*.test.tsx"],
         },
       },
       {

@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../src/alert-dialog.jsx";
-import { Button } from "../src/button.jsx";
+import { Button } from "../src/button/index.js";
 import {
   Checkbox,
   CheckboxControl,
@@ -911,10 +911,33 @@ describe("обещанные зацепки доезжают до докумен
   });
 });
 
+/**
+ * Разметка зоны — файлами в `src/` И файлами в папках компонентов.
+ *
+ * Обход папок обязателен: компонент переезжает в свою папку по одному (`PWEB-7`), и плоский
+ * `readdirSync` перестал бы видеть переехавшего МОЛЧА — обещание по его зацепкам осталось бы
+ * непроверенным, а прогон зелёным. Пробы компонента (`<имя>.test.tsx`) не разметка и в перебор
+ * не идут: в них зацепки стоят ожиданиями, а не ставятся на узел.
+ */
+function markupSources(): Array<{ name: string; slots: string[] }> {
+  return readdirSync(srcDir, { withFileTypes: true }).flatMap((item) => {
+    if (item.isDirectory()) {
+      return readdirSync(join(srcDir, item.name))
+        .filter((name) => name.endsWith(".tsx") && !name.endsWith(".test.tsx"))
+        .map((name) => ({
+          name: `${item.name}/${name}`,
+          slots: slotsInSource(readFileSync(join(srcDir, item.name, name), "utf8")),
+        }));
+    }
+
+    return item.name.endsWith(".tsx")
+      ? [{ name: item.name, slots: slotsInSource(readFileSync(join(srcDir, item.name), "utf8")) }]
+      : [];
+  });
+}
+
 describe("зацепки исходников не выходят за обещанное", () => {
-  const sources = readdirSync(srcDir)
-    .filter((name) => name.endsWith(".tsx"))
-    .map((name) => ({ name, slots: slotsInSource(readFileSync(join(srcDir, name), "utf8")) }));
+  const sources = markupSources();
 
   it("файлы с примитивами вообще нашлись", () => {
     // Иначе перебор по пустому списку файлов был бы зелёным и ничего не проверял. Порог, а не

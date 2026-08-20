@@ -1,12 +1,16 @@
-// Поверхность стилевого слоя. Зависимостей на `ui`, `runtime` и `build` тут нет и быть не
+// Поверхность НАБОРА ЗНАЧЕНИЙ. Зависимостей на `ui`, `runtime` и `build` тут нет и быть не
 // может: направление зависимостей одностороннее (`kb:PROBEWEB-4`).
+//
+// ИНСТРУМЕНТОВ СТИЛИЗАЦИИ ЗДЕСЬ НЕТ (`PWEB-3`). `cn`, `createStyle` и реэкспорт `cva`
+// уехали в самостоятельную необязательную поставку `@omnifield/probe-web-style-tools`, и
+// зависимости на неё тут тоже нет: оформление вправе взять инструменты у нас, у кого-то
+// ещё или не брать вовсе. Пока инструменты приезжали вместе со значениями, «необязательно»
+// было словом — их привозила одна установка.
 //
 // CSS через этот вход НЕ идёт: манифест объявляет `sideEffects: false`, и импорт-побочка
 // из корня была бы выброшена tree-shaking'ом при первом же неиспользованном экспорте.
 // Стили едут отдельными подпутями — `/base.css` и `/themes.css`.
 
-export { cn } from "./cn.js";
-export { createStyle, type VariantFn } from "./create-style.js";
 export {
   createThemeController,
   registerTheme,
@@ -27,6 +31,7 @@ export {
   createTheme,
   type CreateThemeOptions,
   type PaletteToken,
+  type PaletteValues,
   type ScaleName,
   type ScaleToken,
   type ThemeDefinition,
@@ -106,7 +111,3 @@ export {
   type Oklch,
   type Srgb,
 } from "./color/oklch.js";
-
-// Реэкспорт CVA — точка, из которой зона `ui` берёт варианты, не заводя своей копии
-// зависимости. Одна зависимость на продукт вместо одной на пакет.
-export { cva, type VariantProps } from "class-variance-authority";
