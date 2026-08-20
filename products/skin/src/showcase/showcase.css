@@ -1,0 +1,213 @@
+/* ВИД САМОЙ ВИТРИНЫ — оболочки, а не компонентов.
+ *
+ * Это НЕ скин: скин одевает кит и живёт записью в хранилище, а здесь — рамка, в которой кит
+ * показывают. Смешать их нельзя ни в одну сторону: подкрась мы витриной кнопку, «голый кит»
+ * перестал бы быть проверяемым состоянием — человек видел бы одетое там, где не одевал никто.
+ *
+ * Поэтому здесь нет ни одного правила, адресующего части кита: ни `data-scope`, ни `data-part`,
+ * ни `data-slot`. Только собственные имена оболочки.
+ *
+ * Значения — роли набора значений зоны `style`: витрина обязана работать в обеих парах тем, и
+ * следование за режимом здесь проверяется тем же способом, что у скина.
+ */
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) 1fr;
+  min-block-size: 100dvh;
+}
+
+/* ── перечень компонентов ─────────────────────────────────────────────────────────────── */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-inline-end: var(--border-width-1) solid var(--separator);
+  background: var(--surface-subtle);
+}
+
+.rail__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.rail__title {
+  font-size: var(--font-size-lg);
+}
+
+.rail__note,
+.rail__state {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.rail__state {
+  margin: 0;
+  margin-block-start: auto;
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-width-1) solid var(--separator);
+}
+
+.rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.rail__item {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.rail__item:hover {
+  background: var(--tint-hover);
+}
+
+.rail__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.rail__item[aria-current="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-text);
+}
+
+/* ── страница компонента ──────────────────────────────────────────────────────────────── */
+
+.main {
+  padding: var(--space-6);
+  overflow: auto;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-inline-size: var(--column-80, 60rem);
+}
+
+.page__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.page__title {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+.page__lead,
+.page__subtitle {
+  margin: 0;
+}
+
+.page__lead {
+  color: var(--text-muted);
+}
+
+.page__subtitle {
+  font-size: var(--font-size-lg);
+}
+
+.page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── части и состояния ────────────────────────────────────────────────────────────────── */
+
+.parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parts__item {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.parts__name {
+  font-family: var(--font-mono);
+}
+
+.parts__means {
+  color: var(--text-muted);
+}
+
+.parts__states {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* ── случаи сеткой ────────────────────────────────────────────────────────────────────── */
+
+.cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.case__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 5rem;
+  padding: var(--space-3);
+  border: var(--border-width-1) dashed var(--separator);
+  border-radius: var(--radius-md);
+}
+
+.case__caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.case__note {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  color: var(--text-muted);
+}
