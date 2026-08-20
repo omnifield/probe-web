@@ -1,0 +1,165 @@
+// МОДЕЛЬ дерева — то, из чего собирают и по чему рисуют.
+//
+// Перенесена из `packages/web/runtime/renderer/src/types.ts` старого репозитория
+// (`egor6-66/capsuleTech`), где форма схемы канонично лежала в `runtime/contract/src/schema.ts`.
+// Что снято при переносе и почему — в README, раздел «Что снято».
+//
+// ## Форма: плоская карта с корнем
+//
+// Дерево хранится не вложенными объектами, а картой `id → узел` плюс имя корня. Так устроены
+// и чужие механики того же предмета (`@json-render/*`, A2UI-стандарт), и наша прежняя, и
+// причина у всех одна: редактор адресует узел, а не путь до него. По вложенному объекту
+// «выдели узел X» стоит обхода всего дерева, по плоской карте — одного взятия по ключу.
+//
+// ## Три необязательных поля, и каждое отвечает за своё
+//
+//   • `parentId` — обратный ход. Редактор ходит по дереву в обе стороны: «чей это узел»,
+//     «что можно вложить сюда», «куда переехать при удалении». Без обратной ссылки каждый
+//     подъём — обход всей карты;
+//   • `styles`  — предмет редактора скинов: вид, приписанный узлу. Механика его НЕ
+//     истолковывает и не знает, что в нём написано, — прокидывает потребителю;
+//   • `meta`    — место для того, что нужно редактору и не нужно отрисовке (свёрнут ли узел
+//     в дереве, кем создан, подписи). Отдельное поле, чтобы редакторское не подмешивалось
+//     к пропам компонента и не уезжало в разметку.
+//
+// ## Совместимость с A2UI
+//
+// A2UI (Google) — стандарт формата, не библиотека: рендерера на Solid у него нет, поэтому
+// как поставкой воспользоваться нечем, а как ориентиром — обязательно. Обе формы это плоская
+// карта с корнем, и соответствие полей прямое: `root` ↔ `components.root`, `elements` ↔
+// `components.nodes`, `type`/`props`/`children` — один в один. Наши добавки (`parentId`,
+// `styles`, `meta`) выводимы или необязательны, то есть расхождение не структурное. Таблица
+// соответствия — в README.
+
+/** Устойчивое имя узла в дереве. Уникально в пределах одного дерева. */
+export type NodeId = string;
+
+/**
+ * Один узел дерева.
+ *
+ * Узел БЕЗ состояния: ни «выделен», ни «только что создан», ни «свёрнут». Это состояние
+ * редактора, а не дерева, — окажись оно здесь, две разные сессии редактора начали бы спорить
+ * об одном поле, и оно уехало бы в сохранённое дерево вместе с чужим выделением.
+ */
+export interface AssemblyNode {
+  readonly id: NodeId;
+  /**
+   * Адрес в реестре через точку: `button`, `ui.button`, `accordion.itemTrigger`.
+   *
+   * Адрес компонента целиком и адрес его корневой части — одно и то же место дерева, и
+   * механика их отождествляет (см. `readAddress`).
+   */
+  readonly type: string;
+  /** Кто владеет узлом. У корня — `null`. */
+  readonly parentId: NodeId | null;
+  /** Дети по порядку. Порядок значим — массив, а не множество. */
+  readonly children: readonly NodeId[];
+  /** Пропы компонента — уезжают в него как есть. */
+  readonly props?: Readonly<Record<string, unknown>>;
+  /** Редакторское, в отрисовку не вмешивается. */
+  readonly meta?: Readonly<Record<string, unknown>>;
+  /** Вид, приписанный узлу. Механика его не истолковывает. */
+  readonly styles?: Readonly<Record<string, string>>;
+}
+
+/**
+ * Дерево целиком.
+ *
+ * Обёртка `components` вокруг пары «корень и узлы» перенесена из прежней формы намеренно: по
+ * ней сохранённые деревья старого репозитория читаются как есть. Поле `interactions`, которое
+ * лежало рядом, снято — см. README.
+ */
+export interface AssemblyTree {
+  readonly components: {
+    readonly root: NodeId;
+    readonly nodes: Readonly<Record<NodeId, AssemblyNode>>;
+  };
+}
+
+/**
+ * Пустое дерево: корень указывает в никуда, узлов нет — рисуется ничего.
+ *
+ * Нужно не для красоты, а как цель приведения: потребитель законно отдаёт `undefined` в
+ * первый кадр (дерево ещё не пришло), и отрисовка обязана в этот кадр промолчать, а не упасть.
+ */
+export const EMPTY_TREE: AssemblyTree = { components: { root: "", nodes: {} } };
+
+/**
+ * Узел по имени, либо `undefined`.
+ *
+ * @param tree дерево
+ * @param id имя узла
+ */
+export function nodeOf(tree: AssemblyTree, id: NodeId): AssemblyNode | undefined {
+  return tree.components.nodes[id];
+}
+
+/**
+ * Корневой узел дерева, либо `undefined` — если корень не найден в карте.
+ *
+ * `undefined` здесь честнее исключения: дерево с недостающим корнем это состояние данных, а
+ * не ошибка вызова, и назвать его должна проверка целостности (`checkTree`), а не падение
+ * посреди отрисовки.
+ *
+ * @param tree дерево
+ */
+export function rootOf(tree: AssemblyTree): AssemblyNode | undefined {
+  return tree.components.nodes[tree.components.root];
+}
+
+/**
+ * Цепочка владельцев узла — от ближайшего к корню.
+ *
+ * Идёт по `parentId`, а не обходом карты: ради этого поле и перенесено. Оборвётся на узле,
+ * которого нет в карте, — и это правильно: сломанную ссылку показывает `checkTree`, а не
+ * бесконечный подъём.
+ *
+ * Защита от кольца обязательна: кольцо `parentId` в сохранённом дереве встречается (правка
+ * извне, слияние двух версий), и без учёта пройденного подъём стал бы вечным.
+ *
+ * @param tree дерево
+ * @param id имя узла, чьих владельцев ищем
+ */
+export function ancestorsOf(tree: AssemblyTree, id: NodeId): AssemblyNode[] {
+  const chain: AssemblyNode[] = [];
+  const seen = new Set<NodeId>([id]);
+
+  let current = nodeOf(tree, id)?.parentId ?? null;
+  while (current !== null && !seen.has(current)) {
+    const owner = nodeOf(tree, current);
+    if (!owner) break;
+    chain.push(owner);
+    seen.add(current);
+    current = owner.parentId;
+  }
+
+  return chain;
+}
+
+/**
+ * Имена узла и всего, что под ним, — сверху вниз.
+ *
+ * Нужно правкам: удаление узла уносит поддерево, перенос обязан отказать при попытке
+ * положить узел внутрь самого себя.
+ *
+ * @param tree дерево
+ * @param id имя корня поддерева
+ */
+export function subtreeOf(tree: AssemblyTree, id: NodeId): NodeId[] {
+  const collected: NodeId[] = [];
+  const seen = new Set<NodeId>();
+  const queue: NodeId[] = [id];
+
+  while (queue.length > 0) {
+    const current = queue.shift() as NodeId;
+    if (seen.has(current)) continue;
+    seen.add(current);
+
+    const node = nodeOf(tree, current);
+    if (!node) continue;
+    collected.push(current);
+    queue.push(...node.children);
+  }
+
+  return collected;
+}

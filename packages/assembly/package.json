@@ -1,0 +1,49 @@
+{
+  "name": "@omnifield/probe-web-assembly",
+  "version": "0.0.0",
+  "description": "Механика сборки probe-web: дерево узлов, реестр из паспортов, правки, проверка вложенности и отрисовка по данным. Одна на редактор скинов и конструктор страниц (PWEB-23).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "solid": "./dist/index.jsx",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./model": {
+      "types": "./dist/model.d.ts",
+      "default": "./dist/model.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "pnpm run build && vitest run"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@omnifield/probe-web-ui": "workspace:*",
+    "@types/node": "^24.10.1",
+    "esbuild": "^0.27.7",
+    "esbuild-plugin-solid": "^0.6.0",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
+  }
+}
