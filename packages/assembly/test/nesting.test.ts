@@ -7,7 +7,13 @@
 
 import { describe, expect, it } from "vitest";
 
-import { allowedInside, canAdmit, canContain } from "../src/nesting.js";
+import {
+  allowedInside,
+  canAdmit,
+  canContain,
+  ownersAdmitting,
+  possibleOwnersOf,
+} from "../src/nesting.js";
 import { createRegistry } from "../src/registry.js";
 import { spec } from "./passports.js";
 
@@ -149,6 +155,76 @@ describe("кандидат без адреса", () => {
     expect(canAdmit(registry, "accordion", { kind: "part", name: "itemContent" })).toMatchObject({
       refusal: "part-not-admitted",
     });
+  });
+});
+
+describe("обратное чтение: возможные владельцы", () => {
+  // Поле «предок» в адресе правила скина перечисляется ТОЛЬКО так. Перечень обязан совпадать с
+  // ходом вперёд: что здесь названо владельцем, то и должно пустить гостя внутрь.
+  const addresses = (found: ReturnType<typeof ownersAdmitting>) => found.map((one) => one.address);
+
+  it("часть ищет владельцев только среди частей своего компонента", () => {
+    expect(addresses(possibleOwnersOf(registry, "accordion.item") ?? [])).toEqual(["accordion"]);
+    expect(addresses(possibleOwnersOf(registry, "accordion.itemTrigger") ?? [])).toEqual([
+      "accordion.item",
+    ]);
+  });
+
+  it("владелец назван частью, а не только адресом — состояния берутся у неё", () => {
+    expect(possibleOwnersOf(registry, "accordion.itemTrigger")?.[0]).toEqual({
+      address: "accordion.item",
+      component: "accordion",
+      part: "item",
+    });
+  });
+
+  it("компонент ищет владельцев по всему реестру — его опознают родом", () => {
+    // Значок подходит и туда, где ждут значок (кнопка, вкладка гармошки), и туда, где ждут
+    // любой компонент (раскладка, содержимое вкладки), и туда, где не запрещено ничего.
+    expect(addresses(possibleOwnersOf(registry, "icon") ?? [])).toEqual([
+      "accordion.itemContent",
+      "accordion.itemTrigger",
+      "button",
+      "layout",
+      "ui.button",
+      "открытый",
+    ]);
+  });
+
+  it("компонент рода «компонент» в место под значок не попадает", () => {
+    const owners = addresses(possibleOwnersOf(registry, "layout") ?? []);
+
+    expect(owners).toContain("layout");
+    expect(owners).toContain("accordion.itemContent");
+    expect(owners).not.toContain("button");
+    expect(owners).not.toContain("accordion.itemTrigger");
+  });
+
+  it("совпадает с ходом вперёд — на каждом найденном владельце", () => {
+    for (const child of ["icon", "layout", "accordion.item", "button"]) {
+      for (const owner of possibleOwnersOf(registry, child) ?? []) {
+        expect(canContain(registry, owner.address, child)).toEqual({ allowed: true });
+      }
+    }
+  });
+
+  it("кандидат без адреса спрашивается родом или именем части", () => {
+    expect(addresses(ownersAdmitting(registry, { kind: "content", genus: "text" }))).toEqual([
+      "accordion.itemTrigger",
+      "button",
+      "ui.button",
+      "открытый",
+    ]);
+    expect(
+      addresses(ownersAdmitting(registry, { kind: "part", name: "item" }, "accordion")),
+    ).toEqual(["accordion"]);
+  });
+
+  it("неизвестный адрес — `undefined`, а не пустой перечень", () => {
+    expect(possibleOwnersOf(registry, "нет")).toBeUndefined();
+    // Пустой перечень значил бы «владельцев нет», и редактор показал бы пустой список вместо
+    // сообщения об опечатке в адресе.
+    expect(possibleOwnersOf(registry, "icon")).not.toHaveLength(0);
   });
 });
 
