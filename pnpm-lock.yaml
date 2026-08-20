@@ -470,9 +470,6 @@ importers:
       '@omnifield/probe-web-lint':
         specifier: workspace:*
         version: link:../../packages/lint
-      '@probe-web/skin':
-        specifier: workspace:*
-        version: link:../skin
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
