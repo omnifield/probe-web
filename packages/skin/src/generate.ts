@@ -2,13 +2,36 @@
 //
 // ## Что здесь своё, а что чужое
 //
-// Своего тут ровно два действия: печать объявлений и обёртка в слой каскада. Разворот
-// вложенного (`&::before`, `@media`) в плоский текст делает `expandNestedCss` из
-// `@pandacss/core` — та единственная утилита, ради которой пакет взят (замер `PWEB-28`).
+// Своего тут три действия: печать объявлений, обёртка в слой каскада и расстановка отступов
+// (`format.ts`). Разворот вложенного (`&::before`, `@media`) в плоский текст делает
+// `postcss-nested` — то средство, которым разворачивание и делается.
 //
-// Панду целиком в генераторы не берут: его модель вывода — атомарные классы, которые надо
-// навешивать на узел, а кит голый и классов не носит. Взята одна функция, и делает она ровно то,
-// чего у нас нет.
+// ## Почему `postcss-nested`, а не `@pandacss/core`
+//
+// Замер 2026-08-20. Задача называла взятым `@pandacss/core` — и он подходит, но внутри его
+// `expandNestedCss` лежит ровно `postcss([nested(), prettify()])`, где `prettify` — полтора
+// десятка строк расстановки отступов. То есть весь предмет заимствования это `postcss-nested`
+// плюс форматирование.
+//
+// Цена разная на порядок:
+//
+//   `@pandacss/core`             9,0 МБ · 33 пакета  (browserslist с базой браузеров,
+//                                                     ts-pattern, lodash.merge, шесть
+//                                                     собственных подпакетов Panda)
+//   `postcss` + `postcss-nested` 1,1 МБ ·  8 пакетов
+//
+// Взятое едет ПОТРЕБИТЕЛЮ, и восемь мегабайт транзитивных зависимостей ради полутора десятков
+// строк форматирования — плата не за средство, а за то, что средство завёрнуто в чужой продукт.
+// Правило «берём существующее» этим не нарушено, а исполнено точнее: берём ровно то средство, на
+// котором стоит и сам Panda.
+//
+// Потерялось при замене РОВНО одно: их `prettify`. Он заменён своим (`format.ts`), и вывод
+// сверен с эталоном, снятым ДО замены, — те же 23 правила, те же селекторы, тот же порядок,
+// совпадение текста при нормализации пробелов и завершающих точек с запятой. Отличаются только
+// отступы, и в лучшую сторону; чем именно и почему — шапка `format.ts`.
+//
+// Панду целиком в генераторы не берут в любом случае: его модель вывода — атомарные классы,
+// которые надо навешивать на узел, а кит голый и классов не носит.
 //
 // ## Почему текст, а не объект
 //
@@ -22,9 +45,11 @@
 // первой: утечь нечему. Держи мы это фильтром — правки образца рано или поздно уехали бы в файл
 // скина, и приложение получило бы вид, привязанный к идентификаторам чужого стенда.
 
-import { expandNestedCss } from "@pandacss/core";
+import postcss from "postcss";
+import nested from "postcss-nested";
 
 import type { PassportLookup } from "./address.js";
+import { prettify } from "./format.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
 import type { Skin, SketchEdit, StyleObject, StyleValue } from "./recipe.js";
 import {
@@ -72,7 +97,7 @@ function cssProperty(name: string): string {
   return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 }
 
-/** Печатает объявления и вложенные блоки. Вложенное разворачивает не она, а `expandNestedCss`. */
+/** Печатает объявления и вложенные блоки. Вложенное разворачивает не она, а `postcss-nested`. */
 function declarations(style: StyleObject, indent: string): string[] {
   const lines: string[] = [];
 
@@ -133,13 +158,21 @@ function keyframesText(skin: Skin): string[] {
   );
 }
 
+/** Разворачиватель вложенного. Заводится один раз: конвейер postcss переиспользуем. */
+const flatten = postcss([nested()]);
+
 /** Оборачивает содержимое в слой каскада и разворачивает вложенное. */
 function layered(header: string, layer: string, blocks: readonly string[]): string {
-  const done = trace(`expandNestedCss(${layer})`);
+  const done = trace(`postcss-nested(${layer})`);
   const text = [header, LAYER_ORDER, "", `@layer ${layer} {`, ...blocks, "}", ""].join("\n");
-  const flat = expandNestedCss(text);
+
+  // `root` у синхронного конвейера доступен сразу; отступы правим по дереву, а не по строке —
+  // регулярное выражение по CSS ошибается на первом же значении со скобками.
+  const root = flatten.process(text, { from: undefined }).root;
+  prettify(root);
+
   done();
-  return flat;
+  return root.toString();
 }
 
 /**

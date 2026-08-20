@@ -1,0 +1,18 @@
+/* Правки образца — порождены механикой скина по именам узлов.
+   Это НЕ скин: адрес здесь — одно место, а не координата, и в файл скина он не едет. */
+
+@layer probe-web-skin, probe-web-sketch;
+
+@layer probe-web-sketch {
+  [data-node="btn-1"] {
+    background: red;
+  }
+
+  [data-node="btn-1"]::before {
+    content: "!";
+  }
+
+  [data-node="btn-1"]:is(:hover, [data-force~="hover"]) {
+    background: darkred;
+  }
+}

@@ -1,0 +1,89 @@
+/* Скин «эталон» — порождён механикой скина из записи.
+   Править бесполезно: следующее порождение перезапишет.
+   Адреса собраны из анатомии компонентов, руками селекторы не писались. */
+
+@layer probe-web-skin, probe-web-sketch;
+
+@layer probe-web-skin {
+  :root {
+    --a: 1;
+  }
+
+  :root.dark, :root .dark {
+    --a: 2;
+  }
+
+  @keyframes пульс {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0.4;
+    }
+  }
+
+  [data-scope="button"][data-part="root"] {
+    display: inline-flex;
+    padding-inline: var(--space-3);
+  }
+
+  [data-scope="button"][data-part="root"]::before {
+    content: "";
+    display: block;
+  }
+
+  [data-scope="button"][data-part="root"]::after {
+    content: "↦";
+  }
+
+  @media (min-width: 40rem) {
+    [data-scope="button"][data-part="root"] {
+      padding-inline: 2rem;
+    }
+
+    [data-scope="button"][data-part="root"]::before {
+      content: "широко";
+    }
+  }
+
+  @supports (color: oklch(0 0 0)) {
+    [data-scope="button"][data-part="root"] {
+      color: oklch(0.2 0 0);
+    }
+  }
+
+  @container (min-width: 20rem) {
+    [data-scope="button"][data-part="root"] {
+      gap: 1rem;
+    }
+  }
+
+  [data-scope="button"][data-part="root"]:is([data-variant="главная"], :not([data-variant])) {
+    background: rgb(1, 2, 3);
+  }
+
+  [data-scope="button"][data-part="root"][data-variant="тихая"] {
+    background: transparent;
+  }
+
+  [data-scope="button"][data-part="root"]:is(:hover, [data-force~="hover"]) {
+    opacity: 0.9;
+  }
+
+  [data-scope="button"][data-part="root"]:is(:hover, [data-force~="hover"])::before {
+    opacity: 1;
+  }
+
+  [data-scope="button"][data-part="root"][data-disabled] {
+    opacity: 0.4;
+  }
+
+  [data-scope="button"][data-part="root"]:is([data-variant="главная"], :not([data-variant]), [data-variant="тихая"]):is(:hover, [data-force~="hover"]) {
+    filter: brightness(1.1);
+  }
+
+  [data-scope="button"][data-part="root"][data-disabled]:is(:hover, [data-force~="hover"]) {
+    opacity: 0.4;
+  }
+}

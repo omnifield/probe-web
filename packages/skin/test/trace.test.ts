@@ -67,8 +67,8 @@ describe("включается флагом", () => {
     const lines = debug.mock.calls.map((call) => String(call[0]));
 
     expect(lines.some((line) => line.includes("skinRules"))).toBe(true);
-    // Разворот вложенного — чужая работа (`@pandacss/core`), и её цену видно отдельно от своей.
-    expect(lines.some((line) => line.includes("expandNestedCss"))).toBe(true);
+    // Разворот вложенного — чужая работа (`postcss-nested`), и её цену видно отдельно от своей.
+    expect(lines.some((line) => line.includes("postcss-nested"))).toBe(true);
     expect(lines.some((line) => line.includes("generateSkinCss"))).toBe(true);
   });
 
