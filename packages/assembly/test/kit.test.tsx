@@ -14,7 +14,7 @@
 //
 // Кит здесь — `devDependency`; в поставку механики он не едет.
 
-import { Button } from "@omnifield/probe-web-ui";
+import { Button, Popover, PopoverTrigger } from "@omnifield/probe-web-ui";
 import { admits, coordinateOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -105,5 +105,98 @@ describe("дерево из настоящих компонентов кита",
     expect(button.getAttribute("data-node")).toBe("сохранить");
     expect(button.getAttribute("data-scope")).toBe("button");
     expect(button.querySelector("[data-overlay]")).not.toBeNull();
+  });
+});
+
+describe("композиция на живом ките", () => {
+  // «Кнопка, вставленная в триггер всплывающего окна» — тот самый случай, ради которого узел
+  // научился нести композицию. Здесь он проверяется НЕ на своих компонентах: собирает узел
+  // настоящий `PopoverTrigger`, рисует настоящая `Button`, состояние приходит от настоящего
+  // окна.
+  //
+  // ПРЕДЕЛ, названный заранее: паспорта у окна пока нет — адрес сегодня несёт один компонент
+  // кита, остальные объявляются волной разноса (`PWEB-7`). Поэтому внешняя часть объявлена
+  // здесь фикстурой: минимальной, только чтобы механике было по чему проверить вложенность.
+  // В поставку она не едет; появится настоящий паспорт — проба возьмёт его и станет строже.
+  const окно: ReadablePassport = {
+    component: "popover",
+    genus: "component",
+    anatomy: { keys: () => ["root", "trigger"] },
+    root: "root",
+    parts: [
+      { name: "root", accepts: [{ kind: "part", name: "trigger" }] },
+      { name: "trigger", accepts: [{ kind: "content", genus: "component" }] },
+    ],
+  };
+
+  const составной = createRegistry({
+    components: {
+      button: Button,
+      popover: Object.assign(Popover, { trigger: PopoverTrigger }),
+    },
+    passports: { button: passportOf("button") as ReadablePassport, popover: окно },
+    admits,
+  });
+
+  const дерево: AssemblyTree = {
+    components: {
+      root: "окно",
+      nodes: {
+        окно: {
+          id: "окно",
+          type: "popover",
+          parentId: null,
+          children: ["настройки"],
+          props: { open: true },
+        },
+        настройки: {
+          id: "настройки",
+          type: "button",
+          composedInto: "popover.trigger",
+          parentId: "окно",
+          children: [],
+          props: { children: "Настройки" },
+        },
+      },
+    },
+  };
+
+  it("собирается живой узел: один элемент, а не два", () => {
+    const host = mount(() => <RenderTree tree={дерево} registry={составной} />);
+
+    expect(host.querySelectorAll("button")).toHaveLength(1);
+    expect(host.querySelector("button")?.textContent).toBe("Настройки");
+  });
+
+  it("адрес на узле — кнопкин, а не триггерный", () => {
+    const host = mount(() => <RenderTree tree={дерево} registry={составной} />);
+    const button = host.querySelector("button") as HTMLElement;
+
+    expect(button.getAttribute("data-scope")).toBe("button");
+    expect(button.getAttribute("data-part")).toBe("root");
+  });
+
+  it("состояние раскрытия приходит от окна и остаётся адресуемым", () => {
+    const host = mount(() => <RenderTree tree={дерево} registry={составной} />);
+    const button = host.querySelector("button") as HTMLElement;
+
+    // Состояние выражено ОТДЕЛЬНЫМ атрибутом, а не адресом, поэтому композицию оно переживает
+    // само. Скин адресует его по имени из паспорта кнопки — там `data-expanded` объявлено.
+    expect(button.hasAttribute("data-expanded")).toBe(true);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("признак узла доезжает и через два звена композиции", () => {
+    const host = mount(() => <RenderTree tree={дерево} registry={составной} />);
+
+    expect(host.querySelector("button")?.getAttribute("data-node")).toBe("настройки");
+  });
+
+  it("координата составного узла — кнопкина: одевается он как кнопка", () => {
+    const host = mount(() => <RenderTree tree={дерево} registry={составной} />);
+    const button = host.querySelector("button") as Element;
+
+    expect(coordinateOf(button, passportOf)?.component).toBe("button");
+    expect(coordinateOfType(составной, "button")?.component).toBe("button");
   });
 });

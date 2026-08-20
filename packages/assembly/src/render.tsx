@@ -278,25 +278,71 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     },
   };
 
+  /** Внешний компонент композиции, если узел составной. */
+  const outer = createMemo(() => {
+    const composed = node()?.composedInto;
+    if (composed === undefined) return undefined;
+    return resolveComponent(props.registry, composed);
+  });
+
+  /**
+   * Что на самом деле зовётся для узла (`PWEB-33`).
+   *
+   * Обычный узел рисует себя сам. Составной — «кнопка, вставленная в триггер окна» — рисуется
+   * ВНЕШНИМ компонентом, которому внутренний передаётся пропом `as`: так композицию делает сам
+   * кит, и механика пользуется его механизмом, а не заводит второй.
+   *
+   * Отсюда и распределение: поведение и состояние приходят от внешнего (раскрытость окна
+   * приезжает на узел отдельным атрибутом), адресные атрибуты ставит внутренний — тот, чем
+   * вещь является визуально. Ни того, ни другого механика не устраивает руками: она лишь
+   * зовёт то, что кит уже умеет.
+   *
+   * `missing` называет ИМЕННО ТОТ адрес, который не разрешился: у составного узла их два, и
+   * «не нашёлся popover.trigger» отличается от «не нашлась button» ровно тем, что человек
+   * пойдёт чинить.
+   */
+  const assembled = ():
+    | { kind: "component"; Comp: unknown; composition?: { as: unknown } }
+    | { kind: "missing"; type: string } => {
+    const current = node();
+    const Inner = resolved();
+    if (!current) return { kind: "missing", type: "" };
+    if (!Inner) return { kind: "missing", type: current.type };
+
+    const composed = current.composedInto;
+    if (composed === undefined) return { kind: "component", Comp: Inner };
+
+    const Outer = outer();
+    if (!Outer) return { kind: "missing", type: composed };
+
+    return { kind: "component", Comp: Outer, composition: { as: Inner } };
+  };
+
   const rendered = () => {
     const current = node();
     if (!current) return null;
 
     const close = trace(`узел ${current.id} (${current.type})`);
     try {
-      const Comp = resolved();
+      const built = assembled();
       const EditOverlay = props.editOverlay;
 
       // Адрес не разрешился — явный запасной вид. Украшение ему тоже полагается: узел в
       // дереве есть, и в редакторе его должно быть можно выделить и убрать.
-      if (!Comp) {
-        const body = createComponent(props.fallback, { type: current.type, nodeId: current.id });
+      if (built.kind === "missing") {
+        const body = createComponent(props.fallback, { type: built.type, nodeId: current.id });
         return EditOverlay ? wrapped(body, EditOverlay) : body;
       }
 
+      const Comp = built.Comp;
+      // Композиция ставится ПОСЛЕ пропов узла и до признака: `as` — не проп потребителя, а то,
+      // из чего узел собран, и перебить его пропом было бы тем самым вторым способом надеть
+      // внешний компонент.
+      const composition = built.composition ?? {};
+
       // Обычный путь: украшения нет — нет и ветвлений.
       if (!EditOverlay) {
-        const plainProps = mergeProps(ownProps, identityProps, {
+        const plainProps = mergeProps(ownProps, composition, identityProps, {
           get meta() {
             return node()?.meta;
           },
@@ -309,7 +355,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
 
       // Узел не пускает содержимое — украшение идёт снаружи, обёрткой.
       if (!takesContent(props.registry, current.type)) {
-        const closedProps = mergeProps(ownProps, identityProps, {
+        const closedProps = mergeProps(ownProps, composition, identityProps, {
           get meta() {
             return node()?.meta;
           },
@@ -321,7 +367,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
       // Узел пускает содержимое — украшение идёт внутрь, ПОСЛЕ настоящих детей. Раскладку оно
       // не двигает: украшение позиционировано абсолютно, а узлу навязывается только
       // `position:relative` — без него абсолютной привязке не за что зацепиться.
-      const decoratedProps = mergeProps(ownProps, identityProps, {
+      const decoratedProps = mergeProps(ownProps, composition, identityProps, {
           get style() {
             const own = (node()?.props as { style?: unknown } | undefined)?.style;
             if (typeof own === "string") return `position:relative; ${own}`;

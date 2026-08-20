@@ -11,6 +11,7 @@
 // адресов внутри отрисовки.
 
 import { createSignal, type Component } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createRegistry } from "../src/registry.js";
@@ -50,12 +51,46 @@ const Icon: Component<Record<string, unknown>> = (props) => (
   <img data-scope="icon" alt="" {...props} />
 );
 
+/** Всплывающее окно — просто держит содержимое; составным его делает триггер внутри. */
+const Popover: Component<Record<string, unknown>> = (props) => (
+  <div data-scope="popover" {...props}>
+    {props.children as never}
+  </div>
+);
+
+/**
+ * Внешнее звено композиции — устроено как настоящее: рисует то, что пришло в `as`, и отдаёт
+ * ему своё поведение и состояние. Свой адрес при этом НЕ ставит: адрес принадлежит внутреннему.
+ */
+interface TriggerProps {
+  /** Внутреннее звено композиции — то, чем узел является визуально. */
+  as?: Component<Record<string, unknown>> | string;
+  children?: unknown;
+}
+
+const Trigger: Component<TriggerProps> = (props) => (
+  // `as` уходит из пропов после спреда: он не проп потребителя, а то, из чего узел собран.
+  <Dynamic component={props.as ?? "button"} {...props} as={undefined} data-expanded="">
+    {props.children as never}
+  </Dynamic>
+);
+
 const Boom: Component = () => {
   throw new Error("узел не собрался");
 };
 
 const registry = createRegistry({
-  components: { layout: Layout, button: Button, icon: Icon, boom: Boom, ui: { button: Button } },
+  components: {
+    layout: Layout,
+    button: Button,
+    icon: Icon,
+    boom: Boom,
+    // Компонент И пространство имён разом — так устроены namespace-компоненты кита
+    // (`Popover.Trigger`), и реестр их принимает как есть: разрешение адреса идёт по
+    // свойствам, а свойства есть и у функции.
+    popover: Object.assign(Popover, { trigger: Trigger, content: Layout }),
+    ui: { button: Button },
+  },
   // `boom` — компонент, который падает при отрисовке; паспорт ему нужен кнопочный: предмет
   // пробы в том, что упавший узел не уносит соседей, а не в его вложенности.
   passports: { ...PASSPORTS, boom: PASSPORTS.button },
@@ -441,5 +476,87 @@ describe("слот украшения", () => {
     const slot = host.querySelector("[data-overlay]")?.parentElement as HTMLElement;
     expect(slot.style.pointerEvents).toBe("none");
     expect(slot.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("композиция", () => {
+  // Узел несёт адрес кнопки и указание, во что она вставлена. Собрать из этого живой узел —
+  // работа отрисовки: внешний зовётся с `as`, потому что так композицию делает сам кит.
+  const составной = tree({
+    окно: { id: "окно", type: "popover", parentId: null, children: ["настройки"] },
+    настройки: {
+      id: "настройки",
+      type: "button",
+      composedInto: "popover.trigger",
+      parentId: "окно",
+      children: [],
+      props: { children: "Настройки" },
+    },
+  }, "окно");
+
+  it("рисует ОДИН узел: внешний собирает, внутренний рисуется", () => {
+    const host = mount(() => <RenderTree tree={составной} registry={registry} />);
+
+    expect(host.querySelectorAll("button")).toHaveLength(1);
+    expect(host.querySelector("button")?.textContent).toBe("Настройки");
+  });
+
+  it("узел несёт адрес ВНУТРЕННЕГО — кнопки, а не триггера", () => {
+    const host = mount(() => <RenderTree tree={составной} registry={registry} />);
+
+    expect(host.querySelector("button")?.getAttribute("data-scope")).toBe("button");
+  });
+
+  it("состояние приходит от внешнего и остаётся на узле", () => {
+    const host = mount(() => <RenderTree tree={составной} registry={registry} />);
+
+    expect(host.querySelector("button")?.hasAttribute("data-expanded")).toBe(true);
+  });
+
+  it("признак узла доезжает и через композицию", () => {
+    const host = mount(() => <RenderTree tree={составной} registry={registry} />);
+
+    expect(host.querySelector("button")?.getAttribute("data-node")).toBe("настройки");
+  });
+
+  it("неразрешённый ВНЕШНИЙ адрес называет себя, а не внутренний", () => {
+    // У составного узла адреса два, и «не нашёлся триггер» отличается от «не нашлась кнопка»
+    // ровно тем, что человек пойдёт чинить.
+    const Fallback: Component<{ type: string }> = (props) => <div data-missing={props.type} />;
+    const host = mount(() => (
+      <RenderTree
+        tree={tree({
+          узел: {
+            id: "узел",
+            type: "button",
+            composedInto: "нет.такого",
+            parentId: null,
+            children: [],
+          },
+        }, "узел")}
+        registry={registry}
+        fallback={Fallback}
+      />
+    ));
+
+    expect(host.querySelector("[data-missing]")?.getAttribute("data-missing")).toBe("нет.такого");
+  });
+
+  it("украшение достаётся составному узлу так же, как обычному", () => {
+    const Overlay: Component<EditOverlayProps> = (props) => <i data-overlay={props.nodeId} />;
+    const host = mount(() => (
+      <RenderTree tree={составной} registry={registry} editOverlay={Overlay} />
+    ));
+
+    expect(host.querySelector("[data-overlay=настройки]")).not.toBeNull();
+    expect(host.querySelector("button")?.getAttribute("data-node")).toBe("настройки");
+  });
+
+  it("обычный узел путь отрисовки не меняет — ни `as`, ни лишних узлов", () => {
+    const host = mount(() => <RenderTree tree={page} registry={registry} />);
+
+    expect(host.innerHTML).not.toContain("as=");
+    expect(host.querySelectorAll("button")).toHaveLength(2);
+    expect(host.querySelector("button")?.hasAttribute("data-expanded")).toBe(false);
   });
 });
