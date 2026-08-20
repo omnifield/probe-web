@@ -1,0 +1,34 @@
+{
+  "//": [
+    "Конфиг САМОГО пакета. Своего `tsconfig` наружу зона не отдаёт — базу приложениям задаёт",
+    "зона `build` подпутём `/tsconfig` (kb:PROBEWEB-4).",
+    "",
+    "`jsx: preserve` здесь не стилистика, а поставка: ветка `solid` в `exports` обязана отдать",
+    "НЕПРЕОБРАЗОВАННЫЙ JSX (трансформация Solid компиляторная — потребитель применяет свою,",
+    "под свою цель), и типы должны проверяться ровно в той форме, в которой код уезжает."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    // Исходники в тарбол не едут (`files` манифеста), поэтому карта обязана нести их в себе —
+    // иначе у потребителя она указывает в пустоту.
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts", "scripts"],
+  "exclude": ["dist", "node_modules"]
+}
