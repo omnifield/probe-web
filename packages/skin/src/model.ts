@@ -43,5 +43,16 @@ export {
   variantSelector,
 } from "./address.js";
 
-export type { SkinFlaw, SkinFlawName, SkinRule, SkinRules, ValueVocabulary } from "./rules.js";
-export { checkSketch, checkSkin, sketchRules, skinRules } from "./rules.js";
+export type {
+  RuleSet,
+  SkinFlaw,
+  SkinFlawName,
+  SkinRule,
+  SkinRules,
+  TouchedCoordinates,
+  ValueVocabulary,
+} from "./rules.js";
+export { checkSketch, checkSkin, partKey, sketchRules, skinRules, stateKey } from "./rules.js";
+
+export type { SkinGap, SkinGapKind } from "./coverage.js";
+export { skinGaps } from "./coverage.js";
