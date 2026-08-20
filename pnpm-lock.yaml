@@ -57,6 +57,45 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
 
+  packages/assembly:
+    devDependencies:
+      '@omnifield/probe-web-lint':
+        specifier: workspace:*
+        version: link:../lint
+      '@omnifield/probe-web-ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      esbuild:
+        specifier: ^0.27.7
+        version: 0.27.7
+      esbuild-plugin-solid:
+        specifier: ^0.6.0
+        version: 0.6.0(esbuild@0.27.7)(solid-js@1.9.14)
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1
+      jsdom:
+        specifier: ^30.0.1
+        version: 30.0.1
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.2.1
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)
+      vite-plugin-solid:
+        specifier: ^2.11.14
+        version: 2.11.14(solid-js@1.9.14)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
+
   packages/build:
     dependencies:
       vite-plugin-solid:
