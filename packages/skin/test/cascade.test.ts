@@ -19,6 +19,7 @@ import { JSDOM } from "jsdom";
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
+import { flattenCss } from "../src/flatten.js";
 import { generateSketchCss, generateSkinCss } from "../src/generate.js";
 import { NODE_ATTRIBUTE } from "../src/marks.js";
 import type { SketchEdit } from "../src/model.js";
@@ -29,7 +30,10 @@ import { buttonSkin, VOCABULARY } from "./skins.js";
 const SKIN_COLOUR = "rgb(1, 2, 3)";
 const SKETCH_COLOUR = "rgb(9, 9, 9)";
 
-const skinCss = generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY });
+// Генератор отдаёт ВЛОЖЕННУЮ форму — браузеру она годится как есть, а jsdom её не понимает так
+// же, как не понимает слои. Поэтому проба разворачивает и то и другое: обе вещи — ограничение
+// окружения пробы, а не поставки.
+const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY }));
 
 const edits: readonly SketchEdit[] = [
   {
@@ -39,7 +43,7 @@ const edits: readonly SketchEdit[] = [
     style: { props: { backgroundColor: SKETCH_COLOUR } },
   },
 ];
-const sketchCss = generateSketchCss(edits, lookup);
+const sketchCss = flattenCss(generateSketchCss(edits, lookup));
 
 /** Слои — в вес селектора, как это делает браузер, только заранее. */
 function withLayers(css: string): string {

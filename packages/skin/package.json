@@ -13,6 +13,10 @@
     "./model": {
       "types": "./dist/model.d.ts",
       "default": "./dist/model.js"
+    },
+    "./flat": {
+      "types": "./dist/flat.d.ts",
+      "default": "./dist/flat.js"
     }
   },
   "files": [

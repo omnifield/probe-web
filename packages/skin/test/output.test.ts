@@ -21,29 +21,55 @@
 
 import { describe, expect, it } from "vitest";
 
+import { flattenCss } from "../src/flatten.js";
 import { generateSketchCss, generateSkinCss } from "../src/generate.js";
 import { lookup } from "./passports.js";
 import { nestedEdits, nestedSkin } from "./skins.js";
 
-describe("текст порождения", () => {
-  it("скин со всем разрешённым вложением", async () => {
-    const css = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
+const skinCss = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
+const sketchCss = generateSketchCss(nestedEdits, lookup);
 
-    await expect(css).toMatchFileSnapshot("./__snapshots__/skin.css");
+describe("текст порождения — вложенная форма", () => {
+  it("скин со всем разрешённым вложением", async () => {
+    await expect(skinCss).toMatchFileSnapshot("./__snapshots__/skin.nested.css");
   });
 
   it("правки образца", async () => {
-    const css = generateSketchCss(nestedEdits, lookup);
-
-    await expect(css).toMatchFileSnapshot("./__snapshots__/sketch.css");
+    await expect(sketchCss).toMatchFileSnapshot("./__snapshots__/sketch.nested.css");
   });
 
-  it("порождение устойчиво: два вызова подряд дают один и тот же текст", () => {
-    const once = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
+  it("вложенность в тексте есть — иначе разворачивать было бы нечего", () => {
+    expect(skinCss).toContain("&::before");
+    expect(skinCss).toContain("@media (min-width: 40rem)");
+  });
+});
+
+describe("текст порождения — плоская форма", () => {
+  it("скин со всем разрешённым вложением", async () => {
+    await expect(flattenCss(skinCss)).toMatchFileSnapshot("./__snapshots__/skin.css");
+  });
+
+  it("правки образца", async () => {
+    await expect(flattenCss(sketchCss)).toMatchFileSnapshot("./__snapshots__/sketch.css");
+  });
+
+  it("плоская форма плоская: вложенных блоков не осталось", () => {
+    const flat = flattenCss(skinCss);
+
+    expect(flat).not.toContain("&");
+  });
+});
+
+describe("устойчивость", () => {
+  it("порождение: два вызова подряд дают один и тот же текст", () => {
     const twice = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
 
-    // Конвейер разворота заводится один раз на модуль — проверяем, что он не копит состояние
-    // между вызовами. Копил бы — второй скин в том же сеансе редактора выходил бы другим.
-    expect(twice).toBe(once);
+    expect(twice).toBe(skinCss);
+  });
+
+  it("разворот: конвейер не копит состояние между вызовами", () => {
+    // Конвейер postcss заводится один раз на модуль. Копил бы — второй скин в том же сеансе
+    // редактора выходил бы другим.
+    expect(flattenCss(skinCss)).toBe(flattenCss(skinCss));
   });
 });

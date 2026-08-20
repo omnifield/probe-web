@@ -1,8 +1,13 @@
 // ПОВЕРХНОСТЬ ПОСТАВКИ — обещание подпутей, проверенное по СОБРАННОМУ файлу, а не по намерению.
 //
-// Обещание одно и стоит денег потребителю: `./model` не тянет порождение, а значит не тянет
-// postcss. Проверить его можно только тем, что уехало в `dist`: исходник об этом не говорит —
-// важно, что попало в бандл после разрешения импортов.
+// Обещаний два, и оба стоят денег потребителю:
+//
+//   • порождение отдаёт ВЛОЖЕННУЮ форму и postcss в цепочку не тянет — витрина и редактор
+//     порождают CSS на каждое движение ручки, и разворачиватель был там главным весом;
+//   • `./model` не тянет даже печать — хранилищу и проверке сохранённой записи она не нужна.
+//
+// Проверить их можно только тем, что уехало в `dist`: исходник об этом не говорит — важно, что
+// попало в бандл после разрешения импортов.
 //
 // Проба идёт после сборки: `pnpm test` собирает пакет первым шагом.
 
@@ -26,13 +31,25 @@ const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8"))
   peerDependencies: Record<string, string>;
 };
 
-describe("подпуть `./model` не тянет порождение", () => {
-  it("в собранном `model.js` нет ни одной ссылки на postcss", () => {
+describe("postcss живёт ТОЛЬКО за подпутём `./flat`", () => {
+  it("в собранном `index.js` нет ни одной ссылки на postcss", () => {
+    // Главный пункт задачи: вложенная форма отдаётся БЕЗ postcss в цепочке. Он попадает в сборку
+    // потребителя от одного импорта, звали его или нет, — поэтому проверяем собранный файл.
+    expect(bundle("index.js")).not.toContain("postcss");
+  });
+
+  it("в `model.js` — тем более", () => {
     expect(bundle("model.js")).not.toContain("postcss");
   });
 
-  it("корневой вход, наоборот, зовёт разворачиватель — иначе порождать было бы нечем", () => {
-    expect(bundle("index.js")).toContain("postcss-nested");
+  it("в `flat.js` — есть: там ему и место", () => {
+    expect(bundle("flat.js")).toContain("postcss-nested");
+  });
+
+  it("`./flat` отдаёт ТОЛЬКО разворот: широкий вход вернул бы postcss всем", async () => {
+    const flat = await import("../src/flat.js");
+
+    expect(Object.keys(flat)).toEqual(["flattenCss"]);
   });
 
   it("покрытие лежит в `./model`: хранилищу оно нужно, а postcss — нет", async () => {
@@ -46,12 +63,12 @@ describe("подпуть `./model` не тянет порождение", () => 
 });
 
 describe("что уезжает, а что остаётся", () => {
-  it("оба подпути объявлены и указывают на собранные файлы", () => {
-    expect(Object.keys(manifest.exports)).toEqual([".", "./model"]);
-    expect(() => bundle("index.js")).not.toThrow();
-    expect(() => bundle("model.js")).not.toThrow();
-    expect(() => bundle("index.d.ts")).not.toThrow();
-    expect(() => bundle("model.d.ts")).not.toThrow();
+  it("все три подпути объявлены и указывают на собранные файлы", () => {
+    expect(Object.keys(manifest.exports)).toEqual([".", "./model", "./flat"]);
+    for (const name of ["index", "model", "flat"]) {
+      expect(() => bundle(`${name}.js`)).not.toThrow();
+      expect(() => bundle(`${name}.d.ts`)).not.toThrow();
+    }
   });
 
   it("в поставке ровно разворачиватель вложенного и его основание — больше ничего", () => {

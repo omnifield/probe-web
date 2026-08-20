@@ -6,6 +6,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { flattenCss } from "../src/flatten.js";
 import { generateSkinCss } from "../src/generate.js";
 import { note, trace } from "../src/trace.js";
 import { lookup } from "./passports.js";
@@ -67,9 +68,20 @@ describe("включается флагом", () => {
     const lines = debug.mock.calls.map((call) => String(call[0]));
 
     expect(lines.some((line) => line.includes("skinRules"))).toBe(true);
-    // Разворот вложенного — чужая работа (`postcss-nested`), и её цену видно отдельно от своей.
-    expect(lines.some((line) => line.includes("postcss-nested"))).toBe(true);
     expect(lines.some((line) => line.includes("generateSkinCss"))).toBe(true);
+    // Разворота в порождении больше НЕТ: вложенная форма уходит браузеру как есть.
+    expect(lines.some((line) => line.includes("flattenCss"))).toBe(false);
+  });
+
+  it("разворот отчитывается отдельно — это чужая работа и чужой вес", () => {
+    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
+    (globalThis as Flagged)[FLAG] = true;
+
+    flattenCss(generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY }));
+
+    expect(debug.mock.calls.map((call) => String(call[0])).some((l) => l.includes("flattenCss"))).toBe(
+      true,
+    );
   });
 
   it("событие без длительности печатается строкой", () => {
