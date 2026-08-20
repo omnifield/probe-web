@@ -54,7 +54,6 @@ export interface NewNode {
   readonly type: string;
   readonly props?: Readonly<Record<string, unknown>>;
   readonly meta?: Readonly<Record<string, unknown>>;
-  readonly styles?: Readonly<Record<string, string>>;
 }
 
 const refuse = (refusal: EditRefusal, means: string): EditResult => ({
@@ -116,7 +115,6 @@ export function insertNode(
     children: [],
     ...(node.props ? { props: node.props } : {}),
     ...(node.meta ? { meta: node.meta } : {}),
-    ...(node.styles ? { styles: node.styles } : {}),
   };
 
   const nodes = { ...tree.components.nodes };
@@ -217,15 +215,20 @@ export function moveNode(
   return { ok: true, tree: withNodes(tree, nodes) };
 }
 
-/** Что меняем у узла. Названное поле заменяется целиком, неназванное остаётся как было. */
+/**
+ * Что меняем у узла. Названное поле заменяется целиком, неназванное остаётся как было.
+ *
+ * Вида здесь нет и не будет: он адресуется координатой паспорта либо идентификатором узла и
+ * порождается в стили генератором скина, а не приписывается узлу пропом (`PWEB-27`, снятие
+ * `styles`). Механика даёт для этого другое — признак, которым узел адресуем в разметке.
+ */
 export interface NodePatch {
   readonly props?: Readonly<Record<string, unknown>>;
   readonly meta?: Readonly<Record<string, unknown>>;
-  readonly styles?: Readonly<Record<string, string>>;
 }
 
 /**
- * Меняет пропы, редакторское или вид узла.
+ * Меняет пропы или редакторское узла.
  *
  * Названное поле заменяется ЦЕЛИКОМ, а не сливается по ключам. Слияние выглядит удобнее ровно
  * до первой попытки убрать один проп: убрать его стало бы нечем, и потребителю пришлось бы
@@ -248,7 +251,6 @@ export function updateNode(tree: AssemblyTree, id: NodeId, patch: NodePatch): Ed
     ...node,
     ...("props" in patch ? { props: patch.props } : {}),
     ...("meta" in patch ? { meta: patch.meta } : {}),
-    ...("styles" in patch ? { styles: patch.styles } : {}),
   };
 
   return { ok: true, tree: withNodes(tree, nodes) };
