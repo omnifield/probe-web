@@ -214,6 +214,67 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
 
+  packages/skin:
+    dependencies:
+      postcss:
+        specifier: ^8.5.14
+        version: 8.5.26
+      postcss-nested:
+        specifier: ^7.0.2
+        version: 7.0.2(postcss@8.5.26)
+    devDependencies:
+      '@csstools/postcss-cascade-layers':
+        specifier: ^5.0.2
+        version: 5.0.2(postcss@8.5.26)
+      '@kobalte/core':
+        specifier: ^0.13.12
+        version: 0.13.13(solid-js@1.9.14)
+      '@omnifield/probe-web-assembly':
+        specifier: workspace:*
+        version: link:../assembly
+      '@omnifield/probe-web-lint':
+        specifier: workspace:*
+        version: link:../lint
+      '@omnifield/probe-web-runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@omnifield/probe-web-ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/jsdom':
+        specifier: ^27.0.0
+        version: 27.0.0
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      '@zag-js/anatomy':
+        specifier: ^1.43.1
+        version: 1.43.1
+      esbuild:
+        specifier: ^0.27.7
+        version: 0.27.7
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1
+      jsdom:
+        specifier: ^30.0.1
+        version: 30.0.1
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.2.1
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)
+      vite-plugin-solid:
+        specifier: ^2.11.14
+        version: 2.11.14(solid-js@1.9.14)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7))
+
   packages/starter:
     devDependencies:
       '@types/ejs':
@@ -720,6 +781,18 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
 
+  '@csstools/postcss-cascade-layers@5.0.2':
+    resolution: {integrity: sha512-nWBE08nhO8uWl6kSAeCx4im7QfVko3zLrtgWZY4/bP87zrSPpSyN/3W3TDqz1jJuH+kbKOHXg5rJnK+ZVYcFFg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      postcss: ^8.4
+
+  '@csstools/selector-specificity@5.0.0':
+    resolution: {integrity: sha512-PCqQV3c4CoVm3kdPhyeZ07VmBRdH2EpMFA/pd9OASpOEC3aXNGoqPDAZ80D0cLpMBxnmk0+yNhGsEx31hq7Gtw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      postcss-selector-parser: ^7.0.0
+
   '@esbuild/aix-ppc64@0.27.7':
     resolution: {integrity: sha512-EKX3Qwmhz1eMdEJokhALr0YiD0lhQNwDqkPYyPhiSwKrh7/4KRjQc04sZ8db+5DVVnZ1LmbNDI1uAMPEUBnQPg==}
     engines: {node: '>=18'}
@@ -1179,6 +1252,9 @@ packages:
   '@types/gensync@1.0.5':
     resolution: {integrity: sha512-MbsRCT7mTikHwKZ0X+LVUTLRrZZRLipTuXEO9qOYO+zmjMVk81axyClMROf6uoPD9MRVu46bx8zoR0Ad9q3NAg==}
 
+  '@types/jsdom@27.0.0':
+    resolution: {integrity: sha512-NZyFl/PViwKzdEkQg96gtnB8wm+1ljhdDay9ahn4hgb+SfVtPCbm3TlmDUFXTA+MGN3CijicnMhG18SI5H3rFw==}
+
   '@types/jsdom@28.0.3':
     resolution: {integrity: sha512-/HQ2uFoetFTXuye8vzIcHw2z6Fwi7Hi/qcgC+RoS9NCyewiqxhVGqlG+ViGB6lkax481R6dmhf1I7lIGlzJStQ==}
 
@@ -1471,6 +1547,11 @@ packages:
   css-tree@3.2.1:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
+
+  cssesc@3.0.0:
+    resolution: {integrity: sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==}
+    engines: {node: '>=4'}
+    hasBin: true
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -1902,6 +1983,16 @@ packages:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
+  postcss-nested@7.0.2:
+    resolution: {integrity: sha512-5osppouFc0VR9/VYzYxO03VaDa3e8F23Kfd6/9qcZTUI8P58GIYlArOET2Wq0ywSl2o2PjELhYOFI4W7l5QHKw==}
+    engines: {node: '>=18.0'}
+    peerDependencies:
+      postcss: ^8.2.14
+
+  postcss-selector-parser@7.1.5:
+    resolution: {integrity: sha512-KvvtD7SrlBP7dlgkBghEE3r84CABm5SmV2aNcG4oCA+qDnJ/tvKonFVvwWAyyWUEwxuNawdfEAZKP9zM3oZ2Uw==}
+    engines: {node: '>=4'}
+
   postcss@8.5.26:
     resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -2063,6 +2154,9 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  util-deprecate@1.0.2:
+    resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
   vite-plugin-solid@2.11.14:
     resolution: {integrity: sha512-7ZVBt8rpoyqmlwin2kRIUveaHoF6/kulY7gsnD+qFh4nS29V4OPAnw+ojoAspXIjObiL9o1xh9a/nTuYHm02Rw==}
@@ -2543,6 +2637,16 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
+  '@csstools/postcss-cascade-layers@5.0.2(postcss@8.5.26)':
+    dependencies:
+      '@csstools/selector-specificity': 5.0.0(postcss-selector-parser@7.1.5)
+      postcss: 8.5.26
+      postcss-selector-parser: 7.1.5
+
+  '@csstools/selector-specificity@5.0.0(postcss-selector-parser@7.1.5)':
+    dependencies:
+      postcss-selector-parser: 7.1.5
+
   '@esbuild/aix-ppc64@0.27.7':
     optional: true
 
@@ -2890,6 +2994,12 @@ snapshots:
 
   '@types/gensync@1.0.5': {}
 
+  '@types/jsdom@27.0.0':
+    dependencies:
+      '@types/node': 24.13.3
+      '@types/tough-cookie': 4.0.5
+      parse5: 7.3.0
+
   '@types/jsdom@28.0.3':
     dependencies:
       '@types/node': 24.13.3
@@ -3149,6 +3259,8 @@ snapshots:
     dependencies:
       mdn-data: 2.27.1
       source-map-js: 1.2.1
+
+  cssesc@3.0.0: {}
 
   csstype@3.2.3: {}
 
@@ -3563,6 +3675,16 @@ snapshots:
 
   picomatch@4.0.5: {}
 
+  postcss-nested@7.0.2(postcss@8.5.26):
+    dependencies:
+      postcss: 8.5.26
+      postcss-selector-parser: 7.1.5
+
+  postcss-selector-parser@7.1.5:
+    dependencies:
+      cssesc: 3.0.0
+      util-deprecate: 1.0.2
+
   postcss@8.5.26:
     dependencies:
       nanoid: 3.3.18
@@ -3731,6 +3853,8 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  util-deprecate@1.0.2: {}
 
   vite-plugin-solid@2.11.14(solid-js@1.9.14)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)):
     dependencies:
