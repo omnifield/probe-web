@@ -439,7 +439,7 @@ describe("паспорт из поставки", () => {
     // приезжают вызовом, а не полем: `@zag-js/anatomy` порождает атрибуты узла и селектор
     // стиля из одного объявления, и разъехаться им негде по построению.
     const passport = runInConsumer(
-      `import { passportOf } from "${PKG}/passport";
+      `import { GROUPS, groupOf, passportOf } from "${PKG}/passport";
 
 const кнопка = passportOf("button");
 
@@ -453,6 +453,8 @@ console.log(JSON.stringify({
   parts: кнопка.parts.map((часть) => часть.name),
   states: кнопка.parts.flatMap((часть) => часть.states.map((с) => с.name)),
   axis: кнопка.variantAxis.mark,
+  group: кнопка.group,
+  подписьГруппы: GROUPS[groupOf(кнопка)],
 }));`,
     ) as {
       component: string;
@@ -464,6 +466,8 @@ console.log(JSON.stringify({
       parts: string[];
       states: string[];
       axis: { kind: string; name: string; value?: string };
+      group: string;
+      подписьГруппы: string;
     };
 
     expect(passport.component).toBe("button");
@@ -483,6 +487,11 @@ console.log(JSON.stringify({
     // Ось вариаций объявлена, а имён у неё нет: их создаёт человек в редакторе вместе со
     // скином. Приехало бы отсюда имя — паспорт объявил бы то, чего нельзя проверить.
     expect(passport.axis).toEqual({ kind: "attribute", name: "data-variant" });
+
+    // Место в перечне и его подпись едут ВМЕСТЕ (`PWEB-34`): доедь одно без другого — раздел
+    // назвал бы каждый пульт сам, и перечни разошлись бы ровно так же, как без поля вовсе.
+    expect(passport.group).toBe("actions");
+    expect(passport.подписьГруппы).toBe("Действия");
   });
 
   it("правило вложенности приезжает решением, а не только данными", () => {
