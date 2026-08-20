@@ -140,3 +140,30 @@ export const BUTTON_CASES: readonly ShowcaseCase[] = [
 export const CASES: Readonly<Record<string, readonly ShowcaseCase[]>> = {
   button: BUTTON_CASES,
 };
+
+/**
+ * Случаи вариаций — по одному на каждое имя, объявленное СКИНОМ.
+ *
+ * Здесь перечня имён нет и быть не может: вариации принадлежат скину, а не паспорту и не
+ * витрине. Нет надетого скина — нет и случаев: называть нечего, и показывать «вариации вообще»
+ * значило бы придумать их за автора скина.
+ *
+ * Отдельной функцией, а не полем в `CASES`, ровно поэтому: состав зависит от того, что надето
+ * СЕЙЧАС, и пересчитывается при смене скина.
+ *
+ * @param component адрес компонента в реестре
+ * @param names имена вариаций из записи надетого скина
+ */
+export function variantCases(
+  component: string,
+  names: readonly string[],
+): readonly ShowcaseCase[] {
+  return names.map((name) =>
+    caseOf(component, {
+      id: `variant-${name}`,
+      title: name,
+      note: "имя вариации придумал человек вместе со скином; кит пропускает его насквозь",
+      props: { children: "Сохранить", "data-variant": name },
+    }),
+  );
+}

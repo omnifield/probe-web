@@ -45,17 +45,9 @@ body {
   font-size: var(--font-size-lg);
 }
 
-.rail__note,
-.rail__state {
+.rail__note {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
-}
-
-.rail__state {
-  margin: 0;
-  margin-block-start: auto;
-  padding-block-start: var(--space-4);
-  border-block-start: var(--border-width-1) solid var(--separator);
 }
 
 .rail__list {
@@ -87,6 +79,58 @@ body {
   border-color: var(--brand-border);
   background: var(--brand-element);
   color: var(--brand-text);
+}
+
+/* ── выбор скина ──────────────────────────────────────────────────────────────────────── */
+
+.skins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-block-start: auto;
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-width-1) solid var(--separator);
+}
+
+.skins__title {
+  margin-block-end: var(--space-1);
+}
+
+.skins__item {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.skins__item:hover {
+  background: var(--tint-hover);
+}
+
+.skins__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.skins__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-text);
+}
+
+.skins__item--off[aria-pressed="true"] {
+  border-color: var(--danger-border);
+  background: var(--danger-element);
+  color: var(--danger-text);
+}
+
+.skins__state {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 /* ── страница компонента ──────────────────────────────────────────────────────────────── */
@@ -209,5 +253,10 @@ body {
 }
 
 .empty {
+  color: var(--text-muted);
+}
+
+.page__empty {
+  margin: 0;
   color: var(--text-muted);
 }

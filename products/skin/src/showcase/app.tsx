@@ -4,30 +4,36 @@
 //
 //   ┌──────────────┬────────────────────────────────────┐
 //   │ компоненты   │ страница компонента                │
-//   │ из реестра   │ случаи сеткой, каждый подписан     │
+//   │ и выбор      │ части, вариации, случаи — сеткой   │
+//   │ скина        │                                    │
 //   └──────────────┴────────────────────────────────────┘
 //
-// Третьей колонки — панели правки — здесь НЕТ и в этой волне не будет: витрина показывает,
-// редактор правит, и это разные вещи (страница раздела «Устройство продукта»). Так же
-// разложено у Storybook: перечень, холст и панели — разные области, а выбор темы живёт вообще
-// не там, где правка.
+// Третьей колонки — панели правки — здесь НЕТ: витрина показывает, редактор правит, и это
+// разные вещи (страница «Устройство продукта»). Так же разложено у Storybook: перечень, холст и
+// панели — разные области, а выбор темы живёт вообще не там, где правка.
 //
-// ЧЕГО ЗДЕСЬ НЕТ ЕЩЁ:
-//   • выбора скина — скин появится следующим шагом, сейчас витрина показывает ГОЛЫЙ кит;
-//   • вариаций — их имена принадлежат скину, а не паспорту: нет скина — называть нечего.
+// ВЫБОР СКИНА — в колонке перечня, а не на странице компонента: скин один на всю витрину, и
+// принадлежит он не кнопке. Тронешь его на странице кнопки — покажется, что одеваешь кнопку, а
+// одевается всё.
 //
-// Оба пробела названы на экране вслух. Пустое место, о котором не сказано, читается как
-// поломка; названное — как состояние работы.
+// НАДЕВАНИЕ ЗОВЁТСЯ, А НЕ ПОВТОРЯЕТСЯ. Лист стилей, атрибут на корне и память выбора — механика
+// приложения (`runtime`). Своей вставки стилей в зоне нет: вторая реализация того же разошлась
+// бы с первой ровно тогда, когда одна из них научится чему-то новому.
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
+import { makeSkinSwitch } from "@omnifield/probe-web-runtime";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { createSignal, For, Show } from "solid-js";
+import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
-import { CASES, type ShowcaseCase } from "./cases.js";
+import { SKIN_SOURCE, SKINS, skinOf } from "../skins/index.js";
+import { CASES, variantCases, type ShowcaseCase } from "./cases.js";
 import { REGISTRY } from "./registry.js";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
 const COMPONENTS = knownComponents(REGISTRY);
+
+/** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
+const SKIN = makeSkinSwitch(SKIN_SOURCE);
 
 /**
  * Один случай: подпись, пояснение и сам компонент, нарисованный МЕХАНИКОЙ.
@@ -75,22 +81,49 @@ function Parts(props: { component: string }) {
 }
 
 /** Страница компонента: что он объявил о себе и как держится в случаях. */
-function ComponentPage(props: { component: string }) {
+function ComponentPage(props: { component: string; worn: string | null }) {
   const cases = () => CASES[props.component] ?? [];
+
+  /**
+   * Имена вариаций — из записи НАДЕТОГО скина. Ни паспорт, ни витрина их не знают: имена
+   * принадлежат скину, и без него называть нечего.
+   */
+  const variants = () => {
+    const skin = props.worn === null ? undefined : skinOf(props.worn);
+    return Object.keys(skin?.recipes[props.component]?.variants ?? {});
+  };
 
   return (
     <article class="page">
       <header class="page__head">
         <h1 class="page__title">{props.component}</h1>
         <p class="page__lead">
-          Части и состояния — из паспорта компонента. Случаи собраны из образца и нарисованы
-          механикой сборки.
+          Части и состояния — из паспорта компонента. Вариации — из надетого скина. Случаи собраны
+          из образца и нарисованы механикой сборки.
         </p>
       </header>
 
       <section class="page__section">
         <h2 class="page__subtitle">Части и состояния</h2>
         <Parts component={props.component} />
+      </section>
+
+      <section class="page__section">
+        <h2 class="page__subtitle">Вариации</h2>
+        <Show
+          when={variants().length > 0}
+          fallback={
+            <p class="page__empty">
+              Скин не надет — имён вариаций нет. Они принадлежат скину, а не компоненту.
+            </p>
+          }
+        >
+          <div class="cases">
+            <For each={variantCases(props.component, variants())}>
+              {(item) => <Case item={item} />}
+            </For>
+          </div>
+        </Show>
       </section>
 
       <section class="page__section">
@@ -103,8 +136,78 @@ function ComponentPage(props: { component: string }) {
   );
 }
 
+/**
+ * Выбор скина: что надето, чем заменить, чем снять.
+ *
+ * Снятие — отдельная кнопка, а не «пустой» пункт перечня: голый кит это законное рабочее
+ * состояние продукта, и обращаться с ним как с отсутствием выбора значило бы прятать его.
+ */
+function SkinChoice(props: { worn: string | null; onWear: (name: string) => void; onTakeOff: () => void }) {
+  const [names] = createResource(() => SKIN.names());
+
+  return (
+    <div class="skins">
+      <b class="skins__title">Скин</b>
+      <For each={names() ?? Object.keys(SKINS)}>
+        {(name) => (
+          <button
+            class="skins__item"
+            type="button"
+            aria-pressed={name === props.worn}
+            onClick={() => props.onWear(name)}
+          >
+            {name}
+          </button>
+        )}
+      </For>
+      <button
+        class="skins__item skins__item--off"
+        type="button"
+        aria-pressed={props.worn === null}
+        onClick={() => props.onTakeOff()}
+      >
+        снять
+      </button>
+      <p class="skins__state">
+        <Show
+          when={props.worn}
+          fallback="Скин снят — кит показан голым. Рабочее состояние продукта, а не поломка витрины."
+        >
+          {(name) => `Надет «${name()}». Снимите — останется голый кит, и это проверка, а не поломка.`}
+        </Show>
+      </p>
+    </div>
+  );
+}
+
 export function App() {
   const [current, setCurrent] = createSignal(COMPONENTS[0] ?? "");
+  const [worn, setWorn] = createSignal<string | null>(null);
+
+  // Первый заход: восстанавливаем запомненный выбор, а если его нет — надеваем первый скин зоны
+  // и НЕ запоминаем. Витрина существует, чтобы смотреть на одетое, но чужое умолчание выбором
+  // человека не является, и памятью оно не становится.
+  onMount(() => {
+    void (async () => {
+      const restored = await SKIN.restore();
+      if (restored !== null) {
+        setWorn(restored);
+        return;
+      }
+
+      const [first] = await SKIN.names();
+      if (first !== undefined) setWorn(await SKIN.wear(first, { remember: false }));
+    })();
+  });
+
+  const wear = (name: string) => {
+    void SKIN.wear(name).then(setWorn);
+  };
+
+  const takeOff = () => {
+    SKIN.takeOff();
+    setWorn(SKIN.worn());
+  };
 
   return (
     <div class="shell">
@@ -127,15 +230,12 @@ export function App() {
             )}
           </For>
         </nav>
-        <p class="rail__state">
-          Скин не надет — кит показан голым. Это рабочее состояние продукта, а не поломка
-          витрины.
-        </p>
+        <SkinChoice worn={worn()} onWear={wear} onTakeOff={takeOff} />
       </aside>
 
       <main class="main">
         <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
-          {(component) => <ComponentPage component={component()} />}
+          {(component) => <ComponentPage component={component()} worn={worn()} />}
         </Show>
       </main>
     </div>
