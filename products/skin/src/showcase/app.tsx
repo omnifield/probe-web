@@ -28,7 +28,7 @@ import { createResource, createSignal, For, onMount, Show } from "solid-js";
 import {
   listSkins,
   readSkin,
-  SEED_HINT,
+  EMPTY_HINT,
   SERVICE_HINT,
   SKIN_SOURCE,
   type SkinRecord,
@@ -187,8 +187,8 @@ function SkinChoice(props: {
               when={props.records && props.records.length > 0}
               fallback={
                 <>
-                  Служба отвечает, но скинов в ней нет. Засеять первым:
-                  <code class="skins__cmd">{SEED_HINT}</code>
+                  Служба отвечает, но скинов в ней нет:
+                  <code class="skins__cmd">{EMPTY_HINT}</code>
                 </>
               }
             >

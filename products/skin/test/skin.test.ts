@@ -1,104 +1,107 @@
-// СКИН КНОПКИ как данные (`PWEB-31`, первая половина гейта).
+// СКИН, ПРИШЕДШИЙ ИЗ СЛУЖБЫ (`PWEB-31`, первая половина гейта).
 //
-// Проверяется не «CSS похож на правильный», а четыре обещания записи:
+// Проверяется путь записи, а не её содержимое: содержимое живёт в службе, и что там написано —
+// дело автора скина. Зона отвечает за другое:
 //
-//   1. запись СОБИРАЕТСЯ генератором механики — то есть форма верна. Изъян записи механика
-//      отвергает целиком, а не отдаёт текст с ошибкой рядом;
-//   2. порождённый CSS адресует КООРДИНАТАМИ из анатомии — за это и цепляется скин;
-//   3. в самой записи нет ни одного селектора: адрес приходит из паспорта, руками не пишется;
-//   4. скин стоит на СВОИХ значениях: ни одного имени из нашего набора. Пока это не так, «скин
-//      без наших значений законен» остаётся обещанием.
+//   1. запись, полученная из службы, **собирается генератором** — то есть шов «служба → модель»
+//      цел, и JSON ничего по дороге не потерял;
+//   2. порождённый CSS адресует **координатами** из анатомии — за это и цепляется скин;
+//   3. в коде зоны **нет ни одного скина**: ни перечня, ни семени, ни встроенного.
+//
+// Третье — не придирка. Встроенное содержимое означало бы, что человек не отличает «служба
+// отдала мой скин» от «показываю своё», и расхождение он нашёл бы у коллеги, а не у себя.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { generateSkinCss } from "@omnifield/probe-web-skin";
 import { DARK_CLASS, FORCE_ATTRIBUTE, SKIN_LAYER } from "@omnifield/probe-web-skin/model";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { GRAPHITE } from "../src/skins/graphite.js";
-import { SEED } from "../src/skins/index.js";
+import { SKIN_SOURCE } from "../src/skins/index.js";
+import { FIXTURE } from "./fixtures.js";
+import { restoreStore, serveSkins } from "./store-stub.js";
 
-/** Текст порождается один раз: он один и тот же для всех проверок ниже. */
-const css = generateSkinCss(GRAPHITE, passportOf);
+beforeEach(() => serveSkins(FIXTURE));
+afterEach(restoreStore);
 
-/**
- * Исходник записи — для проверок «чего в ней нет».
- *
- * Путь считается от корня зоны, а не от `import.meta.url`: порождение тянет за собой postcss, а
- * с ним в jsdom приезжает браузерная половина `node:url`, и адрес пробы перестаёт быть файловым.
- * Комментарии вырезаны — в них имена НАЗЫВАЮТСЯ (объяснить запрет, не назвав запрещённое,
- * нельзя), но ничего не адресуют.
- */
-const source = readFileSync(resolve(process.cwd(), "src/skins/graphite.ts"), "utf8").replaceAll(
-  /\/\/.*$/gm,
-  "",
-);
+/** Исходники зоны — для проверок «чего в них нет». */
+function sources(): { path: string; text: string }[] {
+  const dir = resolve(process.cwd(), "src/skins");
 
-describe("запись собирается", () => {
-  it("генератор принимает скин целиком", () => {
-    expect(() => generateSkinCss(GRAPHITE, passportOf)).not.toThrow();
+  return readdirSync(dir).map((name) => ({
+    path: name,
+    text: readFileSync(resolve(dir, name), "utf8"),
+  }));
+}
+
+describe("запись доезжает из службы и собирается", () => {
+  it("источник отдаёт готовый текст стилей", async () => {
+    const css = await SKIN_SOURCE.css(FIXTURE.name);
+
+    expect(css).toContain(`@layer ${SKIN_LAYER}`);
+    expect(css.length).toBeGreaterThan(100);
   });
 
-  it("в коде зоны он — СЕМЯ, а не перечень", () => {
-    // Семя одно и вывозится под своим именем: им засевают пустую службу командой. Локального
-    // перечня скинов в зоне нет вовсе — два перечня расходятся молча, и это уже оплачено.
-    expect(SEED).toBe(GRAPHITE);
+  it("часть адресована парой атрибутов из анатомии", async () => {
+    const css = await SKIN_SOURCE.css(FIXTURE.name);
 
-    const index = readFileSync(resolve(process.cwd(), "src/skins/index.ts"), "utf8");
-
-    expect(index).toContain("listSkins");
-    expect(index).not.toMatch(/const SKINS|Record<string, Skin>/);
-  });
-
-  it("умолчание объявлено — вариации без него были бы двумя адресами", () => {
-    const recipe = GRAPHITE.recipes.button;
-
-    expect(recipe?.defaultVariant).toBeDefined();
-    expect(Object.keys(recipe?.variants ?? {})).toContain(recipe?.defaultVariant ?? "");
-  });
-});
-
-describe("порождённый CSS адресует координатами", () => {
-  it("часть — парой атрибутов из анатомии", () => {
     expect(css).toContain('[data-scope="button"][data-part="root"]');
   });
 
-  it("вариация — именем, которое объявил сам скин", () => {
-    for (const name of Object.keys(GRAPHITE.recipes.button?.variants ?? {})) {
+  it("вариации — именами, которые объявил сам скин", async () => {
+    const css = await SKIN_SOURCE.css(FIXTURE.name);
+
+    for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
+      // Умолчание сводится с отсутствием атрибута, поэтому его имя ищем в паре с `:not`.
       expect(css).toContain(`[data-variant="${name}"]`);
     }
   });
 
-  it("состояние кита — его атрибутом, состояние браузера — псевдоклассом с признаком", () => {
+  it("состояние кита — атрибутом, состояние браузера — псевдоклассом с признаком", async () => {
+    const css = await SKIN_SOURCE.css(FIXTURE.name);
+
     expect(css).toContain("[data-disabled]");
     expect(css).toContain(":hover");
     expect(css).toContain(FORCE_ATTRIBUTE);
   });
 
-  it("уезжает в свой слой каскада", () => {
-    expect(css).toContain(`@layer ${SKIN_LAYER}`);
-  });
+  it("тёмная половина следует за режимом", async () => {
+    const css = await SKIN_SOURCE.css(FIXTURE.name);
 
-  it("тёмная половина следует за режимом", () => {
     expect(css).toContain(DARK_CLASS);
     expect(css).toContain("--skin-ink");
   });
+
+  it("имени, которого в службе нет, отказывают", async () => {
+    await expect(SKIN_SOURCE.css("нет-такого")).rejects.toThrow();
+  });
 });
 
-describe("чего в записи нет", () => {
-  it("ни одного селектора", () => {
-    expect(source).not.toMatch(/data-scope|data-part|data-variant|data-slot/);
-    expect(source).not.toMatch(/:hover|:focus-visible|:active/);
+describe("в коде зоны скинов нет", () => {
+  it("в источнике нет ни одной записи скина", () => {
+    for (const { path, text } of sources()) {
+      const withoutComments = text.replaceAll(/\/\/.*$/gm, "").replaceAll(/\/\*[\s\S]*?\*\//g, "");
+
+      // Запись скина узнаётся по своим полям: рецепты и переменные. Тип-импорт `Skin` при этом
+      // законен — разбор ответа службы обязан её называть.
+      expect(withoutComments, path).not.toMatch(/recipes\s*:/);
+      expect(withoutComments, path).not.toMatch(/defaultVariant\s*:/);
+      expect(withoutComments, path).not.toMatch(/variables\s*:/);
+    }
   });
 
-  it("ни одного имени из нашего набора значений", () => {
-    // Наши роли и шкалы: `--brand-9`, `--space-4`, `--radius-md`, `--text-muted`…
-    // Собственные переменные скина начинаются с `skin-`, и спутать их нельзя.
-    const ours = [...source.matchAll(/var\(\s*--([a-z0-9-]+)/gu)].map((match) => match[1]);
+  it("перечень скинов запрашивается, а не объявляется", () => {
+    const index = sources().find((file) => file.path === "index.ts");
 
-    expect(ours.length).toBeGreaterThan(0);
-    for (const name of ours) expect(name).toMatch(/^skin-/);
+    expect(index?.text).toContain("listSkins");
+    expect(index?.text).not.toMatch(/const SKINS|Record<string, Skin>/);
+  });
+
+  it("команды засева нет — скины делает человек", () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+    ) as { scripts?: Record<string, string> };
+
+    expect(Object.keys(manifest.scripts ?? {})).not.toContain("seed:skins");
   });
 });

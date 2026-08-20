@@ -16,11 +16,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/showcase/app.jsx";
 import { BUTTON_CASES, CASES } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
-import { SEED } from "../src/skins/index.js";
+
 import { cleanup, mount } from "./dom.jsx";
+import { FIXTURE } from "./fixtures.js";
 import { restoreStore, serveSkins } from "./store-stub.js";
 
-beforeEach(() => serveSkins(SEED));
+beforeEach(() => serveSkins(FIXTURE));
 
 afterEach(() => {
   restoreStore();
@@ -124,7 +125,7 @@ describe("отрисовка", () => {
     // законно — называть нечего.
     await vi.waitFor(() => {
       const shown = host.textContent ?? "";
-      for (const name of Object.keys(SEED.recipes.button?.variants ?? {})) {
+      for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
         expect(shown).toContain(name);
       }
     });
