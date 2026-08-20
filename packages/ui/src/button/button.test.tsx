@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, mount, one } from "../../test/dom.jsx";
+import { admits } from "../passport-form.js";
 import { anatomy, parts, passport } from "./button.anatomy.js";
 import { Button } from "./button.jsx";
 
@@ -289,6 +290,47 @@ describe("паспорт: ось вариаций", () => {
   });
 });
 
+describe("паспорт: что допустимо внутри", () => {
+  // Кнопка пускает внутрь подпись и значок — и это записано РОДОМ, а не именами компонентов
+  // (`PWEB-24`). Проба сторожит обе стороны: объявленное действительно доезжает до живого узла,
+  // а необъявленное машина отвергает.
+  //
+  // Честный предел: отвергает РЕДАКТОР, а не DOM. Положить в `<button>` можно что угодно, и
+  // проверить отказ на узле нельзя в принципе — правило вложенности это обещание тому, кто
+  // собирает дерево. Поэтому здесь спрашивается `admits`, а не разметка.
+  const root = passport.parts.find((part) => part.name === passport.root);
+
+  if (!root) throw new Error("у кнопки нет добавки на корневую часть");
+
+  it("объявляет допустимым текст и значок — и ничего сверх того", () => {
+    expect(admits(root, { kind: "content", genus: "text" })).toBe(true);
+    expect(admits(root, { kind: "content", genus: "icon" })).toBe(true);
+  });
+
+  it("отвергает компонент — раскладке внутри кнопки места нет", () => {
+    // Род кандидата берётся из ЕГО паспорта. Здесь это паспорт самой кнопки: кнопка в кнопке —
+    // ровно то вложение, которое обязано отвергаться, и второй компонент для проверки не нужен.
+    expect(admits(root, { kind: "content", genus: passport.genus })).toBe(false);
+  });
+
+  it("объявленное доезжает до живого узла: подпись и значок видны внутри кнопки", () => {
+    const host = mount(() => (
+      <Button>
+        <svg data-проба="значок" />
+        Сохранить
+      </Button>
+    ));
+    const node = one(host, "button");
+
+    expect(node.textContent).toBe("Сохранить");
+    expect(node.querySelector("[data-проба='значок']")).not.toBeNull();
+  });
+
+  it("род компонента объявлен — иначе кандидата опознавали бы по имени пакета", () => {
+    expect(passport.genus).toBe("component");
+  });
+});
+
 describe("паспорт: форма", () => {
   const declared = passport.parts.map((part) => part.name);
 
@@ -306,9 +348,11 @@ describe("паспорт: форма", () => {
     expect(passport.component).toBe(parts[passport.root].attrs["data-scope"]);
   });
 
-  it("правила вложенности ссылаются на существующие части", () => {
+  it("правило вложенности ссылается на существующие части", () => {
     for (const part of passport.parts) {
-      for (const child of part.children) expect(declared).toContain(child);
+      for (const allowed of part.accepts ?? []) {
+        if (allowed.kind === "part") expect(declared).toContain(allowed.name);
+      }
     }
   });
 
