@@ -24,8 +24,15 @@
 import { readAddress, type Registry } from "./registry.js";
 import { type AssemblyTree, type NodeId } from "./tree.js";
 
-/** Паспортная половина координаты: компонент и его часть. */
-export interface Coordinate {
+/**
+ * Паспортная ПОЛОВИНА координаты: компонент и его часть.
+ *
+ * Имя разведено с китовым намеренно. Читатель паспорта под вид отдаёт `SkinCoordinate` —
+ * полный адрес правила (часть, состояния, вариация, предок), снятый с ЖИВОГО узла разметки.
+ * Здесь — то, что известно по адресу узла В ДЕРЕВЕ, до всякой разметки. Оба попадут в один
+ * редактор, и одноимённые функции с разным предметом там пришлось бы различать по памяти.
+ */
+export interface NodeCoordinate {
   /** Адрес компонента в реестре. */
   readonly component: string;
   /** Часть компонента — та, что уедет в адрес правила скина. */
@@ -42,12 +49,12 @@ export interface Coordinate {
 }
 
 /**
- * Координата узла по его адресу, либо `undefined` — если адрес реестру неизвестен.
+ * Координата по адресу узла, либо `undefined` — если адрес реестру неизвестен.
  *
  * @param registry реестр
- * @param type адрес узла
+ * @param type адрес узла — то же поле `type`, которым узел адресуется в дереве
  */
-export function coordinateOf(registry: Registry, type: string): Coordinate | undefined {
+export function coordinateOfType(registry: Registry, type: string): NodeCoordinate | undefined {
   const read = readAddress(registry, type);
   if (!read) return undefined;
 
@@ -71,7 +78,7 @@ export function nodesByCoordinate(
   const groups = new Map<string, NodeId[]>();
 
   for (const [id, node] of Object.entries(tree.components.nodes)) {
-    const coordinate = coordinateOf(registry, node.type);
+    const coordinate = coordinateOfType(registry, node.type);
     if (!coordinate) continue;
 
     const kin = groups.get(coordinate.address);
@@ -101,7 +108,7 @@ export function nodesSharingCoordinate(
   const node = tree.components.nodes[nodeId];
   if (!node) return undefined;
 
-  const coordinate = coordinateOf(registry, node.type);
+  const coordinate = coordinateOfType(registry, node.type);
   if (!coordinate) return undefined;
 
   return (nodesByCoordinate(tree, registry).get(coordinate.address) ?? []).filter(

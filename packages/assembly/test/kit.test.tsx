@@ -15,10 +15,11 @@
 // Кит здесь — `devDependency`; в поставку механики он не едет.
 
 import { Button } from "@omnifield/probe-web-ui";
-import { passportOf, admits } from "@omnifield/probe-web-ui/passport";
+import { admits, coordinateOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { ReadablePassport } from "../src/passport-read.js";
+import { coordinateOfType } from "../src/coordinate.js";
 import { createRegistry } from "../src/registry.js";
 import { RenderTree } from "../src/render.jsx";
 import type { AssemblyTree } from "../src/tree.js";
@@ -69,6 +70,26 @@ describe("дерево из настоящих компонентов кита",
     expect(button.getAttribute("data-scope")).toBe("button");
     expect(button.getAttribute("data-part")).toBe("root");
     expect(button.getAttribute("data-node")).toBe("сохранить");
+  });
+
+  it("шов сходится: координата с живого узла совпадает с координатой по адресу", () => {
+    // Две половины моста написаны в РАЗНЫХ зонах и разными людьми: кит снимает координату с
+    // живого узла разметки, механика — с адреса узла в дереве. Совпадение здесь и есть шов;
+    // разъедься он — редактор одел бы одно, а показал другое, и обе стороны были бы зелёными.
+    const host = mount(() => <RenderTree tree={tree} registry={registry} />);
+    const button = host.querySelector("button") as Element;
+
+    const fromMarkup = coordinateOf(button, passportOf);
+    const fromTree = coordinateOfType(registry, "button");
+
+    // Сначала — что обе стороны вообще ответили: сравнение двух `undefined` совпало бы и было
+    // бы зелёным от пустоты.
+    expect(fromMarkup).toBeDefined();
+    expect(fromTree).toBeDefined();
+
+    expect(fromMarkup?.component).toBe(fromTree?.component);
+    expect(fromMarkup?.part).toBe(fromTree?.part);
+    expect(fromTree?.part).toBe("root");
   });
 
   it("украшенный узел подписан так же — путь редактора не меняет адресации", () => {

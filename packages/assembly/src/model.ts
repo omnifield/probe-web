@@ -39,8 +39,8 @@ export {
   possibleOwnersOf,
 } from "./nesting.js";
 
-export type { Coordinate } from "./coordinate.js";
-export { coordinateOf, nodesByCoordinate, nodesSharingCoordinate } from "./coordinate.js";
+export type { NodeCoordinate } from "./coordinate.js";
+export { coordinateOfType, nodesByCoordinate, nodesSharingCoordinate } from "./coordinate.js";
 
 export type { SketchNaming } from "./sketch.js";
 export { sketchOf } from "./sketch.js";

@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { coordinateOf, nodesByCoordinate, nodesSharingCoordinate } from "../src/coordinate.js";
+import {
+  coordinateOfType,
+  nodesByCoordinate,
+  nodesSharingCoordinate,
+} from "../src/coordinate.js";
 import { checkTree } from "../src/integrity.js";
 import { canContain } from "../src/nesting.js";
 import { createRegistry } from "../src/registry.js";
@@ -138,12 +142,12 @@ describe("координата узла", () => {
   };
 
   it("адрес компонента и адрес его корневой части — ОДНА координата", () => {
-    expect(coordinateOf(registry, "button")).toEqual({
+    expect(coordinateOfType(registry, "button")).toEqual({
       component: "button",
       part: "root",
       address: "button",
     });
-    expect(coordinateOf(registry, "button.root")).toEqual(coordinateOf(registry, "button"));
+    expect(coordinateOfType(registry, "button.root")).toEqual(coordinateOfType(registry, "button"));
   });
 
   it("узлы раскладываются по координатам", () => {

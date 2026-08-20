@@ -75,7 +75,7 @@ describe("собранное", () => {
       "checkTree",
       "possibleOwnersOf",
       "ownersAdmitting",
-      "coordinateOf",
+      "coordinateOfType",
       "nodesSharingCoordinate",
       "sketchOf",
       "insertNode",
