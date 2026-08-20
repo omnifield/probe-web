@@ -1,0 +1,35 @@
+{
+  "//": [
+    "Конфиг САМОГО пакета. Своего `tsconfig` наружу зона не отдаёт — базу приложениям задаёт",
+    "зона `build` подпутём `/tsconfig` (kb:PROBEWEB-4).",
+    "",
+    "JSX здесь настроен ТОЛЬКО ради проб: сама механика скина ни одного компонента не рисует —",
+    "она превращает данные в текст. Живая кнопка нужна пробе `test/kit.test.tsx`, которая",
+    "проверяет адресацию на НАСТОЯЩЕЙ разметке кита, а не на разметке, собранной пробой по",
+    "нашему же представлению о ней."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    // Исходники в тарбол не едут (`files` манифеста), поэтому карта обязана нести их в себе —
+    // иначе у потребителя она указывает в пустоту.
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts", "scripts"],
+  "exclude": ["dist", "node_modules"]
+}

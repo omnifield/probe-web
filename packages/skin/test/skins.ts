@@ -1,0 +1,67 @@
+// СКИН ДЛЯ ПРОБ — кнопка, одетая целиком.
+//
+// Это ПРОБА, а не одежда. Содержимое скина — предмет зоны `products/skin`, и сюда оно не едет:
+// здесь механика, и скин нужен ей ровно как вход, на котором проверяется порождение. Значения
+// подобраны так, чтобы каждое требование гейта имело чем проверяться, а не чтобы кнопка была
+// красивой.
+//
+// Обкатка идёт на кнопке (страница «Скин», раздел «Обкатка»): остальные компоненты одеваются
+// волной разноса, по одному.
+
+import type { Skin } from "../src/model.js";
+
+/** Имена значений, которые проба объявляет известными: словарь приходит снаружи. */
+export const VOCABULARY = ["radius-md", "brand-9", "brand-10", "danger-9", "space-3"];
+
+/** Кнопка: база, три вариации, умолчание, состояния и пересечение. */
+export const buttonSkin: Skin = {
+  name: "проба",
+  variables: {
+    light: { "skin-ink": "oklch(0.2 0 0)", "skin-ring": "oklch(0.6 0.1 250)" },
+    dark: { "skin-ink": "oklch(0.98 0 0)", "skin-ring": "oklch(0.7 0.1 250)" },
+  },
+  keyframes: {
+    пульс: { from: { opacity: "1" }, to: { opacity: "0.4" } },
+  },
+  recipes: {
+    button: {
+      base: {
+        root: {
+          props: {
+            display: "inline-flex",
+            alignItems: "center",
+            paddingInline: "var(--space-3)",
+            borderRadius: "var(--radius-md)",
+            color: "var(--skin-ink)",
+            // Литерал, а не ссылка: пробы каскада сравнивают ВЫЧИСЛЕННЫЙ цвет, а `var()` в
+            // jsdom не разрешается — сравнивать было бы нечего.
+            backgroundColor: "rgb(7, 7, 7)",
+          },
+          states: {
+            hover: { props: { opacity: "0.9" } },
+            "focus-visible": { props: { outline: "2px solid var(--skin-ring)" } },
+            disabled: {
+              props: { opacity: "0.4" },
+              // Пересечение состояний вложением: у отключённой кнопки наведения быть не должно.
+              states: { hover: { props: { opacity: "0.4" } } },
+            },
+            busy: { props: { animation: "пульс 1s infinite" } },
+          },
+        },
+      },
+      variants: {
+        главная: { root: { props: { backgroundColor: "rgb(1, 2, 3)" } } },
+        тихая: { root: { props: { backgroundColor: "transparent" } } },
+        опасная: { root: { props: { backgroundColor: "var(--danger-9)" } } },
+      },
+      defaultVariant: "главная",
+      compoundVariants: [
+        {
+          variants: ["главная", "опасная"],
+          states: ["hover"],
+          style: { root: { props: { filter: "brightness(1.1)" } } },
+        },
+      ],
+    },
+  },
+};

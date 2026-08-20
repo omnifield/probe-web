@@ -1,11 +1,55 @@
 {
   "name": "@omnifield/probe-web-skin",
   "version": "0.0.0",
-  "type": "module",
+  "description": "Механика скина probe-web: модель, сборка рецепта по частям, адресация из анатомии и порождение CSS (PWEB-4). Механика — фреймворк; сама одежда живёт продуктом.",
   "license": "UNLICENSED",
+  "type": "module",
   "sideEffects": false,
-  "files": ["dist", "README.md"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./model": {
+      "types": "./dist/model.d.ts",
+      "default": "./dist/model.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "@pandacss/core": "^1.12.0"
+  },
+  "peerDependencies": {
+    "@omnifield/probe-web-ui": "^0.1.0"
+  },
+  "devDependencies": {
+    "@csstools/postcss-cascade-layers": "^5.0.2",
+    "@kobalte/core": "^0.13.12",
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@omnifield/probe-web-ui": "workspace:*",
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.10.1",
+    "@zag-js/anatomy": "^1.43.1",
+    "esbuild": "^0.27.7",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.5.14",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
   }
 }
