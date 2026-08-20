@@ -399,9 +399,15 @@ importers:
 
   products/skin:
     dependencies:
+      '@omnifield/probe-web-assembly':
+        specifier: workspace:*
+        version: link:../../packages/assembly
       '@omnifield/probe-web-runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@omnifield/probe-web-skin':
+        specifier: workspace:*
+        version: link:../../packages/skin
       '@omnifield/probe-web-style':
         specifier: workspace:*
         version: link:../../packages/style
@@ -412,9 +418,6 @@ importers:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@iconify-json/lucide':
-        specifier: ^1.2.123
-        version: 1.2.123
       '@omnifield/probe-web-build':
         specifier: workspace:*
         version: link:../../packages/build
@@ -500,12 +503,6 @@ importers:
       '@omnifield/probe-web-style':
         specifier: workspace:*
         version: link:../../../packages/style
-      '@omnifield/probe-web-ui':
-        specifier: workspace:*
-        version: link:../../../packages/ui
-      '@probe-web/skin':
-        specifier: workspace:*
-        version: link:../../../products/skin
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
@@ -1016,12 +1013,6 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
-
-  '@iconify-json/lucide@1.2.123':
-    resolution: {integrity: sha512-0CozmpKXEOEEhltrfT2zt+/t1hez67Y+hM2VJWoIcBKdBrb83VYuKf+b5A0QU9HfQm+RNn2GjFWlTOwi+Ss6IA==}
-
-  '@iconify/types@2.0.0':
-    resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
   '@internationalized/number@3.6.7':
     resolution: {integrity: sha512-3ji1fcrT+FPAK86UqEhB/psHixYo6niWPJtt7+qRaYFynt/BaJG8GhAPimtWUpEiVSTq8ZM8L5psMxGquiB/Vg==}
@@ -2783,12 +2774,6 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
-
-  '@iconify-json/lucide@1.2.123':
-    dependencies:
-      '@iconify/types': 2.0.0
-
-  '@iconify/types@2.0.0': {}
 
   '@internationalized/number@3.6.7':
     dependencies:

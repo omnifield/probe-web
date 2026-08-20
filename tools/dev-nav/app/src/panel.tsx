@@ -1,28 +1,23 @@
 // Девпанель: вкладки зон и выбор оформления.
 //
-// Собрана на нашем ките — панель показывает производство собой самой, а не рассказывает о нём.
-// Вкладки и список выбора приходят готовыми: клавиатуру, фокус и `aria-*` делает kobalte, вид —
-// оформление из `skin`. Ничего из этого здесь не имитируется разметкой.
+// СОБРАНА НА НАТИВНЫХ ЭЛЕМЕНТАХ, и это временно (решение user 2026-08-20). Прежде панель
+// стояла на ките и одевалась прежним поколением оформления; поколение снято целиком, а новый
+// скин ещё не написан. Панель — рабочий инструмент, и ждать она не может.
+//
+// Что из этого следует, чтобы возврат на кит был дешёвым:
+//   • ЛОГИКА НЕ ЗАВИСИТ ОТ РАЗМЕТКИ. Опрос зон, применение выбора, наблюдение за кадром — всё
+//     работает поверх сигналов и не знает, чем нарисовано. Возврат трогает только разметку;
+//   • ДОСТУПНОСТЬ НЕ ИМИТИРУЕТСЯ. Там, где нативный элемент её даёт сам (`select`, `button`),
+//     берётся он. Там, где не даёт (вкладки), роли расставлены руками и помечены как долг —
+//     подделывать клавиатурный обход вкладок здесь не станем, это работа кита;
+//   • СВОЙ ВИД ЗНАЕТ, ЧТО ОН ВРЕМЕННЫЙ. Значения берутся ролями слоя, а не литералами: когда
+//     приедет скин, панель сменит разметку, а не палитру.
 //
 // ЗОНЫ ПОКАЗЫВАЮТСЯ ТОЛЬКО ПОДНЯТЫЕ (решение user): вкладка, которую нельзя открыть, — это шум.
 // Поднявшаяся зона появляется сама в течение нескольких секунд.
 
 import { applySkin, readSkin, restoreSkin, type SkinChoice } from "@omnifield/probe-web-runtime";
 import { DEFAULT_PALETTE, themeModelToCss, type ThemeModel } from "@omnifield/probe-web-style";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectItemLabel,
-  SelectListbox,
-  SelectPortal,
-  SelectTrigger,
-  SelectValue,
-  Tabs,
-  TabsIndicator,
-  TabsList,
-  TabsTrigger,
-} from "@omnifield/probe-web-ui";
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 interface Zone {
@@ -38,8 +33,8 @@ interface PresetItem {
 }
 
 // ВЫБОР ДЕРЖИТ РАНТАЙМ, а не панель. Своего хранилища здесь больше нет: запоминание выбора —
-// часть механики (`kb:PROBEWEB-13`), и второй ключ рядом означал бы два места, где живёт ответ
-// на вопрос «чем страница одета». Панель — первый живой потребитель этой механики.
+// часть механики, и второй ключ рядом означал бы два места, где живёт ответ на вопрос «чем
+// страница одета». Панель — первый живой потребитель этой механики.
 
 export function Panel() {
   const [zones, setZones] = createSignal<Zone[]>([]);
@@ -53,21 +48,10 @@ export function Panel() {
   const live = createMemo(() => zones().filter((zone) => zone.up));
 
   /**
-   * Применить выбор к себе и к открытой зоне.
-   *
-   * ВРЕМЕННО: панель ставит выбор зоне напрямую. Это костыль до механики
-   * (`tasker:PROBEWEB-52`), где зона читает общий выбор САМА при запуске. Работает только
-   * потому, что зоны проксируются через этот же порт — origin общий.
-   */
-  /**
    * Собрать стили выбранного пресета ИЗ СЛУЖБЫ.
    *
-   * Служба хранит МОДЕЛЬ, а не готовый файл (`kb:PROBEWEB-8`: бэк хранит, зона понимает).
-   * Собирает из неё вид генератор БАЗЫ — `themeModelToCss` переехал в `style` (`kb:PROBEWEB-15`),
-   * и своего пути сборки у панели быть не должно.
-   *
-   * Прежде здесь читалось поле `record.state.css`, которого в записи нет и не было: пресет
-   * выбирался и молча не применялся.
+   * Служба хранит МОДЕЛЬ, а не готовый файл: бэк хранит, зона понимает. Собирает из неё вид
+   * генератор БАЗЫ, и своего пути сборки у панели быть не должно.
    */
   async function applyPresetCss(id: string | null) {
     const tag = document.getElementById("preset-css");
@@ -99,7 +83,7 @@ export function Panel() {
     if (!same) setLook(next);
 
     // СВОЯ страница — штатной механикой рантайма, а не своим атрибутом: второй способ надеть
-    // скин означал бы второе место, где живёт это знание (`kb:PROBEWEB-13`).
+    // скин означал бы второе место, где живёт это знание.
     applySkin({ preset: next.preset, mode: next.mode, remember });
     void applyPresetCss(next.preset);
 
@@ -157,9 +141,9 @@ export function Panel() {
   }
 
   async function open(id: string) {
-    // Ранний выход — НЕ оптимизация, а защита от петли: вкладки контролируются `value`, их
-    // `onChange` срабатывает и при перерисовке, а смена ключа кадра ниже перезагружает зону.
-    // Без этой строки зона перезагружается бесконечно и вешает вкладку браузера.
+    // Ранний выход — НЕ оптимизация, а защита от петли: смена ключа кадра ниже перезагружает
+    // зону, а обработчик срабатывает и при перерисовке. Без этой строки зона перезагружается
+    // бесконечно и вешает вкладку браузера.
     if (!id || id === current()) return;
     await fetch(`/__nav/switch?zone=${encodeURIComponent(id)}`, { method: "POST" });
     setCurrent(id);
@@ -209,69 +193,54 @@ export function Panel() {
         </span>
 
         <Show when={live().length > 0}>
-          <Tabs
-            class="panel-tabs"
-            value={current()}
-            onChange={(id: string) => void open(id)}
-          >
-            <TabsList>
-              <For each={live()}>
-                {(zone) => (
-                  <TabsTrigger value={zone.id} title={`порт ${zone.port}`}>
-                    {zone.label}
-                  </TabsTrigger>
-                )}
-              </For>
-              <TabsIndicator />
-            </TabsList>
-          </Tabs>
+          {/* ДОЛГ, названный вслух: роли расставлены, но клавиатурный обход стрелками здесь
+              НЕ сделан. Подделывать его разметкой не станем — это работа кита, и она вернётся
+              вместе с ним. Пока вкладки доступны обходом по Tab, как обычные кнопки. */}
+          <div class="panel-tabs" role="tablist" aria-label="Зоны">
+            <For each={live()}>
+              {(zone) => (
+                <button
+                  type="button"
+                  class="panel-tab"
+                  role="tab"
+                  aria-selected={current() === zone.id}
+                  title={`порт ${zone.port}`}
+                  onClick={() => void open(zone.id)}
+                >
+                  {zone.label}
+                </button>
+              )}
+            </For>
+          </div>
         </Show>
 
         <div class="panel-look">
           {/* Есть сохранённые оформления — список. Нет — ничего: подпись про пустоту
               занимает место и ничего не говорит (решение user). */}
           <Show when={presets().length > 0}>
-            <Select<PresetItem>
-              options={presets()}
-              optionValue="id"
-              optionTextValue="label"
-              placeholder="оформление"
-              value={presets().find((item) => item.id === look().preset)}
-              onChange={(item: PresetItem | null) =>
-                apply({ ...look(), preset: item?.id ?? null })
-              }
-              itemComponent={(itemProps) => (
-                <SelectItem item={itemProps.item}>
-                  <SelectItemLabel>{itemProps.item.rawValue.label}</SelectItemLabel>
-                </SelectItem>
-              )}
+            <select
+              class="panel-select"
+              aria-label="Оформление"
+              value={look().preset ?? ""}
+              onChange={(event) => apply({ ...look(), preset: event.currentTarget.value || null })}
             >
-              <SelectTrigger>
-                <SelectValue<PresetItem>>
-                  {(state) => state.selectedOption()?.label ?? "оформление"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectPortal>
-                <SelectContent>
-                  <SelectListbox />
-                </SelectContent>
-              </SelectPortal>
-            </Select>
+              <For each={presets()}>
+                {(item) => <option value={item.id}>{item.label}</option>}
+              </For>
+            </select>
           </Show>
 
           <button
-            data-slot="button"
-            data-variant="outline"
-            data-size="sm"
+            type="button"
+            class="panel-btn"
             title="Светлая или тёмная пара"
             onClick={() => apply({ ...look(), mode: look().mode === "light" ? "dark" : "light" })}
           >
             ◐
           </button>
           <button
-            data-slot="button"
-            data-variant="ghost"
-            data-size="sm"
+            type="button"
+            class="panel-btn panel-btn-quiet"
             title="Перезагрузить зону"
             onClick={() => setNonce((n) => n + 1)}
           >
