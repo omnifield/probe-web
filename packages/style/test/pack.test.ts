@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -29,6 +30,8 @@ describe("pnpm pack", () => {
       expect.arrayContaining([
         "dist/index.js",
         "dist/index.d.ts",
+        "dist/values.js",
+        "dist/values.d.ts",
         "dist/css/base.css",
         "dist/css/themes.css",
         "dist/css/generate.js",
@@ -87,6 +90,12 @@ describe("разрешение из установки", () => {
     );
   });
 
+  it("подпуть `/values` резолвится в узкий вход", () => {
+    expect(req().resolve(`${PKG}/values`)).toBe(
+      join(install, "node_modules", PKG, "dist", "values.js"),
+    );
+  });
+
   it("внутренние файлы наружу не торчат — только объявленные подпути", () => {
     expect(() => req().resolve(`${PKG}/dist/tokens.js`)).toThrow();
   });
@@ -116,5 +125,65 @@ describe("разрешение из установки", () => {
       "dist",
       "package.json",
     ]);
+  });
+});
+
+// Узкий вход обещан БЕЗ Solid (`PWEB-44`), и проверяется это ЗАПУСКОМ в установке, где Solid
+// физически нет, а не чтением манифеста: манифест расходится с фактом молча.
+//
+// Установка здесь та же, что выше, — распакованный тарбол и ничего больше: ни `solid-js`, ни
+// прочего dev-обвеса. Импорт идёт ОТДЕЛЬНЫМ процессом node с рабочей папкой потребителя, чтобы
+// спецификатор разрешался по `exports` поставки, а не по нашему `node_modules`.
+describe("Solid в чистой установке", () => {
+  /** Пробует импорт в установке потребителя. Возвращает пусто при успехе, иначе — текст отказа. */
+  const tryImport = (specifier: string): string => {
+    try {
+      execFileSync(
+        process.execPath,
+        ["--input-type=module", "-e", `await import(${JSON.stringify(specifier)});`],
+        { cwd: install, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      );
+      return "";
+    } catch (error) {
+      const failed = error as { stdout?: string; stderr?: string };
+      return `${failed.stdout ?? ""}${failed.stderr ?? ""}`.trim();
+    }
+  };
+
+  it("узкий вход поднимается там, где `solid-js` не установлен", () => {
+    expect(tryImport(`${PKG}/values`)).toBe("");
+  });
+
+  it("корневой вход в той же установке НЕ поднимается — и это положительный контроль", () => {
+    // Без этой половины зелёная проба выше значила бы и «Solid узкому входу не нужен», и
+    // «проверка до Solid вообще не дошла». Корень его требует — значит установка честно
+    // чистая, и первая проба меряет то, что заявлено.
+    expect(tryImport(PKG)).toMatch(/Cannot find package 'solid-js'/);
+  });
+
+  it("порождение CSS тоже обходится без Solid — подпуть зовёт чужая зона", () => {
+    // `/generate` Solid не тянул и раньше, но держалось это тем, что никто не дописал в него
+    // импорт. Теперь держится гейтом.
+    expect(tryImport(`${PKG}/generate`)).toBe("");
+  });
+
+  it("`solid-js` объявлен НЕОБЯЗАТЕЛЬНЫМ одноранговым", () => {
+    // Без этого поля обещание «узкий вход не тянет Solid» верно только для графа модулей:
+    // pnpm с 8-й версии доставляет одноранговые сам (`auto-install-peers` включён по
+    // умолчанию, проверено на pnpm 11), и Solid приехал бы на диск и тому, кто взял только
+    // `/values`. Поле — не послабление, а точное описание факта: Solid нужен ровно одному
+    // входу из четырёх.
+    //
+    // Цена названа: потребитель КОРНЕВОГО входа, забывший поставить Solid, узнает об этом при
+    // запуске, а не при установке. Взвешено замером — все сегодняшние потребители корня
+    // (`apps/reference`, `products/skin`, `products/tables`) объявляют `solid-js` у себя
+    // напрямую, то есть теряют они ровно ничего.
+    const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
+      peerDependencies?: Record<string, string>;
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>;
+    };
+
+    expect(manifest.peerDependencies?.["solid-js"]).toBeDefined();
+    expect(manifest.peerDependenciesMeta?.["solid-js"]?.optional).toBe(true);
   });
 });

@@ -105,6 +105,38 @@ beforeAll(() => {
   );
   writeFileSync(join(install, "tsconfig.generate.json"), tsconfig(["generate.ts"]), "utf8");
 
+  // Узкий вход (`PWEB-44`) — такая же публичная поверхность, как корневая, и типизироваться у
+  // потребителя обязан так же. Берём из него по имени из каждой части: шкалы, цвет, роли,
+  // размерности — иначе прогон был бы зелёным и на пустом файле.
+  writeFileSync(
+    join(install, "values.ts"),
+    [
+      `import { AA_TEXT, ROLE_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}/values";`,
+      `import type { ParsedColor, ScaleMode } from "${PKG}/values";`,
+      "",
+      "export const mode: ScaleMode = 'dark';",
+      "export const names: readonly string[] = [...SCALE_TOKENS, ...ROLE_TOKENS];",
+      "export const parsed: ParsedColor = tryParseColor('hsl(210 40% 25%)');",
+      "export const ok: boolean = contrastRatio('#000000', '#ffffff') >= AA_TEXT;",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  writeFileSync(join(install, "tsconfig.values.json"), tsconfig(["values.ts"]), "utf8");
+
+  // Негатив к нему же: реактивная часть в узкий вход НЕ попадает. Без этой пробы «узкий вход
+  // типизируется» означало бы и «он узкий», и «он просто копия корневого».
+  writeFileSync(
+    join(install, "values-reactive.ts"),
+    `import { createThemeController } from "${PKG}/values";\nexport { createThemeController };\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(install, "tsconfig.values-reactive.json"),
+    tsconfig(["values-reactive.ts"]),
+    "utf8",
+  );
+
   writeFileSync(join(install, "no-extension.ts"), `import "${PKG}/css";\n`, "utf8");
   writeFileSync(
     join(install, "tsconfig.no-extension.json"),
@@ -137,6 +169,20 @@ describe("типизация у потребителя", () => {
     // потребитель поставки, как приложение: несложившиеся типы здесь означают, что зацеп
     // придётся писать «на любых», а это ровно тот шов, который потом молча разъедется.
     expect(typecheck("tsconfig.generate.json")).toBe("");
+  });
+
+  it("узкий подпуть `/values` типизируется из чистой установки", () => {
+    // Его берут те, кому нужны значения и цвет без реактивности, — в том числе механика скина
+    // для своего подпутя модели (`PWEB-44`). Несложившиеся типы здесь означают, что модель
+    // придётся писать «на любых».
+    expect(typecheck("tsconfig.values.json")).toBe("");
+  });
+
+  it("реактивной части в узком подпути НЕТ — иначе он не узкий", () => {
+    // `TS2305` — «модуль не экспортирует такого имени». Ровно то, что обязан увидеть тот, кто
+    // по привычке возьмёт контроллер темы из узкого входа: подсказка ведёт в корень, а не
+    // молча возвращает Solid туда, откуда его убирали.
+    expect(typecheck("tsconfig.values-reactive.json")).toMatch(/TS2305/);
   });
 
   it("инструментов стилизации на поверхности нет — они отдельная поставка", () => {

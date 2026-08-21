@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./values": {
+      "types": "./dist/values.d.ts",
+      "default": "./dist/values.js"
+    },
     "./generate": {
       "types": "./dist/css/generate.d.ts",
       "default": "./dist/css/generate.js"
@@ -32,6 +36,11 @@
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
+  },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
