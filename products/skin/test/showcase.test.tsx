@@ -250,14 +250,38 @@ describe("отрисовка", () => {
     expect(JSON.stringify(passportOf("button"))).not.toContain("главная");
   });
 
-  it("части и состояния на странице — из паспорта, а не из своего перечня", () => {
+  it("оси перечисляют части и состояния ИЗ ПАСПОРТА, а не из своего словаря", () => {
     const host = mount(() => <App />);
     const passport = passportOf("button");
-    const shown = host.textContent ?? "";
+    const options = [...host.querySelectorAll(".axes__select option")].map(
+      (option) => option.textContent ?? "",
+    );
 
     for (const part of passport?.parts ?? []) {
-      expect(shown).toContain(part.name);
-      for (const state of part.states) expect(shown).toContain(state.name);
+      expect(options).toContain(part.name);
+      for (const state of part.states) expect(options).toContain(state.name);
     }
+  });
+
+  it("витрина показывает вид, а не техничку", () => {
+    const host = mount(() => <App />);
+    const shown = host.textContent ?? "";
+
+    // Долг одевания, перечень частей с назначениями и паспортные факты уехали из витрины
+    // (решение user 2026-08-21): смешение показа и технички портит оба.
+    expect(shown).not.toContain("Долг одевания");
+    expect(shown).not.toContain("поставщик:");
+    expect(host.querySelector(".parts")).toBeNull();
+    expect(host.querySelector(".gaps")).toBeNull();
+  });
+
+  it("переход в редактор говорит правду: его ещё нет", async () => {
+    const host = mount(() => <App />);
+    const [, editor] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
+
+    editor?.click();
+
+    await vi.waitFor(() => expect(host.textContent ?? "").toContain("Редактора ещё нет"));
+    expect(host.querySelectorAll(".case")).toHaveLength(0);
   });
 });

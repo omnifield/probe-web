@@ -30,7 +30,7 @@ import {
   readSkin as readRoot,
   type SkinMode,
 } from "@omnifield/probe-web-runtime";
-import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
+import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   type Component,
   createResource,
@@ -49,8 +49,6 @@ import {
   SKIN_SOURCE,
   type SkinRecord,
 } from "../skins/index.js";
-import { skinGaps, type SkinGap } from "@omnifield/probe-web-skin/model";
-
 import {
   addressOfPart,
   casesOf,
@@ -86,6 +84,15 @@ const BY_GROUP = Object.entries(GROUPS)
 
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
+
+/** Что делают с компонентом: смотрят или правят. Редактор придёт следующим шагом. */
+export type View = "showcase" | "editor";
+
+/** Переходы страницы компонента. Перечень здесь, потому что он про УСТРОЙСТВО пульта. */
+const VIEWS: readonly { id: View; title: string }[] = [
+  { id: "showcase", title: "витрина" },
+  { id: "editor", title: "редактор" },
+];
 
 /** Порог, за которым карточка перестаёт делить строку с соседями. */
 const WIDE_AT = 380;
@@ -146,31 +153,6 @@ function highlight(address: string): Component<EditOverlayProps> {
   return (props) => (
     <Show when={props.node.type === address}>
       <span class="pick" />
-    </Show>
-  );
-}
-
-/** Части компонента — из анатомии, а не из нашего представления о нём. */
-function Parts(props: { component: string }) {
-  const passport = () => passportOf(props.component);
-
-  return (
-    <Show when={passport()}>
-      {(found) => (
-        <ul class="parts">
-          <For each={found().parts}>
-            {(part) => (
-              <li class="parts__item">
-                <code class="parts__name">{part.name}</code>
-                <span class="parts__means">{part.means}</span>
-                <span class="parts__states">
-                  {part.states.map((state) => state.name).join(" · ")}
-                </span>
-              </li>
-            )}
-          </For>
-        </ul>
-      )}
     </Show>
   );
 }
@@ -243,17 +225,28 @@ function Axes(props: {
   );
 }
 
-/** Страница компонента: что он объявил о себе, чего не одето и как держится в случаях. */
+/**
+ * СТРАНИЦА КОМПОНЕНТА — показ, и только он.
+ *
+ * Витрина существует, чтобы СМОТРЕТЬ: полистать компоненты, переключить скин, показать человеку,
+ * который оценивает вид, а не устройство. Поэтому здесь нет ни долга одевания, ни перечня частей
+ * с состояниями, ни паспортных фактов — всё это техничка, и живёт она отдельно (решение user
+ * 2026-08-21).
+ *
+ * Убрано не «потому что мешает», а потому что смешение двух предметов портит оба: заказчик,
+ * которому показывают вид, спотыкается о долг и род компонента, а одевающий ищет техничку среди
+ * картинок.
+ *
+ * СВОЙ ХЕДЕР у страницы — имя, фильтр и переход в редактор. Он про ОДИН компонент, поэтому и
+ * стоит над ним, а не в общем хедере витрины: там живёт то, что общее на всё, — скин и режим.
+ */
 function ComponentPage(props: {
   component: string;
   variants: readonly string[];
-  gaps: readonly SkinGap[];
   part: string;
   variant: string | null;
   state: string | null;
-  onPart: (part: string) => void;
-  onVariant: (variant: string | null) => void;
-  onState: (state: string | null) => void;
+  view: View;
 }) {
   const cases = () =>
     casesOf(props.component, {
@@ -265,74 +258,30 @@ function ComponentPage(props: {
 
   return (
     <article class="page">
-      <header class="page__head">
-        <h1 class="page__title">{props.component}</h1>
-        <p class="page__facts">
-          <Show when={passportOf(props.component)}>
-            {(passport) => (
-              <>
-                <span class="page__fact">раздел: {GROUPS[groupOf(passport())]}</span>
-                <span class="page__fact">род: {passport().genus}</span>
-                <span class="page__fact">поставщик: {passport().package}</span>
-              </>
-            )}
-          </Show>
-        </p>
-      </header>
+      <Show
+        when={props.view === "showcase"}
+        fallback={
+          <p class="page__empty">
+            Редактора ещё нет — он делается следующим шагом. Пустая заглушка честнее нарисованной
+            панели, которая ничего не правит.
+          </p>
+        }
+      >
+        <Show when={props.variants.length === 0}>
+          <p class="page__empty">
+            Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка
+            витрины: наденьте скин справа вверху.
+          </p>
+        </Show>
 
-      <Axes
-        component={props.component}
-        variants={props.variants}
-        part={props.part}
-        variant={props.variant}
-        state={props.state}
-        onPart={props.onPart}
-        onVariant={props.onVariant}
-        onState={props.onState}
-      />
-
-      <Show when={props.variants.length === 0}>
-        <p class="page__empty">
-          Вариаций нет — скин не надет: имена принадлежат скину, и называть их за него витрина не
-          вправе. Случаи ниже показывают голый кит.
-        </p>
-      </Show>
-
-      <section class="page__section">
         <div class="cases">
           <For each={cases()}>
-            {(item) => <Case item={item} overlay={highlight(addressOfPart(props.component, props.part))} />}
+            {(item) => (
+              <Case item={item} overlay={highlight(addressOfPart(props.component, props.part))} />
+            )}
           </For>
         </div>
-      </section>
-
-      <section class="page__section">
-        <h2 class="page__subtitle">Долг одевания</h2>
-        <Show
-          when={props.gaps.length > 0}
-          fallback={
-            <p class="page__empty">
-              Всё объявленное одето: ни одной части и ни одного состояния без правила.
-            </p>
-          }
-        >
-          <ul class="gaps">
-            <For each={props.gaps}>
-              {(gap) => (
-                <li class="gaps__item">
-                  <code class="gaps__kind">{gap.kind}</code>
-                  <span class="gaps__means">{gap.means}</span>
-                </li>
-              )}
-            </For>
-          </ul>
-        </Show>
-      </section>
-
-      <section class="page__section">
-        <h2 class="page__subtitle">Части и состояния</h2>
-        <Parts component={props.component} />
-      </section>
+      </Show>
     </article>
   );
 }
@@ -356,10 +305,20 @@ function ComponentPage(props: {
  * можно было использовать, она не вправе: одевать кита ею же и означает работать без скина.
  */
 function Head(props: {
+  component: string;
+  variants: readonly string[];
+  part: string;
+  variant: string | null;
+  state: string | null;
+  view: View;
   worn: string | null;
   records: readonly SkinRecord[] | undefined;
   failure: unknown;
   mode: SkinMode;
+  onPart: (part: string) => void;
+  onVariant: (variant: string | null) => void;
+  onState: (state: string | null) => void;
+  onView: (view: View) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
   onMode: (mode: SkinMode) => void;
@@ -379,12 +338,26 @@ function Head(props: {
 
   return (
     <header class="head">
-      {/* Слева — только то, что требует внимания. В обычном состоянии здесь пусто: что надето,
-          и так написано в списке справа, а вторая надпись про то же — шум, который перестают
-          читать, и вместе с ним перестают читать настоящую беду. */}
-      <Show when={trouble()}>{(said) => <p class="head__trouble">{said()}</p>}</Show>
+      {/* Слева — про ОДИН компонент: как его зовут и что из него показать. */}
+      <div class="head__subject">
+        <b class="head__component">{props.component}</b>
 
+        <Axes
+          component={props.component}
+          variants={props.variants}
+          part={props.part}
+          variant={props.variant}
+          state={props.state}
+          onPart={props.onPart}
+          onVariant={props.onVariant}
+          onState={props.onState}
+        />
+      </div>
+
+      {/* Справа — про ВСЮ витрину: чем одето, в каком режиме, и куда перейти. */}
       <div class="head__controls">
+        <Show when={trouble()}>{(said) => <p class="head__trouble">{said()}</p>}</Show>
+
         <div class="modes" role="group" aria-label="Режим">
           <For each={["light", "dark"] as const}>
             {(value) => (
@@ -412,6 +385,21 @@ function Head(props: {
             {(record) => <option value={record.name}>{record.label}</option>}
           </For>
         </select>
+
+        <nav class="views" aria-label="Что делаем с компонентом">
+          <For each={VIEWS}>
+            {(view) => (
+              <button
+                class="views__item"
+                type="button"
+                aria-pressed={props.view === view.id}
+                onClick={() => props.onView(view.id)}
+              >
+                {view.title}
+              </button>
+            )}
+          </For>
+        </nav>
       </div>
     </header>
   );
@@ -425,6 +413,7 @@ export function App() {
   const [part, setPart] = createSignal(rootPartOf(COMPONENTS[0] ?? ""));
   const [variant, setVariant] = createSignal<string | null>(null);
   const [state, setState] = createSignal<string | null>(null);
+  const [view, setView] = createSignal<View>("showcase");
 
   /** Смена компонента сбрасывает оси: чужая часть и чужое состояние на нём не значат ничего. */
   const setCurrent = (component: string) => {
@@ -464,20 +453,6 @@ export function App() {
   /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */
   const variants = (): readonly string[] =>
     Object.keys(wornSkin()?.recipes[current()]?.variants ?? {});
-
-  /**
-   * ДОЛГ ОДЕВАНИЯ показанного компонента — считает МЕХАНИКА, а не витрина.
-   *
-   * Свой подсчёт здесь стал бы вторым ответом на один вопрос: у редактора появился бы третий, и
-   * разошлись бы они в тот день, когда показали бы разное про один скин.
-   */
-  const gaps = (): readonly SkinGap[] => {
-    const skin = wornSkin();
-
-    return skin === undefined
-      ? []
-      : skinGaps(skin, Object.values(PASSPORTS)).filter((gap) => gap.component === current());
-  };
 
   // Первый заход: восстанавливаем запомненный выбор, а если его нет — надеваем первый скин
   // службы и НЕ запоминаем. Витрина существует, чтобы смотреть на одетое, но чужое умолчание
@@ -549,10 +524,20 @@ export function App() {
           ровно тогда, когда по нему надо переключиться. */}
       <div class="stack">
         <Head
+          component={current()}
+          variants={variants()}
+          part={part()}
+          variant={variant()}
+          state={state()}
+          view={view()}
           worn={worn()}
           records={records()}
           failure={records.error}
           mode={mode()}
+          onPart={choosePart}
+          onVariant={setVariant}
+          onState={setState}
+          onView={setView}
           onWear={wear}
           onTakeOff={takeOff}
           onMode={setMode}
@@ -564,13 +549,10 @@ export function App() {
               <ComponentPage
                 component={component()}
                 variants={variants()}
-                gaps={gaps()}
+                view={view()}
                 part={part()}
                 variant={variant()}
                 state={state()}
-                onPart={choosePart}
-                onVariant={setVariant}
-                onState={setState}
               />
             )}
           </Show>

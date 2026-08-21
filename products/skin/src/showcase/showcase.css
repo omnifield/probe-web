@@ -10,14 +10,18 @@
  * Значения — роли набора значений зоны `style`: витрина обязана работать в обеих парах тем, и
  * следование за режимом здесь проверяется тем же способом, что у скина.
  *
+ * ВИТРИНА — ПРО ВИД, а не про устройство. Долг одевания, части с состояниями и паспортные
+ * факты отсюда убраны (решение user 2026-08-21): смешение двух предметов портит оба — тот, кому
+ * показывают вид, спотыкается о техничку, а одевающий ищет техничку среди картинок.
+ *
  * РАСКЛАДКА: сайдбар во всю высоту, хедер — только над показом.
  *
- *   ┌──────────────┬──────────────────────────────┐
- *   │ перечень     │        режим · скин          │
- *   │ во всю       ├──────────────────────────────┤
- *   │ высоту       │ показ                        │
- *   │ свой скролл  │ свой скролл, вся ширина      │
- *   └──────────────┴──────────────────────────────┘
+ *   ┌──────────────┬──────────────────────────────────────┐
+ *   │ перечень     │ компонент · фильтр │ режим · скин · ↔ │
+ *   │ во всю       ├──────────────────────────────────────┤
+ *   │ высоту       │ показ                                │
+ *   │ свой скролл  │ свой скролл, вся ширина              │
+ *   └──────────────┴──────────────────────────────────────┘
  *
  * Перечень — опора работы, и обрезать его хедером значит отнимать у него строки ради полосы,
  * которая нужна реже. Хедер управляет тем, что видно В ПОКАЗЕ, поэтому и стоит над ним.
@@ -56,9 +60,12 @@ body {
 
 /* ── хедер ────────────────────────────────────────────────────────────────────────────── */
 
+/* Хедер один, но у него две половины с разными предметами: слева ОДИН компонент — как зовут и
+   что из него показать; справа ВСЯ витрина — чем одето, в каком режиме и куда перейти. */
 .head {
   display: flex;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
   align-items: center;
   justify-content: space-between;
   min-block-size: 3rem;
@@ -66,8 +73,20 @@ body {
   border-block-end: var(--border-width-1) solid var(--separator);
 }
 
-/* Управление прижато к правому краю; слева место остаётся под то, что требует внимания, и в
-   обычном состоянии оно пустое. */
+.head__subject {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.head__component {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+}
+
+/* Управление прижато к правому краю. Беда, если она есть, встаёт здесь же, слева от ручек: её
+   надо увидеть, а не искать. */
 .head__controls {
   display: flex;
   gap: var(--space-2);
@@ -218,27 +237,6 @@ body {
   gap: var(--space-6);
 }
 
-.page__head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.page__title {
-  margin: 0;
-  font-family: var(--font-mono);
-}
-
-.page__facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin: 0;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-}
-
 .page__lead,
 .page__subtitle {
   margin: 0;
@@ -265,52 +263,43 @@ body {
   color: var(--text-muted);
 }
 
-/* ── части и состояния ────────────────────────────────────────────────────────────────── */
-
-.parts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.parts__item {
-  display: grid;
-  grid-template-columns: minmax(6rem, auto) 1fr auto;
-  gap: var(--space-3);
-  align-items: baseline;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.parts__name {
-  font-family: var(--font-mono);
-}
-
-.parts__means {
-  color: var(--text-muted);
-}
-
-.parts__states {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-}
-
-/* ── оси ──────────────────────────────────────────────────────────────────────────────── */
+/* ── оси и переходы ───────────────────────────────────────────────────────────────────── */
 
 .axes {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  padding: var(--space-2) var(--space-3);
+}
+
+.views {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.views__item {
+  padding: var(--space-1) var(--space-3);
   border: var(--border-width-1) solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-subtle);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.views__item:hover {
+  background: var(--tint-hover);
+}
+
+.views__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.views__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-text);
 }
 
 .axes__field {
@@ -346,33 +335,6 @@ body {
   inset: 0;
   border: var(--border-width-1) solid var(--brand-border);
   border-radius: var(--radius-sm);
-}
-
-/* ── долг одевания ────────────────────────────────────────────────────────────────────── */
-
-.gaps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.gaps__item {
-  display: grid;
-  grid-template-columns: minmax(5rem, auto) 1fr;
-  gap: var(--space-3);
-  align-items: baseline;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-1) solid var(--danger-border);
-  border-radius: var(--radius-md);
-}
-
-.gaps__kind {
-  color: var(--danger-text);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
 }
 
 /* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
