@@ -33,6 +33,7 @@
 import type { PassportLookup } from "./address.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
 import { cssProperty } from "./property.js";
+import { skinValues } from "./seeds.js";
 import type { Skin, SketchEdit, StyleObject, StyleValue } from "./recipe.js";
 import {
   skinRules,
@@ -92,10 +93,10 @@ function ruleText(rule: CssRule): string {
 }
 
 /** Печатает блок значений: имя без `--` в записи, с `--` в файле. */
-function valuesText(selector: string, values: Readonly<Record<string, string>>): string {
+function valuesText(selector: string, values: readonly (readonly [string, string])[]): string {
   return [
     `  ${selector} {`,
-    ...Object.entries(values).map(([name, value]) => `    --${name}: ${value};`),
+    ...values.map(([name, value]) => `    --${name}: ${value};`),
     "  }",
   ].join("\n");
 }
@@ -111,12 +112,22 @@ function valuesText(selector: string, values: Readonly<Record<string, string>>):
  */
 function variablesText(skin: Skin): string[] {
   const blocks: string[] = [];
-  const light = skin.variables?.light;
-  const dark = skin.variables?.dark;
+  const light = skinValues(skin, "light");
+  const dark = skinValues(skin, "dark");
 
-  if (light && Object.keys(light).length > 0) blocks.push(valuesText(":root", light));
-  if (dark && Object.keys(dark).length > 0) {
-    blocks.push(valuesText(`:root.${DARK_CLASS}, :root .${DARK_CLASS}`, dark));
+  if (light.size > 0) {
+    blocks.push(valuesText(":root", [...light].map(([name, own]) => [name, own.value])));
+  }
+
+  // В тёмный блок едет только ОТЛИЧАЮЩЕЕСЯ. Половины пересекаются почти целиком — имя без семени
+  // объявлено один раз, затемнение под слоем от режима не зависит, — и печатать совпадающее
+  // второй раз значило бы удваивать файл ради строк, которые ничего не меняют.
+  const differs = [...dark]
+    .filter(([name, own]) => light.get(name)?.value !== own.value)
+    .map(([name, own]): [string, string] => [name, own.value]);
+
+  if (differs.length > 0) {
+    blocks.push(valuesText(`:root.${DARK_CLASS}, :root .${DARK_CLASS}`, differs));
   }
 
   return blocks;

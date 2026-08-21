@@ -55,11 +55,9 @@ import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
 import { passportLookup } from "./address.js";
 import { cssProperty } from "./property.js";
 import type { Skin, StyleObject } from "./recipe.js";
+import { skinValues, type SkinHalf } from "./seeds.js";
 import { skinRules, type RuleCoordinate, type SkinRule } from "./rules.js";
 import { trace } from "./trace.js";
-
-/** Половина скина. Тёмная — это светлая, поверх которой легли объявленные ею имена. */
-export type SkinHalf = "light" | "dark";
 
 /** Норма, по которой считали пару. */
 export type ContrastNorm = "text" | "non-text";
@@ -128,12 +126,6 @@ const SEE_THROUGH = new Set(["transparent", "none", "inherit", "currentcolor", "
 /** Предел раскрутки ссылок: переменная, ссылающаяся сама на себя, не должна вешать счёт. */
 const DEPTH = 16;
 
-/** Значения половины: тёмная объявляет только то, что переопределяет, остальное берёт у светлой. */
-function valuesOf(skin: Skin, half: SkinHalf): Record<string, string> {
-  const light = { ...skin.variables?.light };
-  return half === "light" ? light : { ...light, ...skin.variables?.dark };
-}
-
 /** Ищет закрывающую скобку для открывающей на позиции `open`. */
 function closing(text: string, open: number): number {
   let depth = 0;
@@ -169,7 +161,7 @@ function splitReference(inside: string): { name: string; fallback?: string } {
  *
  * @returns разрешённое значение либо `undefined` — если раскрутить нечем
  */
-function resolve(value: string, values: Record<string, string>, depth = 0): string | undefined {
+function resolve(value: string, values: Map<string, { value: string }>, depth = 0): string | undefined {
   if (depth > DEPTH) return undefined;
 
   const open = value.indexOf("var(");
@@ -180,7 +172,7 @@ function resolve(value: string, values: Record<string, string>, depth = 0): stri
   if (end < 0) return undefined;
 
   const { name, fallback } = splitReference(value.slice(paren + 1, end));
-  const own = values[name.startsWith("--") ? name.slice(2) : name];
+  const own = values.get(name.startsWith("--") ? name.slice(2) : name)?.value;
   const replacement = own ?? fallback;
 
   if (replacement === undefined) return undefined;
@@ -298,7 +290,7 @@ function pairKey(half: SkinHalf, property: string, front: string, back: string):
 /** Разбирает одно значение до цвета либо называет причину, по которой не вышло. */
 function readColour(
   value: string,
-  values: Record<string, string>,
+  values: Map<string, { value: string }>,
 ): { colour: string } | { reason: UnreckonableReason } {
   const resolved = resolve(value, values);
 
@@ -341,7 +333,7 @@ export function skinContrast(
   const notes: ContrastNote[] = [];
 
   for (const half of ["light", "dark"] as const) {
-    const values = valuesOf(skin, half);
+    const values = skinValues(skin, half);
     const seen = new Set<string>();
 
     for (const rule of rules) {

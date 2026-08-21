@@ -17,7 +17,6 @@ export type {
   ContrastAddress,
   ContrastNorm,
   ContrastNote,
-  SkinHalf,
   UnreckonableReason,
 } from "./contrast.js";
 export { skinContrast } from "./contrast.js";

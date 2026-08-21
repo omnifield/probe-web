@@ -11,6 +11,8 @@
 export type {
   AncestorStyle,
   CompoundVariant,
+  ScaleDeclaration,
+  SeededScale,
   Keyframes,
   LocalStyle,
   PartStyle,
@@ -57,3 +59,9 @@ export { checkSketch, checkSkin, sketchRules, skinRules } from "./rules.js";
 
 export type { SkinGap, SkinGapKind } from "./coverage.js";
 export { skinGaps } from "./coverage.js";
+
+// Значения скина: построение семенами и то, чем правка человека помечена. Живёт в `./model`,
+// потому что это МОДЕЛЬ — от неё зависят и проверка имён, и порождение, и читаемость. Цена
+// названа: построение шкал берётся у зоны значений, и она приезжает сюда одноранговой.
+export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds.js";
+export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";

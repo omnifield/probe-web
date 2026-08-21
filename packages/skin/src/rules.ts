@@ -55,6 +55,7 @@ import type {
   SlotRecipe,
   StyleObject,
 } from "./recipe.js";
+import { valueNames } from "./seeds.js";
 import { note, trace } from "./trace.js";
 
 /**
@@ -191,14 +192,19 @@ function customProperty(name: string): string {
   return name.startsWith("--") ? name : `--${name}`;
 }
 
-/** Собирает словарь: объявленное снаружи плюс собственные переменные скина. */
-function vocabularyOf(skin: Pick<Skin, "variables">, vocabulary: ValueVocabulary): Set<string> {
+/**
+ * Собирает словарь: объявленное снаружи плюс собственные значения скина.
+ *
+ * Собственные — это и литералы, и построенное семенами: ссылка на ступень объявленной шкалы
+ * (`var(--бренд-9)`) обязана считаться известной, иначе семенной скин уезжал бы в изъяны целиком.
+ * Имена берутся у того же построения, что даёт значения, — второй их перечень разошёлся бы с
+ * первым на первом же новом ряде.
+ */
+function vocabularyOf(skin: Skin | undefined, vocabulary: ValueVocabulary): Set<string> {
   const known = new Set<string>();
 
   for (const token of vocabulary.tokens ?? []) known.add(customProperty(token));
-  for (const half of [skin.variables?.light, skin.variables?.dark]) {
-    for (const name of Object.keys(half ?? {})) known.add(customProperty(name));
-  }
+  if (skin) for (const name of valueNames(skin)) known.add(customProperty(name));
 
   return known;
 }
@@ -755,7 +761,7 @@ export function sketchRules(
 ): SketchRules {
   const done = trace(`sketchRules(${edits.length})`);
 
-  const known = vocabularyOf({}, vocabulary);
+  const known = vocabularyOf(undefined, vocabulary);
   const flaws = new Flaws();
   const out: CssRule[] = [];
   // Подпись пустая: обход у нас общий, а адреса у правки образца нет. Отдельная ветка обхода
