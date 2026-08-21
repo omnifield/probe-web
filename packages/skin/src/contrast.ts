@@ -48,8 +48,30 @@
 //   • **пара, которую посчитать нечем, НАЗЫВАЕТСЯ.** Прозрачная заливка, ссылка на имя вне
 //     скина, значение, которого формула не разбирает, — всё это отдельный вид ответа, а не
 //     молчание. Молчание здесь неотличимо от «всё хорошо».
+//
+// ## Цвет ли это — спрашивается ВЕТВЛЕНИЕМ, а не перехватом отказа
+//
+// Раньше механика узнавала цвет, пробуя посчитать контраст и ловя исключение: разбор умел только
+// бросать, и другого способа не было. Теперь зона значений отдаёт не бросающий `tryParseColor`, и
+// отказ приходит значением с НАЗВАННОЙ причиной.
+//
+// Разница не косметическая. Причин две, и чинятся они разным: полупрозрачное значение понято, но
+// контраст на нём не считается, пока не названа заливка под ним; неразобранная запись — опечатка
+// или незнакомая форма. Перехватом они неразличимы, и человека посылало искать ошибку там, где
+// надо назвать фон.
+//
+// Причина доносится до записи целиком, вместе с пояснением от разбора: пересказывать его своими
+// словами значило бы завести второй текст об одном и том же (`PWEB-45`).
 
-import { AA_NON_TEXT, AA_TEXT, contrastRatio } from "@omnifield/probe-web-style";
+import {
+  AA_NON_TEXT,
+  AA_TEXT,
+  contrastRatio,
+  tryParseColor,
+  type ColorRefusal,
+  type Oklch,
+  type ParsedColor,
+} from "@omnifield/probe-web-style";
 import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
 
 import { passportLookup } from "./address.js";
@@ -65,11 +87,18 @@ export type ContrastNorm = "text" | "non-text";
 /**
  * Почему пару посчитать нечем.
  *
- *  • `no-background` — заливки на этой координате нет вовсе: что под текстом, скин не говорит;
- *  • `outside-skin`  — значение приходит извне скина: ссылка на чужое имя или прозрачность;
- *  • `not-a-colour`  — значение не разбирается как цвет той формулой, которой считает гейт.
+ *  • `no-background`    — заливки на этой координате нет вовсе: что под текстом, скин не говорит;
+ *  • `outside-skin`     — значение приходит извне скина: ссылка на имя, которого в скине нет,
+ *                         либо ключевое слово CSS, отсылающее наружу (`inherit`, `currentColor`);
+ *  • `translucent`      — запись понята, но цвет полупрозрачен: контраст зависит от того, что под
+ *                         ним, и считать его не с чем, пока заливка не названа;
+ *  • `unknown-notation` — запись не разобрана: опечатка или незнакомая форма.
+ *
+ * Последние две — РАЗНЫЕ причины, потому что чинятся разным. Слепи их в «не цвет», и человек
+ * пойдёт искать опечатку там, где надо назвать заливку под текстом. Имена взяты у разбора
+ * (`ColorRefusal`): перевод чужих имён в свои — второй словарь об одном и том же.
  */
-export type UnreckonableReason = "no-background" | "outside-skin" | "not-a-colour";
+export type UnreckonableReason = "no-background" | "outside-skin" | ColorRefusal;
 
 /** Адрес, на котором сошлась пара. Пустая вариация — «без вариации», как у базы. */
 export type ContrastAddress = Pick<RuleCoordinate, "component" | "part" | "variants" | "states">;
@@ -120,8 +149,17 @@ const FOREGROUND: readonly (readonly [property: string, norm: ContrastNorm])[] =
   ["stroke", "non-text"],
 ];
 
-/** Значения, означающие «что под этим — не в скине». */
-const SEE_THROUGH = new Set(["transparent", "none", "inherit", "currentcolor", "unset", "initial"]);
+/**
+ * Ключевые слова CSS, отсылающие ЗА ПРЕДЕЛЫ этой координаты.
+ *
+ * Цветовыми записями они не являются вовсе, и спрашивать о них разбор бессмысленно: он честно
+ * ответит «не разобрано», а это неправда — тут не опечатка, а отсылка наружу. Своего разбора
+ * цвета здесь нет: перечень короткий, закрытый и про синтаксис CSS, а не про цвет.
+ *
+ * `transparent` сюда НЕ входит: это настоящая цветовая запись, и разбор называет её
+ * полупрозрачной — точнее, чем смогли бы мы.
+ */
+const OUTSIDE = new Set(["none", "inherit", "currentcolor", "unset", "initial", "revert"]);
 
 /** Предел раскрутки ссылок: переменная, ссылающаяся сама на себя, не должна вешать счёт. */
 const DEPTH = 16;
@@ -184,37 +222,53 @@ function resolve(value: string, values: Map<string, { value: string }>, depth = 
   );
 }
 
-/** Цвет из значения, либо `undefined`. Пробует значение целиком, затем последний его кусок. */
-function colourOf(value: string): string | undefined {
-  const trimmed = value.trim();
-
-  const parses = (candidate: string): boolean => {
-    try {
-      contrastRatio(candidate, candidate);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  if (parses(trimmed)) return trimmed;
-
-  // Составное значение вроде `1px solid #334455`: цвет в нём стоит отдельным куском. Режем по
-  // пробелам ВЕРХНЕГО уровня — иначе `oklch(0.2 0 0)` развалился бы на три бессмысленных.
-  const pieces: string[] = [];
+/** Куски значения верхнего уровня: `1px solid #334455` → три, `oklch(0.2 0 0)` → один. */
+function pieces(value: string): string[] {
+  const found: string[] = [];
   let depth = 0;
   let start = 0;
-  for (let i = 0; i < trimmed.length; i += 1) {
-    if (trimmed[i] === "(") depth += 1;
-    else if (trimmed[i] === ")") depth -= 1;
-    else if (trimmed[i] === " " && depth === 0) {
-      pieces.push(trimmed.slice(start, i));
+
+  for (let i = 0; i < value.length; i += 1) {
+    if (value[i] === "(") depth += 1;
+    else if (value[i] === ")") depth -= 1;
+    // Режем по пробелам ВЕРХНЕГО уровня — иначе `oklch(0.2 0 0)` развалился бы на три
+    // бессмысленных куска.
+    else if (value[i] === " " && depth === 0) {
+      found.push(value.slice(start, i));
       start = i + 1;
     }
   }
-  pieces.push(trimmed.slice(start));
+  found.push(value.slice(start));
 
-  return pieces.filter(Boolean).reverse().find(parses);
+  return found.filter(Boolean);
+}
+
+/**
+ * Цвет из значения — ветвлением по ответу разбора, без единого перехвата.
+ *
+ * Пробует значение целиком, затем его куски с конца: у составного значения (`1px solid #334455`)
+ * цвет стоит отдельным куском, и стоит он последним.
+ *
+ * Если цвета не нашлось, отдаётся ПРИЧИНА, и полупрозрачность имеет приоритет над «не разобрано»:
+ * в `1px solid rgba(0 0 0 / 50%)` целое действительно не разбирается, но человеку чинить надо не
+ * это. Причина берётся у разбора вместе с его пояснением.
+ */
+function colourOf(value: string): (ParsedColor & { ok: false }) | { ok: true; color: Oklch; text: string } {
+  const trimmed = value.trim();
+  const whole = tryParseColor(trimmed);
+
+  if (whole.ok) return { ok: true, color: whole.color, text: trimmed };
+
+  let refusal = whole;
+
+  for (const piece of pieces(trimmed).reverse()) {
+    const parsed = tryParseColor(piece);
+
+    if (parsed.ok) return { ok: true, color: parsed.color, text: piece };
+    if (parsed.refusal === "translucent") refusal = parsed;
+  }
+
+  return refusal;
 }
 
 /** Применимо ли правило к адресу: тот же компонент и часть, вариация и состояния — подмножеством. */
@@ -291,15 +345,28 @@ function pairKey(half: SkinHalf, property: string, front: string, back: string):
 function readColour(
   value: string,
   values: Map<string, { value: string }>,
-): { colour: string } | { reason: UnreckonableReason } {
+): { colour: Oklch; text: string } | { reason: UnreckonableReason; means: string } {
   const resolved = resolve(value, values);
 
-  if (resolved === undefined) return { reason: "outside-skin" };
-  if (SEE_THROUGH.has(resolved.trim().toLowerCase())) return { reason: "outside-skin" };
+  if (resolved === undefined) {
+    return {
+      reason: "outside-skin",
+      means: `значение «${value}» ссылается на имя, которого в скине нет`,
+    };
+  }
 
-  const colour = colourOf(resolved);
+  if (OUTSIDE.has(resolved.trim().toLowerCase())) {
+    return {
+      reason: "outside-skin",
+      means: `«${resolved.trim()}» отсылает за пределы этой координаты: чем оно окажется, скин не говорит`,
+    };
+  }
 
-  return colour === undefined ? { reason: "not-a-colour" } : { colour };
+  const parsed = colourOf(resolved);
+
+  return parsed.ok
+    ? { colour: parsed.color, text: parsed.text }
+    : { reason: parsed.refusal, means: parsed.means };
 }
 
 /**
@@ -375,6 +442,8 @@ export function skinContrast(
 
         const first = readColour(front, values);
         const second = readColour(back, values);
+        // Причина берётся у того значения, которое её дало, вместе с его пояснением: своими
+        // словами пересказывать разбор значило бы завести второй текст об одном и том же.
         const failed = "reason" in first ? first : "reason" in second ? second : undefined;
 
         if (failed) {
@@ -385,17 +454,15 @@ export function skinContrast(
             property,
             norm,
             reason: failed.reason,
-            means:
-              failed.reason === "outside-skin"
-                ? `значение приходит извне скина (${property}: ${front} на ${back}) — посчитать пару нечем`
-                : `значение не разбирается как цвет (${property}: ${front} на ${back}) — посчитать пару нечем`,
+            means: `${failed.means} (${property}: ${front} на ${back})`,
           });
           continue;
         }
 
-        const foreground = (first as { colour: string }).colour;
-        const background = (second as { colour: string }).colour;
-        const ratio = Math.round(contrastRatio(foreground, background) * 100) / 100;
+        const foreground = first as { colour: Oklch; text: string };
+        const background = second as { colour: Oklch; text: string };
+        const ratio =
+          Math.round(contrastRatio(foreground.colour, background.colour) * 100) / 100;
 
         if (ratio >= required) continue;
 
@@ -405,8 +472,8 @@ export function skinContrast(
           where: at,
           property,
           norm,
-          foreground,
-          background,
+          foreground: foreground.text,
+          background: background.text,
           ratio,
           required,
           means:

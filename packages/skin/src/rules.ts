@@ -55,7 +55,7 @@ import type {
   SlotRecipe,
   StyleObject,
 } from "./recipe.js";
-import { valueNames } from "./seeds.js";
+import { seedRefusals, valueNames } from "./seeds.js";
 import { note, trace } from "./trace.js";
 
 /**
@@ -70,6 +70,7 @@ import { note, trace } from "./trace.js";
  *  • `default-missing`     — вариации есть, а умолчание не названо;
  *  • `variant-unaddressable` — ось вариаций выражена не атрибутом: имя в разметку не попадёт;
  *  • `unsafe-name`         — имя не годится внутрь селектора;
+ *  • `bad-seed`            — семя шкалы не разбирается как цвет: лестницу из него не построить;
  *  • `unknown-value`       — ссылка на значение, которого нет в словаре, и без запасного;
  *  • `empty-value`         — значение пусто: правило было бы мёртвым;
  *  • `free-selector`       — вложенный ключ, не являющийся ни псевдоэлементом, ни at-правилом.
@@ -83,6 +84,7 @@ export type SkinFlawName =
   | "default-missing"
   | "variant-unaddressable"
   | "unsafe-name"
+  | "bad-seed"
   | "unknown-value"
   | "empty-value"
   | "free-selector";
@@ -697,6 +699,18 @@ export function skinRules(
 
   if (!safeName(skin.name)) {
     flaws.add("unsafe-name", "name", `имя скина «${skin.name}» не годится внутрь селектора`);
+  }
+
+  // Семя, из которого лестницу не построить, — изъян ЗАПИСИ, а не поломка счёта. Проверяется до
+  // всего остального: следом за негодным семенем в перечень посыплются ссылки на его ступени, и
+  // причину надо назвать первой.
+  for (const bad of seedRefusals(skin.variables)) {
+    flaws.add(
+      "bad-seed",
+      `variables.scales.${bad.scale}`,
+      `${bad.means}. Из такого семени лестница не строится, и ступени шкалы «${bad.scale}» ` +
+        "объявленными не считаются",
+    );
   }
 
   // Переменные — половина скина, и значение в них такое же значение: ссылка на несуществующее

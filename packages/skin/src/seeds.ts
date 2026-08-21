@@ -45,6 +45,8 @@ import {
   buildChartScale,
   buildScale,
   buildScrim,
+  tryParseColor,
+  type ColorRefusal,
   type ScaleMode,
 } from "@omnifield/probe-web-style";
 
@@ -88,6 +90,36 @@ function declared(declaration: ScaleDeclaration): SeededScale {
   return typeof declaration === "string" ? { seed: declaration } : declaration;
 }
 
+/** Семя, из которого лестницу не построить: имя шкалы и названная причина. */
+export interface SeedRefusal {
+  readonly scale: string;
+  readonly seed: string;
+  readonly refusal: ColorRefusal;
+  readonly means: string;
+}
+
+/**
+ * Семена, которые построением не берутся.
+ *
+ * Спрашивается ВЕТВЛЕНИЕМ, а не перехватом: построение шкалы бросает на негодном семени, и без
+ * этой проверки `checkSkin` — обещанный «перечень изъянов значением» — падал бы исключением
+ * посреди перечня (`PWEB-45`). Отказ разбора доносится целиком, вместе с его пояснением.
+ *
+ * @param variables переменные скина
+ */
+export function seedRefusals(variables: SkinVariables | undefined): readonly SeedRefusal[] {
+  const refusals: SeedRefusal[] = [];
+
+  for (const [scale, declaration] of Object.entries(variables?.scales ?? {})) {
+    const { seed } = declared(declaration);
+    const parsed = tryParseColor(seed);
+
+    if (!parsed.ok) refusals.push({ scale, seed, refusal: parsed.refusal, means: parsed.means });
+  }
+
+  return refusals;
+}
+
 /**
  * Строит значения ОДНОЙ шкалы под один режим: имя ступени → значение.
  *
@@ -117,14 +149,20 @@ function scaleValues(name: string, scale: SeededScale, mode: SkinHalf): Map<stri
   return values;
 }
 
-/** Построенные значения всех объявленных шкал под один режим. */
+/**
+ * Построенные значения всех объявленных шкал под один режим.
+ *
+ * Шкала с негодным семенем ПРОПУСКАЕТСЯ, а не роняет обход: её отказ — запись в перечне изъянов
+ * (`seedRefusals`), и падать посреди счёта из-за одной опечатки нечему.
+ */
 function seeded(variables: SkinVariables | undefined, mode: SkinHalf): Map<string, SkinValue> {
   const values = new Map<string, SkinValue>();
 
   for (const [name, declaration] of Object.entries(variables?.scales ?? {})) {
-    for (const [key, value] of scaleValues(name, declared(declaration), mode)) {
-      values.set(key, value);
-    }
+    const scale = declared(declaration);
+    if (!tryParseColor(scale.seed).ok) continue;
+
+    for (const [key, value] of scaleValues(name, scale, mode)) values.set(key, value);
   }
 
   return values;

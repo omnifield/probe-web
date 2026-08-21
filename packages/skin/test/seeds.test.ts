@@ -268,6 +268,61 @@ describe("ссылка на ступень известна проверке", (
   });
 });
 
+describe("негодное семя — изъян записи, а не поломка счёта", () => {
+  const rotten: Skin = {
+    name: "негодное",
+    variables: { scales: { бренд: "не-цвет" } },
+    recipes: {
+      button: { base: { root: { props: { color: "var(--бренд-12)" } } } },
+    },
+  };
+
+  it("проверка НЕ бросает, а называет причину", () => {
+    // До `PWEB-45` построение шкалы бросало, и обещанный «перечень изъянов значением» падал
+    // исключением посреди перечня.
+    expect(() => checkSkin(rotten, lookup)).not.toThrow();
+    expect(checkSkin(rotten, lookup).map((flaw) => flaw.name)).toEqual([
+      "bad-seed",
+      "unknown-value",
+    ]);
+  });
+
+  it("причина названа первой: следом за ней сыплются ссылки на ступени", () => {
+    const [first] = checkSkin(rotten, lookup);
+
+    expect(first?.name).toBe("bad-seed");
+    expect(first?.where).toBe("variables.scales.бренд");
+    expect(first?.means).toContain("не-цвет");
+  });
+
+  it("порождение отказывает по-своему, а не чужим исключением", () => {
+    expect(() => generateSkinCss(rotten, lookup)).toThrow(/не порождён/);
+  });
+
+  it("полупрозрачное семя названо полупрозрачным, а не опечаткой", () => {
+    const translucent: Skin = {
+      name: "полупрозрачное",
+      variables: { scales: { бренд: "rgb(0 0 0 / 50%)" } },
+      recipes: {},
+    };
+    const [flaw] = checkSkin(translucent, lookup);
+
+    expect(flaw?.name).toBe("bad-seed");
+    expect(flaw?.means).toContain("полупрозрач");
+  });
+
+  it("годные шкалы рядом с негодной строятся как ни в чём не бывало", () => {
+    const mixed: Skin = {
+      name: "смешанное",
+      variables: { scales: { бренд: SEED, сор: "не-цвет" } },
+      recipes: {},
+    };
+
+    expect(skinValues(mixed, "light").has("бренд-9")).toBe(true);
+    expect(skinValues(mixed, "light").has("сор-9")).toBe(false);
+  });
+});
+
 describe("контраст обещан построением", () => {
   // Замер 2026-08-21: 16 семян × 2 режима × все объявленные обещания — 384 пары, ни одного
   // нарушения. Проба держит это дальше: обещание, на которое опирается «читаемость избыточна»,

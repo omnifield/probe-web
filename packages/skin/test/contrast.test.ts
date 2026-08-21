@@ -63,6 +63,34 @@ describe("ответ — значение, а не отказ", () => {
       expect(note.means.length).toBeGreaterThan(0);
     }
   });
+
+  it("мусор на входе даёт НАЗВАННУЮ запись, а не исключение", () => {
+    // Определение цвета идёт ветвлением по ответу разбора, а не перехватом отказа (`PWEB-45`).
+    // Проба это и проверяет: ни один вход не должен бросить, и на каждый должна быть причина.
+    for (const background of [
+      "color-mix(in oklch, red, blue)",
+      "lab(50% 40 59)",
+      "не-цвет",
+      "var(--нет)",
+      "1px solid",
+      "rgba(0,0,0,0.5)",
+      "#12345",
+      "inherit",
+    ]) {
+      const skin: Skin = {
+        name: "мусор",
+        recipes: { button: { base: { root: { props: { color: "#000000", background } } } } },
+      };
+
+      const list = notes(skin);
+
+      expect(list.length).toBeGreaterThan(0);
+      for (const note of list) {
+        expect(note.kind).toBe("unreckonable");
+        expect(note.means.length).toBeGreaterThan(0);
+      }
+    }
+  });
 });
 
 describe("пара ниже нормы названа", () => {
@@ -207,7 +235,7 @@ describe("пара складывается по каскаду", () => {
 });
 
 describe("непосчитанное называется, а не пропускается молча", () => {
-  it("прозрачная заливка: что под ней — не в скине", () => {
+  it("прозрачная заливка названа ПОЛУПРОЗРАЧНОЙ, а не опечаткой", () => {
     const skin: Skin = {
       name: "прозрачно",
       recipes: {
@@ -217,7 +245,54 @@ describe("непосчитанное называется, а не пропус�
       },
     };
 
-    expect(shorthand(notes(skin))).toEqual(["?outside-skin light color", "?outside-skin dark color"]);
+    expect(shorthand(notes(skin))).toEqual(["?translucent light color", "?translucent dark color"]);
+  });
+
+  it("полупрозрачное и неразобранное — РАЗНЫЕ причины: чинятся они разным", () => {
+    const reason = (background: string): string => {
+      const [note] = notes({
+        name: "две-причины",
+        recipes: { button: { base: { root: { props: { color: "#949494", background } } } } },
+      });
+
+      return note?.kind === "unreckonable" ? note.reason : "—";
+    };
+
+    expect(reason("rgb(0 0 0 / 50%)")).toBe("translucent");
+    expect(reason("color-mix(in oklch, red, blue)")).toBe("unknown-notation");
+  });
+
+  it("полупрозрачность в СОСТАВНОМ значении не теряется под «не разобрано»", () => {
+    // Целое тут действительно не разбирается, но чинить человеку надо не это.
+    const skin: Skin = {
+      name: "составное-прозрачное",
+      recipes: {
+        button: {
+          base: {
+            root: { props: { borderColor: "1px solid rgba(0, 0, 0, 0.5)", background: "#ffffff" } },
+          },
+        },
+      },
+    };
+
+    expect(shorthand(notes(skin))).toEqual([
+      "?translucent light border-color",
+      "?translucent dark border-color",
+    ]);
+  });
+
+  it("ключевое слово CSS отсылает НАРУЖУ — это третья причина, не опечатка", () => {
+    for (const background of ["inherit", "currentColor"]) {
+      const skin: Skin = {
+        name: "наружу",
+        recipes: { button: { base: { root: { props: { color: "#949494", background } } } } },
+      };
+
+      expect(shorthand(notes(skin))).toEqual([
+        "?outside-skin light color",
+        "?outside-skin dark color",
+      ]);
+    }
   });
 
   it("ссылка на имя, которого в скине нет", () => {
@@ -265,7 +340,10 @@ describe("непосчитанное называется, а не пропус�
       },
     };
 
-    expect(shorthand(notes(skin))).toEqual(["?not-a-colour light color", "?not-a-colour dark color"]);
+    expect(shorthand(notes(skin))).toEqual([
+      "?unknown-notation light color",
+      "?unknown-notation dark color",
+    ]);
   });
 
   it("заливки нет вовсе", () => {
@@ -333,8 +411,8 @@ describe("проверено мутацией: ухудшение значени
   it("подмена заливки на прозрачную превращает счёт в честное «нечем»", () => {
     expect(notes(paired("#000000", "#ffffff"))).toEqual([]);
     expect(shorthand(notes(paired("#000000", "transparent")))).toEqual([
-      "?outside-skin light color",
-      "?outside-skin dark color",
+      "?translucent light color",
+      "?translucent dark color",
     ]);
   });
 });
