@@ -25,15 +25,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionHeader,
-  AccordionItem,
-  AccordionTrigger,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../src/accordion.jsx";
+} from "../src/collapsible.jsx";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -528,15 +523,6 @@ function Scene() {
       </Menubar>
 
 
-
-      <Accordion multiple value={["доставка"]}>
-        <AccordionItem value="доставка">
-          <AccordionHeader>
-            <AccordionTrigger>Доставка</AccordionTrigger>
-          </AccordionHeader>
-          <AccordionContent>Курьером</AccordionContent>
-        </AccordionItem>
-      </Accordion>
 
       <Collapsible defaultOpen>
         <CollapsibleTrigger>Подробнее</CollapsibleTrigger>

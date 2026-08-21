@@ -10,10 +10,10 @@
  */
 export const EXPECTED_SURFACE = [
   "Accordion",
-  "AccordionContent",
-  "AccordionHeader",
   "AccordionItem",
-  "AccordionTrigger",
+  "AccordionItemContent",
+  "AccordionItemIndicator",
+  "AccordionItemTrigger",
   "AlertDialog",
   "AlertDialogClose",
   "AlertDialogContent",

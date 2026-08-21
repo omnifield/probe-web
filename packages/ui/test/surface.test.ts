@@ -147,11 +147,17 @@ describe("манифест", () => {
     expect(manifest.sideEffects).toBe(false);
   });
 
-  it("`solid-js` и `@kobalte/core` — в peer; обычная зависимость ровно одна", () => {
+  it("Solid и оба поставщика кита — в peer; обычная зависимость ровно одна", () => {
     // Две копии Solid в дереве ломают реактивность, и ядро предупреждает об этом только в
     // dev-сборке (норма фонда). У kobalte та же причина: он держит СВОЙ контекст, и вторая
-    // копия рассыпала бы связку `Field` ↔ его частей.
+    // копия рассыпала бы связку `Field` ↔ его частей. У Ark причина та же и даже жёстче: он
+    // держит машины состояний Zag, и вторая копия рассыпала бы связку «корень ↔ части» у
+    // каждого составного компонента.
+    //
+    // Поставщиков кита сегодня ДВА, и это переходное состояние: кит переезжает на Ark по одному
+    // компоненту (`PWEB-37` — первый), и kobalte уйдёт вместе с последним, кто на нём стоит.
     expect(manifest.peerDependencies).toEqual({
+      "@ark-ui/solid": expect.any(String),
       "@kobalte/core": expect.any(String),
       "solid-js": expect.any(String),
     });
@@ -162,7 +168,15 @@ describe("манифест", () => {
     // же деревом, что Ark, — второй копии в дереве потребителя не появляется. Равенство, а не
     // вхождение: каждая новая зависимость поставки становится зависимостью КАЖДОГО
     // потребителя, и появиться она обязана решением architect, а не побочно.
-    expect(manifest.dependencies).toEqual({ "@zag-js/anatomy": expect.any(String) });
+    // Обычных зависимостей поставки две, и обе — ДАННЫЕ паспорта, а не рантайм: `@zag-js/anatomy`
+    // (форма объявления, `PWEB-2`) и `@zag-js/accordion` — тот подпуть, где физически лежит
+    // анатомия гармошки (`PWEB-37`). Ark берёт её оттуда же; брать через него значило бы тянуть
+    // в подпуть данных ветку `solid` с JSX. Равенство, а не вхождение: каждая новая зависимость
+    // поставки становится зависимостью КАЖДОГО потребителя.
+    expect(manifest.dependencies).toEqual({
+      "@zag-js/accordion": expect.any(String),
+      "@zag-js/anatomy": expect.any(String),
+    });
   });
 });
 
@@ -590,5 +604,13 @@ console.log(JSON.stringify(passportOf("такого-компонента-нет"
     expect(bundle).not.toContain("solid-js");
     expect(bundle).not.toContain("@kobalte/core");
     expect(bundle).toContain("@zag-js/anatomy");
+
+    // Анатомия компонента, приехавшего из Ark, берётся у ПЕРВОИСТОЧНИКА —
+    // `@zag-js/accordion/anatomy`, — а не через `@ark-ui/solid/anatomy` (`PWEB-37`). Разница не
+    // косметическая: у подпути Ark есть ветка `solid` с файлом `.jsx`, и читатель паспорта, чей
+    // резолвер её понимает, получает JSX там, где ждал данные. Здесь же нет ни Solid, ни машины
+    // состояний — только объявление частей, и Ark берёт его оттуда же.
+    expect(bundle).toContain("@zag-js/accordion/anatomy");
+    expect(bundle).not.toContain("@ark-ui/solid");
   });
 });

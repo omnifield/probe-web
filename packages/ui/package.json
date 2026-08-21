@@ -30,13 +30,16 @@
     "test": "pnpm run build && vitest run"
   },
   "dependencies": {
+    "@zag-js/accordion": "^1.43.1",
     "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
+    "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
+    "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
     "@omnifield/probe-web-lint": "workspace:*",
     "@types/node": "^24.10.1",

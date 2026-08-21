@@ -22,11 +22,6 @@
  * же число убрано из `kb:PROBEWEB-11`).
  */
 export const PROMISED_SLOTS = [
-  "accordion",
-  "accordion-content",
-  "accordion-header",
-  "accordion-item",
-  "accordion-trigger",
   "alert-dialog-close",
   "alert-dialog-content",
   "alert-dialog-description",
