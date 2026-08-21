@@ -48,7 +48,10 @@ import {
   tryParseColor,
   type ColorRefusal,
   type ScaleMode,
-} from "@omnifield/probe-web-style";
+} from "@omnifield/probe-web-style/values";
+// Узкий вход, а не корень: корень зоны значений объявляет Solid одноранговым, а трогает его один
+// файл — реактивный контроллер темы. Модель скина отдаётся подпутём без отрисовки, и тянуть
+// реактивность за построением шкалы ей не за что (`PWEB-44`).
 
 import type { ScaleDeclaration, SeededScale, Skin, SkinVariables } from "./recipe.js";
 import { trace } from "./trace.js";

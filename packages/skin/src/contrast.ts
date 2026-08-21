@@ -71,7 +71,7 @@ import {
   type ColorRefusal,
   type Oklch,
   type ParsedColor,
-} from "@omnifield/probe-web-style";
+} from "@omnifield/probe-web-style/values";
 import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
 
 import { passportLookup } from "./address.js";
