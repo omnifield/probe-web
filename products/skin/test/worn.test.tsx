@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { casesOf, rootPartOf } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
-import { SKIN_SOURCE, StoreDown } from "../src/skins/index.js";
+import { deleteSkin, listSkins, SKIN_SOURCE, StoreDown, StoreRefused } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
 import { FIXTURE } from "./fixtures.js";
 import { dropStore, restoreStore, serveSkins } from "./store-stub.js";
@@ -34,7 +34,7 @@ beforeEach(() => {
   // Скины приходят из СЛУЖБЫ, и проба идёт тем же путём: перечень, потом запись по
   // идентификатору. Подменяется `fetch`, а не наш клиент, — проверяется шов, а не то, что мы
   // умеем звать сами себя.
-  serveSkins(FIXTURE);
+  serveSkins([FIXTURE]);
 });
 
 afterEach(() => {
@@ -123,6 +123,35 @@ describe("скин снимается", () => {
   });
 });
 
+describe("эталоны", () => {
+  it("перечень объединяет эталоны и свои, эталоны первыми", async () => {
+    const mine = { ...FIXTURE, name: "моя-проба" };
+    serveSkins([FIXTURE], [mine]);
+
+    const records = await listSkins();
+
+    expect(records.map((item) => item.name)).toEqual([FIXTURE.name, "моя-проба"]);
+    expect(records.map((item) => item.reference)).toEqual([true, false]);
+  });
+
+  it("эталон не удаляется — с него начинают, а не его правят", async () => {
+    serveSkins([FIXTURE]);
+
+    const [reference] = await listSkins();
+
+    await expect(deleteSkin(reference!)).rejects.toBeInstanceOf(StoreRefused);
+  });
+
+  it("свой скин удаляется", async () => {
+    const mine = { ...FIXTURE, name: "моя-проба" };
+    serveSkins([], [mine]);
+
+    const [own] = await listSkins();
+
+    await expect(deleteSkin(own!)).resolves.toBeUndefined();
+  });
+});
+
 describe("хранилище", () => {
   it("перечень имён приходит из службы, а не из кода зоны", async () => {
     expect([...(await SKIN_SOURCE.names())]).toEqual([FIXTURE.name]);
@@ -135,7 +164,7 @@ describe("хранилище", () => {
   });
 
   it("служба пуста — перечень пуст, и это другое состояние", async () => {
-    serveSkins();
+    serveSkins([]);
 
     expect([...(await SKIN_SOURCE.names())]).toEqual([]);
   });

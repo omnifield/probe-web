@@ -30,7 +30,7 @@ import { cleanup, mount } from "./dom.jsx";
 import { FIXTURE } from "./fixtures.js";
 import { restoreStore, serveSkins } from "./store-stub.js";
 
-beforeEach(() => serveSkins(FIXTURE));
+beforeEach(() => serveSkins([FIXTURE]));
 
 afterEach(() => {
   restoreStore();
@@ -125,6 +125,15 @@ describe("случаи", () => {
 });
 
 describe("хедер", () => {
+  it("эталоны и свои разведены группами", async () => {
+    const host = mount(() => <App />);
+
+    await vi.waitFor(() => {
+      const groups = [...host.querySelectorAll("optgroup")].map((group) => group.label);
+      expect(groups).toContain("эталоны");
+    });
+  });
+
   it("скин выбирается списком, и «снят» — полноправный пункт", async () => {
     const host = mount(() => <App />);
     const select = await vi.waitFor(() => {

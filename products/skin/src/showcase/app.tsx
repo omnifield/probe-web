@@ -373,6 +373,8 @@ function Head(props: {
           </For>
         </div>
 
+        {/* Эталоны и свои разведены группами: эталон это отправная точка, общая для всех, и
+            выбирая его, человек должен понимать, что правит он потом КОПИЮ, а не эту запись. */}
         <select
           class="head__select"
           aria-label="Скин"
@@ -381,9 +383,20 @@ function Head(props: {
           onChange={(event) => choose(event.currentTarget.value)}
         >
           <option value="">без скина</option>
-          <For each={props.records ?? []}>
-            {(record) => <option value={record.name}>{record.label}</option>}
-          </For>
+          <Show when={(props.records ?? []).some((record) => record.reference)}>
+            <optgroup label="эталоны">
+              <For each={(props.records ?? []).filter((record) => record.reference)}>
+                {(record) => <option value={record.name}>{record.label}</option>}
+              </For>
+            </optgroup>
+          </Show>
+          <Show when={(props.records ?? []).some((record) => !record.reference)}>
+            <optgroup label="свои">
+              <For each={(props.records ?? []).filter((record) => !record.reference)}>
+                {(record) => <option value={record.name}>{record.label}</option>}
+              </For>
+            </optgroup>
+          </Show>
         </select>
 
         <nav class="views" aria-label="Что делаем с компонентом">
