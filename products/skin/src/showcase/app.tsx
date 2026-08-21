@@ -30,7 +30,7 @@ import {
   readSkin as readRoot,
   type SkinMode,
 } from "@omnifield/probe-web-runtime";
-import { PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
+import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
 import {
@@ -48,6 +48,26 @@ import { REGISTRY } from "./registry.js";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
 const COMPONENTS = knownComponents(REGISTRY);
+
+/**
+ * Компоненты по разделам.
+ *
+ * Раздел объявляет САМ компонент (`group` в паспорте), а перечень разделов и их подписи живут у
+ * формы паспорта. Своего перечня витрина не заводит: назови она разделы сама — их стало бы два,
+ * и у следующего пульта третий. Порядок разделов — порядок объявления в перечне, а не наш.
+ *
+ * Пустые разделы не показываются: раздел без компонентов это обещание, которого никто не давал.
+ */
+const BY_GROUP = Object.entries(GROUPS)
+  .map(([group, title]) => ({
+    group,
+    title,
+    components: COMPONENTS.filter((component) => {
+      const passport = passportOf(component);
+      return passport !== undefined && groupOf(passport) === group;
+    }),
+  }))
+  .filter((section) => section.components.length > 0);
 
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
@@ -156,6 +176,17 @@ function ComponentPage(props: {
     <article class="page">
       <header class="page__head">
         <h1 class="page__title">{props.component}</h1>
+        <p class="page__facts">
+          <Show when={passportOf(props.component)}>
+            {(passport) => (
+              <>
+                <span class="page__fact">раздел: {GROUPS[groupOf(passport())]}</span>
+                <span class="page__fact">род: {passport().genus}</span>
+                <span class="page__fact">поставщик: {passport().package}</span>
+              </>
+            )}
+          </Show>
+        </p>
         <p class="page__lead">
           Части и состояния — из паспорта компонента. Вариации — из надетого скина. Случаи собраны
           из образца и нарисованы механикой сборки.
@@ -393,16 +424,23 @@ export function App() {
           </For>
         </div>
         <nav class="rail__list">
-          <For each={COMPONENTS}>
-            {(component) => (
-              <button
-                class="rail__item"
-                type="button"
-                aria-current={component === current() ? "true" : undefined}
-                onClick={() => setCurrent(component)}
-              >
-                {component}
-              </button>
+          <For each={BY_GROUP}>
+            {(section) => (
+              <>
+                <b class="rail__group">{section.title}</b>
+                <For each={section.components}>
+                  {(component) => (
+                    <button
+                      class="rail__item"
+                      type="button"
+                      aria-current={component === current() ? "true" : undefined}
+                      onClick={() => setCurrent(component)}
+                    >
+                      {component}
+                    </button>
+                  )}
+                </For>
+              </>
             )}
           </For>
         </nav>

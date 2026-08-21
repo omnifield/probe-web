@@ -9,8 +9,16 @@
 // Третье — самое важное: пока адрес на узле есть, скин может одеть компонент, даже если самого
 // скина ещё нет. Пропади адрес — витрина продолжит выглядеть исправной, а одеть станет нечего.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
+import {
+  type ComponentPassport,
+  GROUPS,
+  groupOf,
+  passportOf,
+} from "@omnifield/probe-web-ui/passport";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/showcase/app.jsx";
@@ -84,6 +92,24 @@ describe("случаи", () => {
     for (const component of knownComponents(REGISTRY)) {
       expect(CASES[component]?.length ?? 0).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("перечень по разделам", () => {
+  it("раздел компонента приходит из его паспорта, а не из перечня витрины", () => {
+    const host = mount(() => <App />);
+    const passport = passportOf("button");
+    const shown = host.textContent ?? "";
+
+    expect(passport?.group).toBeDefined();
+    expect(shown).toContain(GROUPS[groupOf(passport as ComponentPassport)]);
+  });
+
+  it("подписи разделов берутся у формы паспорта — своего словаря витрина не ведёт", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/showcase/app.tsx"), "utf8");
+
+    expect(source).toContain("GROUPS");
+    expect(source).not.toMatch(/["']Действия["']|["']Ввод["']|["']Всплывающее["']/);
   });
 });
 
