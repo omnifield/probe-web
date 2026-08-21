@@ -9,7 +9,24 @@
  *
  * Значения — роли набора значений зоны `style`: витрина обязана работать в обеих парах тем, и
  * следование за режимом здесь проверяется тем же способом, что у скина.
+ *
+ * РАСКЛАДКА: хедер сверху, под ним две области со СВОЕЙ прокруткой.
+ *
+ *   ┌─────────────────────────────────────────────┐
+ *   │ хедер: скин · режим · состояние хранилища   │
+ *   ├──────────────┬──────────────────────────────┤
+ *   │ перечень     │ показ                        │
+ *   │ свой скролл  │ свой скролл, вся ширина      │
+ *   └──────────────┴──────────────────────────────┘
+ *
+ * Прокрутка разведена намеренно: перечень длинный сам по себе, показ длиннее вдвое, и общий
+ * скролл уводил бы перечень наверх ровно тогда, когда по нему надо переключиться.
  */
+
+html,
+body {
+  block-size: 100%;
+}
 
 body {
   margin: 0;
@@ -20,8 +37,108 @@ body {
 
 .shell {
   display: grid;
-  grid-template-columns: minmax(12rem, 16rem) 1fr;
-  min-block-size: 100dvh;
+  grid-template-rows: auto 1fr;
+  block-size: 100dvh;
+  overflow: hidden;
+}
+
+/* `min-block-size: 0` обязателен обоим: без него ячейка сетки не даёт содержимому сжаться, и
+   прокрутка уезжает на весь документ — то есть ровно то, что мы разводим. */
+.body {
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) 1fr;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+/* ── хедер ────────────────────────────────────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-block-end: var(--border-width-1) solid var(--separator);
+  background: var(--surface-subtle);
+}
+
+.head__title {
+  font-size: var(--font-size-lg);
+}
+
+.head__field {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.head__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.head__select {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.head__select:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.head__select:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.head__state {
+  flex: 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: end;
+}
+
+.head__cmd {
+  font-family: var(--font-mono);
+}
+
+/* ── режим ────────────────────────────────────────────────────────────────────────────── */
+
+.modes {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.modes__item {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.modes__item:hover {
+  background: var(--tint-hover);
+}
+
+.modes__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.modes__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-text);
 }
 
 /* ── перечень компонентов ─────────────────────────────────────────────────────────────── */
@@ -29,8 +146,10 @@ body {
 .rail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  min-block-size: 0;
   padding: var(--space-4);
+  overflow-y: auto;
   border-inline-end: var(--border-width-1) solid var(--separator);
   background: var(--surface-subtle);
 }
@@ -39,10 +158,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-
-.rail__title {
-  font-size: var(--font-size-lg);
 }
 
 .rail__note {
@@ -54,6 +169,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.rail__group {
+  margin-block-start: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}
+
+.rail__group:first-child {
+  margin-block-start: 0;
 }
 
 .rail__item {
@@ -81,70 +207,20 @@ body {
   color: var(--brand-text);
 }
 
-/* ── выбор скина ──────────────────────────────────────────────────────────────────────── */
-
-.skins {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-block-start: auto;
-  padding-block-start: var(--space-4);
-  border-block-start: var(--border-width-1) solid var(--separator);
-}
-
-.skins__title {
-  margin-block-end: var(--space-1);
-}
-
-.skins__item {
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.skins__item:hover {
-  background: var(--tint-hover);
-}
-
-.skins__item:focus-visible {
-  outline: var(--focus-ring);
-}
-
-.skins__item[aria-pressed="true"] {
-  border-color: var(--brand-border);
-  background: var(--brand-element);
-  color: var(--brand-text);
-}
-
-.skins__item--off[aria-pressed="true"] {
-  border-color: var(--danger-border);
-  background: var(--danger-element);
-  color: var(--danger-text);
-}
-
-.skins__state {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-}
-
-/* ── страница компонента ──────────────────────────────────────────────────────────────── */
+/* ── показ ────────────────────────────────────────────────────────────────────────────── */
 
 .main {
+  min-block-size: 0;
   padding: var(--space-6);
   overflow: auto;
 }
 
+/* Ширина не ограничивается: показ занимает всё, что дали. Сетка вариаций растёт в стороны, и
+   отобранное у неё место — это отобранные клетки, то есть то самое, ради чего сюда пришли. */
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  max-inline-size: var(--column-80, 60rem);
 }
 
 .page__head {
@@ -158,12 +234,23 @@ body {
   font-family: var(--font-mono);
 }
 
+.page__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
 .page__lead,
 .page__subtitle {
   margin: 0;
 }
 
 .page__lead {
+  max-inline-size: var(--column-80, 60rem);
   color: var(--text-muted);
 }
 
@@ -175,6 +262,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.page__empty,
+.empty {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 /* ── части и состояния ────────────────────────────────────────────────────────────────── */
@@ -210,95 +303,6 @@ body {
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
-}
-
-/* ── случаи сеткой ────────────────────────────────────────────────────────────────────── */
-
-.cases {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: var(--space-4);
-}
-
-.case {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-3);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
-
-.case__stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-block-size: 5rem;
-  padding: var(--space-3);
-  border: var(--border-width-1) dashed var(--separator);
-  border-radius: var(--radius-md);
-}
-
-.case__caption {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.case__note {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.empty {
-  color: var(--text-muted);
-}
-
-.page__empty {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-/* ── переключатель режима ─────────────────────────────────────────────────────────────── */
-
-.modes {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.modes__item {
-  flex: 1;
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.modes__item:hover {
-  background: var(--tint-hover);
-}
-
-.modes__item:focus-visible {
-  outline: var(--focus-ring);
-}
-
-.modes__item[aria-pressed="true"] {
-  border-color: var(--brand-border);
-  background: var(--brand-element);
-  color: var(--brand-text);
-}
-
-.skins__cmd {
-  display: block;
-  margin-block-start: var(--space-1);
-  font-family: var(--font-mono);
-  overflow-wrap: anywhere;
 }
 
 /* ── сетка: вариации × состояния ──────────────────────────────────────────────────────── */
@@ -366,23 +370,42 @@ body {
   font-size: var(--font-size-sm);
 }
 
-.rail__group {
-  margin-block-start: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: 400;
+/* ── случаи ───────────────────────────────────────────────────────────────────────────── */
+
+.cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-4);
 }
 
-.rail__group:first-child {
-  margin-block-start: 0;
-}
-
-.page__facts {
+.case {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.case__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 5rem;
+  padding: var(--space-3);
+  border: var(--border-width-1) dashed var(--separator);
+  border-radius: var(--radius-md);
+}
+
+.case__caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.case__note {
   color: var(--text-muted);
-  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
 }

@@ -250,81 +250,93 @@ function ComponentPage(props: {
 }
 
 /**
- * Выбор скина: что надето, чем заменить, чем снять.
+ * ХЕДЕР: что надето и в каком режиме.
  *
- * Снятие — отдельная кнопка, а не «пустой» пункт перечня: голый кит это законное рабочее
- * состояние продукта, и обращаться с ним как с отсутствием выбора значило бы прятать его.
+ * Оба выбора здесь, а не на странице компонента, по одной причине: **они общие на всю витрину**.
+ * Скин один на всё, режим один на всё; стой они на странице кнопки, показалось бы, что одеваешь
+ * кнопку, а одевается всё.
+ *
+ * СКИН — списком выбора, а не рядом кнопок: скинов станет много, и ряд кнопок расползётся по
+ * ширине, отбирая место у самого показа. «Снят» — первый пункт списка и полноправный выбор:
+ * голый кит это рабочее состояние продукта, а не отсутствие выбора.
  *
  * ТРИ СОСТОЯНИЯ ХРАНИЛИЩА говорятся врозь, потому что лечатся разным: перечень есть · служба
- * пуста (засеять) · службы нет (поднять, адрес назван). Слепи их в одно «ничего нет» — человек
- * пойдёт чинить не то, а пустой список прочтёт как «скинов не существует».
+ * отвечает, но пуста · службы нет. Слепи их в одно «ничего нет» — человек пойдёт чинить не то, а
+ * пустой список прочтёт как «скинов не существует».
+ *
+ * Элементы здесь НАТИВНЫЕ. Витрина — инструмент, и ждать, пока появится скин, чтобы её саму
+ * можно было использовать, она не вправе: одевать кита ею же и означает работать без скина.
  */
-function SkinChoice(props: {
+function Head(props: {
   worn: string | null;
   records: readonly SkinRecord[] | undefined;
   failure: unknown;
+  mode: SkinMode;
   onWear: (name: string) => void;
   onTakeOff: () => void;
+  onMode: (mode: SkinMode) => void;
 }) {
+  const choose = (value: string) => {
+    if (value === "") props.onTakeOff();
+    else props.onWear(value);
+  };
+
   return (
-    <div class="skins">
-      <b class="skins__title">Скин</b>
+    <header class="head">
+      <b class="head__title">Витрина</b>
 
-      <For each={props.records ?? []}>
-        {(record) => (
-          <button
-            class="skins__item"
-            type="button"
-            aria-pressed={record.name === props.worn}
-            onClick={() => props.onWear(record.name)}
-          >
-            {record.label}
-          </button>
-        )}
-      </For>
-
-      <Show when={props.records && props.records.length > 0}>
-        <button
-          class="skins__item skins__item--off"
-          type="button"
-          aria-pressed={props.worn === null}
-          onClick={() => props.onTakeOff()}
+      <label class="head__field">
+        <span class="head__label">Скин</span>
+        <select
+          class="head__select"
+          value={props.worn ?? ""}
+          disabled={props.failure !== undefined || (props.records?.length ?? 0) === 0}
+          onChange={(event) => choose(event.currentTarget.value)}
         >
-          снять
-        </button>
-      </Show>
+          <option value="">— снят, голый кит —</option>
+          <For each={props.records ?? []}>
+            {(record) => <option value={record.name}>{record.label}</option>}
+          </For>
+        </select>
+      </label>
 
-      <p class="skins__state">
+      <div class="modes" role="group" aria-label="Режим">
+        <For each={["light", "dark"] as const}>
+          {(value) => (
+            <button
+              class="modes__item"
+              type="button"
+              aria-pressed={props.mode === value}
+              onClick={() => props.onMode(value)}
+            >
+              {value === "light" ? "светлый" : "тёмный"}
+            </button>
+          )}
+        </For>
+      </div>
+
+      <p class="head__state">
         <Show
           when={props.failure}
           fallback={
             <Show
               when={props.records && props.records.length > 0}
-              fallback={
-                <>
-                  Служба отвечает, но скинов в ней нет:
-                  <code class="skins__cmd">{EMPTY_HINT}</code>
-                </>
-              }
+              fallback={<>Служба отвечает, но скинов в ней нет: {EMPTY_HINT}</>}
             >
-              <Show
-                when={props.worn}
-                fallback="Скин снят — кит показан голым. Рабочее состояние продукта, а не поломка витрины."
-              >
-                {(name) => `Надет «${name()}». Снимите — останется голый кит: это проверка, а не поломка.`}
+              <Show when={props.worn} fallback="Скин снят — кит показан голым, и это рабочее состояние.">
+                {(name) => `Надет «${name()}»`}
               </Show>
             </Show>
           }
         >
           {(failure) => (
             <>
-              {String((failure() as Error).message)}
-              <code class="skins__cmd">{SERVICE_HINT}</code>
+              {String((failure() as Error).message)} · <code class="head__cmd">{SERVICE_HINT}</code>
             </>
           )}
         </Show>
       </p>
-    </div>
+    </header>
   );
 }
 
@@ -403,63 +415,56 @@ export function App() {
 
   return (
     <div class="shell">
-      <aside class="rail">
-        <div class="rail__head">
-          <b class="rail__title">Витрина</b>
-          <span class="rail__note">перечень — из реестра паспортов</span>
-        </div>
+      <Head
+        worn={worn()}
+        records={records()}
+        failure={records.error}
+        mode={mode()}
+        onWear={wear}
+        onTakeOff={takeOff}
+        onMode={setMode}
+      />
 
-        <div class="modes">
-          <For each={["light", "dark"] as const}>
-            {(value) => (
-              <button
-                class="modes__item"
-                type="button"
-                aria-pressed={mode() === value}
-                onClick={() => setMode(value)}
-              >
-                {value === "light" ? "светлый" : "тёмный"}
-              </button>
-            )}
-          </For>
-        </div>
-        <nav class="rail__list">
-          <For each={BY_GROUP}>
-            {(section) => (
-              <>
-                <b class="rail__group">{section.title}</b>
-                <For each={section.components}>
-                  {(component) => (
-                    <button
-                      class="rail__item"
-                      type="button"
-                      aria-current={component === current() ? "true" : undefined}
-                      onClick={() => setCurrent(component)}
-                    >
-                      {component}
-                    </button>
-                  )}
-                </For>
-              </>
-            )}
-          </For>
-        </nav>
-        <SkinChoice
-          worn={worn()}
-          records={records()}
-          failure={records.error}
-          onWear={wear}
-          onTakeOff={takeOff}
-        />
-      </aside>
+      <div class="body">
+        {/* Две области прокрутки, и каждая своя: перечень длинный сам по себе, показ длиннее
+            вдвое, и общий скролл уводил бы перечень наверх ровно тогда, когда по нему надо
+            переключиться. */}
+        <aside class="rail">
+          <div class="rail__head">
+            <span class="rail__note">перечень — из реестра паспортов</span>
+          </div>
 
-      <main class="main">
-        <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
-          {(component) => (
-            <ComponentPage component={component()} variants={variants()} gaps={gaps()} />
-          )}
-        </Show>
-      </main>
+          <nav class="rail__list">
+            <For each={BY_GROUP}>
+              {(section) => (
+                <>
+                  <b class="rail__group">{section.title}</b>
+                  <For each={section.components}>
+                    {(component) => (
+                      <button
+                        class="rail__item"
+                        type="button"
+                        aria-current={component === current() ? "true" : undefined}
+                        onClick={() => setCurrent(component)}
+                      >
+                        {component}
+                      </button>
+                    )}
+                  </For>
+                </>
+              )}
+            </For>
+          </nav>
+        </aside>
+
+        <main class="main">
+          <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+            {(component) => (
+              <ComponentPage component={component()} variants={variants()} gaps={gaps()} />
+            )}
+          </Show>
+        </main>
+      </div>
     </div>
   );
 }

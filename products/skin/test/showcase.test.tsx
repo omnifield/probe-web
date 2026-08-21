@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
+import { readSkin } from "@omnifield/probe-web-runtime";
 import {
   type ComponentPassport,
   GROUPS,
@@ -92,6 +93,53 @@ describe("случаи", () => {
     for (const component of knownComponents(REGISTRY)) {
       expect(CASES[component]?.length ?? 0).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("хедер", () => {
+  it("скин выбирается списком, и «снят» — полноправный пункт", async () => {
+    const host = mount(() => <App />);
+    const select = await vi.waitFor(() => {
+      const found = host.querySelector<HTMLSelectElement>(".head__select");
+      expect(found?.options.length).toBeGreaterThan(1);
+      return found as HTMLSelectElement;
+    });
+
+    // Первый пункт — снятие: голый кит это рабочее состояние продукта, а не отсутствие выбора.
+    expect(select.options[0]?.value).toBe("");
+    expect([...select.options].map((option) => option.value)).toContain(FIXTURE.name);
+  });
+
+  it("выбор списком надевает скин, пустой пункт — снимает", async () => {
+    const host = mount(() => <App />);
+    const select = await vi.waitFor(() => {
+      const found = host.querySelector<HTMLSelectElement>(".head__select");
+      expect(found?.options.length).toBeGreaterThan(1);
+      return found as HTMLSelectElement;
+    });
+
+    select.value = FIXTURE.name;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await vi.waitFor(() =>
+      expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name),
+    );
+
+    select.value = "";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await vi.waitFor(() =>
+      expect(document.documentElement.hasAttribute("data-skin")).toBe(false),
+    );
+  });
+
+  it("режим переключается механикой приложения", () => {
+    const host = mount(() => <App />);
+    const [light] = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
+
+    light?.click();
+
+    expect(readSkin().mode).toBe("light");
   });
 });
 
