@@ -37,6 +37,7 @@
     "postcss-nested": "^7.0.2"
   },
   "peerDependencies": {
+    "@omnifield/probe-web-style": "^0.1.0",
     "@omnifield/probe-web-ui": "^0.1.0"
   },
   "devDependencies": {
@@ -45,6 +46,7 @@
     "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-runtime": "workspace:*",
+    "@omnifield/probe-web-style": "workspace:*",
     "@omnifield/probe-web-ui": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",

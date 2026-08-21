@@ -52,6 +52,20 @@ describe("postcss живёт ТОЛЬКО за подпутём `./flat`", () =>
     expect(Object.keys(flat)).toEqual(["flattenCss"]);
   });
 
+  it("набора значений в `model.js` нет: формула контраста живёт в корне", () => {
+    // Зависимость на зону значений взята ради ОДНОЙ формулы (гейт контраста), и она тянет за
+    // собой Solid. Хранилищу, которому нужна только форма записи, платить за это не за что.
+    expect(bundle("model.js")).not.toContain("probe-web-style");
+  });
+
+  it("читаемость — в корне, а не в `./model`", async () => {
+    const root = await import("../src/index.js");
+    const model = await import("../src/model.js");
+
+    expect(typeof root.skinContrast).toBe("function");
+    expect("skinContrast" in model).toBe(false);
+  });
+
   it("покрытие лежит в `./model`: хранилищу оно нужно, а postcss — нет", async () => {
     // «Отказаться сохранить неполный скин» — работа хранилища, и ставить ради неё конвейер CSS
     // ему не за что. Проверяем не намерение, а собранный файл: `model.js` postcss не содержит
@@ -78,10 +92,14 @@ describe("что уезжает, а что остаётся", () => {
     expect(Object.keys(manifest.dependencies).toSorted()).toEqual(["postcss", "postcss-nested"]);
   });
 
-  it("кит объявлен ОДНОРАНГОВЫМ: копию паспортов приносит потребитель", () => {
-    // Две копии формы паспорта в дереве разъедутся молча — та самая третья копия, от которой
-    // ушли, объявив читателя под вид рядом с формой (`PWEB-27`).
-    expect(Object.keys(manifest.peerDependencies)).toEqual(["@omnifield/probe-web-ui"]);
+  it("кит и набор значений объявлены ОДНОРАНГОВЫМИ, а не обычными", () => {
+    // Кит — потому что две копии формы паспорта в дереве разъедутся молча (`PWEB-27`). Набор
+    // значений — потому что взята его формула-ГЕЙТ, и «проверено» у нас и у того, кто ставит
+    // свой бренд, обязано означать одно и то же.
+    expect(Object.keys(manifest.peerDependencies).toSorted()).toEqual([
+      "@omnifield/probe-web-style",
+      "@omnifield/probe-web-ui",
+    ]);
   });
 
   it("ни Solid, ни отрисовки в поставке нет: механика превращает данные в текст", () => {

@@ -96,7 +96,7 @@ export interface SkinFlaw {
 }
 
 /** Готовое правило: селектор и стилевой объект, который под ним стоит. */
-export interface SkinRule {
+export interface CssRule {
   /** Полный селектор — порождён из координаты, руками не написан. */
   readonly selector: string;
   /** Вид: свойства и разрешённые вложенные блоки. */
@@ -107,42 +107,56 @@ export interface SkinRule {
   readonly origin: number;
 }
 
-/** Что вышло из обхода: правила в порядке каскада и все найденные изъяны сразу. */
-export interface RuleSet {
+/**
+ * АДРЕС правила в рецепте — то, чем оно адресовано, до превращения в селектор.
+ *
+ * Отдаётся наружу, потому что читателей у него больше одного: покрытие спрашивает, какие
+ * координаты одеты, читаемость — какие значения сходятся на одной координате. Считай каждый из
+ * них адрес по-своему, разбирая селектор обратно, — и мы получили бы два разбора одной строки,
+ * расходящихся на первом же новом виде адреса.
+ */
+export interface RuleCoordinate {
+  /** Имя компонента, оно же `data-scope`. */
+  readonly component: string;
+  /** Часть — ключ анатомии. */
+  readonly part: string;
+  /**
+   * Имена вариаций, при которых правило действует.
+   *
+   * Пусто — при любой: так выглядит база. Несколько — так выглядит пересечение, названное
+   * автором рецепта.
+   */
+  readonly variants: readonly string[];
+  /** Состояния СВОЕЙ части, набранные к этому правилу. */
+  readonly states: readonly string[];
+  /** Предок и его состояния — если правило от них зависит. */
+  readonly ancestor?: {
+    readonly component: string;
+    readonly part: string;
+    readonly states: readonly string[];
+  };
+}
+
+/** Правило из РЕЦЕПТА: несёт адрес, по которому его собрали. */
+export interface SkinRule extends CssRule {
+  readonly coordinate: RuleCoordinate;
+}
+
+/** Что вышло из обхода рецептов: правила в порядке каскада и все изъяны сразу. */
+export interface SkinRules {
   readonly rules: readonly SkinRule[];
   readonly flaws: readonly SkinFlaw[];
 }
 
 /**
- * КООРДИНАТЫ, КОТОРЫХ КОСНУЛСЯ СКИН, — сырьё для ответа «чего он ещё не одел».
+ * Что вышло из обхода ПРАВОК ОБРАЗЦА.
  *
- * Ключами, а не вложенными картами: сравнение идёт по принадлежности, и один плоский набор здесь
- * и дешевле, и короче читается. Пишутся ключи ОДНИМ местом (`partKey`, `stateKey`) — два
- * начертания одного ключа разошлись бы молча, и покрытие врало бы в обе стороны.
- *
- * «Коснулся» значит «дал вид»: сюда попадает часть, получившая хоть одно правило. Часть,
- * упомянутая только как ПРЕДОК чужого правила, не попадает — вида ей не дали.
+ * Координаты у этих правил нет и не заводится: правка образца адресует ОДНО МЕСТО. Приписать ей
+ * координату значило бы объявить одетой координату, которой вида не давали.
  */
-export interface TouchedCoordinates {
-  /** Части: ключ `partKey`. */
-  readonly parts: ReadonlySet<string>;
-  /** Состояния: ключ `stateKey`. */
-  readonly states: ReadonlySet<string>;
-}
-
-/** Что вышло из обхода РЕЦЕПТОВ: правила, изъяны и то, чего скин коснулся. */
-export interface SkinRules extends RuleSet {
-  readonly touched: TouchedCoordinates;
-}
-
-/** Ключ части. Одно место записи на всю зону. */
-export function partKey(component: string, part: string): string {
-  return `${component}.${part}`;
-}
-
-/** Ключ состояния части. Одно место записи на всю зону. */
-export function stateKey(component: string, part: string, state: string): string {
-  return `${partKey(component, part)}:${state}`;
+export interface SketchRules {
+  readonly rules: readonly CssRule[];
+  readonly flaws: readonly SkinFlaw[];
 }
 
 /** Словарь известных имён значений — то, на что скин вправе ссылаться. */
@@ -187,24 +201,6 @@ function vocabularyOf(skin: Pick<Skin, "variables">, vocabulary: ValueVocabulary
   }
 
   return known;
-}
-
-/** Копилка покрытия: что обход успел одеть. */
-class Touched implements TouchedCoordinates {
-  readonly parts = new Set<string>();
-  readonly states = new Set<string>();
-
-  /**
-   * Отмечает координату, получившую правило.
-   *
-   * @param component имя компонента
-   * @param part имя части
-   * @param states состояния СВОЕЙ части, набранные к этому правилу
-   */
-  mark(component: string, part: string, states: readonly string[]): void {
-    this.parts.add(partKey(component, part));
-    for (const state of states) this.states.add(stateKey(component, part, state));
-  }
 }
 
 /** Копилка изъянов — чтобы обход не таскал массив параметром через каждый уровень. */
@@ -339,15 +335,20 @@ function declares(style: StyleObject): boolean {
  * Одним объектом, а не пятью параметрами через все уровни: у обхода шесть функций, и каждая
  * протаскивала бы их насквозь, ничего с ними не делая. Переменная часть — курсор (`Cursor`),
  * она у каждого уровня своя.
+ *
+ * Тип-параметр `Mark` — то, чем правило подписывается СВЕРХ селектора: обход рецептов ставит
+ * координату, обход правок образца не ставит ничего. Обход при этом ОДИН: развести его на две
+ * копии ради одного поля значило бы завести вторую правду о том, как рецепт разворачивается.
  */
-interface Walk {
+interface Walk<Mark> {
   /** Чем найти паспорт по имени компонента: нужен предку, живущему в чужом дереве. */
   readonly lookup: PassportLookup;
   /** Известные имена значений. */
   readonly known: Set<string>;
   readonly flaws: Flaws;
-  readonly touched: Touched;
-  readonly out: SkinRule[];
+  readonly out: (CssRule & Mark)[];
+  /** Чем подписать правило, стоящее в этом месте обхода. */
+  mark(cursor: Cursor): Mark;
 }
 
 /** ПЕРЕМЕННОЕ: где обход сейчас находится и что уже набрал в селектор. */
@@ -358,6 +359,8 @@ interface Cursor {
   readonly own: string;
   /** Селектор предка, если он есть, — встаёт слева. */
   readonly prefix: string;
+  /** Имена вариаций, при которых правило действует. Пусто — при любой. */
+  readonly variants: readonly string[];
   /**
    * Состояния СВОЕЙ части, набранные к этому месту.
    *
@@ -365,18 +368,52 @@ interface Cursor {
    * наша часть, и записывать предку покрытие значило бы объявить одетым то, чему вида не дали.
    */
   readonly states: readonly string[];
+  /** Предок и его состояния, если обход спустился в правило от предка. */
+  readonly ancestor?: RuleCoordinate["ancestor"];
   /** Число условий адреса — им задаётся порядок при равном весе селектора. */
   readonly conditions: number;
   /** Происхождение: 0 база, 1 вариация, 2 пересечение. */
   readonly origin: number;
 }
 
+/**
+ * Вариация на входе обхода: селектор и ИМЕНА, которые он выражает.
+ *
+ * Пара, а не одна строка: селектор нужен печати, имена — адресу. Восстанавливать имена из
+ * селектора обратно значило бы разбирать собственную же запись.
+ */
+interface Variant {
+  readonly selector: string;
+  readonly names: readonly string[];
+}
+
+/** «При любой вариации» — так адресована база. */
+const ANY_VARIANT: Variant = { selector: "", names: [] };
+
+/** Подпись правила из рецепта — его адрес. */
+function coordinateOf(cursor: Cursor): { coordinate: RuleCoordinate } {
+  return {
+    coordinate: {
+      component: cursor.passport.component,
+      part: cursor.part,
+      variants: cursor.variants,
+      states: cursor.states,
+      ...(cursor.ancestor ? { ancestor: cursor.ancestor } : {}),
+    },
+  };
+}
+
 /** Разворачивает вид под одним селектором: свои свойства, затем состояния части. */
-function growLocal(cursor: Cursor, style: LocalStyle, where: string, walk: Walk): void {
+function growLocal<Mark>(
+  cursor: Cursor,
+  style: LocalStyle,
+  where: string,
+  walk: Walk<Mark>,
+): void {
   if (style.props && declares(style.props)) {
     checkStyle(style.props, `${where}.props`, walk.known, walk.flaws);
-    walk.touched.mark(cursor.passport.component, cursor.part, cursor.states);
     walk.out.push({
+      ...walk.mark(cursor),
       selector: cursor.prefix === "" ? cursor.own : `${cursor.prefix} ${cursor.own}`,
       style: style.props,
       conditions: cursor.conditions,
@@ -412,7 +449,12 @@ function growLocal(cursor: Cursor, style: LocalStyle, where: string, walk: Walk)
 }
 
 /** Разворачивает правила «часть выглядит так, когда её владелец в таком состоянии». */
-function growAncestor(cursor: Cursor, ancestor: AncestorStyle, where: string, walk: Walk): void {
+function growAncestor<Mark>(
+  cursor: Cursor,
+  ancestor: AncestorStyle,
+  where: string,
+  walk: Walk<Mark>,
+): void {
   const owner = walk.lookup(ancestor.component);
   const prefix = owner && ancestorSelector(owner, ancestor.part, ancestor.states);
 
@@ -427,7 +469,16 @@ function growAncestor(cursor: Cursor, ancestor: AncestorStyle, where: string, wa
   }
 
   growLocal(
-    { ...cursor, prefix, conditions: cursor.conditions + (ancestor.states?.length ?? 0) },
+    {
+      ...cursor,
+      prefix,
+      ancestor: {
+        component: ancestor.component,
+        part: ancestor.part,
+        states: ancestor.states ?? [],
+      },
+      conditions: cursor.conditions + (ancestor.states?.length ?? 0),
+    },
     ancestor.style,
     `${where}.style`,
     walk,
@@ -435,15 +486,15 @@ function growAncestor(cursor: Cursor, ancestor: AncestorStyle, where: string, wa
 }
 
 /** Разворачивает вид одной части целиком: свой адрес и уточнения по предку. */
-function growPart(
+function growPart<Mark>(
   passport: ComponentPassport,
   part: string,
-  /** Селектор вариации, если правило принадлежит вариации. */
-  variant: string,
+  /** Селектор вариации и имена, которые он выражает. */
+  variant: Variant,
   origin: number,
   style: PartStyle,
   where: string,
-  walk: Walk,
+  walk: Walk<Mark>,
 ): void {
   const own = partSelector(passport, part);
 
@@ -459,8 +510,9 @@ function growPart(
   const cursor: Cursor = {
     passport,
     part,
-    own: own + variant,
+    own: own + variant.selector,
     prefix: "",
+    variants: variant.names,
     states: [],
     conditions: 0,
     origin,
@@ -474,13 +526,13 @@ function growPart(
 }
 
 /** Разворачивает вид по частям. */
-function growParts(
+function growParts<Mark>(
   passport: ComponentPassport,
-  variant: string,
+  variant: Variant,
   origin: number,
   parts: PartStyles,
   where: string,
-  walk: Walk,
+  walk: Walk<Mark>,
 ): void {
   for (const [part, style] of Object.entries(parts)) {
     growPart(passport, part, variant, origin, style, `${where}.${part}`, walk);
@@ -488,11 +540,11 @@ function growParts(
 }
 
 /** Разворачивает один рецепт: база, вариации, умолчание, пересечения. */
-function growRecipe(
+function growRecipe<Mark>(
   passport: ComponentPassport,
   recipe: SlotRecipe,
   where: string,
-  walk: Walk,
+  walk: Walk<Mark>,
 ): void {
   const names = Object.keys(recipe.variants ?? {});
 
@@ -514,7 +566,7 @@ function growRecipe(
   }
 
   if (recipe.base) {
-    growParts(passport, "", 0, recipe.base, `${where}.base`, walk);
+    growParts(passport, ANY_VARIANT, 0, recipe.base, `${where}.base`, walk);
   }
 
   for (const [name, parts] of Object.entries(recipe.variants ?? {})) {
@@ -537,7 +589,7 @@ function growRecipe(
       continue;
     }
 
-    growParts(passport, selector, 1, parts, at, walk);
+    growParts(passport, { selector, names: [name] }, 1, parts, at, walk);
   }
 
   for (const [index, compound] of (recipe.compoundVariants ?? []).entries()) {
@@ -546,12 +598,12 @@ function growRecipe(
 }
 
 /** Разворачивает одно пересечение: перечисленные вариации и состояния — в один адрес. */
-function growCompound(
+function growCompound<Mark>(
   passport: ComponentPassport,
   recipe: SlotRecipe,
   compound: CompoundVariant,
   where: string,
-  walk: Walk,
+  walk: Walk<Mark>,
 ): void {
   const chosen = compound.variants ?? [];
   const unknown = chosen.filter((name) => !(name in (recipe.variants ?? {})));
@@ -595,11 +647,11 @@ function growCompound(
     ]),
   );
 
-  growParts(passport, variant, 2, wrapped, where, walk);
+  growParts(passport, { selector: variant, names: chosen }, 2, wrapped, where, walk);
 }
 
 /** Ставит правила в порядок каскада: больше условий — позже; при равенстве — по происхождению. */
-function ordered(rules: SkinRule[]): SkinRule[] {
+function ordered<R extends CssRule>(rules: R[]): R[] {
   return rules
     .map((rule, index) => ({ rule, index }))
     .sort(
@@ -617,7 +669,7 @@ function ordered(rules: SkinRule[]): SkinRule[] {
  * @param skin скин целиком
  * @param lookup чем найти паспорт по имени компонента
  * @param vocabulary словарь известных имён значений
- * @returns правила в порядке каскада, все изъяны сразу и то, чего скин коснулся
+ * @returns правила в порядке каскада — каждое со своим адресом — и все изъяны сразу
  */
 export function skinRules(
   skin: Skin,
@@ -628,9 +680,14 @@ export function skinRules(
 
   const known = vocabularyOf(skin, vocabulary);
   const flaws = new Flaws();
-  const touched = new Touched();
   const out: SkinRule[] = [];
-  const walk: Walk = { lookup, known, flaws, touched, out };
+  const walk: Walk<{ coordinate: RuleCoordinate }> = {
+    lookup,
+    known,
+    flaws,
+    out,
+    mark: coordinateOf,
+  };
 
   if (!safeName(skin.name)) {
     flaws.add("unsafe-name", "name", `имя скина «${skin.name}» не годится внутрь селектора`);
@@ -672,7 +729,7 @@ export function skinRules(
   }
 
   done();
-  return { rules: ordered(out), flaws: flaws.list, touched };
+  return { rules: ordered(out), flaws: flaws.list };
 }
 
 /**
@@ -683,9 +740,9 @@ export function skinRules(
  * приложение получит вид, привязанный к идентификаторам чужого стенда. Здесь утечь нечему:
  * скин на вход этой функции не приходит вовсе.
  *
- * Покрытия этот вызов НЕ считает, и в его ответе его нет: правка образца одевает ОДНО МЕСТО, а
- * не координату. Зачти мы её в покрытие — скин выглядел бы одетым там, где на самом деле покрашен
- * один узел чужого стенда.
+ * Адреса у этих правил НЕТ, и в ответе его нет: правка образца одевает ОДНО МЕСТО, а не
+ * координату. Припиши мы ей координату — покрытие и читаемость увидели бы одетой ту, которой
+ * вида не давали, а покрашен один узел чужого стенда.
  *
  * @param edits правки по узлам
  * @param lookup чем найти паспорт по имени компонента
@@ -695,15 +752,15 @@ export function sketchRules(
   edits: readonly SketchEdit[],
   lookup: PassportLookup,
   vocabulary: ValueVocabulary = {},
-): RuleSet {
+): SketchRules {
   const done = trace(`sketchRules(${edits.length})`);
 
   const known = vocabularyOf({}, vocabulary);
   const flaws = new Flaws();
-  const out: SkinRule[] = [];
-  // Копилка покрытия заведена и выброшена: обход у нас общий, а зачитывать правку образца в
-  // покрытие нельзя. Отдельная ветка обхода стоила бы второй реализации ради одного `if`.
-  const walk: Walk = { lookup, known, flaws, touched: new Touched(), out };
+  const out: CssRule[] = [];
+  // Подпись пустая: обход у нас общий, а адреса у правки образца нет. Отдельная ветка обхода
+  // стоила бы второй реализации разворота рецепта ради одного поля.
+  const walk: Walk<Record<never, never>> = { lookup, known, flaws, out, mark: () => ({}) };
 
   for (const [index, edit] of edits.entries()) {
     const where = `edits[${index}]`;
@@ -736,6 +793,7 @@ export function sketchRules(
       part: edit.part,
       own: nodeSelector(edit.node),
       prefix: "",
+      variants: [],
       states: [],
       conditions: 0,
       origin: 0,

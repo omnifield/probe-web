@@ -42,9 +42,30 @@
 import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
 import { partOf } from "@omnifield/probe-web-ui/passport";
 
+import { passportLookup } from "./address.js";
 import type { Skin } from "./recipe.js";
-import { partKey, skinRules, stateKey, type TouchedCoordinates } from "./rules.js";
+import { skinRules, type SkinRule } from "./rules.js";
 import { trace } from "./trace.js";
+
+/**
+ * Что скин ОДЕЛ — снято с адресов правил.
+ *
+ * Адрес несёт само правило (`SkinRule.coordinate`), поэтому отдельной копилки в обходе нет:
+ * второй перечень того же самого разошёлся бы с первым молча. «Одел» значит «дал вид» — часть,
+ * упомянутая только как предок, своего правила не получает и сюда не попадает.
+ */
+function dressed(rules: readonly SkinRule[]): { parts: Set<string>; states: Set<string> } {
+  const parts = new Set<string>();
+  const states = new Set<string>();
+
+  for (const { coordinate } of rules) {
+    const part = `${coordinate.component}.${coordinate.part}`;
+    parts.add(part);
+    for (const state of coordinate.states) states.add(`${part}:${state}`);
+  }
+
+  return { parts, states };
+}
 
 /**
  * Что именно не одето.
@@ -86,7 +107,7 @@ export type SkinGap =
 /** Собирает пробелы одного компонента. */
 function gapsOfComponent(
   passport: ComponentPassport,
-  touched: TouchedCoordinates,
+  touched: { parts: ReadonlySet<string>; states: ReadonlySet<string> },
   gaps: SkinGap[],
 ): void {
   const component = passport.component;
@@ -95,7 +116,7 @@ function gapsOfComponent(
   // Часть, объявленная анатомией и забытая в добавке, одета всё равно не будет, и молчать о ней
   // значило бы считать, что частей меньше, чем компонент про себя сказал.
   for (const part of passport.anatomy.keys()) {
-    if (!touched.parts.has(partKey(component, part))) {
+    if (!touched.parts.has(`${component}.${part}`)) {
       gaps.push({
         kind: "part",
         component,
@@ -109,7 +130,7 @@ function gapsOfComponent(
     // Часть без добавки к анатомии — пробел ПАСПОРТА, а не долг скина: словаря состояний у неё
     // нет, и требовать одеть несуществующее состояние не за что.
     for (const state of partOf(passport, part)?.states ?? []) {
-      if (touched.states.has(stateKey(component, part, state.name))) continue;
+      if (touched.states.has(`${component}.${part}:${state.name}`)) continue;
 
       gaps.push({
         kind: "state",
@@ -147,10 +168,9 @@ export function skinGaps(skin: Skin, passports: Iterable<ComponentPassport>): re
   const done = trace(`skinGaps(${skin.name})`);
 
   const list = [...passports];
-  // Обход рецептов зовёт паспорт по имени — для предка, живущего в чужом дереве. Собираем лукап
-  // из того же перечня: второго источника паспортов у покрытия нет.
-  const byName = new Map(list.map((passport) => [passport.component, passport]));
-  const { touched } = skinRules(skin, (name) => byName.get(name));
+  // Обход рецептов зовёт паспорт по имени — для предка, живущего в чужом дереве. Лукап собран из
+  // того же перечня: второго источника паспортов у покрытия нет.
+  const touched = dressed(skinRules(skin, passportLookup(list)).rules);
 
   const gaps: SkinGap[] = [];
 

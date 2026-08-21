@@ -8,3 +8,16 @@
 export * from "./model.js";
 
 export { SkinRefused, generateSketchCss, generateSkinCss } from "./generate.js";
+
+// Читаемость живёт ЗДЕСЬ, а не в `./model`, и это то же правило: делит входы то, что попадёт в
+// сборку потребителя. Формула контраста берётся у зоны значений (иначе «проверено» у нас и у
+// того, кто ставит свой бренд, означало бы разное), а та зона тянет за собой Solid. Хранилищу,
+// которому нужна только форма записи, платить за это не за что.
+export type {
+  ContrastAddress,
+  ContrastNorm,
+  ContrastNote,
+  SkinHalf,
+  UnreckonableReason,
+} from "./contrast.js";
+export { skinContrast } from "./contrast.js";

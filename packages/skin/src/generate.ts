@@ -32,12 +32,13 @@
 
 import type { PassportLookup } from "./address.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
+import { cssProperty } from "./property.js";
 import type { Skin, SketchEdit, StyleObject, StyleValue } from "./recipe.js";
 import {
   skinRules,
   sketchRules,
+  type CssRule,
   type SkinFlaw,
-  type SkinRule,
   type ValueVocabulary,
 } from "./rules.js";
 import { trace } from "./trace.js";
@@ -67,17 +68,6 @@ export class SkinRefused extends Error {
   }
 }
 
-/**
- * Имя свойства в CSS-начертании.
- *
- * Два начертания принимаются оба (`borderWidth` и `border-width`), потому что взятая форма
- * рецепта пишется первым, а CSS понимает второе. Кастом-свойства не трогаются: `--моё-имя` — уже
- * имя, а не запись.
- */
-function cssProperty(name: string): string {
-  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-}
-
 /** Печатает объявления и вложенные блоки. Вложенность остаётся вложенностью. */
 function declarations(style: StyleObject, indent: string): string[] {
   const lines: string[] = [];
@@ -97,7 +87,7 @@ function declarations(style: StyleObject, indent: string): string[] {
 }
 
 /** Печатает одно правило. */
-function ruleText(rule: SkinRule): string {
+function ruleText(rule: CssRule): string {
   return [`  ${rule.selector} {`, ...declarations(rule.style, "    "), "  }"].join("\n");
 }
 

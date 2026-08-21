@@ -44,15 +44,16 @@ export {
 } from "./address.js";
 
 export type {
-  RuleSet,
+  CssRule,
+  RuleCoordinate,
   SkinFlaw,
   SkinFlawName,
   SkinRule,
   SkinRules,
-  TouchedCoordinates,
+  SketchRules,
   ValueVocabulary,
 } from "./rules.js";
-export { checkSketch, checkSkin, partKey, sketchRules, skinRules, stateKey } from "./rules.js";
+export { checkSketch, checkSkin, sketchRules, skinRules } from "./rules.js";
 
 export type { SkinGap, SkinGapKind } from "./coverage.js";
 export { skinGaps } from "./coverage.js";
