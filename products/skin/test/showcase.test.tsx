@@ -125,13 +125,17 @@ describe("случаи", () => {
 });
 
 describe("хедер", () => {
-  it("эталоны и свои разведены группами", async () => {
+  it("список скинов — просто список: ролей человек в нём не читает", async () => {
     const host = mount(() => <App />);
 
     await vi.waitFor(() => {
-      const groups = [...host.querySelectorAll("optgroup")].map((group) => group.label);
-      expect(groups).toContain("эталоны");
+      expect(host.querySelectorAll(".head__select option").length).toBeGreaterThan(1);
     });
+
+    // Защита от удаления живёт в хранилище, а не в подписях: человек берёт любой скин и делает
+    // из него свой, и объяснять ему устройство записей в списке незачем.
+    expect(host.querySelectorAll("optgroup")).toHaveLength(0);
+    expect(host.textContent ?? "").not.toContain("эталон");
   });
 
   it("скин выбирается списком, и «снят» — полноправный пункт", async () => {
