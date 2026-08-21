@@ -4,10 +4,10 @@ import {
   formatOklch,
   inSrgbGamut,
   oklchToSrgb,
-  parseColor,
   srgbToOklch,
   toSrgbGamut,
 } from "../src/color/oklch.js";
+import { parseColor } from "../src/color/parse.js";
 
 // Цветовая математика — фундамент гейта контраста: ошибка здесь делает ЗЕЛЁНЫМ несоответствие,
 // а это хуже красного прогона. Поэтому проверяем не «функция что-то вернула», а известные
@@ -70,31 +70,9 @@ describe("охват sRGB", () => {
   });
 });
 
-describe("разбор и запись", () => {
-  it("читает `oklch(L C H)`", () => {
-    expect(parseColor("oklch(0.55 0.17 262)")).toEqual({ l: 0.55, c: 0.17, h: 262 });
-  });
-
-  it("читает проценты и `none` — CSS Color 4 допускает обе формы", () => {
-    expect(parseColor("oklch(55% 0.17 262)").l).toBeCloseTo(0.55, 10);
-    expect(parseColor("oklch(0.55 none none)")).toEqual({ l: 0.55, c: 0, h: 0 });
-  });
-
-  it("читает шестнадцатеричный цвет — бренд приходит именно им", () => {
-    expect(parseColor("#fff")).toEqual(parseColor("#ffffff"));
-    const red = parseColor("#ff0000");
-    expect(red.l).toBeCloseTo(0.6279, 3);
-    expect(red.h).toBeCloseTo(29.23, 1);
-  });
-
-  it("прозрачность и мусор отвергаются с внятной причиной", () => {
-    // Полупрозрачное семя делает контраст ступени зависимым от того, что под ней, — то есть
-    // обещание перестаёт быть проверяемым. Лучше отказ на сборке, чем зелёный гейт и
-    // несоответствие в проде.
-    expect(() => parseColor("oklch(0.5 0.1 200 / 0.5)")).toThrow(/не разобран/);
-    expect(() => parseColor("rebeccapurple")).toThrow(/не разобран/);
-  });
-
+// Разбор текста живёт в `src/color/parse.ts` и проверяется `test/parse.test.ts` — здесь только
+// то, что читает ЗАПИСАННОЕ нами же: сериализация обязана переживать обход туда-обратно.
+describe("запись", () => {
   it("запись округляет и не тащит хвост двойной точности", () => {
     expect(formatOklch({ l: 2 / 3, c: 0.043216, h: 200.987654 })).toBe(
       "oklch(0.6667 0.0432 200.99)",

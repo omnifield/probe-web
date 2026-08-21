@@ -153,50 +153,6 @@ export function formatOklch(color: Oklch, alpha?: number): string {
   return `oklch(${round(mapped.l, 4)} ${c} ${h}${opacity})`;
 }
 
-const OKLCH_RE =
-  /^oklch\(\s*(none|[-\d.]+%?)\s+(none|[-\d.]+%?)\s+(none|[-\d.]+)(?:deg)?\s*\)$/i;
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-/** Число или `none` (CSS Color 4 §4.4 — отсутствующая компонента считается нулём). */
-function component(raw: string, scale: number): number {
-  if (raw.toLowerCase() === "none") return 0;
-  return raw.endsWith("%") ? (Number.parseFloat(raw) / 100) * scale : Number.parseFloat(raw);
-}
-
-/**
- * Разбор цвета-семени. Понимает `oklch(L C H)` и `#rgb`/`#rrggbb` — бренд обычно приходит
- * шестнадцатеричным, и заставлять потребителя переводить его руками значит получить
- * перевод с ошибкой.
- *
- * Прозрачность НЕ поддержана намеренно: полупрозрачное семя делает контраст ступени
- * зависимым от того, что под ней, — то есть обещание перестаёт быть проверяемым.
- */
-export function parseColor(value: string): Oklch {
-  const raw = value.trim();
-
-  const oklch = OKLCH_RE.exec(raw);
-  if (oklch) {
-    return {
-      l: component(oklch[1], 1),
-      c: component(oklch[2], 0.4),
-      h: component(oklch[3], 1),
-    };
-  }
-
-  const hex = HEX_RE.exec(raw);
-  if (hex) {
-    const digits =
-      hex[1].length === 3
-        ? [...hex[1]].map((digit) => digit + digit).join("")
-        : hex[1];
-    return srgbToOklch({
-      r: Number.parseInt(digits.slice(0, 2), 16) / 255,
-      g: Number.parseInt(digits.slice(2, 4), 16) / 255,
-      b: Number.parseInt(digits.slice(4, 6), 16) / 255,
-    });
-  }
-
-  throw new TypeError(
-    `цвет-семя «${value}» не разобран: ожидается oklch(L C H) или #rrggbb (без прозрачности)`,
-  );
-}
+// РАЗБОР ТЕКСТА ЗДЕСЬ БОЛЬШЕ НЕ ЖИВЁТ (`PWEB-42`). Он уехал в `src/color/parse.ts`: предмет у
+// него свой — перевод написанного человеком в цвет, — и пока он стоял внутри математики,
+// расширять его было страшно, а выглядел он её деталью. Математика осталась математикой.

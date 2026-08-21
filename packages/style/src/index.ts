@@ -105,9 +105,16 @@ export {
   formatOklch,
   inSrgbGamut,
   oklchToSrgb,
-  parseColor,
   srgbToOklch,
   toSrgbGamut,
   type Oklch,
   type Srgb,
 } from "./color/oklch.js";
+// Разбор цвета — вход в тот же гейт (`PWEB-42`). Наружу торчат ОБЕ формы, и это не удобство:
+// бросающая нужна там, где отказ означает поломку сборки (семя шкалы), не бросающая — там, где
+// отказ это запись в перечне, а не остановка. Была бы одна бросающая — потребитель ловил бы
+// исключение ради ветвления и терял бы ПРИЧИНУ отказа, а причин две и чинятся они разным.
+export { parseColor, tryParseColor, type ColorRefusal, type ParsedColor } from "./color/parse.js";
+// Таблица именованных цветов CSS: она же ответ на вопрос «какие имена разбор понимает», и
+// спрашивать его перебором не должен никто.
+export { NAMED_COLORS, NAMED_COLOR_COUNT } from "./color/named.js";

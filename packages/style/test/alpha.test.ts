@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { composite, veilOver } from "../src/color/alpha.js";
-import { oklchToSrgb, parseColor, type Srgb } from "../src/color/oklch.js";
+import { oklchToSrgb, type Srgb } from "../src/color/oklch.js";
+import { parseColor } from "../src/color/parse.js";
 import { SCALE_STEPS, buildAlphaScale, buildScale, buildScrim } from "../src/scale.js";
 import { DEFAULT_SEEDS, SCALE_NAMES } from "../src/tokens.js";
 

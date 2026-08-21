@@ -9,7 +9,8 @@
 // коэффициентов здесь нет и быть не может: «примерно как в норме» в гейте соответствия
 // означает, что соответствие проверяется не по норме.
 
-import { type Oklch, oklchToSrgb, parseColor } from "./oklch.js";
+import { type Oklch, oklchToSrgb } from "./oklch.js";
+import { parseColor } from "./parse.js";
 
 /** Порог AA для текста — WCAG 2.2, критерий 1.4.3. */
 export const AA_TEXT = 4.5;
