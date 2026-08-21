@@ -10,14 +10,17 @@
  * Значения — роли набора значений зоны `style`: витрина обязана работать в обеих парах тем, и
  * следование за режимом здесь проверяется тем же способом, что у скина.
  *
- * РАСКЛАДКА: хедер сверху, под ним две области со СВОЕЙ прокруткой.
+ * РАСКЛАДКА: сайдбар во всю высоту, хедер — только над показом.
  *
- *   ┌─────────────────────────────────────────────┐
- *   │ хедер: скин · режим · состояние хранилища   │
- *   ├──────────────┬──────────────────────────────┤
- *   │ перечень     │ показ                        │
+ *   ┌──────────────┬──────────────────────────────┐
+ *   │ перечень     │        режим · скин          │
+ *   │ во всю       ├──────────────────────────────┤
+ *   │ высоту       │ показ                        │
  *   │ свой скролл  │ свой скролл, вся ширина      │
  *   └──────────────┴──────────────────────────────┘
+ *
+ * Перечень — опора работы, и обрезать его хедером значит отнимать у него строки ради полосы,
+ * которая нужна реже. Хедер управляет тем, что видно В ПОКАЗЕ, поэтому и стоит над ним.
  *
  * Прокрутка разведена намеренно: перечень длинный сам по себе, показ длиннее вдвое, и общий
  * скролл уводил бы перечень наверх ровно тогда, когда по нему надо переключиться.
@@ -37,44 +40,44 @@ body {
 
 .shell {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(12rem, 16rem) 1fr;
   block-size: 100dvh;
   overflow: hidden;
 }
 
-/* `min-block-size: 0` обязателен обоим: без него ячейка сетки не даёт содержимому сжаться, и
-   прокрутка уезжает на весь документ — то есть ровно то, что мы разводим. */
-.body {
+/* `min-block-size: 0` обязателен: без него ячейка сетки не даёт содержимому сжаться, и прокрутка
+   уезжает на весь документ — то есть ровно то, что мы разводим. */
+.stack {
   display: grid;
-  grid-template-columns: minmax(11rem, 15rem) 1fr;
+  grid-template-rows: auto 1fr;
   min-block-size: 0;
-  overflow: hidden;
+  min-inline-size: 0;
 }
 
 /* ── хедер ────────────────────────────────────────────────────────────────────────────── */
 
 .head {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  padding: var(--space-3) var(--space-4);
+  justify-content: space-between;
+  min-block-size: 3rem;
+  padding: var(--space-2) var(--space-4);
   border-block-end: var(--border-width-1) solid var(--separator);
-  background: var(--surface-subtle);
 }
 
-.head__title {
-  font-size: var(--font-size-lg);
-}
-
-.head__field {
+/* Управление прижато к правому краю; слева место остаётся под то, что требует внимания, и в
+   обычном состоянии оно пустое. */
+.head__controls {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+  margin-inline-start: auto;
 }
 
-.head__label {
-  color: var(--text-muted);
+.head__trouble {
+  margin: 0;
+  color: var(--danger-text);
   font-size: var(--font-size-sm);
 }
 
@@ -95,18 +98,6 @@ body {
 .head__select:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
-}
-
-.head__state {
-  flex: 1;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  text-align: end;
-}
-
-.head__cmd {
-  font-family: var(--font-mono);
 }
 
 /* ── режим ────────────────────────────────────────────────────────────────────────────── */
@@ -158,6 +149,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.rail__title {
+  font-size: var(--font-size-lg);
 }
 
 .rail__note {

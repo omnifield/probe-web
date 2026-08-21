@@ -281,61 +281,50 @@ function Head(props: {
     else props.onWear(value);
   };
 
+  const trouble = (): string | null => {
+    if (props.failure !== undefined) {
+      return `${String((props.failure as Error).message)} · ${SERVICE_HINT}`;
+    }
+
+    return (props.records?.length ?? 0) === 0 ? `Скинов в службе нет · ${EMPTY_HINT}` : null;
+  };
+
   return (
     <header class="head">
-      <b class="head__title">Витрина</b>
+      {/* Слева — только то, что требует внимания. В обычном состоянии здесь пусто: что надето,
+          и так написано в списке справа, а вторая надпись про то же — шум, который перестают
+          читать, и вместе с ним перестают читать настоящую беду. */}
+      <Show when={trouble()}>{(said) => <p class="head__trouble">{said()}</p>}</Show>
 
-      <label class="head__field">
-        <span class="head__label">Скин</span>
+      <div class="head__controls">
+        <div class="modes" role="group" aria-label="Режим">
+          <For each={["light", "dark"] as const}>
+            {(value) => (
+              <button
+                class="modes__item"
+                type="button"
+                aria-pressed={props.mode === value}
+                onClick={() => props.onMode(value)}
+              >
+                {value === "light" ? "светлый" : "тёмный"}
+              </button>
+            )}
+          </For>
+        </div>
+
         <select
           class="head__select"
+          aria-label="Скин"
           value={props.worn ?? ""}
           disabled={props.failure !== undefined || (props.records?.length ?? 0) === 0}
           onChange={(event) => choose(event.currentTarget.value)}
         >
-          <option value="">— снят, голый кит —</option>
+          <option value="">без скина</option>
           <For each={props.records ?? []}>
             {(record) => <option value={record.name}>{record.label}</option>}
           </For>
         </select>
-      </label>
-
-      <div class="modes" role="group" aria-label="Режим">
-        <For each={["light", "dark"] as const}>
-          {(value) => (
-            <button
-              class="modes__item"
-              type="button"
-              aria-pressed={props.mode === value}
-              onClick={() => props.onMode(value)}
-            >
-              {value === "light" ? "светлый" : "тёмный"}
-            </button>
-          )}
-        </For>
       </div>
-
-      <p class="head__state">
-        <Show
-          when={props.failure}
-          fallback={
-            <Show
-              when={props.records && props.records.length > 0}
-              fallback={<>Служба отвечает, но скинов в ней нет: {EMPTY_HINT}</>}
-            >
-              <Show when={props.worn} fallback="Скин снят — кит показан голым, и это рабочее состояние.">
-                {(name) => `Надет «${name()}»`}
-              </Show>
-            </Show>
-          }
-        >
-          {(failure) => (
-            <>
-              {String((failure() as Error).message)} · <code class="head__cmd">{SERVICE_HINT}</code>
-            </>
-          )}
-        </Show>
-      </p>
     </header>
   );
 }
@@ -415,26 +404,16 @@ export function App() {
 
   return (
     <div class="shell">
-      <Head
-        worn={worn()}
-        records={records()}
-        failure={records.error}
-        mode={mode()}
-        onWear={wear}
-        onTakeOff={takeOff}
-        onMode={setMode}
-      />
+      {/* Сайдбар — во всю высоту: перечень это опора работы, и обрезать его хедером значит
+          отнимать у него строки ради полосы, которая нужна реже. Хедер стоит НАД ПОКАЗОМ и
+          управляет тем, что в показе видно. */}
+      <aside class="rail">
+        <div class="rail__head">
+          <b class="rail__title">Витрина</b>
+          <span class="rail__note">перечень — из реестра паспортов</span>
+        </div>
 
-      <div class="body">
-        {/* Две области прокрутки, и каждая своя: перечень длинный сам по себе, показ длиннее
-            вдвое, и общий скролл уводил бы перечень наверх ровно тогда, когда по нему надо
-            переключиться. */}
-        <aside class="rail">
-          <div class="rail__head">
-            <span class="rail__note">перечень — из реестра паспортов</span>
-          </div>
-
-          <nav class="rail__list">
+        <nav class="rail__list">
             <For each={BY_GROUP}>
               {(section) => (
                 <>
@@ -453,9 +432,23 @@ export function App() {
                   </For>
                 </>
               )}
-            </For>
-          </nav>
-        </aside>
+          </For>
+        </nav>
+      </aside>
+
+      {/* Правая половина: хедер и показ. Прокрутка своя у каждой из двух областей — перечень
+          длинный сам по себе, показ длиннее вдвое, и общий скролл уводил бы перечень наверх
+          ровно тогда, когда по нему надо переключиться. */}
+      <div class="stack">
+        <Head
+          worn={worn()}
+          records={records()}
+          failure={records.error}
+          mode={mode()}
+          onWear={wear}
+          onTakeOff={takeOff}
+          onMode={setMode}
+        />
 
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
