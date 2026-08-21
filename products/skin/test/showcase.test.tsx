@@ -23,7 +23,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/showcase/app.jsx";
-import { BUTTON_CASES, CASES } from "../src/showcase/cases.js";
+import { casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
 
 import { cleanup, mount } from "./dom.jsx";
@@ -52,13 +52,17 @@ describe("перечень", () => {
   });
 });
 
+/** Поток случаев кнопки при развёрнутых осях — то, что видит человек по умолчанию. */
+const stream = (): ShowcaseCase[] =>
+  casesOf("button", { part: rootPartOf("button"), variants: Object.keys(FIXTURE.recipes.button?.variants ?? {}) });
+
 describe("случаи", () => {
   it("дерево случая — образец компонента, а не своя разметка", () => {
     const sketch = sketchOf(REGISTRY, "button");
 
     expect(sketch).toBeDefined();
 
-    for (const item of BUTTON_CASES) {
+    for (const item of stream()) {
       expect(item.tree.components.root).toBe(sketch?.components.root);
       expect(Object.keys(item.tree.components.nodes)).toEqual(
         Object.keys(sketch?.components.nodes ?? {}),
@@ -70,7 +74,7 @@ describe("случаи", () => {
     const passport = passportOf("button");
     const declared = new Set(passport?.anatomy.keys() ?? []);
 
-    for (const item of BUTTON_CASES) {
+    for (const item of stream()) {
       for (const node of Object.values(item.tree.components.nodes)) {
         const part = node.type === "button" ? passport?.root : node.type.split(".").at(-1);
         expect(declared.has(part ?? "")).toBe(true);
@@ -79,20 +83,31 @@ describe("случаи", () => {
   });
 
   it("каждый случай назван и объяснён — случай без повода не показывают", () => {
-    for (const item of BUTTON_CASES) {
+    for (const item of stream()) {
       expect(item.title.length).toBeGreaterThan(0);
       expect(item.note.length).toBeGreaterThan(0);
     }
   });
 
-  it("первый случай — базовый", () => {
-    expect(BUTTON_CASES[0]?.id).toBe("base");
+  it("первый случай — умолчание без состояния: с него начинается всё остальное", () => {
+    expect(stream()[0]?.title).toContain("умолчание");
+    expect(stream()[0]?.title).toContain("обычное");
   });
 
   it("случаи есть у каждого компонента перечня", () => {
     for (const component of knownComponents(REGISTRY)) {
-      expect(CASES[component]?.length ?? 0).toBeGreaterThan(0);
+      expect(casesOf(component, { part: rootPartOf(component), variants: [] }).length).toBeGreaterThan(0);
     }
+  });
+
+  it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
+    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
+    const all = casesOf("button", { part: "root", variants });
+    const one = casesOf("button", { part: "root", variant: variants[0] ?? null, state: "hover", variants });
+
+    expect(all.length).toBeGreaterThan(one.length);
+    // Зафиксированный срез — ровно один осевой случай плюс человеческие.
+    expect(one.filter((item) => item.origin === "axis")).toHaveLength(1);
   });
 });
 
@@ -140,6 +155,33 @@ describe("хедер", () => {
     light?.click();
 
     expect(readSkin().mode).toBe("light");
+  });
+});
+
+describe("оси — фильтр, а не раскладка", () => {
+  it("выбор состояния сужает поток случаев", async () => {
+    const host = mount(() => <App />);
+    const before = await vi.waitFor(() => {
+      const cards = host.querySelectorAll(".case");
+      expect(cards.length).toBeGreaterThan(3);
+      return cards.length;
+    });
+
+    const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
+    stateAxis!.value = "hover";
+    stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(before));
+  });
+
+  it("выбранная часть подсвечивается слотом украшения механики", async () => {
+    const host = mount(() => <App />);
+
+    await vi.waitFor(() => expect(host.querySelector(".pick")).not.toBeNull());
+
+    // Украшение механики не ловит событий: оно показывает выбор, а не перехватывает его.
+    const pick = host.querySelector(".pick")?.parentElement;
+    expect(pick?.getAttribute("aria-hidden")).toBe("true");
   });
 });
 

@@ -20,7 +20,7 @@
 // приложения (`runtime`). Своей вставки стилей в зоне нет: вторая реализация того же разошлась
 // бы с первой ровно тогда, когда одна из них научится чему-то новому.
 
-import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
+import { knownComponents, RenderTree, type EditOverlayProps } from "@omnifield/probe-web-assembly";
 // `readSkin` из механики приложения читает КОРЕНЬ (что надето и в каком режиме), а одноимённая
 // функция хранилища читает ЗАПИСЬ. Предметы разные, имена совпали — развожу их псевдонимом, а не
 // переименованием чужого.
@@ -31,7 +31,15 @@ import {
   type SkinMode,
 } from "@omnifield/probe-web-runtime";
 import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
-import { createResource, createSignal, For, onMount, Show } from "solid-js";
+import {
+  type Component,
+  createResource,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 
 import {
   listSkins,
@@ -43,7 +51,14 @@ import {
 } from "../skins/index.js";
 import { skinGaps, type SkinGap } from "@omnifield/probe-web-skin/model";
 
-import { CASES, matrixOf, type MatrixCell, type ShowcaseCase } from "./cases.js";
+import {
+  addressOfPart,
+  casesOf,
+  partsOf,
+  rootPartOf,
+  statesOfPart,
+  type ShowcaseCase,
+} from "./cases.js";
 import { REGISTRY } from "./registry.js";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
@@ -72,32 +87,67 @@ const BY_GROUP = Object.entries(GROUPS)
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
 
+/** Порог, за которым карточка перестаёт делить строку с соседями. */
+const WIDE_AT = 380;
+
 /**
- * Один случай: подпись, пояснение и сам компонент, нарисованный МЕХАНИКОЙ.
+ * КАРТОЧКА СЛУЧАЯ — компонент в условии, нарисованный МЕХАНИКОЙ.
  *
- * Отрисовка — тот же `RenderTree`, которым рисует потребитель. Второго способа превратить
- * дерево в вид не существует, и именно поэтому витрина отвечает за то, что увидит человек.
+ * Отрисовка — тот же `RenderTree`, которым рисует потребитель. Второго способа превратить дерево
+ * в вид не существует, и именно поэтому витрина отвечает за то, что увидит человек.
+ *
+ * ШИРИНУ КАРТОЧКА РЕШАЕТ САМА, измерением. Ни паспорт, ни наш список «крупных компонентов» этого
+ * не решают: паспорт про вид не говорит, а список устарел бы на первом же новом компоненте.
+ * Содержимое шире порога — карточка занимает всю строку, и кнопка с диалогом живут в одном
+ * потоке, не подгоняя его друг под друга.
  */
-function Case(props: { item: ShowcaseCase }) {
+function Case(props: { item: ShowcaseCase; overlay?: Component<EditOverlayProps> }) {
+  const [wide, setWide] = createSignal(false);
+  let stage!: HTMLDivElement;
+
+  onMount(() => {
+    const measure = () => setWide(stage.scrollWidth > WIDE_AT);
+
+    measure();
+
+    // Среда без наблюдателя размеров (jsdom в пробах) меряет один раз и живёт дальше: ширина
+    // карточки — украшение показа, и ронять из-за неё весь показ нечестно.
+    if (typeof ResizeObserver !== "function") return;
+
+    // Пересчитываем на смену скина и шрифтов: одетый компонент шире голого, и «широкий» — это
+    // свойство того, что показано сейчас, а не того, что показали в первый кадр.
+    const watcher = new ResizeObserver(measure);
+    watcher.observe(stage);
+    onCleanup(() => watcher.disconnect());
+  });
+
   return (
-    <figure class="case">
-      <div class="case__stage">
-        <RenderTree tree={props.item.tree} registry={REGISTRY} />
+    <figure class="case" classList={{ "case--wide": wide() }}>
+      <div class="case__stage" ref={stage}>
+        <RenderTree tree={props.item.tree} registry={REGISTRY} editOverlay={props.overlay} />
       </div>
       <figcaption class="case__caption">
-        <b class="case__title">{props.item.title}</b>
+        <b class="case__title" classList={{ "case__title--axis": props.item.origin === "axis" }}>
+          {props.item.title}
+        </b>
         <span class="case__note">{props.item.note}</span>
       </figcaption>
     </figure>
   );
 }
 
-/** Имена состояний корневой части — из паспорта, для заголовков сетки. */
-function statesOf(component: string): string[] {
-  const passport = passportOf(component);
-  const root = passport?.parts.find((part) => part.name === passport.root);
-
-  return (root?.states ?? []).map((state) => state.name);
+/**
+ * Подсветка выбранной части — слотом украшения МЕХАНИКИ, а не своей обёрткой.
+ *
+ * Слот ортогонален отрисовке: не задан — путь прежний, ни одного лишнего узла в разметке. Тот же
+ * слот будет рисовать выделение в редакторе, поэтому и берём его, а не рисуем рамку сами.
+ */
+function highlight(address: string): Component<EditOverlayProps> {
+  return (props) => (
+    <Show when={props.node.type === address}>
+      <span class="pick" />
+    </Show>
+  );
 }
 
 /** Части компонента — из анатомии, а не из нашего представления о нём. */
@@ -126,51 +176,92 @@ function Parts(props: { component: string }) {
 }
 
 /**
- * СЕТКА: вариации по строкам, состояния по колонкам.
+ * ОСИ — фильтр, а не раскладка.
  *
- * То, ради чего одевающий сюда приходит. Клетка, ничем не отличающаяся от соседней, — это дыра
- * в скине: правило на этот адрес не написано. Пустая сетка значит, что скин снят или вариаций у
- * него нет, и об этом сказано словами рядом.
+ * Ось в положении «все» разворачивается в поток случаев, названная — фиксируется. Так один и тот
+ * же показ годится компоненту любого размера: что разворачивать, решает человек.
  *
- * Подпись клетки называет КООРДИНАТУ, а не описывает вид: «умолчание · hover», а не «серая при
- * наведении». Это тот же адрес, которым правило адресует скин, — и тот, которым его будет
- * адресовать редактор.
+ * Часть «всех» не имеет намеренно: состояние всегда чьё-то, и «состояние вообще» — не адрес.
+ * Перечень состояний следует за выбранной частью: словарь у каждой части свой.
  */
-function Matrix(props: { cells: readonly MatrixCell[]; states: readonly string[] }) {
-  const rows = () => [...new Set(props.cells.map((cell) => cell.variant))];
-
+function Axes(props: {
+  component: string;
+  variants: readonly string[];
+  part: string;
+  variant: string | null;
+  state: string | null;
+  onPart: (part: string) => void;
+  onVariant: (variant: string | null) => void;
+  onState: (state: string | null) => void;
+}) {
   return (
-    <div class="matrix" style={{ "--matrix-columns": String(props.states.length + 1) }}>
-      <span class="matrix__corner" />
-      <For each={props.states}>
-        {(state) => <b class="matrix__head">{state === "" ? "обычное" : state}</b>}
-      </For>
+    <div class="axes">
+      <label class="axes__field">
+        <span class="axes__label">часть</span>
+        <select
+          class="axes__select"
+          value={props.part}
+          onChange={(event) => props.onPart(event.currentTarget.value)}
+        >
+          <For each={partsOf(props.component)}>
+            {(part) => <option value={part}>{part}</option>}
+          </For>
+        </select>
+      </label>
 
-      <For each={rows()}>
-        {(variant) => (
-          <>
-            <b class="matrix__side">{variant ?? "умолчание"}</b>
-            <For each={props.cells.filter((cell) => cell.variant === variant)}>
-              {(cell) => (
-                <div class="matrix__cell" title={cell.address}>
-                  <RenderTree tree={cell.tree} registry={REGISTRY} />
-                </div>
-              )}
-            </For>
-          </>
-        )}
-      </For>
+      <label class="axes__field">
+        <span class="axes__label">вариация</span>
+        <select
+          class="axes__select"
+          value={props.variant ?? ""}
+          disabled={props.variants.length === 0}
+          onChange={(event) =>
+            props.onVariant(event.currentTarget.value === "" ? null : event.currentTarget.value)
+          }
+        >
+          <option value="">все</option>
+          <For each={props.variants}>{(name) => <option value={name}>{name}</option>}</For>
+        </select>
+      </label>
+
+      <label class="axes__field">
+        <span class="axes__label">состояние</span>
+        <select
+          class="axes__select"
+          value={props.state ?? ""}
+          onChange={(event) =>
+            props.onState(event.currentTarget.value === "" ? null : event.currentTarget.value)
+          }
+        >
+          <option value="">все</option>
+          <For each={statesOfPart(props.component, props.part)}>
+            {(state) => <option value={state.name}>{state.name}</option>}
+          </For>
+        </select>
+      </label>
     </div>
   );
 }
 
-/** Страница компонента: что он объявил о себе и как держится в случаях. */
+/** Страница компонента: что он объявил о себе, чего не одето и как держится в случаях. */
 function ComponentPage(props: {
   component: string;
   variants: readonly string[];
   gaps: readonly SkinGap[];
+  part: string;
+  variant: string | null;
+  state: string | null;
+  onPart: (part: string) => void;
+  onVariant: (variant: string | null) => void;
+  onState: (state: string | null) => void;
 }) {
-  const cases = () => CASES[props.component] ?? [];
+  const cases = () =>
+    casesOf(props.component, {
+      part: props.part,
+      variant: props.variant,
+      state: props.state,
+      variants: props.variants,
+    });
 
   return (
     <article class="page">
@@ -187,33 +278,32 @@ function ComponentPage(props: {
             )}
           </Show>
         </p>
-        <p class="page__lead">
-          Части и состояния — из паспорта компонента. Вариации — из надетого скина. Случаи собраны
-          из образца и нарисованы механикой сборки.
-        </p>
       </header>
 
-      <section class="page__section">
-        <h2 class="page__subtitle">Части и состояния</h2>
-        <Parts component={props.component} />
-      </section>
+      <Axes
+        component={props.component}
+        variants={props.variants}
+        part={props.part}
+        variant={props.variant}
+        state={props.state}
+        onPart={props.onPart}
+        onVariant={props.onVariant}
+        onState={props.onState}
+      />
+
+      <Show when={props.variants.length === 0}>
+        <p class="page__empty">
+          Вариаций нет — скин не надет: имена принадлежат скину, и называть их за него витрина не
+          вправе. Случаи ниже показывают голый кит.
+        </p>
+      </Show>
 
       <section class="page__section">
-        <h2 class="page__subtitle">Вариации и состояния</h2>
-        <Show
-          when={props.variants.length > 0}
-          fallback={
-            <p class="page__empty">
-              Скин не надет — имён вариаций нет. Они принадлежат скину, а не компоненту, и
-              называть их за него витрина не вправе.
-            </p>
-          }
-        >
-          <Matrix
-            cells={matrixOf(props.component, props.variants)}
-            states={["", ...statesOf(props.component)]}
-          />
-        </Show>
+        <div class="cases">
+          <For each={cases()}>
+            {(item) => <Case item={item} overlay={highlight(addressOfPart(props.component, props.part))} />}
+          </For>
+        </div>
       </section>
 
       <section class="page__section">
@@ -240,10 +330,8 @@ function ComponentPage(props: {
       </section>
 
       <section class="page__section">
-        <h2 class="page__subtitle">Случаи</h2>
-        <div class="cases">
-          <For each={cases()}>{(item) => <Case item={item} />}</For>
-        </div>
+        <h2 class="page__subtitle">Части и состояния</h2>
+        <Parts component={props.component} />
       </section>
     </article>
   );
@@ -330,7 +418,27 @@ function Head(props: {
 }
 
 export function App() {
-  const [current, setCurrent] = createSignal(COMPONENTS[0] ?? "");
+  const [current, setCurrentSignal] = createSignal(COMPONENTS[0] ?? "");
+
+  // ОСИ. Часть по умолчанию корневая, остальные оси развёрнуты: одевающий приходит смотреть, что
+  // одето, а не искать, где это включается.
+  const [part, setPart] = createSignal(rootPartOf(COMPONENTS[0] ?? ""));
+  const [variant, setVariant] = createSignal<string | null>(null);
+  const [state, setState] = createSignal<string | null>(null);
+
+  /** Смена компонента сбрасывает оси: чужая часть и чужое состояние на нём не значат ничего. */
+  const setCurrent = (component: string) => {
+    setCurrentSignal(component);
+    setPart(rootPartOf(component));
+    setVariant(null);
+    setState(null);
+  };
+
+  /** Смена части сбрасывает состояние: словарь состояний у каждой части свой. */
+  const choosePart = (value: string) => {
+    setPart(value);
+    setState(null);
+  };
   const [worn, setWorn] = createSignal<string | null>(null);
 
   // РЕЖИМ переключается механикой приложения, а не классом в разметке: пара для тёмного —
@@ -453,7 +561,17 @@ export function App() {
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
             {(component) => (
-              <ComponentPage component={component()} variants={variants()} gaps={gaps()} />
+              <ComponentPage
+                component={component()}
+                variants={variants()}
+                gaps={gaps()}
+                part={part()}
+                variant={variant()}
+                state={state()}
+                onPart={choosePart}
+                onVariant={setVariant}
+                onState={setState}
+              />
             )}
           </Show>
         </main>

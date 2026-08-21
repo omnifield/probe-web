@@ -300,42 +300,52 @@ body {
   font-size: var(--font-size-sm);
 }
 
-/* ── сетка: вариации × состояния ──────────────────────────────────────────────────────── */
+/* ── оси ──────────────────────────────────────────────────────────────────────────────── */
 
-.matrix {
-  display: grid;
-  grid-template-columns: auto repeat(calc(var(--matrix-columns) - 1), minmax(7rem, 1fr));
+.axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.axes__field {
+  display: flex;
   gap: var(--space-2);
   align-items: center;
-  overflow-x: auto;
 }
 
-.matrix__head,
-.matrix__side {
+.axes__label {
   color: var(--text-muted);
-  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
-  font-weight: 400;
 }
 
-.matrix__head {
-  text-align: center;
-}
-
-.matrix__side {
-  padding-inline-end: var(--space-2);
-  text-align: end;
-  white-space: nowrap;
-}
-
-.matrix__cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-block-size: 3.5rem;
-  padding: var(--space-2);
-  border: var(--border-width-1) dashed var(--separator);
+.axes__select {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
   border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.axes__select:focus-visible {
+  outline: var(--focus-ring);
+}
+
+/* ── подсветка выбранной части ────────────────────────────────────────────────────────── */
+
+/* Рисуется в слоте украшения механики: он позиционирован по боксу узла и событий не ловит. */
+.pick {
+  position: absolute;
+  inset: 0;
+  border: var(--border-width-1) solid var(--brand-border);
+  border-radius: var(--radius-sm);
 }
 
 /* ── долг одевания ────────────────────────────────────────────────────────────────────── */
@@ -365,12 +375,13 @@ body {
   font-size: var(--font-size-sm);
 }
 
-/* ── случаи ───────────────────────────────────────────────────────────────────────────── */
+/* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
 
 .cases {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  align-items: start;
 }
 
 .case {
@@ -384,11 +395,21 @@ body {
   background: var(--surface);
 }
 
+/* Широкому компоненту колонка не годится: он занимает строку целиком. Решает измерение, а не
+   перечень «крупных компонентов» — такой перечень устарел бы на первом же новом. */
+.case--wide {
+  grid-column: 1 / -1;
+}
+
+/* `max-content` нужен измерению: так `scrollWidth` показывает ЕСТЕСТВЕННУЮ ширину содержимого, а
+   не ширину колонки, в которую его уже сжали. */
 .case__stage {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-block-size: 5rem;
+  min-block-size: 4rem;
+  inline-size: max-content;
+  max-inline-size: 100%;
   padding: var(--space-3);
   border: var(--border-width-1) dashed var(--separator);
   border-radius: var(--radius-md);
@@ -403,4 +424,12 @@ body {
 .case__note {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
+}
+
+/* Осевой случай подписан КООРДИНАТОЙ — тем же адресом, которым его адресует скин. Человеческий
+   назван словами. Разные обещания различаются и на вид. */
+.case__title--axis {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
 }
