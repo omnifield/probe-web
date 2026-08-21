@@ -52,9 +52,9 @@ export const Flow = slotAware(function Flow<T extends ValidComponent = "div">(
 ) {
   traceLife("ui.flow");
 
-  const address = useAddress(props, parts.root.attrs);
+  const [address, rest] = useAddress(props, parts.root.attrs);
 
-  return <Polymorphic as="div" {...address} {...props} />;
+  return <Polymorphic as="div" {...rest} {...address} />;
 });
 
 /**
@@ -70,7 +70,7 @@ export const FlowItem = slotAware(function FlowItem<T extends ValidComponent = "
 ) {
   traceLife("ui.flow-item");
 
-  const address = useAddress(props, parts.item.attrs);
+  const [address, rest] = useAddress(props, parts.item.attrs);
 
-  return <Polymorphic as="div" {...address} {...props} />;
+  return <Polymorphic as="div" {...rest} {...address} />;
 });

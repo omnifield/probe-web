@@ -11,6 +11,7 @@ import {
   type AccordionRootProps as ArkRootProps,
 } from "@ark-ui/solid/accordion";
 
+import { dropAddress } from "../slot-chain.js";
 import { traceLife } from "../trace.js";
 
 // Раскрывающиеся разделы — ПЕРВЫЙ компонент кита, приехавший из Ark UI (`PWEB-37`).
@@ -26,6 +27,13 @@ import { traceLife } from "../trace.js";
 // новому компоненту адреса снимаемой механики значило бы расширять то, от чего уходим. Прежние
 // имена (`accordion`, `accordion-header`, `accordion-trigger`, …) сняты вместе с прежним
 // компонентом — потребителей у них не было, проверено обходом дерева.
+//
+// ## Адрес ставит Ark, а переписать его не даём мы
+//
+// Атрибуты на узел кладёт сам Ark, но пропы потребителя он спредит ПОСЛЕ своих — то есть
+// написанный руками `data-scope` победил бы и узел соврал бы о том, чем он является. Решение
+// `PWEB-46` действует на весь кит, а не только на компоненты, чей адрес ставим мы, поэтому
+// обёртки снимают чужой адрес с пропов (`dropAddress`) и отдают Ark всё остальное как есть.
 //
 // ## Частей пять, и заголовка среди них нет
 //
@@ -73,7 +81,7 @@ export type AccordionProps = ArkRootProps;
 export function Accordion(props: AccordionProps) {
   traceLife("ui.accordion");
 
-  return <ArkRoot {...props} />;
+  return <ArkRoot {...dropAddress(props)} />;
 }
 
 /** Пропсы `AccordionItem`. */
@@ -88,7 +96,7 @@ export type AccordionItemProps = ArkItemProps;
 export function AccordionItem(props: AccordionItemProps) {
   traceLife("ui.accordion-item");
 
-  return <ArkItem {...props} />;
+  return <ArkItem {...dropAddress(props)} />;
 }
 
 /** Пропсы `AccordionItemTrigger`. */
@@ -103,7 +111,7 @@ export type AccordionItemTriggerProps = ArkItemTriggerProps;
 export function AccordionItemTrigger(props: AccordionItemTriggerProps) {
   traceLife("ui.accordion-item-trigger");
 
-  return <ArkItemTrigger {...props} />;
+  return <ArkItemTrigger {...dropAddress(props)} />;
 }
 
 /** Пропсы `AccordionItemContent`. */
@@ -113,7 +121,7 @@ export type AccordionItemContentProps = ArkItemContentProps;
 export function AccordionItemContent(props: AccordionItemContentProps) {
   traceLife("ui.accordion-item-content");
 
-  return <ArkItemContent {...props} />;
+  return <ArkItemContent {...dropAddress(props)} />;
 }
 
 /** Пропсы `AccordionItemIndicator`. */
@@ -128,5 +136,5 @@ export type AccordionItemIndicatorProps = ArkItemIndicatorProps;
 export function AccordionItemIndicator(props: AccordionItemIndicatorProps) {
   traceLife("ui.accordion-item-indicator");
 
-  return <ArkItemIndicator {...props} />;
+  return <ArkItemIndicator {...dropAddress(props)} />;
 }

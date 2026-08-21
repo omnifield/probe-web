@@ -48,9 +48,9 @@ export const Grid = slotAware(function Grid<T extends ValidComponent = "div">(
 ) {
   traceLife("ui.grid");
 
-  const address = useAddress(props, parts.root.attrs);
+  const [address, rest] = useAddress(props, parts.root.attrs);
 
-  return <Polymorphic as="div" {...address} {...props} />;
+  return <Polymorphic as="div" {...rest} {...address} />;
 });
 
 /**
@@ -66,7 +66,7 @@ export const GridCell = slotAware(function GridCell<T extends ValidComponent = "
 ) {
   traceLife("ui.grid-cell");
 
-  const address = useAddress(props, parts.cell.attrs);
+  const [address, rest] = useAddress(props, parts.cell.attrs);
 
-  return <Polymorphic as="div" {...address} {...props} />;
+  return <Polymorphic as="div" {...rest} {...address} />;
 });

@@ -28,10 +28,17 @@ import { createAnatomy } from "@zag-js/anatomy";
 import type { JSX, ValidComponent } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  Accordion,
+  AccordionItem,
+  AccordionItemContent,
+  AccordionItemTrigger,
+} from "../src/accordion/index.js";
 import { Button } from "../src/button/index.js";
 import { passport } from "../src/button/button.anatomy.js";
 import { Popover, PopoverTrigger } from "../src/popover.jsx";
 import { useAddress, useSlot, slotAware } from "../src/slot-chain.js";
+import { Surface } from "../src/surface/index.js";
 import { Toggle } from "../src/toggle.jsx";
 import { cleanup, mount, one } from "./dom.jsx";
 
@@ -46,12 +53,17 @@ interface ПробаProps {
   __slot?: string;
 }
 
-/** Примитив-проба: внешнее звено композиции, у которого СВОЙ адрес уже есть. */
+/**
+ * Примитив-проба: внешнее звено композиции, у которого СВОЙ адрес уже есть.
+ *
+ * Устроен ровно так, как обязан быть устроен адресуемый примитив кита, включая ПОРЯДОК спреда:
+ * зацепка дефолтом впереди, адрес — последним и неперебиваемым (`PWEB-46`).
+ */
 const Проба = slotAware(function Проба(props: ПробаProps) {
   const [slot, rest] = useSlot(props, "проба");
-  const address = useAddress(props, пробаParts.root.attrs);
+  const [address, clean] = useAddress(rest, пробаParts.root.attrs);
 
-  return <Polymorphic as="button" {...address} {...slot} {...rest} />;
+  return <Polymorphic as="button" {...slot} {...clean} {...address} />;
 });
 
 /** Адреса, реально стоящие на узле: пара «чей компонент · какая часть». */
@@ -100,19 +112,16 @@ describe("адрес при композиции", () => {
     expect(slotsOf(one(host, "button"))).toEqual(["button", "проба"]);
   });
 
-  it("ГРАНИЦА: чужая обёртка посередине оставляет адрес внешнему", () => {
-    // Та же граница, что у цепочки зацепок, и та же причина: метка стоит только на наших
-    // примитивах, а компонент потребителя её не имеет. Внешний видит «мой `as` не наш», решает,
-    // что узел рисует он сам, и адрес ставит; внутренняя кнопка ставит свой ДО спреда, и он
-    // перебивается пришедшим снаружи.
-    //
-    // Записано явно, чтобы предел был известен заранее: трёхзвенная композиция всегда идёт
-    // через обёртку потребителя — `as` у примитива один.
+  it("чужая обёртка посередине адрес больше не отбирает", () => {
+    // ПРЕЖНИЙ ПРЕДЕЛ, снятый решением `PWEB-46`. Раньше внешний видел «мой `as` не наш», решал,
+    // что узел рисует он сам, и его адрес перебивал адрес кнопки, потому что кнопка ставила свой
+    // ДО спреда. Теперь адрес ставится последним, а пришедший снаружи отбрасывается — и узнавать
+    // происхождение обёртки не нужно вовсе.
     const host = mount(() => (
       <Проба as={(props: Record<string, unknown>) => <Button {...props} />}>Настройки</Проба>
     ));
 
-    expect(addressOf(one(host, "button"))).toEqual({ scope: "проба", part: "root" });
+    expect(addressOf(one(host, "button"))).toEqual({ scope: "button", part: "root" });
   });
 });
 
@@ -154,5 +163,111 @@ describe("состояния переживают композицию", () => {
 
     expect(объявлены).toContain("data-expanded");
     expect(объявлены).toContain("data-pressed");
+  });
+});
+
+describe("адрес не перебивается ничем (`PWEB-46`)", () => {
+  // Решение архитектора: адрес ставится последним, пришедший снаружи отбрасывается — от кого бы
+  // ни пришёл. Прежде он стоял до спреда намеренно, чтобы потребитель мог перебить; для
+  // имён-зацепок это верно и сегодня, для адреса — нет: адрес это личность узла, и дав переписать
+  // её, мы дали бы узлу соврать о том, чем он является.
+
+  it("потребитель не перепишет адрес нашего компонента", () => {
+    const host = mount(() => (
+      <Button data-scope="мой" data-part="моя">
+        Сохранить
+      </Button>
+    ));
+
+    expect(addressOf(one(host, "button"))).toEqual({ scope: "button", part: "root" });
+  });
+
+  it("не перепишет и у компонента без поведения", () => {
+    const host = mount(() => <Surface data-scope="мой" data-part="моя" />);
+
+    expect(addressOf(one(host, "div"))).toEqual({ scope: "surface", part: "root" });
+  });
+
+  it("не перепишет и у компонента, чей адрес ставит Ark", () => {
+    // Решение действует на весь кит, а не только там, где адрес ставим мы. Ark спредит пропы
+    // потребителя ПОСЛЕ своих, поэтому чужой адрес снимает наша обёртка.
+    const host = mount(() => (
+      <Accordion>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger data-scope="мой" data-part="моя">Доставка</AccordionItemTrigger>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    expect(addressOf(one(host, "button"))).toEqual({ scope: "accordion", part: "item-trigger" });
+  });
+
+  it("а `data-slot` перебивается по-прежнему — обещание зоны цело", () => {
+    // Две половины одного спреда с разной судьбой, и проверяются они рядом намеренно: сломать
+    // одну, чиня другую, проще всего.
+    const host = mount(() => (
+      <Button data-slot="моя-зацепка" data-scope="мой">
+        Сохранить
+      </Button>
+    ));
+    const node = one(host, "button");
+
+    expect(slotsOf(node)).toEqual(["моя-зацепка"]);
+    expect(addressOf(node)).toEqual({ scope: "button", part: "root" });
+  });
+});
+
+describe("чужое внешнее звено", () => {
+  /**
+   * Вставка компонента в часть Ark через `asChild`.
+   *
+   * Приведение здесь не «чтобы собралось»: у Ark 5.38.2 тип `asChild` объявляет ОБЪЕКТ пропов
+   * (`(props: ParentProps<T>) => JSX.Element`), а на исполнении приезжает АКСЕССОР — функция,
+   * отдающая слитые пропы (`factory.tsx`, `withAsProp`). Проверено по коду поставки и на живом
+   * узле; пишем как есть на самом деле, а расхождение называем здесь, чтобы следующий не искал
+   * его заново.
+   */
+  const вставить = (render: (props: () => Record<string, unknown>) => JSX.Element) =>
+    render as unknown as Parameters<typeof AccordionItemTrigger>[0]["asChild"];
+
+  /** Гармошка Ark, в триггер которой вставлена наша кнопка. */
+  const составленная = (open: boolean) => () => (
+    <Accordion value={open ? ["доставка"] : []}>
+      <AccordionItem value="доставка">
+        <AccordionItemTrigger asChild={вставить((props) => <Button {...props()}>Доставка</Button>)} />
+        <AccordionItemContent>Курьером</AccordionItemContent>
+      </AccordionItem>
+    </Accordion>
+  );
+
+  it("составленный чужим звеном узел несёт адрес НАШЕГО внутреннего компонента", () => {
+    // То, ради чего решение и принято. Прежде здесь стоял адрес гармошки: Ark не знает нашей
+    // метки и спредит свои пропы на вставленный компонент.
+    const host = mount(составленная(false));
+
+    expect(addressOf(one(host, "button"))).toEqual({ scope: "button", part: "root" });
+  });
+
+  it("состояние от чужого звена на узле ПРИСУТСТВУЕТ", () => {
+    // Отбрасывается ровно пара адресных атрибутов. Всё остальное — поведение внешнего звена, и
+    // потерять его значило бы вылечить адрес ценой раскрытия.
+    const host = mount(составленная(true));
+    const node = one(host, "button");
+
+    expect(node.getAttribute("data-state")).toBe("open");
+    expect(node.getAttribute("aria-expanded")).toBe("true");
+    expect(node.hasAttribute("aria-controls")).toBe(true);
+  });
+
+  it("голое чужое звено несёт СВОЙ адрес", () => {
+    const host = mount(() => (
+      <Accordion>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    expect(addressOf(one(host, "button"))).toEqual({ scope: "accordion", part: "item-trigger" });
   });
 });

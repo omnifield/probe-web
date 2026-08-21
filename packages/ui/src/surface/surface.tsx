@@ -54,8 +54,8 @@ export const Surface = slotAware(function Surface<T extends ValidComponent = "di
 
   // Адрес едет через `useAddress`, а не прямым спредом: при композиции `as={…}` с нашим же
   // примитивом адрес принадлежит внутреннему — тому, чем узел является визуально (`PWEB-25`).
-  const address = useAddress(props, parts.root.attrs);
+  const [address, rest] = useAddress(props, parts.root.attrs);
 
   // `as="div"` стоит ДО спреда — это дефолт, который проп потребителя перебивает.
-  return <Polymorphic as="div" {...address} {...props} />;
+  return <Polymorphic as="div" {...rest} {...address} />;
 });
