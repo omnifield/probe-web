@@ -3,8 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm -r --filter './packages/*' build",
-    "test": "pnpm -r --filter './packages/*' --filter './apps/*' test",
-    "lint": "pnpm -r --filter './packages/*' --filter './apps/*' lint"
+    "build": "FORCE_COLOR=0 nx run-many -t build -p '@omnifield/*'",
+    "test": "FORCE_COLOR=0 nx run-many -t test -p '@omnifield/*'",
+    "lint": "FORCE_COLOR=0 nx run-many -t lint -p '@omnifield/*'",
+    "typecheck": "FORCE_COLOR=0 nx run-many -t typecheck -p '@omnifield/*'",
+    "dev": "nx run-many -t dev -p '@omnifield/*' --parallel=10",
+    "graph": "nx graph",
+    "nx": "nx",
+    "nav": "nx run-many -t build -p '@omnifield/*' && node tools/dev-nav/server.mjs"
+  },
+  "devDependencies": {
+    "nx": "23.1.1"
   }
 }
