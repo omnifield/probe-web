@@ -100,6 +100,19 @@ describe("случаи", () => {
     }
   });
 
+  it("фильтр отбирает и человеческие случаи — у них тоже есть координата", () => {
+    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
+    const hover = casesOf("button", { part: "root", state: "hover", variants });
+    const disabled = casesOf("button", { part: "root", state: "disabled", variants });
+
+    // «Занята» и «отключена по-настоящему» стоят в состояниях `busy` и `disabled`: в срезе по
+    // наведению их быть не должно, иначе фильтр читается как неработающий.
+    expect(hover.filter((item) => item.origin === "human")).toHaveLength(0);
+    expect(disabled.filter((item) => item.origin === "human").map((item) => item.title)).toContain(
+      "Отключена по-настоящему",
+    );
+  });
+
   it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
     const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
     const all = casesOf("button", { part: "root", variants });

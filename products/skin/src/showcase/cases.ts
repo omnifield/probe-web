@@ -35,6 +35,22 @@ import {
 
 import { REGISTRY } from "./registry.js";
 
+/**
+ * Координата случая — где он стоит по осям.
+ *
+ * Есть у КАЖДОГО случая, включая человеческий: «занята» это состояние `busy`, «длинная подпись» —
+ * умолчание без состояния. Без неё фильтр к человеческим случаям не применялся бы, и они висели
+ * бы в потоке при любом срезе — а это читается как «фильтр не работает».
+ */
+export interface CaseAt {
+  /** Часть, к которой случай относится. Не названа — корневая. */
+  readonly part?: string;
+  /** Вариация; `null` — умолчание, то есть атрибут не поставлен. */
+  readonly variant: string | null;
+  /** Состояние; `null` — обычное. */
+  readonly state: string | null;
+}
+
 /** Один случай: компонент в названном условии. */
 export interface ShowcaseCase {
   readonly id: string;
@@ -44,6 +60,8 @@ export interface ShowcaseCase {
   readonly note: string;
   /** Кто назвал условие: ось или человек. Это разные обещания, и подпись их различает. */
   readonly origin: "axis" | "human";
+  /** Где случай стоит по осям — по этому его и отбирает фильтр. */
+  readonly at: CaseAt;
   /** Дерево случая: образец компонента плюс условие. */
   readonly tree: AssemblyTree;
 }
@@ -188,6 +206,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
         title: [variant ?? "умолчание", part, state?.name ?? "обычное"].join(" · "),
         note: state?.means ?? "вид без состояния — то, с чего начинается всё остальное",
         origin: "axis",
+        at: { part, variant, state: state?.name ?? null },
         tree: build(component, { children: "Кнопка", ...variantProps }, address, state?.mark),
       });
     }
@@ -201,6 +220,8 @@ interface Condition {
   readonly id: string;
   readonly title: string;
   readonly note: string;
+  /** Где случай стоит по осям. Называет ЧЕЛОВЕК: только он знает, про что его случай. */
+  readonly at: CaseAt;
   readonly props: Readonly<Record<string, unknown>>;
 }
 
@@ -211,6 +232,7 @@ function human(component: string, condition: Condition): ShowcaseCase {
     title: condition.title,
     note: condition.note,
     origin: "human",
+    at: condition.at,
     tree: build(component, condition.props),
   };
 }
@@ -228,18 +250,21 @@ export const HUMAN_CASES: Readonly<Record<string, readonly ShowcaseCase[]>> = {
       id: "busy",
       title: "Занята",
       note: "работа идёт: занятость собирается из готового — отключённость плюс `aria-busy`",
+      at: { variant: null, state: "busy" },
       props: { children: "Сохраняю…", disabled: true, "aria-busy": "true" },
     }),
     human("button", {
       id: "disabled-real",
       title: "Отключена по-настоящему",
       note: "не признаком, а пропом: проверяем, что кит сам ставит `data-disabled`",
+      at: { variant: null, state: "disabled" },
       props: { children: "Сохранить", disabled: true },
     }),
     human("button", {
       id: "long",
       title: "Длинная подпись",
       note: "содержимое кладёт потребитель, и оно бывает длиннее места — смотрим, как держится",
+      at: { variant: null, state: null },
       props: { children: "Сохранить и вернуться к перечню документов" },
     }),
   ],
@@ -248,12 +273,34 @@ export const HUMAN_CASES: Readonly<Record<string, readonly ShowcaseCase[]>> = {
 /**
  * Показ компонента целиком: порождённое осями плюс названное человеком, ОДНИМ потоком.
  *
- * Человеческие случаи идут после осевых: оси отвечают на «одето ли всё», человеческие — на «как
+ * Фильтр применяется к ОБОИМ родам одинаково — по координате случая. Прежде человеческие случаи
+ * висели в потоке при любом срезе, и это читалось как «фильтр не работает»: он работал, просто
+ * сравнивать ему было нечего.
+ *
+ * Человеческие идут после осевых: оси отвечают на «одето ли всё», человеческие — на «как
  * держится». При одевании первый вопрос возникает раньше.
  *
  * @param component адрес компонента в реестре
  * @param slice срез осей
  */
 export function casesOf(component: string, slice: Slice): ShowcaseCase[] {
-  return [...axisCases(component, slice), ...(HUMAN_CASES[component] ?? [])];
+  const humans = (HUMAN_CASES[component] ?? []).filter((item) => inSlice(item, component, slice));
+
+  return [...axisCases(component, slice), ...humans];
+}
+
+/**
+ * Стоит ли случай в срезе: названная ось обязана совпасть, ось «все» пропускает любой.
+ *
+ * Часть сравнивается с корневой по умолчанию — случай, не назвавший части, про корень и есть.
+ */
+function inSlice(item: ShowcaseCase, component: string, slice: Slice): boolean {
+  const part = slice.part ?? rootPartOf(component);
+
+  if ((item.at.part ?? rootPartOf(component)) !== part) return false;
+  if (slice.variant !== undefined && slice.variant !== null && item.at.variant !== slice.variant) {
+    return false;
+  }
+
+  return !(slice.state !== undefined && slice.state !== null && item.at.state !== slice.state);
 }
