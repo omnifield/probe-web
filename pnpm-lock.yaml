@@ -238,6 +238,9 @@ importers:
       '@omnifield/probe-web-runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@omnifield/probe-web-style':
+        specifier: workspace:*
+        version: link:../style
       '@omnifield/probe-web-ui':
         specifier: workspace:*
         version: link:../ui
