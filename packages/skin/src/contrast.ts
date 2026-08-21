@@ -81,8 +81,24 @@ import { skinValues, type SkinHalf } from "./seeds.js";
 import { skinRules, type RuleCoordinate, type SkinRule } from "./rules.js";
 import { trace } from "./trace.js";
 
-/** Норма, по которой считали пару. */
-export type ContrastNorm = "text" | "non-text";
+/**
+ * ВОПРОС, на который счёт отвечает про эту пару. Их три, и они разные.
+ *
+ *  • `text`     — читается ли текст на заливке. Норма 4.5 (WCAG 2.2, 1.4.3);
+ *  • `non-text` — виден ли нетекстовый элемент на заливке, которую он собой закрывает: значок,
+ *                 залитая фигура. Норма 3 (1.4.11) — обе стороны пары механике известны;
+ *  • `distinct` — отличается ли рамка от заливки, которую ОБВОДИТ. **Это не вопрос нормы.**
+ *
+ * Про последний — решение архитектора 2026-08-21 по находке сквозного прохода. Норма для
+ * нетекстового спрашивает, видна ли граница на фоне того, что РЯДОМ, то есть снаружи узла.
+ * Механика этого не знает и знать не может: что лежит рядом, знает дерево, а скин от дерева
+ * независим намеренно — он адресует координаты, а не места.
+ *
+ * Значит вопрос у механики другой, и называть его нормой нельзя: человек пойдёт чинить по
+ * одному правилу, а померено другое. Вопрос при этом настоящий — невидимая внутренняя рамка
+ * это дефект, и ловить его стоит.
+ */
+export type ContrastQuestion = "text" | "non-text" | "distinct";
 
 /**
  * Почему пару посчитать нечем.
@@ -100,6 +116,7 @@ export type ContrastNorm = "text" | "non-text";
  */
 export type UnreckonableReason = "no-background" | "outside-skin" | ColorRefusal;
 
+
 /** Адрес, на котором сошлась пара. Пустая вариация — «без вариации», как у базы. */
 export type ContrastAddress = Pick<RuleCoordinate, "component" | "part" | "variants" | "states">;
 
@@ -112,12 +129,13 @@ export type ContrastAddress = Pick<RuleCoordinate, "component" | "part" | "varia
  */
 export type ContrastNote =
   | {
+      /** Пара не проходит НОРМУ. Только там, где вопрос нормой и является. */
       readonly kind: "low";
       readonly half: SkinHalf;
       readonly where: ContrastAddress;
-      /** Свойство переднего плана: `color`, `border-color`… */
+      /** Свойство переднего плана: `color`, `fill`… */
       readonly property: string;
-      readonly norm: ContrastNorm;
+      readonly question: "text" | "non-text";
       /** Разрешённые значения — те, по которым считали. */
       readonly foreground: string;
       readonly background: string;
@@ -128,26 +146,105 @@ export type ContrastNote =
       readonly means: string;
     }
   | {
+      /**
+       * Рамка не отличается от заливки, которую обводит.
+       *
+       * Порога нормы здесь НЕТ и быть не может — вопрос не нормы. Есть наш порог, названный
+       * своим именем (`INDISTINCT`) и выведенный из собственной лестницы значений.
+       */
+      readonly kind: "indistinct";
+      readonly half: SkinHalf;
+      readonly where: ContrastAddress;
+      readonly property: string;
+      readonly question: "distinct";
+      readonly foreground: string;
+      readonly background: string;
+      readonly ratio: number;
+      readonly means: string;
+    }
+  | {
       readonly kind: "unreckonable";
       readonly half: SkinHalf;
       readonly where: ContrastAddress;
       readonly property: string;
-      readonly norm: ContrastNorm;
+      readonly question: ContrastQuestion;
       readonly reason: UnreckonableReason;
       readonly means: string;
     };
 
+/**
+ * Вопрос, которого счёт НЕ задаёт, — объявленный, а не подразумеваемый.
+ *
+ * Молчаливое частичное покрытие хуже объявленного непокрытия: по нему решают, что проверено
+ * всё. Поэтому непокрытое едет в ОТВЕТЕ, а не лежит в доке.
+ */
+export interface UncheckedQuestion {
+  /** Короткое имя вопроса. */
+  readonly question: string;
+  /** Свойства скина, которых это касается и которые в записи действительно встретились. */
+  readonly properties: readonly string[];
+  readonly means: string;
+}
+
+/**
+ * Ответ счёта: что нашлось и чего счёт не смотрит.
+ *
+ * Два поля, а не один перечень, потому что это разные вещи. Пробел в покрытии проверки — не
+ * изъян скина, и складывать их в одну кучу значило бы заставить каждого читателя разбирать её
+ * заново.
+ */
+export interface ContrastReport {
+  readonly notes: readonly ContrastNote[];
+  readonly unchecked: readonly UncheckedQuestion[];
+}
+
 /** Свойства заливки. Длинное имя перебивает короткое: оно точнее. */
 const BACKGROUND = ["background-color", "background"];
 
-/** Свойства переднего плана и норма, по которой их считают. */
-const FOREGROUND: readonly (readonly [property: string, norm: ContrastNorm])[] = [
+/**
+ * Свойства переднего плана и ВОПРОС, на который счёт по ним отвечает.
+ *
+ * Рамка и обвод отделены от значка и заливки фигуры намеренно. Рамка и обвод рисуются по краю
+ * узла и граничат с тем, что СНАРУЖИ, — а снаружи механике неизвестно. Значок же лежит НА
+ * собственной заливке узла: обе стороны пары известны, и это ровно вопрос нормы.
+ */
+const FOREGROUND: readonly (readonly [property: string, question: ContrastQuestion])[] = [
   ["color", "text"],
-  ["border-color", "non-text"],
-  ["outline-color", "non-text"],
+  ["border-color", "distinct"],
+  ["outline-color", "distinct"],
   ["fill", "non-text"],
   ["stroke", "non-text"],
 ];
+
+/**
+ * Ниже этого отношения рамку от собственной заливки не отличить.
+ *
+ * **Это НАШ порог, а не норма**, и путать их нельзя. Выведен из собственной лестницы значений,
+ * а не выбран на глаз (замер 2026-08-21, пять семян × два режима):
+ *
+ *   ступень 7 против 3   1,34…1,88   назначенная граница на назначенном фоне элемента
+ *   ступень 6 против 3   1,19…1,47   тонкая граница там же
+ *   ступень 9 против 10  1,14…1,21   заливка и заливка при наведении
+ *
+ * Последняя строка — САМОЕ МЕЛКОЕ различие, которое лестница делает намеренно. Значит порог
+ * ниже неё: всё, что тусклее сознательного различия системы, различием не является. Возьми мы
+ * порог выше — счёт бранил бы собственные назначенные границы.
+ */
+export const INDISTINCT = 1.1;
+
+/**
+ * Чего счёт НЕ смотрит по рамке — текст объявлен один раз и едет в ответ как есть.
+ *
+ * Здесь, а не в доке: доку читают не все, а ответ читают все, кто счётом пользуется.
+ */
+const OUTSIDE_UNCHECKED = {
+  question: "рамка против внешнего",
+  means:
+    "контраст рамки против того, что лежит РЯДОМ с узлом, счётом не проверяется. Норма " +
+    "(WCAG 2.2, 1.4.11) спрашивает именно это, но что лежит рядом — знает дерево, а скин от " +
+    "дерева независим: он адресует координаты, а не места. Счёт отвечает на соседний вопрос — " +
+    "отличима ли рамка от заливки, которую обводит",
+} as const;
 
 /**
  * Ключевые слова CSS, отсылающие ЗА ПРЕДЕЛЫ этой координаты.
@@ -392,12 +489,14 @@ function readColour(
 export function skinContrast(
   skin: Skin,
   passports: Iterable<ComponentPassport>,
-): readonly ContrastNote[] {
+): ContrastReport {
   const done = trace(`skinContrast(${skin.name})`);
 
   const { rules } = skinRules(skin, passportLookup(passports));
   const groups = byPart(rules);
   const notes: ContrastNote[] = [];
+  /** Свойства рамки, которые в записи действительно встретились. */
+  const bordered = new Set<string>();
 
   for (const half of ["light", "dark"] as const) {
     const values = skinValues(skin, half);
@@ -413,12 +512,13 @@ export function skinContrast(
       const fallbackVariant = skin.recipes[at.component]?.defaultVariant;
       const props = foldedAt(groups.get(partOfKey(at)) ?? [], at, fallbackVariant);
 
-      for (const [property, norm] of FOREGROUND) {
+      for (const [property, question] of FOREGROUND) {
         const front = props.get(property);
         if (front === undefined) continue;
 
+        if (question === "distinct") bordered.add(property);
+
         const back = BACKGROUND.map((name) => props.get(name)).find((v) => v !== undefined);
-        const required = norm === "text" ? AA_TEXT : AA_NON_TEXT;
 
         if (back === undefined) {
           if (seen.has(pairKey(half, property, front, "—"))) continue;
@@ -428,7 +528,7 @@ export function skinContrast(
             half,
             where: at,
             property,
-            norm,
+            question,
             reason: "no-background",
             means:
               `на координате «${at.component}.${at.part}» объявлен ${property}, а заливки нет: ` +
@@ -452,7 +552,7 @@ export function skinContrast(
             half,
             where: at,
             property,
-            norm,
+            question,
             reason: failed.reason,
             means: `${failed.means} (${property}: ${front} на ${back})`,
           });
@@ -463,7 +563,31 @@ export function skinContrast(
         const background = second as { colour: Oklch; text: string };
         const ratio =
           Math.round(contrastRatio(foreground.colour, background.colour) * 100) / 100;
+        const where = `«${at.component}.${at.part}»`;
+        const side = half === "light" ? "светлая" : "тёмная";
 
+        // Рамка: вопрос НЕ нормы, поэтому и порог свой, и слова свои. Ссылаться здесь на норму
+        // значило бы послать человека чинить по правилу, по которому не мерили.
+        if (question === "distinct") {
+          if (ratio >= INDISTINCT) continue;
+
+          notes.push({
+            kind: "indistinct",
+            half,
+            where: at,
+            property,
+            question,
+            foreground: foreground.text,
+            background: background.text,
+            ratio,
+            means:
+              `${property} на координате ${where} не отличается от заливки, которую обводит ` +
+              `(${ratio.toFixed(2)}; ${side} половина). Рамка есть в записи и не видна на узле`,
+          });
+          continue;
+        }
+
+        const required = question === "text" ? AA_TEXT : AA_NON_TEXT;
         if (ratio >= required) continue;
 
         notes.push({
@@ -471,20 +595,24 @@ export function skinContrast(
           half,
           where: at,
           property,
-          norm,
+          question,
           foreground: foreground.text,
           background: background.text,
           ratio,
           required,
           means:
-            `${norm === "text" ? "текст" : "нетекстовый элемент"} на координате ` +
-            `«${at.component}.${at.part}» даёт ${ratio.toFixed(2)} при норме ${required} ` +
-            `(${half === "light" ? "светлая" : "тёмная"} половина)`,
+            `${question === "text" ? "текст" : "нетекстовый элемент"} на координате ${where} ` +
+            `даёт ${ratio.toFixed(2)} при норме ${required} (${side} половина)`,
         });
       }
     }
   }
 
+  const unchecked: UncheckedQuestion[] =
+    bordered.size > 0
+      ? [{ ...OUTSIDE_UNCHECKED, properties: [...bordered].toSorted() }]
+      : [];
+
   done();
-  return notes;
+  return { notes, unchecked };
 }

@@ -349,7 +349,7 @@ describe("контраст обещан построением", () => {
   it("читаемость на семенном скине молчит — но НЕ снята", () => {
     // На пути семян проверка избыточна: обещание даётся построением. Снять её нельзя — на пути
     // литералов она единственное, что стоит между скином и нечитаемой кнопкой.
-    expect(skinContrast(sown(SEED), [buttonPassport])).toEqual([]);
+    expect(skinContrast(sown(SEED), [buttonPassport]).notes).toEqual([]);
   });
 
   it("на пути литералов она по-прежнему ловит", () => {
@@ -362,14 +362,16 @@ describe("контраст обещан построением", () => {
       },
     };
 
-    expect(skinContrast(bad, [buttonPassport]).length).toBeGreaterThan(0);
+    expect(skinContrast(bad, [buttonPassport]).notes.length).toBeGreaterThan(0);
   });
 
   it("литерал, положенный ПОВЕРХ семени, проверяется как литерал", () => {
     // Наложение снимает обещание построения ровно на том значении, которое человек тронул, — и
     // проверка это видит.
     const spoiled = sown(SEED, { light: { "бренд-contrast": "#b0b0b0", "бренд-9": "#ffffff" } });
-    const low = skinContrast(spoiled, [buttonPassport]).filter((note) => note.kind === "low");
+    const low = skinContrast(spoiled, [buttonPassport]).notes.filter(
+      (note) => note.kind === "low",
+    );
 
     expect(low.length).toBeGreaterThan(0);
   });

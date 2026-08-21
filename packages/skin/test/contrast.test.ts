@@ -13,7 +13,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { skinContrast, type ContrastNote } from "../src/contrast.js";
+import { INDISTINCT, skinContrast, type ContrastNote } from "../src/contrast.js";
 import type { Skin } from "../src/model.js";
 import { buttonPassport } from "./passports.js";
 
@@ -30,17 +30,21 @@ function paired(color: string, background: string, dark?: Record<string, string>
   };
 }
 
-function notes(skin: Skin): readonly ContrastNote[] {
+function report(skin: Skin) {
   return skinContrast(skin, [buttonPassport]);
+}
+
+function notes(skin: Skin): readonly ContrastNote[] {
+  return report(skin).notes;
 }
 
 /** Компактная запись ответа — сравнивать удобнее её. */
 function shorthand(list: readonly ContrastNote[]): string[] {
-  return list.map((note) =>
-    note.kind === "low"
-      ? `low ${note.half} ${note.property} ${note.norm}`
-      : `?${note.reason} ${note.half} ${note.property}`,
-  );
+  return list.map((note) => {
+    if (note.kind === "low") return `low ${note.half} ${note.property} ${note.question}`;
+    if (note.kind === "indistinct") return `неотличима ${note.half} ${note.property}`;
+    return `?${note.reason} ${note.half} ${note.property}`;
+  });
 }
 
 describe("ответ — значение, а не отказ", () => {
@@ -103,7 +107,7 @@ describe("пара ниже нормы названа", () => {
     if (low!.kind !== "low") return;
 
     expect(low!.property).toBe("color");
-    expect(low!.norm).toBe("text");
+    expect(low!.question).toBe("text");
     expect(low!.ratio).toBeLessThan(low!.required);
     expect(low!.foreground).toBe("#949494");
     expect(low!.background).toBe("#ffffff");
@@ -129,43 +133,153 @@ describe("пара ниже нормы названа", () => {
   });
 });
 
-describe("порог различает текст и не-текст", () => {
-  const skin: Skin = {
-    name: "порог",
-    variables: { light: { ink: "#949494", face: "#ffffff" } },
-    recipes: {
-      button: {
-        base: {
-          root: {
-            props: {
-              // Один и тот же цвет на одной и той же заливке: 3.03 — мало тексту, довольно рамке.
-              color: "var(--ink)",
-              borderColor: "var(--ink)",
-              backgroundColor: "var(--face)",
+describe("вопрос зависит от того, чем пара является", () => {
+  it("текст и рамка одного цвета на одной заливке: текст забракован, рамка — нет", () => {
+    // 3.03 мало тексту. Рамке норма тут не судья вовсе: она граничит с тем, что СНАРУЖИ узла, а
+    // это знание дерева. Порог рамки — свой и другой.
+    const skin: Skin = {
+      name: "вопросы",
+      variables: { light: { ink: "#949494", face: "#ffffff" } },
+      recipes: {
+        button: {
+          base: {
+            root: {
+              props: {
+                color: "var(--ink)",
+                borderColor: "var(--ink)",
+                backgroundColor: "var(--face)",
+              },
             },
           },
         },
       },
-    },
-  };
+    };
 
-  it("тот же цвет забракован как текст и пропущен как рамка", () => {
     expect(shorthand(notes(skin))).toEqual(["low light color text", "low dark color text"]);
   });
 
-  it("рамка ниже СВОЕГО порога всё-таки называется", () => {
-    const weak: Skin = {
-      name: "рамка",
+  it("значок на собственной заливке — по-прежнему вопрос НОРМЫ", () => {
+    // Значок лежит НА заливке узла: обе стороны пары механике известны, и 1.4.11 к ним
+    // применима. Отделять его от рамки — не придирка: рамка граничит с внешним, значок нет.
+    const skin: Skin = {
+      name: "значок",
       recipes: {
         button: {
-          base: { root: { props: { borderColor: "#b0b0b0", backgroundColor: "#ffffff" } } },
+          base: { root: { props: { fill: "#b0b0b0", backgroundColor: "#ffffff" } } },
         },
       },
     };
-    const low = notes(weak).find((note) => note.kind === "low");
+    const [low] = notes(skin);
 
-    expect(low?.kind === "low" && low.norm).toBe("non-text");
-    expect(low?.kind === "low" && low.required).toBe(3);
+    expect(low?.kind).toBe("low");
+    if (low?.kind !== "low") return;
+    expect(low.question).toBe("non-text");
+    expect(low.required).toBe(3);
+  });
+});
+
+describe("рамка против своей заливки — своё имя, не норма", () => {
+  /** Рамка того же цвета, что заливка: в записи она есть, на узле её нет. */
+  const invisible: Skin = {
+    name: "невидимая",
+    recipes: {
+      button: {
+        base: { root: { props: { borderColor: "#ffffff", backgroundColor: "#ffffff" } } },
+      },
+    },
+  };
+
+  it("неотличимая рамка ПО-ПРЕЖНЕМУ находится", () => {
+    expect(shorthand(notes(invisible))).toEqual([
+      "неотличима light border-color",
+      "неотличима dark border-color",
+    ]);
+  });
+
+  it("порога нормы в ответе нет — ни числом, ни словом", () => {
+    const [note] = notes(invisible);
+
+    expect(note?.kind).toBe("indistinct");
+    if (note?.kind !== "indistinct") return;
+
+    expect(note).not.toHaveProperty("required");
+    expect(note.question).toBe("distinct");
+    expect(note.means).not.toMatch(/норм/i);
+    expect(note.means).toContain("не отличается от заливки");
+    expect(note.ratio).toBe(1);
+  });
+
+  it("рамка, ОТЛИЧИМАЯ от заливки, нормой больше не бранится", () => {
+    // Находка сквозного прохода: рамка соседней ступени при заливке рядом давала 1,68 и
+    // называлась нарушением порога 3. Меряли при этом не то, что спрашивает норма.
+    const neighbourly: Skin = {
+      name: "соседняя",
+      recipes: {
+        button: {
+          base: { root: { props: { borderColor: "#8f8f8f", backgroundColor: "#767676" } } },
+        },
+      },
+    };
+
+    expect(notes(neighbourly)).toEqual([]);
+  });
+
+  it("порог рамки — наш, и он ниже самого мелкого различия собственной лестницы", () => {
+    // Замер 2026-08-21: ступень 9 против 10 (заливка и заливка при наведении) даёт 1,14 — это
+    // самое мелкое различие, которое лестница делает НАМЕРЕННО. Порог обязан быть ниже, иначе
+    // счёт бранил бы собственные назначенные границы.
+    expect(INDISTINCT).toBeLessThan(1.14);
+  });
+});
+
+describe("непокрытое названо В ОТВЕТЕ, а не в доке", () => {
+  const withBorder: Skin = {
+    name: "с-рамкой",
+    recipes: {
+      button: {
+        base: { root: { props: { borderColor: "#000000", backgroundColor: "#ffffff" } } },
+      },
+    },
+  };
+
+  it("скин с рамкой: ответ говорит, чего счёт не смотрит", () => {
+    const { unchecked } = report(withBorder);
+
+    expect(unchecked).toHaveLength(1);
+    expect(unchecked[0]!.properties).toEqual(["border-color"]);
+    expect(unchecked[0]!.means).toContain("РЯДОМ");
+  });
+
+  it("названы ровно те свойства, что в записи встретились", () => {
+    const both: Skin = {
+      name: "обе",
+      recipes: {
+        button: {
+          base: {
+            root: {
+              props: {
+                borderColor: "#000000",
+                outlineColor: "#000000",
+                backgroundColor: "#ffffff",
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(report(both).unchecked[0]!.properties).toEqual(["border-color", "outline-color"]);
+  });
+
+  it("скин без рамок непокрытого не объявляет: говорить не о чем", () => {
+    expect(report(paired("#000000", "#ffffff")).unchecked).toEqual([]);
+  });
+
+  it("непокрытое — не изъян и лежит отдельно от изъянов", () => {
+    // Сложи их в одну кучу — и каждый читатель разбирал бы её заново, а витрина показывала бы
+    // «одна проблема» там, где проблемы нет.
+    expect(report(withBorder).notes).toEqual([]);
+    expect(report(withBorder).unchecked).toHaveLength(1);
   });
 });
 
@@ -355,20 +469,23 @@ describe("непосчитанное называется, а не пропус�
     expect(shorthand(notes(skin))).toEqual(["?no-background light color", "?no-background dark color"]);
   });
 
-  it("цвет из составного значения достаётся: `1px solid #b0b0b0` — это #b0b0b0", () => {
+  it("цвет из составного значения достаётся: `1px solid #ffffff` — это #ffffff", () => {
     const skin: Skin = {
       name: "составное",
       recipes: {
         button: {
           base: {
-            root: { props: { borderColor: "1px solid #b0b0b0", backgroundColor: "#ffffff" } },
+            root: { props: { borderColor: "1px solid #ffffff", backgroundColor: "#ffffff" } },
           },
         },
       },
     };
-    const low = notes(skin).find((note) => note.kind === "low");
+    const [note] = notes(skin);
 
-    expect(low?.kind === "low" && low.foreground).toBe("#b0b0b0");
+    // Рамка сокращённой записью, того же цвета, что заливка: цвет из куска достался, и пара
+    // посчиталась — иначе тут была бы жалоба на неразобранную запись.
+    expect(note?.kind).toBe("indistinct");
+    expect(note?.kind === "indistinct" && note.foreground).toBe("#ffffff");
   });
 });
 

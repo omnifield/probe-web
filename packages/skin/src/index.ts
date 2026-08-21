@@ -15,8 +15,10 @@ export { SkinRefused, generateSketchCss, generateSkinCss } from "./generate.js";
 // которому нужна только форма записи, платить за это не за что.
 export type {
   ContrastAddress,
-  ContrastNorm,
   ContrastNote,
+  ContrastQuestion,
+  ContrastReport,
+  UncheckedQuestion,
   UnreckonableReason,
 } from "./contrast.js";
-export { skinContrast } from "./contrast.js";
+export { INDISTINCT, skinContrast } from "./contrast.js";
