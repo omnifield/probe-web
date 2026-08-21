@@ -32,6 +32,9 @@ export {
   type AccordionItemTriggerProps,
   type AccordionProps,
 } from "./accordion/index.js";
+export { Flow, FlowItem, type FlowItemProps, type FlowProps } from "./flow/index.js";
+export { Grid, GridCell, type GridCellProps, type GridProps } from "./grid/index.js";
+export { Surface, type SurfaceProps } from "./surface/index.js";
 export {
   Collapsible,
   CollapsibleContent,

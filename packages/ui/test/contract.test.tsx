@@ -14,6 +14,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Accordion, AccordionItem, AccordionItemTrigger } from "../src/accordion/index.js";
 import { Collapsible, CollapsibleTrigger } from "../src/collapsible.jsx";
+import { Flow, FlowItem } from "../src/flow/index.js";
+import { Grid, GridCell } from "../src/grid/index.js";
+import { Surface } from "../src/surface/index.js";
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button/index.js";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
@@ -347,6 +350,43 @@ const PRIMITIVES = [
           <NavigationMenuTrigger {...props} />
         </NavigationMenuMenu>
       </NavigationMenu>
+    ),
+  },
+  {
+    // Раскладка и поверхность прозрачны так же, как всё остальное: у них нет ни поведения, ни
+    // вида, и единственное, что они делают с пропами потребителя, — пропускают их насквозь.
+    name: "Surface",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Surface {...props} />,
+  },
+  {
+    name: "Flow",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Flow {...props} />,
+  },
+  {
+    name: "FlowItem",
+    // Тег нарочно НЕ `div`: узел потока и узел элемента иначе неразличимы поиском, и проверка
+    // молча смотрела бы на корень вместо элемента.
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <Flow>
+        <FlowItem as="span" {...props} />
+      </Flow>
+    ),
+  },
+  {
+    name: "Grid",
+    tag: "div",
+    render: (props: Record<string, unknown>) => <Grid {...props} />,
+  },
+  {
+    name: "GridCell",
+    tag: "span",
+    render: (props: Record<string, unknown>) => (
+      <Grid>
+        <GridCell as="span" {...props} />
+      </Grid>
     ),
   },
   {
