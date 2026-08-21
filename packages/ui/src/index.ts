@@ -22,22 +22,27 @@
 
 export {
   Accordion,
-  AccordionContent,
-  type AccordionContentComponentProps,
-  AccordionHeader,
-  type AccordionHeaderComponentProps,
   AccordionItem,
-  type AccordionItemComponentProps,
+  AccordionItemContent,
+  type AccordionItemContentProps,
+  AccordionItemIndicator,
+  type AccordionItemIndicatorProps,
+  type AccordionItemProps,
+  AccordionItemTrigger,
+  type AccordionItemTriggerProps,
   type AccordionProps,
-  AccordionTrigger,
-  type AccordionTriggerComponentProps,
+} from "./accordion/index.js";
+export { Flow, FlowItem, type FlowItemProps, type FlowProps } from "./flow/index.js";
+export { Grid, GridCell, type GridCellProps, type GridProps } from "./grid/index.js";
+export { Surface, type SurfaceProps } from "./surface/index.js";
+export {
   Collapsible,
   CollapsibleContent,
   type CollapsibleContentComponentProps,
   type CollapsibleProps,
   CollapsibleTrigger,
   type CollapsibleTriggerComponentProps,
-} from "./accordion.jsx";
+} from "./collapsible.jsx";
 export {
   AlertDialog,
   AlertDialogClose,

@@ -54,6 +54,18 @@ export const accordion = passport("accordion", "component", "root", [
 ]);
 
 /**
+ * Всплывающее окно — составной компонент с триггером: на нём проверяется композиция.
+ *
+ * Триггер пускает внутрь компонент — им и становится кнопка, вставленная в него. Что именно
+ * туда допустимо, решает паспорт: механика об этом собственного мнения не имеет.
+ */
+export const popover = passport("popover", "component", "root", [
+  { name: "root", accepts: [part("trigger"), part("content")] },
+  { name: "trigger", accepts: [content("component")] },
+  { name: "content", accepts: [content("component")] },
+]);
+
+/**
  * Компонент, чья часть правила вложенности не объявила вовсе.
  *
  * Третье состояние поля `accepts` — «не запрещает ничего». Отличать его от пустого перечня
@@ -82,6 +94,7 @@ export const PASSPORTS = {
   button,
   icon,
   accordion,
+  popover,
   открытый,
   half: halfDeclared,
   // Тот же компонент под чужим пространством имён: адрес и имя совпадать не обязаны.

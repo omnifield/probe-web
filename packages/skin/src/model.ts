@@ -1,16 +1,18 @@
 // ПОДПУТЬ `./model` — механика скина БЕЗ порождения: модель, адресация, сборка правил, проверки.
 //
-// Отдельный вход, а не кусок общего, потому что у этой половины другой потребитель и другая
-// цена. Хранилище скинов, проверка сохранённой записи, редактор на стадии «человек ещё правит» —
-// им нужны форма и отказы, но не нужен плоский текст CSS. А за текстом стоит postcss с
-// `postcss-nested`: влей мы всё в один вход, каждый такой потребитель ставил бы postcss ради
-// проверки имени токена.
+// Отдельный вход, а не кусок общего, потому что у этой половины другой потребитель: хранилищу
+// скинов, проверке сохранённой записи и редактору на стадии «человек ещё правит» нужны форма и
+// отказы, а печатать текст им нечего и незачем.
 //
 // Обратное неверно: порождение стоит на модели, поэтому корневой вход отдаёт и её тоже.
+//
+// Оба этих входа postcss не тянут — он живёт за третьим, `./flat` (`PWEB-36`).
 
 export type {
   AncestorStyle,
   CompoundVariant,
+  ScaleDeclaration,
+  SeededScale,
   Keyframes,
   LocalStyle,
   PartStyle,
@@ -43,5 +45,23 @@ export {
   variantSelector,
 } from "./address.js";
 
-export type { SkinFlaw, SkinFlawName, SkinRule, SkinRules, ValueVocabulary } from "./rules.js";
+export type {
+  CssRule,
+  RuleCoordinate,
+  SkinFlaw,
+  SkinFlawName,
+  SkinRule,
+  SkinRules,
+  SketchRules,
+  ValueVocabulary,
+} from "./rules.js";
 export { checkSketch, checkSkin, sketchRules, skinRules } from "./rules.js";
+
+export type { SkinGap, SkinGapKind } from "./coverage.js";
+export { skinGaps } from "./coverage.js";
+
+// Значения скина: построение семенами и то, чем правка человека помечена. Живёт в `./model`,
+// потому что это МОДЕЛЬ — от неё зависят и проверка имён, и порождение, и читаемость. Цена
+// названа: построение шкал берётся у зоны значений, и она приезжает сюда одноранговой.
+export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds.js";
+export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";

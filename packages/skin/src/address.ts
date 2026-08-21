@@ -57,6 +57,23 @@ export function safeName(name: string): boolean {
   return name.length > 0 && !/["\\]/.test(name);
 }
 
+/**
+ * Собирает читатель паспортов из перечня.
+ *
+ * Перечень компонентов приходит СНАРУЖИ — он принадлежит реестру, — а обходу нужен вызов по
+ * имени. Место сборки одно, чтобы каждый читатель перечня не заводил свою карту.
+ *
+ * @param passports паспорта, которые считаются известными
+ */
+export function passportLookup(
+  passports: Iterable<ComponentPassport>,
+): PassportLookup {
+  const byName = new Map<string, ComponentPassport>();
+  for (const passport of passports) byName.set(passport.component, passport);
+
+  return (component) => byName.get(component);
+}
+
 /** Селектор атрибута: с ожидаемым значением или на само наличие. */
 function attribute(name: string, value?: string): string {
   return value === undefined ? `[${name}]` : `[${name}="${value}"]`;

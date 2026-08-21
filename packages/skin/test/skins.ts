@@ -130,3 +130,32 @@ export const nestedEdits: readonly SketchEdit[] = [
     },
   },
 ];
+
+/**
+ * Кнопка, одетая ЦЕЛИКОМ: часть и все семь объявленных состояний.
+ *
+ * Нужен покрытию: «пусто» проверяется только на скине, которому по-настоящему нечего добрать.
+ * Состояния перечислены руками, а не выведены из паспорта: выведи их проба из того же источника,
+ * из которого их читает механика, — и она перестала бы замечать, что одно из них потерялось.
+ */
+export const dressedSkin: Skin = {
+  name: "одета",
+  recipes: {
+    button: {
+      base: {
+        root: {
+          props: { display: "inline-flex" },
+          states: {
+            hover: { props: { opacity: "0.9" } },
+            "focus-visible": { props: { outline: "2px solid" } },
+            active: { props: { transform: "translateY(1px)" } },
+            disabled: { props: { opacity: "0.4" } },
+            busy: { props: { cursor: "progress" } },
+            expanded: { props: { borderBottomColor: "transparent" } },
+            pressed: { props: { fontWeight: "700" } },
+          },
+        },
+      },
+    },
+  },
+};

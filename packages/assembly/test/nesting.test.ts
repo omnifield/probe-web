@@ -186,6 +186,8 @@ describe("обратное чтение: возможные владельцы",
       "accordion.itemTrigger",
       "button",
       "layout",
+      "popover.content",
+      "popover.trigger",
       "ui.button",
       "открытый",
     ]);

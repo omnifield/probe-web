@@ -1,17 +1,16 @@
 <!doctype html>
 <!-- Тема стоит классом на `<html>`: `themes.css` красит `:root` в светлую пару, `.dark` — в
      тёмную. Класс в разметке, а не переключатель на JS, — тема встаёт до первого кадра, и
-     вспышки светлого экрана перед загрузкой скрипта не бывает. Стенд переключает этот же
-     класс, а не подменяет стили. -->
+     вспышки светлого экрана перед загрузкой скрипта не бывает. -->
 <html lang="ru" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Стенд зоны skin — оформление подключается и снимается</title>
+    <title>Витрина — компоненты, подключённые к редактору скина</title>
   </head>
   <body>
     <!-- #root — часть замороженной поверхности (kb:PROBEWEB-4): mount() ищет точку сам. -->
     <div id="root"></div>
-    <script type="module" src="/src/playground/main.tsx"></script>
+    <script type="module" src="/src/showcase/main.tsx"></script>
   </body>
 </html>

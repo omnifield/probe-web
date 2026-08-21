@@ -18,13 +18,8 @@
 
 import { veilOver } from "./color/alpha.js";
 import { AA_NON_TEXT, AA_TEXT, contrastRatio } from "./color/contrast.js";
-import {
-  type Oklch,
-  formatOklch,
-  oklchToSrgb,
-  parseColor,
-  srgbToOklch,
-} from "./color/oklch.js";
+import { type Oklch, formatOklch, oklchToSrgb, srgbToOklch } from "./color/oklch.js";
+import { parseColor } from "./color/parse.js";
 import { trace } from "./trace.js";
 
 /** Режим шкалы. Тёмная — ОТДЕЛЬНАЯ шкала, а не инверсия светлой. */

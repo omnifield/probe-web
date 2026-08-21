@@ -17,7 +17,7 @@ export type {
 export { partOf } from "./passport-read.js";
 
 export type { AssemblyNode, AssemblyTree, NodeId } from "./tree.js";
-export { ancestorsOf, EMPTY_TREE, nodeOf, rootOf, subtreeOf } from "./tree.js";
+export { ancestorsOf, EMPTY_TREE, nodeOf, outerTypeOf, rootOf, subtreeOf } from "./tree.js";
 
 export type { ComponentMap } from "./resolve.js";
 export { resolveAddress } from "./resolve.js";

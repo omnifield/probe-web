@@ -1,8 +1,11 @@
 // ПОВЕРХНОСТЬ ПОСТАВКИ — обещание подпутей, проверенное по СОБРАННОМУ файлу, а не по намерению.
 //
-// Обещание одно и стоит денег потребителю: `./model` не тянет порождение, а значит не тянет
-// postcss. Проверить его можно только тем, что уехало в `dist`: исходник об этом не говорит —
-// важно, что попало в бандл после разрешения импортов.
+// Обещание одно и стоит денег потребителю: порождение отдаёт ВЛОЖЕННУЮ форму и postcss в цепочку
+// не тянет — витрина и редактор порождают CSS на каждое движение ручки, и разворачиватель был
+// там главным весом.
+//
+// Проверить это можно только тем, что уехало в `dist`: исходник об этом не говорит — важно, что
+// попало в бандл после разрешения импортов.
 //
 // Проба идёт после сборки: `pnpm test` собирает пакет первым шагом.
 
@@ -19,44 +22,84 @@ function bundle(name: string): string {
   return readFileSync(join(pkgRoot, "dist", name), "utf8");
 }
 
-/** Манифест пакета. */
+/** Манифест пакета — здесь нужен ровно ради перечня подпутей. */
 const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
   exports: Record<string, { types: string; default: string }>;
-  dependencies: Record<string, string>;
-  peerDependencies: Record<string, string>;
 };
 
-describe("подпуть `./model` не тянет порождение", () => {
-  it("в собранном `model.js` нет ни одной ссылки на postcss", () => {
-    expect(bundle("model.js")).not.toContain("postcss");
+/** Чужие пакеты, которые вход тянет за собой. Из СОБРАННОГО файла, а не из исходника. */
+function imports(name: string): string[] {
+  return [
+    ...new Set(
+      [...bundle(name).matchAll(/from\s*"([^".][^"]*)"/g)].map((match) => match[1]!),
+    ),
+  ].toSorted();
+}
+
+describe("что каждый вход тянет за собой", () => {
+  // Проверяется РЕБРО, а не наличие подстроки: перечень целиком, а не «содержит». Подросший
+  // молча импорт — это ровно то, чего проба обязана не пропустить, и обнаруживается он только
+  // сравнением всего списка.
+
+  it("корень: кит и УЗКИЙ вход набора значений, и ни следа postcss", () => {
+    expect(imports("index.js")).toEqual([
+      "@omnifield/probe-web-style/values",
+      "@omnifield/probe-web-ui/passport",
+    ]);
   });
 
-  it("корневой вход, наоборот, зовёт разворачиватель — иначе порождать было бы нечем", () => {
-    expect(bundle("index.js")).toContain("postcss-nested");
+  it("`./model`: то же самое — построение семенами это МОДЕЛЬ, и Solid она не тянет", () => {
+    // Набор значений приехал сюда за построением шкал (`PWEB-43`): семена — часть записи скина,
+    // и от них зависит уже проверка имён, а не только порождение. Своего построения заводить
+    // было нельзя — оно объявлено гейтом там.
+    //
+    // Вход УЗКИЙ (`PWEB-44`): корень зоны значений объявляет Solid одноранговым, и модель начала
+    // тянуть реактивность транзитивно. Подпуть отдаёт то же построение без неё — обещание
+    // «модель без Solid» восстановлено, и держит его вот это ребро.
+    expect(imports("model.js")).toEqual([
+      "@omnifield/probe-web-style/values",
+      "@omnifield/probe-web-ui/passport",
+    ]);
+  });
+
+  it("`./flat`: только разворот, и ничего из зоны", () => {
+    expect(imports("flat.js")).toEqual(["postcss", "postcss-nested"]);
+  });
+
+  it("`./flat` отдаёт ТОЛЬКО разворот: широкий вход вернул бы postcss всем", async () => {
+    const flat = await import("../src/flat.js");
+
+    expect(Object.keys(flat)).toEqual(["flattenCss"]);
+  });
+
+  it("читаемость — в корне, а не в `./model`", async () => {
+    const root = await import("../src/index.js");
+    const model = await import("../src/model.js");
+
+    expect(typeof root.skinContrast).toBe("function");
+    expect("skinContrast" in model).toBe(false);
+  });
+
+  it("покрытие и значения — в `./model`: хранилищу они нужны, а конвейер CSS нет", async () => {
+    const model = await import("../src/model.js");
+
+    expect(typeof model.skinGaps).toBe("function");
+    expect(typeof model.skinValues).toBe("function");
   });
 });
 
 describe("что уезжает, а что остаётся", () => {
-  it("оба подпути объявлены и указывают на собранные файлы", () => {
-    expect(Object.keys(manifest.exports)).toEqual([".", "./model"]);
-    expect(() => bundle("index.js")).not.toThrow();
-    expect(() => bundle("model.js")).not.toThrow();
-    expect(() => bundle("index.d.ts")).not.toThrow();
-    expect(() => bundle("model.d.ts")).not.toThrow();
+  it("все три подпути объявлены и указывают на собранные файлы", () => {
+    expect(Object.keys(manifest.exports)).toEqual([".", "./model", "./flat"]);
+    for (const name of ["index", "model", "flat"]) {
+      expect(() => bundle(`${name}.js`)).not.toThrow();
+      expect(() => bundle(`${name}.d.ts`)).not.toThrow();
+    }
   });
 
-  it("в поставке ровно разворачиватель вложенного и его основание — больше ничего", () => {
-    // Замер 2026-08-20: `@pandacss/core` вокруг той же утилиты — 9,0 МБ и 33 пакета против
-    // 1,1 МБ и 8. Перечень сравнивается целиком, а не «содержит»: молча подросший список
-    // зависимостей — это и есть то, чего проба обязана не пропустить.
-    expect(Object.keys(manifest.dependencies).toSorted()).toEqual(["postcss", "postcss-nested"]);
-  });
-
-  it("кит объявлен ОДНОРАНГОВЫМ: копию паспортов приносит потребитель", () => {
-    // Две копии формы паспорта в дереве разъедутся молча — та самая третья копия, от которой
-    // ушли, объявив читателя под вид рядом с формой (`PWEB-27`).
-    expect(Object.keys(manifest.peerDependencies)).toEqual(["@omnifield/probe-web-ui"]);
-  });
+  // Что объявлено в манифесте — предмет гейта ПОСТАВКИ (`test/pack.test.ts`): там это
+  // проверяется установкой, а не чтением полей. Здесь — только рёбра собранных файлов: два
+  // места, утверждающих одно, разъехались бы, и правым оказался бы тот, кого спросили последним.
 
   it("ни Solid, ни отрисовки в поставке нет: механика превращает данные в текст", () => {
     for (const name of ["index.js", "model.js"]) {

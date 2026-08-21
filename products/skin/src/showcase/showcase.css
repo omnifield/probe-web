@@ -1,0 +1,391 @@
+/* ВИД САМОЙ ВИТРИНЫ — оболочки, а не компонентов.
+ *
+ * Это НЕ скин: скин одевает кит и живёт записью в хранилище, а здесь — рамка, в которой кит
+ * показывают. Смешать их нельзя ни в одну сторону: подкрась мы витриной кнопку, «голый кит»
+ * перестал бы быть проверяемым состоянием — человек видел бы одетое там, где не одевал никто.
+ *
+ * Поэтому здесь нет ни одного правила, адресующего части кита: ни `data-scope`, ни `data-part`,
+ * ни `data-slot`. Только собственные имена оболочки.
+ *
+ * ЗНАЧЕНИЯ — РОЛИ НАБОРА ЗНАЧЕНИЙ зоны `style`, и своих здесь нет намеренно.
+ *
+ * Свои заводились — и были сняты: они прятали чужой дефект. Тёмная половина ролей объявлена
+ * только внутри ТЕМЫ, а тем витрина не ставит (скины пришли теме на смену), поэтому в тёмном
+ * режиме оболочка остаётся светлой. Дефект принадлежит зоне значений, заявка туда поднята, и
+ * закрывать его своими переменными значит спрятать от всех, включая потребителя, которому
+ * прятать будет нечем.
+ *
+ * ВИТРИНА — ПРО ВИД, а не про устройство. Долг одевания, части с состояниями и паспортные
+ * факты отсюда убраны (решение user 2026-08-21): смешение двух предметов портит оба — тот, кому
+ * показывают вид, спотыкается о техничку, а одевающий ищет техничку среди картинок.
+ *
+ * РАСКЛАДКА: сайдбар во всю высоту, хедер — только над показом.
+ *
+ *   ┌──────────────┬──────────────────────────────────────┐
+ *   │ перечень     │ компонент · фильтр │ режим · скин · ↔ │
+ *   │ во всю       ├──────────────────────────────────────┤
+ *   │ высоту       │ показ                                │
+ *   │ свой скролл  │ свой скролл, вся ширина              │
+ *   └──────────────┴──────────────────────────────────────┘
+ *
+ * Перечень — опора работы, и обрезать его хедером значит отнимать у него строки ради полосы,
+ * которая нужна реже. Хедер управляет тем, что видно В ПОКАЗЕ, поэтому и стоит над ним.
+ *
+ * Прокрутка разведена намеренно: перечень длинный сам по себе, показ длиннее вдвое, и общий
+ * скролл уводил бы перечень наверх ровно тогда, когда по нему надо переключиться.
+ */
+
+html,
+body {
+  block-size: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) 1fr;
+  block-size: 100dvh;
+  overflow: hidden;
+}
+
+/* `min-block-size: 0` обязателен: без него ячейка сетки не даёт содержимому сжаться, и прокрутка
+   уезжает на весь документ — то есть ровно то, что мы разводим. */
+.stack {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+/* ── хедер ────────────────────────────────────────────────────────────────────────────── */
+
+/* Хедер один, но у него две половины с разными предметами: слева ОДИН компонент — как зовут и
+   что из него показать; справа ВСЯ витрина — чем одето, в каком режиме и куда перейти. */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: 3rem;
+  padding: var(--space-2) var(--space-4);
+  border-block-end: var(--border-width-1) solid var(--separator);
+}
+
+.head__subject {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.head__component {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+}
+
+/* Управление прижато к правому краю. Беда, если она есть, встаёт здесь же, слева от ручек: её
+   надо увидеть, а не искать. */
+.head__controls {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.head__trouble {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: var(--font-size-sm);
+}
+
+.head__select {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.head__select:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.head__select:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ── режим ────────────────────────────────────────────────────────────────────────────── */
+
+.modes {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.modes__item {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.modes__item:hover {
+  background: var(--tint-hover);
+}
+
+.modes__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.modes__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-border);
+}
+
+/* ── перечень компонентов ─────────────────────────────────────────────────────────────── */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-block-size: 0;
+  padding: var(--space-4);
+  overflow-y: auto;
+  border-inline-end: var(--border-width-1) solid var(--separator);
+  background: var(--surface-subtle);
+}
+
+.rail__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.rail__title {
+  font-size: var(--font-size-lg);
+}
+
+.rail__note {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.rail__group {
+  margin-block-start: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}
+
+.rail__group:first-child {
+  margin-block-start: 0;
+}
+
+.rail__item {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.rail__item:hover {
+  background: var(--tint-hover);
+}
+
+.rail__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.rail__item[aria-current="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-border);
+}
+
+/* ── показ ────────────────────────────────────────────────────────────────────────────── */
+
+.main {
+  min-block-size: 0;
+  padding: var(--space-6);
+  overflow: auto;
+}
+
+/* Ширина не ограничивается: показ занимает всё, что дали. Сетка вариаций растёт в стороны, и
+   отобранное у неё место — это отобранные клетки, то есть то самое, ради чего сюда пришли. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.page__lead,
+.page__subtitle {
+  margin: 0;
+}
+
+.page__lead {
+  max-inline-size: 60rem;
+  color: var(--text-muted);
+}
+
+.page__subtitle {
+  font-size: var(--font-size-lg);
+}
+
+.page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.page__empty,
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* ── оси и переходы ───────────────────────────────────────────────────────────────────── */
+
+.axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.views {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.views__item {
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.views__item:hover {
+  background: var(--tint-hover);
+}
+
+.views__item:focus-visible {
+  outline: var(--focus-ring);
+}
+
+.views__item[aria-pressed="true"] {
+  border-color: var(--brand-border);
+  background: var(--brand-element);
+  color: var(--brand-border);
+}
+
+.axes__field {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.axes__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.axes__select {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.axes__select:focus-visible {
+  outline: var(--focus-ring);
+}
+
+/* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
+
+.cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* Широкому компоненту колонка не годится: он занимает строку целиком. Решает измерение, а не
+   перечень «крупных компонентов» — такой перечень устарел бы на первом же новом. */
+.case--wide {
+  grid-column: 1 / -1;
+}
+
+/* `max-content` нужен измерению: так `scrollWidth` показывает ЕСТЕСТВЕННУЮ ширину содержимого, а
+   не ширину колонки, в которую его уже сжали. */
+.case__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 4rem;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.case__caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.case__note {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Осевой случай подписан КООРДИНАТОЙ — тем же адресом, которым его адресует скин. Человеческий
+   назван словами. Разные обещания различаются и на вид. */
+.case__title--axis {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}

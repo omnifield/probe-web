@@ -50,8 +50,15 @@ export type EditResult =
 /** Что объявляет вставляемый узел. Связи (`parentId`, `children`) проставляет сама правка. */
 export interface NewNode {
   readonly id: NodeId;
-  /** Адрес в реестре через точку. */
+  /** Адрес в реестре через точку — внутренний компонент, тот, чем вещь является визуально. */
   readonly type: string;
+  /**
+   * Во что узел вставлен — адрес внешнего компонента, если это композиция (`PWEB-33`).
+   *
+   * Проверяется вместе с местом: внешний обязан пускать внутрь внутренний, а владелец —
+   * пускать внутрь внешний.
+   */
+  readonly composedInto?: string;
   readonly props?: Readonly<Record<string, unknown>>;
   readonly meta?: Readonly<Record<string, unknown>>;
 }
@@ -61,6 +68,47 @@ const refuse = (refusal: EditRefusal, means: string): EditResult => ({
   refusal,
   means,
 });
+
+/**
+ * Проверяет размещение узла внутри владельца — с учётом композиции.
+ *
+ * У составного узла проверок ДВЕ, и обе идут по тому же правилу допуска, что и всё остальное:
+ * своих здесь не заводится.
+ *
+ *  1. **место в дереве** — владелец обязан пускать внутрь ВНЕШНИЙ адрес: место занимает
+ *     триггер, а не кнопка, и допустимость этого места владелец знает про триггер;
+ *  2. **сама композиция** — внешний обязан пускать внутрь ВНУТРЕННИЙ: вставить компонент
+ *     туда, где внешний его не допускает, нельзя.
+ *
+ * У обычного узла вторая проверка не выполняется вовсе — проверять нечего.
+ *
+ * @param registry реестр
+ * @param ownerType адрес узла-владельца
+ * @param type адрес самого узла (внутренний компонент)
+ * @param composedInto адрес внешнего компонента, если это композиция
+ * @returns отказ, либо `undefined` — если размещение допустимо
+ */
+const refusePlacement = (
+  registry: Registry,
+  ownerType: string,
+  type: string,
+  composedInto?: string,
+): EditResult | undefined => {
+  const place = canContain(registry, ownerType, composedInto ?? type);
+  if (!place.allowed) return refuse(place.refusal, place.means);
+
+  if (composedInto === undefined) return undefined;
+
+  const composition = canContain(registry, composedInto, type);
+  if (!composition.allowed) {
+    return refuse(
+      composition.refusal,
+      `вставить «${type}» в «${composedInto}» нельзя: ${composition.means}`,
+    );
+  }
+
+  return undefined;
+};
 
 const withNodes = (
   tree: AssemblyTree,
@@ -105,12 +153,13 @@ export function insertNode(
     return refuse("id-taken", `имя «${node.id}» в дереве уже занято`);
   }
 
-  const verdict = canContain(registry, owner.type, node.type);
-  if (!verdict.allowed) return refuse(verdict.refusal, verdict.means);
+  const refusal = refusePlacement(registry, owner.type, node.type, node.composedInto);
+  if (refusal) return refusal;
 
   const added: AssemblyNode = {
     id: node.id,
     type: node.type,
+    ...(node.composedInto ? { composedInto: node.composedInto } : {}),
     parentId,
     children: [],
     ...(node.props ? { props: node.props } : {}),
@@ -190,8 +239,8 @@ export function moveNode(
     );
   }
 
-  const verdict = canContain(registry, owner.type, node.type);
-  if (!verdict.allowed) return refuse(verdict.refusal, verdict.means);
+  const refusal = refusePlacement(registry, owner.type, node.type, node.composedInto);
+  if (refusal) return refusal;
 
   const nodes = { ...tree.components.nodes };
 
@@ -234,9 +283,10 @@ export interface NodePatch {
  * до первой попытки убрать один проп: убрать его стало бы нечем, и потребителю пришлось бы
  * заводить своё соглашение об «удаляющем значении» — то есть второе правило поверх нашего.
  *
- * Адрес узла (`type`) здесь не меняется: смена адреса — это другой компонент, а значит другая
- * вложенность и другие части. Такое делается парой «убрать и вставить», где обе половины
- * проверяются.
+ * Адрес узла (`type`) и композиция (`composedInto`) здесь не меняются: и то и другое — смена
+ * самой сути узла, а значит другая вложенность и другие части. Такое делается парой «убрать и
+ * вставить», где обе половины проверяются. Второго способа надеть внешний компонент не
+ * заводится: один узел — одна композиция, и меняется она только пересозданием.
  *
  * @param tree дерево
  * @param id узел

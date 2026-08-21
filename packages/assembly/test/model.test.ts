@@ -141,6 +141,7 @@ describe("реестр", () => {
       "half",
       "icon",
       "layout",
+      "popover",
       "ui.button",
       "открытый",
     ]);

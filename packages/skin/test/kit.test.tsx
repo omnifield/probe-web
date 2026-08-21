@@ -11,7 +11,8 @@
 // любому (страница «Основания»).
 //
 // Про слои каскада и полифил — см. шапку `cascade.test.ts`: jsdom их не понимает, поэтому текст
-// прогоняется через стандартный полифил. Полифил — проверка, а не поставка.
+// прогоняется через стандартный полифил. Полифил — проверка, а не поставка. По той же причине
+// текст здесь ещё и разворачивается: вложенности jsdom тоже не знает.
 
 import layers from "@csstools/postcss-cascade-layers";
 import { Button } from "@omnifield/probe-web-ui";
@@ -19,6 +20,7 @@ import { passportOf } from "@omnifield/probe-web-ui/passport";
 import postcss, { type Rule } from "postcss";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { flattenCss } from "../src/flatten.js";
 import { generateSkinCss } from "../src/generate.js";
 import { FORCE_ATTRIBUTE } from "../src/marks.js";
 import { partSelector } from "../src/address.js";
@@ -29,7 +31,10 @@ import { cleanup, mount } from "./dom.jsx";
 afterEach(cleanup);
 
 const passport = passportOf("button")!;
-const skinCss = generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY });
+// Развёрнуто намеренно: генератор отдаёт вложенную форму, а jsdom не понимает ни вложенности,
+// ни слоёв. Оба разворота — ограничение окружения пробы, а не поставки; в браузере вложенная
+// форма работает как есть.
+const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY }));
 
 /** Селекторы порождённого скина — те, что относятся к координатам, а не к корню документа. */
 const selectors: string[] = [];

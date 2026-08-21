@@ -3,7 +3,6 @@
 // их вид из модели генератором базы (`themeModelToCss`), а не читает готовым файлом.
 import "@omnifield/probe-web-style/base.css";
 import "@omnifield/probe-web-style/themes.css";
-import "@probe-web/skin/skin.css";
 import "./panel.css";
 
 import { restoreSkin } from "@omnifield/probe-web-runtime";

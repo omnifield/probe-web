@@ -1,37 +1,22 @@
 // ПОРОЖДЕНИЕ CSS — превращение собранных правил в текст, который приложение надевает.
 //
-// ## Что здесь своё, а что чужое
+// ## Форма вывода здесь ВЛОЖЕННАЯ, и это не полуфабрикат
 //
-// Своего тут три действия: печать объявлений, обёртка в слой каскада и расстановка отступов
-// (`format.ts`). Разворот вложенного (`&::before`, `@media`) в плоский текст делает
-// `postcss-nested` — то средство, которым разворачивание и делается.
+// Вложенность CSS — Baseline Widely Available с 11 июня 2026, охват 94,1 % (сверено
+// архитектором скина 2026-08-20 по обозревателю возможностей платформы). Браузер разворачивает
+// её сам, и текст отсюда годится в лист стилей КАК ЕСТЬ.
 //
-// ## Почему `postcss-nested`, а не `@pandacss/core`
+// Разворачивать её нам нужно ровно там, где плоская форма правда нужна: файл на диск, старый
+// клиент, сверка снимком. Это отдельный подпуть `./flat` и отдельная зависимость — см.
+// `flatten.ts`.
 //
-// Замер 2026-08-20. Задача называла взятым `@pandacss/core` — и он подходит, но внутри его
-// `expandNestedCss` лежит ровно `postcss([nested(), prettify()])`, где `prettify` — полтора
-// десятка строк расстановки отступов. То есть весь предмет заимствования это `postcss-nested`
-// плюс форматирование.
+// Цена вопроса замерена, а не предположена: сборка витрины со `postcss` в цепочке — 257,06 КБ,
+// без него — см. замер в README. Витрина и редактор порождают CSS НА КАЖДОЕ ДВИЖЕНИЕ РУЧКИ, и
+// разворачиватель был их главным весом при том, что разворачивать для браузера нечего.
 //
-// Цена разная на порядок:
-//
-//   `@pandacss/core`             9,0 МБ · 33 пакета  (browserslist с базой браузеров,
-//                                                     ts-pattern, lodash.merge, шесть
-//                                                     собственных подпакетов Panda)
-//   `postcss` + `postcss-nested` 1,1 МБ ·  8 пакетов
-//
-// Взятое едет ПОТРЕБИТЕЛЮ, и восемь мегабайт транзитивных зависимостей ради полутора десятков
-// строк форматирования — плата не за средство, а за то, что средство завёрнуто в чужой продукт.
-// Правило «берём существующее» этим не нарушено, а исполнено точнее: берём ровно то средство, на
-// котором стоит и сам Panda.
-//
-// Потерялось при замене РОВНО одно: их `prettify`. Он заменён своим (`format.ts`), и вывод
-// сверен с эталоном, снятым ДО замены, — те же 23 правила, те же селекторы, тот же порядок,
-// совпадение текста при нормализации пробелов и завершающих точек с запятой. Отличаются только
-// отступы, и в лучшую сторону; чем именно и почему — шапка `format.ts`.
-//
-// Панду целиком в генераторы не берут в любом случае: его модель вывода — атомарные классы,
-// которые надо навешивать на узел, а кит голый и классов не носит.
+// **Второго генератора при этом нет.** Сборка рецепта одна (`rules.ts`), печать одна (здесь),
+// а плоская форма получается из вложенной одним вызовом. Обе формы описывают ОДИН вид, и это
+// проверяется сравнением после разворачивания, а не обещанием.
 //
 // ## Почему текст, а не объект
 //
@@ -45,18 +30,16 @@
 // первой: утечь нечему. Держи мы это фильтром — правки образца рано или поздно уехали бы в файл
 // скина, и приложение получило бы вид, привязанный к идентификаторам чужого стенда.
 
-import postcss from "postcss";
-import nested from "postcss-nested";
-
 import type { PassportLookup } from "./address.js";
-import { prettify } from "./format.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
+import { cssProperty } from "./property.js";
+import { skinValues } from "./seeds.js";
 import type { Skin, SketchEdit, StyleObject, StyleValue } from "./recipe.js";
 import {
   skinRules,
   sketchRules,
+  type CssRule,
   type SkinFlaw,
-  type SkinRule,
   type ValueVocabulary,
 } from "./rules.js";
 import { trace } from "./trace.js";
@@ -86,18 +69,7 @@ export class SkinRefused extends Error {
   }
 }
 
-/**
- * Имя свойства в CSS-начертании.
- *
- * Два начертания принимаются оба (`borderWidth` и `border-width`), потому что взятая форма
- * рецепта пишется первым, а CSS понимает второе. Кастом-свойства не трогаются: `--моё-имя` — уже
- * имя, а не запись.
- */
-function cssProperty(name: string): string {
-  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-}
-
-/** Печатает объявления и вложенные блоки. Вложенное разворачивает не она, а `postcss-nested`. */
+/** Печатает объявления и вложенные блоки. Вложенность остаётся вложенностью. */
 function declarations(style: StyleObject, indent: string): string[] {
   const lines: string[] = [];
 
@@ -116,15 +88,15 @@ function declarations(style: StyleObject, indent: string): string[] {
 }
 
 /** Печатает одно правило. */
-function ruleText(rule: SkinRule): string {
+function ruleText(rule: CssRule): string {
   return [`  ${rule.selector} {`, ...declarations(rule.style, "    "), "  }"].join("\n");
 }
 
 /** Печатает блок значений: имя без `--` в записи, с `--` в файле. */
-function valuesText(selector: string, values: Readonly<Record<string, string>>): string {
+function valuesText(selector: string, values: readonly (readonly [string, string])[]): string {
   return [
     `  ${selector} {`,
-    ...Object.entries(values).map(([name, value]) => `    --${name}: ${value};`),
+    ...values.map(([name, value]) => `    --${name}: ${value};`),
     "  }",
   ].join("\n");
 }
@@ -140,12 +112,22 @@ function valuesText(selector: string, values: Readonly<Record<string, string>>):
  */
 function variablesText(skin: Skin): string[] {
   const blocks: string[] = [];
-  const light = skin.variables?.light;
-  const dark = skin.variables?.dark;
+  const light = skinValues(skin, "light");
+  const dark = skinValues(skin, "dark");
 
-  if (light && Object.keys(light).length > 0) blocks.push(valuesText(":root", light));
-  if (dark && Object.keys(dark).length > 0) {
-    blocks.push(valuesText(`:root.${DARK_CLASS}, :root .${DARK_CLASS}`, dark));
+  if (light.size > 0) {
+    blocks.push(valuesText(":root", [...light].map(([name, own]) => [name, own.value])));
+  }
+
+  // В тёмный блок едет только ОТЛИЧАЮЩЕЕСЯ. Половины пересекаются почти целиком — имя без семени
+  // объявлено один раз, затемнение под слоем от режима не зависит, — и печатать совпадающее
+  // второй раз значило бы удваивать файл ради строк, которые ничего не меняют.
+  const differs = [...dark]
+    .filter(([name, own]) => light.get(name)?.value !== own.value)
+    .map(([name, own]): [string, string] => [name, own.value]);
+
+  if (differs.length > 0) {
+    blocks.push(valuesText(`:root.${DARK_CLASS}, :root .${DARK_CLASS}`, differs));
   }
 
   return blocks;
@@ -158,21 +140,15 @@ function keyframesText(skin: Skin): string[] {
   );
 }
 
-/** Разворачиватель вложенного. Заводится один раз: конвейер postcss переиспользуем. */
-const flatten = postcss([nested()]);
-
-/** Оборачивает содержимое в слой каскада и разворачивает вложенное. */
+/**
+ * Оборачивает содержимое в слой каскада.
+ *
+ * Больше здесь ничего не происходит: текст блоков уже готов, вложенность в нём законная, и
+ * разворачивать её для браузера незачем. Отступы расставлены при печати — своим кодом, а не
+ * проходом по разобранному дереву.
+ */
 function layered(header: string, layer: string, blocks: readonly string[]): string {
-  const done = trace(`postcss-nested(${layer})`);
-  const text = [header, LAYER_ORDER, "", `@layer ${layer} {`, ...blocks, "}", ""].join("\n");
-
-  // `root` у синхронного конвейера доступен сразу; отступы правим по дереву, а не по строке —
-  // регулярное выражение по CSS ошибается на первом же значении со скобками.
-  const root = flatten.process(text, { from: undefined }).root;
-  prettify(root);
-
-  done();
-  return root.toString();
+  return [header, LAYER_ORDER, "", `@layer ${layer} {`, ...blocks, "}", ""].join("\n");
 }
 
 /**
@@ -192,7 +168,8 @@ function layered(header: string, layer: string, blocks: readonly string[]): stri
  * @param skin скин целиком: переменные, рецепты, движения
  * @param lookup чем найти паспорт по имени компонента
  * @param vocabulary словарь известных имён значений
- * @returns готовый текст стилей — та самая валюта, которой источник скинов кормит `runtime`
+ * @returns готовый текст стилей ВО ВЛОЖЕННОЙ форме — та самая валюта, которой источник скинов
+ *   кормит `runtime`. Плоская форма — `flattenCss` из подпути `./flat`
  * @throws {SkinRefused} если в записи есть хоть один изъян
  */
 export function generateSkinCss(

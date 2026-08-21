@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AA_NON_TEXT, AA_TEXT, contrastRatio } from "../src/color/contrast.js";
-import { parseColor } from "../src/color/oklch.js";
+import { parseColor } from "../src/color/parse.js";
 import {
   CONTRAST_PROMISES,
   type ScaleMode,

@@ -1,5 +1,14 @@
-/* Раскладка панели. Ни одного цвета, кегля и отступа литералом — только роли и шкалы слоя:
-   вид приезжает оформлением, а не пишется здесь (kb:PROBEWEB-11, правило третье).
+/* Вид панели. Ни одного цвета, кегля и отступа литералом — только роли и шкалы слоя значений.
+   Панель временно стоит на нативных элементах (решение user 2026-08-20): прежнее поколение
+   оформления снято, новый скин ещё не написан.
+
+   ПОЧЕМУ ЗДЕСЬ ВООБЩЕ ЕСТЬ ВИД КОНТРОЛОВ, а раньше не было: одевал их скин, и правил тут не
+   требовалось. Теперь одевать некому, а панель — рабочий инструмент. Эти правила уйдут вместе
+   с возвратом на кит, и уйдут ЦЕЛИКОМ: они держатся отдельным блоком ниже, а не размазаны
+   по раскладке.
+
+   Значения — ролями, а не литералами, именно поэтому: когда приедет скин, панель сменит
+   разметку, а не палитру.
 
    Скроллит РОВНО ОДНО место — ряд вкладок, когда их больше, чем влезает. Ни страница, ни
    шапка не прокручиваются: иначе рабочая область уезжает из виду, а в ней весь смысл. */
@@ -17,6 +26,8 @@ body {
 
 #root { height: 100%; }
 
+/* ── раскладка ────────────────────────────────────────────────────────────────────────── */
+
 .panel { height: 100%; display: grid; grid-template-rows: auto 1fr; min-height: 0; }
 
 .panel-bar {
@@ -31,8 +42,9 @@ body {
 
 /* Вкладки занимают всю свободную ширину и прокручиваются вбок, а не переносятся:
    перенос растит шапку и съедает рабочую область. */
-.panel-tabs { flex: 1; min-width: 0; }
-.panel-tabs [data-slot~="tabs-list"] {
+.panel-tabs {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: var(--space-1);
   overflow-x: auto;
   /* Вертикальную прокрутку запрещаем ЯВНО: с одним лишь `overflow-x: auto` браузер добавляет
      и вертикальную полосу, и она висит в шапке поперёк вкладок. */
@@ -54,4 +66,43 @@ body {
 .panel-empty code {
   background: var(--muted); color: var(--foreground);
   padding: 0 var(--space-1); border-radius: var(--radius-sm);
+}
+
+/* ── ВРЕМЕННЫЙ ВИД КОНТРОЛОВ ──────────────────────────────────────────────────────────────
+   Держится одним блоком, чтобы сниматься одним движением при возврате на кит. Ничего из
+   этого не переезжает в скин: скин адресует части компонентов, а здесь голые элементы. */
+
+.panel-tab,
+.panel-btn,
+.panel-select {
+  font: inherit;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.panel-tab { white-space: nowrap; color: var(--muted-foreground); }
+.panel-tab:hover { color: var(--foreground); background: var(--muted); }
+.panel-tab[aria-selected="true"] {
+  color: var(--foreground);
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.panel-btn { border-color: var(--border); }
+.panel-btn:hover { background: var(--muted); }
+.panel-btn-quiet { border-color: transparent; }
+
+.panel-select { border-color: var(--border); }
+
+/* Обвод фокуса — общий и обязательный: клавиатурный обход остаётся единственным способом
+   дойти до вкладок, пока клавиш стрелками нет. */
+.panel-tab:focus-visible,
+.panel-btn:focus-visible,
+.panel-select:focus-visible {
+  outline: 2px solid var(--ring, currentColor);
+  outline-offset: 2px;
 }

@@ -13,6 +13,10 @@
     "./model": {
       "types": "./dist/model.d.ts",
       "default": "./dist/model.js"
+    },
+    "./flat": {
+      "types": "./dist/flat.d.ts",
+      "default": "./dist/flat.js"
     }
   },
   "files": [
@@ -28,12 +32,11 @@
     "lint": "eslint . && pnpm run typecheck",
     "test": "pnpm run build && vitest run"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@omnifield/probe-web-style": "^0.1.0",
+    "@omnifield/probe-web-ui": "^0.1.0",
     "postcss": "^8.5.14",
     "postcss-nested": "^7.0.2"
-  },
-  "peerDependencies": {
-    "@omnifield/probe-web-ui": "^0.1.0"
   },
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
@@ -41,6 +44,7 @@
     "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-runtime": "workspace:*",
+    "@omnifield/probe-web-style": "workspace:*",
     "@omnifield/probe-web-ui": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
@@ -48,10 +52,20 @@
     "esbuild": "^0.27.7",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
+    "postcss": "^8.5.14",
+    "postcss-nested": "^7.0.2",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vite-plugin-solid": "^2.11.14",
     "vitest": "^4.1.10"
+  },
+  "peerDependenciesMeta": {
+    "postcss": {
+      "optional": true
+    },
+    "postcss-nested": {
+      "optional": true
+    }
   }
 }

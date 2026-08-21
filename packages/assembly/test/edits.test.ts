@@ -171,3 +171,118 @@ describe("правка узла", () => {
     expect(updateNode(base, "нет", { props: {} })).toMatchObject({ refusal: "node-unknown" });
   });
 });
+
+describe("композиция", () => {
+  // «Кнопка, вставленная в триггер всплывающего окна» — один узел с двумя принадлежностями:
+  // адрес и вид у кнопки, поведение и состояние у триггера.
+  const страница: AssemblyTree = {
+    components: {
+      root: "стр",
+      nodes: {
+        стр: { id: "стр", type: "layout", parentId: null, children: ["окно", "окно2"] },
+        окно: { id: "окно", type: "popover", parentId: "стр", children: [] },
+        окно2: { id: "окно2", type: "popover", parentId: "стр", children: [] },
+      },
+    },
+  };
+
+  it("узел несёт адрес кнопки и указание, во что она вставлена", () => {
+    const tree = grown(
+      insertNode(
+        страница,
+        registry,
+        { id: "настройки", type: "button", composedInto: "popover.trigger" },
+        "окно",
+      ),
+    );
+
+    expect(nodeOf(tree, "настройки")).toMatchObject({
+      type: "button",
+      composedInto: "popover.trigger",
+      parentId: "окно",
+    });
+    expect(nodeOf(tree, "окно")?.children).toEqual(["настройки"]);
+  });
+
+  it("место в дереве проверяется по ВНЕШНЕМУ адресу, а не по внутреннему", () => {
+    // Кнопку раскладка пускает, а вот триггер чужого компонента сам по себе в неё не кладётся:
+    // место занимает именно он.
+    expect(insertNode(страница, registry, { id: "н", type: "button" }, "стр").ok).toBe(true);
+    expect(
+      insertNode(
+        страница,
+        registry,
+        { id: "н", type: "button", composedInto: "popover.trigger" },
+        "стр",
+      ),
+    ).toMatchObject({ ok: false, refusal: "foreign-part" });
+  });
+
+  it("без композиции кнопку внутрь окна не положить — там место только под части", () => {
+    // Обратная сторона того же: узел, не ставший триггером, в окне не помещается вовсе.
+    expect(insertNode(страница, registry, { id: "н", type: "button" }, "окно")).toMatchObject({
+      ok: false,
+      refusal: "content-not-admitted",
+    });
+  });
+
+  it("сама композиция проверяется по паспорту внешнего", () => {
+    // Место допустимо — вкладка гармошки лежит в гармошке, — но внутрь вкладки идут только её
+    // части, и компонент туда не вставить.
+    const гармошка: AssemblyTree = {
+      components: {
+        root: "г",
+        nodes: { г: { id: "г", type: "accordion", parentId: null, children: [] } },
+      },
+    };
+
+    const result = insertNode(
+      гармошка,
+      registry,
+      { id: "н", type: "button", composedInto: "accordion.item" },
+      "г",
+    );
+
+    expect(result).toMatchObject({ ok: false, refusal: "content-not-admitted" });
+    expect(result.ok === false && result.means).toContain("вставить «button» в «accordion.item»");
+  });
+
+  it("неизвестный внешний адрес отвергается, а не принимается молча", () => {
+    expect(
+      insertNode(
+        страница,
+        registry,
+        { id: "н", type: "button", composedInto: "нет.такого" },
+        "окно",
+      ),
+    ).toMatchObject({ ok: false, refusal: "child-unknown" });
+  });
+
+  it("перенос составного узла проверяется так же", () => {
+    const собрано = grown(
+      insertNode(
+        страница,
+        registry,
+        { id: "настройки", type: "button", composedInto: "popover.trigger" },
+        "окно",
+      ),
+    );
+
+    // В другое окно — можно: там тоже есть место под триггер.
+    const переехало = grown(moveNode(собрано, registry, "настройки", "окно2"));
+    expect(nodeOf(переехало, "настройки")?.parentId).toBe("окно2");
+    expect(nodeOf(переехало, "настройки")?.composedInto).toBe("popover.trigger");
+
+    // А в раскладку — нельзя: место под триггер там не объявлено.
+    expect(moveNode(собрано, registry, "настройки", "стр")).toMatchObject({
+      ok: false,
+      refusal: "foreign-part",
+    });
+  });
+
+  it("обычный узел поля не получает — пустого места в данных не заводится", () => {
+    const tree = grown(insertNode(страница, registry, { id: "просто", type: "button" }, "стр"));
+
+    expect(nodeOf(tree, "просто")).not.toHaveProperty("composedInto");
+  });
+});

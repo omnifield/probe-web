@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { admits } from "../passport-form.js";
+import { admits, GROUPS, groupOf } from "../passport-form.js";
 import { Popover, PopoverTrigger } from "../popover.jsx";
 import { Toggle } from "../toggle.jsx";
 import { anatomy, parts, passport } from "./button.anatomy.js";
@@ -401,6 +401,14 @@ describe("паспорт: форма", () => {
 
       expect(new Set(names).size).toBe(names.length);
     }
+  });
+
+  it("группа объявлена и взята из закрытого перечня", () => {
+    // Место в перечне называет ПОСТАВЩИК (`PWEB-34`): не назови его кнопка — раздел придумал бы
+    // каждый пульт сам, и витрина с редактором разошлись бы на первом же десятке компонентов.
+    expect(passport.group).toBe("actions");
+    expect(Object.keys(GROUPS)).toContain(passport.group);
+    expect(groupOf(passport)).toBe("actions");
   });
 
   it("поставщик назван и совпадает с манифестом", () => {

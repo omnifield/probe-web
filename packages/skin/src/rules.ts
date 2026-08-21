@@ -55,6 +55,7 @@ import type {
   SlotRecipe,
   StyleObject,
 } from "./recipe.js";
+import { seedRefusals, valueNames } from "./seeds.js";
 import { note, trace } from "./trace.js";
 
 /**
@@ -69,6 +70,7 @@ import { note, trace } from "./trace.js";
  *  • `default-missing`     — вариации есть, а умолчание не названо;
  *  • `variant-unaddressable` — ось вариаций выражена не атрибутом: имя в разметку не попадёт;
  *  • `unsafe-name`         — имя не годится внутрь селектора;
+ *  • `bad-seed`            — семя шкалы не разбирается как цвет: лестницу из него не построить;
  *  • `unknown-value`       — ссылка на значение, которого нет в словаре, и без запасного;
  *  • `empty-value`         — значение пусто: правило было бы мёртвым;
  *  • `free-selector`       — вложенный ключ, не являющийся ни псевдоэлементом, ни at-правилом.
@@ -82,6 +84,7 @@ export type SkinFlawName =
   | "default-missing"
   | "variant-unaddressable"
   | "unsafe-name"
+  | "bad-seed"
   | "unknown-value"
   | "empty-value"
   | "free-selector";
@@ -96,7 +99,7 @@ export interface SkinFlaw {
 }
 
 /** Готовое правило: селектор и стилевой объект, который под ним стоит. */
-export interface SkinRule {
+export interface CssRule {
   /** Полный селектор — порождён из координаты, руками не написан. */
   readonly selector: string;
   /** Вид: свойства и разрешённые вложенные блоки. */
@@ -107,9 +110,55 @@ export interface SkinRule {
   readonly origin: number;
 }
 
-/** Что вышло из обхода: правила в порядке каскада и все найденные изъяны сразу. */
+/**
+ * АДРЕС правила в рецепте — то, чем оно адресовано, до превращения в селектор.
+ *
+ * Отдаётся наружу, потому что читателей у него больше одного: покрытие спрашивает, какие
+ * координаты одеты, читаемость — какие значения сходятся на одной координате. Считай каждый из
+ * них адрес по-своему, разбирая селектор обратно, — и мы получили бы два разбора одной строки,
+ * расходящихся на первом же новом виде адреса.
+ */
+export interface RuleCoordinate {
+  /** Имя компонента, оно же `data-scope`. */
+  readonly component: string;
+  /** Часть — ключ анатомии. */
+  readonly part: string;
+  /**
+   * Имена вариаций, при которых правило действует.
+   *
+   * Пусто — при любой: так выглядит база. Несколько — так выглядит пересечение, названное
+   * автором рецепта.
+   */
+  readonly variants: readonly string[];
+  /** Состояния СВОЕЙ части, набранные к этому правилу. */
+  readonly states: readonly string[];
+  /** Предок и его состояния — если правило от них зависит. */
+  readonly ancestor?: {
+    readonly component: string;
+    readonly part: string;
+    readonly states: readonly string[];
+  };
+}
+
+/** Правило из РЕЦЕПТА: несёт адрес, по которому его собрали. */
+export interface SkinRule extends CssRule {
+  readonly coordinate: RuleCoordinate;
+}
+
+/** Что вышло из обхода рецептов: правила в порядке каскада и все изъяны сразу. */
 export interface SkinRules {
   readonly rules: readonly SkinRule[];
+  readonly flaws: readonly SkinFlaw[];
+}
+
+/**
+ * Что вышло из обхода ПРАВОК ОБРАЗЦА.
+ *
+ * Координаты у этих правил нет и не заводится: правка образца адресует ОДНО МЕСТО. Приписать ей
+ * координату значило бы объявить одетой координату, которой вида не давали.
+ */
+export interface SketchRules {
+  readonly rules: readonly CssRule[];
   readonly flaws: readonly SkinFlaw[];
 }
 
@@ -145,14 +194,19 @@ function customProperty(name: string): string {
   return name.startsWith("--") ? name : `--${name}`;
 }
 
-/** Собирает словарь: объявленное снаружи плюс собственные переменные скина. */
-function vocabularyOf(skin: Pick<Skin, "variables">, vocabulary: ValueVocabulary): Set<string> {
+/**
+ * Собирает словарь: объявленное снаружи плюс собственные значения скина.
+ *
+ * Собственные — это и литералы, и построенное семенами: ссылка на ступень объявленной шкалы
+ * (`var(--бренд-9)`) обязана считаться известной, иначе семенной скин уезжал бы в изъяны целиком.
+ * Имена берутся у того же построения, что даёт значения, — второй их перечень разошёлся бы с
+ * первым на первом же новом ряде.
+ */
+function vocabularyOf(skin: Skin | undefined, vocabulary: ValueVocabulary): Set<string> {
   const known = new Set<string>();
 
   for (const token of vocabulary.tokens ?? []) known.add(customProperty(token));
-  for (const half of [skin.variables?.light, skin.variables?.dark]) {
-    for (const name of Object.keys(half ?? {})) known.add(customProperty(name));
-  }
+  if (skin) for (const name of valueNames(skin)) known.add(customProperty(name));
 
   return known;
 }
@@ -283,80 +337,137 @@ function declares(style: StyleObject): boolean {
   return Object.values(style).some((value) => value !== undefined);
 }
 
+/**
+ * ПОСТОЯННОЕ на весь обход: куда складывать, чем искать паспорт, что считать известным.
+ *
+ * Одним объектом, а не пятью параметрами через все уровни: у обхода шесть функций, и каждая
+ * протаскивала бы их насквозь, ничего с ними не делая. Переменная часть — курсор (`Cursor`),
+ * она у каждого уровня своя.
+ *
+ * Тип-параметр `Mark` — то, чем правило подписывается СВЕРХ селектора: обход рецептов ставит
+ * координату, обход правок образца не ставит ничего. Обход при этом ОДИН: развести его на две
+ * копии ради одного поля значило бы завести вторую правду о том, как рецепт разворачивается.
+ */
+interface Walk<Mark> {
+  /** Чем найти паспорт по имени компонента: нужен предку, живущему в чужом дереве. */
+  readonly lookup: PassportLookup;
+  /** Известные имена значений. */
+  readonly known: Set<string>;
+  readonly flaws: Flaws;
+  readonly out: (CssRule & Mark)[];
+  /** Чем подписать правило, стоящее в этом месте обхода. */
+  mark(cursor: Cursor): Mark;
+}
+
+/** ПЕРЕМЕННОЕ: где обход сейчас находится и что уже набрал в селектор. */
+interface Cursor {
+  readonly passport: ComponentPassport;
+  readonly part: string;
+  /** Селектор части вместе с уже набранными вариацией и состояниями. */
+  readonly own: string;
+  /** Селектор предка, если он есть, — встаёт слева. */
+  readonly prefix: string;
+  /** Имена вариаций, при которых правило действует. Пусто — при любой. */
+  readonly variants: readonly string[];
+  /**
+   * Состояния СВОЕЙ части, набранные к этому месту.
+   *
+   * Именно свои: состояния предка сюда не попадают. Предок в правиле — условие, а вид получает
+   * наша часть, и записывать предку покрытие значило бы объявить одетым то, чему вида не дали.
+   */
+  readonly states: readonly string[];
+  /** Предок и его состояния, если обход спустился в правило от предка. */
+  readonly ancestor?: RuleCoordinate["ancestor"];
+  /** Число условий адреса — им задаётся порядок при равном весе селектора. */
+  readonly conditions: number;
+  /** Происхождение: 0 база, 1 вариация, 2 пересечение. */
+  readonly origin: number;
+}
+
+/**
+ * Вариация на входе обхода: селектор и ИМЕНА, которые он выражает.
+ *
+ * Пара, а не одна строка: селектор нужен печати, имена — адресу. Восстанавливать имена из
+ * селектора обратно значило бы разбирать собственную же запись.
+ */
+interface Variant {
+  readonly selector: string;
+  readonly names: readonly string[];
+}
+
+/** «При любой вариации» — так адресована база. */
+const ANY_VARIANT: Variant = { selector: "", names: [] };
+
+/** Подпись правила из рецепта — его адрес. */
+function coordinateOf(cursor: Cursor): { coordinate: RuleCoordinate } {
+  return {
+    coordinate: {
+      component: cursor.passport.component,
+      part: cursor.part,
+      variants: cursor.variants,
+      states: cursor.states,
+      ...(cursor.ancestor ? { ancestor: cursor.ancestor } : {}),
+    },
+  };
+}
+
 /** Разворачивает вид под одним селектором: свои свойства, затем состояния части. */
-function growLocal(
-  args: {
-    passport: ComponentPassport;
-    part: string;
-    /** Селектор части вместе с уже набранными вариацией и состояниями. */
-    own: string;
-    /** Селектор предка, если он есть, — встаёт слева. */
-    prefix: string;
-    conditions: number;
-    origin: number;
-  },
+function growLocal<Mark>(
+  cursor: Cursor,
   style: LocalStyle,
   where: string,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
   if (style.props && declares(style.props)) {
-    checkStyle(style.props, `${where}.props`, known, flaws);
-    out.push({
-      selector: args.prefix === "" ? args.own : `${args.prefix} ${args.own}`,
+    checkStyle(style.props, `${where}.props`, walk.known, walk.flaws);
+    walk.out.push({
+      ...walk.mark(cursor),
+      selector: cursor.prefix === "" ? cursor.own : `${cursor.prefix} ${cursor.own}`,
       style: style.props,
-      conditions: args.conditions,
-      origin: args.origin,
+      conditions: cursor.conditions,
+      origin: cursor.origin,
     });
   }
 
   for (const [state, nested] of Object.entries(style.states ?? {})) {
-    const mark = stateSelector(args.passport, args.part, state);
+    const mark = stateSelector(cursor.passport, cursor.part, state);
 
     if (mark === undefined) {
-      flaws.add(
+      walk.flaws.add(
         "unknown-state",
         `${where}.states.${state}`,
-        `часть «${args.part}» компонента «${args.passport.component}» такого состояния не ` +
+        `часть «${cursor.part}» компонента «${cursor.passport.component}» такого состояния не ` +
           "объявляла. Правило, адресующее необъявленное состояние, невалидно",
       );
       continue;
     }
 
     growLocal(
-      { ...args, own: args.own + mark, conditions: args.conditions + 1 },
+      {
+        ...cursor,
+        own: cursor.own + mark,
+        states: [...cursor.states, state],
+        conditions: cursor.conditions + 1,
+      },
       nested,
       `${where}.states.${state}`,
-      known,
-      flaws,
-      out,
+      walk,
     );
   }
 }
 
 /** Разворачивает правила «часть выглядит так, когда её владелец в таком состоянии». */
-function growAncestor(
-  args: {
-    passport: ComponentPassport;
-    part: string;
-    own: string;
-    conditions: number;
-    origin: number;
-  },
+function growAncestor<Mark>(
+  cursor: Cursor,
   ancestor: AncestorStyle,
   where: string,
-  lookup: PassportLookup,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
-  const owner = lookup(ancestor.component);
-  const prefix =
-    owner && ancestorSelector(owner, ancestor.part, ancestor.states);
+  const owner = walk.lookup(ancestor.component);
+  const prefix = owner && ancestorSelector(owner, ancestor.part, ancestor.states);
 
   if (!prefix) {
-    flaws.add(
+    walk.flaws.add(
       "unknown-ancestor",
       where,
       `предок «${ancestor.component}.${ancestor.part}» не объявлен: нет паспорта, части или ` +
@@ -367,36 +478,36 @@ function growAncestor(
 
   growLocal(
     {
-      ...args,
+      ...cursor,
       prefix,
-      conditions: args.conditions + (ancestor.states?.length ?? 0),
+      ancestor: {
+        component: ancestor.component,
+        part: ancestor.part,
+        states: ancestor.states ?? [],
+      },
+      conditions: cursor.conditions + (ancestor.states?.length ?? 0),
     },
     ancestor.style,
     `${where}.style`,
-    known,
-    flaws,
-    out,
+    walk,
   );
 }
 
 /** Разворачивает вид одной части целиком: свой адрес и уточнения по предку. */
-function growPart(
+function growPart<Mark>(
   passport: ComponentPassport,
   part: string,
-  /** Селектор вариации, если правило принадлежит вариации. */
-  variant: string,
+  /** Селектор вариации и имена, которые он выражает. */
+  variant: Variant,
   origin: number,
   style: PartStyle,
   where: string,
-  lookup: PassportLookup,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
   const own = partSelector(passport, part);
 
   if (own === undefined) {
-    flaws.add(
+    walk.flaws.add(
       "unknown-part",
       where,
       `компонент «${passport.component}» части «${part}» не объявлял: адресовать нечего`,
@@ -404,64 +515,49 @@ function growPart(
     return;
   }
 
-  const args = {
+  const cursor: Cursor = {
     passport,
     part,
-    own: own + variant,
+    own: own + variant.selector,
     prefix: "",
+    variants: variant.names,
+    states: [],
     conditions: 0,
     origin,
   };
 
-  growLocal(args, style, where, known, flaws, out);
+  growLocal(cursor, style, where, walk);
 
   for (const [index, ancestor] of (style.ancestors ?? []).entries()) {
-    growAncestor(args, ancestor, `${where}.ancestors[${index}]`, lookup, known, flaws, out);
+    growAncestor(cursor, ancestor, `${where}.ancestors[${index}]`, walk);
   }
 }
 
 /** Разворачивает вид по частям. */
-function growParts(
+function growParts<Mark>(
   passport: ComponentPassport,
-  variant: string,
+  variant: Variant,
   origin: number,
   parts: PartStyles,
   where: string,
-  lookup: PassportLookup,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
   for (const [part, style] of Object.entries(parts)) {
-    growPart(
-      passport,
-      part,
-      variant,
-      origin,
-      style,
-      `${where}.${part}`,
-      lookup,
-      known,
-      flaws,
-      out,
-    );
+    growPart(passport, part, variant, origin, style, `${where}.${part}`, walk);
   }
 }
 
 /** Разворачивает один рецепт: база, вариации, умолчание, пересечения. */
-function growRecipe(
+function growRecipe<Mark>(
   passport: ComponentPassport,
   recipe: SlotRecipe,
   where: string,
-  lookup: PassportLookup,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
   const names = Object.keys(recipe.variants ?? {});
 
   if (names.length > 0 && recipe.defaultVariant === undefined) {
-    flaws.add(
+    walk.flaws.add(
       "default-missing",
       where,
       "вариации объявлены, а умолчание нет. Тогда «главная» и «атрибут не указан» — два разных " +
@@ -470,7 +566,7 @@ function growRecipe(
   }
 
   if (recipe.defaultVariant !== undefined && !names.includes(recipe.defaultVariant)) {
-    flaws.add(
+    walk.flaws.add(
       "unknown-variant",
       `${where}.defaultVariant`,
       `умолчание называет вариацию «${recipe.defaultVariant}», которой в рецепте нет`,
@@ -478,21 +574,21 @@ function growRecipe(
   }
 
   if (recipe.base) {
-    growParts(passport, "", 0, recipe.base, `${where}.base`, lookup, known, flaws, out);
+    growParts(passport, ANY_VARIANT, 0, recipe.base, `${where}.base`, walk);
   }
 
   for (const [name, parts] of Object.entries(recipe.variants ?? {})) {
     const at = `${where}.variants.${name}`;
 
     if (!safeName(name)) {
-      flaws.add("unsafe-name", at, `имя вариации «${name}» не годится внутрь селектора`);
+      walk.flaws.add("unsafe-name", at, `имя вариации «${name}» не годится внутрь селектора`);
       continue;
     }
 
     const selector = variantSelector(passport, name, name === recipe.defaultVariant);
 
     if (selector === undefined) {
-      flaws.add(
+      walk.flaws.add(
         "variant-unaddressable",
         at,
         `ось вариаций компонента «${passport.component}» выражена не атрибутом — имя вариации ` +
@@ -501,30 +597,27 @@ function growRecipe(
       continue;
     }
 
-    growParts(passport, selector, 1, parts, at, lookup, known, flaws, out);
+    growParts(passport, { selector, names: [name] }, 1, parts, at, walk);
   }
 
   for (const [index, compound] of (recipe.compoundVariants ?? []).entries()) {
-    growCompound(passport, recipe, compound, `${where}.compoundVariants[${index}]`, lookup, known, flaws, out);
+    growCompound(passport, recipe, compound, `${where}.compoundVariants[${index}]`, walk);
   }
 }
 
 /** Разворачивает одно пересечение: перечисленные вариации и состояния — в один адрес. */
-function growCompound(
+function growCompound<Mark>(
   passport: ComponentPassport,
   recipe: SlotRecipe,
   compound: CompoundVariant,
   where: string,
-  lookup: PassportLookup,
-  known: Set<string>,
-  flaws: Flaws,
-  out: SkinRule[],
+  walk: Walk<Mark>,
 ): void {
   const chosen = compound.variants ?? [];
   const unknown = chosen.filter((name) => !(name in (recipe.variants ?? {})));
 
   if (unknown.length > 0) {
-    flaws.add(
+    walk.flaws.add(
       "unknown-variant",
       where,
       `пересечение называет вариации, которых в рецепте нет: ${unknown.join(", ")}`,
@@ -540,7 +633,7 @@ function growCompound(
   );
 
   if (options.some((option) => option === undefined)) {
-    flaws.add(
+    walk.flaws.add(
       "variant-unaddressable",
       where,
       `ось вариаций компонента «${passport.component}» выражена не атрибутом`,
@@ -562,11 +655,11 @@ function growCompound(
     ]),
   );
 
-  growParts(passport, variant, 2, wrapped, where, lookup, known, flaws, out);
+  growParts(passport, { selector: variant, names: chosen }, 2, wrapped, where, walk);
 }
 
 /** Ставит правила в порядок каскада: больше условий — позже; при равенстве — по происхождению. */
-function ordered(rules: SkinRule[]): SkinRule[] {
+function ordered<R extends CssRule>(rules: R[]): R[] {
   return rules
     .map((rule, index) => ({ rule, index }))
     .sort(
@@ -584,7 +677,7 @@ function ordered(rules: SkinRule[]): SkinRule[] {
  * @param skin скин целиком
  * @param lookup чем найти паспорт по имени компонента
  * @param vocabulary словарь известных имён значений
- * @returns правила в порядке каскада и все изъяны сразу, а не по одному за проход
+ * @returns правила в порядке каскада — каждое со своим адресом — и все изъяны сразу
  */
 export function skinRules(
   skin: Skin,
@@ -596,9 +689,28 @@ export function skinRules(
   const known = vocabularyOf(skin, vocabulary);
   const flaws = new Flaws();
   const out: SkinRule[] = [];
+  const walk: Walk<{ coordinate: RuleCoordinate }> = {
+    lookup,
+    known,
+    flaws,
+    out,
+    mark: coordinateOf,
+  };
 
   if (!safeName(skin.name)) {
     flaws.add("unsafe-name", "name", `имя скина «${skin.name}» не годится внутрь селектора`);
+  }
+
+  // Семя, из которого лестницу не построить, — изъян ЗАПИСИ, а не поломка счёта. Проверяется до
+  // всего остального: следом за негодным семенем в перечень посыплются ссылки на его ступени, и
+  // причину надо назвать первой.
+  for (const bad of seedRefusals(skin.variables)) {
+    flaws.add(
+      "bad-seed",
+      `variables.scales.${bad.scale}`,
+      `${bad.means}. Из такого семени лестница не строится, и ступени шкалы «${bad.scale}» ` +
+        "объявленными не считаются",
+    );
   }
 
   // Переменные — половина скина, и значение в них такое же значение: ссылка на несуществующее
@@ -625,7 +737,7 @@ export function skinRules(
       continue;
     }
 
-    growRecipe(passport, recipe, where, lookup, known, flaws, out);
+    growRecipe(passport, recipe, where, walk);
   }
 
   for (const [name, frames] of Object.entries(skin.keyframes ?? {})) {
@@ -648,6 +760,10 @@ export function skinRules(
  * приложение получит вид, привязанный к идентификаторам чужого стенда. Здесь утечь нечему:
  * скин на вход этой функции не приходит вовсе.
  *
+ * Адреса у этих правил НЕТ, и в ответе его нет: правка образца одевает ОДНО МЕСТО, а не
+ * координату. Припиши мы ей координату — покрытие и читаемость увидели бы одетой ту, которой
+ * вида не давали, а покрашен один узел чужого стенда.
+ *
  * @param edits правки по узлам
  * @param lookup чем найти паспорт по имени компонента
  * @param vocabulary словарь известных имён значений
@@ -656,12 +772,15 @@ export function sketchRules(
   edits: readonly SketchEdit[],
   lookup: PassportLookup,
   vocabulary: ValueVocabulary = {},
-): SkinRules {
+): SketchRules {
   const done = trace(`sketchRules(${edits.length})`);
 
-  const known = vocabularyOf({}, vocabulary);
+  const known = vocabularyOf(undefined, vocabulary);
   const flaws = new Flaws();
-  const out: SkinRule[] = [];
+  const out: CssRule[] = [];
+  // Подпись пустая: обход у нас общий, а адреса у правки образца нет. Отдельная ветка обхода
+  // стоила бы второй реализации разворота рецепта ради одного поля.
+  const walk: Walk<Record<never, never>> = { lookup, known, flaws, out, mark: () => ({}) };
 
   for (const [index, edit] of edits.entries()) {
     const where = `edits[${index}]`;
@@ -689,19 +808,21 @@ export function sketchRules(
     // Адрес — ТОЛЬКО имя узла: оно уникально в дереве, и добавлять к нему координату значило бы
     // утяжелять селектор ради вида записи. Часть при этом названа не зря — из неё читается
     // словарь состояний, без которого «этот узел при наведении» не адресуем.
-    const args = {
+    const cursor: Cursor = {
       passport,
       part: edit.part,
       own: nodeSelector(edit.node),
       prefix: "",
+      variants: [],
+      states: [],
       conditions: 0,
       origin: 0,
     };
 
-    growLocal(args, edit.style, where, known, flaws, out);
+    growLocal(cursor, edit.style, where, walk);
 
     for (const [i, ancestor] of (edit.style.ancestors ?? []).entries()) {
-      growAncestor(args, ancestor, `${where}.ancestors[${i}]`, lookup, known, flaws, out);
+      growAncestor(cursor, ancestor, `${where}.ancestors[${i}]`, walk);
     }
   }
 
