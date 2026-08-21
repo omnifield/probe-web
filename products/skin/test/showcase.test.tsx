@@ -200,14 +200,17 @@ describe("оси — фильтр, а не раскладка", () => {
     await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(before));
   });
 
-  it("выбранная часть подсвечивается слотом украшения механики", async () => {
+  it("витрина не рисует внутри компонента ничего своего", async () => {
     const host = mount(() => <App />);
 
-    await vi.waitFor(() => expect(host.querySelector(".pick")).not.toBeNull());
+    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeGreaterThan(0));
 
-    // Украшение механики не ловит событий: оно показывает выбор, а не перехватывает его.
-    const pick = host.querySelector(".pick")?.parentElement;
-    expect(pick?.getAttribute("aria-hidden")).toBe("true");
+    // Подсветка части отсюда убрана: она рисовала рамку ВНУТРИ каждой кнопки, и компонент
+    // выглядел как кнопка на кнопке. Витрина показывает вид — своих отметок внутри быть не может.
+    expect(host.querySelector(".pick")).toBeNull();
+    for (const node of host.querySelectorAll('[data-scope="button"]')) {
+      expect(node.querySelector("[aria-hidden]")).toBeNull();
+    }
   });
 });
 

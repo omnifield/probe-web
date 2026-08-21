@@ -10,6 +10,7 @@
 //      остались бы зелёными, а правило просто перестало бы срабатывать.
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
@@ -19,6 +20,25 @@ import { describe, expect, it } from "vitest";
 function read(path: string): string {
   return readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
 }
+
+describe("оболочка витрины живёт своими значениями", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/showcase/showcase.css"), "utf8").replaceAll(
+    /\/\*[\s\S]*?\*\//g,
+    "",
+  );
+
+  it("у неё есть пара на тёмный режим", () => {
+    // Роли набора значений сюда не годятся: их тёмная половина живёт в теме, а тем витрина не
+    // ставит. Опираясь на них, оболочка оставалась бы светлой при тёмном режиме — и скин,
+    // читающий класс `dark`, давал бы тёмную пару поверх светлой карточки.
+    expect(css).toMatch(/:root\.dark/);
+    expect(css).toContain("--ui-ink");
+  });
+
+  it("не берёт роли темы, которой не ставит", () => {
+    expect(css).not.toMatch(/var\(--surface\)|var\(--text\)|var\(--brand-|var\(--space-/);
+  });
+});
 
 describe("витрина не одевает кит", () => {
   // Комментарии вырезаны: имена кита в них НАЗЫВАЮТСЯ (объяснить запрет нельзя, не назвав то,

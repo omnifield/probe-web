@@ -20,7 +20,7 @@
 // приложения (`runtime`). Своей вставки стилей в зоне нет: вторая реализация того же разошлась
 // бы с первой ровно тогда, когда одна из них научится чему-то новому.
 
-import { knownComponents, RenderTree, type EditOverlayProps } from "@omnifield/probe-web-assembly";
+import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 // `readSkin` из механики приложения читает КОРЕНЬ (что надето и в каком режиме), а одноимённая
 // функция хранилища читает ЗАПИСЬ. Предметы разные, имена совпали — развожу их псевдонимом, а не
 // переименованием чужого.
@@ -32,7 +32,6 @@ import {
 } from "@omnifield/probe-web-runtime";
 import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
-  type Component,
   createResource,
   createSignal,
   For,
@@ -50,7 +49,6 @@ import {
   type SkinRecord,
 } from "../skins/index.js";
 import {
-  addressOfPart,
   casesOf,
   partsOf,
   rootPartOf,
@@ -108,7 +106,7 @@ const WIDE_AT = 380;
  * Содержимое шире порога — карточка занимает всю строку, и кнопка с диалогом живут в одном
  * потоке, не подгоняя его друг под друга.
  */
-function Case(props: { item: ShowcaseCase; overlay?: Component<EditOverlayProps> }) {
+function Case(props: { item: ShowcaseCase }) {
   const [wide, setWide] = createSignal(false);
   let stage!: HTMLDivElement;
 
@@ -131,7 +129,7 @@ function Case(props: { item: ShowcaseCase; overlay?: Component<EditOverlayProps>
   return (
     <figure class="case" classList={{ "case--wide": wide() }}>
       <div class="case__stage" ref={stage}>
-        <RenderTree tree={props.item.tree} registry={REGISTRY} editOverlay={props.overlay} />
+        <RenderTree tree={props.item.tree} registry={REGISTRY} />
       </div>
       <figcaption class="case__caption">
         <b class="case__title" classList={{ "case__title--axis": props.item.origin === "axis" }}>
@@ -140,20 +138,6 @@ function Case(props: { item: ShowcaseCase; overlay?: Component<EditOverlayProps>
         <span class="case__note">{props.item.note}</span>
       </figcaption>
     </figure>
-  );
-}
-
-/**
- * Подсветка выбранной части — слотом украшения МЕХАНИКИ, а не своей обёрткой.
- *
- * Слот ортогонален отрисовке: не задан — путь прежний, ни одного лишнего узла в разметке. Тот же
- * слот будет рисовать выделение в редакторе, поэтому и берём его, а не рисуем рамку сами.
- */
-function highlight(address: string): Component<EditOverlayProps> {
-  return (props) => (
-    <Show when={props.node.type === address}>
-      <span class="pick" />
-    </Show>
   );
 }
 
@@ -276,9 +260,7 @@ function ComponentPage(props: {
 
         <div class="cases">
           <For each={cases()}>
-            {(item) => (
-              <Case item={item} overlay={highlight(addressOfPart(props.component, props.part))} />
-            )}
+            {(item) => <Case item={item} />}
           </For>
         </div>
       </Show>
