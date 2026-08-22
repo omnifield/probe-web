@@ -1,0 +1,11 @@
+{
+  "name": "@omnifield/live-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Обвязка к настоящему Chromium для вопросов, на которые не отвечает jsdom",
+  "exports": {
+    ".": "./chrome.mjs"
+  },
+  "files": ["chrome.mjs", "README.md"]
+}
