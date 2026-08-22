@@ -22,8 +22,10 @@ export function mount(code: () => JSX.Element): HTMLElement {
 export function cleanup(): void {
   for (const dispose of mounted.splice(0)) dispose();
   document.body.innerHTML = "";
-  // Тема живёт на `documentElement` — состояние глобальное, и его обязан снимать тест,
-  // иначе следующий стартует в чужом режиме.
+  // Режим и имя скина живут на `documentElement` — состояние глобальное. Приложение их
+  // больше не ставит (`PWEB-52`): режим — половина скина, скина у эталона нет. Уборка
+  // остаётся страховкой для НЕГАТИВНОЙ пробы: она утверждает, что на корне пусто, и обязана
+  // стартовать с пустого корня, иначе покраснеет от соседа, а не от поломки.
   document.documentElement.classList.remove("dark");
   document.documentElement.removeAttribute("data-theme");
 }

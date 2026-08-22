@@ -8,11 +8,13 @@
 // Экран намеренно ОДИН. Полигон, выросший в приложение, перестаёт быть полигоном: за ним
 // начинают ухаживать вместо того, чтобы им проверять.
 
-// Две РАЗНЫЕ поставки, и здесь видно, зачем их две (`PWEB-3`): из набора значений приезжает
-// только значение (контроллер темы), из ящика инструментов — только механика сборки класса.
-// Инструменты необязательны, и приложение берёт их отдельным решением, а не заодно с темой:
-// пока они приезжали одной установкой, «необязательно» держалось обещанием.
-import { createThemeController } from "@omnifield/probe-web-style";
+// Из ящика инструментов приезжает механика сборки класса, и только она (`PWEB-3`).
+// Инструменты необязательны, и приложение берёт их ОТДЕЛЬНЫМ решением — эта поставка
+// объявлена в манифесте сама по себе, а не приезжает следом за набором значений.
+//
+// Из набора значений сюда не приезжает НИЧЕГО (`PWEB-52`): контроллер темы отсюда ушёл вместе
+// с переключателем режима — режим стал половиной скина, а скина у эталона нет. Значения зона
+// по-прежнему объявляет в манифесте: оттуда приезжает базовый слой CSS (`src/main.tsx`).
 import { createStyle, cva } from "@omnifield/probe-web-style-tools";
 import {
   Button,
@@ -46,6 +48,7 @@ export interface Order {
   mail: string;
   city: string | null;
   comment: string;
+  urgent: boolean;
 }
 
 const CITIES = ["Москва", "Казань", "Новосибирск"];
@@ -90,13 +93,10 @@ export function App(props: AppProps) {
   // флага сразу дают ОДНУ ленту — от `mount()` рантайма до жизни каждого примитива.
   const settled = trace("app.setup");
 
-  // Контроллер темы — per-instance, создаётся на бутстрапе приложения (норма зоны `style`:
-  // синглтон в пакете означал бы одно состояние темы на весь процесс).
-  const theme = createThemeController();
-
   const [mail, setMail] = createSignal("");
   const [city, setCity] = createSignal<string | null>(null);
   const [comment, setComment] = createSignal("");
+  const [urgent, setUrgent] = createSignal(false);
   const [sending, setSending] = createSignal(false);
   const [sent, setSent] = createSignal<Order | null>(null);
 
@@ -119,7 +119,12 @@ export function App(props: AppProps) {
     event.preventDefault();
     if (!canSend()) return;
 
-    const order: Order = { mail: mail(), city: city(), comment: comment() };
+    const order: Order = {
+      mail: mail(),
+      city: city(),
+      comment: comment(),
+      urgent: urgent(),
+    };
     const send = props.send ?? pretendSend;
 
     const measured = trace("app.submit");
@@ -139,14 +144,13 @@ export function App(props: AppProps) {
     <Slot as="main" class="app">
       <header class="app__head">
         <h1>probe-web reference</h1>
-        {/* Тема переключается механикой зоны `style`, а кнопка приезжает из `ui`: шов между
-            двумя пакетами кита виден ровно здесь. */}
-        <Toggle
-          pressed={theme.mode() === "dark"}
-          onChange={() => theme.toggleMode()}
-          aria-label="Тёмная тема"
-        >
-          {theme.mode() === "dark" ? "Тёмная" : "Светлая"}
+        {/* Переключатель держит признак ЗАЯВКИ, а не режим документа (`PWEB-52`). Режим
+            принадлежит скину, скина у эталона нет — переключать было бы нечего, и ручка,
+            которая заведомо ничего не делает, гейтом быть перестаёт. Шов при этом остался
+            тем же: примитив из `ui` объявляет нажатое состояние атрибутом, а состояние
+            приложения доезжает до заявки. */}
+        <Toggle pressed={urgent()} onChange={setUrgent} aria-label="Срочная заявка">
+          {urgent() ? "Срочно" : "Обычно"}
         </Toggle>
       </header>
 

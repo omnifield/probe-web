@@ -1,14 +1,23 @@
-/* Оформление ПОТРЕБИТЕЛЯ. Кит безголовый (`kb:PROBEWEB-4`): ни один примитив не везёт класса
-   по умолчанию, поэтому весь внешний вид страницы живёт здесь — и это не пример стиля, а
-   проверка контракта. Файл цепляется ТОЛЬКО за две вещи:
+/* Оформление ПОТРЕБИТЕЛЯ, и оно теперь БЕЗ ЦВЕТА (`PWEB-52`). Кит безголовый
+   (`kb:PROBEWEB-4`): ни один примитив не везёт класса по умолчанию, поэтому раскладка страницы
+   живёт здесь. Файл цепляется ТОЛЬКО за две вещи:
 
      • `data-slot` — зацепка, которую примитив ставит ДО спреда пропсов;
-     • токены темы (`var(--primary)`, `var(--radius-md)`) из `@omnifield/probe-web-style`.
+     • РАЗМЕРНЫЕ токены (`var(--radius-md)`, `var(--motion-slow)`) из
+       `@omnifield/probe-web-style` — они работают без палитры, у них есть подстраховки.
 
-   Ни одного селектора по внутренностям kobalte и ни одного литерального цвета. Отсюда и
-   свойство гейта: снимут зацепку в зоне `ui` — страница разъедется целиком, а не «немного
-   поедет»; уедет токен из зоны `style` — свойство станет недействительным и место
-   поломки будет видно глазом. */
+   Цветовых ролей здесь нет ни одной, и это не обеднение файла, а следствие решения «режим —
+   половина скина»: роли (`--primary`, `--border`, `--background`) ссылаются на СТУПЕНИ, а
+   ступени приезжают скином. Скина у эталона нет — значит роли пусты, и опираться на них
+   значило бы писать декларации, которые браузер молча отбрасывает.
+
+   Своего цвета взамен не заведено намеренно: эталон — приложение, а не инструмент. Приложение
+   без скина обязано быть голым, и голое оно потому, что вид ему никто не дал, а не потому, что
+   что-то сломалось. Нативный вид контролов рисует браузер, `currentColor` наследуется от него.
+
+   Свойство гейта от этого не пропало, а переехало: снимут зацепку в зоне `ui` — страница
+   разъедется целиком; уедет размерная шкала из зоны `style` — скругления и движение станут
+   недействительными и место поломки будет видно глазом. */
 
 .app {
   max-width: 34rem;
@@ -40,9 +49,8 @@
 .app__done {
   margin: 0;
   padding: 0.75rem 1rem;
+  border: 1px solid;
   border-radius: var(--radius-md);
-  background-color: var(--accent);
-  color: var(--accent-foreground);
 }
 
 /* --- Поле: подпись, ввод, пояснение, ошибка ------------------------------------------- */
@@ -55,43 +63,26 @@
 
 [data-slot="label"] {
   font-size: 0.875rem;
-  color: var(--muted-foreground);
 }
 
 [data-slot="input"],
 [data-slot="textarea"] {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--input);
   border-radius: var(--radius-md);
-  background-color: var(--background);
-  color: var(--foreground);
   font: inherit;
 }
 
-[data-slot="input"]:focus-visible,
-[data-slot="textarea"]:focus-visible,
-[data-slot="button"]:focus-visible,
-[data-slot="toggle"]:focus-visible,
-[data-slot="select-trigger"]:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Состояния приезжают атрибутами, а не классами: примитив их ставит, CSS читает. */
+/* Состояния приезжают атрибутами, а не классами: примитив их ставит, CSS читает. Разница
+   видна БЕЗ цвета — толщиной рамки: цветом её показать нечем, а показать надо. */
 [data-slot="input"][data-invalid],
 [data-slot="textarea"][data-invalid] {
-  border-color: var(--destructive);
+  border-width: 2px;
 }
 
-[data-slot="field-description"] {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-
+[data-slot="field-description"],
 [data-slot="field-error"] {
   font-size: 0.8125rem;
-  color: var(--destructive);
 }
 
 /* --- Кнопки и переключатель ------------------------------------------------------------ */
@@ -104,10 +95,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 0.875rem;
-  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background-color: var(--secondary);
-  color: var(--secondary-foreground);
   font: inherit;
   cursor: pointer;
   transition: opacity var(--motion-fast) var(--ease-out);
@@ -119,32 +107,31 @@
   cursor: default;
 }
 
+/* Нажатое состояние переключателя — тоже не цветом: рамка вдавлена внутрь. */
 [data-slot="toggle"][data-pressed] {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  border-color: var(--primary);
+  border-style: inset;
 }
 
 /* Варианты кнопки отправки собраны `createStyle` в `app.tsx` — то есть вторым, JS-путём
    стилизации. Классы здесь именованные (не утилитарные): Tailwind контракт зон не
-   объявляет, а `cn` работает и без него. */
+   объявляет, а `cn` работает и без него. Вариант виден без цвета: занятая кнопка приглушена,
+   и приглушение это прозрачность, а не краска. */
 .app-submit {
   align-self: flex-start;
 }
 
 .app-submit--active {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  border-color: var(--primary);
+  opacity: 1;
 }
 
 .app-submit--waiting {
-  background-color: var(--muted);
-  color: var(--muted-foreground);
+  opacity: 0.7;
 }
 
 /* --- Спиннер: кольцо рисует потребитель --------------------------------------------------
-   Примитив даёт только `role="status"` — вращающееся кольцо это CSS, и живёт он тут. */
+   Примитив даёт только `role="status"` — вращающееся кольцо это CSS, и живёт он тут.
+   `currentColor` — не выбор цвета, а отказ от него: кольцо берёт цвет текста, каким бы он
+   ни был у голой страницы. */
 
 [data-slot="spinner"] {
   display: inline-block;
@@ -170,17 +157,18 @@
 
 /* --- Список ------------------------------------------------------------------------------
    `SelectContent` приводит в документ два узла (позиционер floating-ui и панель) — названное
-   отступление от 1-to-1, задокументированное в зоне `ui`. Красим панель, позиционер не
-   трогаем: его геометрию считает kobalte. */
+   отступление от 1-to-1, задокументированное в зоне `ui`. Одеваем панель, позиционер не
+   трогаем: его геометрию считает kobalte.
+
+   Фона у панели нет: он был `var(--popover)`, роль пуста без скина. На голой странице панель
+   ложится поверх содержимого прозрачной — это ВИДНО и это правда: одеть её некому. Подставить
+   сюда свой цвет значило бы отгрузить приложению половину скина второй раз. */
 
 [data-slot="select-content"] {
   min-width: 12rem;
   padding: 0.25rem;
-  border: 1px solid var(--border);
+  border: 1px solid;
   border-radius: var(--radius-md);
-  background-color: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--shadow-md);
 }
 
 [data-slot="select-listbox"] {
@@ -201,9 +189,9 @@
   cursor: pointer;
 }
 
+/* Подсветка наведённого — подчёркиванием: цвета фона взять неоткуда. */
 [data-slot="select-item"][data-highlighted] {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
+  text-decoration: underline;
 }
 
 [data-slot="separator"] {
@@ -211,5 +199,5 @@
   height: 1px;
   margin: 0;
   border: 0;
-  background-color: var(--border);
+  border-top: 1px solid;
 }
