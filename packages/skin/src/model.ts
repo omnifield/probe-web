@@ -65,3 +65,7 @@ export { skinGaps } from "./coverage.js";
 // названа: построение шкал берётся у зоны значений, и она приезжает сюда одноранговой.
 export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds.js";
 export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";
+// Размерные шкалы: второй ряд посеваемого. Наружу — потому что редактор и хранилище спрашивают
+// то же самое, что и порождение: какие семена законны и что скин объявляет на самом деле.
+export type { SizeRefusal, SizeSeed } from "./sizes.js";
+export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes.js";

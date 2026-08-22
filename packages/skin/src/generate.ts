@@ -34,6 +34,7 @@ import type { PassportLookup } from "./address.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
 import { cssProperty } from "./property.js";
 import { skinValues } from "./seeds.js";
+import { sizeBlocks } from "./sizes.js";
 import type { Skin, SketchEdit, StyleObject, StyleValue } from "./recipe.js";
 import {
   skinRules,
@@ -139,6 +140,11 @@ function variablesText(skin: Skin, dark: readonly (readonly [string, string])[])
   }
 
   if (dark.length > 0) blocks.push(valuesText(DARK_SELECTOR, dark));
+
+  // Размерные ступени стоят ПОСЛЕ цветных и одним блоком на обе половины: режим их не двигает.
+  // До `PWEB-64` они приезжали приложению общим листом — мимо скина, вторым путём к тому же
+  // результату. Что сюда не едет и почему — `sizes.ts`.
+  blocks.push(...sizeBlocks(skin, "  "));
 
   return blocks;
 }

@@ -56,6 +56,7 @@ import {
 // без Solid» при этом не на слове: его держит ребро собранного файла в `test/surface.test.ts`.
 
 import type { ScaleDeclaration, SeededScale, Skin, SkinVariables } from "./recipe.js";
+import { sizeValues } from "./sizes.js";
 import { trace } from "./trace.js";
 
 /** Половина скина. */
@@ -222,5 +223,12 @@ export function skinValues(skin: Skin, half: SkinHalf): Map<string, SkinValue> {
  * @param skin скин целиком
  */
 export function valueNames(skin: Skin): Set<string> {
-  return new Set([...skinValues(skin, "light").keys(), ...skinValues(skin, "dark").keys()]);
+  return new Set([
+    ...skinValues(skin, "light").keys(),
+    ...skinValues(skin, "dark").keys(),
+    // Размерные ступени объявлены скином ровно так же, как цветные, и от режима не зависят:
+    // половина у них одна. Не включи мы их сюда — `var(--space-3)` уезжал бы в изъяны на
+    // каждом посеянном скине, то есть проверка отвергала бы собственный вывод механики.
+    ...sizeValues(skin).keys(),
+  ]);
 }

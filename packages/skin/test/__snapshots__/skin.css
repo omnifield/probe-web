@@ -26,6 +26,36 @@
     --a: 2;
   }
 
+  :root {
+    --space: 0.25rem;
+    --density: 1;
+    --space-1: calc(var(--space) * var(--density));
+    --space-2: calc(var(--space) * 2 * var(--density));
+    --space-3: calc(var(--space) * 3 * var(--density));
+    --space-4: calc(var(--space) * 4 * var(--density));
+    --space-6: calc(var(--space) * 6 * var(--density));
+    --space-8: calc(var(--space) * 8 * var(--density));
+    --space-12: calc(var(--space) * 12 * var(--density));
+    --space-16: calc(var(--space) * 16 * var(--density));
+    --space-24: calc(var(--space) * 24 * var(--density));
+    --space-32: calc(var(--space) * 32 * var(--density));
+  }
+
+  @supports (width: round(nearest, 1rem, 0.25rem)) {
+    :root {
+      --space-1: round(nearest, calc(var(--space) * var(--density)), 0.25rem);
+      --space-2: round(nearest, calc(var(--space) * 2 * var(--density)), 0.25rem);
+      --space-3: round(nearest, calc(var(--space) * 3 * var(--density)), 0.25rem);
+      --space-4: round(nearest, calc(var(--space) * 4 * var(--density)), 0.25rem);
+      --space-6: round(nearest, calc(var(--space) * 6 * var(--density)), 0.25rem);
+      --space-8: round(nearest, calc(var(--space) * 8 * var(--density)), 0.25rem);
+      --space-12: round(nearest, calc(var(--space) * 12 * var(--density)), 0.25rem);
+      --space-16: round(nearest, calc(var(--space) * 16 * var(--density)), 0.25rem);
+      --space-24: round(nearest, calc(var(--space) * 24 * var(--density)), 0.25rem);
+      --space-32: round(nearest, calc(var(--space) * 32 * var(--density)), 0.25rem);
+    }
+  }
+
   @keyframes пульс {
     from {
       opacity: 1;

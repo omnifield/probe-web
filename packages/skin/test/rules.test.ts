@@ -9,18 +9,17 @@ import { partSelector } from "../src/address.js";
 import type { Skin } from "../src/model.js";
 import { checkSkin, skinRules } from "../src/rules.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
-import { buttonSkin, VOCABULARY } from "./skins.js";
+import { buttonSkin } from "./skins.js";
 
-const vocabulary = { tokens: VOCABULARY };
 
 /** Собирает правила пробного скина — вход, к которому сводится большинство проверок ниже. */
 function rules(skin: Skin = buttonSkin) {
-  return skinRules(skin, lookup, vocabulary);
+  return skinRules(skin, lookup);
 }
 
 /** Имена изъянов — сравнивать удобнее их, а пояснение читает человек. */
 function names(skin: Skin) {
-  return checkSkin(skin, lookup, vocabulary).map((flaw) => flaw.name);
+  return checkSkin(skin, lookup).map((flaw) => flaw.name);
 }
 
 describe("рецепт собирается целиком", () => {
@@ -151,7 +150,7 @@ describe("предок — вторая половина адреса", () => {
 
 describe("именованные отказы", () => {
   it("компонент без паспорта", () => {
-    expect(checkSkin(buttonSkin, emptyLookup, vocabulary).map((f) => f.name)).toEqual([
+    expect(checkSkin(buttonSkin, emptyLookup).map((f) => f.name)).toEqual([
       "unknown-component",
     ]);
   });

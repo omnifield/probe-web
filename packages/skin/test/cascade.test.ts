@@ -24,7 +24,7 @@ import { generateSketchCss, generateSkinCss } from "../src/generate.js";
 import { NODE_ATTRIBUTE } from "../src/marks.js";
 import type { SketchEdit } from "../src/model.js";
 import { lookup } from "./passports.js";
-import { buttonSkin, VOCABULARY } from "./skins.js";
+import { buttonSkin } from "./skins.js";
 
 /** Цвет, который ставит скин базой, и цвет, которым его перебивает правка образца. */
 const SKIN_COLOUR = "rgb(1, 2, 3)";
@@ -33,7 +33,7 @@ const SKETCH_COLOUR = "rgb(9, 9, 9)";
 // Генератор отдаёт ВЛОЖЕННУЮ форму — браузеру она годится как есть, а jsdom её не понимает так
 // же, как не понимает слои. Поэтому проба разворачивает и то и другое: обе вещи — ограничение
 // окружения пробы, а не поставки.
-const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY }));
+const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup));
 
 const edits: readonly SketchEdit[] = [
   {

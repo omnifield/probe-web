@@ -25,7 +25,7 @@ import { generateSkinCss } from "../src/generate.js";
 import { FORCE_ATTRIBUTE } from "../src/marks.js";
 import { partSelector } from "../src/address.js";
 import { lookup } from "./passports.js";
-import { buttonSkin, VOCABULARY } from "./skins.js";
+import { buttonSkin } from "./skins.js";
 import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);
@@ -34,7 +34,7 @@ const passport = passportOf("button")!;
 // Развёрнуто намеренно: генератор отдаёт вложенную форму, а jsdom не понимает ни вложенности,
 // ни слоёв. Оба разворота — ограничение окружения пробы, а не поставки; в браузере вложенная
 // форма работает как есть.
-const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup, { tokens: VOCABULARY }));
+const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup));
 
 /** Селекторы порождённого скина — те, что относятся к координатам, а не к корню документа. */
 const selectors: string[] = [];
