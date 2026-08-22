@@ -40,7 +40,7 @@
 // то, на что опираемся.
 
 import { createRegistry, RenderTree, type AssemblyTree, type ReadablePassport } from "@omnifield/probe-web-assembly";
-import { applySkin } from "@omnifield/probe-web-runtime";
+import { applySkin, makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
 import { Button } from "@omnifield/probe-web-ui";
 import { admits, passportOf } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
@@ -107,6 +107,16 @@ describe("шов с механикой сборки: признак узла", (
   });
 });
 
+// ## Почему проба этого шва СНАЧАЛА ОДЕВАЕТ СТРАНИЦУ
+//
+// Режим — половина скина, а не свойство документа: на голом приложении второй половины нет, и
+// рантайм там режим не ставит вовсе. Значит затемнить голый корень нельзя, и проба, которая
+// это делала, стерегла договорённость, которой больше нет.
+//
+// Одевание тут — предусловие, а не предмет. Спрашиваем по-прежнему одно: попадает ли наш
+// селектор тёмной половины в тот корень, который затемнил ЧУЖОЙ рантайм. Одеваем настоящим
+// переключателем — другого публичного пути поставить опознание на корень нет, а зашей мы
+// атрибут руками, проба перестала бы ловить его переименование.
 describe("шов с рантаймом: тёмная пара", () => {
   const skin: Skin = {
     name: "пара",
@@ -115,24 +125,50 @@ describe("шов с рантаймом: тёмная пара", () => {
   };
 
   /** Селектор тёмной половины — тот, что порождён, а не записанный в пробе. */
-  const darkSelector = selectorsOf(generateSkinCss(skin, lookup)).find((selector) =>
+  const css = generateSkinCss(skin, lookup);
+  const darkSelector = selectorsOf(css).find((selector) =>
     selector.startsWith(":root") && selector !== ":root",
   )!;
 
-  it("порождённая тёмная половина цепляется за корень, который затемнил ЧУЖОЙ рантайм", () => {
+  /**
+   * Источник скинов приложения — наш же порождённый текст. Что именно в листе, здесь не
+   * важно: проба спрашивает СЕЛЕКТОР, а не вычисленный вид (тот проверяет `passage`).
+   */
+  const source: SkinSource = { names: () => [skin.name], css: () => css };
+
+  /** Свой ключ памяти: чужую запись выбора проба трогать не должна. */
+  const worn = makeSkinSwitch(source, { storageKey: "probe-web:шов-тёмная-пара" });
+
+  afterEach(() => {
+    worn.takeOff({ remember: false });
+    worn.dispose();
+  });
+
+  it("порождённая тёмная половина цепляется за корень, который затемнил ЧУЖОЙ рантайм", async () => {
+    await worn.wear(skin.name, { remember: false });
     applySkin({ mode: "dark", remember: false });
 
     expect(document.documentElement.matches(darkSelector)).toBe(true);
   });
 
-  it("в светлом режиме — не цепляется: светлая половина это ОТСУТСТВИЕ признака", () => {
+  it("в светлом режиме — не цепляется: светлая половина это ОТСУТСТВИЕ признака", async () => {
+    await worn.wear(skin.name, { remember: false });
     applySkin({ mode: "light", remember: false });
 
     expect(document.documentElement.matches(darkSelector)).toBe(false);
   });
 
-  it("светлая половина цепляется за корень всегда — она не про режим", () => {
-    applySkin({ mode: "light", remember: false });
+  it("на ГОЛОМ корне тёмная половина не цепляется НИКОГДА — ставить её некуда", () => {
+    applySkin({ mode: "dark", remember: false });
+
+    // Не «мы промолчали», а «менять было нечего»: скин не надет, второй половины не существует.
+    expect(worn.worn()).toBeNull();
+    expect(document.documentElement.matches(darkSelector)).toBe(false);
+  });
+
+  it("светлая половина цепляется за корень всегда — она не про режим", async () => {
+    await worn.wear(skin.name, { remember: false });
+    applySkin({ mode: "dark", remember: false });
 
     expect(document.documentElement.matches(":root")).toBe(true);
   });
