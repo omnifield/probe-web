@@ -122,7 +122,7 @@ describe("импорт пакета", () => {
     )) as Record<string, unknown>;
 
     expect(Object.keys(loaded).sort()).toEqual(
-      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder", "makeSkinSwitch"].sort(),
+      ["mount", "checkStyleOrder", "makeSkinSwitch"].sort(),
     );
   });
 });
@@ -130,21 +130,14 @@ describe("импорт пакета", () => {
 describe("собранные декларации", () => {
   const dts = () => readFileSync(join(pkgRoot, "dist/index.d.ts"), "utf8");
 
-  // Перечень ЯВНЫЙ, а не «содержит»: смысл пробы в том, что лишний экспорт замерзает навсегда.
-  // Список расширен по разрешению architect от 2026-08-19 (`tasker:PROBEWEB-52`): заморожена
-  // СИГНАТУРА `mount()` и идентификатор `#root`, а не запрет на соседние экспорты. Механика
-  // скина едет именованными экспортами ТОЙ ЖЕ точки — подпуть остаётся один.
+  // Перечень ЯВНЫЙ, а не «содержит», и в этом весь смысл пробы: лишний экспорт замерзает
+  // навсегда, а второй путь к тому же результату — второй источник правды. Механика надевания
+  // ОДНА, и снятые имена пресетного пути не имеют права вернуться ни обёрткой, ни
+  // «совместимостью»: краснеть обязано здесь, а не у потребителя через полгода.
   it("объявляют ровно тот перечень значений, который мы называли", () => {
     const exported = [...dts().matchAll(/^export\s+declare\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
 
-    expect(exported).toEqual([
-      "mount",
-      "applySkin",
-      "readSkin",
-      "restoreSkin",
-      "checkStyleOrder",
-      "makeSkinSwitch",
-    ]);
+    expect(exported).toEqual(["mount", "checkStyleOrder", "makeSkinSwitch"]);
   });
 
   it("объявляют ровно тот перечень типов, который мы называли", () => {
@@ -154,9 +147,6 @@ describe("собранные декларации", () => {
 
     expect(exported).toEqual([
       "SkinMode",
-      "SkinChoice",
-      "SkinPatch",
-      "RestoreSkinOptions",
       "StyleMarker",
       "StyleOrderOptions",
       "StyleOrderStatus",
@@ -164,6 +154,7 @@ describe("собранные декларации", () => {
       "SkinSource",
       "SkinSwitchOptions",
       "SkinWearOptions",
+      "SkinWorn",
       "SkinSwitch",
     ]);
   });
