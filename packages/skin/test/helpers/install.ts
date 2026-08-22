@@ -34,6 +34,40 @@ export interface Installed {
   entries: string[];
 }
 
+/**
+ * Окружение для ДЕТЕЙ этого гейта: их вывод — данные, а не текст для человека.
+ *
+ * ## Почему точка запуска вообще думает об окраске
+ *
+ * Гейт РАЗБИРАЕТ то, что печатают дети: у `pnpm pack` берётся путь тарбола, у `tar` — перечень
+ * путей, у `node` — напечатанный ответ, и сравнивается он ТОЧНО. Инструмент, решивший украсить
+ * свой вывод, кладёт в эти строки управляющие последовательности, и данные перестают быть
+ * данными. Оплачено `PWEB-58`: `console.log(true)` в ребёнке красит булево жёлтым, и точное
+ * сравнение ловит `[33mtrue[39m` вместо `true`.
+ *
+ * Красит при этом не терминал. Стандартный вывод здесь труба, а не терминал, и сам по себе
+ * окраску не включает — включает её УНАСЛЕДОВАННАЯ переменная `FORCE_COLOR`, которую ребёнок
+ * получает от нас. Значит и гасить её надо здесь, на запуске ребёнка.
+ *
+ * ## Почему не снаружи
+ *
+ * Погасить окраску в сценарии зоны было бы обходом: способов запуска три (`pnpm test` из корня,
+ * `pnpm test` в папке зоны, `npx nx`), и починился бы один. Проба, отвечающая по-разному на один
+ * и тот же код, — ложный гейт: пару раз мигнув, он обесценивает и настоящую красноту.
+ *
+ * ## Почему обе переменные
+ *
+ * `FORCE_COLOR` читают первой и Node, и семейство `chalk` (её и наследуют — она же и виновата).
+ * `NO_COLOR` — межинструментальный стандарт для тех, кто про `FORCE_COLOR` не знает. Порядок у
+ * Node такой, что одна без другой оставила бы дыру: `FORCE_COLOR` перебивает `NO_COLOR`.
+ *
+ * Читается на КАЖДЫЙ запуск, а не один раз при загрузке модуля: иначе проба, включающая окраску
+ * у себя, проверяла бы снимок окружения вместо настоящего пути.
+ */
+function plainEnv(): NodeJS.ProcessEnv {
+  return { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" };
+}
+
 /** Корень пакета по его имени — там, где он лежит на самом деле. */
 function packageRoot(name: string): string {
   // Идём от разрешённого файла вверх до папки с манифестом: у каждого пакета своя раскладка
@@ -54,10 +88,11 @@ export function installFromTarball(prefix: string): Installed {
   const packed = execFileSync("pnpm", ["pack", "--pack-destination", work], {
     cwd: pkgRoot,
     encoding: "utf8",
+    env: plainEnv(),
   });
   const tarball = packed.trim().split("\n").at(-1) as string;
 
-  const entries = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8" })
+  const entries = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8", env: plainEnv() })
     .trim()
     .split("\n")
     // npm-тарбол кладёт всё под `package/` — сравниваем пути такими, какими их увидит
@@ -66,8 +101,10 @@ export function installFromTarball(prefix: string): Installed {
 
   const install = join(work, "consumer");
   mkdirSync(join(install, "node_modules", "@omnifield"), { recursive: true });
-  execFileSync("tar", ["-xzf", tarball, "-C", work]);
-  execFileSync("mv", [join(work, "package"), join(install, "node_modules", PKG)]);
+  execFileSync("tar", ["-xzf", tarball, "-C", work], { env: plainEnv() });
+  execFileSync("mv", [join(work, "package"), join(install, "node_modules", PKG)], {
+    env: plainEnv(),
+  });
   rmSync(tarball, { force: true });
 
   return { work, install, entries };
@@ -105,6 +142,7 @@ export function runInInstall(install: string, code: string): string {
       cwd: install,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      env: plainEnv(),
     }).trim();
   } catch (error) {
     const failed = error as { stdout?: string; stderr?: string };
