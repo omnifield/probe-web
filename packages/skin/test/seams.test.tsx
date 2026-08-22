@@ -41,7 +41,7 @@
 // то, на что опираемся.
 
 import { createRegistry, RenderTree, type AssemblyTree, type ReadablePassport } from "@omnifield/probe-web-assembly";
-import { applySkin, makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
+import { makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
 import { Button } from "@omnifield/probe-web-ui";
 import { admits, passportOf } from "@omnifield/probe-web-ui/passport";
 import { readFileSync } from "node:fs";
@@ -111,16 +111,18 @@ describe("шов с механикой сборки: признак узла", (
   });
 });
 
-// ## Почему проба этого шва СНАЧАЛА ОДЕВАЕТ СТРАНИЦУ
+// ## Половина приезжает ВМЕСТЕ СО СКИНОМ, и дверь тут одна
 //
-// Режим — половина скина, а не свойство документа: на голом приложении второй половины нет, и
-// рантайм там режим не ставит вовсе. Значит затемнить голый корень нельзя, и проба, которая
-// это делала, стерегла договорённость, которой больше нет.
+// Режим — половина скина, а не свойство документа, и у рантайма это выражено формой вызова:
+// `wear(имя, { mode })`. Отдельной ручки режима нет вовсе — она была бы вторым ответом на
+// вопрос «во что одета страница».
 //
-// Одевание тут — предусловие, а не предмет. Спрашиваем по-прежнему одно: попадает ли наш
-// селектор тёмной половины в тот корень, который затемнил ЧУЖОЙ рантайм. Одеваем настоящим
-// переключателем — другого публичного пути поставить опознание на корень нет, а зашей мы
-// атрибут руками, проба перестала бы ловить его переименование.
+// Поэтому проба надевает: не «сначала оденем, потом затемним», а одним движением — тем самым,
+// которым это делает приложение. Спрашиваем по-прежнему одно: попадает ли наш селектор тёмной
+// половины в тот корень, который затемнил ЧУЖОЙ рантайм.
+//
+// Атрибут и класс проба руками не ставит: зашей мы их здесь, она перестала бы ловить
+// переименование у хозяина — ровно то, ради чего этот файл существует.
 describe("шов с рантаймом: тёмная пара", () => {
   const skin: Skin = {
     name: "пара",
@@ -149,32 +151,42 @@ describe("шов с рантаймом: тёмная пара", () => {
   });
 
   it("порождённая тёмная половина цепляется за корень, который затемнил ЧУЖОЙ рантайм", async () => {
-    await worn.wear(skin.name, { remember: false });
-    applySkin({ mode: "dark", remember: false });
+    await worn.wear(skin.name, { mode: "dark", remember: false });
 
     expect(document.documentElement.matches(darkSelector)).toBe(true);
   });
 
-  it("в светлом режиме — не цепляется: светлая половина это ОТСУТСТВИЕ признака", async () => {
-    await worn.wear(skin.name, { remember: false });
-    applySkin({ mode: "light", remember: false });
+  it("в светлой половине — не цепляется: светлая это ОТСУТСТВИЕ признака", async () => {
+    await worn.wear(skin.name, { mode: "light", remember: false });
 
     expect(document.documentElement.matches(darkSelector)).toBe(false);
   });
 
-  it("на ГОЛОМ корне тёмная половина не цепляется НИКОГДА — ставить её некуда", () => {
-    applySkin({ mode: "dark", remember: false });
-
-    // Не «мы промолчали», а «менять было нечего»: скин не надет, второй половины не существует.
+  it("на ГОЛОМ корне тёмная половина не цепляется НИКОГДА — надевать её не звали", () => {
+    // Половине взяться неоткуда: она приезжает со скином, а скин не надет. Проба заодно держит
+    // и наш вывод: селектор тёмной половины обязан ТРЕБОВАТЬ признака, а не совпадать со всем.
     expect(worn.worn()).toBeNull();
     expect(document.documentElement.matches(darkSelector)).toBe(false);
   });
 
   it("светлая половина цепляется за корень всегда — она не про режим", async () => {
-    await worn.wear(skin.name, { remember: false });
-    applySkin({ mode: "dark", remember: false });
+    await worn.wear(skin.name, { mode: "dark", remember: false });
 
     expect(document.documentElement.matches(":root")).toBe(true);
+  });
+
+  it("надевание БЕЗ имени половины стоящую не сбрасывает — молчание это не «светлая»", async () => {
+    // Новое обещание рантайма, и наш вывод стоит на нём целиком: половина ставится, когда её
+    // НАЗВАЛИ, — своим именем или запомненным. Не названо ни там, ни там — документ не трогается.
+    //
+    // Читай рантайм молчание как «светлая», перекраска скина на лету сбрасывала бы тёмную у
+    // человека, который её выбрал, и наша тёмная половина отцеплялась бы посреди работы.
+    await worn.wear(skin.name, { mode: "dark", remember: false });
+    expect(document.documentElement.matches(darkSelector)).toBe(true);
+
+    await worn.wear(skin.name, { remember: false });
+
+    expect(document.documentElement.matches(darkSelector)).toBe(true);
   });
 });
 
