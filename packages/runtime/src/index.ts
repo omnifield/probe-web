@@ -361,8 +361,8 @@ export function restoreSkin(options: RestoreSkinOptions): SkinChoice {
 
   writePreset(checkedPreset(preset));
 
-  // Режим — только на одетую страницу. На голой его некуда ставить: база объявляет браузеру,
-  // что страница умеет обе пары, и голое приложение следует за человеком само.
+  // Режим — только на одетую страницу. На голой его НЕТ: режим это половина скина, а скина
+  // нет — половине не от чего быть.
   if (mode !== undefined) applyMode(mode);
 
   done();
