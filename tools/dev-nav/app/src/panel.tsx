@@ -17,7 +17,7 @@
 // Поднявшаяся зона появляется сама в течение нескольких секунд.
 
 import { applySkin, readSkin, restoreSkin, type SkinChoice } from "@omnifield/probe-web-runtime";
-import { DEFAULT_PALETTE, themeModelToCss, type ThemeModel } from "@omnifield/probe-web-style";
+import { themeModelToCss, type ThemeModel } from "@omnifield/probe-web-style";
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 interface Zone {
@@ -40,7 +40,9 @@ export function Panel() {
   const [zones, setZones] = createSignal<Zone[]>([]);
   const [current, setCurrent] = createSignal<string>("");
   const [presets, setPresets] = createSignal<PresetItem[]>([]);
-  const [look, setLook] = createSignal<SkinChoice>({ preset: null, mode: "dark" });
+  // Стартовое состояние — ГОЛОЕ, и названо им честно: пресета нет, режим светлый не по выбору
+  // человека, а потому что на голом документе класса режима не существует.
+  const [look, setLook] = createSignal<SkinChoice>({ preset: null, mode: "light", dressed: false });
   const [nonce, setNonce] = createSignal(0);
 
   let frame: HTMLIFrameElement | undefined;
@@ -55,8 +57,9 @@ export function Panel() {
    */
   async function applyPresetCss(id: string | null) {
     const tag = document.getElementById("preset-css");
-    // Дефолтная палитра приезжает файлом `themes.css` — собирать её нечего.
-    if (!id || id === DEFAULT_PALETTE) {
+    // Палитры по умолчанию больше нет: надеваемый набор снят с поставки. Не назвали пресет —
+    // собирать нечего, страница остаётся голой, и это её рабочее состояние.
+    if (!id) {
       tag?.remove();
       return;
     }
@@ -130,10 +133,9 @@ export function Panel() {
       // Перечень приехал — теперь запомненный выбор можно восстановить целиком: до этого
       // момента сохранённый пресет не проходил проверку «есть ли он в перечне» и отбрасывался.
       // `restoreSkin()` ничего не запоминает, поэтому повтор безопасен.
-      const back = restoreSkin({
-        presets: [DEFAULT_PALETTE, ...said.presets.map((item) => item.id)],
-        fallback: { preset: DEFAULT_PALETTE, mode: "dark" },
-      });
+      // Умолчания по пресету нет и не подставляется: не выбрано — значит голо. Режим тоже не
+      // навязываем — он половина скина, и на голой странице его не существует.
+      const back = restoreSkin({ presets: said.presets.map((item) => item.id) });
       if (back.preset !== look().preset || back.mode !== look().mode) apply(back, false);
     } catch {
       setPresets([]);

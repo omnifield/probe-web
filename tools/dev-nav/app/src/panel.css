@@ -18,8 +18,8 @@
 html, body { height: 100%; margin: 0; overflow: hidden; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--п-фон);
+  color: var(--п-текст);
   font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   font-size: var(--font-size-sm);
 }
@@ -33,12 +33,12 @@ body {
 .panel-bar {
   display: flex; align-items: center; gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--card); border-bottom: 1px solid var(--border);
+  background: var(--п-шапка); border-bottom: 1px solid var(--п-граница);
   min-width: 0;
 }
 
 .panel-brand { font-weight: 600; white-space: nowrap; }
-.panel-brand small { color: var(--muted-foreground); font-weight: 400; margin-left: var(--space-1); }
+.panel-brand small { color: var(--п-тихий); font-weight: 400; margin-left: var(--space-1); }
 
 /* Вкладки занимают всю свободную ширину и прокручиваются вбок, а не переносятся:
    перенос растит шапку и съедает рабочую область. */
@@ -56,16 +56,48 @@ body {
 
 .panel-stage { min-height: 0; }
 .panel-stage iframe {
-  width: 100%; height: 100%; border: 0; display: block; background: var(--background);
+  width: 100%; height: 100%; border: 0; display: block; background: var(--п-фон);
 }
 
 .panel-empty {
   height: 100%; display: grid; place-content: center; gap: var(--space-2);
-  text-align: center; color: var(--muted-foreground); padding: var(--space-8);
+  text-align: center; color: var(--п-тихий); padding: var(--space-8);
 }
 .panel-empty code {
-  background: var(--muted); color: var(--foreground);
+  background: var(--п-подсветка); color: var(--п-текст);
   padding: 0 var(--space-1); border-radius: var(--radius-sm);
+}
+
+/* ── СВОЙ ЦВЕТ ────────────────────────────────────────────────────────────────────────────
+   Панель — инструмент, скина у неё нет и не будет: надеваемый набор значений снят с поставки,
+   а половиной скина фреймворк больше не торгует. Значит цвет она задаёт сама.
+
+   Литералами, и это осознанно: ролями было бы враньё — роли ссылаются на ступени, которых без
+   скина не существует, и панель осталась бы бесцветной.
+
+   Режим — по системной настройке человека: своего переключателя у панели нет, а режим теперь
+   половина скина. Инструмент следует за настройкой, как и голая страница. */
+
+:root {
+  --п-фон:      #ffffff;
+  --п-текст:    #1a1a1a;
+  --п-шапка:    #f6f6f7;
+  --п-граница:  #e0e0e2;
+  --п-тихий:    #6b6b70;
+  --п-подсветка:#eeeef0;
+  --п-обвод:    #3b6fd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --п-фон:      #131316;
+    --п-текст:    #ededef;
+    --п-шапка:    #1b1b1f;
+    --п-граница:  #2c2c31;
+    --п-тихий:    #9a9aa2;
+    --п-подсветка:#26262b;
+    --п-обвод:    #7aa2f7;
+  }
 }
 
 /* ── ВРЕМЕННЫЙ ВИД КОНТРОЛОВ ──────────────────────────────────────────────────────────────
@@ -76,7 +108,7 @@ body {
 .panel-btn,
 .panel-select {
   font: inherit;
-  color: var(--foreground);
+  color: var(--п-текст);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -84,25 +116,25 @@ body {
   cursor: pointer;
 }
 
-.panel-tab { white-space: nowrap; color: var(--muted-foreground); }
-.panel-tab:hover { color: var(--foreground); background: var(--muted); }
+.panel-tab { white-space: nowrap; color: var(--п-тихий); }
+.panel-tab:hover { color: var(--п-текст); background: var(--п-подсветка); }
 .panel-tab[aria-selected="true"] {
-  color: var(--foreground);
-  background: var(--muted);
+  color: var(--п-текст);
+  background: var(--п-подсветка);
   font-weight: 600;
 }
 
-.panel-btn { border-color: var(--border); }
-.panel-btn:hover { background: var(--muted); }
+.panel-btn { border-color: var(--п-граница); }
+.panel-btn:hover { background: var(--п-подсветка); }
 .panel-btn-quiet { border-color: transparent; }
 
-.panel-select { border-color: var(--border); }
+.panel-select { border-color: var(--п-граница); }
 
 /* Обвод фокуса — общий и обязательный: клавиатурный обход остаётся единственным способом
    дойти до вкладок, пока клавиш стрелками нет. */
 .panel-tab:focus-visible,
 .panel-btn:focus-visible,
 .panel-select:focus-visible {
-  outline: 2px solid var(--ring, currentColor);
+  outline: 2px solid var(--п-обвод);
   outline-offset: 2px;
 }
