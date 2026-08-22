@@ -74,6 +74,11 @@ const кнопка: SlotRecipe = {
         letterSpacing: "var(--tracking-normal)",
         cursor: "pointer",
         transition: переход,
+        // ВЛОЖЕНИЕМ, и оно здесь по существу: человек, попросивший систему двигать поменьше,
+        // просил об этом всерьёз. Это же единственное место эталона, где формы вывода
+        // РАСХОДЯТСЯ ПО ФОРМЕ, — вложенная оставляет at-правило внутри правила, плоская
+        // выносит наверх. Гейт совпадения стоит ровно на том, что вид от этого не меняется.
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         // Кольцо фокуса — восьмая ступень: она и есть «сильная граница и кольцо фокуса», и
@@ -247,6 +252,7 @@ const гармошка: SlotRecipe = {
         textAlign: "start",
         cursor: "pointer",
         transition: переход,
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         open: { props: { background: "var(--нейтраль-4)", color: "var(--нейтраль-12)" } },
@@ -297,6 +303,7 @@ const гармошка: SlotRecipe = {
         color: "var(--нейтраль-11)",
         background: "var(--нейтраль-3)",
         transition: "transform var(--motion-fast) var(--ease-out)",
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         open: { props: { transform: "rotate(180deg)" } },

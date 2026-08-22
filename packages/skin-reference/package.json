@@ -29,6 +29,7 @@
     "@omnifield/probe-web-ui": "^0.1.0"
   },
   "devDependencies": {
+    "@omnifield/live-check": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-skin": "workspace:*",
     "@omnifield/probe-web-style": "workspace:*",
