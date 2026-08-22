@@ -143,11 +143,15 @@ describe("шов с рантаймом: тёмная пара", () => {
   const source: SkinSource = { names: () => [skin.name], css: () => css };
 
   /** Свой ключ памяти: чужую запись выбора проба трогать не должна. */
-  const worn = makeSkinSwitch(source, { storageKey: "probe-web:шов-тёмная-пара" });
+  const KEY = "probe-web:шов-тёмная-пара";
+  const worn = makeSkinSwitch(source, { storageKey: KEY });
 
   afterEach(() => {
     worn.takeOff({ remember: false });
     worn.dispose();
+    // Память чистим руками: одна проба запоминает выбор намеренно, и утечь в следующую он не
+    // должен — иначе соседняя проба мерила бы вчерашний выбор вместо своего.
+    localStorage.removeItem(KEY);
   });
 
   it("порождённая тёмная половина цепляется за корень, который затемнил ЧУЖОЙ рантайм", async () => {
@@ -185,6 +189,18 @@ describe("шов с рантаймом: тёмная пара", () => {
     expect(document.documentElement.matches(darkSelector)).toBe(true);
 
     await worn.wear(skin.name, { remember: false });
+
+    expect(document.documentElement.matches(darkSelector)).toBe(true);
+  });
+
+  it("названная половина сильнее запомненной — её называют сейчас, а ту выбрали когда-то", async () => {
+    // Вторая сторона того же обещания. Молчание не трогает документ (проба выше), а слово —
+    // трогает, и трогает поверх памяти. Не будь так, человек, переключивший половину, видел бы
+    // вчерашнюю: наша тёмная цеплялась бы не тогда, когда её попросили.
+    await worn.wear(skin.name, { mode: "light" });
+    expect(document.documentElement.matches(darkSelector)).toBe(false);
+
+    await worn.wear(skin.name, { mode: "dark", remember: false });
 
     expect(document.documentElement.matches(darkSelector)).toBe(true);
   });
