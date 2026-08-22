@@ -12,13 +12,7 @@
 import { BASE_MARKER } from "@omnifield/probe-web-style";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  applySkin,
-  checkStyleOrder,
-  readSkin,
-  restoreSkin,
-  type SkinMode,
-} from "../src/index.js";
+import { applySkin, checkStyleOrder, readSkin, restoreSkin } from "../src/index.js";
 
 const STORAGE_KEY = "probe-web:skin";
 
@@ -50,6 +44,18 @@ function givenPresetCss(id: string): HTMLStyleElement {
 }
 
 /**
+ * Настройка режима в системе. Стоит здесь ровно затем, чтобы доказать, что механика её НЕ
+ * СПРАШИВАЕТ: без этой обстановки «не поставили» и «поставили светлый» выглядят одинаково —
+ * тёмная пара это класс, а светлая его отсутствие.
+ */
+function givenSystemMode(mode: "light" | "dark"): void {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: mode === "dark" && query.includes("dark"),
+    media: query,
+  }));
+}
+
+/**
  * Одетая страница — скин надет.
  *
  * Нужна почти каждой пробе про режим: он половина СКИНА, и на голой странице ставить его
@@ -58,13 +64,6 @@ function givenPresetCss(id: string): HTMLStyleElement {
  */
 function givenDressed(name = "фикстура"): void {
   root().setAttribute("data-skin", name);
-}
-
-function givenSystemMode(mode: SkinMode): void {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: mode === "dark" && query.includes("dark"),
-    media: query,
-  }));
 }
 
 beforeEach(() => {
@@ -125,9 +124,6 @@ describe("применение и чтение", () => {
 });
 
 // Режим — ПОЛОВИНА СКИНА, а не свойство документа: цвета у того, чего не сшили, быть не может.
-// Прежняя редакция этого блока утверждала обратное — что режим ортогонален пресету, — и была
-// верна, пока пресет существовал. Пресет перестал быть единицей, ортогональность пережила свой
-// предмет, и правило заменено (решение архитектора 2026-08-22).
 describe("режим принадлежит скину", () => {
   it("переключатель на ГОЛОЙ странице не меняет документ ни на пиксель", () => {
     const before = root().outerHTML;
@@ -223,7 +219,7 @@ describe("память выбора", () => {
   });
 
   it("восстановление НЕ запоминает — человек этого выбора не делал", () => {
-    restoreSkin({ presets: ["twitter"] });
+    restoreSkin({ presets: ["twitter"], fallback: { preset: "twitter" } });
 
     expect(root().getAttribute("data-theme")).toBe("twitter");
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -240,7 +236,9 @@ describe("память выбора", () => {
   it("битая запись в хранилище не роняет запуск", () => {
     localStorage.setItem(STORAGE_KEY, "{это не json");
 
-    expect(() => restoreSkin({ presets: ["twitter"] })).not.toThrow();
+    expect(() =>
+      restoreSkin({ presets: ["twitter"], fallback: { preset: "twitter" } }),
+    ).not.toThrow();
     expect(readSkin().preset).toBe("twitter");
   });
 
@@ -281,73 +279,81 @@ describe("перечень пресетов — ПРИНИМАЕТСЯ, а не 
 
     const restored = restoreSkin({ presets: ["twitter", "dense"] });
 
-    // Пресета нет — берётся первый из перечня. Режим при этом СВОЙ, запомненный:
-    // негодный пресет не повод забыть про режим.
-    expect(restored).toEqual({ preset: "twitter", mode: "dark", dressed: true });
+    // Негодный пресет не заменяется ничем: перечень служит проверке, а не выбору. Режим при
+    // этом СВОЙ, запомненный — негодный пресет не повод забыть про режим.
+    expect(restored).toEqual({ preset: null, mode: "dark", dressed: true });
   });
 
-  it("умолчание — первый в перечне, пока своё не названо", () => {
-    expect(restoreSkin({ presets: ["dense", "twitter"] }).preset).toBe("dense");
+  it("НЕ ВСПОМНИЛОСЬ И ЗАПАСНОГО НЕ НАЗВАЛИ — значит нечего, а не первый из перечня", () => {
+    const restored = restoreSkin({ presets: ["dense", "twitter"] });
+
+    expect(restored.preset).toBeNull();
+    expect(root().hasAttribute("data-theme")).toBe(false);
   });
 
-  it("названное умолчание перебивает порядок перечня", () => {
+  it("названный запасной ставится — это выбор потребителя", () => {
     expect(
       restoreSkin({ presets: ["dense", "twitter"], fallback: { preset: "twitter" } }).preset,
     ).toBe("twitter");
   });
 
-  it("умолчание null означает «без пресета», а не «возьми первый»", () => {
+  it("запасной null означает «без пресета» — то же, что и не назвать", () => {
     expect(restoreSkin({ presets: ["dense"], fallback: { preset: null } }).preset).toBeNull();
     expect(root().hasAttribute("data-theme")).toBe(false);
   });
 
-  it("пустой перечень — законное «пресетов нет»: ставится только режим", () => {
-    givenSystemMode("dark");
+  it("пустой перечень — законное «пресетов нет»: не ставится ничего", () => {
     givenDressed();
 
-    expect(restoreSkin({ presets: [] })).toEqual({ preset: null, mode: "dark", dressed: true });
+    expect(restoreSkin({ presets: [] })).toEqual({ preset: null, mode: "light", dressed: true });
     expect(root().hasAttribute("data-theme")).toBe(false);
   });
 
   it("перечень чужого поставщика встаёт без правок — это обычные строки", () => {
     const foreign = ["acme-light", "acme-contrast"];
+    applySkin({ preset: "acme-contrast", remember: true });
+    root().removeAttribute("data-theme");
 
-    expect(restoreSkin({ presets: foreign }).preset).toBe("acme-light");
+    expect(restoreSkin({ presets: foreign }).preset).toBe("acme-contrast");
   });
 });
 
 describe("режим до первой отрисовки", () => {
-  it("нечего вспоминать — берётся системный режим, а не светлый по умолчанию", () => {
+  it("НЕЧЕГО ВСПОМНИТЬ И ЗАПАСНОГО НЕТ — режим не ставится ничем", () => {
+    // Система при этом говорит ТЁМНЫЙ, и механика её не слушает: настройка системы — не выбор
+    // человека в приложении, а наша догадка о нём. Без этой строки проба ничего не значила бы:
+    // «не поставили» и «поставили светлый» на документе неразличимы.
     givenSystemMode("dark");
     givenDressed();
 
-    expect(restoreSkin({ presets: ["twitter"] }).mode).toBe("dark");
+    const restored = restoreSkin({ presets: ["twitter"] });
+
+    expect(restored.mode).toBe("light");
+    expect(root().classList.contains("dark")).toBe(false);
+    expect(root().className).toBe("");
+  });
+
+  it("названный запасной режим ставится — это выбор потребителя", () => {
+    givenDressed();
+
+    expect(restoreSkin({ presets: ["twitter"], fallback: { mode: "dark" } }).mode).toBe("dark");
     expect(root().classList.contains("dark")).toBe(true);
   });
 
-  it("на ГОЛОЙ странице восстановление режим не ставит — за человеком следует браузер", () => {
-    givenSystemMode("dark");
-
-    const restored = restoreSkin({ presets: ["twitter"] });
-
-    expect(restored.dressed).toBe(false);
-    expect(root().classList.contains("dark")).toBe(false);
-  });
-
-  it("запомненный режим сильнее системного — человек уже выбрал", () => {
-    givenSystemMode("dark");
+  it("запомненный режим сильнее запасного — человек уже выбрал", () => {
     givenDressed();
     applySkin({ preset: "twitter", mode: "light" });
     root().classList.add("dark");
 
-    expect(restoreSkin({ presets: ["twitter"] }).mode).toBe("light");
+    expect(restoreSkin({ presets: ["twitter"], fallback: { mode: "dark" } }).mode).toBe("light");
     expect(root().classList.contains("dark")).toBe(false);
   });
 
-  it("движок без matchMedia не роняет запуск", () => {
-    vi.stubGlobal("matchMedia", undefined);
+  it("на ГОЛОЙ странице режим не ставится даже названный — ставить его некуда", () => {
+    const restored = restoreSkin({ presets: ["twitter"], fallback: { mode: "dark" } });
 
-    expect(restoreSkin({ presets: ["twitter"] }).mode).toBe("light");
+    expect(restored.dressed).toBe(false);
+    expect(root().classList.contains("dark")).toBe(false);
   });
 
   it("зовётся ДО mount(): ей не нужны ни #root, ни body, ни один лист стилей", () => {
@@ -355,7 +361,9 @@ describe("режим до первой отрисовки", () => {
     document.body.innerHTML = "";
     document.head.innerHTML = "";
 
-    expect(() => restoreSkin({ presets: ["twitter"] })).not.toThrow();
+    expect(() =>
+      restoreSkin({ presets: ["twitter"], fallback: { preset: "twitter" } }),
+    ).not.toThrow();
     expect(root().getAttribute("data-theme")).toBe("twitter");
     expect(document.getElementById("root")).toBeNull();
   });
