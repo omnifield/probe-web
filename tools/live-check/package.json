@@ -5,7 +5,15 @@
   "type": "module",
   "description": "Обвязка к настоящему Chromium для вопросов, на которые не отвечает jsdom",
   "exports": {
-    ".": "./chrome.mjs"
+    ".": {
+      "types": "./chrome.d.ts",
+      "default": "./chrome.mjs"
+    }
   },
-  "files": ["chrome.mjs", "README.md"]
+  "files": [
+    "chrome.mjs",
+    "chrome.d.ts",
+    "README.md"
+  ],
+  "types": "./chrome.d.ts"
 }

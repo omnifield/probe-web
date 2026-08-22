@@ -289,6 +289,9 @@ importers:
 
   packages/skin-reference:
     devDependencies:
+      '@omnifield/live-check':
+        specifier: workspace:*
+        version: link:../../tools/live-check
       '@omnifield/probe-web-lint':
         specifier: workspace:*
         version: link:../lint
