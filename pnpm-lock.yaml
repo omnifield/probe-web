@@ -521,9 +521,15 @@ importers:
       '@omnifield/probe-web-runtime':
         specifier: workspace:*
         version: link:../../../packages/runtime
+      '@omnifield/probe-web-skin':
+        specifier: workspace:*
+        version: link:../../../packages/skin
       '@omnifield/probe-web-style':
         specifier: workspace:*
         version: link:../../../packages/style
+      '@omnifield/probe-web-ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
