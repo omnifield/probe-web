@@ -20,6 +20,10 @@
 // Служба ответила и перечень есть · служба ответила, но пуста · службы нет. Лечатся они разным,
 // поэтому и называются разно: пустая служба ждёт первого сохранённого скина, отсутствие службы —
 // её подъёма. Слепи их в одно «ничего нет» — человек пойдёт чинить не то.
+//
+// Ролей у записей нет. Деление на «эталонные» и «свои» заводилось вторым ярлыком вида и снято:
+// роль, выраженная в обход модели, остаётся нашей выдумкой — её не знает ни механика, ни
+// хранилище, ни второй продукт.
 
 import type { Skin } from "@omnifield/probe-web-skin/model";
 
@@ -33,19 +37,8 @@ import type { Skin } from "@omnifield/probe-web-skin/model";
 const BASE =
   (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
 
-/**
- * Ярлыки вида: по ним служба отдаёт нужные записи, не толкуя ни одной.
- *
- * Их два, потому что РОЛЬ у записей разная. Эталон — отправная точка, общая для всех: с него
- * начинают, его правят копией и удалить его нельзя. Пользовательский скин принадлежит тому, кто
- * его сделал, и удаляется им же.
- *
- * Роль выражена КОНВЕРТОМ, а не содержимым: внутри и там и там обычный скин, и служба по-прежнему
- * не заглядывает внутрь. Признак внутри записи потребовал бы поля в модели скина — это чужая
- * зона, и заявка туда поднята отдельно (происхождение скина: от какого эталона произошёл).
- */
-const SKIN_KIND = "skin";
-const REFERENCE_KIND = "skin-reference";
+/** Ярлык вида: по нему служба отдаёт только скины, не толкуя их. */
+const KIND = "skin";
 
 /** Команда, которой поднимают службу. Человеку нужен адрес и команда, а не текст ошибки движка. */
 export const SERVICE_HINT = "pnpm --filter @probe-web/presets start";
@@ -55,7 +48,7 @@ export const SERVICE_HINT = "pnpm --filter @probe-web/presets start";
  *
  * Команды засева здесь нет и не будет: скинов в коде тоже нет. Скин делает ЧЕЛОВЕК и сохраняет
  * его в службу — тем же путём, которым скины появляются всегда. Пустая служба это начало работы,
- * а не поломка, и подсказка обязана вести к работе, а не к чужому семени.
+ * а не поломка, и подсказка обязана вести к работе, а не к встроенному содержимому.
  */
 export const EMPTY_HINT = "скины создаёт человек — сохраните первый из редактора";
 
@@ -78,8 +71,6 @@ export interface SkinRecord {
   readonly label: string;
   /** Имя для машины — оно же имя скина, оно же уезжает на корень. */
   readonly name: string;
-  /** Эталон — отправная точка: правится копией, не удаляется. */
-  readonly reference: boolean;
 }
 
 /** Чужой ответ разбирается, а не приводится типом. */
@@ -122,9 +113,15 @@ async function ask(url: string, init?: RequestInit): Promise<Response> {
  * и запись без него надеть нельзя. Молчаливо подставить ей идентификатор значило бы завести
  * второе имя скина, которого автор не давал.
  */
-/** Перечень одного ярлыка. Записи без машинного имени отбрасываются — надеть их нечем. */
-async function listOf(kind: string, reference: boolean): Promise<SkinRecord[]> {
-  const response = await ask(`${BASE}?kind=${kind}`);
+/**
+ * Перечень скинов службы — без содержимого.
+ *
+ * Записи без машинного имени отбрасываются: имя это то, чем скин зовут на корне, и запись без
+ * него надеть нельзя. Молча подставить ей идентификатор значило бы завести второе имя скина,
+ * которого автор не давал.
+ */
+export async function listSkins(): Promise<SkinRecord[]> {
+  const response = await ask(`${BASE}?kind=${KIND}`);
   const body: unknown = await response.json();
   const items: unknown = (body as { items?: unknown }).items;
 
@@ -137,28 +134,7 @@ async function listOf(kind: string, reference: boolean): Promise<SkinRecord[]> {
       id: text(item.id),
       label: text(item.label) === "" ? text(item.name) : text(item.label),
       name: text(item.name),
-      reference,
     }));
-}
-
-/**
- * Перечень скинов службы — эталоны и пользовательские вместе, без содержимого.
- *
- * Эталоны идут первыми: с них начинают. Два запроса, а не отбор на нашей стороне, — потому что
- * отбирать по ярлыку умеет сама служба, и просить у неё лишнее, чтобы выбросить половину, было
- * бы работой ради работы.
- *
- * Записи без машинного имени отбрасываются: имя это то, чем скин зовут на корне, и запись без
- * него надеть нельзя. Молча подставить ей идентификатор значило бы завести второе имя скина,
- * которого автор не давал.
- */
-export async function listSkins(): Promise<SkinRecord[]> {
-  const [references, mine] = await Promise.all([
-    listOf(REFERENCE_KIND, true),
-    listOf(SKIN_KIND, false),
-  ]);
-
-  return [...references, ...mine];
 }
 
 /**
@@ -188,45 +164,28 @@ export async function readSkin(id: string): Promise<Skin> {
  * @param skin скин целиком
  * @param label имя для человека; не названо — берётся машинное
  */
-export async function saveSkin(
-  skin: Skin,
-  options: { label?: string; reference?: boolean } = {},
-): Promise<SkinRecord> {
-  const reference = options.reference ?? false;
+export async function saveSkin(skin: Skin, label?: string): Promise<SkinRecord> {
   const response = await ask(BASE, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      label: options.label ?? skin.name,
+      label: label ?? skin.name,
       name: skin.name,
-      kind: reference ? REFERENCE_KIND : SKIN_KIND,
+      kind: KIND,
       state: skin,
     }),
   });
 
   const body = (await response.json()) as WireRecord;
 
-  return { id: text(body.id), label: text(body.label), name: text(body.name), reference };
+  return { id: text(body.id), label: text(body.label), name: text(body.name) };
 }
 
 /**
  * Убирает запись из службы. Скин уходит у ВСЕХ — предупреждение об этом на стороне зовущего.
  *
- * ЭТАЛОН НЕ УДАЛЯЕТСЯ. Он отправная точка для всех, и убрать его значит отнять базу у каждого,
- * кто на ней стоит. Правится он копией — «сохранить как новый», — и это единственный законный
- * способ с ним работать.
- *
- * Проверка на НАШЕЙ стороне намеренно: служба ролей не знает и знать не должна — она хранит
- * непрозрачные записи. Роль объявили мы конвертом, нам её и держать.
- *
- * @param record запись, которую убирают
+ * @param id идентификатор записи
  */
-export async function deleteSkin(record: SkinRecord): Promise<void> {
-  if (record.reference) {
-    throw new StoreRefused(
-      `«${record.label}» — эталон: его не удаляют, с него начинают. Сохраните свою копию и правьте её`,
-    );
-  }
-
-  await ask(`${BASE}/${encodeURIComponent(record.id)}`, { method: "DELETE" });
+export async function deleteSkin(id: string): Promise<void> {
+  await ask(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
