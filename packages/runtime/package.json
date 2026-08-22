@@ -28,6 +28,7 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
+    "@omnifield/probe-web-style": "workspace:*",
     "@types/node": "^24.10.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

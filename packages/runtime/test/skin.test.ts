@@ -9,6 +9,7 @@
 // значением: она спрашивает вычисленный на корне токен, и подмена ответа проверяла бы саму
 // подмену. JSDOM разрешает кастом-свойства и из `<style>`, и из inline — сверено 2026-08-19.
 
+import { BASE_MARKER } from "@omnifield/probe-web-style";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -21,15 +22,21 @@ import {
 
 const STORAGE_KEY = "probe-web:skin";
 
-/** Имя маркерного токена — здесь оно ПРОБНОЕ. Механика его не знает, ей его сообщают. */
-const MARKER = "--space";
+/**
+ * Маркерная пара — здесь она ПРОБНАЯ: механика маркера не знает, ей его сообщают.
+ *
+ * Настоящая пара проверяется отдельно и настоящая — см. «маркер настоящий, а не наш» ниже.
+ * Разница между этими двумя местами оплачена: пока все пробы ходили собственным маркером,
+ * переезд настоящего (кастом-свойство → свойство сброса) прошёл мимо них целиком.
+ */
+const MARKER = { property: "--space", value: "0.25rem" };
 
 const root = () => document.documentElement;
 
-/** Базовый CSS: объявляет на корне маркер, который обязан приехать вместе с ним. */
-function givenBaseCss(): HTMLStyleElement {
+/** Базовый CSS: даёт маркерному свойству ровно то значение, которым предъявляется приезд. */
+function givenBaseCss(marker = MARKER): HTMLStyleElement {
   const sheet = document.createElement("style");
-  sheet.textContent = `:root { ${MARKER}: 0.25rem; }`;
+  sheet.textContent = `:root { ${marker.property}: ${marker.value}; }`;
   document.head.appendChild(sheet);
   return sheet;
 }
@@ -364,6 +371,7 @@ describe("проверка порядка подключения", () => {
     expect(checkStyleOrder({ marker: MARKER })).toEqual({
       status: "ok",
       marker: MARKER,
+      seen: MARKER.value,
       preset: "twitter",
       message: "",
     });
@@ -380,7 +388,8 @@ describe("проверка порядка подключения", () => {
     expect(report.status).toBe("missing-base");
     expect(report.preset).toBe("twitter");
     expect(report.message).toContain("twitter");
-    expect(report.message).toContain(MARKER);
+    expect(report.message).toContain(MARKER.property);
+    expect(report.message).toContain(MARKER.value);
     expect(report.message).toMatch(/порядок подключения нарушен/);
     expect(error).toHaveBeenCalledTimes(1);
     expect(error.mock.calls[0]?.[0]).toBe(report.message);
@@ -404,18 +413,84 @@ describe("проверка порядка подключения", () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it("имя маркера принимается снаружи — механика не знает НИ ОДНОГО имени токена", () => {
-    const sheet = document.createElement("style");
-    sheet.textContent = ":root { --совершенно-другой-маркер: 1; }";
-    document.head.appendChild(sheet);
+  it("маркер принимается снаружи — механика не знает НИ ОДНОЙ пары", () => {
+    const foreign = { property: "--совершенно-другой-маркер", value: "1" };
+    givenBaseCss(foreign);
     applySkin({ preset: "twitter" });
 
-    expect(checkStyleOrder({ marker: "--совершенно-другой-маркер" }).status).toBe("ok");
+    expect(checkStyleOrder({ marker: foreign }).status).toBe("ok");
     expect(checkStyleOrder({ marker: MARKER }).status).toBe("missing-base");
   });
 
-  it("маркер не кастом-свойство — отказ, а не вечная ложная тревога", () => {
-    expect(() => checkStyleOrder({ marker: "space" })).toThrow(/начинаться с/);
+  it("ЗНАЧЕНИЕ, а не наличие: свойство есть, но чужое — это НЕ приезд базы", () => {
+    givenBaseCss({ property: MARKER.property, value: "999rem" });
+    applySkin({ preset: "twitter" });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const report = checkStyleOrder({ marker: MARKER });
+
+    expect(report.status).toBe("missing-base");
+    expect(report.seen).toBe("999rem");
+  });
+
+  it("половина пары — отказ: свойство без значения врало бы ЗЕЛЁНЫМ", () => {
+    expect(() => checkStyleOrder({ marker: { property: "box-sizing", value: "" } })).toThrow(
+      /врёт зелёным/,
+    );
+    expect(() => checkStyleOrder({ marker: { property: " ", value: "border-box" } })).toThrow(
+      /ПАРА/,
+    );
+  });
+
+  it("обычное свойство маркером ЗАКОННО — требования «кастом-свойство» больше нет", () => {
+    givenBaseCss({ property: "box-sizing", value: "border-box" });
+
+    expect(checkStyleOrder({ marker: { property: "box-sizing", value: "border-box" } }).status).toBe(
+      "ok",
+    );
+  });
+
+  // ── МАРКЕР НАСТОЯЩИЙ, А НЕ НАШ ──────────────────────────────────────────────────────────
+  //
+  // Пары выше пробные, и этого мало. Настоящий маркер уже переезжал — с кастом-свойства на
+  // свойство сброса, — и переезд прошёл мимо всех проб зоны: они ходили собственным именем,
+  // поэтому остались зелёными, пока вызов в скелете ломался. Хотя бы одна проба обязана ходить
+  // ТОЙ ЖЕ парой, что получит скелет; тогда следующий переезд не пройдёт молча, а покраснеет
+  // здесь. Ради этого зона держит `@omnifield/probe-web-style` в пробных зависимостях: в
+  // поставку он не едет, а перечень зависимостей поставки стережёт `surface.test.ts`.
+  describe("маркер настоящий, а не наш", () => {
+    it("ГЛАВНОЕ: краснеет без базового листа — при том что свойство браузером ОБЪЯВЛЕНО", () => {
+      applySkin({ preset: "twitter" });
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      // Ни одного нашего листа в документе — и при этом свойство маркера у корня есть: его
+      // объявляет сам браузер своим умолчанием. Прежняя проверка («свойство объявлено») на
+      // этом месте сказала бы «база приехала» — и была бы зелёной ровно там, где всё сломано.
+      const seen = getComputedStyle(root()).getPropertyValue(BASE_MARKER.property);
+      expect(seen).not.toBe("");
+      expect(seen).not.toBe(BASE_MARKER.value);
+
+      const report = checkStyleOrder({ marker: BASE_MARKER });
+
+      expect(report.status).toBe("missing-base");
+      expect(report.seen).toBe(seen);
+    });
+
+    it("с приехавшей базой — зелено, и это та же пара", () => {
+      // Настоящий лист объявляет маркер универсальным селектором (`*`), а JSDOM его к корню не
+      // применяет — сверено 2026-08-22 прогоном настоящего `base.css`. Поэтому лист здесь наш,
+      // а ПАРА настоящая: предмет пробы — сравнение значения, а не разбор чужого файла.
+      givenBaseCss(BASE_MARKER);
+      applySkin({ preset: "twitter" });
+
+      expect(checkStyleOrder({ marker: BASE_MARKER }).status).toBe("ok");
+    });
+
+    it("пара приезжает целиком — половины из неё не выковырять", () => {
+      expect(BASE_MARKER.property.trim()).not.toBe("");
+      expect(BASE_MARKER.value.trim()).not.toBe("");
+      expect(String(BASE_MARKER)).toBe(BASE_MARKER.property);
+    });
   });
 
   it("не роняет приложение — диагностика вида не имеет права этого делать", () => {

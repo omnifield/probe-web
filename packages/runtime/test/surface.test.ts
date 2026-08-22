@@ -157,6 +157,7 @@ describe("собранные декларации", () => {
       "SkinChoice",
       "SkinPatch",
       "RestoreSkinOptions",
+      "StyleMarker",
       "StyleOrderOptions",
       "StyleOrderStatus",
       "StyleOrderReport",
