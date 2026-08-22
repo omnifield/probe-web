@@ -33,18 +33,9 @@
     "lint": "pnpm run typecheck",
     "test": "pnpm run build && vitest run"
   },
-  "peerDependencies": {
-    "solid-js": "^1.9.14"
-  },
-  "peerDependenciesMeta": {
-    "solid-js": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "jsdom": "^30.0.1",
-    "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vitest": "^4.1.10"

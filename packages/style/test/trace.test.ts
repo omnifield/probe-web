@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { registerTheme } from "../src/theme.js";
-import { LIGHT } from "./helpers/seeds.js";
+// Лист графа замеров: `buildScale` не зовёт внутри себя ничего трассируемого, поэтому «ровно
+// один вызов» — свойство самого трейса, а не совпадение. `themeModelToCss` здесь не годится:
+// он строит обе половины и даёт пятнадцать замеров подряд.
+import { buildScale } from "../src/scale.js";
+import { SEEDS } from "./helpers/seeds.js";
 import { trace } from "../src/trace.js";
 
 const FLAG = "__PROBE_WEB_STYLE_TRACE__";
@@ -10,7 +13,6 @@ type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
 afterEach(() => {
   delete (globalThis as TraceGlobal)[FLAG];
-  document.head.innerHTML = "";
   vi.restoreAllMocks();
 });
 
@@ -19,7 +21,7 @@ describe("trace", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
 
     trace("замер")();
-    registerTheme({ name: "ocean", light: LIGHT });
+    buildScale(SEEDS.brand, "light");
 
     expect(debug).not.toHaveBeenCalled();
   });
@@ -28,11 +30,11 @@ describe("trace", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
     (globalThis as TraceGlobal)[FLAG] = true;
 
-    registerTheme({ name: "ocean", light: LIGHT });
+    buildScale(SEEDS.brand, "light");
 
     expect(debug).toHaveBeenCalledTimes(1);
     expect(debug.mock.calls[0][0]).toMatch(
-      /^\[probe-web-style] registerTheme\(ocean\) — \d+\.\d{2}ms$/,
+      /^\[probe-web-style] buildScale\(light\) — \d+\.\d{2}ms$/,
     );
   });
 });
