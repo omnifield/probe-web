@@ -307,9 +307,6 @@ importers:
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
