@@ -32,6 +32,15 @@ const declaredIn = (css: string): string[] => [
 const DECLARED = declaredIn(base);
 
 /**
+ * Что снимаем на голом приложении.
+ *
+ * Кастом-свойств в листе не осталось (`PWEB-66`), перечислять нечего — поэтому спрашиваем то,
+ * что в нём ЕСТЬ (сброс) и что он мог бы сказать о режиме. Список короткий и названный: снимок
+ * по пустому перечню отвечал бы «ничего не поехало» и на сломанном листе тоже.
+ */
+const WATCHED = ["color-scheme", "box-sizing", "margin-top", "color", "background-color"];
+
+/**
  * Снимок вычисленных значений корня: объявление режима плюс перечисленные свойства.
  *
  * Имена передаются, а не берутся из одного файла: документ в пробе бывает и голым, и с надетой
@@ -82,15 +91,18 @@ describe("приложение БЕЗ скина", () => {
   });
 
   it("переключение режима не меняет НИ ОДНОГО значения", () => {
-    // Главный гейт задачи. Раньше менялись два: объявление режима браузеру и тёмная пара ролей
-    // из поставляемой палитры. Первое ушло в способность, второй нет вовсе — палитра без
-    // рецептов это половина скина, а половин у скина не бывает.
-    expect(DECLARED.length, "базовый слой не объявил ни одного свойства — снимок пустой").
-      toBeGreaterThan(20);
+    // Главный гейт задачи. Менялось двое: объявление режима браузеру и тёмная пара ролей из
+    // поставляемой палитры. Обоих больше нет.
+    //
+    // СНИМОК СТАЛ ДРУГИМ, и это следствие снятия (`PWEB-66`): кастом-свойств в листе не
+    // осталось ни одного, перечислять нечего. Спрашиваем то, что в листе есть, — сброс, — и
+    // объявление режима. Ноль объявленных свойств здесь не «проба ослепла», а проверяемое
+    // состояние: пустоту стережёт `base-css.test.ts`, а тут важно, что она не зависит от класса.
+    expect(DECLARED, "в листе появилось кастом-свойство — снимок больше не полон").toEqual([]);
 
-    const light = snapshot(DECLARED);
+    const light = snapshot(WATCHED);
     document.documentElement.classList.add("dark");
-    const dark = snapshot(DECLARED);
+    const dark = snapshot(WATCHED);
 
     const moved = Object.keys(light).filter((name) => light[name] !== dark[name]);
     expect(moved, "значение поехало за классом режима на голом приложении").toEqual([]);
@@ -101,9 +113,9 @@ describe("приложение БЕЗ скина", () => {
     // классом можно вернуть так, что снимок выше не заметит, — например объявив свойство,
     // которого в светлой половине нет. Здесь спрашивается сам документ.
     document.documentElement.classList.add("dark");
-    const withClass = snapshot(DECLARED);
+    const withClass = snapshot(WATCHED);
     document.documentElement.classList.remove("dark");
-    const without = snapshot(DECLARED);
+    const without = snapshot(WATCHED);
 
     expect(withClass).toEqual(without);
   });
@@ -136,9 +148,9 @@ describe("положительный контроль: палитра надет
     // имени, и снятие имени возвращает документ к голому состоянию вместе с режимом.
     document.documentElement.removeAttribute(PALETTE_ATTRIBUTE);
 
-    const light = snapshot([...DECLARED, ...PALETTE_NAMES]);
+    const light = snapshot([...WATCHED, ...PALETTE_NAMES]);
     document.documentElement.classList.add("dark");
-    const dark = snapshot([...DECLARED, ...PALETTE_NAMES]);
+    const dark = snapshot([...WATCHED, ...PALETTE_NAMES]);
 
     expect(Object.keys(light).filter((name) => light[name] !== dark[name])).toEqual([]);
   });

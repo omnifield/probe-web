@@ -64,10 +64,6 @@ export const LAYERS: readonly Layer[] = [
 /** Имена токенов слоёв — для контракта и доки. */
 export const LAYER_TOKENS: readonly string[] = LAYERS.map((layer) => layer.name);
 
-/** Генерация CSS-блока шкалы слоёв для `base.css`. */
-export function layerCss(): string {
-  const lines = LAYERS.map(
-    (layer) => `  --${layer.name}: ${layer.value}; /* ${layer.purpose} */`,
-  );
-  return `:root {\n${lines.join("\n")}\n}`;
-}
+// ПЕЧАТИ В ЛИСТ ЗДЕСЬ БОЛЬШЕ НЕТ (`PWEB-66`). Была `layerCss()` — шкала слоёв в базовом слое.
+// Порядок перекрытия остаётся ДАННЫМИ (`LAYERS`, `LAYER_TOKENS`): это контракт, а печатать его
+// всем и молча базовый слой больше не вправе.

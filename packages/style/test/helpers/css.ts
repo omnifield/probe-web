@@ -18,7 +18,16 @@ export const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\
 
 export interface Rule {
   selector: string;
+  /** Кастом-свойства блока, БЕЗ ведущих дефисов в ключе. */
   declarations: Map<string, string>;
+  /**
+   * Обычные свойства блока, имя как написано.
+   *
+   * Отдельной картой, а не вперемешку с кастомными: после снятия ключ `box-sizing` мог бы
+   * прийти и от свойства сброса, и от кастомного `--box-sizing` — разными сущностями с одним
+   * ключом. Спутать их означало бы, что маркер приезда базы иногда находится там, где его нет.
+   */
+  plain: Map<string, string>;
 }
 
 /**
@@ -29,13 +38,16 @@ export interface Rule {
 export const rules = (css: string): Rule[] =>
   [...stripComments(css).matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => {
     const declarations = new Map<string, string>();
+    const plain = new Map<string, string>();
     for (const line of match[2].split(";")) {
-      const [, name, value] = /^\s*--([\w-]+):\s*([\s\S]+)$/.exec(line) ?? [];
-      if (name) declarations.set(name, (value as string).trim());
+      const [, custom, name, value] = /^\s*(--)?([\w-]+):\s*([\s\S]+)$/.exec(line) ?? [];
+      if (!name) continue;
+      (custom ? declarations : plain).set(name, (value as string).trim());
     }
     return {
       selector: match[1].trim().replace(/^@supports[^{]*$/, "@supports"),
       declarations,
+      plain,
     };
   });
 

@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { LAYERS, LAYER_TOKENS, layerCss } from "../src/layer.js";
+import { LAYERS, LAYER_TOKENS } from "../src/layer.js";
 import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 
 // Порядок слоёв — КОНТРАКТ, а не деталь реализации компонента. Пока слой один, `z-index: 1`
@@ -46,28 +44,32 @@ describe("шкала слоёв", () => {
     for (const layer of LAYERS) expect(layer.purpose.length).toBeGreaterThan(10);
   });
 
-  it("слои — целые числа, а не строки и не дроби", () => {
-    for (const layer of LAYERS) expect(Number.isInteger(layer.value)).toBe(true);
-  });
 });
 
-describe("слои в поставке", () => {
-  const built = readFileSync(resolve(import.meta.dirname, "../dist/css/base.css"), "utf8");
+// РАЗДЕЛ «СЛОИ В ПОСТАВКЕ» СНЯТ (`PWEB-66`). Шкала слоёв больше не печатается в лист — базовый
+// слой везёт только сброс. Порядок перекрытия остался ДАННЫМИ (`LAYERS`), и проверяется он
+// выше: это контракт, а не строка в чужом файле.
 
-  it("шкала доехала в base.css", () => {
-    for (const token of LAYER_TOKENS) expect(built).toContain(`--${token}:`);
-  });
-
-  it("слои — не тема: они одинаковы для всех палитр", () => {
-    // Порядок слоёв от бренда не зависит, и место ему в базе, а не в каждой палитре. Прежде
-    // здесь стерёгся и третий перечень — роли; ролей больше нет (`PWEB-61`).
+// РАЗДЕЛ «СЛОИ В ПОСТАВКЕ» СНЯТ (`PWEB-66`): шкала слоёв больше не печатается в лист — базовый
+// слой везёт только сброс. Ушли вместе с ним «шкала доехала в base.css» и «значения — числа
+// без единиц»: обе спрашивали ТЕКСТ, которого нет.
+//
+// Обязательство, которое печати не касалось, осталось и переехало сюда.
+describe("слои — данные, а не лист", () => {
+  it("слои не тема: они одинаковы для всех палитр", () => {
+    // Порядок перекрытия от бренда не зависит, и место ему в контракте, а не в палитре.
     for (const token of LAYER_TOKENS) {
       expect(SCALE_TOKENS).not.toContain(token);
       expect(THEME_META_TOKENS).not.toContain(token);
     }
   });
 
-  it("значения — числа без единиц: `z-index` их не принимает", () => {
-    expect(layerCss()).toMatch(/--z-dialog: \d+;/);
+  it("значение слоя — целое число: `z-index` дробей и единиц не принимает", () => {
+    // Прежде это проверялось по печатному виду (`--z-dialog: 40;`). Печати нет — спрашиваем
+    // данные, и вопрос от этого стал прямее: печатать будет тот, кому шкала понадобится.
+    for (const layer of LAYERS) {
+      expect(Number.isInteger(layer.value), `слой --${layer.name}`).toBe(true);
+      expect(String(layer.value)).toMatch(/^\d+$/);
+    }
   });
 });

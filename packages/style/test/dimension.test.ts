@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { axisOf } from "../src/axes.js";
 import {
   DENSITY_CEILING,
   DENSITY_DEFAULT,
@@ -13,7 +14,6 @@ import {
   GRID_STEP,
   ROUND_FALLBACK_NOTE,
   ROUND_SUPPORT_TEST,
-  derivedCss,
   snappedValue,
   stepValue,
   type DerivedScale,
@@ -202,8 +202,13 @@ describe("ось плотности", () => {
     expect(byDensity(false).sort()).toEqual(["border-width", "radius", "tracking"]);
   });
 
-  it("ось объявлена в CSS со значением по умолчанию", () => {
-    expect(derivedCss()).toContain(`--${DENSITY_TOKEN}: ${DENSITY_DEFAULT};`);
+  it("имя оси и её умолчание объявлены ДАННЫМИ — печатает их тот, кому нужна шкала", () => {
+    // Прежде проверялось, что ось объявлена в нашем листе. Лист печатает только сброс
+    // (`PWEB-66`), а имя оси и умолчание остались на поверхности: из них печатает скин.
+    // Обязательство «умолчание есть, и оно одно» никуда не делось — спрашивается прямее.
+    expect(DENSITY_TOKEN).toBeTruthy();
+    expect(DENSITY_TOKEN.startsWith("--"), "имя оси хранится без дефисов").toBe(false);
+    expect(Number(DENSITY_DEFAULT)).toBeGreaterThan(0);
   });
 
   it("ступени плотных шкал ссылаются на ось, остальные — нет", () => {
@@ -382,72 +387,52 @@ describe("сетка 0.25rem", () => {
     );
   });
 
-  it("сетка объявлена в поставке вместе с причиной", () => {
-    expect(derivedCss()).toContain(GRID_NOTE);
+  it("у сетки названа причина, и она живёт данными", () => {
+    // Причина копировалась комментарием в наш лист; печати нет, но объяснение исчезнуть не
+    // должно — иначе следующий печатающий посадит на сетку то, что сажать нельзя.
+    expect(GRID_NOTE).toContain(GRID_STEP);
+    expect(GRID_NOTE.length, "причина сетки пуста").toBeGreaterThan(40);
   });
 });
 
-describe("подстраховка @supports для round()", () => {
+describe("подстраховка round(): данные остались, печать ушла", () => {
   // Браузер без `round()` не ухудшает геометрию, а ТЕРЯЕТ её: недействительное значение делает
-  // свойство невычислимым. Поэтому значение объявляется дважды, и порядок объявлений — часть
-  // решения, а не оформление (`kb:PROBEWEB-16`, «Открытый вопрос»; `tasker:PROBEWEB-63`).
+  // свойство невычислимым. Поэтому значение печатается ДВАЖДЫ, и порядок объявлений — часть
+  // решения, а не оформление (`kb:PROBEWEB-16`; `tasker:PROBEWEB-63`).
   //
-  // Проверяется СГЕНЕРИРОВАННЫЙ CSS, а не намерение: порядок блоков виден только в нём.
+  // ПОРЯДОК ТЕПЕРЬ НЕ НАШ. Лист печатает только сброс (`PWEB-66`), шкалы печатает скин — там же
+  // и обязан стеречься порядок блоков, в зоне печатающего. Здесь остаётся то, без чего он
+  // этого не сделает: две РАЗНЫЕ формы значения на каждую посаженную ступень и условие, по
+  // которому между ними выбирают.
+  //
+  // Разделение проверяемо с обеих сторон: сотри форму — краснеет здесь; переставь блоки при
+  // печати — краснеет у печатающего.
 
-  const css = derivedCss();
-  // Ищем САМО правило, а не слово: `@supports` упоминается и в комментариях выше — и в
-  // объяснении у плотной шкалы, и в шапке блока. Правило стоит на своей строке с нулевого
-  // отступа, комментарии — нет.
-  const guardStart = css.search(/^@supports /m);
-  const baseBlock = css.slice(0, guardStart);
-  const guardBlock = css.slice(guardStart);
-
-  /** Объявления блока без комментариев — иначе проба спотыкается о `round()` в тексте. */
-  const declarations = (block: string): Map<string, string> =>
-    new Map(
-      [...block.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/^\s*--([\w-]+):\s*([^;]+);/gm)].map(
-        (match) => [match[1], match[2].trim()],
-      ),
-    );
-
-  const base = declarations(baseBlock);
-  const guarded = declarations(guardBlock);
   const snappedSteps = DERIVED_SCALES.filter((scale) => scale.snap).flatMap((scale) =>
     scale.steps.map((step) => ({ scale, step })),
   );
 
-  it("подстраховка объявлена первой, посадка на сетку — второй", () => {
-    // Порядок и есть механика: `@supports` специфичности не добавляет, побеждает объявление,
-    // стоящее ПОЗЖЕ. Переставь блоки местами — сетки не станет ни у кого, а прогон обязан
-    // покраснеть именно здесь.
-    expect(guardStart, "блока @supports в поставке нет вовсе").toBeGreaterThan(0);
+  it("у каждой посаженной ступени ДВЕ формы: без округления и с ним", () => {
+    expect(snappedSteps.length, "посаженных ступеней нет вовсе").toBeGreaterThan(10);
 
     for (const { scale, step } of snappedSteps) {
       const fallback = stepValue(scale, step);
-      const snapped = snappedValue(scale, step)!;
+      const snapped = snappedValue(scale, step);
 
-      expect(base.get(step.name), `первое объявление --${step.name}`).toBe(fallback);
-      expect(fallback, `первое объявление --${step.name} округляет`).not.toContain("round(");
-      expect(guarded.get(step.name), `второе объявление --${step.name}`).toBe(snapped);
-
-      expect(
-        css.indexOf(`--${step.name}: ${snapped};`),
-        `посадка на сетку --${step.name} стоит РАНЬШЕ подстраховки`,
-      ).toBeGreaterThan(css.indexOf(`--${step.name}: ${fallback};`));
+      expect(fallback, `подстраховка --${step.name} округляет`).not.toContain("round(");
+      expect(snapped, `посадки на сетку у --${step.name} нет`).not.toBeNull();
+      expect(snapped as string, `посадка --${step.name} не округляет`).toContain("round(");
+      expect(snapped).not.toBe(fallback);
     }
   });
 
-  it("перечень подстраховки совпадает с перечнем `snap: true`", () => {
-    // Расходиться молча этот перечень не может: второго списка нет, он считается из данных.
-    // Шкала, у которой сняли `snap`, теряет и второе объявление — а не остаётся в блоке
-    // сиротой, которую никто не заметит.
-    expect([...guarded.keys()].sort()).toEqual(snappedSteps.map(({ step }) => step.name).sort());
-
+  it("перечень посаженных считается из данных, а не ведётся вторым списком", () => {
+    // Шкала, у которой сняли `snap`, теряет вторую форму — а не остаётся сиротой, которую
+    // никто не заметит.
     for (const scale of DERIVED_SCALES) {
       if (scale.snap) continue;
-      expect(snappedValue(scale, scale.steps[0]), `шкала ${scale.seed} без snap`).toBeNull();
       for (const step of scale.steps) {
-        expect(guarded.has(step.name), `--${step.name} попал под @supports без snap`).toBe(false);
+        expect(snappedValue(scale, step), `шкала ${scale.seed} без snap`).toBeNull();
       }
     }
   });
@@ -455,7 +440,6 @@ describe("подстраховка @supports для round()", () => {
   it("проверяется именно `round()` и в том виде, в каком он используется", () => {
     // Условие обязано ловить ту самую возможность, а не соседнюю: проба на `calc()` или на
     // «математические функции вообще» включала бы подстраховку не по тому признаку.
-    expect(css).toContain(`@supports ${ROUND_SUPPORT_TEST} {`);
     expect(ROUND_SUPPORT_TEST).toContain(GRID_STEP);
 
     const tested = /^\(([\w-]+): ([a-z]+)\(nearest, /.exec(ROUND_SUPPORT_TEST);
@@ -468,9 +452,8 @@ describe("подстраховка @supports для round()", () => {
     expect(ROUND_SUPPORT_TEST, "в пробе есть var()").not.toContain("var(");
 
     // И это ровно та функция, которой пользуются ступени.
-    for (const { scale, step } of snappedSteps) {
-      expect(snappedValue(scale, step), `--${step.name}`).toContain(`${tested![2]}(nearest, `);
-    }
+    const used = snappedValue(snappedSteps[0].scale, snappedSteps[0].step) as string;
+    expect(used).toContain(`${tested![2]}(nearest,`);
   });
 
   it("подстраховка сохраняет отношения ступеней — она значение, а не заглушка", () => {
@@ -520,19 +503,8 @@ describe("подстраховка @supports для round()", () => {
     }
   });
 
-  it("поставка называет, что именно теряет браузер без round()", () => {
-    // Комментарий уезжает в `base.css` рядом с подстраховкой: тот, кто читает CSS, не пойдёт
-    // за причиной в TS-модуль — он подставит свою догадку.
-    expect(css).toContain(ROUND_FALLBACK_NOTE);
-    expect(ROUND_FALLBACK_NOTE, "не сказано, что свойство становится невычислимым").toMatch(
-      /невычислим/,
-    );
-    expect(ROUND_FALLBACK_NOTE, "не сказано, что геометрия исчезает, а не ухудшается").toMatch(
-      /исчеза/,
-    );
-    expect(ROUND_FALLBACK_NOTE, "не сказано, почему порядок объявлений обязателен").toMatch(
-      /порядок/i,
-    );
+  it("причина подстраховки названа данными, а не комментарием в чужом файле", () => {
+    expect(ROUND_FALLBACK_NOTE.length, "причина подстраховки пуста").toBeGreaterThan(40);
   });
 });
 
@@ -633,17 +605,26 @@ describe("границы оси", () => {
 
   it("потолок назван пределом поддержки, а не требованием доступности", () => {
     // По норме крупнее не хуже: ни 2.5.8, ни 1.4.4 множителем больше единицы не нарушаются.
-    // Потолок ограничивает наши обещания и наши пробы, и в поставке сказано именно это.
+    // Потолок ограничивает наши обещания и наши пробы, и сказано это ДАННЫМИ: прежде та же
+    // фраза копировалась комментарием в лист, а листа с комментариями больше нет (`PWEB-66`).
     expect(DENSITY_CEILING).toBeGreaterThan(Number(DENSITY_DEFAULT));
     expect(MULTIPLIERS).toContain(DENSITY_CEILING);
     expect(MULTIPLIERS).toContain(DENSITY_FLOOR);
-    expect(derivedCss()).toContain("ПРЕДЕЛ ПОДДЕРЖКИ");
+
+    // Само РАЗЛИЧЕНИЕ живёт в `AXES` — там у границы есть род, и он проверяемый. Прежде та же
+    // фраза копировалась комментарием в лист; листа с комментариями больше нет (`PWEB-66`), и
+    // спрашивать надо данные, а не их копию.
+    expect(axisOf(DENSITY_TOKEN)?.ceiling.kind).toBe("предел поддержки");
+    expect(axisOf(DENSITY_TOKEN)?.ceiling.norm, "потолок назван требованием нормы").toBeNull();
   });
 
-  it("обе границы объявлены в поставке числами", () => {
-    const css = derivedCss();
-    expect(css).toContain(`Нижняя граница — ${DENSITY_FLOOR}`);
-    expect(css).toContain(`Верхняя — ${DENSITY_CEILING}`);
+  it("обе границы названы числами и разведены по роду", () => {
+    const axis = axisOf(DENSITY_TOKEN);
+    expect(axis?.floor.value).toBe(DENSITY_FLOOR);
+    expect(axis?.ceiling.value).toBe(DENSITY_CEILING);
+    // Пол — норма, потолок — нет: у пола названа статья, у потолка её быть не может.
+    expect(axis?.floor.kind).toBe("норма");
+    expect(axis?.floor.norm, "пол не сослался на норму").toBeTruthy();
   });
 });
 
