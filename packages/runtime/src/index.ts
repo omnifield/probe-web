@@ -13,7 +13,7 @@
 import type { JSX } from "solid-js";
 import { render } from "solid-js/web";
 
-import { DEFAULT_STORAGE_KEY, recall, remember } from "./skin-memory.js";
+import { DEFAULT_STORAGE_KEY, recall, remember, type Remembered } from "./skin-memory.js";
 import {
   readDark,
   readPreset,
@@ -104,14 +104,29 @@ export function mount(root: () => JSX.Element): void {
 // механику без единой правки.
 // ────────────────────────────────────────────────────────────────────────────────────────────
 
-/** Режим: светлая или тёмная пара. Ортогонален пресету (инвариант 3). */
+/** Режим: светлая или тёмная пара. Половина СКИНА, а не свойство документа. */
 export type SkinMode = "light" | "dark";
 
 /** Что стоит на корне документа. */
 export interface SkinChoice {
   /** Идентификатор пресета в `data-theme`; `null` — пресет не стоит, приложение на базе. */
   preset: string | null;
+  /**
+   * Режим, СТОЯЩИЙ на документе сейчас.
+   *
+   * На голом приложении он всегда `light`, и это не выбор человека, а отсутствие выбора:
+   * тёмная пара выражается классом, а на голом документе класса нет. Что выбрал человек,
+   * помнит хранилище, и его выбор встанет, когда наденут скин.
+   */
   mode: SkinMode;
+  /**
+   * Надет ли скин.
+   *
+   * Здесь же ответ на вопрос «взялся ли режим»: не надет — менять было нечего, и документ не
+   * тронут. Ради этого поле и заведено — состояние «менять нечего» обязано быть отличимо от
+   * состояния «поменяли», а по одному только `mode` они неразличимы.
+   */
+  dressed: boolean;
 }
 
 /**
@@ -210,6 +225,33 @@ function systemMode(): SkinMode {
 }
 
 /**
+ * Одета ли страница. ЕДИНСТВЕННОЕ место, где живёт этот ответ.
+ *
+ * Спрашиваем документ, а не зону скина и не свою память: скин надет ровно тогда, когда на
+ * корне стоит его опознание. Заведи мы второй ответ — флаг в модуле, поле в переключателе, —
+ * они разошлись бы на первой же странице, которая оделась руками.
+ */
+function dressed(): boolean {
+  return readWorn() !== null;
+}
+
+/**
+ * Ставит режим на документ, ЕСЛИ его есть куда ставить.
+ *
+ * Режим — половина скина, и на голом приложении второй половины нет: футболку красят после
+ * того, как сшили. Поэтому переключатель на голой странице не меняет ни пикселя — не потому,
+ * что мы промолчали, а потому что менять нечего. Выбор человека при этом не теряется: он
+ * лежит в памяти и встанет при надевании.
+ *
+ * @returns взялся ли режим
+ */
+function applyMode(mode: SkinMode): boolean {
+  if (!dressed()) return false;
+  writeDark(mode === "dark");
+  return true;
+}
+
+/**
  * Ставит пресет и режим на корень документа и (по умолчанию) запоминает выбор.
  *
  * Поля правки независимы: `applySkin({ mode: "dark" })` не трогает `data-theme`, а
@@ -217,18 +259,32 @@ function systemMode(): SkinMode {
  * только значения на корне, поэтому открытые панели, фокус и ввод переживают смену вида
  * (инвариант 9).
  *
+ * **РЕЖИМ БЕЗ НАДЕТОГО СКИНА НЕ ДЕЛАЕТ НИЧЕГО.** Он половина скина, а не свойство документа:
+ * цвета у того, чего не сшили, быть не может. Голая страница от переключателя не меняется ни
+ * на пиксель, и узнать это можно по `dressed` в ответе. Выбор при этом ЗАПОМИНАЕТСЯ — человек
+ * его сделал, — и встанет сам, когда скин наденут.
+ *
  * @param patch что изменить; отсутствующее поле остаётся как было
- * @returns что стоит на корне ПОСЛЕ правки
+ * @returns что стоит на корне ПОСЛЕ правки — вместе с ответом, одета ли страница
  * @throws если идентификатор пресета — пустая строка
  */
 export function applySkin(patch: SkinPatch): SkinChoice {
   const done = trace("applySkin");
 
   if (patch.preset !== undefined) writePreset(checkedPreset(patch.preset));
-  if (patch.mode !== undefined) writeDark(patch.mode === "dark");
+  if (patch.mode !== undefined) applyMode(patch.mode);
 
   const choice = readSkin();
-  if (patch.remember !== false) remember(patch.storageKey ?? DEFAULT_STORAGE_KEY, choice);
+
+  if (patch.remember !== false) {
+    // Запоминается ВЫБРАННОЕ, а не стоящее на документе. Разница видна ровно на голой
+    // странице: режим туда не встал, и запиши мы `choice.mode`, выбор человека затёрся бы
+    // светлым — тем самым, которого он не выбирал. Режим, который не назвали, не трогается
+    // вовсе: запись идёт слиянием, и отсутствующее поле остаётся прежним.
+    const record: Remembered = { preset: choice.preset };
+    if (patch.mode !== undefined) record.mode = patch.mode;
+    remember(patch.storageKey ?? DEFAULT_STORAGE_KEY, record);
+  }
 
   done();
   return choice;
@@ -244,6 +300,7 @@ export function readSkin(): SkinChoice {
   return {
     preset: readPreset(),
     mode: readDark() ? "dark" : "light",
+    dressed: dressed(),
   };
 }
 
@@ -287,7 +344,11 @@ export function restoreSkin(options: RestoreSkinOptions): SkinChoice {
   const mode = remembered?.mode ?? fallback.mode ?? systemMode();
 
   writePreset(checkedPreset(preset));
-  writeDark(mode === "dark");
+
+  // Режим — только на одетую страницу. На голой его некуда ставить, и это не потеря: база
+  // объявляет браузеру, что страница умеет обе пары, и голое приложение следует за настройкой
+  // человека само. Поставь мы класс — мы назвали бы за него конкретный режим.
+  applyMode(mode);
 
   done();
   return readSkin();
@@ -509,6 +570,12 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
 
     sheet.put(css);
     writeWorn(checked);
+
+    // Скин надет — у режима наконец появилась вторая половина, и запомненный выбор человека
+    // встаёт. Не запомнено ничего — идём за настройкой человека в системе: это не наш выбор
+    // за него, а тот же ответ, который дал бы браузер голой странице.
+    writeDark((recall(key)?.mode ?? systemMode()) === "dark");
+
     if (wearOptions.remember !== false) remember(key, { skin: checked });
 
     done();
@@ -523,6 +590,13 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
 
     sheet.drop();
     writeWorn(null);
+
+    // Голое состояние — целиком голое: режим уходит вместе со скином, чьей половиной он был.
+    // Оставь мы класс — на голой странице стоял бы вид, которого не из чего вывести, и
+    // переключатель на ней перестал бы быть бездействующим: одно нажатие всё-таки меняло бы
+    // документ. Выбор человека при этом остаётся в памяти и вернётся со следующим скином.
+    writeDark(false);
+
     if (wearOptions.remember !== false) remember(key, { skin: null });
 
     done();

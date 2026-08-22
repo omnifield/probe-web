@@ -163,15 +163,49 @@ describe("механика необязательна", () => {
   });
 });
 
-describe("режим отдельно от скина", () => {
-  it("надевание и снятие скина не трогают тёмную пару", async () => {
-    applySkin({ mode: "dark" });
-    const skin = makeSkinSwitch(givenSource());
+// Режим — половина СКИНА: у голого приложения его нет, надетый скин его приносит, снятый
+// уносит. Прежняя редакция блока проверяла обратное — что режим скина не касается, — и была
+// верна, пока единицей был пресет (решение архитектора 2026-08-22).
+describe("режим принадлежит скину", () => {
+  it("надевание применяет ЗАПОМНЕННЫЙ режим — выбор человека ждал своей половины", async () => {
+    applySkin({ mode: "dark" }); // голая страница: выбор запомнен, документ не тронут
+    expect(root().classList.contains("dark")).toBe(false);
 
-    await skin.wear("twitter");
+    await makeSkinSwitch(givenSource()).wear("twitter");
+
     expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("нечего вспоминать — надевание идёт за настройкой человека в системе", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("dark"),
+      media: query,
+    }));
+
+    await makeSkinSwitch(givenSource()).wear("twitter");
+
+    expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("снятие уносит режим вместе со скином — голое состояние целиком голое", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter");
+    applySkin({ mode: "dark" });
 
     skin.takeOff();
+
+    expect(root().classList.contains("dark")).toBe(false);
+    expect(root().className).toBe("");
+  });
+
+  it("снятый режим не забыт: следующий скин надевается с ним же", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter");
+    applySkin({ mode: "dark" });
+    skin.takeOff();
+
+    await skin.wear("brutal");
+
     expect(root().classList.contains("dark")).toBe(true);
   });
 
