@@ -90,9 +90,12 @@
     "payload": "D=\"${TMPDIR:-/tmp}/omnifield-probe-web-payload\"; rm -rf \"$D\" && baser pack . --into \"$D\""
   },
   "devDependencies": {
+    "@omnifield/probe-web-runtime": "workspace:*",
+    "@omnifield/probe-web-style": "workspace:*",
     "@types/ejs": "^3.1.5",
     "@types/node": "^24.10.1",
     "ejs": "^3.1.10",
+    "happy-dom": "^20.11.6",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
