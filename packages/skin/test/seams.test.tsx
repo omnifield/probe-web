@@ -1,9 +1,10 @@
 // ШВЫ С ЧУЖИМИ ЗОНАМИ — то, на что механика скина опирается, но чем не владеет.
 //
-// Швы двух родов, и ломаются они одинаково — молча:
+// Швы трёх родов, и ломаются они одинаково — молча:
 //
 //   • **ИМЕНА**, которые мы адресуем, а объявляет и ставит кто-то другой;
-//   • **ПОВЕДЕНИЕ** чужой функции, от которого зависит наш ответ.
+//   • **ПОВЕДЕНИЕ** чужой функции, от которого зависит наш ответ;
+//   • **ОБЪЯВЛЕНИЕ** в чужой поставке, которое наш вывод обязан перебить в каскаде.
 //
 // Место одно намеренно: сюда смотрят, когда спрашивают «на что мы опираемся у соседей». Разложи
 // эти пробы по предметным файлам — и вопрос перестанет иметь адрес.
@@ -43,6 +44,9 @@ import { createRegistry, RenderTree, type AssemblyTree, type ReadablePassport } 
 import { applySkin, makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
 import { Button } from "@omnifield/probe-web-ui";
 import { admits, passportOf } from "@omnifield/probe-web-ui/passport";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+
 import postcss from "postcss";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -171,6 +175,71 @@ describe("шов с рантаймом: тёмная пара", () => {
     applySkin({ mode: "dark", remember: false });
 
     expect(document.documentElement.matches(":root")).toBe(true);
+  });
+});
+
+// ## Способность объявляет база, выбор называем мы
+//
+// Третий шов того же рода, что первые два, только опираемся здесь не на имя и не на поведение
+// функции, а на ОБЪЯВЛЕНИЕ в чужой поставке: базовый слой говорит браузеру `color-scheme:
+// light dark` — «страница умеет обе, следуй за человеком». Наш ответ про надетую половину
+// обязан его перебить, иначе системные элементы уйдут за настройкой человека, а компоненты
+// останутся со скином.
+//
+// Материал НАСТОЯЩИЙ — тот `base.css`, который уезжает потребителю. Сверять с копией строки
+// здесь бессмысленно: вопрос не «что написано у соседа», а «кто побеждает в каскаде».
+describe("шов с базовым слоем: способность против выбора", () => {
+  const base = readFileSync(
+    createRequire(import.meta.url).resolve("@omnifield/probe-web-style/base.css"),
+    "utf8",
+  );
+
+  const skin: Skin = {
+    name: "пара",
+    variables: { light: { ink: "black" }, dark: { ink: "white" } },
+    recipes: {},
+  };
+
+  /** Порядок листов — тот, что объявлен контрактом подключения: база, затем скин. */
+  function sheets(...texts: readonly string[]): HTMLStyleElement[] {
+    return texts.map((css) => {
+      const tag = document.createElement("style");
+      tag.textContent = css;
+      document.head.append(tag);
+      return tag;
+    });
+  }
+
+  /** Что документ отвечает про режим сейчас. */
+  function mode(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();
+  }
+
+  afterEach(() => {
+    document.head.querySelectorAll("style").forEach((tag) => tag.remove());
+  });
+
+  it("голое приложение следует за человеком — база объявляет способность", () => {
+    sheets(base);
+
+    expect(mode()).toBe("light dark");
+  });
+
+  it("надетый скин перебивает способность и называет свою половину", () => {
+    sheets(base, generateSkinCss(skin, lookup));
+
+    expect(mode()).toBe("light");
+    document.documentElement.classList.add("dark");
+    expect(mode()).toBe("dark");
+  });
+
+  it("скин снят — следование настройке человека возвращается", () => {
+    const [, worn] = sheets(base, generateSkinCss(skin, lookup));
+
+    expect(mode()).toBe("light");
+    worn!.remove();
+
+    expect(mode()).toBe("light dark");
   });
 });
 

@@ -12,6 +12,7 @@ import { generateSketchCss, generateSkinCss, SkinRefused } from "../src/generate
 import { FORCE_ATTRIBUTE, LAYER_ORDER, NODE_ATTRIBUTE, SKETCH_LAYER, SKIN_LAYER } from "../src/marks.js";
 import type { SketchEdit, Skin } from "../src/model.js";
 import { skinRules } from "../src/rules.js";
+import { inLayer } from "./helpers/layers.js";
 import { buttonPassport, lookup } from "./passports.js";
 import { buttonSkin, VOCABULARY } from "./skins.js";
 
@@ -191,13 +192,15 @@ describe("машинный разрез: генератор отдаёт ТОЛ�
 
 describe("переменные и движения", () => {
   it("светлая половина встаёт на корень, тёмная — на класс режима", () => {
-    const roots = rulesOf(skinCss).filter((rule) => rule.selector.startsWith(":root"));
+    const roots = rulesOf(skinCss)
+      .filter(inLayer)
+      .filter((rule) => rule.selector.startsWith(":root"));
 
     expect(roots.map((rule) => rule.selector)).toEqual([":root", ":root.dark, :root .dark"]);
   });
 
   it("имя переменной уезжает с двумя дефисами, как записано в зоне значений", () => {
-    const light = rulesOf(skinCss).find((rule) => rule.selector === ":root")!;
+    const light = rulesOf(skinCss).find((rule) => inLayer(rule) && rule.selector === ":root")!;
 
     expect(light.toString()).toContain("--skin-ink:");
   });
