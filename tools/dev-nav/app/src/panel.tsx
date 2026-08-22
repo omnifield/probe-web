@@ -10,14 +10,23 @@
 //   • ДОСТУПНОСТЬ НЕ ИМИТИРУЕТСЯ. Там, где нативный элемент её даёт сам (`select`, `button`),
 //     берётся он. Там, где не даёт (вкладки), роли расставлены руками и помечены как долг —
 //     подделывать клавиатурный обход вкладок здесь не станем, это работа кита;
-//   • СВОЙ ВИД ЗНАЕТ, ЧТО ОН ВРЕМЕННЫЙ. Значения берутся ролями слоя, а не литералами: когда
-//     приедет скин, панель сменит разметку, а не палитру.
+//   • СВОЙ ВИД ЗНАЕТ, ЧТО ОН ВРЕМЕННЫЙ. Панель задаёт его сама, литералами — см. `panel.css`.
 //
 // ЗОНЫ ПОКАЗЫВАЮТСЯ ТОЛЬКО ПОДНЯТЫЕ (решение user): вкладка, которую нельзя открыть, — это шум.
 // Поднявшаяся зона появляется сама в течение нескольких секунд.
+//
+// ОДЕВАЕТСЯ ПАНЕЛЬ ШТАТНЫМ НАДЕВАНИЕМ, и другого пути нет. Прежде здесь жил пресетный путь
+// (`applySkin`, `restoreSkin`, `readSkin`, атрибут `data-theme`) — вторая механика того же
+// потока, снятая целиком (`PWEB-72`). Панель была её последним потребителем.
 
-import { applySkin, readSkin, restoreSkin, type SkinChoice } from "@omnifield/probe-web-runtime";
-import { themeModelToCss, type ThemeModel } from "@omnifield/probe-web-style";
+import {
+  makeSkinSwitch,
+  type SkinMode,
+  type SkinSwitch,
+  type SkinWorn,
+} from "@omnifield/probe-web-runtime";
+import { generateSkinCss, type Skin } from "@omnifield/probe-web-skin";
+import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 interface Zone {
@@ -36,71 +45,72 @@ interface PresetItem {
 // часть механики, и второй ключ рядом означал бы два места, где живёт ответ на вопрос «чем
 // страница одета». Панель — первый живой потребитель этой механики.
 
+/**
+ * Источник скинов панели: перечень и текст приходят из службы хранилища.
+ *
+ * Служба хранит СКИН — переменные и рецепты одной записью, — а не готовый файл. Порождает из
+ * него CSS та же механика, которой пользуется приложение человека: своего пути сборки у панели
+ * быть не должно, иначе она показывала бы не то, что увидит человек.
+ */
+const SOURCE = {
+  names: async (): Promise<readonly string[]> => {
+    const said = (await (await fetch("/__nav/presets")).json()) as { presets: PresetItem[] };
+    return said.presets.map((item) => item.id);
+  },
+  css: async (name: string): Promise<string> => {
+    const record = (await (await fetch(`/__nav/preset/${encodeURIComponent(name)}`)).json()) as {
+      state?: Skin;
+    };
+    // Отказ источника не глотаем: надевание обязано узнать, что текста нет, — иначе на корне
+    // останется опознание скина, которого не приехало.
+    if (!record.state) throw new Error(`[dev-nav] в записи «${name}» нет скина`);
+    return generateSkinCss(record.state, passportOf);
+  },
+};
+
 export function Panel() {
   const [zones, setZones] = createSignal<Zone[]>([]);
   const [current, setCurrent] = createSignal<string>("");
   const [presets, setPresets] = createSignal<PresetItem[]>([]);
-  // Стартовое состояние — ГОЛОЕ, и названо им честно: пресета нет, режим светлый не по выбору
-  // человека, а потому что на голом документе класса режима не существует.
-  const [look, setLook] = createSignal<SkinChoice>({ preset: null, mode: "light", dressed: false });
+  // Стартовое состояние — ГОЛОЕ, и названо им честно: скина нет, половины нет. Ни то, ни другое
+  // не придумывается: не выбрано — значит нечего.
+  const [worn, setWorn] = createSignal<SkinWorn | null>(null);
   const [nonce, setNonce] = createSignal(0);
+
+  const skins: SkinSwitch = makeSkinSwitch(SOURCE);
+  onCleanup(() => skins.dispose());
 
   let frame: HTMLIFrameElement | undefined;
 
   const live = createMemo(() => zones().filter((zone) => zone.up));
 
   /**
-   * Собрать стили выбранного пресета ИЗ СЛУЖБЫ.
+   * Надеть скин на СВОЮ страницу штатным надеванием.
    *
-   * Служба хранит МОДЕЛЬ, а не готовый файл: бэк хранит, зона понимает. Собирает из неё вид
-   * генератор БАЗЫ, и своего пути сборки у панели быть не должно.
+   * Половина едет вместе со скином, а не отдельной ручкой: она часть скина, и вторая ручка была
+   * бы вторым ответом на вопрос «во что одета страница».
+   *
+   * Отказ источника не роняет панель: она рабочий инструмент, и недоступная служба пресетов —
+   * не повод терять вкладки зон. На корне при этом остаётся то, что было.
    */
-  async function applyPresetCss(id: string | null) {
-    const tag = document.getElementById("preset-css");
-    // Палитры по умолчанию больше нет: надеваемый набор снят с поставки. Не назвали пресет —
-    // собирать нечего, страница остаётся голой, и это её рабочее состояние.
-    if (!id) {
-      tag?.remove();
-      return;
-    }
+  async function dress(name: string | null, mode?: SkinMode) {
     try {
-      const record = (await (await fetch(`/__nav/preset/${encodeURIComponent(id)}`)).json()) as {
-        state?: ThemeModel;
-      };
-      const model = record.state;
-      if (!model) return;
-      const css = themeModelToCss(model);
-      const style = (tag as HTMLStyleElement | null) ?? document.createElement("style");
-      style.id = "preset-css";
-      style.textContent = css;
-      if (!tag) document.head.append(style);
+      setWorn(name === null ? (skins.takeOff(), null) : await skins.wear(name, { mode }));
     } catch {
-      /* службы нет — панель остаётся на умолчаниях базы, оформление необязательно */
+      /* службы нет или запись негодна — панель остаётся как была */
     }
   }
 
-  function apply(next: SkinChoice, remember = true) {
-    // Идемпотентность: `apply` зовётся и на загрузку кадра, поэтому запись сигнала без
-    // изменений — лишний повод для перерисовки. Дешевле сравнить, чем ловить последствия.
-    const same = next.preset === look().preset && next.mode === look().mode;
-    if (!same) setLook(next);
-
-    // СВОЯ страница — штатной механикой рантайма, а не своим атрибутом: второй способ надеть
-    // скин означал бы второе место, где живёт это знание.
-    applySkin({ preset: next.preset, mode: next.mode, remember });
-    void applyPresetCss(next.preset);
-
-    const inner = frame?.contentDocument?.documentElement;
-    if (!inner) return;
-    // Кадр — ЧУЖОЙ документ, и механика до него не дотягивается: она работает с `document`
-    // своей страницы. Здесь атрибут ставится руками не как второй путь применения, а как
-    // единственный способ дотянуться до соседнего документа.
-    //
-    // Своё берёт верх над общим: зону, поставившую собственный выбор, панель не перебивает.
-    if (inner.dataset["lookOwn"] === "true") return;
-    if (next.preset) inner.dataset["theme"] = next.preset;
-    inner.classList.toggle("dark", next.mode === "dark");
-  }
+  // ЗОНУ В КАДРЕ ПАНЕЛЬ БОЛЬШЕ НЕ ОДЕВАЕТ, и это не потеря, а снятая подпорка.
+  //
+  // Прежде она дотягивалась до соседнего документа руками — ставила туда атрибут пресета и
+  // класс режима. Атрибута больше нет: пресетный путь снят целиком, а надевание работает со
+  // СВОИМ документом и в чужой не лезет по устройству.
+  //
+  // Возвращать это своим способом нельзя: чужой документ, одетый мимо механики, — ровно та
+  // вторая дорога, ради снятия которой всё и делалось. Зона одевается сама, тем же надеванием,
+  // и панель показывает её такой, какая она есть. Понадобится примерка скина внутри зоны —
+  // это отдельный предмет и отдельный разговор, а не атрибут сбоку.
 
   async function refreshZones() {
     try {
@@ -130,13 +140,6 @@ export function Panel() {
     try {
       const said = (await (await fetch("/__nav/presets")).json()) as { presets: PresetItem[] };
       setPresets(said.presets);
-      // Перечень приехал — теперь запомненный выбор можно восстановить целиком: до этого
-      // момента сохранённый пресет не проходил проверку «есть ли он в перечне» и отбрасывался.
-      // `restoreSkin()` ничего не запоминает, поэтому повтор безопасен.
-      // Умолчания по пресету нет и не подставляется: не выбрано — значит голо. Режим тоже не
-      // навязываем — он половина скина, и на голой странице его не существует.
-      const back = restoreSkin({ presets: said.presets.map((item) => item.id) });
-      if (back.preset !== look().preset || back.mode !== look().mode) apply(back, false);
     } catch {
       setPresets([]);
     }
@@ -152,30 +155,13 @@ export function Panel() {
     setNonce((n) => n + 1);
   }
 
-  /**
-   * Смотреть, что зона делает со своей темой.
-   *
-   * Обмен идёт через атрибут на корне: панель ставит его зоне, зона читает. Обратного канала
-   * не было — поэтому смена пресета внутри зоны до панели не доходила. Наблюдение закрывает
-   * это тем же способом, каким зона слушает нас, и работает потому, что origin общий.
-   */
-  function watchZone() {
-    const root = frame?.contentDocument?.documentElement;
-    if (!root) return;
-    const watcher = new MutationObserver(() => {
-      const theirs = root.dataset["theme"];
-      if (theirs && theirs !== look().preset) apply({ ...look(), preset: theirs });
-    });
-    watcher.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-    onCleanup(() => watcher.disconnect());
-  }
-
   onMount(() => {
-    // Палитру назвала точка входа — до первой отрисовки, иначе вспышка. Здесь только читаем,
-    // что встало: восстановление с ПОЛНЫМ перечнем сделает `refreshPresets()`, когда список
-    // сохранённых приедет из службы.
-    setLook(readSkin());
-    void applyPresetCss(look().preset);
+    // Восстановление — И СКИН, И ПОЛОВИНА, одним вызовом: человек, выбравший их в прошлый
+    // заход, обязан увидеть их же. Ничего не запоминает, поэтому безопасно на каждом запуске.
+    //
+    // Не вспомнилось — не надевается ничего, и это рабочее состояние: панель остаётся голой,
+    // как и любое приложение без скина.
+    void skins.restore().then(setWorn).catch(() => undefined);
     void refreshZones();
     void refreshPresets();
     // Опрос вместо канала — сознательно: канал заводится, когда задержка начнёт мешать.
@@ -222,24 +208,33 @@ export function Panel() {
           <Show when={presets().length > 0}>
             <select
               class="panel-select"
-              aria-label="Оформление"
-              value={look().preset ?? ""}
-              onChange={(event) => apply({ ...look(), preset: event.currentTarget.value || null })}
+              aria-label="Скин"
+              value={worn()?.name ?? ""}
+              onChange={(event) => void dress(event.currentTarget.value || null)}
             >
+              {/* Голая строка — рабочий выбор, а не заглушка: без скина панель показывает
+                  голый кит, и человеку нужен способ туда вернуться. */}
+              <option value="">без скина</option>
               <For each={presets()}>
                 {(item) => <option value={item.id}>{item.label}</option>}
               </For>
             </select>
           </Show>
 
-          <button
-            type="button"
-            class="panel-btn"
-            title="Светлая или тёмная пара"
-            onClick={() => apply({ ...look(), mode: look().mode === "light" ? "dark" : "light" })}
-          >
-            ◐
-          </button>
+          {/* Половину переключаем ТОЛЬКО когда скин надет: без скина её не существует, и
+              кнопка, которая ничего не делает, врёт про возможность. */}
+          <Show when={worn()}>
+            {(on) => (
+              <button
+                type="button"
+                class="panel-btn"
+                title="Светлая или тёмная половина"
+                onClick={() => void dress(on().name, on().mode === "dark" ? "light" : "dark")}
+              >
+                ◐
+              </button>
+            )}
+          </Show>
           <button
             type="button"
             class="panel-btn panel-btn-quiet"
@@ -263,15 +258,9 @@ export function Panel() {
             </div>
           }
         >
-          <iframe
-            ref={frame}
-            src={`/?nav=${nonce()}`}
-            title="Зона"
-            onLoad={() => {
-              apply(look(), false);
-              watchZone();
-            }}
-          />
+          {/* Обработчика загрузки здесь больше нет: он одевал зону в кадре руками и следил за
+              её атрибутом. Оба конца этого обмена жили на снятом пресетном пути. */}
+          <iframe ref={frame} src={`/?nav=${nonce()}`} title="Зона" />
         </Show>
       </div>
     </div>
