@@ -7,13 +7,21 @@
  * Поэтому здесь нет ни одного правила, адресующего части кита: ни `data-scope`, ни `data-part`,
  * ни `data-slot`. Только собственные имена оболочки.
  *
- * ЗНАЧЕНИЯ — РОЛИ НАБОРА ЗНАЧЕНИЙ зоны `style`, и своих здесь нет намеренно.
+ * ЗНАЧЕНИЯ — СВОИ, и это единственный оставшийся путь.
  *
- * Свои заводились — и были сняты: они прятали чужой дефект. Тёмная половина ролей объявлена
- * только внутри ТЕМЫ, а тем витрина не ставит (скины пришли теме на смену), поэтому в тёмном
- * режиме оболочка остаётся светлой. Дефект принадлежит зоне значений, заявка туда поднята, и
- * закрывать его своими переменными значит спрятать от всех, включая потребителя, которому
- * прятать будет нечем.
+ * Фреймворк надеваемой палитры не везёт: палитра без рецептов — половина скина, а половин у
+ * скина не бывает. Роли (`--surface`, `--text`) в базовом слое объявлены через шкалы, но самих
+ * шкал никто не поставляет — они приходят СО СКИНОМ.
+ *
+ * Витрина же обязана быть видна всегда: и когда скинов в службе нет, и когда скин снят намеренно.
+ * Инструмент, невидимый без одежды, которую им же и делают, бесполезен.
+ *
+ * Прежде свои значения здесь были ОБХОДОМ — палитра существовала, и брать её следовало у неё.
+ * Теперь брать не у кого, и это не обход, а собственный вид приложения.
+ *
+ * ТЁМНАЯ ПАРА следует за классом режима, который ставит механика приложения при надетом скине:
+ * смотришь тёмный скин — инструмент рядом тоже тёмный. Нет скина — нет и класса, оболочка
+ * светлая, и это верно: режима без скина не существует.
  *
  * ВИТРИНА — ПРО ВИД, а не про устройство. Долг одевания, части с состояниями и паспортные
  * факты отсюда убраны (решение user 2026-08-21): смешение двух предметов портит оба — тот, кому
@@ -35,6 +43,50 @@
  * скролл уводил бы перечень наверх ровно тогда, когда по нему надо переключиться.
  */
 
+/* Оболочка витрины: своя пара значений на светлый и тёмный. Имя класса тёмной половины —
+   общее для продукта: его ставит механика приложения, читают скин и мы. */
+:root {
+  --ui-surface: #ffffff;
+  --ui-surface-sunk: #f6f6f7;
+  --ui-stage: #f2f2f4;
+  --ui-line: #e3e3e6;
+  --ui-line-soft: #ececee;
+  --ui-ink: #18181b;
+  --ui-ink-quiet: #71717a;
+  --ui-accent: #4f46e5;
+  --ui-accent-soft: #eef2ff;
+  --ui-danger: #b91c1c;
+  --ui-tint: rgba(24, 24, 27, 0.05);
+  --ui-focus: 2px solid #818cf8;
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-gap-1: 0.25rem;
+  --ui-gap-2: 0.5rem;
+  --ui-gap-3: 0.75rem;
+  --ui-gap-4: 1rem;
+  --ui-gap-6: 1.5rem;
+  --ui-size-sm: 0.8125rem;
+  --ui-size-md: 0.9375rem;
+  --ui-size-lg: 1.0625rem;
+  --ui-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root.dark,
+.dark {
+  --ui-surface: #131316;
+  --ui-surface-sunk: #0d0d10;
+  --ui-stage: #1b1b1f;
+  --ui-line: #2a2a30;
+  --ui-line-soft: #232329;
+  --ui-ink: #f4f4f5;
+  --ui-ink-quiet: #a1a1aa;
+  --ui-accent: #818cf8;
+  --ui-accent-soft: #1e1b3a;
+  --ui-danger: #f87171;
+  --ui-tint: rgba(255, 255, 255, 0.06);
+  --ui-focus: 2px solid #a5b4fc;
+}
+
 html,
 body {
   block-size: 100%;
@@ -42,8 +94,10 @@ body {
 
 body {
   margin: 0;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--ui-size-md);
 }
 
 .shell {
@@ -69,57 +123,57 @@ body {
 .head {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--ui-gap-3) var(--ui-gap-4);
   align-items: center;
   justify-content: space-between;
   min-block-size: 3rem;
-  padding: var(--space-2) var(--space-4);
-  border-block-end: var(--border-width-1) solid var(--separator);
+  padding: var(--ui-gap-2) var(--ui-gap-4);
+  border-block-end: 1px solid var(--ui-line-soft);
 }
 
 .head__subject {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--ui-gap-3);
   align-items: center;
 }
 
 .head__component {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-lg);
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-lg);
 }
 
 /* Управление прижато к правому краю. Беда, если она есть, встаёт здесь же, слева от ручек: её
    надо увидеть, а не искать. */
 .head__controls {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--ui-gap-2);
   align-items: center;
   margin-inline-start: auto;
 }
 
 .head__trouble {
   margin: 0;
-  color: var(--danger-text);
-  font-size: var(--font-size-sm);
+  color: var(--ui-danger);
+  font-size: var(--ui-size-sm);
 }
 
 .head__select {
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
   color: inherit;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--ui-size-sm);
 }
 
 .head__select:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--ui-focus);
 }
 
 .head__select:disabled {
-  color: var(--text-muted);
+  color: var(--ui-ink-quiet);
   cursor: not-allowed;
 }
 
@@ -127,32 +181,32 @@ body {
 
 .modes {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--ui-gap-1);
 }
 
 .modes__item {
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
   color: inherit;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--ui-size-sm);
   cursor: pointer;
 }
 
 .modes__item:hover {
-  background: var(--tint-hover);
+  background: var(--ui-tint);
 }
 
 .modes__item:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--ui-focus);
 }
 
 .modes__item[aria-pressed="true"] {
-  border-color: var(--brand-border);
-  background: var(--brand-element);
-  color: var(--brand-border);
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
 }
 
 /* ── перечень компонентов ─────────────────────────────────────────────────────────────── */
@@ -160,39 +214,39 @@ body {
 .rail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--ui-gap-3);
   min-block-size: 0;
-  padding: var(--space-4);
+  padding: var(--ui-gap-4);
   overflow-y: auto;
-  border-inline-end: var(--border-width-1) solid var(--separator);
-  background: var(--surface-subtle);
+  border-inline-end: 1px solid var(--ui-line-soft);
+  background: var(--ui-surface-sunk);
 }
 
 .rail__head {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--ui-gap-1);
 }
 
 .rail__title {
-  font-size: var(--font-size-lg);
+  font-size: var(--ui-size-lg);
 }
 
 .rail__note {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
 }
 
 .rail__list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--ui-gap-1);
 }
 
 .rail__group {
-  margin-block-start: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  margin-block-start: var(--ui-gap-2);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
   font-weight: 400;
 }
 
@@ -201,9 +255,9 @@ body {
 }
 
 .rail__item {
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-1) solid transparent;
-  border-radius: var(--radius-md);
+  padding: var(--ui-gap-2) var(--ui-gap-3);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -212,24 +266,24 @@ body {
 }
 
 .rail__item:hover {
-  background: var(--tint-hover);
+  background: var(--ui-tint);
 }
 
 .rail__item:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--ui-focus);
 }
 
 .rail__item[aria-current="true"] {
-  border-color: var(--brand-border);
-  background: var(--brand-element);
-  color: var(--brand-border);
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
 }
 
 /* ── показ ────────────────────────────────────────────────────────────────────────────── */
 
 .main {
   min-block-size: 0;
-  padding: var(--space-6);
+  padding: var(--ui-gap-6);
   overflow: auto;
 }
 
@@ -238,7 +292,7 @@ body {
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--ui-gap-6);
 }
 
 .page__lead,
@@ -248,23 +302,23 @@ body {
 
 .page__lead {
   max-inline-size: 60rem;
-  color: var(--text-muted);
+  color: var(--ui-ink-quiet);
 }
 
 .page__subtitle {
-  font-size: var(--font-size-lg);
+  font-size: var(--ui-size-lg);
 }
 
 .page__section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--ui-gap-3);
 }
 
 .page__empty,
 .empty {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--ui-ink-quiet);
 }
 
 /* ── оси и переходы ───────────────────────────────────────────────────────────────────── */
@@ -272,63 +326,63 @@ body {
 .axes {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--ui-gap-3);
   align-items: center;
 }
 
 .views {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--ui-gap-1);
 }
 
 .views__item {
-  padding: var(--space-1) var(--space-3);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: var(--ui-gap-1) var(--ui-gap-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
   color: inherit;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--ui-size-sm);
   cursor: pointer;
 }
 
 .views__item:hover {
-  background: var(--tint-hover);
+  background: var(--ui-tint);
 }
 
 .views__item:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--ui-focus);
 }
 
 .views__item[aria-pressed="true"] {
-  border-color: var(--brand-border);
-  background: var(--brand-element);
-  color: var(--brand-border);
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
 }
 
 .axes__field {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--ui-gap-2);
   align-items: center;
 }
 
 .axes__label {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
 }
 
 .axes__select {
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
   color: inherit;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--ui-size-sm);
 }
 
 .axes__select:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--ui-focus);
 }
 
 /* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
@@ -336,19 +390,19 @@ body {
 .cases {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--space-3);
+  gap: var(--ui-gap-3);
   align-items: start;
 }
 
 .case {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--ui-gap-2);
   margin: 0;
-  padding: var(--space-3);
-  border: var(--border-width-1) solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+  padding: var(--ui-gap-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
 }
 
 /* Широкому компоненту колонка не годится: он занимает строку целиком. Решает измерение, а не
@@ -366,26 +420,26 @@ body {
   min-block-size: 4rem;
   inline-size: max-content;
   max-inline-size: 100%;
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--surface-subtle);
+  padding: var(--ui-gap-4);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-sunk);
 }
 
 .case__caption {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--ui-gap-1);
 }
 
 .case__note {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
 }
 
 /* Осевой случай подписан КООРДИНАТОЙ — тем же адресом, которым его адресует скин. Человеческий
    назван словами. Разные обещания различаются и на вид. */
 .case__title--axis {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
   font-weight: 400;
 }
