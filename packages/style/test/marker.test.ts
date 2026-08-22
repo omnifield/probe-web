@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { BASE_MARKER } from "../src/marker.js";
-import { DEFAULT_THEME_MODEL, themeModelToCss } from "../src/model.js";
-import { DEFAULT_PALETTE, paletteSelector } from "../src/palette.js";
+import { themeModelToCss } from "../src/model.js";
+import { paletteSelector } from "../src/palette.js";
 import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 import { readBuilt, rules, unthemedRules } from "./helpers/css.js";
+import { MODEL, PALETTE, paletteFile } from "./helpers/seeds.js";
 
 // ГЕЙТ МАРКЕРА ПРИЕЗДА БАЗЫ (`tasker:PROBEWEB-78`, контракт — `kb:PROBEWEB-13`).
 //
@@ -18,7 +19,10 @@ import { readBuilt, rules, unthemedRules } from "./helpers/css.js";
 
 const name = BASE_MARKER.slice(2);
 const base = readBuilt("base.css");
-const themes = readBuilt("themes.css");
+// Палитра для сверки ПОРОЖДАЕТСЯ фикстурой, а не читается с диска: поставляемой палитры у
+// зоны больше нет (`PWEB-50`), и маркер обязан держаться против ЛЮБОЙ палитры, а не против
+// той, что мы когда-то отгружали.
+const themes = paletteFile();
 
 describe("BASE_MARKER", () => {
   it("это готовое кастом-свойство: чужая проверка отказывает на имени без `--`", () => {
@@ -44,9 +48,9 @@ describe("BASE_MARKER", () => {
   it("не объявлен ни поставляемой палитрой, ни любой другой из того же генератора", () => {
     // Вторая сторона того же: контракт контрактом, а в файл смотрим отдельно — палитра
     // рождается генератором, и проверять надо то, что он выдаёт, а не то, что мы о нём
-    // думаем. Берём и дефолтную палитру из поставки, и произвольную с мета и правками.
+    // думаем. Берём и палитру-фикстуру, и произвольную с мета и правками.
     const custom = themeModelToCss({
-      ...DEFAULT_THEME_MODEL,
+      ...MODEL,
       id: "ocean",
       meta: { radius: "1.3rem" },
       darkOverrides: { "neutral-1": "oklch(0.205 0.008 248)" },
@@ -96,7 +100,7 @@ describe("BASE_MARKER", () => {
   it("палитра поверх базы маркер НЕ перекрывает — проверено на обоих селекторах палитры", () => {
     for (const mode of ["light", "dark"] as const) {
       const rule = rules(themes).find(
-        (item) => item.selector === paletteSelector(DEFAULT_PALETTE, mode),
+        (item) => item.selector === paletteSelector(PALETTE, mode),
       );
       expect(rule?.declarations.has(name), `палитра (${mode}) перебивает маркер`).toBe(false);
     }

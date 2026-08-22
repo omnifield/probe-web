@@ -18,8 +18,7 @@
       "types": "./dist/css/generate.d.ts",
       "default": "./dist/css/generate.js"
     },
-    "./base.css": "./dist/css/base.css",
-    "./themes.css": "./dist/css/themes.css"
+    "./base.css": "./dist/css/base.css"
   },
   "files": [
     "dist",

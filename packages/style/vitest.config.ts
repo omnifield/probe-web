@@ -15,7 +15,13 @@ import { configDefaults, defineConfig } from "vitest/config";
 //
 // Теперь список ведётся с той стороны, где он КОРОТКИЙ и меняется редко: миру документа нужны
 // три файла, всё прочее по построению уезжает в node. Новая проба попадает в прогон сама.
-const DOM_TESTS = ["test/theme.test.ts", "test/trace.test.ts", "test/foreign-values.test.ts"];
+const DOM_TESTS = [
+  "test/theme.test.ts",
+  "test/trace.test.ts",
+  "test/foreign-values.test.ts",
+  // Гейт режима меряет ЖИВЫМ документом: каскад, класс на корне, `getComputedStyle`.
+  "test/mode.test.ts",
+];
 
 export default defineConfig({
   test: {

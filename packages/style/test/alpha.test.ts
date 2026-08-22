@@ -4,7 +4,8 @@ import { composite, veilOver } from "../src/color/alpha.js";
 import { oklchToSrgb, type Srgb } from "../src/color/oklch.js";
 import { parseColor } from "../src/color/parse.js";
 import { SCALE_STEPS, buildAlphaScale, buildScale, buildScrim } from "../src/scale.js";
-import { DEFAULT_SEEDS, SCALE_NAMES } from "../src/tokens.js";
+import { SCALE_NAMES } from "../src/tokens.js";
+import { SEEDS } from "./helpers/seeds.js";
 
 // Альфа-ступени существуют ради одного обещания: ступень `aN` поверх ступени 1 даёт ступень
 // `N`. Обещание проверяемое — значит, проверяется машиной, а не глазами на стенде.
@@ -76,8 +77,8 @@ describe("альфа-шкала — параллельная сплошной", 
   for (const mode of MODES) {
     for (const name of SCALE_NAMES) {
       it(`${name}/${mode}: ступень aN поверх ступени 1 даёт ступень N`, () => {
-        const solid = buildScale(DEFAULT_SEEDS[name], mode);
-        const alpha = buildAlphaScale(DEFAULT_SEEDS[name], mode);
+        const solid = buildScale(SEEDS[name], mode);
+        const alpha = buildAlphaScale(SEEDS[name], mode);
         const background = oklchToSrgb(parseColor(solid["1"]));
 
         for (const step of SCALE_STEPS) {
@@ -97,8 +98,8 @@ describe("альфа-шкала — параллельная сплошной", 
   it("альфа-ступень следует за режимом: в светлом затемняет, в тёмном осветляет", () => {
     // Для подсветки при наведении это и нужно: на светлой странице она темнее фона, на
     // тёмной — светлее. Инверсной вуали не существует, есть вуаль своего режима.
-    const light = readVeil(buildAlphaScale(DEFAULT_SEEDS.neutral, "light").a4);
-    const dark = readVeil(buildAlphaScale(DEFAULT_SEEDS.neutral, "dark").a4);
+    const light = readVeil(buildAlphaScale(SEEDS.neutral, "light").a4);
+    const dark = readVeil(buildAlphaScale(SEEDS.neutral, "dark").a4);
     expect(light.color.r).toBeLessThan(0.5);
     expect(dark.color.r).toBeGreaterThan(0.5);
   });
@@ -106,7 +107,7 @@ describe("альфа-шкала — параллельная сплошной", 
   it("на фоновой половине шкалы прозрачность растёт вместе с номером ступени", () => {
     // Только 1–8: ступени 9–10 идут от бренда, и порядок там задаёт он, а не лестница —
     // ровно как у сплошной шкалы, которую альфа-ряд повторяет.
-    const alpha = buildAlphaScale(DEFAULT_SEEDS.neutral, "light");
+    const alpha = buildAlphaScale(SEEDS.neutral, "light");
     const ladder = SCALE_STEPS.slice(0, 8).map((step) => readVeil(alpha[`a${step}`]).alpha);
     expect([...ladder].sort((a, b) => a - b)).toEqual(ladder);
   });
@@ -114,7 +115,7 @@ describe("альфа-шкала — параллельная сплошной", 
   it("фоновые ступени всегда просвечивают — иначе вуали нет вовсе", () => {
     for (const mode of MODES) {
       for (const name of SCALE_NAMES) {
-        const alpha = buildAlphaScale(DEFAULT_SEEDS[name], mode);
+        const alpha = buildAlphaScale(SEEDS[name], mode);
         for (const step of SCALE_STEPS.slice(0, 8)) {
           expect(alpha[`a${step}`], `${name}/${mode}: a${step}`).toMatch(
             /^oklch\([^)]+ \/ [\d.]+\)$/,
@@ -131,8 +132,8 @@ describe("альфа-шкала — параллельная сплошной", 
     // другой цвет под тем же именем.
     for (const mode of MODES) {
       for (const name of SCALE_NAMES) {
-        const solid = buildScale(DEFAULT_SEEDS[name], mode);
-        const alpha = buildAlphaScale(DEFAULT_SEEDS[name], mode);
+        const solid = buildScale(SEEDS[name], mode);
+        const alpha = buildAlphaScale(SEEDS[name], mode);
         for (const step of SCALE_STEPS) {
           const value = alpha[`a${step}`];
           if (value.includes("/")) continue;
@@ -146,7 +147,7 @@ describe("альфа-шкала — параллельная сплошной", 
 describe("затемнение под модальным слоем", () => {
   it("чёрное в ОБОИХ режимах — от режима оно не зависит", () => {
     // Осветляющая вуаль в тёмной теме не убирает содержимое из фокуса, а подсвечивает его.
-    const scrim = buildScrim(DEFAULT_SEEDS.neutral);
+    const scrim = buildScrim(SEEDS.neutral);
     const { color, alpha } = readVeil(scrim);
     expect(color.r + color.g + color.b).toBeCloseTo(0, 6);
     expect(alpha).toBeGreaterThan(0.35);
@@ -154,12 +155,12 @@ describe("затемнение под модальным слоем", () => {
   });
 
   it("сила взята от шкалы, а не назначена: это перекрытие сплошного акцента", () => {
-    const solid = buildScale(DEFAULT_SEEDS.neutral, "light");
+    const solid = buildScale(SEEDS.neutral, "light");
     const expected = veilOver(
       oklchToSrgb(parseColor(solid["9"])),
       oklchToSrgb(parseColor(solid["1"])),
     );
-    expect(readVeil(buildScrim(DEFAULT_SEEDS.neutral)).alpha).toBeCloseTo(expected.alpha, 6);
+    expect(readVeil(buildScrim(SEEDS.neutral)).alpha).toBeCloseTo(expected.alpha, 6);
   });
 
   it("меняется вместе с нейтральной шкалой, а не живёт своей жизнью", () => {

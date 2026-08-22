@@ -36,13 +36,10 @@
 //
 // CSS через этот вход НЕ идёт, как и через корневой: манифест объявляет `sideEffects: false`,
 // и импорт-побочка была бы выброшена tree-shaking'ом. Стили едут подпутями `/base.css` и
-// `/themes.css`, порождение — подпутём `/generate` (он и сейчас Solid не тянет).
+// `/base.css`, порождение — подпутём `/generate` (он и сейчас Solid не тянет).
 
 export {
   CHART_TOKENS,
-  DEFAULT_DARK,
-  DEFAULT_LIGHT,
-  DEFAULT_SEEDS,
   PALETTE_TOKENS,
   SCALE_NAMES,
   SCALE_TOKENS,
@@ -59,17 +56,17 @@ export {
   type ThemeSeeds,
   type ThemeTokens,
 } from "./tokens.js";
-// Имя дефолтной палитры. `themeToCss` отсюда УБРАН намеренно (`kb:PROBEWEB-18`, следствие 4):
-// свободный селектор снаружи — это второй способ объявить палитру, и правило «палитра
-// принимает имя» держалось бы при нём обещанием. Публичная дорога ровно одна — имя.
-export { DEFAULT_PALETTE } from "./palette.js";
+// Имени дефолтной палитры на поверхности НЕТ (`PWEB-50`): своей палитры у зоны не осталось.
+// `themeToCss` убран отдельно и раньше (`kb:PROBEWEB-18`, следствие 4) — свободный селектор
+// снаружи это второй способ объявить палитру, и правило «палитра принимает имя» держалось бы
+// при нём обещанием.
 // Имя токена-маркера базы. Наружу — потому что проверять приезд базы будет ЧУЖАЯ механика
 // (`runtime`), а имя принадлежит нам: литерал на той стороне — тихая связь, которая переживёт
 // переименование и начнёт врать (`kb:PROBEWEB-13`).
 export { BASE_MARKER } from "./marker.js";
 // Модель темы и её отрисовка в файл: минимум, который записывают, чтобы вид можно было
 // поставить одним указанием. Живёт здесь, а не в зоне производства оформлений (`kb:PROBEWEB-15`).
-export { DEFAULT_THEME_MODEL, themeModelToCss, type ThemeModel } from "./model.js";
+export { themeModelToCss, type ThemeModel } from "./model.js";
 export {
   CHART_SLOTS,
   CONTRAST_PROMISES,

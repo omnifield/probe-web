@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { baseCss, themesCss } from "../src/css/generate.js";
+import { baseCss } from "../src/css/generate.js";
 import { WRITTEN_BASE } from "../src/css/written.js";
 import { DERIVED_TOKENS } from "../src/dimension.js";
 import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
@@ -32,9 +32,8 @@ describe("порождённое совпадает с поставкой", () =
     expect(baseCss()).toBe(readBuilt("base.css"));
   });
 
-  it("дефолтная палитра", () => {
-    expect(themesCss()).toBe(readBuilt("themes.css"));
-  });
+  // Палитры среди артефактов больше нет: надеваемой палитры по умолчанию у зоны не осталось
+  // (`PWEB-50`). Артефакт остался один, и это проверяется отдельно — `pack.test.ts`.
 });
 
 describe("порождение не зависит от прошлой сборки", () => {
@@ -86,6 +85,5 @@ describe("порождение не зависит от прошлой сбор�
 
   it("порождение повторяемо: два вызова дают один и тот же текст", () => {
     expect(baseCss()).toBe(baseCss());
-    expect(themesCss()).toBe(themesCss());
   });
 });

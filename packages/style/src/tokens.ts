@@ -6,9 +6,13 @@
 // (`src/roles.ts`) ссылаются на ступени и в тему не входят: они одинаковы для всех тем, и
 // хранить их в каждой значило бы объявить разделение и тут же его отменить.
 //
-// Значения дефолтной пары СЧИТАЮТСЯ здесь из семян (`src/scale.ts`) — вручную записанных
-// цветов в репозитории больше нет. `dist/css/themes.css` генерируется из этого же модуля при
-// сборке (`scripts/build-css.mjs`), поэтому рассинхрон TS и CSS невозможен by construction.
+// ГОТОВОГО НАБОРА ЗНАЧЕНИЙ ЗДЕСЬ НЕТ (`PWEB-50`). Были `DEFAULT_SEEDS`, `DEFAULT_LIGHT`,
+// `DEFAULT_DARK` — три семени и посчитанные из них половины, то есть палитра фреймворка.
+// Палитра без рецептов — половина скина, отгруженная фреймворком, а половин у скина не бывает:
+// он единица. Пока она была, «нет скина — приложение голое» оставалось неправдой.
+//
+// Осталось то, чем значения ПОЛУЧАЮТ: контракт имён, построение половины из семени, сборка
+// темы из чужих семян. Ушёл набор, а не язык — семя называет тот, кто делает скин.
 
 import { DERIVED_SCALES } from "./dimension.js";
 import {
@@ -130,19 +134,6 @@ export interface ThemeDefinition {
  */
 export type ThemeSeeds = Record<ScaleName, string>;
 
-/**
- * Семена дефолтной пары. Бренд намеренно почти ахроматичен: база не имеет права навязывать
- * потребителю фирменный цвет — свой он ставит одним значением.
- */
-export const DEFAULT_SEEDS: ThemeSeeds = {
-  // Светлота нейтрального семени выше текстовой ступени намеренно: сплошной нейтральный
-  // (вторичная кнопка) обязан отличаться от второстепенного текста, а ступень 11 решается
-  // из порога и падает примерно на 0.54.
-  neutral: "oklch(0.62 0.004 285)",
-  brand: "oklch(0.28 0.006 285)",
-  danger: "oklch(0.505 0.196 27)",
-};
-
 // Мета одинакова для обеих половин пары: шрифт и геометрия от режима не зависят. Семена
 // размерных шкал берутся из их же описания — второго места, где записан дефолт, нет.
 const SHARED_META: Partial<Record<ThemeMetaToken, string>> = {
@@ -185,7 +176,7 @@ export function buildThemeTokens(
   return { ...tokens, ...SHARED_META, ...meta } as ThemeTokens;
 }
 
-export interface CreateThemeOptions extends Partial<ThemeSeeds> {
+export interface CreateThemeOptions extends ThemeSeeds {
   /** Имя палитры → селектор `[data-theme="<name>"]`. */
   name: string;
   /** Переопределение мета-токенов: шрифты, тени, семена размерных шкал. */
@@ -197,19 +188,23 @@ export interface CreateThemeOptions extends Partial<ThemeSeeds> {
  * светлой, иначе фон элемента становится текстом (`kb:PROBEWEB-12`, пункт 1).
  *
  * ```ts
- * registerTheme(createTheme({ name: "ocean", brand: "#0f6fde" }));
+ * createTheme({ name: "ocean", brand: "#0f6fde", neutral: "#71717a", danger: "#e5484d" });
  * ```
  *
- * Незаданная шкала берётся из дефолтной пары — сменить один только бренд должно стоить
- * одного значения, а не переписывания всех трёх.
+ * СЕМЕНА ОБЯЗАТЕЛЬНЫ ВСЕ ТРИ (`PWEB-50`). Прежде незаданная шкала бралась из дефолтной пары,
+ * и это было удобно ровно до того момента, как выяснилось, чем оно является: незаданный бренд
+ * молча приносил НАШ бренд, то есть палитру фреймворка. Дефолтной пары больше нет — не потому
+ * что убрали удобство, а потому что удобством был отгружен вид.
+ *
+ * @param options имя палитры и семя на каждую шкалу
  */
 export function createTheme(options: CreateThemeOptions): ThemeDefinition {
   const done = trace(`createTheme(${options.name})`);
 
   const seeds: ThemeSeeds = {
-    neutral: options.neutral ?? DEFAULT_SEEDS.neutral,
-    brand: options.brand ?? DEFAULT_SEEDS.brand,
-    danger: options.danger ?? DEFAULT_SEEDS.danger,
+    neutral: options.neutral,
+    brand: options.brand,
+    danger: options.danger,
   };
 
   const theme: ThemeDefinition = {
@@ -221,12 +216,6 @@ export function createTheme(options: CreateThemeOptions): ThemeDefinition {
   done();
   return theme;
 }
-
-/** Дефолт светлого режима — нейтральная пара, посчитанная из `DEFAULT_SEEDS`. */
-export const DEFAULT_LIGHT: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "light");
-
-/** Дефолт тёмного режима — СВОЯ шкала того же семени, а не инверсия светлой. */
-export const DEFAULT_DARK: ThemeTokens = buildThemeTokens(DEFAULT_SEEDS, "dark");
 
 /**
  * Сериализация набора значений в CSS-блок для селектора. Форматирование блока — и только

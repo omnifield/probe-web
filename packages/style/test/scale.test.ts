@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { contrastRatio } from "../src/color/contrast.js";
 import { parseColor } from "../src/color/parse.js";
+import { SEEDS } from "./helpers/seeds.js";
 import {
   CONTRAST_PROMISES,
   NO_PROMISE,
@@ -12,7 +13,6 @@ import {
 } from "../src/scale.js";
 import { LEGACY_ALIASES, ROLES, ROLE_TOKENS, legacyCss, rolesCss } from "../src/roles.js";
 import {
-  DEFAULT_SEEDS,
   SCALE_TOKENS,
   createTheme,
   type ThemeTokens,
@@ -27,7 +27,7 @@ const ALL_KEYS: ScaleKey[] = [...SCALE_STEPS.map((step) => `${step}` as ScaleKey
 const EVERY_STEP: string[] = [...ALL_KEYS, ...SCALE_STEPS.map((step) => `a${step}`)];
 
 describe("модель ступеней", () => {
-  const scale = buildScale(DEFAULT_SEEDS.brand, "light");
+  const scale = buildScale(SEEDS.brand, "light");
 
   it("двенадцать ступеней и подпись на сплошной — ни одной пропущенной", () => {
     expect(Object.keys(scale).sort()).toEqual([...ALL_KEYS].sort());
@@ -85,8 +85,8 @@ describe("модель ступеней", () => {
 });
 
 describe("тёмная шкала — СВОЯ, а не перевёрнутая светлая", () => {
-  const light = buildScale(DEFAULT_SEEDS.neutral, "light");
-  const dark = buildScale(DEFAULT_SEEDS.neutral, "dark");
+  const light = buildScale(SEEDS.neutral, "light");
+  const dark = buildScale(SEEDS.neutral, "dark");
 
   it("ступень тёмной шкалы не равна зеркальной ступени светлой", () => {
     // Инверсия ломает назначение: фон элемента становится текстом (`kb:PROBEWEB-12`, п.1).
@@ -118,8 +118,8 @@ describe("тёмная шкала — СВОЯ, а не перевёрнутая
 });
 
 describe("смена бренда — ОДНО значение", () => {
-  const before = createTheme({ name: "before" });
-  const after = createTheme({ name: "after", brand: "#0f6fde" });
+  const before = createTheme({ name: "before", ...SEEDS });
+  const after = createTheme({ name: "after", ...SEEDS, brand: "#0f6fde" });
 
   const changed = (a: ThemeTokens, b: ThemeTokens, prefix: string): string[] =>
     SCALE_TOKENS.filter((token) => token.startsWith(prefix) && a[token] !== b[token]);

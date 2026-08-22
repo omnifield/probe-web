@@ -25,7 +25,7 @@ afterAll(() => {
 });
 
 describe("pnpm pack", () => {
-  it("везёт сборку — JS, типы и оба CSS-артефакта", () => {
+  it("везёт сборку — JS, типы и единственный CSS-артефакт", () => {
     expect(entries).toEqual(
       expect.arrayContaining([
         "dist/index.js",
@@ -33,7 +33,6 @@ describe("pnpm pack", () => {
         "dist/values.js",
         "dist/values.d.ts",
         "dist/css/base.css",
-        "dist/css/themes.css",
         "dist/css/generate.js",
         "dist/css/generate.d.ts",
         "package.json",
@@ -84,10 +83,12 @@ describe("разрешение из установки", () => {
     );
   });
 
-  it("подпуть `/themes.css` резолвится в дефолтную пару тем", () => {
-    expect(req().resolve(`${PKG}/themes.css`)).toBe(
-      join(install, "node_modules", PKG, "dist", "css", "themes.css"),
-    );
+  it("подпутя `/themes.css` НЕТ — надеваемой палитры по умолчанию не осталось", () => {
+    // Палитра без рецептов это половина скина, отгруженная фреймворком (`PWEB-50`). Негатив
+    // здесь обязателен: снятый экспорт легко вернуть «для совместимости», и вернулся бы вместе
+    // с ним отгружаемый вид.
+    expect(() => req().resolve(`${PKG}/themes.css`)).toThrow();
+    expect(entries).not.toContain("dist/css/themes.css");
   });
 
   it("подпуть `/values` резолвится в узкий вход", () => {

@@ -4,9 +4,6 @@ import { DERIVED_TOKENS, FIXED_TOKENS } from "../src/dimension.js";
 import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import {
   CHART_TOKENS,
-  DEFAULT_DARK,
-  DEFAULT_LIGHT,
-  DEFAULT_SEEDS,
   PALETTE_TOKENS,
   SCALE_NAMES,
   SCALE_TOKENS,
@@ -15,6 +12,7 @@ import {
   createTheme,
   themeToCss,
 } from "../src/tokens.js";
+import { DARK, LIGHT, SEEDS } from "./helpers/seeds.js";
 
 // Тесты этого файла — гейт КОНТРАКТА: они держат обещание «тема = данные полного набора».
 // Собранный CSS проверяется отдельно (`test/themes-css.test.ts`): там же живёт правило,
@@ -26,8 +24,8 @@ const CONTRACT = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS]);
 describe("токен-контракт", () => {
   it("обе дефолтные темы покрывают ПОЛНОЕ цветовое ядро", () => {
     for (const [name, theme] of [
-      ["light", DEFAULT_LIGHT],
-      ["dark", DEFAULT_DARK],
+      ["light", LIGHT],
+      ["dark", DARK],
     ] as const) {
       const missing = SCALE_TOKENS.filter((token) => !(token in theme));
       expect(missing, `тема ${name} не покрывает ядро`).toEqual([]);
@@ -35,7 +33,7 @@ describe("токен-контракт", () => {
   });
 
   it("в темах нет токенов вне контракта", () => {
-    for (const theme of [DEFAULT_LIGHT, DEFAULT_DARK]) {
+    for (const theme of [LIGHT, DARK]) {
       const extra = Object.keys(theme).filter((key) => !CONTRACT.has(key));
       expect(extra).toEqual([]);
     }
@@ -72,10 +70,10 @@ describe("токен-контракт", () => {
   });
 
   it("пара различима, мета общая, и тёмная — не инверсия светлой", () => {
-    expect(DEFAULT_DARK["neutral-1"]).not.toBe(DEFAULT_LIGHT["neutral-1"]);
-    expect(DEFAULT_DARK["neutral-12"]).not.toBe(DEFAULT_LIGHT["neutral-12"]);
-    expect(DEFAULT_DARK.radius).toBe(DEFAULT_LIGHT.radius);
-    expect(DEFAULT_DARK["neutral-3"]).not.toBe(DEFAULT_LIGHT["neutral-10"]);
+    expect(DARK["neutral-1"]).not.toBe(LIGHT["neutral-1"]);
+    expect(DARK["neutral-12"]).not.toBe(LIGHT["neutral-12"]);
+    expect(DARK.radius).toBe(LIGHT.radius);
+    expect(DARK["neutral-3"]).not.toBe(LIGHT["neutral-10"]);
   });
 
   it("themeToCss отдаёт блок для селектора, по строке на токен", () => {
@@ -92,28 +90,34 @@ describe("токен-контракт", () => {
 
 describe("тема из семян", () => {
   it("createTheme строит обе половины из трёх значений", () => {
-    const theme = createTheme({ name: "ocean", brand: "#0f6fde" });
+    const theme = createTheme({ name: "ocean", ...SEEDS, brand: "#0f6fde" });
     expect(theme.name).toBe("ocean");
     expect(SCALE_TOKENS.every((token) => token in theme.light)).toBe(true);
     expect(SCALE_TOKENS.every((token) => token in theme.dark!)).toBe(true);
   });
 
-  it("незаданная шкала берётся из дефолтной пары", () => {
-    // Сменить один только бренд должно стоить одного значения, а не переписывания всех трёх.
-    const theme = createTheme({ name: "ocean", brand: "#0f6fde" });
-    expect(theme.light["neutral-9"]).toBe(DEFAULT_LIGHT["neutral-9"]);
-    expect(theme.light["brand-9"]).not.toBe(DEFAULT_LIGHT["brand-9"]);
+  it("семена обязательны все три — незаданное больше НЕ берётся из нашей пары", () => {
+    // Прежде незаданная шкала подставлялась из дефолтных семян, и это было удобно ровно до
+    // того, как выяснилось, чем оно является: незаданный бренд молча приносил НАШ бренд, то
+    // есть палитру фреймворка (`PWEB-50`). Дефолтной пары нет, подставлять нечего.
+    //
+    // Держится ТИПОМ, а не прогоном: пропущенное семя не компилируется у потребителя, и
+    // ловится это в `types.test.ts` на чистой установке. Здесь — поведение: своё семя едет
+    // в свою шкалу и не задевает соседние.
+    const theme = createTheme({ name: "ocean", ...SEEDS, brand: "#0f6fde" });
+    expect(theme.light["neutral-9"]).toBe(LIGHT["neutral-9"]);
+    expect(theme.light["brand-9"]).not.toBe(LIGHT["brand-9"]);
   });
 
-  it("дефолтная пара — это createTheme на дефолтных семенах, а не второй набор значений", () => {
-    const theme = createTheme({ name: "default", ...DEFAULT_SEEDS });
-    expect(theme.light).toEqual(DEFAULT_LIGHT);
-    expect(theme.dark).toEqual(DEFAULT_DARK);
+  it("пара из семян считается тем же построением, а не вторым набором значений", () => {
+    const theme = createTheme({ name: "probe", ...SEEDS });
+    expect(theme.light).toEqual(LIGHT);
+    expect(theme.dark).toEqual(DARK);
   });
 
   it("мета-токены переопределяются, не ломая ядро", () => {
-    const theme = createTheme({ name: "dense", meta: { space: "0.2rem" } });
+    const theme = createTheme({ name: "dense", ...SEEDS, meta: { space: "0.2rem" } });
     expect(theme.light.space).toBe("0.2rem");
-    expect(theme.light.radius).toBe(DEFAULT_LIGHT.radius);
+    expect(theme.light.radius).toBe(LIGHT.radius);
   });
 });

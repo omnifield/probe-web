@@ -69,7 +69,6 @@ beforeAll(() => {
     join(install, "consumer.ts"),
     [
       `import "${PKG}/base.css";`,
-      `import "${PKG}/themes.css";`,
       `import { themeModelToCss, type ThemeModel, type ThemeTokens } from "${PKG}";`,
       "",
       "export type Tokens = ThemeTokens;",
@@ -95,10 +94,9 @@ beforeAll(() => {
   writeFileSync(
     join(install, "generate.ts"),
     [
-      `import { baseCss, themesCss } from "${PKG}/generate";`,
+      `import { baseCss } from "${PKG}/generate";`,
       "",
       "export const base: string = baseCss();",
-      "export const themes: string = themesCss();",
       "",
     ].join("\n"),
     "utf8",
@@ -137,6 +135,24 @@ beforeAll(() => {
     "utf8",
   );
 
+  // Надеваемой палитры по умолчанию нет (`PWEB-50`). Негатив здесь ровно ОДИН — на сборщик
+  // темы: подпуть `/themes.css` этим гейтом не проверить в принципе, и причина записана в
+  // шапке файла — под шаблон `declare module '*.css'` попадает любое имя на `.css`, поэтому
+  // `tsc` зелен и на несуществующем файле. Существование подпутей держит `pack.test.ts`, там
+  // негатив и стоит.
+  writeFileSync(
+    join(install, "seedless.ts"),
+    [
+      `import { createTheme } from "${PKG}/values";`,
+      "",
+      "// Без семян: прежде незаданная шкала бралась из НАШЕЙ пары, теперь брать нечего.",
+      "export const theme = createTheme({ name: 'ocean' });",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  writeFileSync(join(install, "tsconfig.seedless.json"), tsconfig(["seedless.ts"]), "utf8");
+
   writeFileSync(join(install, "no-extension.ts"), `import "${PKG}/css";\n`, "utf8");
   writeFileSync(
     join(install, "tsconfig.no-extension.json"),
@@ -160,7 +176,7 @@ afterAll(() => {
 });
 
 describe("типизация у потребителя", () => {
-  it("оба CSS-подпутя и корень проходят `tsc` из чистой установки", () => {
+  it("CSS-подпуть и корень проходят `tsc` из чистой установки", () => {
     expect(typecheck("tsconfig.json")).toBe("");
   });
 
@@ -183,6 +199,12 @@ describe("типизация у потребителя", () => {
     // по привычке возьмёт контроллер темы из узкого входа: подсказка ведёт в корень, а не
     // молча возвращает Solid туда, откуда его убирали.
     expect(typecheck("tsconfig.values-reactive.json")).toMatch(/TS2305/);
+  });
+
+  it("createTheme без семян не компилируется — умолчания палитрой больше нет", () => {
+    // `TS2739` — «не хватает свойств». Прежде это компилировалось и молча приносило наш бренд:
+    // палитра фреймворка, отгруженная через удобство.
+    expect(typecheck("tsconfig.seedless.json")).toMatch(/TS2739|TS2345/);
   });
 
   it("инструментов стилизации на поверхности нет — они отдельная поставка", () => {

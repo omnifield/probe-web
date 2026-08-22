@@ -1,13 +1,14 @@
 import { createRoot } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { DEFAULT_PALETTE, paletteSelector } from "../src/palette.js";
+import { paletteSelector } from "../src/palette.js";
 import { createThemeController, registerTheme } from "../src/theme.js";
-import { DEFAULT_LIGHT, type ThemeDefinition, type ThemeTokens } from "../src/tokens.js";
+import type { ThemeDefinition, ThemeTokens } from "../src/tokens.js";
+import { LIGHT, PALETTE } from "./helpers/seeds.js";
 
 const palette = (overrides: Partial<ThemeTokens> = {}): ThemeDefinition => ({
   name: "ocean",
-  light: { ...DEFAULT_LIGHT, primary: "oklch(0.6 0.15 240)", ...overrides },
+  light: { ...LIGHT, primary: "oklch(0.6 0.15 240)", ...overrides },
 });
 
 afterEach(() => {
@@ -40,7 +41,7 @@ describe("registerTheme", () => {
     // Инжект и генератор файла обязаны цеплять палитру ОДИНАКОВО: разъедься они, одна и та
     // же палитра дала бы разный вид в зависимости от того, как её подключили. Держит это
     // не совпадение строк, а общий вывод селектора (`src/palette.ts`).
-    registerTheme({ ...palette(), dark: { ...DEFAULT_LIGHT } });
+    registerTheme({ ...palette(), dark: { ...LIGHT } });
     const css = document.getElementById("probe-web-theme-ocean")?.textContent ?? "";
 
     expect(css).toContain(`${paletteSelector("ocean", "light")} {`);
@@ -49,7 +50,7 @@ describe("registerTheme", () => {
   });
 
   it("тёмный вариант палитры получает свой селектор; без него блок один", () => {
-    registerTheme({ ...palette(), dark: { ...DEFAULT_LIGHT, background: "oklch(0.2 0 0)" } });
+    registerTheme({ ...palette(), dark: { ...LIGHT, background: "oklch(0.2 0 0)" } });
     const css = document.getElementById("probe-web-theme-ocean")?.textContent ?? "";
     expect(css).toContain('[data-theme="ocean"].dark, [data-theme="ocean"] .dark {');
 
@@ -74,7 +75,7 @@ describe("createThemeController", () => {
       expect(theme.theme()).toBe("ocean");
 
       theme.setMode("dark");
-      theme.setTheme(DEFAULT_PALETTE);
+      theme.setTheme(PALETTE);
       expect(document.documentElement.classList.contains("dark")).toBe(true);
       expect(theme.mode()).toBe("dark");
 
@@ -113,7 +114,7 @@ describe("createThemeController", () => {
 
   it("палитра ставится атрибутом; `undefined` СНИМАЕТ её, а не возвращает дефолтную", () => {
     // Zero-config снят сознательно (`kb:PROBEWEB-18`): прежний вид «из коробки» — это
-    // `DEFAULT_PALETTE`, названный явно, как и любая другая палитра. Контроллер его НЕ
+    // `PALETTE`, названный явно, как и любая другая палитра. Контроллер его НЕ
     // подставляет — подставив, он вернул бы покрашенный по умолчанию документ, только уже
     // из JS, и «пресет не стоит» снова стало бы невыразимым состоянием.
     createRoot((dispose) => {
@@ -123,8 +124,8 @@ describe("createThemeController", () => {
       expect(theme.theme()).toBe("ocean");
       expect(document.documentElement.getAttribute("data-theme")).toBe("ocean");
 
-      theme.setTheme(DEFAULT_PALETTE);
-      expect(document.documentElement.getAttribute("data-theme")).toBe("default");
+      theme.setTheme(PALETTE);
+      expect(document.documentElement.getAttribute("data-theme")).toBe(PALETTE);
 
       theme.setTheme(undefined);
       expect(document.documentElement.hasAttribute("data-theme")).toBe(false);

@@ -12,10 +12,9 @@
 // в службе: это понятия стенда и хранилища, а не вида. Светлого/тёмного режима тоже нет —
 // режим выбирает пользователь, и одна и та же модель обязана работать в обоих.
 
-import { DENSITY_DEFAULT, DENSITY_TOKEN } from "./dimension.js";
-import { DEFAULT_PALETTE, PALETTE_ATTRIBUTE, paletteCss } from "./palette.js";
+import { DENSITY_TOKEN } from "./dimension.js";
+import { PALETTE_ATTRIBUTE, paletteCss } from "./palette.js";
 import {
-  DEFAULT_SEEDS,
   type ThemeMetaToken,
   type ThemeSeeds,
   type ThemeTokens,
@@ -99,20 +98,9 @@ export function themeModelToCss(model: ThemeModel): string {
   return css;
 }
 
-/**
- * ДЕФОЛТНАЯ ПАЛИТРА КАК МОДЕЛЬ. Из неё сборка делает `dist/css/themes.css` — тем же
- * вызовом `themeModelToCss()`, каким рождается любой пресет, а не похожим на него.
- *
- * Ради этого модель и объявлена значением: пока «дефолт» собирался отдельной веткой в
- * скрипте сборки, он был не палитрой, а привилегией — красил `:root` и перебивался
- * пресетом вместо того, чтобы им БЫТЬ (`kb:PROBEWEB-18`). Второго места, где записано,
- * из чего состоит дефолт, теперь нет: скрипт сборки берёт эту запись, проба — её же.
- *
- * Мета не задана намеренно: значения по умолчанию приходят из описания шкал
- * (`SHARED_META`), и повторить их здесь значило бы завести вторую копию дефолтов.
- */
-export const DEFAULT_THEME_MODEL: ThemeModel = {
-  id: DEFAULT_PALETTE,
-  seeds: DEFAULT_SEEDS,
-  density: DENSITY_DEFAULT,
-};
+// ДЕФОЛТНОЙ МОДЕЛИ ЗДЕСЬ БОЛЬШЕ НЕТ (`PWEB-50`). Была `DEFAULT_THEME_MODEL` — запись, из
+// которой сборка делала `dist/css/themes.css`, надеваемую палитру фреймворка. Ушла вместе с
+// файлом и семенами: палитра без рецептов это половина скина, а половин у скина не бывает.
+//
+// Способ остался целиком: `themeModelToCss()` сделает файл из ЛЮБОЙ модели. Чья она и из
+// каких семян — не наше дело, и записи «вот наша» у зоны теперь нет ни одной.

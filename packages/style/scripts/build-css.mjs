@@ -6,6 +6,9 @@
 // глаз только следующей ручной командой (`PWEB-20`). Теперь порождение — обычная функция
 // зоны, и звать её может кто угодно, в том числе дев-сервер, в момент запроса.
 //
+// Артефакт ОДИН: базовый слой. Файла палитры больше нет — надеваемой палитры по умолчанию у
+// зоны не осталось (`PWEB-50`).
+//
 // Импорт идёт из `dist`, потому что сценарий исполняет node, а не сборщик: он запускается
 // сразу после `tsc` и берёт ровно то, что тот собрал. Склейки здесь нет и быть не должно —
 // это держит проба (`test/generate.test.ts`), а не памятка в шапке.
@@ -21,4 +24,3 @@ const generate = await import(pathToFileURL(resolve(root, "dist/css/generate.js"
 
 await mkdir(outDir, { recursive: true });
 await writeFile(resolve(outDir, "base.css"), generate.baseCss(), "utf8");
-await writeFile(resolve(outDir, "themes.css"), generate.themesCss(), "utf8");

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { registerTheme } from "../src/theme.js";
-import { DEFAULT_LIGHT } from "../src/tokens.js";
+import { LIGHT } from "./helpers/seeds.js";
 import { trace } from "../src/trace.js";
 
 const FLAG = "__PROBE_WEB_STYLE_TRACE__";
@@ -19,7 +19,7 @@ describe("trace", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
 
     trace("замер")();
-    registerTheme({ name: "ocean", light: DEFAULT_LIGHT });
+    registerTheme({ name: "ocean", light: LIGHT });
 
     expect(debug).not.toHaveBeenCalled();
   });
@@ -28,7 +28,7 @@ describe("trace", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
     (globalThis as TraceGlobal)[FLAG] = true;
 
-    registerTheme({ name: "ocean", light: DEFAULT_LIGHT });
+    registerTheme({ name: "ocean", light: LIGHT });
 
     expect(debug).toHaveBeenCalledTimes(1);
     expect(debug.mock.calls[0][0]).toMatch(

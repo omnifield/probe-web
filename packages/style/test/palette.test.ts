@@ -2,8 +2,9 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_PALETTE, PALETTE_ATTRIBUTE, paletteCss, paletteSelector } from "../src/palette.js";
+import { PALETTE_ATTRIBUTE, paletteCss, paletteSelector } from "../src/palette.js";
 import type { ThemeTokens } from "../src/tokens.js";
+import { PALETTE } from "./helpers/seeds.js";
 
 // ГЕЙТ ПРАВИЛА «палитра принимает ИМЯ, а не селектор» (`kb:PROBEWEB-18`).
 //
@@ -51,7 +52,7 @@ describe("paletteSelector", () => {
     // Покрашенный корень означал бы, что палитра не источник вида, а перебивка поверх уже
     // покрашенного, — и состояние «палитра не выбрана» выразить было бы нечем.
     for (const mode of ["light", "dark"] as const) {
-      expect(paletteSelector(DEFAULT_PALETTE, mode)).not.toContain(":root");
+      expect(paletteSelector(PALETTE, mode)).not.toContain(":root");
       expect(paletteSelector("ocean", mode)).not.toContain(":root");
     }
   });
@@ -60,17 +61,18 @@ describe("paletteSelector", () => {
     // Именно это и есть «дефолт перестал быть особым случаем»: разница между ним и
     // кастомной палитрой — ровно имя, а не форма зацепки.
     for (const mode of ["light", "dark"] as const) {
-      expect(paletteSelector(DEFAULT_PALETTE, mode)).toBe(
-        paletteSelector("ocean", mode).replaceAll("ocean", DEFAULT_PALETTE),
+      expect(paletteSelector(PALETTE, mode)).toBe(
+        paletteSelector("ocean", mode).replaceAll("ocean", PALETTE),
       );
     }
   });
 
-  it("имя дефолтной палитры — `default`, и оно уезжает в атрибут", () => {
-    expect(DEFAULT_PALETTE).toBe("default");
+  it("имя палитры уезжает в атрибут как есть", () => {
+    // Своего имени у зоны больше нет (`PWEB-50`): `DEFAULT_PALETTE` ушёл вместе с палитрой.
+    // Проверяется способ — имя превращается в селектор, — а не наше бывшее имя.
     expect(PALETTE_ATTRIBUTE).toBe("data-theme");
-    expect(paletteSelector(DEFAULT_PALETTE, "light")).toBe(
-      `[${PALETTE_ATTRIBUTE}="${DEFAULT_PALETTE}"]`,
+    expect(paletteSelector(PALETTE, "light")).toBe(
+      `[${PALETTE_ATTRIBUTE}="${PALETTE}"]`,
     );
   });
 });
