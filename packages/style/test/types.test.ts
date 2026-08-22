@@ -103,14 +103,15 @@ beforeAll(() => {
   );
   writeFileSync(join(install, "tsconfig.generate.json"), tsconfig(["generate.ts"]), "utf8");
 
-  // Узкий вход (`PWEB-44`) — такая же публичная поверхность, как корневая, и типизироваться у
-  // потребителя обязан так же. Берём из него по имени из каждой части: шкалы, цвет, роли,
-  // размерности — иначе прогон был бы зелёным и на пустом файле.
+  // Поверхность корня целиком: берём по имени из каждой части — шкалы, цвет, роли,
+  // размерности, — иначе прогон был бы зелёным и на пустом файле. Прежде эта проба смотрела в
+  // подпуть `/values`; подпуть снят (`PWEB-56`), а обязательство «поверхность типизируется у
+  // потребителя» осталось и переехало на единственную оставшуюся дверь.
   writeFileSync(
     join(install, "values.ts"),
     [
-      `import { AA_TEXT, ROLE_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}/values";`,
-      `import type { ParsedColor, ScaleMode } from "${PKG}/values";`,
+      `import { AA_TEXT, ROLE_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}";`,
+      `import type { ParsedColor, ScaleMode } from "${PKG}";`,
       "",
       "export const mode: ScaleMode = 'dark';",
       "export const names: readonly string[] = [...SCALE_TOKENS, ...ROLE_TOKENS];",
@@ -122,13 +123,22 @@ beforeAll(() => {
   );
   writeFileSync(join(install, "tsconfig.values.json"), tsconfig(["values.ts"]), "utf8");
 
-  // Негатив к нему же: реактивная часть в узкий вход НЕ попадает. Без этой пробы «узкий вход
-  // типизируется» означало бы и «он узкий», и «он просто копия корневого».
+  // Негатив к нему же: реактивной части на поверхности нет вовсе (`PWEB-56`). Без этой пробы
+  // «поверхность типизируется» означало бы и «она такая, как обещано», и «tsc до неё не дошёл».
   writeFileSync(
     join(install, "values-reactive.ts"),
-    `import { createThemeController } from "${PKG}/values";\nexport { createThemeController };\n`,
+    `import { createThemeController } from "${PKG}";\nexport { createThemeController };\n`,
     "utf8",
   );
+
+  // Снятая дверь — со стороны компилятора. `pack.test.ts` смотрит на резолв и запуск, здесь —
+  // на то, что увидит потребитель при сборке: подпутя нет, и это НЕ «он пустой».
+  writeFileSync(
+    join(install, "gone-subpath.ts"),
+    `import { buildScale } from "${PKG}/values";\nexport { buildScale };\n`,
+    "utf8",
+  );
+  writeFileSync(join(install, "tsconfig.gone-subpath.json"), tsconfig(["gone-subpath.ts"]), "utf8");
   writeFileSync(
     join(install, "tsconfig.values-reactive.json"),
     tsconfig(["values-reactive.ts"]),
@@ -143,7 +153,7 @@ beforeAll(() => {
   writeFileSync(
     join(install, "seedless.ts"),
     [
-      `import { createTheme } from "${PKG}/values";`,
+      `import { createTheme } from "${PKG}";`,
       "",
       "// Без семян: прежде незаданная шкала бралась из НАШЕЙ пары, теперь брать нечего.",
       "export const theme = createTheme({ name: 'ocean' });",
@@ -187,18 +197,22 @@ describe("типизация у потребителя", () => {
     expect(typecheck("tsconfig.generate.json")).toBe("");
   });
 
-  it("узкий подпуть `/values` типизируется из чистой установки", () => {
-    // Его берут те, кому нужны значения и цвет без реактивности, — в том числе механика скина
-    // для своего подпутя модели (`PWEB-44`). Несложившиеся типы здесь означают, что модель
-    // придётся писать «на любых».
+  it("поверхность целиком типизируется из чистой установки", () => {
+    // Её берут все, в том числе механика скина. Несложившиеся типы здесь означают, что
+    // потребителю придётся писать «на любых», а это ровно тот шов, который молча разъезжается.
     expect(typecheck("tsconfig.values.json")).toBe("");
   });
 
-  it("реактивной части в узком подпути НЕТ — иначе он не узкий", () => {
+  it("реактивной части на поверхности НЕТ", () => {
     // `TS2305` — «модуль не экспортирует такого имени». Ровно то, что обязан увидеть тот, кто
-    // по привычке возьмёт контроллер темы из узкого входа: подсказка ведёт в корень, а не
-    // молча возвращает Solid туда, откуда его убирали.
+    // по привычке возьмёт контроллер темы: его нет, а не «он переехал».
     expect(typecheck("tsconfig.values-reactive.json")).toMatch(/TS2305/);
+  });
+
+  it("снятого подпутя `/values` компилятор не находит", () => {
+    // `TS2307` — «модуль не найден», а не `TS2305` («нет такого имени»). Разница существенна:
+    // первое говорит «двери нет», второе сказало бы «дверь есть, но пустая».
+    expect(typecheck("tsconfig.gone-subpath.json")).toMatch(/TS2307/);
   });
 
   it("createTheme без семян не компилируется — умолчания палитрой больше нет", () => {

@@ -10,10 +10,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./values": {
-      "types": "./dist/values.d.ts",
-      "default": "./dist/values.js"
-    },
     "./generate": {
       "types": "./dist/css/generate.d.ts",
       "default": "./dist/css/generate.js"
