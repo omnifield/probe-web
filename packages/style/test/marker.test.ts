@@ -3,11 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { BASE_MARKER } from "../src/marker.js";
-import { themeModelToCss } from "../src/model.js";
-import { paletteSelector } from "../src/palette.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
-import { readBuilt, rules, unthemedRules } from "./helpers/css.js";
-import { MODEL, PALETTE, paletteFile } from "./helpers/seeds.js";
+import { readBuilt, rules } from "./helpers/css.js";
 
 // ГЕЙТ МАРКЕРА ПРИЕЗДА БАЗЫ (`tasker:PROBEWEB-78`, контракт — `kb:PROBEWEB-13`).
 //
@@ -20,16 +16,16 @@ import { MODEL, PALETTE, paletteFile } from "./helpers/seeds.js";
 // `placed-once` и не обновляется никогда.
 //
 // МАРКЕР ПЕРЕЕХАЛ НА СБРОС (`PWEB-66`): кастом-свойств в листе не осталось ни одного, и
-// предъявлять приезд стало нечем, кроме самого сброса. Свойства маркера при этом не менялись —
-// изменился носитель, и пробы ниже спрашивают ровно те же три вещи.
+// предъявлять приезд стало нечем, кроме самого сброса.
+//
+// ПРОБ СТАЛО МЕНЬШЕ, И ЭТО НЕ ОСЛАБЛЕНИЕ. Четыре из них спрашивали про ПАЛИТРУ: не объявлен ли
+// маркер ею, виден ли он документу без неё, не перекрывает ли она его. Палитры не существует —
+// сборщик тем снят вместе с предметом, и вопросы исчезли вместе со своей второй стороной, а не
+// были отпущены.
 
 const SRC = resolve(import.meta.dirname, "..", "src");
 const name = BASE_MARKER.property;
 const base = readBuilt("base.css");
-// Палитра для сверки ПОРОЖДАЕТСЯ фикстурой, а не читается с диска: поставляемой палитры у
-// зоны больше нет (`PWEB-50`), и маркер обязан держаться против ЛЮБОЙ палитры, а не против
-// той, что мы когда-то отгружали.
-const themes = paletteFile();
 
 describe("BASE_MARKER", () => {
   it("это ПАРА: свойство и ожидаемое значение, взять одно без другого нельзя", () => {
@@ -75,42 +71,13 @@ describe("BASE_MARKER", () => {
     expect(BASE_MARKER.value).not.toBe("content-box");
   });
 
-  it("НЕ входит в контракт темы — палитра не вправе его объявить", () => {
-    // Главное свойство, и держится оно контрактом, а не тем, что сегодня в файле его нет:
-    // уехав в палитру, маркер стёр бы разницу между «базы нет» и «палитра не выбрана».
-    // Сброс палитрой не объявляется ещё и по построению: палитра несёт значения, а не правила.
-    expect([...SCALE_TOKENS, ...THEME_META_TOKENS]).not.toContain(name);
-  });
 
-  it("не объявлен ни одной палитрой из того же генератора", () => {
-    // Контракт контрактом, а в файл смотрим отдельно: палитра рождается генератором, и
-    // проверять надо то, что он выдаёт, а не то, что мы о нём думаем.
-    const custom = themeModelToCss({
-      ...MODEL,
-      id: "ocean",
-      meta: { radius: "1.3rem" },
-      darkOverrides: { "neutral-1": "oklch(0.205 0.008 248)" },
-    });
 
-    for (const [what, css] of [
-      ["фикстура", themes],
-      ["произвольная палитра", custom],
-    ] as const) {
-      const painted = rules(css).filter((rule) => rule.plain.has(name));
-      expect(painted.map((rule) => rule.selector), `маркер объявлен палитрой (${what})`).toEqual(
-        [],
-      );
-    }
-  });
 
-  it("находится на документе БЕЗ палитры — иначе `no-skin` не отличить от `missing-base`", () => {
-    // Документ без `data-theme` — законное состояние: красить нечему, но база приехала.
-    const declared = unthemedRules(base, themes).some((rule) => rule.plain.has(name));
-    expect(declared, `${name} не виден документу без палитры`).toBe(true);
-  });
-
-  it("его значение не зависит ни от палитры, ни от режима: ни одного `var()`", () => {
-    const values = unthemedRules(base, themes)
+  it("его значение — литерал: ни одного `var()`", () => {
+    // Маркер с `var()` отвечал бы сразу на два вопроса, и разбираться, какой из них дал пустую
+    // строку, пришлось бы в чужой зоне.
+    const values = rules(base)
       .map((rule) => rule.plain.get(name))
       .filter((value): value is string => value !== undefined);
 
@@ -157,12 +124,4 @@ describe("BASE_MARKER", () => {
     expect(found, "значение сброса записано больше чем один раз").toEqual(["css/written.ts"]);
   });
 
-  it("палитра поверх базы маркер НЕ перекрывает — проверено на обоих селекторах палитры", () => {
-    for (const mode of ["light", "dark"] as const) {
-      const rule = rules(themes).find(
-        (item) => item.selector === paletteSelector(PALETTE, mode),
-      );
-      expect(rule?.declarations.has(name), `палитра (${mode}) перебивает маркер`).toBe(false);
-    }
-  });
 });

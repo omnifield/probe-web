@@ -4,7 +4,6 @@ import { composite, veilOver } from "../src/color/alpha.js";
 import { oklchToSrgb, type Srgb } from "../src/color/oklch.js";
 import { parseColor } from "../src/color/parse.js";
 import { SCALE_STEPS, buildAlphaScale, buildScale, buildScrim } from "../src/scale.js";
-import { SCALE_NAMES } from "../src/tokens.js";
 import { SEEDS } from "./helpers/seeds.js";
 
 // Альфа-ступени существуют ради одного обещания: ступень `aN` поверх ступени 1 даёт ступень
@@ -75,7 +74,7 @@ describe("разложение цвета на вуаль", () => {
 
 describe("альфа-шкала — параллельная сплошной", () => {
   for (const mode of MODES) {
-    for (const name of SCALE_NAMES) {
+    for (const name of Object.keys(SEEDS) as (keyof typeof SEEDS)[]) {
       it(`${name}/${mode}: ступень aN поверх ступени 1 даёт ступень N`, () => {
         const solid = buildScale(SEEDS[name], mode);
         const alpha = buildAlphaScale(SEEDS[name], mode);
@@ -114,7 +113,7 @@ describe("альфа-шкала — параллельная сплошной", 
 
   it("фоновые ступени всегда просвечивают — иначе вуали нет вовсе", () => {
     for (const mode of MODES) {
-      for (const name of SCALE_NAMES) {
+      for (const name of Object.keys(SEEDS) as (keyof typeof SEEDS)[]) {
         const alpha = buildAlphaScale(SEEDS[name], mode);
         for (const step of SCALE_STEPS.slice(0, 8)) {
           expect(alpha[`a${step}`], `${name}/${mode}: a${step}`).toMatch(
@@ -131,7 +130,7 @@ describe("альфа-шкала — параллельная сплошной", 
     // становится непрозрачной и совпадает со сплошной ступенью: приближение здесь означало бы
     // другой цвет под тем же именем.
     for (const mode of MODES) {
-      for (const name of SCALE_NAMES) {
+      for (const name of Object.keys(SEEDS) as (keyof typeof SEEDS)[]) {
         const solid = buildScale(SEEDS[name], mode);
         const alpha = buildAlphaScale(SEEDS[name], mode);
         for (const step of SCALE_STEPS) {

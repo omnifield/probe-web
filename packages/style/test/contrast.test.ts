@@ -9,7 +9,6 @@ import {
   buildChartScale,
   buildScale,
 } from "../src/scale.js";
-import { SCALE_NAMES } from "../src/tokens.js";
 import { SEEDS } from "./helpers/seeds.js";
 
 // ГЕЙТ КОНТРАСТА — главный тест зоны. Обещание ступени (`kb:PROBEWEB-12`, пункт 4) не
@@ -42,7 +41,7 @@ const checkPromises = (scale: ScaleValues, label: string): void => {
 
 describe("обещания контраста — дефолтная пара", () => {
   for (const mode of MODES) {
-    for (const name of SCALE_NAMES) {
+    for (const name of Object.keys(SEEDS) as (keyof typeof SEEDS)[]) {
       it(`шкала ${name}, режим ${mode}`, () => {
         checkPromises(buildScale(SEEDS[name], mode), `${name}/${mode}`);
       });

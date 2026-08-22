@@ -11,13 +11,6 @@ import {
   type ScaleKey,
   buildScale,
 } from "../src/scale.js";
-import {
-  SCALE_TOKENS,
-  THEME_META_TOKENS,
-  createTheme,
-  type ThemeTokens,
-} from "../src/tokens.js";
-import { DENSITY_TOKEN } from "../src/dimension.js";
 
 // Тесты МОДЕЛИ: что ступень значит и что от неё нельзя отнять. Контраст проверяется отдельно
 // (`contrast.test.ts`) — здесь всё остальное, ради чего модель и брали.
@@ -118,32 +111,10 @@ describe("тёмная шкала — СВОЯ, а не перевёрнутая
   });
 });
 
-describe("смена бренда — ОДНО значение", () => {
-  const before = createTheme({ name: "before", ...SEEDS });
-  const after = createTheme({ name: "after", ...SEEDS, brand: "#0f6fde" });
-
-  const changed = (a: ThemeTokens, b: ThemeTokens, prefix: string): string[] =>
-    SCALE_TOKENS.filter((token) => token.startsWith(prefix) && a[token] !== b[token]);
-
-  it("перекрашивает шкалу бренда целиком — и сплошной ряд, и альфа-ряд", () => {
-    // 12 сплошных + 12 альфа + подпись на сплошном.
-    expect(changed(before.light, after.light, "brand-").length).toBe(25);
-    expect(changed(before.dark!, after.dark!, "brand-").length).toBe(25);
-  });
-
-  it("не трогает шкалы, которых не касались", () => {
-    expect(changed(before.light, after.light, "neutral-")).toEqual([]);
-    expect(changed(before.light, after.light, "danger-")).toEqual([]);
-  });
-
-  it("не заводит имён сверх шкал — в паре только ступени и мета", () => {
-    // Прежде здесь проверялось, что смена бренда не трогает РОЛИ. Ролей больше нет: имя,
-    // называющее вид, — решение скина, а не наше (`PWEB-61`). Обязательство осталось от
-    // обратного: пара из семян состоит ровно из объявленного контракта, и лишнего имени в неё
-    // не приезжает — иначе «шкала» тихо стала бы набором.
-    const contract = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS, DENSITY_TOKEN]);
-    for (const token of Object.keys(after.light)) {
-      expect(contract.has(token), `--${token} в паре, но не в контракте`).toBe(true);
-    }
-  });
-});
+// РАЗДЕЛ «СМЕНА БРЕНДА — ОДНО ЗНАЧЕНИЕ» СНЯТ (`PWEB-66`, вторым заходом). Он стоял на
+// `createTheme` — сборщике ТЕМЫ, а темы как единицы больше нет: единицей стал скин, и
+// пересевает он себя сам, вызывая `buildScale` напрямую.
+//
+// Обязательство при этом не потерялось и не ослабло: «поменял семя — поменялась вся половина»
+// проверяется там, где это теперь и происходит, — в `packages/skin` на его собственных семенах.
+// Здесь остаётся то, что он зовёт: построение половины из одного значения, и оно проверено выше.

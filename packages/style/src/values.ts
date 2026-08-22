@@ -16,35 +16,17 @@
 // CSS через вход НЕ идёт: манифест объявляет `sideEffects: false`, и импорт-побочка была бы
 // выброшена tree-shaking'ом. Стили едут подпутём `/base.css`, порождение — `/generate`.
 
-export {
-  CHART_TOKENS,
-  PALETTE_TOKENS,
-  SCALE_NAMES,
-  SCALE_TOKENS,
-  THEME_META_TOKENS,
-  buildThemeTokens,
-  createTheme,
-  type CreateThemeOptions,
-  type PaletteToken,
-  type PaletteValues,
-  type ScaleName,
-  type ScaleToken,
-  type ThemeDefinition,
-  type ThemeMetaToken,
-  type ThemeSeeds,
-  type ThemeTokens,
-} from "./tokens.js";
-// Имени дефолтной палитры на поверхности НЕТ (`PWEB-50`): своей палитры у зоны не осталось.
-// `themeToCss` убран отдельно и раньше (`kb:PROBEWEB-18`, следствие 4) — свободный селектор
-// снаружи это второй способ объявить палитру, и правило «палитра принимает имя» держалось бы
-// при нём обещанием.
-// Имя токена-маркера базы. Наружу — потому что проверять приезд базы будет ЧУЖАЯ механика
-// (`runtime`), а имя принадлежит нам: литерал на той стороне — тихая связь, которая переживёт
-// переименование и начнёт врать (`kb:PROBEWEB-13`).
+// СБОРЩИКА ТЕМ ЗДЕСЬ НЕТ (`PWEB-66`, вторым заходом). Были `createTheme`, `buildThemeTokens`,
+// `themeModelToCss`, контракт токенов темы (`SCALE_TOKENS`, `THEME_META_TOKENS`, `CHART_TOKENS`,
+// `PALETTE_TOKENS`) и всё, чем палитра цеплялась к документу по имени.
+//
+// Вопрос был не «удалить ли», а остался ли у сборщика ПРЕДМЕТ. Тема как единица отменена,
+// единицей стал скин — и замер это подтвердил: живых зовущих во всём дереве ноль. Скин строит
+// свои половины сам, вызывая `buildScale` напрямую, а не через сборщик темы.
+//
+// Ушла и `SHARED_META` — шрифты, тени и умолчания семян. Рекомендованный ряд фреймворк не
+// возит ни в каком виде: его дом — эталонный скин.
 export { BASE_MARKER, type BaseMarker } from "./marker.js";
-// Модель темы и её отрисовка в файл: минимум, который записывают, чтобы вид можно было
-// поставить одним указанием. Живёт здесь, а не в зоне производства оформлений (`kb:PROBEWEB-15`).
-export { themeModelToCss, type ThemeModel } from "./model.js";
 export {
   CHART_SLOTS,
   CONTRAST_PROMISES,

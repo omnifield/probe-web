@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { DERIVED_TOKENS } from "../src/dimension.js";
 import { LAYERS, LAYER_TOKENS } from "../src/layer.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 
 // Порядок слоёв — КОНТРАКТ, а не деталь реализации компонента. Пока слой один, `z-index: 1`
 // работает; при четырёх слоях число из головы спорит с чужим числом из головы, и выигрывает
@@ -58,9 +58,10 @@ describe("шкала слоёв", () => {
 describe("слои — данные, а не лист", () => {
   it("слои не тема: они одинаковы для всех палитр", () => {
     // Порядок перекрытия от бренда не зависит, и место ему в контракте, а не в палитре.
+    // Прежде слои сверялись с контрактом темы; контракта нет (`PWEB-66`). Осталось
+    // различение с тем, что рядом: слой — не размерная ступень.
     for (const token of LAYER_TOKENS) {
-      expect(SCALE_TOKENS).not.toContain(token);
-      expect(THEME_META_TOKENS).not.toContain(token);
+      expect(DERIVED_TOKENS).not.toContain(token);
     }
   });
 

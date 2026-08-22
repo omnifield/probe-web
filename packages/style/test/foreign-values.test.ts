@@ -3,7 +3,8 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import * as surface from "../src/index.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
+import { DERIVED_TOKENS } from "../src/dimension.js";
+import { LAYER_TOKENS } from "../src/layer.js";
 
 // ГЕЙТ ПО СУЩЕСТВУ (`PWEB-3`, п. 2–3): наш набор значений — ОДИН ИЗ поставщиков, а не
 // фундамент. Оформление, собранное из чужих значений, обязано быть законным.
@@ -71,12 +72,11 @@ describe("наши имена — перечень, а не обязательс
   it("зона объявляет имена, но не объявляет, что ими надо пользоваться", () => {
     // Перечни на поверхности есть и нужны: по ним потребитель узнаёт, какие имена МЫ считаем
     // ролями. Обязательства в них нет — это словарь, а не анкета, которую обязаны заполнить.
-    const ours = new Set<string>([
-      ...SCALE_TOKENS,
-      ...THEME_META_TOKENS,
-    ]);
+    // Перечень наших имён — то, что зона объявляет СЕГОДНЯ: производные ступени и слои.
+    // Контракт темы отсюда ушёл вместе со сборщиком тем (`PWEB-66`).
+    const ours = new Set<string>([...DERIVED_TOKENS, ...LAYER_TOKENS]);
 
-    expect(ours.size).toBeGreaterThan(50);
+    expect(ours.size).toBeGreaterThan(30);
     // Чужие имена не пересекаются с нашими — значит скин на них законен и по составу тоже.
     for (const foreign of ["ink", "paper", "rule", "edge", "skin-surface", "skin-brand"]) {
       expect(ours.has(foreign), `${foreign} — наше имя, пример перестал быть про чужие`).toBe(

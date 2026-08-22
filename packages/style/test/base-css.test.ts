@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { WRITTEN_BASE } from "../src/css/written.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 
 // Инвариант base.css машиной, а не обещанием в шапке файла: базовый слой обязан
 // РЕФЕРЕНСИТЬ тему, а не подменять её. Литеральный цвет здесь не переключается вместе с
@@ -33,18 +32,12 @@ describe("base.css", () => {
     }
   });
 
-  it("каждый читаемый токен объявлен либо контрактом темы, либо этим же файлом", () => {
-    const code = strip(built);
-    const declared = new Set(
-      [...code.matchAll(/^\s*(--[\w-]+):/gm)].map((match) => match[1].slice(2)),
-    );
-    const contract = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS]);
-
-    const unknown = [...code.matchAll(/var\((--[\w-]+)/g)]
-      .map((match) => match[1].slice(2))
-      .filter((token) => !declared.has(token) && !contract.has(token));
-
-    expect([...new Set(unknown)], "ссылка на токен вне контракта").toEqual([]);
+  it("читать в листе нечего — ссылок нет ни одной", () => {
+    // Прежде проверялось, что каждый читаемый токен объявлен либо контрактом темы, либо этим
+    // же файлом. Контракта темы больше нет: сборщик тем снят вместе с предметом (`PWEB-66`).
+    // Обязательство свелось к сильному: в листе не осталось ни одного `var()` вообще — ни
+    // разрешимого, ни висячего.
+    expect(strip(built)).not.toContain("var(");
   });
 
   it("не одевает документ: КРОМЕ СБРОСА, своих объявлений в базовом слое нет", () => {

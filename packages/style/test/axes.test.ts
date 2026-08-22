@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { SIZE_SEEDS } from "./helpers/seeds.js";
+
 import { AXES, axisOf, type AxisBound } from "../src/axes.js";
 import {
   DENSITY_CEILING,
@@ -98,8 +100,8 @@ describe("оси вида и их границы", () => {
 
     // Границы не складываются, а перемножаются: на нижней плотности порог для семени равен
     // ровно нынешнему семени, то есть запаса нет.
-    expect(Number.parseFloat(control.fallback) * factor * DENSITY_FLOOR).toBeCloseTo(minRem, 10);
-    expect(floor).toBeLessThan(Number.parseFloat(control.fallback));
+    expect(Number.parseFloat(SIZE_SEEDS[control.seed]!) * factor * DENSITY_FLOOR).toBeCloseTo(minRem, 10);
+    expect(floor).toBeLessThan(Number.parseFloat(SIZE_SEEDS[control.seed]!));
   });
 
   it("единица оси совпадает с единицей семени шкалы", () => {
@@ -110,7 +112,7 @@ describe("оси вида и их границы", () => {
         expect(axis.unit, `${axis.token} — не шкала, значит множитель`).toBe("множитель");
         continue;
       }
-      const unit = /[\d.]+([a-z%]*)$/.exec(scale.fallback)?.[1];
+      const unit = /[\d.]+([a-z%]*)$/.exec(SIZE_SEEDS[scale.seed]!)?.[1];
       expect(axis.unit, `единица ${axis.token}`).toBe(unit);
     }
   });

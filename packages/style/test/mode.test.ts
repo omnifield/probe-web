@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { PALETTE_ATTRIBUTE } from "../src/palette.js";
 import { readBuilt } from "./helpers/css.js";
-import { PALETTE, paletteFile } from "./helpers/seeds.js";
 
 // ГЕЙТ «РЕЖИМ ПРИНАДЛЕЖИТ СКИНУ» (`PWEB-50`, `PWEB-61`). Мерим ЖИВЫМ ДОКУМЕНТОМ, а не чтением
 // файла: вопрос — «меняется ли хоть одно значение», а на него отвечает каскад, а не текст.
@@ -70,7 +68,6 @@ function styleSheet(css: string): void {
 beforeEach(() => {
   document.head.innerHTML = "";
   document.documentElement.className = "";
-  document.documentElement.removeAttribute(PALETTE_ATTRIBUTE);
 });
 
 describe("приложение БЕЗ скина", () => {
@@ -121,37 +118,26 @@ describe("приложение БЕЗ скина", () => {
   });
 });
 
-const PALETTE_NAMES = declaredIn(paletteFile());
+// ПОЛОЖИТЕЛЬНЫЙ КОНТРОЛЬ ПЕРЕЕХАЛ НА СКИН. Прежде им была палитра-фикстура: надета — режим
+// двигает значения, снята — не двигает. Палитры не существует, сборщик тем снят вместе с
+// предметом (`PWEB-66`), поэтому контролем стал лист, который ведёт себя как настоящий скин:
+// объявляет половину под классом режима.
+//
+// Без контроля «ничего не поехало» значило бы и «база режима не называет», и «замер слеп».
+const SKIN_LIKE = ":root { --проба: светлая; } :root.dark { --проба: тёмная; }";
 
-describe("положительный контроль: палитра надета", () => {
-  // Без этой половины «ничего не меняется» значило бы и «режим больше не при чём», и «замер
-  // не умеет замечать изменения». Берём палитру-фикстуру — ту самую, которую зона умеет
-  // порождать, — и убеждаемся, что на ней режим ДЕЙСТВУЕТ.
+describe("положительный контроль: надето что-то, знающее про режим", () => {
   beforeEach(() => {
     styleSheet(base);
-    styleSheet(paletteFile());
-    document.documentElement.setAttribute(PALETTE_ATTRIBUTE, PALETTE);
+    styleSheet(SKIN_LIKE);
   });
 
-  it("с палитрой режим меняет значения — значит замер выше меряет, а не молчит", () => {
-    const light = snapshot(PALETTE_NAMES);
+  it("значение под классом режима ДВИГАЕТСЯ — значит замер выше меряет, а не молчит", () => {
+    const light = snapshot(["--проба"]);
     document.documentElement.classList.add("dark");
-    const dark = snapshot(PALETTE_NAMES);
+    const dark = snapshot(["--проба"]);
 
-    const moved = Object.keys(light).filter((name) => light[name] !== dark[name]);
-    expect(moved.length, "палитра надета, а режим ничего не изменил — замер слеп").
-      toBeGreaterThan(10);
-  });
-
-  it("а надета она ТОЛЬКО по имени: без атрибута палитры режим снова ничего не меняет", () => {
-    // То же различение, что держит `palette.test.ts`, но с этой стороны: палитра действует по
-    // имени, и снятие имени возвращает документ к голому состоянию вместе с режимом.
-    document.documentElement.removeAttribute(PALETTE_ATTRIBUTE);
-
-    const light = snapshot([...WATCHED, ...PALETTE_NAMES]);
-    document.documentElement.classList.add("dark");
-    const dark = snapshot([...WATCHED, ...PALETTE_NAMES]);
-
-    expect(Object.keys(light).filter((name) => light[name] !== dark[name])).toEqual([]);
+    expect(light["--проба"]).toBe("светлая");
+    expect(dark["--проба"]).toBe("тёмная");
   });
 });

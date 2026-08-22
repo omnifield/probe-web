@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { axisOf } from "../src/axes.js";
+import { SIZE_SEEDS } from "./helpers/seeds.js";
 import {
   DENSITY_CEILING,
   DENSITY_DEFAULT,
@@ -14,12 +15,9 @@ import {
   GRID_STEP,
   ROUND_FALLBACK_NOTE,
   ROUND_SUPPORT_TEST,
-  snappedValue,
-  stepValue,
   type DerivedScale,
   type DerivedStep,
 } from "../src/dimension.js";
-import { THEME_META_TOKENS } from "../src/tokens.js";
 
 // Размерные шкалы — гейт того же обещания, что и у цвета: значение выводится из ОДНОГО семени,
 // а не набирается россыпью. Россыпь проверить нечем — она просто есть; шкалу проверить можно.
@@ -62,13 +60,40 @@ const evaluate = (expr: string, density: number): number => {
     return product[1].split(" * ").reduce((acc, term) => acc * evaluate(term, density), 1);
   }
 
-  const reference = /^var\(--([\w-]+), ([^)]+)\)$/.exec(text);
+  const reference = /^var\(--([\w-]+)\)$/.exec(text);
   if (reference) {
-    return reference[1] === DENSITY_TOKEN ? density : toRem(reference[2]);
+    return reference[1] === DENSITY_TOKEN ? density : toRem(SIZE_SEEDS[reference[1]]!);
   }
 
   return toRem(text);
 };
+
+/**
+ * Собиратель значения ступени — ИНСТРУМЕНТ ПРОБ, а не поверхность зоны.
+ *
+ * Такой же жил в зоне (`stepValue`, `snappedValue`) и печатал в базовый слой. Печатать некому:
+ * лист везёт один сброс, ступени печатает СКИН своим кодом. Замер показал, что наш и его
+ * собиратели совпадали алгоритмом и расходились одним — наш подставлял запасное значение в
+ * `var()`. Держать вторую копию печатающего значило бы разъехаться с ним на первой правке.
+ *
+ * Здесь он остался как инструмент: обязательства ниже — про ЧИСЛА (отношения ряда, пол нормы,
+ * посадка на сетку), а числа берутся из выражения, а не из формулы, — иначе проба проверяла бы
+ * саму себя.
+ */
+const stepValue = (scale: DerivedScale, step: DerivedStep): string => {
+  if ("value" in step) return step.value;
+
+  const seed = `var(--${scale.seed})`;
+  if ("offset" in step) return step.offset ? `calc(${seed} ${step.offset})` : seed;
+
+  const parts = [seed];
+  if (step.factor !== 1) parts.push(String(step.factor));
+  if (scale.density) parts.push(`var(--${DENSITY_TOKEN})`);
+  return parts.length === 1 ? seed : `calc(${parts.join(" * ")})`;
+};
+
+const snappedValue = (scale: DerivedScale, step: DerivedStep): string | null =>
+  scale.snap ? `round(nearest, ${stepValue(scale, step)}, ${GRID_STEP})` : null;
 
 /**
  * Выражение, которое достаётся браузеру С поддержкой `round()`: второе объявление, если оно
@@ -87,7 +112,7 @@ const fallbackOf = (scale: DerivedScale, step: DerivedStep, density: number): nu
 
 /** Значение ДО округления — им проверяется вывод границы, а не поставка. */
 const unrounded = (scale: DerivedScale, factor: number, density: number): number =>
-  Number.parseFloat(scale.fallback) * factor * density;
+  Number.parseFloat(SIZE_SEEDS[scale.seed]!) * factor * density;
 
 const factorOf = (step: DerivedStep): number => ("factor" in step ? step.factor : Number.NaN);
 
@@ -121,17 +146,18 @@ describe("производные шкалы", () => {
       for (const step of scale.steps) {
         const value = stepValue(scale, step);
         if ("value" in step) continue; // литерал вроде `9999px` — не производная
-        expect(value, `--${step.name}`).toContain(`var(--${scale.seed}, ${scale.fallback})`);
+        expect(value, `--${step.name}`).toContain(`var(--${scale.seed})`);
       }
     }
   });
 
-  it("семя каждой шкалы объявлено контрактом темы", () => {
-    // Иначе шкала считается от токена, которого в контракте нет: тема его не задаст, и
-    // работать всё будет только на подставленном по умолчанию значении.
-    for (const scale of DERIVED_SCALES) {
-      expect(THEME_META_TOKENS, `семя --${scale.seed}`).toContain(scale.seed);
-    }
+  it("у каждой шкалы объявлено семя, и оно одно на шкалу", () => {
+    // Прежде проверялось, что семя входит в контракт ТЕМЫ. Контракта нет — тема как единица
+    // отменена (`PWEB-66`). Обязательство осталось про сами данные: шкала называет своё семя,
+    // и два семени не совпадают, иначе одна шкала молча правила бы другую.
+    const seeds = DERIVED_SCALES.map((scale) => scale.seed);
+    for (const seed of seeds) expect(seed, "у шкалы нет семени").toBeTruthy();
+    expect(new Set(seeds).size, "два семени совпали").toBe(seeds.length);
   });
 
   it("ни один токен не объявлен дважды", () => {
@@ -514,7 +540,7 @@ describe("шкала ширин поверхностей", () => {
   /** Ширина ступени в знаках при заданной плотности — то, чем шкала и задана. */
   const glyphs = (name: string, density: number): number =>
     valueOf(column, stepByName(column, name), density) /
-    (Number.parseFloat(column.fallback) * density);
+    (Number.parseFloat(SIZE_SEEDS[column.seed]!) * density);
 
   it("имя ступени равно числу знаков", () => {
     // Считается из данных, как у интервалов: имя, которое не равно множителю, — это имя,

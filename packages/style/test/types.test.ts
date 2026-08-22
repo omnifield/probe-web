@@ -69,18 +69,12 @@ beforeAll(() => {
     join(install, "consumer.ts"),
     [
       `import "${PKG}/base.css";`,
-      `import { themeModelToCss, type ThemeModel, type ThemeTokens } from "${PKG}";`,
+      `import { buildScale, type ScaleMode, type ScaleValues } from "${PKG}";`,
       "",
-      "export type Tokens = ThemeTokens;",
-      "",
-      "// Генератор — обычный публичный вход, без подпутей во внутренности: у потребителя",
-      "// он обязан и резолвиться, и типизироваться из корня поставки.",
-      "export const model: ThemeModel = {",
-      "  id: 'ocean',",
-      "  seeds: { brand: 'oklch(0.55 0.16 248)', neutral: 'oklch(0.62 0.004 248)', danger: 'oklch(0.505 0.196 27)' },",
-      "  density: '1',",
-      "};",
-      "export const css: string = themeModelToCss(model);",
+      "// Построение половины из семени — то, что зовёт механика скина. Публичный вход один,",
+      "// без подпутей во внутренности: у потребителя он обязан и резолвиться, и типизироваться.",
+      "export const mode: ScaleMode = 'dark';",
+      "export const half: ScaleValues = buildScale('oklch(0.55 0.16 248)', mode);",
       "",
       "// Порождение CSS по требованию — тоже публичный вход (`PWEB-20`): его зовёт",
       "// дев-сервер, живущий в другой зоне, и типы обязаны складываться у него так же,",
@@ -110,11 +104,11 @@ beforeAll(() => {
   writeFileSync(
     join(install, "values.ts"),
     [
-      `import { AA_TEXT, LAYER_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}";`,
+      `import { AA_TEXT, DERIVED_TOKENS, LAYER_TOKENS, contrastRatio, tryParseColor } from "${PKG}";`,
       `import type { ParsedColor, ScaleMode } from "${PKG}";`,
       "",
       "export const mode: ScaleMode = 'dark';",
-      "export const names: readonly string[] = [...SCALE_TOKENS, ...LAYER_TOKENS];",
+      "export const names: readonly string[] = [...DERIVED_TOKENS, ...LAYER_TOKENS];",
       "export const parsed: ParsedColor = tryParseColor('hsl(210 40% 25%)');",
       "export const ok: boolean = contrastRatio('#000000', '#ffffff') >= AA_TEXT;",
       "",
@@ -145,20 +139,11 @@ beforeAll(() => {
     "utf8",
   );
 
-  // Надеваемой палитры по умолчанию нет (`PWEB-50`). Негатив здесь ровно ОДИН — на сборщик
-  // темы: подпуть `/themes.css` этим гейтом не проверить в принципе, и причина записана в
-  // шапке файла — под шаблон `declare module '*.css'` попадает любое имя на `.css`, поэтому
-  // `tsc` зелен и на несуществующем файле. Существование подпутей держит `pack.test.ts`, там
-  // негатив и стоит.
+  // Сборщика тем на поверхности нет вовсе (`PWEB-66`): тема как единица отменена, живых
+  // зовущих у него было ноль. Негатив стоит на самом заметном его имени.
   writeFileSync(
     join(install, "seedless.ts"),
-    [
-      `import { createTheme } from "${PKG}";`,
-      "",
-      "// Без семян: прежде незаданная шкала бралась из НАШЕЙ пары, теперь брать нечего.",
-      "export const theme = createTheme({ name: 'ocean' });",
-      "",
-    ].join("\n"),
+    `import { createTheme } from "${PKG}";\nexport { createTheme };\n`,
     "utf8",
   );
   writeFileSync(join(install, "tsconfig.seedless.json"), tsconfig(["seedless.ts"]), "utf8");
@@ -215,10 +200,10 @@ describe("типизация у потребителя", () => {
     expect(typecheck("tsconfig.gone-subpath.json")).toMatch(/TS2307/);
   });
 
-  it("createTheme без семян не компилируется — умолчания палитрой больше нет", () => {
-    // `TS2739` — «не хватает свойств». Прежде это компилировалось и молча приносило наш бренд:
-    // палитра фреймворка, отгруженная через удобство.
-    expect(typecheck("tsconfig.seedless.json")).toMatch(/TS2739|TS2345/);
+  it("сборщика тем на поверхности нет", () => {
+    // `TS2305` — «модуль не экспортирует такого имени». Ровно то, что обязан увидеть тот, кто
+    // по привычке соберёт тему: её не существует как единицы, а не «она переехала».
+    expect(typecheck("tsconfig.seedless.json")).toMatch(/TS2305/);
   });
 
   it("инструментов стилизации на поверхности нет — они отдельная поставка", () => {
