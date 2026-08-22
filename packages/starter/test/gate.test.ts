@@ -14,6 +14,16 @@
 // шаблон получает импортом, — настоящий `checkStyleOrder` из рантайма и настоящую пару из
 // стилевого слоя. Копия проверяла бы копию: разъехавшись с шаблоном, она осталась бы зелёной.
 //
+// ТРИ СЛУЧАЯ, и различать их обязательно: база и скин есть — тихо; скин есть, а базы нет —
+// краснеет и называет причину; скина нет вовсе — снова тихо, потому что голый кит это рабочее
+// состояние продукта, а не поломка. Средний случай и есть предмет проверки; крайние стоят
+// рядом, чтобы «краснеет» не оказалось «краснеет всегда».
+//
+// ОДЕВАЕМ ШТАТНОЙ МЕХАНИКОЙ, а не атрибутом руками. Опознание надетого скина принадлежит
+// рантайму: он его называет и он его ставит. Проба, пишущая атрибут сама, — это своя дорога к
+// тому же результату: переименование она переживёт молча и останется зелёной ровно тогда,
+// когда шов разъехался.
+//
 // ПОЧЕМУ ЗДЕСЬ HAPPY-DOM, А НЕ JSDOM. Проверка спрашивает ВЫЧИСЛЕННОЕ на корне значение, то
 // есть ей нужен настоящий каскад, а базовый лист объявляет своё универсальным селектором со
 // списком псевдоэлементов (`*, ::before, ::after`). JSDOM такое правило пропускает целиком —
@@ -26,7 +36,13 @@
 // способность подпутём `/generate`, и порождение отражает ТЕКУЩИЕ исходники, а не прошлую
 // сборку. Читая файл, проба судила бы результат последней чужой сборки.
 
-import { checkStyleOrder, type StyleOrderReport } from "@omnifield/probe-web-runtime";
+import {
+  checkStyleOrder,
+  makeSkinSwitch,
+  type SkinSource,
+  type SkinSwitch,
+  type StyleOrderReport,
+} from "@omnifield/probe-web-runtime";
 import { BASE_MARKER } from "@omnifield/probe-web-style";
 import { baseCss } from "@omnifield/probe-web-style/generate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,19 +83,44 @@ function givenBase(): void {
   document.head.appendChild(sheet);
 }
 
-/** Одетая страница: без неё «базы нет» — законное голое состояние, а не нарушенный порядок. */
-function givenDressed(name = "фикстура"): void {
-  document.documentElement.setAttribute("data-theme", name);
+const SKIN = "фикстура";
+
+/**
+ * Источник скинов приложения-фикстуры. Вид его скина не важен вовсе: предмет пробы — порядок
+ * подключения, а не то, как выглядит кнопка.
+ */
+const source: SkinSource = {
+  names: () => [SKIN],
+  css: () => "/* фикстура: предмет пробы — порядок подключения, а не вид */",
+};
+
+let worn: SkinSwitch | null = null;
+
+/**
+ * Одевает страницу ШТАТНОЙ МЕХАНИКОЙ.
+ *
+ * Атрибут руками здесь был бы своей дорогой к тому же результату: опознание надетого скина
+ * принадлежит рантайму, он его называет и он его ставит. Проба, пишущая атрибут сама,
+ * переживает переименование молча — и остаётся зелёной ровно тогда, когда шов разъехался.
+ */
+async function givenDressed(): Promise<void> {
+  worn = makeSkinSwitch(source);
+  await worn.wear(SKIN);
 }
 
 beforeEach(() => {
   document.head.innerHTML = "";
-  document.documentElement.removeAttribute("data-theme");
   document.documentElement.removeAttribute("data-skin");
   document.documentElement.className = "";
+  localStorage.clear();
 });
 
 afterEach(() => {
+  // Лист переключателя убираем его же средствами: экземпляров может быть несколько, и каждый
+  // владеет своим листом. Опознание с корня снимает `beforeEach` — `dispose()` его не трогает
+  // намеренно, чтобы не соврать про чужую работу.
+  worn?.dispose();
+  worn = null;
   vi.restoreAllMocks();
 });
 
@@ -89,9 +130,9 @@ describe("вызов из шаблона выполняется, а не све�
     expect(CALL).not.toBe("");
   });
 
-  it("С БАЗОЙ ПРОХОДИТ: настоящий лист приехал — проверка молчит", () => {
+  it("БАЗА И СКИН ЕСТЬ: настоящий лист приехал — проверка молчит", async () => {
     givenBase();
-    givenDressed();
+    await givenDressed();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     // Сперва предъявим, что лист ДЕЙСТВИТЕЛЬНО приехал: проверка спрашивает вычисленное
@@ -107,8 +148,8 @@ describe("вызов из шаблона выполняется, а не све�
     expect(error).not.toHaveBeenCalled();
   });
 
-  it("БЕЗ БАЗЫ КРАСНЕЕТ: оформление стоит, листа нет — сказано вслух", () => {
-    givenDressed("фикстура");
+  it("СКИН ЕСТЬ, БАЗЫ НЕТ — КРАСНЕЕТ и говорит вслух", async () => {
+    await givenDressed();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     // Свойство маркера у корня ЕСТЬ и здесь — его объявляет сам браузер своим умолчанием.
@@ -120,19 +161,25 @@ describe("вызов из шаблона выполняется, а не све�
 
     expect(report.status).toBe("missing-base");
     expect(report.seen).toBe(seen);
-    expect(report.message).toContain("фикстура");
+    // Имя надетого скина названо в жалобе, и взялось оно с корня — механика читает документ,
+    // а не свою память.
+    expect(report.skin).toBe(SKIN);
+    expect(report.message).toContain(SKIN);
     expect(error).toHaveBeenCalledTimes(1);
   });
 
-  it("голое приложение — не поломка: ни базы, ни оформления, и тишина", () => {
+  it("СКИНА НЕТ ВОВСЕ — не поломка: голый кит и тишина", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(callFromTemplate().status).toBe("no-skin");
+    const report = callFromTemplate();
+
+    expect(report.status).toBe("no-skin");
+    expect(report.skin).toBeNull();
     expect(error).not.toHaveBeenCalled();
   });
 
-  it("не роняет приложение: диагностика вида не имеет на это права", () => {
-    givenDressed();
+  it("не роняет приложение: диагностика вида не имеет на это права", async () => {
+    await givenDressed();
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(() => callFromTemplate()).not.toThrow();
