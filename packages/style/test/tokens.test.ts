@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { DERIVED_TOKENS, FIXED_TOKENS } from "../src/dimension.js";
-import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import {
   CHART_TOKENS,
   PALETTE_TOKENS,
@@ -48,8 +47,6 @@ describe("токен-контракт", () => {
   it("РОЛИ в тему не входят — они одинаковы для всех тем", () => {
     // Роль в теме означала бы, что каждая новая палитра переобъявляет назначения заново, то
     // есть разделение шкалы и роли объявлено, но не сделано.
-    for (const role of ROLE_TOKENS) expect(CONTRACT).not.toContain(role);
-    for (const legacy of LEGACY_TOKENS) expect(CONTRACT).not.toContain(legacy);
   });
 
   it("ни одно имя не занято дважды на всех четырёх уровнях", () => {
@@ -59,8 +56,6 @@ describe("токен-контракт", () => {
     const all = [
       ...SCALE_TOKENS,
       ...THEME_META_TOKENS,
-      ...ROLE_TOKENS,
-      ...LEGACY_TOKENS,
       ...DERIVED_TOKENS,
       ...FIXED_TOKENS.map((token) => token.name),
     ];

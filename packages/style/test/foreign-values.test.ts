@@ -3,7 +3,6 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import * as surface from "../src/index.js";
-import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 
 // ГЕЙТ ПО СУЩЕСТВУ (`PWEB-3`, п. 2–3): наш набор значений — ОДИН ИЗ поставщиков, а не
@@ -75,8 +74,6 @@ describe("наши имена — перечень, а не обязательс
     const ours = new Set<string>([
       ...SCALE_TOKENS,
       ...THEME_META_TOKENS,
-      ...ROLE_TOKENS,
-      ...LEGACY_TOKENS,
     ]);
 
     expect(ours.size).toBeGreaterThan(50);

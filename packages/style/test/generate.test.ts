@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { baseCss } from "../src/css/generate.js";
 import { WRITTEN_BASE } from "../src/css/written.js";
 import { DERIVED_TOKENS } from "../src/dimension.js";
-import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import { readBuilt } from "./helpers/css.js";
 
 // ГЕЙТ ПОРОЖДЕНИЯ ПО ТРЕБОВАНИЮ (`PWEB-20`).
@@ -55,12 +54,12 @@ describe("порождение не зависит от прошлой сбор�
     expect(readdirSync(sourceDir)).not.toContain("base.css");
   });
 
-  it("состав выведен из данных зоны — каждая ступень и каждая роль на месте", () => {
+  it("состав выведен из данных зоны — каждая ступень на месте", () => {
     // Гейт против возврата ручного списка: перечни живут массивами в TS, и порождённое
     // обязано следовать за ними, а не за текстом, набранным когда-то руками.
     const css = baseCss();
 
-    for (const token of [...DERIVED_TOKENS, ...ROLE_TOKENS, ...LEGACY_TOKENS]) {
+    for (const token of DERIVED_TOKENS) {
       expect(css, `--${token} не попал в порождённое`).toContain(`--${token}:`);
     }
   });
@@ -75,8 +74,6 @@ describe("порождение не зависит от прошлой сбор�
       "derivedCss",
       "axesCss",
       "layerCss",
-      "rolesCss",
-      "legacyCss",
       "themeModelToCss",
     ]) {
       expect(script, `${piece} зовётся мимо порождения`).not.toContain(piece);

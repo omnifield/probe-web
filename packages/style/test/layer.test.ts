@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { LAYERS, LAYER_TOKENS, layerCss } from "../src/layer.js";
-import { ROLE_TOKENS } from "../src/roles.js";
 import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
 
 // Порядок слоёв — КОНТРАКТ, а не деталь реализации компонента. Пока слой один, `z-index: 1`
@@ -59,12 +58,12 @@ describe("слои в поставке", () => {
     for (const token of LAYER_TOKENS) expect(built).toContain(`--${token}:`);
   });
 
-  it("слои — не тема и не роль: они одинаковы для всех палитр", () => {
-    // Порядок слоёв от бренда не зависит, и место ему в базе, а не в каждой палитре.
+  it("слои — не тема: они одинаковы для всех палитр", () => {
+    // Порядок слоёв от бренда не зависит, и место ему в базе, а не в каждой палитре. Прежде
+    // здесь стерёгся и третий перечень — роли; ролей больше нет (`PWEB-61`).
     for (const token of LAYER_TOKENS) {
       expect(SCALE_TOKENS).not.toContain(token);
       expect(THEME_META_TOKENS).not.toContain(token);
-      expect(ROLE_TOKENS).not.toContain(token);
     }
   });
 

@@ -110,11 +110,11 @@ beforeAll(() => {
   writeFileSync(
     join(install, "values.ts"),
     [
-      `import { AA_TEXT, ROLE_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}";`,
+      `import { AA_TEXT, LAYER_TOKENS, SCALE_TOKENS, contrastRatio, tryParseColor } from "${PKG}";`,
       `import type { ParsedColor, ScaleMode } from "${PKG}";`,
       "",
       "export const mode: ScaleMode = 'dark';",
-      "export const names: readonly string[] = [...SCALE_TOKENS, ...ROLE_TOKENS];",
+      "export const names: readonly string[] = [...SCALE_TOKENS, ...LAYER_TOKENS];",
       "export const parsed: ParsedColor = tryParseColor('hsl(210 40% 25%)');",
       "export const ok: boolean = contrastRatio('#000000', '#ffffff') >= AA_TEXT;",
       "",

@@ -11,12 +11,13 @@ import {
   type ScaleKey,
   buildScale,
 } from "../src/scale.js";
-import { LEGACY_ALIASES, ROLES, ROLE_TOKENS, legacyCss, rolesCss } from "../src/roles.js";
 import {
   SCALE_TOKENS,
+  THEME_META_TOKENS,
   createTheme,
   type ThemeTokens,
 } from "../src/tokens.js";
+import { DENSITY_TOKEN } from "../src/dimension.js";
 
 // Тесты МОДЕЛИ: что ступень значит и что от неё нельзя отнять. Контраст проверяется отдельно
 // (`contrast.test.ts`) — здесь всё остальное, ради чего модель и брали.
@@ -135,49 +136,14 @@ describe("смена бренда — ОДНО значение", () => {
     expect(changed(before.light, after.light, "danger-")).toEqual([]);
   });
 
-  it("не трогает РОЛИ — они ссылаются на ступень, а не хранят цвет", () => {
-    // Ради этого разделение и вводилось: имена, за которые цепляется потребитель, переживают
-    // смену бренда.
-    expect(rolesCss()).toBe(rolesCss());
-    for (const token of ROLE_TOKENS) {
-      expect(Object.keys(after.light)).not.toContain(token);
-    }
-  });
-});
-
-describe("семантический слой", () => {
-  it("каждая роль ссылается на СУЩЕСТВУЮЩИЙ токен шкалы", () => {
-    for (const role of ROLES) {
-      expect(SCALE_TOKENS, `роль --${role.name}`).toContain(role.token);
-    }
-  });
-
-  it("у каждой роли объявлено назначение, и имя не начинается с номера ступени", () => {
-    for (const role of ROLES) {
-      expect(role.purpose, `роль --${role.name}`).toBeTruthy();
-      expect(role.name).not.toMatch(/-\d+$/);
-    }
-  });
-
-  it("роли не хранят цвет — только ссылку на ступень", () => {
-    const css = rolesCss();
-    expect(css.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/oklch\(|#[0-9a-f]{3,8}\b/i);
-    for (const role of ROLES) {
-      expect(css).toContain(`--${role.name}: var(--${role.token});`);
-    }
-  });
-
-  it("прежний плоский набор выражен через роли, а не оставлен значениями", () => {
-    const css = legacyCss();
-    for (const alias of LEGACY_ALIASES) {
-      expect(ROLE_TOKENS, `псевдоним --${alias.name}`).toContain(alias.role);
-      expect(css).toContain(`--${alias.name}: var(--${alias.role});`);
-    }
-  });
-
-  it("устаревшее имя не занимает имя роли — иначе одно объявление затирало бы другое", () => {
-    for (const alias of LEGACY_ALIASES) {
-      expect(ROLE_TOKENS).not.toContain(alias.name);
+  it("не заводит имён сверх шкал — в паре только ступени и мета", () => {
+    // Прежде здесь проверялось, что смена бренда не трогает РОЛИ. Ролей больше нет: имя,
+    // называющее вид, — решение скина, а не наше (`PWEB-61`). Обязательство осталось от
+    // обратного: пара из семян состоит ровно из объявленного контракта, и лишнего имени в неё
+    // не приезжает — иначе «шкала» тихо стала бы набором.
+    const contract = new Set<string>([...SCALE_TOKENS, ...THEME_META_TOKENS, DENSITY_TOKEN]);
+    for (const token of Object.keys(after.light)) {
+      expect(contract.has(token), `--${token} в паре, но не в контракте`).toBe(true);
     }
   });
 });
