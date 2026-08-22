@@ -172,11 +172,25 @@ describe("хедер", () => {
     );
   });
 
-  it("режим переключается механикой приложения", () => {
-    const host = mount(() => <App />);
-    const [light] = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
+  it("режима без скина не предлагают — переключать нечего", async () => {
+    serveSkins([]);
 
-    light?.click();
+    const host = mount(() => <App />);
+
+    await vi.waitFor(() => expect(host.textContent ?? "").toContain("Скинов в службе нет"));
+    expect(host.querySelectorAll(".modes__item")).toHaveLength(0);
+  });
+
+  it("со скином режим переключается механикой приложения", async () => {
+    const host = mount(() => <App />);
+
+    const light = await vi.waitFor(() => {
+      const [first] = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
+      expect(first).toBeDefined();
+      return first as HTMLButtonElement;
+    });
+
+    light.click();
 
     expect(readSkin().mode).toBe("light");
   });
