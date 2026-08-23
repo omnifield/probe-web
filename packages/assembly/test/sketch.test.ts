@@ -11,7 +11,7 @@ import { checkTree } from "../src/integrity.js";
 import { canContain } from "../src/nesting.js";
 import { createRegistry } from "../src/registry.js";
 import { sketchOf } from "../src/sketch.js";
-import { nodeOf, type AssemblyTree } from "../src/tree.js";
+import { isContent, nodeOf, type AssemblyTree } from "../src/tree.js";
 import { spec } from "./passports.js";
 
 const Component = () => null;
@@ -26,9 +26,16 @@ const registry = createRegistry(
   }),
 );
 
-/** Пары «узел → его адрес» — так образец читается целиком и в одном месте. */
+/**
+ * Пары «узел → чем он назван» — так образец читается целиком и в одном месте.
+ *
+ * Содержимое названо родом, а не адресом: адреса у него нет. В образце его быть и не должно —
+ * ровно это проверяет проба ниже, и такая запись показала бы его сразу.
+ */
 const shapeOf = (tree: AssemblyTree) =>
-  Object.values(tree.components.nodes).map((node) => [node.id, node.type] as const);
+  Object.values(tree.components.nodes).map(
+    (node) => [node.id, isContent(node) ? `содержимое:${node.genus}` : node.type] as const,
+  );
 
 describe("образец компонента", () => {
   it("у компонента с одной частью — один узел", () => {
@@ -45,6 +52,7 @@ describe("образец компонента", () => {
       ["accordion", "accordion"],
       ["item", "accordion.item"],
       ["itemTrigger", "accordion.itemTrigger"],
+      ["itemIndicator", "accordion.itemIndicator"],
       ["itemContent", "accordion.itemContent"],
     ]);
     expect(nodeOf(sketch, "item")?.children).toEqual(["itemTrigger", "itemContent"]);
@@ -70,7 +78,7 @@ describe("образец компонента", () => {
 
     expect(checkTree(sketch)).toEqual([]);
     for (const node of Object.values(sketch.components.nodes)) {
-      if (node.parentId === null) continue;
+      if (node.parentId === null || isContent(node)) continue;
       const owner = nodeOf(sketch, node.parentId) as { type: string };
       expect(canContain(registry, owner.type, node.type)).toEqual({ allowed: true });
     }
@@ -87,6 +95,7 @@ describe("образец компонента", () => {
       "гармошка-1",
       "гармошка-1-item-1",
       "гармошка-1-itemTrigger-1",
+      "гармошка-1-itemIndicator-1",
       "гармошка-1-itemContent-1",
     ]);
   });

@@ -45,12 +45,19 @@ export const button = passport("button", "component", "root", [
 /** Значок: место занято самим компонентом — пустой перечень не пускает НИЧЕГО. */
 export const icon = passport("icon", "icon", "root", [{ name: "root", accepts: [] }]);
 
-/** Гармошка: четыре части, вложенность объявлена. Проверка «часть внутри части» — на ней. */
+/**
+ * Гармошка: пять частей, вложенность объявлена. Проверка «часть внутри части» — на ней.
+ *
+ * Кнопка раздела списана с настоящей: она допускает СРАЗУ и свою часть-указатель, и содержимое
+ * двух родов. Это то самое место, где прежняя форма теряла подпись (`PWEB-83`), — потому оно и
+ * стоит здесь, а не подобрано покороче.
+ */
 export const accordion = passport("accordion", "component", "root", [
   { name: "root", accepts: [part("item")] },
   { name: "item", accepts: [part("itemTrigger"), part("itemContent")] },
-  { name: "itemTrigger", accepts: [content("text"), content("icon")] },
-  { name: "itemContent", accepts: [content("component")] },
+  { name: "itemTrigger", accepts: [part("itemIndicator"), content("text"), content("icon")] },
+  { name: "itemContent", accepts: [content("text"), content("component")] },
+  { name: "itemIndicator", accepts: [content("text"), content("icon")] },
 ]);
 
 /**

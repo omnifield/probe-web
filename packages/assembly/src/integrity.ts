@@ -15,7 +15,7 @@
 // `orphaned_element`, `missing_child`; сверено 2026-08-20): совпадение словаря даром, а
 // расхождение стоило бы перевода в каждом месте, где деревья ходят между инструментами.
 
-import { nodeOf, type AssemblyTree, type NodeId } from "./tree.js";
+import { isContent, nodeOf, type AssemblyTree, type NodeId } from "./tree.js";
 
 /**
  * Имя изъяна:
@@ -28,7 +28,12 @@ import { nodeOf, type AssemblyTree, type NodeId } from "./tree.js";
  *  • `parent-mismatch`  — обратная ссылка не совпадает с прямой; подъём по дереву соврёт;
  *  • `child-shared`     — один узел числится ребёнком у двоих: дерево перестало быть деревом;
  *  • `orphaned`         — узел есть в карте, но от корня недостижим: он не нарисуется никогда;
- *  • `cycle`            — узел лежит в собственном поддереве: обход не кончится.
+ *  • `cycle`            — узел лежит в собственном поддереве: обход не кончится;
+ *  • `content-in-props` — узел компонента несёт содержимое пропом `children`: это ПРЕЖНЯЯ форма
+ *                          (`PWEB-83`). Отрисовка её больше не читает, и молчать о ней нельзя —
+ *                          человек увидел бы пустой узел и пошёл искать ошибку вёрстки;
+ *  • `content-with-children` — у узла содержимого есть дети: содержимое это лист, и такой узел
+ *                          пришёл извне — правки его создать не могут.
  */
 export type TreeFlawName =
   | "root-missing"
@@ -38,7 +43,9 @@ export type TreeFlawName =
   | "parent-mismatch"
   | "child-shared"
   | "orphaned"
-  | "cycle";
+  | "cycle"
+  | "content-in-props"
+  | "content-with-children";
 
 /** Один изъян: имя, к чему относится и что это значит человеку. */
 export interface TreeFlaw {
@@ -89,6 +96,26 @@ export function checkTree(tree: AssemblyTree): TreeFlaw[] {
         nodeId: key,
         relatedId: node.id,
         means: `узел лежит под ключом «${key}», а зовётся «${node.id}» — взятие по имени идёт по ключу`,
+      });
+    }
+
+    // Род узла и его форма (`PWEB-83`). Оба изъяна — про деревья, пришедшие ИЗВНЕ: хранилище,
+    // чужая правка, дерево прежней формы. Правки механики ни того, ни другого не создают, и
+    // именно поэтому проверка нужна здесь — типы за сохранённый JSON не отвечают.
+    if (isContent(node)) {
+      // Приведение — не придирка: тип обещает пустой список, а данные приехали из файла.
+      if ((node.children as readonly NodeId[]).length > 0) {
+        flaws.push({
+          flaw: "content-with-children",
+          nodeId: key,
+          means: `узел «${key}» — содержимое рода «${node.genus}», но у него есть дети: внутрь содержимого не кладётся ничего`,
+        });
+      }
+    } else if (node.props && "children" in node.props) {
+      flaws.push({
+        flaw: "content-in-props",
+        nodeId: key,
+        means: `узел «${key}» несёт содержимое пропом «children» — это прежняя форма: содержимое кладётся ОТДЕЛЬНЫМ узлом среди детей, и пропом отрисовка его не покажет`,
       });
     }
 

@@ -28,7 +28,7 @@ const tree: AssemblyTree = {
 
 describe("дерево", () => {
   it("отдаёт узел по имени и корень", () => {
-    expect(nodeOf(tree, "a")?.type).toBe("button");
+    expect(nodeOf(tree, "a")).toMatchObject({ type: "button" });
     expect(rootOf(tree)?.id).toBe("page");
   });
 

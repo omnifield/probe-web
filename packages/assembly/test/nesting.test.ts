@@ -183,6 +183,7 @@ describe("обратное чтение: возможные владельцы",
     // любой компонент (раскладка, содержимое вкладки), и туда, где не запрещено ничего.
     expect(addresses(possibleOwnersOf(registry, "icon") ?? [])).toEqual([
       "accordion.itemContent",
+      "accordion.itemIndicator",
       "accordion.itemTrigger",
       "button",
       "layout",
@@ -212,6 +213,8 @@ describe("обратное чтение: возможные владельцы",
 
   it("кандидат без адреса спрашивается родом или именем части", () => {
     expect(addresses(ownersAdmitting(registry, { kind: "content", genus: "text" }))).toEqual([
+      "accordion.itemContent",
+      "accordion.itemIndicator",
       "accordion.itemTrigger",
       "button",
       "ui.button",

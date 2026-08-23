@@ -78,6 +78,7 @@ describe("собранное", () => {
       "coordinateOfType",
       "nodesSharingCoordinate",
       "sketchOf",
+      "isContent",
       "insertNode",
       "removeNode",
       "moveNode",

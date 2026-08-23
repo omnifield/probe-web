@@ -22,7 +22,7 @@
 // остальным.
 
 import { readAddress, type Registry } from "./registry.js";
-import { type AssemblyTree, type NodeId } from "./tree.js";
+import { isContent, type AssemblyTree, type NodeId } from "./tree.js";
 
 /**
  * Паспортная ПОЛОВИНА координаты: компонент и его часть.
@@ -68,6 +68,10 @@ export function coordinateOfType(registry: Registry, type: string): NodeCoordina
  * нечем. Их видно другим средством — отрисовка даёт им явный запасной вид, а `checkTree`
  * говорит о дереве.
  *
+ * Узлы СОДЕРЖИМОГО не попадают сюда по другой причине: у них нет адреса вовсе (`PWEB-83`), и
+ * это не пробел, а устройство — подпись не одевается сама, её одевает часть, внутри которой она
+ * лежит. Скину адресовать здесь нечего.
+ *
  * @param tree дерево
  * @param registry реестр
  */
@@ -78,6 +82,8 @@ export function nodesByCoordinate(
   const groups = new Map<string, NodeId[]>();
 
   for (const [id, node] of Object.entries(tree.components.nodes)) {
+    if (isContent(node)) continue;
+
     const coordinate = coordinateOfType(registry, node.type);
     if (!coordinate) continue;
 
@@ -93,8 +99,9 @@ export function nodesByCoordinate(
  * ДРУГИЕ узлы, которые оденутся вместе с этим, — те же координаты, иное имя.
  *
  * Пустой ответ значит «этот узел в дереве единственный со своей координатой», а `undefined` —
- * «узла нет или его адрес неизвестен». Разница существенна: первое показывают человеку как
- * «правка коснётся только этого места», второе — как ошибку адреса.
+ * «узла нет, его адрес неизвестен или адреса у него не бывает» (узел содержимого). Разница
+ * существенна: первое показывают человеку как «правка коснётся только этого места», второе — как
+ * то, что покрасить отсюда нечего.
  *
  * @param tree дерево
  * @param registry реестр
@@ -106,7 +113,7 @@ export function nodesSharingCoordinate(
   nodeId: NodeId,
 ): NodeId[] | undefined {
   const node = tree.components.nodes[nodeId];
-  if (!node) return undefined;
+  if (!node || isContent(node)) return undefined;
 
   const coordinate = coordinateOfType(registry, node.type);
   if (!coordinate) return undefined;
