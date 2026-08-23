@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { withPassports } from "../src/index.js";
+import { withPassports, type PassportLookup } from "../src/index.js";
 import { lookup } from "./passports.js";
 import { наряд, части } from "./looks.js";
 
@@ -93,6 +93,19 @@ describe("что каждый вход тянет за собой", () => {
 
     expect(typeof model.skinGaps).toBe("function");
     expect(typeof model.skinValues).toBe("function");
+  });
+
+  it("сборщик читателя едет ТЕМ ЖЕ входом, что и его тип (`PWEB-95`)", async () => {
+    // Тип `PassportLookup` отдавал `./model`, а самой сборки не отдавал никто — и держатель
+    // перечня обязан был написать свою карту, то есть завести вторую. Проба спрашивает оба входа:
+    // тип проверяет компилятор (аннотация ниже), наличие сборки — прогон.
+    const model = await import("../src/model.js");
+    const root = await import("../src/index.js");
+
+    const читатель: PassportLookup = model.passportLookup([]);
+
+    expect(typeof читатель).toBe("function");
+    expect(typeof root.passportLookup).toBe("function");
   });
 });
 

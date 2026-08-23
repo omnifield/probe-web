@@ -35,12 +35,17 @@ export {
 } from "./marks.js";
 
 export type { PassportLookup } from "./address.js";
+// `passportLookup` едет наружу ТЕМ ЖЕ входом, что и тип (`PWEB-95`): место сборки карты одно, и
+// объявить это в комментарии, не отдав саму сборку, значило потребовать от каждого держателя
+// перечня написать свою карту — ровно то, что запрещено. Держатель перечня теперь связывает
+// механику в два хода: `withPassports(passportLookup(PASSPORTS))`.
 export {
   ancestorSelector,
   markSelector,
   nodeSelector,
   componentSelector,
   partSelector,
+  passportLookup,
   safeName,
   stateSelector,
   variantSelector,

@@ -22,7 +22,7 @@ import { buttonPassport, lookup } from "./passports.js";
 import { кнопка, наряд, синяя, части } from "./looks.js";
 
 // Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
-const { assemble, checkOutfit, generateSkinCss } = withPassports(lookup);
+const { assemble, checkOutfit, checkSkin, generateSkinCss } = withPassports(lookup);
 
 /** Объявления `--имя` из текста по селекторам: селектор → имя → значение. */
 function блоки(css: string): Map<string, Map<string, string>> {
@@ -148,6 +148,56 @@ describe("СЛОВАРЬ работает контрактом", () => {
     const flaws = checkOutfit({ ...наряд, forms: ["кнопка-строгая", "кнопка-плоская"] }, части);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("component-twice");
+  });
+});
+
+describe("паспорта нет вовсе — названа ПРИЧИНА, а не следствие (`PWEB-95`)", () => {
+  it("форма на компонент без паспорта краснеет своим именем", () => {
+    const flaws = checkOutfit({ ...наряд, forms: ["нездешняя"], overrides: {} }, части);
+
+    expect(flaws.map((flaw) => flaw.name)).toEqual(["unknown-component"]);
+    expect(flaws[0]?.where).toBe("forms[0]");
+    // Человек по этому тексту идёт в КИТ, а не в палитру: чинится объявлением паспорта.
+    expect(flaws[0]?.means).toContain("«нездешний»");
+    expect(flaws[0]?.means).toContain("ките");
+  });
+
+  it("следствий не сыплется: ни одного изъяна по именам, которых без паспорта не прочитать", () => {
+    // Второй конец той же пробы, и ровно та жалоба, ради которой задача заведена: раньше форма
+    // отдавала по `outside-vocabulary` на каждую свою переменную — формально не ложь, но названа
+    // не причина. Перечень выше пуст ровно потому, что перебор ссылок прекращён.
+    const flaws = checkOutfit({ ...наряд, forms: ["нездешняя"], overrides: {} }, части);
+
+    expect(flaws.filter((flaw) => flaw.name === "outside-vocabulary")).toEqual([]);
+  });
+
+  it("та же причина у ТОЧЕЧНОЙ ПРАВКИ: адрес ей собрать не из чего", () => {
+    // Печать такую правку молча пропускает — селектор, собранный догадкой, попадал бы неизвестно
+    // куда, — и ссылается на то, что изъян назовёт проверка наряда. До `PWEB-95` не называл никто.
+    const flaws = checkOutfit(
+      { ...наряд, forms: [], overrides: { нездешний: { "radius-md": "0px" } } },
+      части,
+    );
+
+    expect(flaws.map((flaw) => flaw.name)).toEqual(["unknown-component"]);
+    expect(flaws[0]?.where).toBe("overrides.нездешний");
+  });
+
+  it("ОБЕ ПОЛОВИНЫ механики отвечают на этот случай ОДНИМ именем", () => {
+    // Ради этого имя и взято прежнее, а не заведён синоним: причина одна, починка одна — значит и
+    // слово одно. Иначе редактор говорил бы человеку не то же, что печать.
+    const наряду = checkOutfit({ ...наряд, forms: ["нездешняя"], overrides: {} }, части);
+    const порождению = checkSkin({
+      name: "проба",
+      recipes: { нездешний: { base: { root: { props: { color: "var(--акцент-9)" } } } } },
+    });
+
+    expect(наряду.map((flaw) => flaw.name)).toEqual(порождению.map((flaw) => flaw.name));
+    expect(порождению.map((flaw) => flaw.name)).toEqual(["unknown-component"]);
+  });
+
+  it("наряд без такой формы прежним не перестал быть: ложных изъянов нет", () => {
+    expect(checkOutfit(наряд, части)).toEqual([]);
   });
 });
 
