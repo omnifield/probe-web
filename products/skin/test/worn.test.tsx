@@ -17,12 +17,12 @@
 import { RenderTree } from "@omnifield/probe-web-assembly";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { casesOf, rootPartOf } from "../src/showcase/cases.js";
+import { ANY, casesOf, rootPartOf } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
 import { SKIN_SOURCE, StoreDown } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
-import { FIXTURE } from "./fixtures.js";
-import { dropStore, restoreStore, serveSkins } from "./store-stub.js";
+import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
+import { dropStore, restoreStore, serveLook } from "./store-stub.js";
 
 /** Переключатель заводится на КАЖДУЮ пробу свой: память выбора общая на документ. */
 async function wearing() {
@@ -34,7 +34,7 @@ beforeEach(() => {
   // Скины приходят из СЛУЖБЫ, и проба идёт тем же путём: перечень, потом запись по
   // идентификатору. Подменяется `fetch`, а не наш клиент, — проверяется шов, а не то, что мы
   // умеем звать сами себя.
-  serveSkins([FIXTURE]);
+  serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] });
 });
 
 afterEach(() => {
@@ -54,7 +54,7 @@ describe("скин надевается", () => {
   it("лист с правилами приезжает в документ", async () => {
     const skin = await wearing();
 
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
 
     expect(sheets()).toContain('[data-scope="button"][data-part="root"]');
   });
@@ -62,17 +62,17 @@ describe("скин надевается", () => {
   it("на корне появляется опознание", async () => {
     const skin = await wearing();
 
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
 
-    expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name);
-    expect(skin.worn()?.name).toBe(FIXTURE.name);
+    expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name);
+    expect(skin.worn()?.name).toBe(OUTFIT.name);
   });
 
   it("правило цепляется за узел, который рисует витрина", async () => {
     const skin = await wearing();
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
 
-    const base = casesOf("button", { part: rootPartOf("button"), variants: [] })[0];
+    const base = casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: [] })[0];
     const host = mount(() => <RenderTree tree={base?.tree} registry={REGISTRY} />);
     const node = host.querySelector('[data-scope="button"][data-part="root"]');
 
@@ -85,11 +85,11 @@ describe("скин надевается", () => {
   it("вариации и состояния адресованы теми же координатами", async () => {
     const skin = await wearing();
 
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
 
     const css = sheets();
 
-    for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
+    for (const name of Object.keys(FORM.recipe.variants ?? {})) {
       expect(css).toContain(`[data-variant="${name}"]`);
     }
     expect(css).toContain("[data-disabled]");
@@ -100,7 +100,7 @@ describe("скин надевается", () => {
 describe("скин снимается", () => {
   it("лист уходит, опознание уходит, остаётся голый кит", async () => {
     const skin = await wearing();
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
 
     skin.takeOff();
 
@@ -111,10 +111,10 @@ describe("скин снимается", () => {
 
   it("кнопка после снятия жива и адресуема — голое это рабочее состояние", async () => {
     const skin = await wearing();
-    await skin.wear(FIXTURE.name);
+    await skin.wear(OUTFIT.name);
     skin.takeOff();
 
-    const base = casesOf("button", { part: rootPartOf("button"), variants: [] })[0];
+    const base = casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: [] })[0];
     const host = mount(() => <RenderTree tree={base?.tree} registry={REGISTRY} />);
     const node = host.querySelector('[data-scope="button"][data-part="root"]');
 
@@ -125,7 +125,7 @@ describe("скин снимается", () => {
 
 describe("хранилище", () => {
   it("перечень имён приходит из службы, а не из кода зоны", async () => {
-    expect([...(await SKIN_SOURCE.names())]).toEqual([FIXTURE.name]);
+    expect([...(await SKIN_SOURCE.names())]).toEqual([OUTFIT.name]);
   });
 
   it("службы нет — отказ, названный своим именем, а не пустой перечень", async () => {
@@ -135,7 +135,7 @@ describe("хранилище", () => {
   });
 
   it("служба пуста — перечень пуст, и это другое состояние", async () => {
-    serveSkins([]);
+    serveLook({});
 
     expect([...(await SKIN_SOURCE.names())]).toEqual([]);
   });
@@ -143,7 +143,7 @@ describe("хранилище", () => {
 
 describe("источник зоны", () => {
   it("отдаёт текст стилей, а не адрес файла", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
     expect(css).toContain("@layer");
     expect(css).not.toMatch(/^https?:|\.css$/);

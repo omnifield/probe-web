@@ -34,12 +34,20 @@
 // типах; декларации остаются за `tsc`, а esbuild делает ровно то, за чем его берут.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
 import { solidPlugin } from "esbuild-plugin-solid";
+
+// ПОРОЖДЕНИЯ ЗДЕСЬ НЕТ (`PWEB-86`). Входы `src/passport.ts` и `src/kit.ts` пишет свой шаг —
+// `scripts/generate.mjs`, — и сборка зависит от него ЯВНО: `pnpm run build` зовёт его первым,
+// а Nx видит его отдельной задачей со своими выходами.
+//
+// Прежде порождение приезжало сюда побочным действием импорта, и это оказалось не стилем, а
+// дефектом: порождённое лежит под `.gitignore`, оснастка его не видит, и шаг, которого нет в
+// графе, не участвует ни в отпечатке, ни в восстановлении из кеша. Разбор — в манифесте зоны.
 
 const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(pkgRoot, "src");
@@ -64,80 +72,6 @@ const shared = {
   sourcesContent: true,
 };
 
-// ПЕРЕЧЕНЬ КОМПОНЕНТОВ ПОРОЖДАЕТСЯ ЗДЕСЬ — обходом папок, а не файлом, в который дописывает
-// строку каждый новый компонент. У такого файла один владелец и очередь из всех остальных; это
-// и есть механизм, которым зоны ломают друг друга. Забыл вписать — паспорт молча не уехал бы в
-// поставку, и узнал бы об этом скин, а не мы.
-//
-// Компонент считается объявившим себя, если в его папке лежит `<имя>.anatomy.ts` с экспортом
-// `passport`. Ни списка, ни порядка руками: порядок — алфавитный, чтобы порождённый файл не
-// менялся от порядка чтения каталога.
-
-/** Папки компонентов, объявивших анатомию. */
-function componentFolders() {
-  return readdirSync(srcDir, { withFileTypes: true })
-    .filter((item) => item.isDirectory())
-    .map((item) => item.name)
-    .filter((name) => existsSync(join(srcDir, name, `${name}.anatomy.ts`)))
-    .sort();
-}
-
-/** Имя папки → имя переменной: `number-field` → `numberFieldPassport`. */
-function identifierOf(folder) {
-  return `${folder.replace(/-(.)/g, (_, letter) => letter.toUpperCase())}Passport`;
-}
-
-/** Собирает исходник подпути `./passport` — вход, который читают скин и редактор. */
-function renderPassportEntry(folders) {
-  const imports = folders
-    .map((folder) => `import { passport as ${identifierOf(folder)} } from "./${folder}/${folder}.anatomy.js";`)
-    .join("\n");
-  const entries = folders
-    .map((folder) => `  [${identifierOf(folder)}.component]: ${identifierOf(folder)},`)
-    .join("\n");
-
-  return `// ПОРОЖДЁН СБОРКОЙ (\`scripts/build.mjs\`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
-//
-// Перечень паспортов собирается обходом папок \`src/*/<имя>.anatomy.ts\`: компонент объявляет
-// себя в своей папке, и попадает в поставку самим фактом объявления. Руками этот файл не
-// ведётся — иначе он стал бы тем самым общим файлом, который правят все.
-
-import type { ComponentPassport } from "./passport-form.js";
-${imports}
-
-export * from "./passport-form.js";
-export * from "./passport-view.js";
-
-/**
- * Паспорта пакета по имени компонента.
- *
- * Перечень, а не «сколько их»: число устаревает при добавлении каждого следующего паспорта, а
- * форма чтения — нет. Компонент без паспорта здесь отсутствует ЧЕСТНО: его ещё не одевали, и
- * молчаливая заглушка выглядела бы как объявленный контракт.
- */
-export const PASSPORTS: Readonly<Record<string, ComponentPassport>> = {
-${entries}
-};
-
-/**
- * Паспорт по имени компонента, либо \`undefined\` — если компонент его ещё не объявил.
- *
- * @param component имя компонента, оно же \`data-scope\` на каждом его узле
- */
-export function passportOf(component: string): ComponentPassport | undefined {
-  return PASSPORTS[component];
-}
-`;
-}
-
-const folders = componentFolders();
-
-if (folders.length === 0) {
-  throw new Error("в `src/` нет ни одной папки компонента с анатомией — подпуть паспорта пуст");
-}
-
-writeFileSync(passportEntry, renderPassportEntry(folders), "utf8");
-
 rmSync(outDir, { recursive: true, force: true });
 
 // Ветка `solid`: JSX сохраняется как есть, снимаются только типы.
@@ -155,10 +89,13 @@ await build({
 });
 
 // Подпуть `./passport` — ДАННЫЕ, а не разметка: JSX внутри нет, поэтому ветка одна.
-// Вход порождён выше обходом папок; наружу уезжает форма, правило допуска, читатель под вид
-// (мост узел→координата, `PWEB-27`), перечень паспортов и чтение по имени.
+// Вход порождён обходом папок (`scripts/generate.mjs`); наружу уезжает форма, правило допуска,
+// читатель под вид (мост узел→координата, `PWEB-27`), перечень паспортов и чтение по имени.
 // Отдельный выход, а не кусок корневого бандла: читатель паспорта (механика скина, редактор,
 // чужой инструмент) не должен тянуть за собой ни Solid, ни `@kobalte/core` ради перечня частей.
+//
+// КАРТЫ частей здесь нет и быть не может — её значения это компоненты Solid (`PWEB-84`). Она
+// уезжает корневым входом, вместе с паспортом одним значением; разбор — в `src/kit-form.ts`.
 await build({
   ...shared,
   entryPoints: [passportEntry],

@@ -18,10 +18,10 @@ import { DARK_CLASS, FORCE_ATTRIBUTE, SKIN_LAYER } from "@omnifield/probe-web-sk
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { SKIN_SOURCE } from "../src/skins/index.js";
-import { FIXTURE } from "./fixtures.js";
-import { restoreStore, serveSkins } from "./store-stub.js";
+import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
+import { restoreStore, serveLook } from "./store-stub.js";
 
-beforeEach(() => serveSkins(FIXTURE));
+beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 afterEach(restoreStore);
 
 /** Исходники зоны — для проверок «чего в них нет». */
@@ -36,29 +36,29 @@ function sources(): { path: string; text: string }[] {
 
 describe("запись доезжает из службы и собирается", () => {
   it("источник отдаёт готовый текст стилей", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
     expect(css).toContain(`@layer ${SKIN_LAYER}`);
     expect(css.length).toBeGreaterThan(100);
   });
 
   it("часть адресована парой атрибутов из анатомии", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
     expect(css).toContain('[data-scope="button"][data-part="root"]');
   });
 
   it("вариации — именами, которые объявил сам скин", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
-    for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
+    for (const name of Object.keys(FORM.recipe.variants ?? {})) {
       // Умолчание сводится с отсутствием атрибута, поэтому его имя ищем в паре с `:not`.
       expect(css).toContain(`[data-variant="${name}"]`);
     }
   });
 
   it("состояние кита — атрибутом, состояние браузера — псевдоклассом с признаком", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
     expect(css).toContain("[data-disabled]");
     expect(css).toContain(":hover");
@@ -66,10 +66,11 @@ describe("запись доезжает из службы и собираетс�
   });
 
   it("тёмная половина следует за режимом", async () => {
-    const css = await SKIN_SOURCE.css(FIXTURE.name);
+    const css = await SKIN_SOURCE.css(OUTFIT.name);
 
+    //半 половины строит палитра: семя даёт обе, и тёмная цепляется за класс режима.
     expect(css).toContain(DARK_CLASS);
-    expect(css).toContain("--skin-ink");
+    expect(css).toContain("--акцент-9");
   });
 
   it("имени, которого в службе нет, отказывают", async () => {
@@ -78,23 +79,31 @@ describe("запись доезжает из службы и собираетс�
 });
 
 describe("в коде зоны скинов нет", () => {
-  it("в источнике нет ни одной записи скина", () => {
+  it("в источнике нет ни одной записи вида", () => {
     for (const { path, text } of sources()) {
       const withoutComments = text.replaceAll(/\/\/.*$/gm, "").replaceAll(/\/\*[\s\S]*?\*\//g, "");
 
       // Запись скина узнаётся по своим полям: рецепты и переменные. Тип-импорт `Skin` при этом
       // законен — разбор ответа службы обязан её называть.
-      expect(withoutComments, path).not.toMatch(/recipes\s*:/);
+      expect(withoutComments, path).not.toMatch(/recipe\s*:/);
       expect(withoutComments, path).not.toMatch(/defaultVariant\s*:/);
-      expect(withoutComments, path).not.toMatch(/variables\s*:/);
+      expect(withoutComments, path).not.toMatch(/scales\s*:/);
     }
   });
 
-  it("перечень скинов запрашивается, а не объявляется", () => {
+  it("перечень нарядов запрашивается, а не объявляется", () => {
     const index = sources().find((file) => file.path === "index.ts");
 
-    expect(index?.text).toContain("listSkins");
-    expect(index?.text).not.toMatch(/const SKINS|Record<string, Skin>/);
+    expect(index?.text).toContain("listOutfits");
+    expect(index?.text).not.toMatch(/const OUTFITS|Record<string, Outfit>/);
+  });
+
+  it("сборка зовётся у механики, своей в зоне нет", () => {
+    const index = sources().find((file) => file.path === "index.ts");
+
+    // Вторая правда о законности наряда разошлась бы с первой молча.
+    expect(index?.text).toContain("assemble");
+    expect(index?.text).not.toMatch(/function assemble\b/);
   });
 
   it("команды засева нет — скины делает человек", () => {

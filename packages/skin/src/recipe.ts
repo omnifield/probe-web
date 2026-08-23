@@ -34,6 +34,8 @@
 // «наведение» проверяемо на живом компоненте, а чужое `_hover` разворачивается в чужой составной
 // селектор, которого компонент не обещал (замер `PWEB-28`, Chakra отклонён в том числе за это).
 
+import type { DimensionSeed } from "./fluid.js";
+
 /**
  * Значение свойства.
  *
@@ -234,7 +236,7 @@ export interface SkinVariables {
    *
    * Перечень имён и то, что скину НЕ принадлежит (шкала слоёв, нормированные ряды), — `sizes.ts`.
    */
-  readonly dimensions?: Readonly<Record<string, string>>;
+  readonly dimensions?: Readonly<Record<string, DimensionSeed>>;
   /**
    * Светлая половина литералами. Она же единственная, если тёмной не объявлено.
    *

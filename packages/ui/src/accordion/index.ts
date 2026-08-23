@@ -16,3 +16,4 @@ export {
   type AccordionProps,
 } from "./accordion.jsx";
 export { anatomy, parts, passport } from "./accordion.anatomy.js";
+export { kit } from "./accordion.kit.js";

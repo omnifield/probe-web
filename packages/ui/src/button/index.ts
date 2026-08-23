@@ -6,3 +6,4 @@
 
 export { Button, type ButtonProps } from "./button.jsx";
 export { anatomy, parts, passport } from "./button.anatomy.js";
+export { kit } from "./button.kit.js";

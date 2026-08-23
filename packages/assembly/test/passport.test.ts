@@ -45,8 +45,7 @@ describe("паспорт кита читается механикой", () => {
     // Правило берётся из кита, а не пишется здесь: своё было бы вторым экземпляром того же
     // знания, и разъехалось бы с китовым молча — обе стороны остались бы зелёными.
     const registry = createRegistry({
-      components: { button: Component },
-      passports: { button: real as ReadablePassport },
+      components: { button: { passport: real as ReadablePassport, parts: { root: Component } } },
       admits,
     });
 

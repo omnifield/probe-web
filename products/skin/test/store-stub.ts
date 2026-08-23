@@ -5,9 +5,7 @@
 //
 // Служба здесь ровно такая, какой её описывает контракт хранилища: кладёт непрозрачный кусок под
 // `state`, отдаёт перечень БЕЗ содержимого и запись целиком по идентификатору. Никакого разбора
-// скина в ней нет — его нет и в настоящей.
-
-import type { Skin } from "@omnifield/probe-web-skin/model";
+// вида в ней нет — его нет и в настоящей.
 
 interface StoredRecord {
   id: string;
@@ -30,32 +28,60 @@ const json = (body: unknown, status = 200): Response =>
   });
 
 /**
- * Поднимает подставную службу и кладёт в неё скины.
+ * Поднимает подставную службу и кладёт в неё записи вида.
  *
- * Служба отбирает по ярлыку вида, не заглядывая внутрь, — проба идёт тем же путём.
+ * Части и наряды кладутся вместе, каждая своим ярлыком: служба отбирает по ярлыку, не заглядывая
+ * внутрь, — проба идёт тем же путём.
  *
- * @param skins что должно лежать в хранилище на момент пробы
+ * @param parts что должно лежать в хранилище: `{ palettes, forms, outfits }`
  */
-export function serveSkins(skins: readonly Skin[] | Skin): void {
-  const list = Array.isArray(skins) ? skins : [skins];
-
+export function serveLook(parts: {
+  palettes?: readonly { name: string }[];
+  forms?: readonly { name: string }[];
+  outfits?: readonly { name: string }[];
+}): void {
   stored.length = 0;
 
-  for (const [index, skin] of list.entries()) {
-    stored.push({
-      id: `rec-${index + 1}`,
-      label: skin.name,
-      name: skin.name,
-      kind: "skin",
-      state: skin,
-    });
-  }
+  const put = (kind: string, list: readonly { name: string }[] = []) => {
+    for (const record of list) {
+      stored.push({
+        id: `rec-${stored.length + 1}`,
+        label: record.name,
+        name: record.name,
+        kind,
+        state: record,
+      });
+    }
+  };
+
+  put("palette", parts.palettes);
+  put("form", parts.forms);
+  put("outfit", parts.outfits);
 
   original ??= globalThis.fetch;
 
-  globalThis.fetch = ((input: RequestInfo | URL) => {
+  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input));
     const id = url.pathname.split("/").at(-1);
+
+    // ЗАПИСЬ. Настоящая служба кладёт присланный кусок, не заглядывая внутрь, и отдаёт его с
+    // выданным идентификатором. Проба обязана пройти тот же путь: правка редактора считается
+    // сохранённой не тогда, когда мы позвали `save`, а когда её видно в перечне.
+    if (init?.method === "POST") {
+      const sent = JSON.parse(String(init.body)) as Omit<StoredRecord, "id">;
+      const record: StoredRecord = { ...sent, id: `rec-${stored.length + 1}` };
+
+      stored.push(record);
+
+      return Promise.resolve(json(record, 201));
+    }
+
+    if (init?.method === "DELETE") {
+      const at = stored.findIndex((record) => record.id === id);
+      if (at >= 0) stored.splice(at, 1);
+
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
 
     // Перечень отдаётся БЕЗ содержимого — ровно как настоящая служба: содержимое приезжает
     // отдельным запросом, и проба обязана пройти тот же путь, что живая витрина.
@@ -74,6 +100,11 @@ export function serveSkins(skins: readonly Skin[] | Skin): void {
       found ? json(found) : json({ error: "not_found", message: "нет такой записи" }, 404),
     );
   }) as typeof fetch;
+}
+
+/** Что лежит в подставной службе сейчас — для проб, которые проверяют сохранение. */
+export function storedNow(): readonly StoredRecord[] {
+  return stored;
 }
 
 /** Роняет службу: любой запрос обрывается, как при неподнятой службе. */

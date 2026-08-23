@@ -22,8 +22,11 @@
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
-import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
+import { skinGaps } from "@omnifield/probe-web-skin";
+import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
+  createEffect,
   createResource,
   createSignal,
   For,
@@ -32,22 +35,42 @@ import {
   Show,
 } from "solid-js";
 
+import { Fine } from "../editor/fine.jsx";
+import { Panel } from "../editor/panel.jsx";
 import {
-  listSkins,
-  readSkin,
+  assembleOutfit,
+  type Draft,
+  DRAFT_NAME,
+  draftLook,
   EMPTY_HINT,
+  hold,
+  KINDS,
+  listOutfits,
+  readOutfit,
+  readParts,
+  replace,
   SERVICE_HINT,
   SKIN_SOURCE,
-  type SkinRecord,
+  type StoreRecord,
 } from "../skins/index.js";
 import {
+  ANY,
   casesOf,
   partsOf,
   rootPartOf,
   statesOfPart,
+  type Axis,
   type ShowcaseCase,
 } from "./cases.js";
 import { REGISTRY } from "./registry.js";
+
+/**
+ * Обычное состояние в списке выбора — ПУСТЫМ значением.
+ *
+ * Пустое взято нарочно: именем состояния оно быть не может ни у одного паспорта, а значит выбор
+ * «обычное» не столкнётся с состоянием, которое кто-то так назовёт.
+ */
+const PLAIN = "";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
 const COMPONENTS = knownComponents(REGISTRY);
@@ -75,13 +98,13 @@ const BY_GROUP = Object.entries(GROUPS)
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
 
-/** Что делают с компонентом: смотрят или правят. Редактор придёт следующим шагом. */
-export type View = "showcase" | "editor";
+/** Что делают с компонентом: смотрят или правят его форму. */
+export type View = "showcase" | "form";
 
 /** Переходы страницы компонента. Перечень здесь, потому что он про УСТРОЙСТВО пульта. */
 const VIEWS: readonly { id: View; title: string }[] = [
   { id: "showcase", title: "витрина" },
-  { id: "editor", title: "редактор" },
+  { id: "form", title: "форма" },
 ];
 
 /** Порог, за которым карточка перестаёт делить строку с соседями. */
@@ -124,7 +147,7 @@ function Case(props: { item: ShowcaseCase }) {
         <RenderTree tree={props.item.tree} registry={REGISTRY} />
       </div>
       <figcaption class="case__caption">
-        <b class="case__title" classList={{ "case__title--axis": props.item.origin === "axis" }}>
+        <b class="case__title">
           {props.item.title}
         </b>
         <span class="case__note">{props.item.note}</span>
@@ -139,6 +162,9 @@ function Case(props: { item: ShowcaseCase }) {
  * Ось в положении «все» разворачивается в поток случаев, названная — фиксируется. Так один и тот
  * же показ годится компоненту любого размера: что разворачивать, решает человек.
  *
+ * У состояния положений ТРИ: обычное · все · названное. Обычное — не «фильтр не задан», а сам
+ * вид компонента, когда с ним ничего не происходит; всё прочее показывает отклонения от него.
+ *
  * Часть «всех» не имеет намеренно: состояние всегда чьё-то, и «состояние вообще» — не адрес.
  * Перечень состояний следует за выбранной частью: словарь у каждой части свой.
  */
@@ -146,11 +172,11 @@ function Axes(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
+  variant: Axis<string>;
+  state: Axis<string | null>;
   onPart: (part: string) => void;
-  onVariant: (variant: string | null) => void;
-  onState: (state: string | null) => void;
+  onVariant: (variant: Axis<string>) => void;
+  onState: (state: Axis<string | null>) => void;
 }) {
   return (
     <div class="axes">
@@ -171,13 +197,11 @@ function Axes(props: {
         <span class="axes__label">вариация</span>
         <select
           class="axes__select"
-          value={props.variant ?? ""}
+          value={props.variant}
           disabled={props.variants.length === 0}
-          onChange={(event) =>
-            props.onVariant(event.currentTarget.value === "" ? null : event.currentTarget.value)
-          }
+          onChange={(event) => props.onVariant(event.currentTarget.value)}
         >
-          <option value="">все</option>
+          <option value={ANY}>все</option>
           <For each={props.variants}>{(name) => <option value={name}>{name}</option>}</For>
         </select>
       </label>
@@ -186,12 +210,15 @@ function Axes(props: {
         <span class="axes__label">состояние</span>
         <select
           class="axes__select"
-          value={props.state ?? ""}
+          value={props.state ?? PLAIN}
           onChange={(event) =>
-            props.onState(event.currentTarget.value === "" ? null : event.currentTarget.value)
+            props.onState(event.currentTarget.value === PLAIN ? null : event.currentTarget.value)
           }
         >
-          <option value="">все</option>
+          {/* ОБЫЧНОЕ первым и выбранным: с него начинают смотреть, остальное — отклонения от
+              него. «Все» стоит рядом и остаётся одним движением руки. */}
+          <option value={PLAIN}>обычное</option>
+          <option value={ANY}>все</option>
           <For each={statesOfPart(props.component, props.part)}>
             {(state) => <option value={state.name}>{state.name}</option>}
           </For>
@@ -213,16 +240,15 @@ function Axes(props: {
  * которому показывают вид, спотыкается о долг и род компонента, а одевающий ищет техничку среди
  * картинок.
  *
- * СВОЙ ХЕДЕР у страницы — имя, фильтр и переход в редактор. Он про ОДИН компонент, поэтому и
- * стоит над ним, а не в общем хедере витрины: там живёт то, что общее на всё, — скин и режим.
+ * Выбор ВИДА — витрина или форма — стоит в хедере, а не здесь: страница показывает то, что ей
+ * велели, и не решает, показывать ли себя.
  */
 function ComponentPage(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
-  view: View;
+  variant: Axis<string>;
+  state: Axis<string | null>;
 }) {
   const cases = () =>
     casesOf(props.component, {
@@ -234,28 +260,16 @@ function ComponentPage(props: {
 
   return (
     <article class="page">
-      <Show
-        when={props.view === "showcase"}
-        fallback={
-          <p class="page__empty">
-            Редактора ещё нет — он делается следующим шагом. Пустая заглушка честнее нарисованной
-            панели, которая ничего не правит.
-          </p>
-        }
-      >
-        <Show when={props.variants.length === 0}>
-          <p class="page__empty">
-            Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка
-            витрины: наденьте скин справа вверху.
-          </p>
-        </Show>
-
-        <div class="cases">
-          <For each={cases()}>
-            {(item) => <Case item={item} />}
-          </For>
-        </div>
+      <Show when={props.variants.length === 0}>
+        <p class="page__empty">
+          Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка витрины:
+          наденьте скин справа вверху.
+        </p>
       </Show>
+
+      <div class="cases">
+        <For each={cases()}>{(item) => <Case item={item} />}</For>
+      </div>
     </article>
   );
 }
@@ -282,16 +296,16 @@ function Head(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
+  variant: Axis<string>;
+  state: Axis<string | null>;
   view: View;
   worn: string | null;
-  records: readonly SkinRecord[] | undefined;
+  records: readonly StoreRecord[] | undefined;
   failure: unknown;
   mode: SkinMode;
   onPart: (part: string) => void;
-  onVariant: (variant: string | null) => void;
-  onState: (state: string | null) => void;
+  onVariant: (variant: Axis<string>) => void;
+  onState: (state: Axis<string | null>) => void;
   onView: (view: View) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
@@ -391,18 +405,21 @@ function Head(props: {
 export function App() {
   const [current, setCurrentSignal] = createSignal(COMPONENTS[0] ?? "");
 
-  // ОСИ. Часть по умолчанию корневая, остальные оси развёрнуты: одевающий приходит смотреть, что
-  // одето, а не искать, где это включается.
+  // ОСИ. Часть по умолчанию корневая, вариации развёрнуты, состояние — ОБЫЧНОЕ.
+  //
+  // Пришедший на витрину смотрит сперва на то, как компонент выглядит, когда с ним ничего не
+  // происходит: это и есть его вид, а наведённый и отключённый — отклонения. Развернув обе оси
+  // сразу, мы показывали бы произведение, в котором обычный вид приходится выискивать.
   const [part, setPart] = createSignal(rootPartOf(COMPONENTS[0] ?? ""));
-  const [variant, setVariant] = createSignal<string | null>(null);
-  const [state, setState] = createSignal<string | null>(null);
+  const [variant, setVariant] = createSignal<Axis<string>>(ANY);
+  const [state, setState] = createSignal<Axis<string | null>>(null);
   const [view, setView] = createSignal<View>("showcase");
 
   /** Смена компонента сбрасывает оси: чужая часть и чужое состояние на нём не значат ничего. */
   const setCurrent = (component: string) => {
     setCurrentSignal(component);
     setPart(rootPartOf(component));
-    setVariant(null);
+    setVariant(ANY);
     setState(null);
   };
 
@@ -424,18 +441,16 @@ export function App() {
     void SKIN.wear(current.name, { mode }).then(setWorn);
   };
 
-  // Перечень — из СЛУЖБЫ. Запасного списка нет: витрина без службы показывает голый кит и
-  // называет причину с адресом, а не подсовывает встроенное под видом хранимого.
-  const [records] = createResource(() => listSkins());
+  // Перечень НАРЯДОВ — из СЛУЖБЫ. Части по отдельности не надеваются, поэтому в списке стоят
+  // наряды: палитру и формы человек видит в редакторе, а не здесь.
+  const [records, { refetch: refetchRecords }] = createResource(() => listOutfits());
 
-  // ЗАПИСЬ надетого скина — тоже из службы: имена вариаций живут в ней, и взять их больше
-  // неоткуда. Паспорт их не знает, витрина не придумывает.
+  // СОБРАННЫЙ ВИД надетого наряда — из тех же частей, которыми его одела механика. Имена
+  // вариаций живут в форме, и взять их больше неоткуда: паспорт их не знает, витрина не
+  // придумывает.
   const [wornSkin] = createResource(
     () => worn()?.name,
-    async (name: string) => {
-      const record = (await listSkins()).find((item) => item.name === name);
-      return record === undefined ? undefined : readSkin(record.id);
-    },
+    async (name: string) => (await assembleOutfit(name)).skin,
   );
 
   /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */
@@ -465,6 +480,161 @@ export function App() {
         console.debug("скин не надет на первом заходе", cause);
       }
     })();
+  });
+
+  // ЧЕРНОВИК ФОРМЫ. Живёт здесь, а не в редакторе, по той же причине, по которой там же живёт
+  // надетое: показ одевается черновиком, и вторая правда о том, что сейчас правится, развела бы
+  // правку и показ.
+  const [draft, setDraftSignal] = createSignal<Draft | null>(null);
+  const [saving, setSaving] = createSignal(false);
+  const [trouble, setTrouble] = createSignal<unknown>(null);
+
+  /** Долг одевания черновика — тот же отчёт механики, что видит витрина у сохранённого. */
+  const [gaps, { refetch: recount }] = createResource(
+    () => (draft() === null ? undefined : true),
+    async () => skinGaps((await draftLook()).skin, Object.values(PASSPORTS)),
+  );
+
+  /**
+   * Кладёт черновик и НАДЕВАЕТ его: правка видна тем же путём, каким видно сохранённое.
+   *
+   * Наряд приходит аргументом, а не читается отсюда: правка возвращается из службы асинхронно, и
+   * надетое к тому моменту могло смениться. Взяв его в момент действия человека, мы возвращаем
+   * показ туда, откуда человек ушёл, а не туда, где он оказался.
+   */
+  const setDraft = (черновик: Draft | null, надето: string | undefined) => {
+    setDraftSignal(черновик);
+    hold(черновик, надето);
+
+    if (черновик === null) {
+      if (надето !== undefined) void SKIN.wear(надето, { remember: false }).then(setWorn);
+      return;
+    }
+
+    void SKIN.wear(DRAFT_NAME, { remember: false })
+      .then(() => {
+        setTrouble(null);
+        void recount();
+      })
+      .catch(setTrouble);
+  };
+
+  /**
+   * Открывает форму компонента на правку.
+   *
+   * Формы у компонента может не быть вовсе — это обычное начало работы, а не поломка: человек
+   * одевает то, чего никто не одевал. Пустая форма заводится с именем от наряда и компонента,
+   * потому что имя записи должно быть узнаваемым в службе, а не случайным.
+   */
+  const openForm = async (component: string, надето: string | undefined) => {
+    if (надето === undefined) {
+      setDraft(null, надето);
+      return;
+    }
+
+    try {
+      const [{ forms, palettes }, наряд] = await Promise.all([readParts(), readOutfit(надето)]);
+      const своя = forms.find((форма) => форма.component === component);
+      const цвета = palettes.find((кандидат) => кандидат.name === наряд?.palette);
+
+      setDraft(
+        {
+          ...(цвета ? { palette: цвета } : {}),
+          form: своя ?? { name: `${надето}-${component}`, component, recipe: {} },
+        },
+        надето,
+      );
+    } catch (cause) {
+      setTrouble(cause);
+    }
+  };
+
+  /**
+   * Сохраняет черновик в службу.
+   *
+   * Показ при этом НЕ переодевается: человек остаётся в правке, а сохранённая запись равна
+   * черновику, которым он одет. Переодень мы его на наряд — экран мигнул бы и вернулся к тому
+   * же виду, сообщив о работе, которой не было.
+   */
+  /**
+   * Сохраняет ЦВЕТА под именем.
+   *
+   * Имя своё — значит новая запись; прежнее — значит правка той, которую тянут другие скины, и
+   * увидят они её сразу. Так решил хозяин продукта: палитра одна, копий не заводим.
+   */
+  const savePalette = (имя: string, черновик: Draft | null) => {
+    const цвета = черновик?.palette;
+    if (!цвета) return;
+
+    setSaving(true);
+    void replace(KINDS.palette, { ...цвета, name: имя }, `Цвета: ${имя}`)
+      .then(() => {
+        setTrouble(null);
+        setDraftSignal({ ...черновик, palette: { ...цвета, name: имя } });
+      })
+      .catch(setTrouble)
+      .finally(() => setSaving(false));
+  };
+
+  /**
+   * Сохраняет СКИН: форму компонента и сочетание «эти цвета плюс эти формы» под именем.
+   *
+   * Форма уезжает вместе со скином, а не отдельной кнопкой: человек правил вид кнопки, а не «две
+   * записи», и просить его сохранить их порознь значило бы показать ему наше устройство хранения.
+   */
+  const saveSkin = async (имя: string, черновик: Draft | null, поверх: string | undefined) => {
+    if (!черновик?.form) return;
+
+    setSaving(true);
+
+    try {
+      const прежний = поверх === undefined ? undefined : await readOutfit(поверх);
+      const форма: Form = { ...черновик.form, name: `${имя}-${черновик.form.component}` };
+      const цвета = черновик.palette;
+
+      await replace(KINDS.form, форма, `Форма: ${форма.component}`);
+
+      const формы = [
+        ...(прежний?.forms ?? []).filter((чужая) => !чужая.endsWith(`-${форма.component}`)),
+        форма.name,
+      ];
+
+      await replace(
+        KINDS.outfit,
+        { name: имя, palette: цвета?.name ?? прежний?.palette ?? "", forms: формы },
+        `Скин: ${имя}`,
+      );
+
+      setTrouble(null);
+      setDraftSignal({ ...черновик, form: форма });
+      await refetchRecords();
+    } catch (cause) {
+      setTrouble(cause);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /** Переход между видами: уход из формы снимает черновик. Приход открывает его эффектом ниже. */
+  const chooseView = (next: View) => {
+    setView(next);
+
+    if (next !== "form" && draft() !== null) setDraft(null, worn()?.name);
+  };
+
+  // ФОРМА ОТКРЫВАЕТСЯ, КОГДА ЕСТЬ ПОВЕРХ ЧЕГО. Наряд приезжает из службы, и человек успевает
+  // перейти в правку раньше него; открывать по одному щелчку значило бы говорить «наденьте
+  // наряд» тому, кто уже его надел, — и оставлять это на экране, пока он не щёлкнет ещё раз.
+  //
+  // Эффект следит за тремя вещами: вид, компонент и наряд. Правка черновика среди них не
+  // значится намеренно — иначе каждая правка перечитывала бы форму из службы поверх неё же.
+  createEffect(() => {
+    const надето = worn()?.name;
+    const компонент = current();
+
+    if (view() !== "form") return;
+
+    void openForm(компонент, надето);
   });
 
   const wear = (name: string) => {
@@ -528,7 +698,7 @@ export function App() {
           onPart={choosePart}
           onVariant={setVariant}
           onState={setState}
-          onView={setView}
+          onView={chooseView}
           onWear={wear}
           onTakeOff={takeOff}
           onMode={setMode}
@@ -537,14 +707,40 @@ export function App() {
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
             {(component) => (
-              <ComponentPage
-                component={component()}
-                variants={variants()}
-                view={view()}
-                part={part()}
-                variant={variant()}
-                state={state()}
-              />
+              <div class="work" classList={{ "work--editing": view() === "form" }}>
+                <ComponentPage
+                  component={component()}
+                  variants={variants()}
+                  part={part()}
+                  variant={variant()}
+                  state={state()}
+                />
+
+                {/* ПОКАЗ ОСТАЁТСЯ НА МЕСТЕ, когда человек правит: он крутит цвета не в пустоте,
+                    а на компонентах, и панель приходит СБОКУ, а не вместо них. */}
+                <Show when={view() === "form"}>
+                  <Panel
+                    palette={draft()?.palette ?? null}
+                    form={draft()?.form ?? null}
+                    gaps={gaps() ?? []}
+                    saving={saving()}
+                    trouble={trouble()}
+                    onPalette={(цвета: Palette) =>
+                      setDraft({ ...draft(), palette: цвета }, worn()?.name)
+                    }
+                    onSavePalette={(имя: string) => savePalette(имя, draft())}
+                    onSaveSkin={(имя: string) => void saveSkin(имя, draft(), worn()?.name)}
+                    fine={
+                      <Fine
+                        component={component()}
+                        draft={draft()?.form ?? null}
+                        gaps={gaps() ?? []}
+                        onDraft={(форма) => setDraft({ ...draft(), form: форма }, worn()?.name)}
+                      />
+                    }
+                  />
+                </Show>
+              </div>
             )}
           </Show>
         </main>

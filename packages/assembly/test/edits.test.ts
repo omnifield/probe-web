@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { insertNode, moveNode, removeNode, updateNode } from "../src/edits.js";
 import { createRegistry } from "../src/registry.js";
-import { nodeOf, type AssemblyTree } from "../src/tree.js";
+import { nodeOf, type AssemblyElement, type AssemblyTree } from "../src/tree.js";
 import { spec } from "./passports.js";
 
 const Component = () => null;
@@ -14,7 +14,8 @@ const registry = createRegistry(
     layout: Component,
     button: Component,
     icon: Component,
-    accordion: { item: Component, itemTrigger: Component },
+    accordion: Component,
+    popover: Component,
   }),
 );
 
@@ -35,6 +36,9 @@ function grown(result: ReturnType<typeof insertNode>): AssemblyTree {
   if (!result.ok) throw new Error(`правка отказала: ${result.refusal} — ${result.means}`);
   return result.tree;
 }
+
+/** Узел компонента по имени — там, где проба спрашивает про адрес, пропы или композицию. */
+const element = (tree: AssemblyTree, id: string) => nodeOf(tree, id) as AssemblyElement;
 
 describe("вставка", () => {
   it("кладёт узел внутрь владельца и проставляет связи в обе стороны", () => {
@@ -81,13 +85,13 @@ describe("вставка", () => {
       insertNode(
         base,
         registry,
-        { id: "rich", type: "button", props: { children: "Сохранить" }, meta: { свёрнут: true } },
+        { id: "rich", type: "button", props: { "aria-label": "Сохранить" }, meta: { свёрнут: true } },
         "page",
       ),
     );
 
     expect(nodeOf(tree, "rich")).toMatchObject({
-      props: { children: "Сохранить" },
+      props: { "aria-label": "Сохранить" },
       meta: { свёрнут: true },
     });
   });
@@ -149,11 +153,11 @@ describe("перенос", () => {
 
 describe("правка узла", () => {
   it("заменяет названное поле целиком и не трогает остальные", () => {
-    const first = grown(updateNode(base, "one", { props: { children: "Да" } }));
+    const first = grown(updateNode(base, "one", { props: { "aria-label": "Да" } }));
     const second = grown(updateNode(first, "one", { meta: { свёрнут: true } }));
 
     expect(nodeOf(second, "one")).toMatchObject({
-      props: { children: "Да" },
+      props: { "aria-label": "Да" },
       meta: { свёрнут: true },
       children: ["mark"],
       parentId: "page",
@@ -161,14 +165,169 @@ describe("правка узла", () => {
   });
 
   it("названное поле со значением `undefined` — это снятие", () => {
-    const withProps = grown(updateNode(base, "one", { props: { children: "Да" } }));
+    const withProps = grown(updateNode(base, "one", { props: { "aria-label": "Да" } }));
     const cleared = grown(updateNode(withProps, "one", { props: undefined }));
 
-    expect(nodeOf(cleared, "one")?.props).toBeUndefined();
+    expect(element(cleared, "one").props).toBeUndefined();
   });
 
   it("несуществующий узел — отказ", () => {
     expect(updateNode(base, "нет", { props: {} })).toMatchObject({ refusal: "node-unknown" });
+  });
+});
+
+describe("содержимое — узел дерева", () => {
+  // `PWEB-83`. Прежде содержимое ехало пропом `children`, и дерево выражало одно из двух: есть
+  // вложенные части — подпись молча пропадала. Здесь оно кладётся ТОЙ ЖЕ правкой, что и часть,
+  // и проверяется ТЕМ ЖЕ правилом допуска — кандидатом `{ kind: "content", genus }`.
+
+  /** Гармошка с одним разделом: кнопка раздела — то место, где допустимы и часть, и содержимое. */
+  const гармошка: AssemblyTree = {
+    components: {
+      root: "г",
+      nodes: {
+        г: { id: "г", type: "accordion", parentId: null, children: ["раздел"] },
+        раздел: { id: "раздел", type: "accordion.item", parentId: "г", children: ["кнопка"] },
+        кнопка: { id: "кнопка", type: "accordion.itemTrigger", parentId: "раздел", children: [] },
+      },
+    },
+  };
+
+  it("кладётся тем же `insertNode` и получает связи, как любой узел", () => {
+    const tree = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+
+    expect(nodeOf(tree, "подпись")).toMatchObject({
+      genus: "text",
+      value: "Раздел",
+      parentId: "кнопка",
+      children: [],
+    });
+    expect(nodeOf(tree, "кнопка")?.children).toEqual(["подпись"]);
+  });
+
+  it("СОСУЩЕСТВУЕТ с частью в одном списке — это и есть починка", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+    const сУказателем = grown(
+      insertNode(сПодписью, registry, { id: "стрелка", type: "accordion.itemIndicator" }, "кнопка"),
+    );
+
+    expect(nodeOf(сУказателем, "кнопка")?.children).toEqual(["подпись", "стрелка"]);
+  });
+
+  it("и УПОРЯДОЧИВАЕТСЯ относительно неё — оба порядка выразимы", () => {
+    const сУказателем = grown(
+      insertNode(гармошка, registry, { id: "стрелка", type: "accordion.itemIndicator" }, "кнопка"),
+    );
+
+    // «Подпись, потом стрелка» — вставкой в конец.
+    const подписьПосле = grown(
+      insertNode(сУказателем, registry, { id: "п", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+    expect(nodeOf(подписьПосле, "кнопка")?.children).toEqual(["стрелка", "п"]);
+
+    // «Стрелка, потом подпись» — тем же вызовом, другим местом. Второй механики для этого нет.
+    const подписьДо = grown(
+      insertNode(сУказателем, registry, { id: "п", genus: "text", value: "Раздел" }, "кнопка", 0),
+    );
+    expect(nodeOf(подписьДо, "кнопка")?.children).toEqual(["п", "стрелка"]);
+  });
+
+  it("недопустимый род отвергается ИМЕНЕМ отказа паспорта, а не молчанием", () => {
+    // Кнопка раздела пускает текст и значок; кладём в неё содержимое рода «компонент».
+    const result = insertNode(
+      гармошка,
+      registry,
+      { id: "чужое", genus: "component", value: "…" },
+      "кнопка",
+    );
+
+    expect(result).toMatchObject({ ok: false, refusal: "content-not-admitted" });
+    // Пояснение называет и часть, и род: человеку показывают, ЧТО именно не пустили и куда.
+    expect(result.ok === false && result.means).toContain("itemTrigger");
+    expect(result.ok === false && result.means).toContain("component");
+  });
+
+  it("часть с пустым перечнем не пускает и содержимого — место занято самим компонентом", () => {
+    const сЗначком = grown(insertNode(гармошка, registry, { id: "знак", type: "icon" }, "кнопка"));
+
+    expect(
+      insertNode(сЗначком, registry, { id: "внутрь", genus: "text", value: "…" }, "знак"),
+    ).toMatchObject({ ok: false, refusal: "content-not-admitted" });
+  });
+
+  it("внутрь самого содержимого не кладётся ничего — ни узел, ни содержимое", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+
+    expect(
+      insertNode(сПодписью, registry, { id: "ещё", genus: "text", value: "…" }, "подпись"),
+    ).toMatchObject({ ok: false, refusal: "content-holds-nothing" });
+    expect(
+      insertNode(сПодписью, registry, { id: "знак", type: "icon" }, "подпись"),
+    ).toMatchObject({ ok: false, refusal: "content-holds-nothing" });
+  });
+
+  it("переносится и удаляется как любой узел — своих правок под содержимое нет", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+    const сОбластью = grown(
+      insertNode(сПодписью, registry, { id: "область", type: "accordion.itemContent" }, "раздел"),
+    );
+
+    const переехало = grown(moveNode(сОбластью, registry, "подпись", "область"));
+    expect(nodeOf(переехало, "подпись")?.parentId).toBe("область");
+    expect(nodeOf(переехало, "кнопка")?.children).toEqual([]);
+
+    const убрано = grown(removeNode(переехало, "подпись"));
+    expect(nodeOf(убрано, "подпись")).toBeUndefined();
+    expect(nodeOf(убрано, "область")?.children).toEqual([]);
+  });
+
+  it("перенос туда, где род не допущен, отвергается — проверка та же", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+
+    // Корень гармошки пускает внутрь только свои разделы: подписи там места нет.
+    expect(moveNode(сПодписью, registry, "подпись", "г")).toMatchObject({
+      ok: false,
+      refusal: "content-not-admitted",
+    });
+  });
+
+  it("значение правится на месте — узел не пересоздаётся", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+    const поправлено = grown(updateNode(сПодписью, "подпись", { value: "Другой" }));
+
+    expect(nodeOf(поправлено, "подпись")).toMatchObject({
+      genus: "text",
+      value: "Другой",
+      parentId: "кнопка",
+    });
+    expect(nodeOf(поправлено, "кнопка")?.children).toEqual(["подпись"]);
+  });
+
+  it("поле не того рода — отказ именем, а не тихо пропущенная правка", () => {
+    const сПодписью = grown(
+      insertNode(гармошка, registry, { id: "подпись", genus: "text", value: "Раздел" }, "кнопка"),
+    );
+
+    expect(updateNode(сПодписью, "подпись", { props: { hidden: true } })).toMatchObject({
+      ok: false,
+      refusal: "patch-not-of-node",
+    });
+    expect(updateNode(сПодписью, "кнопка", { value: "Раздел" })).toMatchObject({
+      ok: false,
+      refusal: "patch-not-of-node",
+    });
   });
 });
 
@@ -271,7 +430,7 @@ describe("композиция", () => {
     // В другое окно — можно: там тоже есть место под триггер.
     const переехало = grown(moveNode(собрано, registry, "настройки", "окно2"));
     expect(nodeOf(переехало, "настройки")?.parentId).toBe("окно2");
-    expect(nodeOf(переехало, "настройки")?.composedInto).toBe("popover.trigger");
+    expect(element(переехало, "настройки").composedInto).toBe("popover.trigger");
 
     // А в раскладку — нельзя: место под триггер там не объявлено.
     expect(moveNode(собрано, registry, "настройки", "стр")).toMatchObject({

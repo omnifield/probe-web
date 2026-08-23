@@ -24,10 +24,45 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "pnpm run generate && node scripts/build.mjs",
+    "generate": "node scripts/generate.mjs",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "pnpm run build && vitest run"
+  },
+  "//nx": [
+    "ПОРОЖДЕНИЕ — ОТДЕЛЬНЫЙ ШАГ СО СВОИМИ ВЫХОДАМИ (`PWEB-86`).",
+    "",
+    "`scripts/generate.mjs` пишет `src/passport.ts` и `src/kit.ts`, и оба под `.gitignore`.",
+    "Nx считает отпечаток по файлам, которые ВИДИТ, а игнорируемые он не смотрит вовсе —",
+    "значит порождённое не входит ни в отпечаток, ни в восстановление. Следствие замерено:",
+    "на чистом дереве `nx build` попадает в кеш, кладёт `dist` и НЕ кладёт порождённые входы;",
+    "дальше это ловит не тот, кто сломал, а сосед — сообщением «не разрешается импорт».",
+    "",
+    "Чиним устройством, а не договорённостью: у порождения свой шаг, свои `outputs` и своё",
+    "место в графе. Тогда порождённое восстанавливается кешем наравне с `dist`, а отпечаток",
+    "сборки включает отпечаток порождения — потому что сборка зависит от него ЯВНО.",
+    "",
+    "Входы порождения — `production` целиком, а не выборка вида `scripts/generate.mjs` плюс",
+    "`src/*/*.anatomy.ts`. Выборка точнее ровно до первого файла, о котором забыли, и",
+    "промах там молчит: отпечаток не сменится, старый выход восстановится. Широкий вход",
+    "ошибается в сторону лишнего прогона, а прогон здесь — два обхода каталога.",
+    "",
+    "`dependsOn` перечислен у каждого шага, который порождённое читает, и `^build` в нём",
+    "повторён намеренно: значение из `nx.json` не дополняется, а заменяется целиком."
+  ],
+  "nx": {
+    "targets": {
+      "generate": {
+        "cache": true,
+        "inputs": ["production"],
+        "outputs": ["{projectRoot}/src/passport.ts", "{projectRoot}/src/kit.ts"]
+      },
+      "build": { "dependsOn": ["^build", "generate"] },
+      "typecheck": { "dependsOn": ["^build", "generate"] },
+      "lint": { "dependsOn": ["^build", "generate"] },
+      "test": { "dependsOn": ["^build", "generate"] }
+    }
   },
   "dependencies": {
     "@zag-js/accordion": "^1.43.1",

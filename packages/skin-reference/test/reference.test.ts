@@ -7,7 +7,14 @@
 // Материал берётся у КИТА, а не собирается пробой: паспорта настоящие, и адреса порождаются из
 // их анатомии. Собери проба паспорт сама — она проверяла бы наше представление о ките.
 
-import { assemble, checkOutfit, checkSkin, generateSkinCss, skinValues } from "@omnifield/probe-web-skin";
+import {
+  assemble,
+  checkOutfit,
+  checkSkin,
+  generateSkinCss,
+  SCALE_ROLES,
+  skinValues,
+} from "@omnifield/probe-web-skin";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
@@ -94,15 +101,30 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
       .filter(([, value]) => value.from === "seed")
       .map(([name]) => name);
 
-  it("в каждой половине посеяны ступени всех трёх шкал", () => {
+  it("в каждой половине посеяны ступени ВСЕХ ролей-шкал словаря", () => {
+    // Перечень спрашивается у МЕХАНИКИ, а не выписан здесь. Прежде он был выписан, и когда
+    // словарь вырос с трёх ролей до пяти (`PWEB-79`), проба осталась зелёной: она проверяла свой
+    // вчерашний список, а не сегодняшний контракт. Второй список чужого перечня разъезжается
+    // молча — и разъехался.
     for (const half of ["light", "dark"] as const) {
       const names = посеяно(half);
 
-      for (const scale of ["акцент", "нейтраль", "опасность"]) {
+      for (const scale of SCALE_ROLES) {
         expect(names, `${half}: шкала «${scale}»`).toContain(`${scale}-9`);
         expect(names, `${half}: контрастная «${scale}»`).toContain(`${scale}-contrast`);
       }
     }
+  });
+
+  it("палитра закрывает словарь РОЛЯМИ, а не тем, что употребили формы", () => {
+    // Пять шкал при трёх употреблённых — законно и намеренно: словарь общий на всех поставщиков,
+    // и палитра, задавшая только использованное здесь, развалилась бы на первой же чужой форме.
+    const текст = JSON.stringify(referenceForms);
+    const употреблено = SCALE_ROLES.filter((роль) => текст.includes(`var(--${роль}-`));
+
+    expect(употреблено.length).toBeLessThan(SCALE_ROLES.length);
+    expect(употреблено).toContain("акцент");
+    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
   });
 
   it("ни один цвет не выписан литералом — иначе скин перестал бы быть пересеваемым", () => {

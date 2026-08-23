@@ -38,6 +38,7 @@
 // Три места, откуда приходит значение, без объявленного порядка превращают вопрос «почему этот
 // угол квадратный» в неотвечаемый. Порядок проверяется пробой, а не обещанием.
 
+import { fluidPoles, isFluid, type FluidReport } from "./fluid.js";
 import type { Keyframes, Skin, SkinVariables, SlotRecipe } from "./recipe.js";
 import { trace } from "./trace.js";
 import { knownRole, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";
@@ -143,6 +144,14 @@ export interface OutfitReport {
   readonly overrides: number;
   /** Правки по компонентам: кому сколько. Сорок у одного и сорок у сорока — разные болезни. */
   readonly overridesBy: Readonly<Record<string, number>>;
+  /**
+   * ТЕКУЧИЕ СЕМЕНА — вычисленное значение на каждом полюсе (`PWEB-80`).
+   *
+   * Отчёт, а не отказ, и там, где отказывать не по чему: пола у кегля нет, и назначить его самим
+   * значило бы решить за автора, каким должен быть вид. Но одиннадцать пикселей на узком полюсе
+   * автор обязан увидеть ПРИ ЗАПИСИ, а не найти на телефоне.
+   */
+  readonly fluid: readonly FluidReport[];
 }
 
 /** Что вышло из сборки: надеваемый вид и отчёт о том, из чего он сложился. */
@@ -249,6 +258,27 @@ function closedByDimensions(palette: Palette): Set<string> {
 }
 
 /**
+ * Собирает недостающие роли ПО СЕМЬЯМ: «успех (13), предупреждение (13)» вместо первых восьми
+ * имён подряд.
+ *
+ * Разница не в красоте. Тринадцать ступеней одной непосеянной шкалы — это ОДНА недоделка, а не
+ * тринадцать, и перечень имён подряд её прячет: обрежется он на первой же шкале, и человек
+ * починит одну, не узнав о второй. Ровно на этом проба и поймала прежнюю форму сообщения.
+ */
+function поСемьям(роли: readonly string[]): string {
+  const семьи = new Map<string, number>();
+
+  for (const роль of роли) {
+    const семья = SCALE_ROLES.find((scale) => роль.startsWith(`${scale}-`)) ?? роль;
+    семьи.set(семья, (семьи.get(семья) ?? 0) + 1);
+  }
+
+  const названо = [...семьи].map(([семья, счёт]) => (счёт > 1 ? `${семья} (${счёт})` : семья));
+
+  return названо.length > 12 ? `${названо.slice(0, 12).join(", ")}, …` : названо.join(", ");
+}
+
+/**
  * Перечень изъянов наряда — тот же обход, что делает сборка, но значением.
  *
  * @param outfit наряд
@@ -313,8 +343,8 @@ export function checkOutfit(outfit: Outfit, parts: LookParts): readonly OutfitFl
         where: "palette",
         means:
           `палитра «${palette.name}» не закрыла словарь: не задано ${нехватка.length} рол(ей) — ` +
-          `${нехватка.slice(0, 8).join(", ")}${нехватка.length > 8 ? ", …" : ""}. Форма, ` +
-          "написанная под другую палитру, потеряла бы на ней часть значений молча",
+          `${поСемьям(нехватка)}. Форма, написанная под другую палитру, потеряла бы на ней часть ` +
+          "значений молча",
       });
     }
   }
@@ -403,6 +433,11 @@ export function assemble(outfit: Outfit, parts: LookParts): Assembled {
     (имя) => parts.forms.find((кандидат) => кандидат.name === имя)!,
   );
 
+  const fluid = Object.entries(palette.dimensions ?? {})
+    .filter(([, declaration]) => isFluid(declaration))
+    .map(([seed, declaration]) => fluidPoles(seed, declaration as never))
+    .filter((отчёт): отчёт is FluidReport => отчёт !== null);
+
   const overridesBy: Record<string, number> = {};
   for (const [component, правки] of Object.entries(outfit.overrides ?? {})) {
     overridesBy[component] = Object.keys(правки).length;
@@ -431,6 +466,7 @@ export function assemble(outfit: Outfit, parts: LookParts): Assembled {
       dressed: forms.map((form) => form.component).toSorted(),
       overrides: Object.values(overridesBy).reduce((сумма, счёт) => сумма + счёт, 0),
       overridesBy,
+      fluid,
     },
   };
 }

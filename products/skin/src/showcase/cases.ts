@@ -1,14 +1,14 @@
 // СЛУЧАЙ — компонент в условии, ради которого на него стоит смотреть (`PWEB-31`).
 //
-// ## Единица показа одна
+// ## Случаи порождаются ОСЯМИ, и только ими
 //
-// И порождённое осями, и названное человеком — ОДИН И ТОТ ЖЕ случай: компонент, поставленный в
-// условие, и подпись, которая это условие называет. Разница лишь в том, кто условие назвал.
+// Витрина показывает вид: вариации компонента и состояния, в которых он бывает. Всё это —
+// координаты, и случай на витрине это координата, поставленная в разметку.
 //
-// Прежде их было два блока — «вариации и состояния» таблицей и «случаи» карточками. Таблица
-// задавала компоненту размер клетки: кнопка влезала, крупный компонент нет, — и ось состояний
-// строилась по корневой части, поэтому состояния вложенных частей не показывались вовсе. Оба
-// изъяна снимаются одним ходом: единица одна, а оси становятся ФИЛЬТРОМ, а не раскладкой.
+// Случаев, названных рукой («длинная подпись», «в узком месте»), здесь НЕТ. Они не координаты:
+// длина содержимого не вариация и не состояние, и в потоке вариаций такая карточка отвечает не на
+// тот вопрос, с которым сюда приходят. Их место — раздел проверок в редакторе (решение user
+// 2026-08-23), и заводить их обратно на витрину нельзя.
 //
 // ## Дерево случая порождается, а не верстается
 //
@@ -25,7 +25,13 @@
 // на ячейке. Образец даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
 
-import { sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
+import {
+  insertNode,
+  isContent,
+  sketchOf,
+  updateNode,
+  type AssemblyTree,
+} from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import {
   passportOf,
@@ -36,12 +42,19 @@ import {
 import { REGISTRY } from "./registry.js";
 
 /**
- * Координата случая — где он стоит по осям.
+ * Ось «ВСЕ» — положение, при котором ось не фиксируется, а разворачивается в поток случаев.
  *
- * Есть у КАЖДОГО случая, включая человеческий: «занята» это состояние `busy`, «длинная подпись» —
- * умолчание без состояния. Без неё фильтр к человеческим случаям не применялся бы, и они висели
- * бы в потоке при любом срезе — а это читается как «фильтр не работает».
+ * Отдельным значением, а не `null` и не отсутствием поля, ровно потому, что «все» и «обычное» —
+ * РАЗНЫЕ положения одной оси, и раньше они были склеены. Склейка стоила стартового вида: человек
+ * приходил смотреть вариации, а получал их произведение на состояния, и обычный вид кнопки —
+ * тот, ради которого он и пришёл, — лежал вперемешку с наведёнными и отключёнными.
  */
+export const ANY = "*";
+
+/** Положение оси: названное значение либо «все». */
+export type Axis<T> = T | typeof ANY;
+
+/** Координата случая — где он стоит по осям. */
 export interface CaseAt {
   /** Часть, к которой случай относится. Не названа — корневая. */
   readonly part?: string;
@@ -51,15 +64,13 @@ export interface CaseAt {
   readonly state: string | null;
 }
 
-/** Один случай: компонент в названном условии. */
+/** Один случай: компонент, поставленный в координату. */
 export interface ShowcaseCase {
   readonly id: string;
-  /** Чем условие названо: координата для порождённых, имя случая для человеческих. */
+  /** Чем условие названо — координатой, из которой случай и порождён. */
   readonly title: string;
   /** Зачем случай показан. Случай без повода не показывают. */
   readonly note: string;
-  /** Кто назвал условие: ось или человек. Это разные обещания, и подпись их различает. */
-  readonly origin: "axis" | "human";
   /** Где случай стоит по осям — по этому его и отбирает фильтр. */
   readonly at: CaseAt;
   /** Дерево случая: образец компонента плюс условие. */
@@ -70,10 +81,15 @@ export interface ShowcaseCase {
 export interface Slice {
   /** Часть, чьё состояние показываем. Не названа — корневая. */
   readonly part?: string;
-  /** Имя вариации; `null` — развернуть по всем, включая умолчание. */
-  readonly variant?: string | null;
-  /** Имя состояния; `null` — развернуть по всем, включая обычное. */
-  readonly state?: string | null;
+  /** Вариация: имя либо {@link ANY} — развернуть по всем. */
+  readonly variant: Axis<string>;
+  /**
+   * Состояние: имя, `null` — ОБЫЧНОЕ (ни одного признака не поставлено), либо {@link ANY}.
+   *
+   * Три положения, а не два: обычный вид — полноправный выбор, а не «фильтр не задан». С него
+   * показ и начинается, потому что всё остальное — отклонения от него.
+   */
+  readonly state: Axis<string | null>;
   /** Имена вариаций надетого скина — оси взять больше неоткуда. */
   readonly variants: readonly string[];
 }
@@ -115,14 +131,35 @@ export function rootPartOf(component: string): string {
   return passportOf(component)?.root ?? "";
 }
 
-/** Узел образца по адресу части, либо `undefined` — если такой части в образце нет. */
+/**
+ * Узел образца по адресу части, либо `undefined` — если такой части в образце нет.
+ *
+ * Узлы СОДЕРЖИМОГО пропускаются: адреса у них нет вовсе — они опознаются родом, — и состояние на
+ * подпись не ставится, потому что подпись не часть.
+ */
 function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
-  return Object.values(tree.components.nodes).find((node) => node.type === address)?.id;
+  return Object.values(tree.components.nodes).find(
+    (node) => !isContent(node) && node.type === address,
+  )?.id;
 }
 
 /**
- * Собирает случай: образец плюс условие. Вариация и содержимое ложатся на корень, состояние — на
- * узел выбранной части.
+ * ПОДПИСЬ ОБРАЗЦА — чем наполняется компонент на витрине.
+ *
+ * Содержимое кладёт ПОТРЕБИТЕЛЬ, а не кит и не скин: паспорт лишь объявляет, что внутрь пускают
+ * текст. Витрина здесь и есть потребитель, поэтому подпись её — но живёт она перечнем, а не
+ * зашита в сборку случая: у гармошки подписей несколько и они разные, у кнопки одна.
+ */
+const ПОДПИСИ: Readonly<Record<string, string>> = {
+  button: "Кнопка",
+};
+
+/**
+ * Собирает случай: образец плюс условие. Вариация ложится на корень, состояние — на узел
+ * выбранной части, подпись — отдельным УЗЛОМ СОДЕРЖИМОГО.
+ *
+ * Узлом, а не пропом: у части, принимающей и текст, и вложенную часть, порядок между ними иначе
+ * не выразить, и механика отрисовки props.children у такого узла не рисует вовсе.
  *
  * Отказ механики — **исключение**, а не значение, и это единственное такое место в зоне: отказ
  * означает, что случай написан против паспорта, то есть дефект нашей записи, а не состояние
@@ -144,17 +181,24 @@ function build(
   const onRoot = updateNode(sketch, root, { props: rootProps });
 
   if (!onRoot.ok) throw new Error(`витрина: случай отвергнут механикой — ${onRoot.means}`);
-  if (stateMark === undefined || partAddress === undefined) return onRoot.tree;
 
-  const target = nodeOfPart(onRoot.tree, partAddress);
+  const подпись = ПОДПИСИ[component];
+  const наполнено =
+    подпись === undefined
+      ? onRoot
+      : insertNode(onRoot.tree, REGISTRY, { id: "подпись", genus: "text", value: подпись }, root);
+
+  if (!наполнено.ok) throw new Error(`витрина: подпись не легла — ${наполнено.means}`);
+  if (stateMark === undefined || partAddress === undefined) return наполнено.tree;
+
+  const target = nodeOfPart(наполнено.tree, partAddress);
 
   // Части нет в образце — состояние не ставим и молчим: это законно, часть могла не попасть в
-  // образец (содержимое потребителя механика внутрь не кладёт). Отказывать здесь значило бы
-  // ронять показ из-за выбора оси.
-  if (target === undefined) return onRoot.tree;
+  // образец. Отказывать здесь значило бы ронять показ из-за выбора оси.
+  if (target === undefined) return наполнено.tree;
 
   const props = target === root ? { ...rootProps, ...stateProps(stateMark) } : stateProps(stateMark);
-  const onPart = updateNode(onRoot.tree, target, { props });
+  const onPart = updateNode(наполнено.tree, target, { props });
 
   if (!onPart.ok) throw new Error(`витрина: состояние не легло на часть — ${onPart.means}`);
 
@@ -183,16 +227,26 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   const address = addressOfPart(component, part);
   const axis = passport.variantAxis.mark;
 
-  const variants =
-    slice.variant === undefined || slice.variant === null
-      ? [null, ...slice.variants]
-      : [slice.variant];
+  // УМОЛЧАНИЯ ОТДЕЛЬНОЙ СТРОКОЙ НЕТ. Скин объявляет умолчание именем, и «атрибут не поставлен»
+  // — тот же адрес, что названная умолчательная вариация. Показывать их порознь значило бы
+  // обещать два разных вида там, где вид один.
+  // БЕЗ ВАРИАЦИЙ — ОДИН СЛУЧАЙ, А НЕ НИ ОДНОГО. Имена вариаций приходят из надетого наряда, и
+  // пока он не надет, их нет вовсе. Пустой поток читался бы как поломка витрины, тогда как
+  // показывать есть что: голого кита. «Без вариации» — законная координата, а не заглушка.
+  const named = slice.variants.length > 0 ? slice.variants : [null];
+  const variants: readonly (string | null)[] = slice.variant === ANY ? named : [slice.variant];
 
   const states = statesOfPart(component, part);
+
+  // ОБЫЧНОЕ — это `undefined` в перечне: признака не ставится ни одного. Оно идёт ПЕРВЫМ и в
+  // положении «все», потому что состояния читаются как отклонения от обычного вида, а отклонение
+  // показывать раньше того, от чего оно отклоняется, — значит показывать его без опоры.
   const shown =
-    slice.state === undefined || slice.state === null
+    slice.state === ANY
       ? [undefined, ...states]
-      : states.filter((state) => state.name === slice.state);
+      : slice.state === null
+        ? [undefined]
+        : states.filter((state) => state.name === slice.state);
 
   const cases: ShowcaseCase[] = [];
 
@@ -203,11 +257,10 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
     for (const state of shown) {
       cases.push({
         id: `axis:${variant ?? "-"}:${part}:${state?.name ?? "-"}`,
-        title: [variant ?? "умолчание", part, state?.name ?? "обычное"].join(" · "),
+        title: [variant ?? "без вариации", part, state?.name ?? "обычное"].join(" · "),
         note: state?.means ?? "вид без состояния — то, с чего начинается всё остальное",
-        origin: "axis",
         at: { part, variant, state: state?.name ?? null },
-        tree: build(component, { children: "Кнопка", ...variantProps }, address, state?.mark),
+        tree: build(component, variantProps, address, state?.mark),
       });
     }
   }
@@ -215,92 +268,15 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   return cases;
 }
 
-/** Что накладывается на образец в человеческом случае. */
-interface Condition {
-  readonly id: string;
-  readonly title: string;
-  readonly note: string;
-  /** Где случай стоит по осям. Называет ЧЕЛОВЕК: только он знает, про что его случай. */
-  readonly at: CaseAt;
-  readonly props: Readonly<Record<string, unknown>>;
-}
-
-/** Собирает случай, условие которого назвал человек. */
-function human(component: string, condition: Condition): ShowcaseCase {
-  return {
-    id: `human:${condition.id}`,
-    title: condition.title,
-    note: condition.note,
-    origin: "human",
-    at: condition.at,
-    tree: build(component, condition.props),
-  };
-}
-
 /**
- * Случаи, названные ЧЕЛОВЕКОМ: то, чего оси не порождают.
+ * Показ компонента: случаи текущего среза.
  *
- * Оси знают вариации и состояния — то есть координаты. Всё остальное, что делает случай случаем,
- * координатами не выражается: длина подписи, собранная из готового занятость, чужое содержимое
- * внутри. Это и остаётся человеку.
- */
-export const HUMAN_CASES: Readonly<Record<string, readonly ShowcaseCase[]>> = {
-  button: [
-    human("button", {
-      id: "busy",
-      title: "Занята",
-      note: "работа идёт: занятость собирается из готового — отключённость плюс `aria-busy`",
-      at: { variant: null, state: "busy" },
-      props: { children: "Сохраняю…", disabled: true, "aria-busy": "true" },
-    }),
-    human("button", {
-      id: "disabled-real",
-      title: "Отключена по-настоящему",
-      note: "не признаком, а пропом: проверяем, что кит сам ставит `data-disabled`",
-      at: { variant: null, state: "disabled" },
-      props: { children: "Сохранить", disabled: true },
-    }),
-    human("button", {
-      id: "long",
-      title: "Длинная подпись",
-      note: "содержимое кладёт потребитель, и оно бывает длиннее места — смотрим, как держится",
-      at: { variant: null, state: null },
-      props: { children: "Сохранить и вернуться к перечню документов" },
-    }),
-  ],
-};
-
-/**
- * Показ компонента целиком: порождённое осями плюс названное человеком, ОДНИМ потоком.
- *
- * Фильтр применяется к ОБОИМ родам одинаково — по координате случая. Прежде человеческие случаи
- * висели в потоке при любом срезе, и это читалось как «фильтр не работает»: он работал, просто
- * сравнивать ему было нечего.
- *
- * Человеческие идут после осевых: оси отвечают на «одето ли всё», человеческие — на «как
- * держится». При одевании первый вопрос возникает раньше.
+ * Отдельного входа сверх осей нет намеренно — см. шапку: витрина показывает координаты, и второй
+ * род случаев рядом с ними отвечал бы не на тот вопрос.
  *
  * @param component адрес компонента в реестре
  * @param slice срез осей
  */
 export function casesOf(component: string, slice: Slice): ShowcaseCase[] {
-  const humans = (HUMAN_CASES[component] ?? []).filter((item) => inSlice(item, component, slice));
-
-  return [...axisCases(component, slice), ...humans];
-}
-
-/**
- * Стоит ли случай в срезе: названная ось обязана совпасть, ось «все» пропускает любой.
- *
- * Часть сравнивается с корневой по умолчанию — случай, не назвавший части, про корень и есть.
- */
-function inSlice(item: ShowcaseCase, component: string, slice: Slice): boolean {
-  const part = slice.part ?? rootPartOf(component);
-
-  if ((item.at.part ?? rootPartOf(component)) !== part) return false;
-  if (slice.variant !== undefined && slice.variant !== null && item.at.variant !== slice.variant) {
-    return false;
-  }
-
-  return !(slice.state !== undefined && slice.state !== null && item.at.state !== slice.state);
+  return axisCases(component, slice);
 }

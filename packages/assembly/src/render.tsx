@@ -33,6 +33,17 @@
 // — правилом правки образца, которое порождает генератор скина. Без признака вторая область
 // адреса существовала бы в записи и не существовала бы в разметке.
 //
+// ## Дети обходятся ОДНОРОДНО (`PWEB-83`)
+//
+// Ветки «либо дети, либо текст из пропов» здесь больше нет. Она выражала одно из двух там, где
+// паспорт объявлял оба сразу: у кнопки раздела гармошки допустимы и указатель (часть), и подпись
+// (содержимое) — и подпись молча пропадала, стоило появиться указателю. Теперь содержимое это
+// УЗЕЛ среди детей, и путь один: обойти детей по порядку. Порядок содержимого относительно
+// частей выражается тем же списком, а не отдельной механикой.
+//
+// Проп `children` содержимым больше не считается: он перебивается детьми узла всегда, и потерю
+// называет проверка целостности (`content-in-props`), а не молчание отрисовки.
+//
 // ## Чего эта отрисовка не делает
 //
 // Не приносит вида. Карта стилей на узле (`styles`) СНЯТА (`PWEB-27`): вид приходит правилами
@@ -59,7 +70,13 @@ import { checkTree } from "./integrity.js";
 import { allowedInside } from "./nesting.js";
 import { resolveComponent, type Registry } from "./registry.js";
 import { note, trace } from "./trace.js";
-import { EMPTY_TREE, type AssemblyNode, type AssemblyTree, type NodeId } from "./tree.js";
+import {
+  EMPTY_TREE,
+  isContent,
+  type AssemblyElement,
+  type AssemblyTree,
+  type NodeId,
+} from "./tree.js";
 
 /** Что получает запасной вид: чей адрес не разрешился и у какого узла. */
 export interface FallbackProps {
@@ -81,10 +98,18 @@ export interface ErrorFallbackProps {
   readonly reset: () => void;
 }
 
-/** Что получает слот украшения на каждом узле. */
+/**
+ * Что получает слот украшения на узле компонента.
+ *
+ * Узла содержимого здесь нет намеренно (`PWEB-83`): подпись это текст, а не элемент, — своего
+ * бокса у неё нет, и обвести её можно было бы только чужой обёрткой ВНУТРИ компонента кита.
+ * Такая обёртка попала бы в разметку, за которую цепляется скин, и раскладка кнопки с одной
+ * подписью отличалась бы от кнопки с двумя. Выделять содержимое редактор обязан списком узлов,
+ * а не холстом.
+ */
 export interface EditOverlayProps {
   readonly nodeId: NodeId;
-  readonly node: AssemblyNode;
+  readonly node: AssemblyElement;
 }
 
 export interface RenderTreeProps {
@@ -166,9 +191,16 @@ interface RenderNodeProps {
   editOverlay?: Component<EditOverlayProps>;
 }
 
-/** Материальное для пересборки узла: сменилось — узел собирается заново, нет — живёт. */
+/**
+ * Материальное для пересборки узла: сменилось — узел собирается заново, нет — живёт.
+ *
+ * Род стоит рядом с адресом: узел, ставший из компонента содержимым (или наоборот), рисуется
+ * другим путём, и оставить его смонтированным нельзя. Значение и пропы материальными не
+ * являются — они доезжают геттерами, не трогая монтаж.
+ */
 interface RenderSignature {
   type: string | undefined;
+  genus: string | undefined;
   fallback: Component<FallbackProps>;
 }
 
@@ -184,18 +216,26 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
 
   const resolved = createMemo(() => {
     const current = node();
-    if (!current) return undefined;
+    if (!current || isContent(current)) return undefined;
     return resolveComponent(props.registry, current.type);
   });
 
-  /** Дети узла, а если их нет — содержимое из пропов (текст листа). */
+  /**
+   * Дети узла — однородно, оба рода в одном списке (`PWEB-83`).
+   *
+   * Детей нет — `null`, а не проп `children` узла: содержимое приезжает узлом, и оставь мы здесь
+   * запасной путь через пропы, у одного вопроса снова стало бы два ответа.
+   *
+   * Именно `null`, а не `undefined`: `mergeProps` Solid значением `undefined` предыдущий источник
+   * НЕ перекрывает, и проп `children` узла просочился бы обратно — то есть прежняя форма
+   * продолжила бы работать в точности там, где детей нет.
+   */
   const contentOf = () => {
     const current = node();
-    if (!current) return null;
-    if (current.children.length === 0) return current.props?.children as JSX.Element;
+    if (!current || current.children.length === 0) return null;
 
     return (
-      <For each={node()?.children ?? []}>
+      <For each={(node()?.children ?? []) as readonly NodeId[]}>
         {(childId) => (
           <RenderNode
             nodeId={childId}
@@ -208,6 +248,23 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
         )}
       </For>
     );
+  };
+
+  /** Значение узла содержимого — читается через функцию, поэтому правка подписи доезжает живой. */
+  const valueOf = () => {
+    const current = node();
+    return current && isContent(current) ? current.value : "";
+  };
+
+  /**
+   * Чем узел назвать тому, кто показывает ошибку: адресом либо родом.
+   *
+   * У содержимого адреса нет, и написать «неизвестен» о нём было бы неправдой — род известен.
+   */
+  const typeOrGenus = () => {
+    const current = node();
+    if (!current) return "неизвестен";
+    return isContent(current) ? `содержимое:${current.genus}` : current.type;
   };
 
   /**
@@ -224,7 +281,8 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
           return node()?.id ?? props.nodeId;
         },
         get node() {
-          return node() as AssemblyNode;
+          // Украшение достаётся только узлам компонентов — путь сюда идёт после проверки рода.
+          return node() as AssemblyElement;
         },
       })}
     </span>
@@ -252,7 +310,10 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
    * Именованная функция, а не выражение по месту: так источник читается как то, чем он
    * является, — реактивным чтением узла, — и одинаков во всех трёх путях отрисовки.
    */
-  const ownProps = () => node()?.props ?? {};
+  const ownProps = () => {
+    const current = node();
+    return current && !isContent(current) ? (current.props ?? {}) : {};
+  };
 
   /**
    * ПРИЗНАК УЗЛА В РАЗМЕТКЕ — то, чем узел адресуется снаружи дерева (`PWEB-27`).
@@ -280,7 +341,8 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
 
   /** Внешний компонент композиции, если узел составной. */
   const outer = createMemo(() => {
-    const composed = node()?.composedInto;
+    const current = node();
+    const composed = current && !isContent(current) ? current.composedInto : undefined;
     if (composed === undefined) return undefined;
     return resolveComponent(props.registry, composed);
   });
@@ -306,7 +368,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     | { kind: "missing"; type: string } => {
     const current = node();
     const Inner = resolved();
-    if (!current) return { kind: "missing", type: "" };
+    if (!current || isContent(current)) return { kind: "missing", type: "" };
     if (!Inner) return { kind: "missing", type: current.type };
 
     const composed = current.composedInto;
@@ -321,6 +383,18 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
   const rendered = () => {
     const current = node();
     if (!current) return null;
+
+    // Узел содержимого — лист: значение, и ничего вокруг него. Ни признака узла (адресовать
+    // нечего — текст не элемент), ни запасного вида (разрешать нечего — адреса нет), ни
+    // украшения (причина — у `EditOverlayProps`).
+    if (isContent(current)) {
+      const closeContent = trace(`содержимое ${current.id} (${current.genus})`);
+      try {
+        return <>{valueOf()}</>;
+      } finally {
+        closeContent();
+      }
+    }
 
     const close = trace(`узел ${current.id} (${current.type})`);
     try {
@@ -369,7 +443,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
       // `position:relative` — без него абсолютной привязке не за что зацепиться.
       const decoratedProps = mergeProps(ownProps, composition, identityProps, {
           get style() {
-            const own = (node()?.props as { style?: unknown } | undefined)?.style;
+            const own = (ownProps() as { style?: unknown }).style;
             if (typeof own === "string") return `position:relative; ${own}`;
             if (own && typeof own === "object") return { position: "relative", ...own };
             return "position:relative";
@@ -403,9 +477,15 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
    * стабильность монтажа ниже.
    */
   const signature = createMemo((previous: RenderSignature | undefined): RenderSignature => {
-    const next: RenderSignature = { type: node()?.type, fallback: props.fallback };
+    const current = node();
+    const next: RenderSignature = {
+      type: current && !isContent(current) ? current.type : undefined,
+      genus: current && isContent(current) ? current.genus : undefined,
+      fallback: props.fallback,
+    };
     if (!previous) return next;
     if (previous.type !== next.type) return next;
+    if (previous.genus !== next.genus) return next;
     if (previous.fallback !== next.fallback) return next;
     return previous;
   });
@@ -422,7 +502,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     <ErrorBoundary
       fallback={(error, reset) =>
         createComponent(props.errorFallback, {
-          type: node()?.type ?? "неизвестен",
+          type: typeOrGenus(),
           nodeId: props.nodeId,
           error,
           reset,

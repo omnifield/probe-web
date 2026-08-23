@@ -31,7 +31,7 @@
 // Проверяется, что сходятся ДВЕ ДОРОГИ НАШЕЙ МЕХАНИКИ, — редактор ходит первой, приложение
 // второй, и если сходятся они, то расхождению взяться неоткуда.
 
-import { ask, load, withChrome } from "@omnifield/live-check";
+import { ask, load, withChrome, type Call } from "@omnifield/live-check";
 import { assemble, generateSkinCss, type Outfit } from "@omnifield/probe-web-skin";
 import { flattenCss } from "@omnifield/probe-web-skin/flat";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
@@ -313,5 +313,54 @@ describe("точечная правка: границы и порядок ист
 
     expect(сосед).toBe(снимки["редактор-светлая"]!["поверхность-вариация"]!["padding-left"]);
     expect(сосед).not.toBe("0px");
+  });
+});
+
+describe("ТЕКУЧИЙ РАЗМЕР на живом окне (`PWEB-80`)", () => {
+  // Единственное место, где текучесть вообще проверяема: `vw` считает браузер, `round()` считает
+  // браузер, и `jsdom` не умеет ни того, ни другого. Замер идёт на ДВУХ ширинах окна — узкой и
+  // широкой, — и на настоящем порождённом листе, а не на рукописном образце.
+
+  /** Отступ кнопки при данной ширине окна: то, что видит человек, а не текст объявления. */
+  async function отступ(call: Call, ширина: number): Promise<string> {
+    await call("Emulation.setDeviceMetricsOverride", {
+      width: ширина,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await load(call, страница(дорогаРедактора, false));
+
+    return String(
+      await ask(
+        call,
+        `getComputedStyle(document.getElementById("кнопка-умолчание")).paddingLeft`,
+      ),
+    );
+  }
+
+  let узкое = "";
+  let широкое = "";
+
+  beforeAll(async () => {
+    await withChrome(async (call) => {
+      узкое = await отступ(call, 400);
+      широкое = await отступ(call, 1400);
+    });
+  }, 120_000);
+
+  it("значение при узком и широком окне РАЗНОЕ — иначе текучести нет", () => {
+    expect(узкое).not.toBe(широкое);
+    expect(Number.parseFloat(узкое)).toBeLessThan(Number.parseFloat(широкое));
+  });
+
+  it("и на обеих ширинах оно СИДИТ НА СЕТКЕ 0.25rem", () => {
+    // Опасение «текучесть развалит сетку» проверено, а не принято на слово: посадка работает
+    // ПОВЕРХ текучего значения, и соседние элементы попадают друг в друга при любой ширине.
+    for (const [где, значение] of [["узкое", узкое], ["широкое", широкое]] as const) {
+      const шаг = Number.parseFloat(значение) / 4;
+
+      expect(Number.isInteger(шаг), `${где}: ${значение} не кратно 4px (0.25rem)`).toBe(true);
+    }
   });
 });

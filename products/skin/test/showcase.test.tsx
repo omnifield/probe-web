@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
+import { isContent, knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
 import {
   type ComponentPassport,
   GROUPS,
@@ -22,14 +22,14 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/showcase/app.jsx";
-import { casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
+import { ANY, casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
 
 import { cleanup, mount } from "./dom.jsx";
-import { FIXTURE } from "./fixtures.js";
-import { restoreStore, serveSkins } from "./store-stub.js";
+import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
+import { restoreStore, serveLook } from "./store-stub.js";
 
-beforeEach(() => serveSkins([FIXTURE]));
+beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 
 afterEach(() => {
   restoreStore();
@@ -51,9 +51,16 @@ describe("перечень", () => {
   });
 });
 
-/** Поток случаев кнопки при развёрнутых осях — то, что видит человек по умолчанию. */
+/** Имена вариаций пробной формы — оси взять больше неоткуда, их объявляет скин. */
+const VARIANTS = Object.keys(FORM.recipe.variants ?? {});
+
+/** Поток случаев кнопки при ОБЕИХ развёрнутых осях: вариации × состояния. */
 const stream = (): ShowcaseCase[] =>
-  casesOf("button", { part: rootPartOf("button"), variants: Object.keys(FIXTURE.recipes.button?.variants ?? {}) });
+  casesOf("button", { part: rootPartOf("button"), variant: ANY, state: ANY, variants: VARIANTS });
+
+/** Стартовый срез витрины: все вариации, состояние обычное. */
+const plain = (): ShowcaseCase[] =>
+  casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: VARIANTS });
 
 describe("случаи", () => {
   it("дерево случая — образец компонента, а не своя разметка", () => {
@@ -63,9 +70,12 @@ describe("случаи", () => {
 
     for (const item of stream()) {
       expect(item.tree.components.root).toBe(sketch?.components.root);
-      expect(Object.keys(item.tree.components.nodes)).toEqual(
-        Object.keys(sketch?.components.nodes ?? {}),
-      );
+
+      // Узлы образца — все на месте и ни одного лишнего сверх ПОДПИСИ: её кладёт витрина как
+      // потребитель, и кладёт узлом содержимого, а не своей разметкой.
+      const свои = Object.keys(item.tree.components.nodes).filter((id) => id !== "подпись");
+
+      expect(свои).toEqual(Object.keys(sketch?.components.nodes ?? {}));
     }
   });
 
@@ -75,6 +85,9 @@ describe("случаи", () => {
 
     for (const item of stream()) {
       for (const node of Object.values(item.tree.components.nodes)) {
+        // Содержимое адреса не имеет: оно опознаётся родом, и спрашивать у него часть нечем.
+        if (isContent(node)) continue;
+
         const part = node.type === "button" ? passport?.root : node.type.split(".").at(-1);
         expect(declared.has(part ?? "")).toBe(true);
       }
@@ -88,38 +101,66 @@ describe("случаи", () => {
     }
   });
 
-  it("первый случай — умолчание без состояния: с него начинается всё остальное", () => {
-    expect(stream()[0]?.title).toContain("умолчание");
-    expect(stream()[0]?.title).toContain("обычное");
+  it("стартовый срез — все вариации в обычном состоянии", () => {
+    // Первым человек смотрит НА ВИД, а не на отклонения от него: наведённое и отключённое
+    // читаются как «что происходит с этим видом», и показывать их вперемешку с ним значит
+    // заставлять его выискивать.
+    expect(plain()).toHaveLength(VARIANTS.length);
+    expect(plain().map((item) => item.at.variant)).toEqual(VARIANTS);
+    expect(plain().every((item) => item.at.state === null)).toBe(true);
+  });
+
+  it("обычное и «все» — разные положения оси, а не одно", () => {
+    // Прежде они были склеены, и стартовый вид был произведением осей. Разница должна быть
+    // видна машине, иначе она снова схлопнется.
+    expect(stream().length).toBeGreaterThan(plain().length);
+    expect(stream().some((item) => item.at.state !== null)).toBe(true);
+    expect(plain().some((item) => item.at.state !== null)).toBe(false);
+  });
+
+  it("первая вариация — та, что скин объявил умолчанием", () => {
+    // Отдельной строки «умолчание» нет: скин называет умолчание именем, и «атрибут не поставлен»
+    // — тот же адрес. Две строки обещали бы два разных вида там, где вид один.
+    const [первый] = stream();
+
+    expect(первый?.title).toContain(Object.keys(FORM.recipe.variants ?? {})[0] ?? "");
+    expect(первый?.title).toContain("обычное");
+    expect(stream().some((item) => item.title.includes("умолчание"))).toBe(false);
   });
 
   it("случаи есть у каждого компонента перечня", () => {
     for (const component of knownComponents(REGISTRY)) {
-      expect(casesOf(component, { part: rootPartOf(component), variants: [] }).length).toBeGreaterThan(0);
+      const slice = { part: rootPartOf(component), variant: ANY, state: null, variants: [] };
+
+      expect(casesOf(component, slice).length).toBeGreaterThan(0);
     }
   });
 
-  it("фильтр отбирает и человеческие случаи — у них тоже есть координата", () => {
-    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
-    const hover = casesOf("button", { part: "root", state: "hover", variants });
-    const disabled = casesOf("button", { part: "root", state: "disabled", variants });
+  it("случаев мимо осей на витрине нет", () => {
+    // Витрина показывает КООРДИНАТЫ. Случаи вроде «длинная подпись» и «в узком месте» —
+    // не вариации и не состояния; в потоке вариаций они отвечают не на тот вопрос, с которым
+    // сюда приходят, и уехали в раздел проверок редактора (решение user 2026-08-23).
+    for (const item of stream()) {
+      expect(item.title).toContain(item.at.variant);
+    }
 
-    // «Занята» и «отключена по-настоящему» стоят в состояниях `busy` и `disabled`: в срезе по
-    // наведению их быть не должно, иначе фильтр читается как неработающий.
-    expect(hover.filter((item) => item.origin === "human")).toHaveLength(0);
-    expect(disabled.filter((item) => item.origin === "human").map((item) => item.title)).toContain(
-      "Отключена по-настоящему",
-    );
+    const hover = casesOf("button", { part: "root", variant: ANY, state: "hover", variants: VARIANTS });
+
+    expect(hover).toHaveLength(VARIANTS.length);
   });
 
   it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
-    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
-    const all = casesOf("button", { part: "root", variants });
-    const one = casesOf("button", { part: "root", variant: variants[0] ?? null, state: "hover", variants });
+    const all = stream();
+    const one = casesOf("button", {
+      part: "root",
+      variant: VARIANTS[0] ?? ANY,
+      state: "hover",
+      variants: VARIANTS,
+    });
 
     expect(all.length).toBeGreaterThan(one.length);
-    // Зафиксированный срез — ровно один осевой случай плюс человеческие.
-    expect(one.filter((item) => item.origin === "axis")).toHaveLength(1);
+    // Обе оси названы — случай ровно один.
+    expect(one).toHaveLength(1);
   });
 });
 
@@ -145,7 +186,7 @@ describe("хедер", () => {
 
     // Первый пункт — снятие: голый кит это рабочее состояние продукта, а не отсутствие выбора.
     expect(select.options[0]?.value).toBe("");
-    expect([...select.options].map((option) => option.value)).toContain(FIXTURE.name);
+    expect([...select.options].map((option) => option.value)).toContain(OUTFIT.name);
   });
 
   it("выбор списком надевает скин, пустой пункт — снимает", async () => {
@@ -156,11 +197,11 @@ describe("хедер", () => {
       return found as HTMLSelectElement;
     });
 
-    select.value = FIXTURE.name;
+    select.value = OUTFIT.name;
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
     await vi.waitFor(() =>
-      expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name),
+      expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name),
     );
 
     select.value = "";
@@ -172,7 +213,7 @@ describe("хедер", () => {
   });
 
   it("режима без скина не предлагают — переключать нечего", async () => {
-    serveSkins([]);
+    serveLook({});
 
     const host = mount(() => <App />);
 
@@ -199,20 +240,53 @@ describe("хедер", () => {
   });
 });
 
+/** Ставит ось состояний в названное положение — то же движение, что делает рукой человек. */
+function chooseState(host: HTMLElement, value: string): void {
+  const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
+
+  stateAxis!.value = value;
+  stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 describe("оси — фильтр, а не раскладка", () => {
+  it("витрина открывается на обычном виде, а не на произведении осей", async () => {
+    const host = mount(() => <App />);
+
+    // Пришедший смотреть кнопки видит ВАРИАЦИИ — по одной карточке на каждую, — а не их
+    // произведение на состояния, среди которого обычный вид пришлось бы выискивать.
+    //
+    // Ждём наряда: до его прихода вариаций нет вовсе, и поток состоит из человеческих случаев.
+    await vi.waitFor(() => {
+      const плоские = [...host.querySelectorAll(".case__title")].filter((node) =>
+        (node.textContent ?? "").includes("обычное"),
+      );
+
+      expect(плоские).toHaveLength(Object.keys(FORM.recipe.variants ?? {}).length);
+    });
+
+    expect(host.querySelector("[data-force]")).toBeNull();
+    expect(host.querySelector("[data-disabled]")).toBeNull();
+  });
+
   it("выбор состояния сужает поток случаев", async () => {
     const host = mount(() => <App />);
     const before = await vi.waitFor(() => {
       const cards = host.querySelectorAll(".case");
-      expect(cards.length).toBeGreaterThan(3);
+      expect(cards.length).toBe(Object.keys(FORM.recipe.variants ?? {}).length);
       return cards.length;
     });
 
-    const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
-    stateAxis!.value = "hover";
-    stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
+    chooseState(host, ANY);
 
-    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(before));
+    const развёрнуто = await vi.waitFor(() => {
+      const cards = host.querySelectorAll(".case");
+      expect(cards.length).toBeGreaterThan(before);
+      return cards.length;
+    });
+
+    chooseState(host, "hover");
+
+    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(развёрнуто));
   });
 
   it("витрина не рисует внутри компонента ничего своего", async () => {
@@ -262,20 +336,30 @@ describe("отрисовка", () => {
     expect(host.querySelector("[data-node]")).not.toBeNull();
   });
 
-  it("состояние, которое ставит кит, доезжает до разметки", () => {
+  it("состояние, которое ставит кит, доезжает до разметки", async () => {
     const host = mount(() => <App />);
 
-    expect(host.querySelector("[data-disabled]")).not.toBeNull();
-    expect(host.querySelector('[aria-busy="true"]')).not.toBeNull();
+    // Ось состояний стоит на ОБЫЧНОМ: показ начинается с вида, а не с отклонений от него.
+    // Состояния надо развернуть — ровно так же, как это делает рукой человек.
+    chooseState(host, ANY);
+
+    // Случаи появляются после того, как приедет надетый наряд: вариации живут в нём.
+    await vi.waitFor(() => expect(host.querySelector("[data-disabled]")).not.toBeNull());
   });
 
-  it("псевдосостояние показано признаком — браузерное нам недоступно", () => {
+  it("псевдосостояние показано признаком — браузерное нам недоступно", async () => {
     const host = mount(() => <App />);
-    const forced = [...host.querySelectorAll("[data-force]")].map((node) =>
-      node.getAttribute("data-force"),
-    );
 
-    expect(forced).toEqual(expect.arrayContaining(["hover", "focus-visible", "active"]));
+    chooseState(host, ANY);
+
+    // Вариации приезжают из надетого наряда, поэтому случаи появляются не в первый кадр.
+    await vi.waitFor(() => {
+      const forced = [...host.querySelectorAll("[data-force]")].map((node) =>
+        node.getAttribute("data-force"),
+      );
+
+      expect(forced).toEqual(expect.arrayContaining(["hover", "focus-visible", "active"]));
+    });
   });
 
   it("имена вариаций приходят из записи НАДЕТОГО скина, а не из паспорта", async () => {
@@ -285,7 +369,7 @@ describe("отрисовка", () => {
     // законно — называть нечего.
     await vi.waitFor(() => {
       const shown = host.textContent ?? "";
-      for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
+      for (const name of Object.keys(FORM.recipe.variants ?? {})) {
         expect(shown).toContain(name);
       }
     });
@@ -319,13 +403,15 @@ describe("отрисовка", () => {
     expect(host.querySelector(".gaps")).toBeNull();
   });
 
-  it("переход в редактор говорит правду: его ещё нет", async () => {
+  it("переход в правку добавляет настройки, а показ оставляет на месте", async () => {
     const host = mount(() => <App />);
-    const [, editor] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
+    const [, правка] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
 
-    editor?.click();
+    правка?.click();
 
-    await vi.waitFor(() => expect(host.textContent ?? "").toContain("Редактора ещё нет"));
-    expect(host.querySelectorAll(".case")).toHaveLength(0);
+    // Настройки приходят СБОКУ: цвета крутят на компонентах, а не в пустоте, поэтому случаи
+    // остаются видны. Уведи мы их — человек выбирал бы цвет по образцу.
+    await vi.waitFor(() => expect(host.querySelector(".knobs")).not.toBeNull());
+    expect(host.querySelectorAll(".case").length).toBeGreaterThan(0);
   });
 });

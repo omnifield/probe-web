@@ -18,7 +18,7 @@ import { createRegistry } from "../src/registry.js";
 import { RenderTree, type EditOverlayProps, type ErrorFallbackProps } from "../src/render.jsx";
 import type { AssemblyTree } from "../src/tree.js";
 import { cleanup, mount } from "./dom.jsx";
-import { PASSPORTS, RULE } from "./passports.js";
+import { PASSPORTS, spec } from "./passports.js";
 
 afterEach(cleanup);
 
@@ -79,36 +79,40 @@ const Boom: Component = () => {
   throw new Error("узел не собрался");
 };
 
-const registry = createRegistry({
-  components: {
+const registry = createRegistry(
+  spec({
     layout: Layout,
     button: Button,
     icon: Icon,
-    boom: Boom,
-    // Компонент И пространство имён разом — так устроены namespace-компоненты кита
-    // (`Popover.Trigger`), и реестр их принимает как есть: разрешение адреса идёт по
-    // свойствам, а свойства есть и у функции.
-    popover: Object.assign(Popover, { trigger: Trigger, content: Layout }),
-    ui: { button: Button },
-  },
-  // `boom` — компонент, который падает при отрисовке; паспорт ему нужен кнопочный: предмет
-  // пробы в том, что упавший узел не уносит соседей, а не в его вложенности.
-  passports: { ...PASSPORTS, boom: PASSPORTS.button },
-  ...RULE,
-});
+    // Составной компонент отдаётся ПАРОЙ: паспорт и то, чем рисуется каждая его часть
+    // (`PWEB-85`). Вложенной карты адресов больше нет — части лежат по своим именам.
+    popover: { root: Popover, trigger: Trigger, content: Layout },
+    // Тот же компонент под чужим пространством имён: адрес и имя совпадать не обязаны.
+    "ui.button": Button,
+    // `boom` — компонент, который падает при отрисовке; паспорт ему нужен кнопочный: предмет
+    // пробы в том, что упавший узел не уносит соседей, а не в его вложенности.
+    boom: { passport: PASSPORTS.button, parts: { root: Boom } },
+  }),
+);
 
 const tree = (nodes: AssemblyTree["components"]["nodes"], root = "page"): AssemblyTree => ({
   components: { root, nodes },
 });
 
+/** Узел содержимого — подпись; связи проставлены как у любого узла. */
+const подпись = (id: string, value: string, parentId: string) =>
+  ({ id, genus: "text", value, parentId, children: [] }) as const;
+
 const page = tree({
   page: { id: "page", type: "layout", parentId: null, children: ["one", "two"] },
-  one: { id: "one", type: "button", parentId: "page", children: [], props: { children: "Да" } },
-  two: { id: "two", type: "button", parentId: "page", children: [], props: { children: "Нет" } },
+  one: { id: "one", type: "button", parentId: "page", children: ["да"] },
+  да: подпись("да", "Да", "one"),
+  two: { id: "two", type: "button", parentId: "page", children: ["нет"] },
+  нет: подпись("нет", "Нет", "two"),
 });
 
 describe("отрисовка по данным", () => {
-  it("рисует лист с текстом из пропов", () => {
+  it("рисует лист с содержимым — узлом, а не пропом", () => {
     const host = mount(() => <RenderTree tree={page} registry={registry} />);
 
     expect(host.querySelectorAll("button")).toHaveLength(2);
@@ -126,7 +130,8 @@ describe("отрисовка по данным", () => {
     const host = mount(() => (
       <RenderTree
         tree={tree({
-          page: { id: "page", type: "ui.button", parentId: null, children: [], props: { children: "Вглубь" } },
+          page: { id: "page", type: "ui.button", parentId: null, children: ["вглубь"] },
+          вглубь: подпись("вглубь", "Вглубь", "page"),
         })}
         registry={registry}
       />
@@ -188,7 +193,8 @@ describe("отрисовка по данным", () => {
     setCurrent(
       tree({
         page: { id: "page", type: "layout", parentId: null, children: ["one"] },
-        one: { id: "one", type: "button", parentId: "page", children: [], props: { children: "Да" } },
+        one: { id: "one", type: "button", parentId: "page", children: ["да"] },
+        да: подпись("да", "Да", "one"),
       }),
     );
 
@@ -217,6 +223,130 @@ describe("отрисовка по данным", () => {
   it("дерево пустое — то же самое", () => {
     const host = mount(() => <RenderTree tree={tree({}, "")} registry={registry} />);
     expect(host.innerHTML).toBe("");
+  });
+});
+
+describe("содержимое — узел дерева", () => {
+  // ГЛАВНАЯ строка `PWEB-83`. Прежде отрисовка выражала одно из двух — «либо дети, либо текст из
+  // пропов», — и подпись пропадала, стоило появиться вложенной части. Проверяется ровно тот
+  // случай, на котором дыра открылась: кнопка раздела гармошки с указателем.
+
+  /** Части гармошки — прозрачные, как настоящие: чужие пропы уезжают на их узел. */
+  const Часть = (part: string): Component<Record<string, unknown>> => (props) => (
+    <div data-scope="accordion" data-part={part} {...props}>
+      {props.children as never}
+    </div>
+  );
+
+  const гармошка = createRegistry(
+    spec({
+      accordion: {
+        root: Часть("root"),
+        item: Часть("item"),
+        itemTrigger: Часть("item-trigger"),
+        itemIndicator: Часть("item-indicator"),
+        itemContent: Часть("item-content"),
+      },
+    }),
+  );
+
+  /** Кнопка раздела с указателем и подписью; порядок задаётся списком детей. */
+  const кнопкаРаздела = (children: readonly string[]) =>
+    tree(
+      {
+        кнопка: { id: "кнопка", type: "accordion.itemTrigger", parentId: null, children },
+        стрелка: { id: "стрелка", type: "accordion.itemIndicator", parentId: "кнопка", children: [] },
+        текст: подпись("текст", "Раздел", "кнопка"),
+      },
+      "кнопка",
+    );
+
+  it("кнопка раздела с указателем СОХРАНЯЕТ подпись", () => {
+    const host = mount(() => <RenderTree tree={кнопкаРаздела(["текст", "стрелка"])} registry={гармошка} />);
+
+    expect(host.querySelector('[data-part="item-indicator"]')).not.toBeNull();
+    expect(host.textContent).toContain("Раздел");
+  });
+
+  it("порядок содержимого относительно части выразим — и он оба", () => {
+    const сначалаТекст = mount(() => (
+      <RenderTree tree={кнопкаРаздела(["текст", "стрелка"])} registry={гармошка} />
+    ));
+    expect(сначалаТекст.querySelector('[data-part="item-trigger"]')?.firstChild?.textContent).toBe(
+      "Раздел",
+    );
+
+    cleanup();
+
+    const сначалаСтрелка = mount(() => (
+      <RenderTree tree={кнопкаРаздела(["стрелка", "текст"])} registry={гармошка} />
+    ));
+    expect(
+      сначалаСтрелка.querySelector('[data-part="item-trigger"]')?.firstElementChild?.getAttribute(
+        "data-part",
+      ),
+    ).toBe("item-indicator");
+    expect(сначалаСтрелка.textContent).toContain("Раздел");
+  });
+
+  it("правка значения доезжает до живой разметки, не пересобирая владельца", () => {
+    const [current, setCurrent] = createSignal(
+      tree({
+        page: { id: "page", type: "button", parentId: null, children: ["текст"] },
+        текст: подпись("текст", "Да", "page"),
+      }),
+    );
+
+    const host = mount(() => <RenderTree tree={current()} registry={registry} />);
+    const before = host.querySelector("button");
+    expect(host.textContent).toBe("Да");
+
+    setCurrent(
+      tree({
+        page: { id: "page", type: "button", parentId: null, children: ["текст"] },
+        текст: подпись("текст", "Нет", "page"),
+      }),
+    );
+
+    expect(host.textContent).toBe("Нет");
+    expect(host.querySelector("button")).toBe(before);
+  });
+
+  it("содержимое своего элемента в разметке не заводит — это текст, а не узел", () => {
+    const host = mount(() => (
+      <RenderTree
+        tree={tree({
+          page: { id: "page", type: "button", parentId: null, children: ["текст"] },
+          текст: подпись("текст", "Да", "page"),
+        })}
+        registry={registry}
+      />
+    ));
+
+    const button = host.querySelector("button") as HTMLElement;
+    expect(button.children).toHaveLength(0);
+    expect(button.textContent).toBe("Да");
+  });
+
+  it("проп `children` содержимым больше не считается — узел рисуется пустым", () => {
+    // Прежняя форма. Отрисовка её не показывает, а называет проверка целостности
+    // (`content-in-props`) — молчание здесь и было тем, что теряло подпись.
+    const host = mount(() => (
+      <RenderTree
+        tree={tree({
+          page: {
+            id: "page",
+            type: "button",
+            parentId: null,
+            children: [],
+            props: { children: "Прежнее" },
+          },
+        })}
+        registry={registry}
+      />
+    ));
+
+    expect(host.textContent).toBe("");
   });
 });
 
@@ -330,7 +460,8 @@ describe("неразрешённый адрес", () => {
         tree={tree({
           page: { id: "page", type: "layout", parentId: null, children: ["нетто", "two"] },
           нетто: { id: "нетто", type: "нет.такого", parentId: "page", children: [] },
-          two: { id: "two", type: "button", parentId: "page", children: [], props: { children: "Жив" } },
+          two: { id: "two", type: "button", parentId: "page", children: ["жив"] },
+          жив: подпись("жив", "Жив", "two"),
         })}
         registry={registry}
       />
@@ -349,7 +480,8 @@ describe("упавший узел", () => {
         tree={tree({
           page: { id: "page", type: "layout", parentId: null, children: ["плохой", "two"] },
           плохой: { id: "плохой", type: "boom", parentId: "page", children: [] },
-          two: { id: "two", type: "button", parentId: "page", children: [], props: { children: "Жив" } },
+          two: { id: "two", type: "button", parentId: "page", children: ["жив"] },
+          жив: подпись("жив", "Жив", "two"),
         })}
         registry={registry}
       />
@@ -489,9 +621,9 @@ describe("композиция", () => {
       type: "button",
       composedInto: "popover.trigger",
       parentId: "окно",
-      children: [],
-      props: { children: "Настройки" },
+      children: ["подпись"],
     },
+    подпись: подпись("подпись", "Настройки", "настройки"),
   }, "окно");
 
   it("рисует ОДИН узел: внешний собирает, внутренний рисуется", () => {

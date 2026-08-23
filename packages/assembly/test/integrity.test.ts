@@ -135,6 +135,87 @@ describe("изъяны", () => {
     expect(flawsOf(looped)).toContain("cycle");
   });
 
+  it("содержимое лежит пропом — это прежняя форма, и она названа, а не пропущена", () => {
+    // `PWEB-83`: содержимое едет УЗЛОМ. Дерево прежней формы отрисовка покажет пустым, и молчать
+    // об этом нельзя — человек пошёл бы искать ошибку вёрстки вместо формы дерева.
+    const прежнее: AssemblyTree = {
+      components: {
+        root: "page",
+        nodes: {
+          page: { id: "page", type: "layout", parentId: null, children: ["one"] },
+          one: {
+            id: "one",
+            type: "button",
+            parentId: "page",
+            children: [],
+            props: { children: "Сохранить" },
+          },
+        },
+      },
+    };
+
+    expect(flawsOf(прежнее)).toContain("content-in-props");
+    // Прочие пропы изъяном не являются: предмет проверки — содержимое, а не пропы вообще.
+    expect(
+      flawsOf({
+        components: {
+          root: "page",
+          nodes: {
+            page: {
+              id: "page",
+              type: "layout",
+              parentId: null,
+              children: [],
+              props: { "aria-label": "холст" },
+            },
+          },
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it("у узла содержимого есть дети — такого узла правки не создают", () => {
+    const кривое: AssemblyTree = {
+      components: {
+        root: "page",
+        nodes: {
+          page: { id: "page", type: "layout", parentId: null, children: ["подпись"] },
+          подпись: {
+            id: "подпись",
+            genus: "text",
+            value: "Сохранить",
+            parentId: "page",
+            // Дерево пришло извне: типы за сохранённый JSON не отвечают, отвечает проверка.
+            children: ["ещё"] as unknown as readonly [],
+          },
+          ещё: { id: "ещё", type: "button", parentId: "подпись", children: [] },
+        },
+      },
+    };
+
+    expect(flawsOf(кривое)).toContain("content-with-children");
+  });
+
+  it("узел содержимого сам по себе изъяном не является", () => {
+    expect(
+      checkTree({
+        components: {
+          root: "page",
+          nodes: {
+            page: { id: "page", type: "layout", parentId: null, children: ["подпись"] },
+            подпись: {
+              id: "подпись",
+              genus: "text",
+              value: "Сохранить",
+              parentId: "page",
+              children: [],
+            },
+          },
+        },
+      }),
+    ).toEqual([]);
+  });
+
   it("называет ВСЕ изъяны сразу, а не первый", () => {
     const names = flawsOf({
       components: {

@@ -16,14 +16,38 @@ export type {
 } from "./passport-read.js";
 export { partOf } from "./passport-read.js";
 
-export type { AssemblyNode, AssemblyTree, NodeId } from "./tree.js";
-export { ancestorsOf, EMPTY_TREE, nodeOf, outerTypeOf, rootOf, subtreeOf } from "./tree.js";
+export type {
+  AssemblyContent,
+  AssemblyElement,
+  AssemblyNode,
+  AssemblyTree,
+  NodeId,
+} from "./tree.js";
+export {
+  ancestorsOf,
+  EMPTY_TREE,
+  isContent,
+  nodeOf,
+  outerTypeOf,
+  rootOf,
+  subtreeOf,
+} from "./tree.js";
 
-export type { ComponentMap } from "./resolve.js";
-export { resolveAddress } from "./resolve.js";
-
-export type { Address, Registry, RegistrySpec } from "./registry.js";
-export { createRegistry, knownComponents, readAddress, resolveComponent } from "./registry.js";
+export type {
+  Address,
+  ReadableComponent,
+  Registry,
+  RegistryFlaw,
+  RegistryFlawName,
+  RegistrySpec,
+} from "./registry.js";
+export {
+  checkRegistry,
+  createRegistry,
+  knownComponents,
+  readAddress,
+  resolveComponent,
+} from "./registry.js";
 
 export type {
   AllowedInside,
@@ -48,5 +72,12 @@ export { sketchOf } from "./sketch.js";
 export type { TreeFlaw, TreeFlawName } from "./integrity.js";
 export { checkTree } from "./integrity.js";
 
-export type { EditRefusal, EditResult, NewNode, NodePatch } from "./edits.js";
+export type {
+  EditRefusal,
+  EditResult,
+  NewContent,
+  NewElement,
+  NewNode,
+  NodePatch,
+} from "./edits.js";
 export { insertNode, moveNode, removeNode, updateNode } from "./edits.js";
