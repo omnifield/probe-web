@@ -567,6 +567,92 @@ console.log(JSON.stringify({
     expect(снято.безПаспорта).toBeNull();
   });
 
+  it("настройки, переменные узла и базовая сборка едут ТЕМ ЖЕ подпутём", () => {
+    // Гейт `PWEB-89`. Все три — знание поставщика, которого машина прочесть не могла: настройки
+    // проходили насквозь и не были названы нигде, сборку выдумывала витрина, переменные Zag
+    // существовали только в комментарии. Проверяется, что они доехали до потребителя ИСПОЛНЕНИЕМ
+    // из чистой установки, а не лежат в исходниках.
+    //
+    // Сборка при этом СОБИРАЕТСЯ — `baseAssemblyOf` отдаёт плоское дерево с корнем, ту самую
+    // форму, которую читает механика сборки. Проверь мы здесь только запись, гейт был бы зелен и
+    // на объявлении, которое ни во что не разворачивается.
+    const снято = runInConsumer(
+      `import { baseAssemblyOf, passportOf, SETTINGS } from "${PKG}/passport";
+
+const гармошка = passportOf("accordion");
+const содержимое = гармошка.parts.find((часть) => часть.name === "itemContent");
+const дерево = baseAssemblyOf(гармошка);
+const подЧужимИменем = baseAssemblyOf(гармошка, "ui.accordion");
+
+console.log(JSON.stringify({
+  настройки: Object.keys(гармошка.settings).sort(),
+  вПеречне: Object.keys(гармошка.settings).every((имя) => имя in SETTINGS),
+  положение: гармошка.settings.orientation.values.kind,
+  умолчание: гармошка.settings.orientation.byDefault,
+  переменные: содержимое.variables.map((переменная) => переменная.name),
+  ставит: содержимое.variables.map((переменная) => переменная.setBy),
+  корень: дерево.components.root,
+  узлов: Object.keys(дерево.components.nodes).length,
+  адреса: [...new Set(Object.values(дерево.components.nodes).map((узел) => узел.type).filter(Boolean))].sort(),
+  пропыРаздела: Object.values(дерево.components.nodes).find((узел) => узел.type === "accordion.item").props,
+  подписи: Object.values(дерево.components.nodes).filter((узел) => узел.genus).map((узел) => узел.value),
+  чужоеИмя: подЧужимИменем.components.root,
+  чужиеАдреса: [...new Set(Object.values(подЧужимИменем.components.nodes).map((узел) => узел.type).filter(Boolean))].sort(),
+  безСборки: baseAssemblyOf({ ...гармошка, assembly: undefined }) === undefined ? null : "есть",
+}));`,
+    ) as {
+      настройки: string[];
+      вПеречне: boolean;
+      положение: string;
+      умолчание: string;
+      переменные: string[];
+      ставит: string[];
+      корень: string;
+      узлов: number;
+      адреса: string[];
+      пропыРаздела: Record<string, unknown>;
+      подписи: string[];
+      чужоеИмя: string;
+      чужиеАдреса: string[];
+      безСборки: string | null;
+    };
+
+    // 1. Настройки — чем компонент МОЖЕТ БЫТЬ. Ключи сверены с пропами типом при объявлении;
+    // здесь проверяется, что объявленное доехало и что имена из закрытого перечня.
+    expect(снято.настройки).toEqual(["collapsible", "multiple", "orientation"]);
+    expect(снято.вПеречне).toBe(true);
+    expect(снято.положение).toBe("choice");
+    expect(снято.умолчание).toBe("vertical");
+
+    // 2. Переменные, которые кит кладёт на узел. Без них анимации раскрытия не существует:
+    // `auto` не анимируется, а придумать число за чужое содержимое нельзя.
+    expect(снято.переменные).toEqual(["--height", "--width"]);
+    expect(снято.ставит).toEqual(["kit", "kit"]);
+
+    // 3. Базовая сборка — собранная, а не записанная. Три раздела, у каждого свой `value`:
+    // без него Ark не знает, какой пункт раскрывать.
+    expect(снято.корень).toBe("accordion");
+    expect(снято.узлов).toBeGreaterThan(3);
+    expect(снято.адреса).toEqual([
+      "accordion",
+      "accordion.item",
+      "accordion.itemContent",
+      "accordion.itemIndicator",
+      "accordion.itemTrigger",
+    ]);
+    expect(снято.пропыРаздела).toEqual({ value: "раздел-1" });
+    expect(снято.подписи).toContain("Раздел 1");
+
+    // Адрес компонента — ВХОД, а не константа: в реестре он может лежать под чужим
+    // пространством имён, и зашитый адрес сломал бы сборку у первого же такого потребителя.
+    expect(снято.чужоеИмя).toBe("ui.accordion");
+    expect(снято.чужиеАдреса).toContain("ui.accordion.itemTrigger");
+
+    // Паспорт без сборки отдаёт `undefined` — честно, а не пустым деревом: пустое дерево
+    // выглядело бы как объявленный экземпляр, которого нет.
+    expect(снято.безСборки).toBeNull();
+  });
+
   it("перечень паспортов порождён сборкой — по папкам компонентов, а не руками", () => {
     // Гейт `PWEB-2`: файла, в который дописывает строку каждый новый компонент, быть не
     // должно. Проверяется это единственным честным способом — сверкой того, что уехало в

@@ -10,7 +10,10 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { definePassport } from "../passport-form.js";
+import { defineSettings, definePassport } from "../passport-form.js";
+// ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
+// остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
+import type { ButtonProps } from "./button.jsx";
 
 /**
  * Части кнопки.
@@ -124,5 +127,15 @@ export const passport = definePassport({
     // Имён здесь нет и не будет: их создаёт человек вместе со скином. Паспорт объявляет только
     // то, что ось ЕСТЬ — одно имя, одним атрибутом.
     mark: { kind: "attribute", name: "data-variant" },
+  },
+  // НАСТРОЕК У КНОПКИ НЕТ (`PWEB-89`), и запись это утверждает, а не умалчивает: пустая
+  // `defineSettings<ButtonProps>` — проверяемое заявление, что ни одной настройки из закрытого
+  // перечня кнопка не принимает. Появится — тип потребует её объявить.
+  settings: defineSettings<ButtonProps>({}),
+  // РАБОЧИЙ ЭКЗЕМПЛЯР: у кнопки это один узел с подписью. Пропов, без которых она не работает,
+  // у неё нет — и это тоже знание поставщика, просто пустое.
+  assembly: {
+    means: "кнопка с подписью",
+    tree: { part: "root", children: [{ genus: "text", value: "Кнопка" }] },
   },
 });

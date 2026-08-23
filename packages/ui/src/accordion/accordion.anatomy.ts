@@ -55,7 +55,11 @@
 
 import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
 
-import { definePassport, type PassportState } from "../passport-form.js";
+import { defineSettings, definePassport, type PassportState } from "../passport-form.js";
+// ТИП пропов — только тип: `import type` стирается сборкой целиком, и подпуть `./passport`
+// остаётся тем, чем продан, — данными без Solid и без Ark. Нужен он ровно для того, чтобы ключи
+// настроек сверялись с настоящими пропами компонента, а не с представлением о них.
+import type { AccordionProps } from "./accordion.jsx";
 
 /** Части и адреса — взятые, не наши. */
 export const anatomy = accordionAnatomy;
@@ -158,6 +162,22 @@ export const passport = definePassport({
       // Раскрытое состояние здесь НЕ объявлено намеренно — его признак приезжает не всегда
       // (разбор в шапке файла). Раскрытый вид содержимого адресуется через предка `item`.
       states: [closed, disabled, focus],
+      // Измеренный размер раскрытия (`PWEB-89`). Zag меряет узел и кладёт оба свойства СЮДА —
+      // проверено на живом узле (`accordion.test.tsx`): в разметке стоит `--height: …; --width: …`.
+      // Без них анимации раскрытия не существует: `auto` не анимируется, а придумать число за
+      // чужое содержимое нельзя. Переход по ним пишет СКИН — кит своей анимации не привозит.
+      variables: [
+        {
+          name: "--height",
+          means: "измеренная высота раскрытого содержимого",
+          setBy: "kit",
+        },
+        {
+          name: "--width",
+          means: "измеренная ширина раскрытого содержимого — нужна горизонтальной гармошке",
+          setBy: "kit",
+        },
+      ],
       // Внутрь раздела кладут что угодно — это место потребителя, а не наше: текст, значок,
       // любой компонент. Пустой перечень здесь означал бы, что раскрывать нечего.
       accepts: [
@@ -178,5 +198,107 @@ export const passport = definePassport({
   variantAxis: {
     means: "имя вариации, которое даёт гармошке человек в редакторе; кит пропускает его насквозь",
     mark: { kind: "attribute", name: "data-variant" },
+  },
+  // ЧЕМ ГАРМОШКА МОЖЕТ БЫТЬ (`PWEB-89`). Все три пропа проходят насквозь и работают — до сих пор
+  // об этом не знали ни редактор, ни витрина, и показывали один пресный вид.
+  //
+  // Ключи сверяются с НАСТОЯЩИМИ пропами компонента: `defineSettings<AccordionProps>` не даст
+  // объявить настройку, которой у гармошки нет, и не даст забыть ту, что есть.
+  settings: defineSettings<AccordionProps>({
+    orientation: {
+      means: "как разложены разделы: сверху вниз или слева направо — от этого зависят клавиши и aria",
+      values: {
+        kind: "choice",
+        options: [
+          { value: "vertical", means: "сверху вниз" },
+          { value: "horizontal", means: "слева направо" },
+        ],
+      },
+      byDefault: "vertical",
+    },
+    multiple: {
+      means: "можно ли держать раскрытыми несколько разделов сразу",
+      values: { kind: "flag" },
+      byDefault: false,
+    },
+    collapsible: {
+      means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой",
+      values: { kind: "flag" },
+      byDefault: false,
+    },
+  }),
+  // РАБОЧИЙ ЭКЗЕМПЛЯР (`PWEB-89`).
+  //
+  // Три раздела, а не один: главное в виде гармошки — РАЗДЕЛИТЕЛИ, а между одним разделом их не
+  // бывает. Показ на одном разделе умолчал бы о половине формы.
+  //
+  // Первый раскрыт: гармошка существует ради раскрытия, и экземпляр, в котором его не видно, не
+  // показывает работу. Раскрытость при этом остаётся СОСТОЯНИЕМ — тот, кто показывает состояния,
+  // ставит их своей осью поверх этой сборки.
+  //
+  // `value` у раздела — не вид и не состояние: без него Ark не знает, какой пункт раскрывать, и
+  // складывает `undefined` в идентификаторы. Это ровно то знание поставщика, ради которого
+  // базовая сборка и заводится: потребитель его не выдумывает.
+  assembly: {
+    means: "три раздела, первый раскрыт",
+    tree: {
+      part: "root",
+      props: { defaultValue: ["раздел-1"] },
+      children: [
+        {
+          part: "item",
+          props: { value: "раздел-1" },
+          children: [
+            {
+              part: "itemTrigger",
+              // Подпись ПЕРВОЙ, указатель следом: порядок содержимого относительно частей —
+              // решение автора вида, и выразим он только общим списком детей.
+              children: [
+                { genus: "text", value: "Раздел 1" },
+                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+              ],
+            },
+            {
+              part: "itemContent",
+              children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
+            },
+          ],
+        },
+        {
+          part: "item",
+          props: { value: "раздел-2" },
+          children: [
+            {
+              part: "itemTrigger",
+              children: [
+                { genus: "text", value: "Раздел 2" },
+                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+              ],
+            },
+            {
+              part: "itemContent",
+              children: [{ genus: "text", value: "Второй раздел закрыт." }],
+            },
+          ],
+        },
+        {
+          part: "item",
+          props: { value: "раздел-3" },
+          children: [
+            {
+              part: "itemTrigger",
+              children: [
+                { genus: "text", value: "Раздел 3" },
+                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+              ],
+            },
+            {
+              part: "itemContent",
+              children: [{ genus: "text", value: "Третий раздел закрыт." }],
+            },
+          ],
+        },
+      ],
+    },
   },
 });

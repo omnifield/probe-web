@@ -41,6 +41,7 @@ const списокPassport = definePassport({
   package: "@чужой/пакет",
   genus: "component",
   root: "root",
+  settings: {},
   parts: [
     {
       name: "root",

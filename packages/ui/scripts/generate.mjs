@@ -67,6 +67,7 @@ function renderPassportEntry(folders) {
 import type { ComponentPassport } from "./passport-form.js";
 ${imports}
 
+export * from "./passport-assembly.js";
 export * from "./passport-form.js";
 export * from "./passport-view.js";
 

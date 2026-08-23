@@ -90,6 +90,11 @@ async function дождаться(условие: () => boolean): Promise<void> 
   }
 }
 
+/** Раскрыт ли узел — по словарному признаку Zag, а не по видимости. */
+function раскрыт(node: Element): boolean {
+  return node.getAttribute("data-state") === "open";
+}
+
 /** Узлы части — по её же адресу из анатомии. */
 function узлы(host: ParentNode, part: keyof typeof parts): Element[] {
   return [...host.querySelectorAll(`[data-part="${parts[part].attrs["data-part"]}"]`)];
@@ -424,5 +429,120 @@ describe("паспорт: форма", () => {
 
       expect(new Set(names).size).toBe(names.length);
     }
+  });
+});
+
+// НАСТРОЙКИ — чем гармошка может быть (`PWEB-89`).
+//
+// Ключи объявления сверены с пропами компонента ТИПОМ (`defineSettings<AccordionProps>`):
+// настройка, которой у гармошки нет, не наберётся, а настройка, которая есть и не объявлена, —
+// недостача обязательного ключа. Обе половины проверены мутациями и записаны в README.
+//
+// Здесь проверяется вторая сторона, которую тип не видит: что объявленное НАБЛЮДАЕМО на живом
+// компоненте. Правило паспорта одно на всё, что в нём записано, и настроек оно тоже касается:
+// объявить настройку, которая ничего не меняет, значило бы соврать данными.
+describe("паспорт: настройки наблюдаемы на живом компоненте", () => {
+  it("объявлены ровно те, что приняты формой, и каждая с умолчанием", () => {
+    // Умолчание обязательно по той же причине, что у оси вариаций: без него «горизонтальная» и
+    // «не указано» окажутся разными положениями, совпадающими по договорённости.
+    for (const [name, setting] of Object.entries(passport.settings)) {
+      expect(setting.means.length, `настройка «${name}» без объяснения`).toBeGreaterThan(0);
+      expect(setting.byDefault, `настройка «${name}» без умолчания`).toBeDefined();
+    }
+
+    expect(Object.keys(passport.settings).sort()).toEqual(["collapsible", "multiple", "orientation"]);
+  });
+
+  it("`orientation` меняет РАЗМЕТКУ: положение доезжает до узлов признаком", () => {
+    const умолчание = mount(() => <Справка value={["доставка"]} />);
+
+    expect(умолчание.querySelector("[data-orientation]")?.getAttribute("data-orientation")).toBe(
+      passport.settings.orientation!.byDefault,
+    );
+
+    cleanup();
+
+    const боком = mount(() => (
+      <Accordion orientation="horizontal" value={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+          <AccordionItemContent>Курьером</AccordionItemContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    expect(боком.querySelector("[data-orientation]")?.getAttribute("data-orientation")).toBe(
+      "horizontal",
+    );
+  });
+
+  it("`multiple` меняет ПОВЕДЕНИЕ: без неё раскрыт один раздел, с ней — два", async () => {
+    const одиночная = mount(() => (
+      <Accordion defaultValue={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+          <AccordionItemContent>Курьером</AccordionItemContent>
+        </AccordionItem>
+        <AccordionItem value="оплата">
+          <AccordionItemTrigger>Оплата</AccordionItemTrigger>
+          <AccordionItemContent>Картой</AccordionItemContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    нажать(узлы(одиночная, "itemTrigger")[1]!);
+    await дождаться(() => узлы(одиночная, "item")[1]!.getAttribute("data-state") === "open");
+
+    // Умолчание — `false`: раскрытие второго ЗАКРЫВАЕТ первый. Проверяется не число раскрытых, а
+    // ПЕРЕКЛЮЧЕНИЕ: одно число зелено и тогда, когда нажатие вообще не дошло до машины, — ловушка
+    // проб на Ark, разобранная в шапке файла.
+    expect(passport.settings.multiple!.byDefault).toBe(false);
+    expect(узлы(одиночная, "item").filter(раскрыт).map((node) => node.getAttribute("data-part"))).toEqual(
+      ["item"],
+    );
+    expect(раскрыт(узлы(одиночная, "item")[1]!)).toBe(true);
+    expect(раскрыт(узлы(одиночная, "item")[0]!)).toBe(false);
+
+    cleanup();
+
+    const множественная = mount(() => <Справка value={["доставка", "оплата"]} />);
+
+    expect(узлы(множественная, "item").filter(раскрыт).length).toBe(2);
+  });
+
+  it("`collapsible` меняет ПОВЕДЕНИЕ: без неё последний раскрытый не закрывается", async () => {
+    // Пара, а не одна сцена: ОДНО И ТО ЖЕ нажатие даёт разный исход. Проверь мы только «остался
+    // раскрыт», проба была бы зелена и на нажатии, не дошедшем до машины; второй половиной
+    // доказано, что нажатие доходит.
+    const обычная = mount(() => (
+      <Accordion defaultValue={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+          <AccordionItemContent>Курьером</AccordionItemContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    нажать(узлы(обычная, "itemTrigger")[0]!);
+    await дождаться(() => узлы(обычная, "item").filter(раскрыт).length === 0);
+
+    expect(passport.settings.collapsible!.byDefault).toBe(false);
+    expect(узлы(обычная, "item").filter(раскрыт).length).toBe(1);
+
+    cleanup();
+
+    const закрываемая = mount(() => (
+      <Accordion collapsible defaultValue={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+          <AccordionItemContent>Курьером</AccordionItemContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    нажать(узлы(закрываемая, "itemTrigger")[0]!);
+    await дождаться(() => узлы(закрываемая, "item").filter(раскрыт).length === 0);
+
+    expect(узлы(закрываемая, "item").filter(раскрыт).length).toBe(0);
   });
 });
