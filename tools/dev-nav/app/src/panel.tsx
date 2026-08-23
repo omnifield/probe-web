@@ -25,7 +25,7 @@ import {
   type SkinSwitch,
   type SkinWorn,
 } from "@omnifield/probe-web-runtime";
-import { generateSkinCss, type Skin } from "@omnifield/probe-web-skin";
+import { withPassports, type Skin } from "@omnifield/probe-web-skin";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
@@ -52,6 +52,11 @@ interface PresetItem {
  * него CSS та же механика, которой пользуется приложение человека: своего пути сборки у панели
  * быть не должно, иначе она показывала бы не то, что увидит человек.
  */
+// Источник паспортов называется ОДИН РАЗ и дальше едет связкой (`PWEB-94`). Панель держит ГОЛЫЙ
+// скин — запись приезжает из службы, наряда у неё нет и быть не должно, — и связка выбрана именно
+// такой, чтобы держатель голого скина остался законным потребителем.
+const { generateSkinCss } = withPassports(passportOf);
+
 const SOURCE = {
   names: async (): Promise<readonly string[]> => {
     const said = (await (await fetch("/__nav/presets")).json()) as { presets: PresetItem[] };
@@ -64,7 +69,7 @@ const SOURCE = {
     // Отказ источника не глотаем: надевание обязано узнать, что текста нет, — иначе на корне
     // останется опознание скина, которого не приехало.
     if (!record.state) throw new Error(`[dev-nav] в записи «${name}» нет скина`);
-    return generateSkinCss(record.state, passportOf);
+    return generateSkinCss(record.state);
   },
 };
 
