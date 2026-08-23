@@ -22,8 +22,11 @@
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
-import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
+import { skinGaps } from "@omnifield/probe-web-skin";
+import type { Form } from "@omnifield/probe-web-skin/model";
+import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
+  createEffect,
   createResource,
   createSignal,
   For,
@@ -32,10 +35,17 @@ import {
   Show,
 } from "solid-js";
 
+import { FormEditor } from "../editor/form.jsx";
 import {
   assembleOutfit,
+  DRAFT_NAME,
+  draftLook,
   EMPTY_HINT,
+  hold,
+  KINDS,
   listOutfits,
+  readParts,
+  replace,
   SERVICE_HINT,
   SKIN_SOURCE,
   type StoreRecord,
@@ -85,13 +95,13 @@ const BY_GROUP = Object.entries(GROUPS)
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
 
-/** Что делают с компонентом: смотрят или правят. Редактор придёт следующим шагом. */
-export type View = "showcase" | "editor";
+/** Что делают с компонентом: смотрят или правят его форму. */
+export type View = "showcase" | "form";
 
 /** Переходы страницы компонента. Перечень здесь, потому что он про УСТРОЙСТВО пульта. */
 const VIEWS: readonly { id: View; title: string }[] = [
   { id: "showcase", title: "витрина" },
-  { id: "editor", title: "редактор" },
+  { id: "form", title: "форма" },
 ];
 
 /** Порог, за которым карточка перестаёт делить строку с соседями. */
@@ -227,8 +237,8 @@ function Axes(props: {
  * которому показывают вид, спотыкается о долг и род компонента, а одевающий ищет техничку среди
  * картинок.
  *
- * СВОЙ ХЕДЕР у страницы — имя, фильтр и переход в редактор. Он про ОДИН компонент, поэтому и
- * стоит над ним, а не в общем хедере витрины: там живёт то, что общее на всё, — скин и режим.
+ * Выбор ВИДА — витрина или форма — стоит в хедере, а не здесь: страница показывает то, что ей
+ * велели, и не решает, показывать ли себя.
  */
 function ComponentPage(props: {
   component: string;
@@ -236,7 +246,6 @@ function ComponentPage(props: {
   part: string;
   variant: Axis<string>;
   state: Axis<string | null>;
-  view: View;
 }) {
   const cases = () =>
     casesOf(props.component, {
@@ -248,28 +257,16 @@ function ComponentPage(props: {
 
   return (
     <article class="page">
-      <Show
-        when={props.view === "showcase"}
-        fallback={
-          <p class="page__empty">
-            Редактора ещё нет — он делается следующим шагом. Пустая заглушка честнее нарисованной
-            панели, которая ничего не правит.
-          </p>
-        }
-      >
-        <Show when={props.variants.length === 0}>
-          <p class="page__empty">
-            Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка
-            витрины: наденьте скин справа вверху.
-          </p>
-        </Show>
-
-        <div class="cases">
-          <For each={cases()}>
-            {(item) => <Case item={item} />}
-          </For>
-        </div>
+      <Show when={props.variants.length === 0}>
+        <p class="page__empty">
+          Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка витрины:
+          наденьте скин справа вверху.
+        </p>
       </Show>
+
+      <div class="cases">
+        <For each={cases()}>{(item) => <Case item={item} />}</For>
+      </div>
     </article>
   );
 }
@@ -482,6 +479,105 @@ export function App() {
     })();
   });
 
+  // ЧЕРНОВИК ФОРМЫ. Живёт здесь, а не в редакторе, по той же причине, по которой там же живёт
+  // надетое: показ одевается черновиком, и вторая правда о том, что сейчас правится, развела бы
+  // правку и показ.
+  const [draft, setDraftSignal] = createSignal<Form | null>(null);
+  const [saving, setSaving] = createSignal(false);
+  const [trouble, setTrouble] = createSignal<unknown>(null);
+
+  /** Долг одевания черновика — тот же отчёт механики, что видит витрина у сохранённого. */
+  const [gaps, { refetch: recount }] = createResource(
+    () => (draft() === null ? undefined : true),
+    async () => skinGaps((await draftLook()).skin, Object.values(PASSPORTS)),
+  );
+
+  /**
+   * Кладёт черновик и НАДЕВАЕТ его: правка видна тем же путём, каким видно сохранённое.
+   *
+   * Наряд приходит аргументом, а не читается отсюда: правка возвращается из службы асинхронно, и
+   * надетое к тому моменту могло смениться. Взяв его в момент действия человека, мы возвращаем
+   * показ туда, откуда человек ушёл, а не туда, где он оказался.
+   */
+  const setDraft = (form: Form | null, надето: string | undefined) => {
+    setDraftSignal(form);
+    hold(form, надето);
+
+    if (form === null) {
+      if (надето !== undefined) void SKIN.wear(надето, { remember: false }).then(setWorn);
+      return;
+    }
+
+    void SKIN.wear(DRAFT_NAME, { remember: false })
+      .then(() => {
+        setTrouble(null);
+        void recount();
+      })
+      .catch(setTrouble);
+  };
+
+  /**
+   * Открывает форму компонента на правку.
+   *
+   * Формы у компонента может не быть вовсе — это обычное начало работы, а не поломка: человек
+   * одевает то, чего никто не одевал. Пустая форма заводится с именем от наряда и компонента,
+   * потому что имя записи должно быть узнаваемым в службе, а не случайным.
+   */
+  const openForm = async (component: string, надето: string | undefined) => {
+    if (надето === undefined) {
+      setDraft(null, надето);
+      return;
+    }
+
+    try {
+      const { forms } = await readParts();
+      const своя = forms.find((форма) => форма.component === component);
+
+      setDraft(своя ?? { name: `${надето}-${component}`, component, recipe: {} }, надето);
+    } catch (cause) {
+      setTrouble(cause);
+    }
+  };
+
+  /**
+   * Сохраняет черновик в службу.
+   *
+   * Показ при этом НЕ переодевается: человек остаётся в правке, а сохранённая запись равна
+   * черновику, которым он одет. Переодень мы его на наряд — экран мигнул бы и вернулся к тому
+   * же виду, сообщив о работе, которой не было.
+   */
+  const saveDraft = (форма: Form) => {
+    setSaving(true);
+    void replace(KINDS.form, форма, `Форма: ${форма.component}`)
+      .then(() => {
+        setTrouble(null);
+      })
+      .catch(setTrouble)
+      .finally(() => setSaving(false));
+  };
+
+  /** Переход между видами: уход из формы снимает черновик. Приход открывает его эффектом ниже. */
+  const chooseView = (next: View) => {
+    setView(next);
+
+    if (next !== "form" && draft() !== null) setDraft(null, worn()?.name);
+  };
+
+  // ФОРМА ОТКРЫВАЕТСЯ, КОГДА ЕСТЬ ПОВЕРХ ЧЕГО. Наряд приезжает из службы, и человек успевает
+  // перейти в правку раньше него; открывать по одному щелчку значило бы говорить «наденьте
+  // наряд» тому, кто уже его надел, — и оставлять это на экране, пока он не щёлкнет ещё раз.
+  //
+  // Эффект следит за тремя вещами: вид, компонент и наряд. Правка черновика среди них не
+  // значится намеренно — иначе каждая правка перечитывала бы форму из службы поверх неё же.
+  createEffect(() => {
+    const надето = worn()?.name;
+    const компонент = current();
+
+    if (view() !== "form") return;
+
+    void openForm(компонент, надето);
+  });
+
   const wear = (name: string) => {
     void SKIN.wear(name).then(setWorn);
   };
@@ -543,7 +639,7 @@ export function App() {
           onPart={choosePart}
           onVariant={setVariant}
           onState={setState}
-          onView={setView}
+          onView={chooseView}
           onWear={wear}
           onTakeOff={takeOff}
           onMode={setMode}
@@ -552,14 +648,28 @@ export function App() {
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
             {(component) => (
-              <ComponentPage
-                component={component()}
-                variants={variants()}
-                view={view()}
-                part={part()}
-                variant={variant()}
-                state={state()}
-              />
+              <Show
+                when={view() === "showcase"}
+                fallback={
+                  <FormEditor
+                    component={component()}
+                    draft={draft()}
+                    gaps={gaps() ?? []}
+                    trouble={trouble()}
+                    saving={saving()}
+                    onDraft={(форма) => setDraft(форма, worn()?.name)}
+                    onSave={saveDraft}
+                  />
+                }
+              >
+                <ComponentPage
+                  component={component()}
+                  variants={variants()}
+                  part={part()}
+                  variant={variant()}
+                  state={state()}
+                />
+              </Show>
             )}
           </Show>
         </main>

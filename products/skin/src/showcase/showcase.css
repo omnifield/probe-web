@@ -473,3 +473,207 @@ body {
   font-size: var(--ui-size-sm);
   font-weight: 400;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ЭКРАН ФОРМЫ — три колонки: что есть у компонента, как выглядит, что написано.
+
+   Колонки в таком порядке не по вкусу: слева предмет работы, в центре исход, справа
+   инструмент. Поменяй местами центр и правое — человек правил бы, не видя, что правит.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr) minmax(14rem, 20rem);
+  gap: var(--ui-gap-4);
+  align-items: start;
+  padding: var(--ui-gap-4);
+}
+
+.form__parts,
+.form__props {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-2);
+  min-inline-size: 0;
+}
+
+.form__title {
+  margin: 0;
+  color: var(--ui-ink-quiet);
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.form__part {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-2);
+  padding: var(--ui-gap-2);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.form__part:hover {
+  background: var(--ui-surface-sunk);
+}
+
+.form__part[aria-pressed="true"] {
+  border-color: var(--ui-line);
+  background: var(--ui-surface-sunk);
+}
+
+.form__part-name {
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Долг — число, а не значок: «сколько осталось» отвечает на вопрос, с которым сюда смотрят. */
+.form__debt {
+  flex: none;
+  min-inline-size: 1.25rem;
+  padding-inline: var(--ui-gap-1);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-sunk);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+  text-align: center;
+}
+
+.form__hint,
+.form__note {
+  margin: 0;
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+}
+
+.form__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+  min-inline-size: 0;
+}
+
+.form__coords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-3);
+}
+
+.form__show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 8rem;
+  padding: var(--ui-gap-4);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-sunk);
+}
+
+.prop {
+  display: flex;
+  align-items: end;
+  gap: var(--ui-gap-2);
+}
+
+.prop__label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ui-gap-1);
+  min-inline-size: 0;
+}
+
+.prop__name {
+  color: var(--ui-ink-quiet);
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.prop__value {
+  min-inline-size: 0;
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+  color: inherit;
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
+}
+
+/* УНАСЛЕДОВАННОЕ бледное и без кнопки снятия: снимать нечего — здесь ничего не объявлено.
+   Значение стоит подсказкой в поле, поэтому видно, что перебиваешь. */
+.prop--inherited .prop__name,
+.prop--inherited .prop__value {
+  color: var(--ui-ink-quiet);
+}
+
+.prop__note,
+.prop__drop {
+  flex: none;
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+}
+
+.prop__drop {
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.form__add,
+.form__save {
+  display: flex;
+  gap: var(--ui-gap-2);
+  margin-block-start: var(--ui-gap-2);
+}
+
+.form__save {
+  flex-direction: column;
+}
+
+.form__button {
+  padding: var(--ui-gap-2) var(--ui-gap-3);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--ui-size-sm);
+  cursor: pointer;
+}
+
+.form__button--main {
+  background: var(--ui-surface-sunk);
+}
+
+.form__button[disabled] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.form__trouble {
+  margin: 0;
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+  overflow-wrap: anywhere;
+}
+
+/* УЗКОЕ ОКНО. Три колонки в одну: править форму на телефоне — не главный случай, но экран,
+   рассыпающийся на узком, читается как сломанный. */
+@media (width < 60rem) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

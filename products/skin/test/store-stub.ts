@@ -60,9 +60,28 @@ export function serveLook(parts: {
 
   original ??= globalThis.fetch;
 
-  globalThis.fetch = ((input: RequestInfo | URL) => {
+  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input));
     const id = url.pathname.split("/").at(-1);
+
+    // ЗАПИСЬ. Настоящая служба кладёт присланный кусок, не заглядывая внутрь, и отдаёт его с
+    // выданным идентификатором. Проба обязана пройти тот же путь: правка редактора считается
+    // сохранённой не тогда, когда мы позвали `save`, а когда её видно в перечне.
+    if (init?.method === "POST") {
+      const sent = JSON.parse(String(init.body)) as Omit<StoredRecord, "id">;
+      const record: StoredRecord = { ...sent, id: `rec-${stored.length + 1}` };
+
+      stored.push(record);
+
+      return Promise.resolve(json(record, 201));
+    }
+
+    if (init?.method === "DELETE") {
+      const at = stored.findIndex((record) => record.id === id);
+      if (at >= 0) stored.splice(at, 1);
+
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
 
     // Перечень отдаётся БЕЗ содержимого — ровно как настоящая служба: содержимое приезжает
     // отдельным запросом, и проба обязана пройти тот же путь, что живая витрина.
@@ -81,6 +100,11 @@ export function serveLook(parts: {
       found ? json(found) : json({ error: "not_found", message: "нет такой записи" }, 404),
     );
   }) as typeof fetch;
+}
+
+/** Что лежит в подставной службе сейчас — для проб, которые проверяют сохранение. */
+export function storedNow(): readonly StoredRecord[] {
+  return stored;
 }
 
 /** Роняет службу: любой запрос обрывается, как при неподнятой службе. */

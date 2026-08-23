@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
+import { isContent, knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
 import {
   type ComponentPassport,
   GROUPS,
@@ -82,6 +82,9 @@ describe("случаи", () => {
 
     for (const item of stream()) {
       for (const node of Object.values(item.tree.components.nodes)) {
+        // Содержимое адреса не имеет: оно опознаётся родом, и спрашивать у него часть нечем.
+        if (isContent(node)) continue;
+
         const part = node.type === "button" ? passport?.root : node.type.split(".").at(-1);
         expect(declared.has(part ?? "")).toBe(true);
       }
@@ -397,13 +400,15 @@ describe("отрисовка", () => {
     expect(host.querySelector(".gaps")).toBeNull();
   });
 
-  it("переход в редактор говорит правду: его ещё нет", async () => {
+  it("переход в форму меняет предмет показа: случаи уступают правке", async () => {
     const host = mount(() => <App />);
-    const [, editor] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
+    const [, форма] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
 
-    editor?.click();
+    форма?.click();
 
-    await vi.waitFor(() => expect(host.textContent ?? "").toContain("Редактора ещё нет"));
+    // Части приезжают из паспорта сразу, а черновик — из службы; ждём именно правку, потому что
+    // до её прихода экран честно говорит, что править нечем.
+    await vi.waitFor(() => expect(host.querySelector(".form__parts")).not.toBeNull());
     expect(host.querySelectorAll(".case")).toHaveLength(0);
   });
 });

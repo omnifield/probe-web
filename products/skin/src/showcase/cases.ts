@@ -25,7 +25,7 @@
 // на ячейке. Образец даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
 
-import { sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
+import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import {
   passportOf,
@@ -125,9 +125,16 @@ export function rootPartOf(component: string): string {
   return passportOf(component)?.root ?? "";
 }
 
-/** Узел образца по адресу части, либо `undefined` — если такой части в образце нет. */
+/**
+ * Узел образца по адресу части, либо `undefined` — если такой части в образце нет.
+ *
+ * Узлы СОДЕРЖИМОГО пропускаются: адреса у них нет вовсе — они опознаются родом, — и состояние на
+ * подпись не ставится, потому что подпись не часть.
+ */
 function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
-  return Object.values(tree.components.nodes).find((node) => node.type === address)?.id;
+  return Object.values(tree.components.nodes).find(
+    (node) => !isContent(node) && node.type === address,
+  )?.id;
 }
 
 /**
