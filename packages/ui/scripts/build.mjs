@@ -41,10 +41,13 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { solidPlugin } from "esbuild-plugin-solid";
 
-// Порождение входов — ДО первого прохода esbuild: `src/index.ts` ссылается на карту, а
-// `src/passport.ts` и есть точка входа подпути. Побочным действием импорта, а не вызовом:
-// у файла одна работа, и звать её отдельно значило бы разрешить импорт без неё.
-import "./generate.mjs";
+// ПОРОЖДЕНИЯ ЗДЕСЬ НЕТ (`PWEB-86`). Входы `src/passport.ts` и `src/kit.ts` пишет свой шаг —
+// `scripts/generate.mjs`, — и сборка зависит от него ЯВНО: `pnpm run build` зовёт его первым,
+// а Nx видит его отдельной задачей со своими выходами.
+//
+// Прежде порождение приезжало сюда побочным действием импорта, и это оказалось не стилем, а
+// дефектом: порождённое лежит под `.gitignore`, оснастка его не видит, и шаг, которого нет в
+// графе, не участвует ни в отпечатке, ни в восстановлении из кеша. Разбор — в манифесте зоны.
 
 const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(pkgRoot, "src");
