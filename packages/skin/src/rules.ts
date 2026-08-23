@@ -56,6 +56,7 @@ import type {
   StyleObject,
 } from "./recipe.js";
 import { seedRefusals, valueNames } from "./seeds.js";
+import { homesText, partVariables, variableHomes, type VariableHome } from "./variables.js";
 import { sizeRefusals } from "./sizes.js";
 import { note, trace } from "./trace.js";
 
@@ -74,6 +75,7 @@ import { note, trace } from "./trace.js";
  *  • `bad-seed`            — семя шкалы не разбирается как цвет: лестницу из него не построить;
  *  • `bad-size`            — размерный набор не сходится: имени шкалы нет либо плотность не названа;
  *  • `unknown-value`       — ссылка на значение, которого нет в словаре, и без запасного;
+ *  • `variable-elsewhere`  — переменная объявлена паспортом, но НА ДРУГОЙ ЧАСТИ: здесь её не ставят;
  *  • `empty-value`         — значение пусто: правило было бы мёртвым;
  *  • `free-selector`       — вложенный ключ, не являющийся ни псевдоэлементом, ни at-правилом.
  */
@@ -89,6 +91,7 @@ export type SkinFlawName =
   | "bad-seed"
   | "bad-size"
   | "unknown-value"
+  | "variable-elsewhere"
   | "empty-value"
   | "free-selector";
 
@@ -241,6 +244,7 @@ function checkStyle(
   where: string,
   known: Set<string>,
   flaws: Flaws,
+  homes: Map<string, VariableHome[]> = new Map(),
 ): void {
   for (const [key, value] of Object.entries(style)) {
     if (value === undefined) continue;
@@ -262,11 +266,11 @@ function checkStyle(
         continue;
       }
 
-      checkStyle(value, at, known, flaws);
+      checkStyle(value, at, known, flaws, homes);
       continue;
     }
 
-    checkValue(value, at, known, flaws);
+    checkValue(value, at, known, flaws, homes);
   }
 }
 
@@ -277,7 +281,13 @@ function checkStyle(
  * движения. Форма у них разная — у движения вложенность это `from`/`to`/`50%`, а не селектор, —
  * а требование к значению одно, и второй его копии быть не должно.
  */
-function checkValue(value: string | number, at: string, known: Set<string>, flaws: Flaws): void {
+function checkValue(
+  value: string | number,
+  at: string,
+  known: Set<string>,
+  flaws: Flaws,
+  homes: Map<string, VariableHome[]> = new Map(),
+): void {
   if (typeof value === "number") {
     if (!Number.isFinite(value)) flaws.add("empty-value", at, "число не является значением");
     return;
@@ -291,11 +301,26 @@ function checkValue(value: string | number, at: string, known: Set<string>, flaw
   for (const [, name, fallback] of value.matchAll(VAR_REFERENCE)) {
     if (fallback === "," || known.has(name)) continue;
 
+    // ОБЪЯВЛЕНА, НО НЕ ЗДЕСЬ — отдельный изъян, а не оттенок предыдущего (`PWEB-93`). Причина
+    // другая и починка другая: правило переносят на ту часть или адресуют её по предку, а не
+    // дописывают роль в палитру. Слей мы их — человек пошёл бы чинить не то.
+    const где = homes.get(name!);
+    if (где) {
+      flaws.add(
+        "variable-elsewhere",
+        at,
+        `переменную «${name}» объявляет паспорт, но на другой части — ${homesText(где)}. ` +
+          "Здесь её никто не ставит: правило приедет на страницу с неразрешимым значением. " +
+          "Перенеси правило на ту часть либо адресуй её по предку",
+      );
+      continue;
+    }
+
     flaws.add(
       "unknown-value",
       at,
-      `имя «${name}» не объявлено ни скином, ни словарём. Браузер выбросит правило целиком, ` +
-        `и чинить будут вид. Запасное значение — \`var(${name}, …)\` — снимает отказ`,
+      `имя «${name}» не объявлено ни скином, ни словарём, ни паспортом. Браузер выбросит правило ` +
+        `целиком, и чинить будут вид. Запасное значение — \`var(${name}, …)\` — снимает отказ`,
     );
   }
 }
@@ -356,6 +381,13 @@ interface Walk<Mark> {
   readonly lookup: PassportLookup;
   /** Известные имена значений. */
   readonly known: Set<string>;
+  /**
+   * Где объявлена каждая переменная паспорта — чтобы отличить «не здесь» от «нигде».
+   *
+   * Без этого оба случая слились бы в один изъян, и человек, поставивший правило не на ту часть,
+   * пошёл бы чинить палитру (`PWEB-93`).
+   */
+  readonly homes: Map<string, VariableHome[]>;
   readonly flaws: Flaws;
   readonly out: (CssRule & Mark)[];
   /** Чем подписать правило, стоящее в этом месте обхода. */
@@ -366,6 +398,13 @@ interface Walk<Mark> {
 interface Cursor {
   readonly passport: ComponentPassport;
   readonly part: string;
+  /**
+   * Словарь ЭТОЙ части: общий плюс переменные, объявленные ею в паспорте (`PWEB-93`).
+   *
+   * Свой у каждой части, а не один на обход: `--height` объявлен содержимым гармошки, и правило
+   * на кнопке ссылаться на него не вправе — там его никто не ставит.
+   */
+  readonly known: Set<string>;
   /** Селектор части вместе с уже набранными вариацией и состояниями. */
   readonly own: string;
   /** Селектор предка, если он есть, — встаёт слева. */
@@ -422,7 +461,7 @@ function growLocal<Mark>(
   walk: Walk<Mark>,
 ): void {
   if (style.props && declares(style.props)) {
-    checkStyle(style.props, `${where}.props`, walk.known, walk.flaws);
+    checkStyle(style.props, `${where}.props`, cursor.known, walk.flaws, walk.homes);
     walk.out.push({
       ...walk.mark(cursor),
       selector: cursor.prefix === "" ? cursor.own : `${cursor.prefix} ${cursor.own}`,
@@ -521,6 +560,9 @@ function growPart<Mark>(
   const cursor: Cursor = {
     passport,
     part,
+    // Переменные части кладутся В СЛОВАРЬ, а не проверяются отдельной веткой: для правила они
+    // такие же известные имена, как ступени палитры, и разница только в том, кто их ставит.
+    known: new Set([...walk.known, ...partVariables(passport, part)]),
     own: own + variant.selector,
     prefix: "",
     variants: variant.names,
@@ -695,6 +737,10 @@ export function skinRules(
   const walk: Walk<{ coordinate: RuleCoordinate }> = {
     lookup,
     known,
+    // Спрашиваем ровно те компоненты, которые одевает сам скин: предел назван в `variables.ts` —
+    // переменную компонента, которого в скине нет, механика зовёт необъявленной, и это верный
+    // ответ для неё.
+    homes: variableHomes(lookup, Object.keys(skin.recipes)),
     flaws,
     out,
     mark: coordinateOf,
@@ -789,7 +835,14 @@ export function sketchRules(
   const out: CssRule[] = [];
   // Подпись пустая: обход у нас общий, а адреса у правки образца нет. Отдельная ветка обхода
   // стоила бы второй реализации разворота рецепта ради одного поля.
-  const walk: Walk<Record<never, never>> = { lookup, known, flaws, out, mark: () => ({}) };
+  const walk: Walk<Record<never, never>> = {
+    lookup,
+    known,
+    homes: variableHomes(lookup, edits.map((edit) => edit.component)),
+    flaws,
+    out,
+    mark: () => ({}),
+  };
 
   for (const [index, edit] of edits.entries()) {
     const where = `edits[${index}]`;
@@ -820,6 +873,9 @@ export function sketchRules(
     const cursor: Cursor = {
       passport,
       part: edit.part,
+      // Правка образца адресует ту же ЧАСТЬ, значит и переменные ей доступны те же: у одного
+      // вопроса один ответ независимо от того, координатой правило пришло или именем узла.
+      known: new Set([...known, ...partVariables(passport, edit.part)]),
       own: nodeSelector(edit.node),
       prefix: "",
       variants: [],

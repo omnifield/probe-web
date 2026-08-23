@@ -276,11 +276,20 @@ const гармошка: SlotRecipe = {
         color: "var(--нейтраль-11)",
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
+        // РАСКРЫТИЕ ПИШЕТ СКИН (`PWEB-93`). Кит своей анимации не привозит — он меряет узел и
+        // кладёт сюда `--height`, объявив это паспортом. Взять высоту больше неоткуда: `auto` не
+        // анимируется, а придумать число за чужое содержимое нельзя.
+        //
+        // `--width` эталон не адресует, и это выбор, а не пробел: гармошка здесь вертикальная,
+        // горизонтальной ширина понадобится — вертикальной незачем.
+        overflow: "hidden",
+        transition: `height var(--motion-normal) var(--ease-out), ${переход}`,
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         // Закрытое содержимое кит показывать не обязан — вид на этот случай всё равно объявлен:
         // состояние объявлено паспортом, значит оно адресуемо, значит эталон его адресует.
-        closed: { props: { paddingBlock: "0" } },
+        closed: { props: { paddingBlock: "0", height: "0" } },
         disabled: { props: { color: "var(--нейтраль-11)", background: "var(--нейтраль-2)" } },
         focus: { props: { color: "var(--нейтраль-12)", background: "var(--нейтраль-1)" } },
       },
@@ -291,7 +300,7 @@ const гармошка: SlotRecipe = {
           component: "accordion",
           part: "item",
           states: ["open"],
-          style: { props: { paddingBlock: "var(--space-3)" } },
+          style: { props: { paddingBlock: "var(--space-3)", height: "var(--height)" } },
         },
       ],
     },

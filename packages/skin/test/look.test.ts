@@ -46,7 +46,7 @@ describe("три записи существуют раздельно и скл�
   });
 
   it("сборка даёт надеваемый вид — тот же `Skin`, что и раньше", () => {
-    const { skin } = assemble(наряд, части);
+    const { skin } = assemble(наряд, части, lookup);
 
     // `Skin` не снят: он перестал быть формой ЗАПИСИ и остался формой СБОРКИ. Порождение,
     // надевание, покрытие и читаемость принимают его ровно как принимали.
@@ -57,7 +57,7 @@ describe("три записи существуют раздельно и скл�
   });
 
   it("на корень уезжает имя НАРЯДА — опознание одно", () => {
-    expect(assemble(наряд, части).skin.name).toBe("проба");
+    expect(assemble(наряд, части, lookup).skin.name).toBe("проба");
   });
 });
 
@@ -65,8 +65,8 @@ describe("наряд ССЫЛАЕТСЯ, а не копирует", () => {
   it("поменял палитру — поменялся собранный вид", () => {
     // Мутация задачи. Копия убила бы пересев: в наряде остался бы вчерашний слепок палитры, и
     // смена бренда перестала бы что-либо менять — молча.
-    const наСиней = assemble(наряд, части).skin;
-    const наЗелёной = assemble({ ...наряд, palette: "зелёная" }, части).skin;
+    const наСиней = assemble(наряд, части, lookup).skin;
+    const наЗелёной = assemble({ ...наряд, palette: "зелёная" }, части, lookup).skin;
 
     expect(наЗелёной.variables?.scales).not.toEqual(наСиней.variables?.scales);
     expect(generateSkinCss(наЗелёной, lookup)).not.toBe(generateSkinCss(наСиней, lookup));
@@ -78,7 +78,7 @@ describe("наряд ССЫЛАЕТСЯ, а не копирует", () => {
   });
 
   it("имя, которого источник не отдаёт, — изъян, а не пустой вид", () => {
-    const flaws = checkOutfit({ ...наряд, palette: "которой нет" }, части);
+    const flaws = checkOutfit({ ...наряд, palette: "которой нет" }, части, lookup);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("unknown-palette");
   });
@@ -88,16 +88,16 @@ describe("СЛОВАРЬ работает контрактом", () => {
   it("форма с ролью вне словаря отвергается ДО надевания, с названной причиной", () => {
     const плохой = { ...наряд, forms: ["кнопка-чужая"] };
 
-    expect(() => assemble(плохой, части)).toThrow(OutfitRefused);
+    expect(() => assemble(плохой, части, lookup)).toThrow(OutfitRefused);
 
-    const flaw = checkOutfit(плохой, части).find((кандидат) => кандидат.name === "outside-vocabulary");
+    const flaw = checkOutfit(плохой, части, lookup).find((кандидат) => кандидат.name === "outside-vocabulary");
 
     expect(flaw?.where).toContain("фирменный-градиент");
-    expect(flaw?.means).toContain("словаре нет");
+    expect(flaw?.means).toContain("ни в словаре, ни в паспорте");
   });
 
   it("палитра, не закрывшая словарь, названа неполной ДО надевания", () => {
-    const flaws = checkOutfit({ ...наряд, palette: "неполная" }, части);
+    const flaws = checkOutfit({ ...наряд, palette: "неполная" }, части, lookup);
     const flaw = flaws.find((кандидат) => кандидат.name === "palette-incomplete");
 
     expect(flaw).toBeDefined();
@@ -107,7 +107,7 @@ describe("СЛОВАРЬ работает контрактом", () => {
   });
 
   it("полная палитра словарь ЗАКРЫВАЕТ — иначе проба выше ничего не значила бы", () => {
-    expect(checkOutfit(наряд, части)).toEqual([]);
+    expect(checkOutfit(наряд, части, lookup)).toEqual([]);
     expect(VOCABULARY.length).toBeGreaterThan(100);
   });
 
@@ -132,9 +132,9 @@ describe("СЛОВАРЬ работает контрактом", () => {
     // проглатывается. Причина несёт и число недостающих ролей, и их имена.
     const плохой = { ...наряд, palette: "трёхшкальная" };
 
-    expect(() => assemble(плохой, части)).toThrow(OutfitRefused);
+    expect(() => assemble(плохой, части, lookup)).toThrow(OutfitRefused);
 
-    const flaw = checkOutfit(плохой, части).find((кандидат) => кандидат.name === "palette-incomplete");
+    const flaw = checkOutfit(плохой, части, lookup).find((кандидат) => кандидат.name === "palette-incomplete");
 
     // Недостача названа ПО СЕМЬЯМ: тринадцать ступеней непосеянной шкалы — одна недоделка, а не
     // тринадцать. Перечень имён подряд обрезался бы на первой же шкале, и человек починил бы одну,
@@ -144,14 +144,14 @@ describe("СЛОВАРЬ работает контрактом", () => {
   });
 
   it("две формы на один компонент — изъян: чей вид победит, наряд не говорит", () => {
-    const flaws = checkOutfit({ ...наряд, forms: ["кнопка-строгая", "кнопка-плоская"] }, части);
+    const flaws = checkOutfit({ ...наряд, forms: ["кнопка-строгая", "кнопка-плоская"] }, части, lookup);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("component-twice");
   });
 });
 
 describe("точечная правка живёт в границах своего компонента", () => {
-  const css = generateSkinCss(assemble(наряд, части).skin, lookup);
+  const css = generateSkinCss(assemble(наряд, части, lookup).skin, lookup);
   const адрес = Object.entries(buttonPassport.anatomy.build().root!.attrs).find(
     ([, value]) => value === "button",
   )!;
@@ -177,14 +177,14 @@ describe("точечная правка живёт в границах свое�
     // Сорок исключений означают, что палитра выбрана неверно. Механика сообщает, а не запрещает:
     // что делать с числом, решает человек. Сорок у одного и сорок у сорока — разные болезни,
     // поэтому рядом с суммой стоит разбивка.
-    const { report } = assemble(наряд, части);
+    const { report } = assemble(наряд, части, lookup);
 
     expect(report.overrides).toBe(1);
     expect(report.overridesBy).toEqual({ button: 1 });
   });
 
   it("правка с ролью вне словаря отвергается: переопределять нечего", () => {
-    const flaws = checkOutfit({ ...наряд, overrides: { button: { "чего-нет": "0" } } }, части);
+    const flaws = checkOutfit({ ...наряд, overrides: { button: { "чего-нет": "0" } } }, части, lookup);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("outside-vocabulary");
   });
@@ -193,15 +193,15 @@ describe("точечная правка живёт в границах свое�
 describe("НЕПОЛНЫЙ НАРЯД законен", () => {
   it("наряд без единой формы собирается и надевается", () => {
     // То же правило, что «нет скина — нет визуала», только на один компонент.
-    const голый = assemble({ ...наряд, forms: [], overrides: {} }, части);
+    const голый = assemble({ ...наряд, forms: [], overrides: {} }, части, lookup);
 
     expect(голый.report.dressed).toEqual([]);
     expect(() => generateSkinCss(голый.skin, lookup)).not.toThrow();
   });
 
   it("компонент без формы остаётся голым — и покрытие это ГОВОРИТ ЦЕЛЫМ компонентом", () => {
-    const одета = assemble({ ...наряд, forms: ["кнопка-строгая"], overrides: {} }, части);
-    const голая = assemble({ ...наряд, forms: [], overrides: {} }, части);
+    const одета = assemble({ ...наряд, forms: ["кнопка-строгая"], overrides: {} }, части, lookup);
+    const голая = assemble({ ...наряд, forms: [], overrides: {} }, части, lookup);
 
     // У одетой кнопки пробелы есть — форма покрыла базу, а не все состояния, — но это ЧАСТИ и
     // СОСТОЯНИЯ. У неодетой пробел другого рода: компонента нет вовсе.
@@ -218,7 +218,7 @@ describe("порядок источников значения объявлен 
   it("форма бьёт палитру: своё значение в правиле палитра не достаёт", () => {
     // Правило написало `0px` литералом — роль скругления до этого свойства не доходит вовсе.
     const css = generateSkinCss(
-      assemble({ ...наряд, forms: ["кнопка-своя"], overrides: {} }, части).skin,
+      assemble({ ...наряд, forms: ["кнопка-своя"], overrides: {} }, части, lookup).skin,
       lookup,
     );
     const правило = postcss
@@ -231,7 +231,7 @@ describe("порядок источников значения объявлен 
   });
 
   it("правка бьёт форму: роль, которую форма адресует, переопределена у компонента", () => {
-    const css = generateSkinCss(assemble(наряд, части).skin, lookup);
+    const css = generateSkinCss(assemble(наряд, части, lookup).skin, lookup);
 
     // Форма просит `var(--radius-md)`; правка задаёт эту роль на координате компонента, то есть
     // ближе к узлу, чем корень. Что победит на живом узле — предмет пробы в настоящем браузере.
@@ -246,8 +246,8 @@ describe("читаемость и покрытие считаются ПО СО�
     // Форма написана под одну палитру, а лечь может на другую — и тогда читаемость становится
     // свойством СОЧЕТАНИЯ. Спросить её у формы или у палитры по отдельности нельзя: у формы нет
     // значений, а палитра не знает, что на что легло.
-    const хорошее = skinContrast(assemble(наряд, части).skin, [buttonPassport]);
-    const плохое = skinContrast(assemble({ ...наряд, palette: "слепая" }, части).skin, [buttonPassport]);
+    const хорошее = skinContrast(assemble(наряд, части, lookup).skin, [buttonPassport]);
+    const плохое = skinContrast(assemble({ ...наряд, palette: "слепая" }, части, lookup).skin, [buttonPassport]);
 
     expect(хорошее.notes.filter((note) => note.kind === "low")).toEqual([]);
     expect(плохое.notes.filter((note) => note.kind === "low").length).toBeGreaterThan(0);
@@ -263,7 +263,7 @@ describe("обещания контраста считаются по НОВЫМ
   // Лестницу строит `buildScale` зоны значений, и ей всё равно, какое семя: обещания привязаны к
   // СТУПЕНИ, а не к шкале. Проба проверяет, что это так и на новых двух, — иначе «добавили роль»
   // означало бы «добавили роль без обещаний», а узнал бы об этом человек по нечитаемой плашке.
-  const значения = skinValues(assemble(наряд, части).skin, "light");
+  const значения = skinValues(assemble(наряд, части, lookup).skin, "light");
 
   for (const роль of ["успех", "предупреждение"]) {
     it(`«${роль}»: ступени построены семенем, а не выписаны`, () => {
@@ -274,7 +274,7 @@ describe("обещания контраста считаются по НОВЫМ
   }
 
   it("и тёмная половина у новых шкал тоже СТРОИТСЯ, а не инвертируется", () => {
-    const тёмные = skinValues(assemble(наряд, части).skin, "dark");
+    const тёмные = skinValues(assemble(наряд, части, lookup).skin, "dark");
 
     for (const роль of ["успех", "предупреждение"]) {
       expect(тёмные.get(`${роль}-9`)?.value).not.toBe(значения.get(`${роль}-9`)?.value);

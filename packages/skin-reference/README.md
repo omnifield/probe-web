@@ -8,10 +8,11 @@ import { referenceOutfit, referencePalette, referenceForms } from "@omnifield/pr
 import { assemble, generateSkinCss } from "@omnifield/probe-web-skin";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 
-const { skin, report } = assemble(referenceOutfit, {
-  palettes: [referencePalette],
-  forms: referenceForms,
-});
+const { skin, report } = assemble(
+  referenceOutfit,
+  { palettes: [referencePalette], forms: referenceForms },
+  passportOf,
+);
 const css = generateSkinCss(skin, passportOf);
 ```
 

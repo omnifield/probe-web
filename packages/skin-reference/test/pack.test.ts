@@ -86,7 +86,7 @@ describe("в чистой установке эталон работает, а �
       `import { referenceOutfit, referencePalette, referenceForms } from ${JSON.stringify(PKG)};
        import { assemble, checkSkin, generateSkinCss } from "@omnifield/probe-web-skin";
        import { passportOf } from "@omnifield/probe-web-ui/passport";
-       const { skin, report } = assemble(referenceOutfit, { palettes: [referencePalette], forms: referenceForms });
+       const { skin, report } = assemble(referenceOutfit, { palettes: [referencePalette], forms: referenceForms }, passportOf);
        const flaws = checkSkin(skin, passportOf);
        const css = generateSkinCss(skin, passportOf);
        process.stdout.write([flaws.length, report.dressed.length, css.includes("--акцент-9:"), css.includes("color-scheme: light")].join(" "));`,
@@ -103,7 +103,7 @@ describe("в чистой установке эталон работает, а �
        import { assemble, generateSkinCss } from "@omnifield/probe-web-skin";
        import { passportOf } from "@omnifield/probe-web-ui/passport";
        const порча = { ...referencePalette, scales: { ...referencePalette.scales, акцент: "не-цвет" } };
-       const { skin } = assemble(referenceOutfit, { palettes: [порча], forms: referenceForms });
+       const { skin } = assemble(referenceOutfit, { palettes: [порча], forms: referenceForms }, passportOf);
        generateSkinCss(skin, passportOf);`,
     );
 

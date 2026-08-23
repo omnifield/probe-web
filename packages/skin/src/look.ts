@@ -39,9 +39,11 @@
 // угол квадратный» в неотвечаемый. Порядок проверяется пробой, а не обещанием.
 
 import { fluidPoles, isFluid, type FluidReport } from "./fluid.js";
-import type { Keyframes, Skin, SkinVariables, SlotRecipe } from "./recipe.js";
+import type { Keyframes, PartStyles, Skin, SkinVariables, SlotRecipe } from "./recipe.js";
 import { trace } from "./trace.js";
+import { homesText, partVariables, variableHomes } from "./variables.js";
 import { knownRole, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";
+import type { PassportLookup } from "./address.js";
 
 /**
  * ПАЛИТРА — словарь значений. Одна на наряд.
@@ -111,14 +113,21 @@ export interface LookParts {
  *  • `unknown-form`      — формы с таким именем в источнике нет;
  *  • `outside-vocabulary` — роль вне словаря: у формы, у палитры или у правки;
  *  • `palette-incomplete` — палитра не закрыла словарь;
- *  • `component-twice`   — две формы на один компонент: чей вид победит, наряд не говорит.
+ *  • `component-twice`   — две формы на один компонент: чей вид победит, наряд не говорит;
+ *  • `variable-elsewhere` — переменная объявлена паспортом, но НА ДРУГОЙ ЧАСТИ (`PWEB-93`).
+ *
+ * Последнее — отдельное имя, а не оттенок `outside-vocabulary`, и это решение. Причины разные и
+ * починки разные: «нет такого имени» чинят объявлением в палитре или в паспорте, а «объявлено, но
+ * не здесь» — переносом правила на ту часть либо адресом по предку. Оставь мы одно имя на два
+ * случая, человек пошёл бы дописывать роль в палитру, которой она не принадлежит.
  */
 export type OutfitFlawName =
   | "unknown-palette"
   | "unknown-form"
   | "outside-vocabulary"
   | "palette-incomplete"
-  | "component-twice";
+  | "component-twice"
+  | "variable-elsewhere";
 
 /** Изъян наряда: имя, место в записи и пояснение человеку. */
 export interface OutfitFlaw {
@@ -207,14 +216,56 @@ function paletteValues(palette: Palette): Set<string> {
   return роли;
 }
 
-/** Ссылки на роли, которые АДРЕСУЕТ форма: `var(--имя)` в любом её правиле. */
-function formRoles(form: Form): Set<string> {
-  const роли = new Set<string>();
-  const текст = JSON.stringify(form.recipe) + JSON.stringify(form.keyframes ?? {});
+/** Ссылка формы на имя: где она стоит и на какой ЧАСТИ. */
+interface FormReference {
+  readonly name: string;
+  /** Часть, на которой стоит правило. `null` — движение: оно принадлежит форме целиком. */
+  readonly part: string | null;
+  readonly where: string;
+}
 
-  for (const [, name] of текст.matchAll(/var\(\s*(--[^\s,)]+)/gu)) роли.add(bare(name));
+/** Имена из `var(--…)` в одном куске записи. */
+function refsIn(value: unknown): string[] {
+  return [...JSON.stringify(value ?? null).matchAll(/var\(\s*(--[^\s,)]+)/gu)].map((m) =>
+    bare(m[1]!),
+  );
+}
 
-  return роли;
+/**
+ * Ссылки формы — С УКАЗАНИЕМ ЧАСТИ, на которой они стоят.
+ *
+ * Часть здесь несущая, а не для сообщения: переменная паспорта законна на СВОЕЙ части и незаконна
+ * на соседней (`PWEB-93`). Пропусти мы имя без части — правило поехало бы на страницу с
+ * неразрешимым значением, и мы вернулись бы к тому, от чего уходим, только тише.
+ *
+ * Обход СВОЙ, а не общий с порождением, и причина названа: порождение разворачивает рецепт в
+ * правила и требует собранный скин, а здесь скина ещё нет — наряд проверяется ДО сборки. Общее у
+ * них не обход, а ОТВЕТ о законности: он один и живёт в `variables.ts`.
+ *
+ * Состояния и предки лежат внутри стиля своей части: правило «эта часть при таком предке» одевает
+ * по-прежнему её, значит и словарь у него её.
+ */
+function formRefs(form: Form): FormReference[] {
+  const found: FormReference[] = [];
+  const parts = (styles: PartStyles | undefined, where: string): void => {
+    for (const [part, style] of Object.entries(styles ?? {})) {
+      for (const name of refsIn(style)) found.push({ name, part, where: `${where}.${part}` });
+    }
+  };
+
+  parts(form.recipe.base, "base");
+  for (const [name, styles] of Object.entries(form.recipe.variants ?? {})) {
+    parts(styles, `variants.${name}`);
+  }
+  for (const [index, compound] of (form.recipe.compoundVariants ?? []).entries()) {
+    parts(compound.style, `compoundVariants[${index}]`);
+  }
+
+  // Движение принадлежит форме целиком, а не одной части (`recipe.ts`), поэтому переменной части
+  // в нём быть не может: ставить её было бы некому.
+  for (const name of refsIn(form.keyframes)) found.push({ name, part: null, where: "keyframes" });
+
+  return found;
 }
 
 /**
@@ -283,11 +334,23 @@ function поСемьям(роли: readonly string[]): string {
  *
  * @param outfit наряд
  * @param parts откуда брать палитру и формы по именам
+ * @param lookup чем найти паспорт по имени компонента — тем же способом, что в порождении
  * @returns все изъяны сразу: человек чинит запись целиком, а не по одному
  */
-export function checkOutfit(outfit: Outfit, parts: LookParts): readonly OutfitFlaw[] {
+export function checkOutfit(
+  outfit: Outfit,
+  parts: LookParts,
+  lookup: PassportLookup,
+): readonly OutfitFlaw[] {
   const done = trace(`checkOutfit(${outfit.name})`);
   const flaws: OutfitFlaw[] = [];
+  // Паспорта приходят ТЕМ ЖЕ способом, что в порождении, — третьим доводом и обязательно. Сделай
+  // мы его необязательным, завёлся бы второй путь: проверка без паспортов, законная по подписи и
+  // слепая по делу (`PWEB-93`).
+  const дома = variableHomes(
+    lookup,
+    parts.forms.filter((form) => outfit.forms.includes(form.name)).map((form) => form.component),
+  );
 
   const palette = parts.palettes.find((кандидат) => кандидат.name === outfit.palette);
 
@@ -379,16 +442,37 @@ export function checkOutfit(outfit: Outfit, parts: LookParts): readonly OutfitFl
     занято.set(form.component, имя);
     собрано.push(form);
 
-    for (const роль of formRoles(form)) {
-      if (!knownRole(роль)) {
-        flaws.push({
-          name: "outside-vocabulary",
-          where: `forms[${индекс}].${роль}`,
-          means:
-            `форма просит роль «${роль}», которой в словаре нет. Ни одна палитра её не задаст, ` +
-            "и правило приедет на страницу с неразрешимым значением",
-        });
+    const passport = lookup(form.component);
+
+    for (const ссылка of formRefs(form)) {
+      if (knownRole(ссылка.name)) continue;
+
+      // Переменная, объявленная ЭТОЙ частью, законна: кит её ставит, и паспорт это объявил.
+      // Роли она при этом не становится — палитра её не задаёт и задать не может.
+      if (passport && ссылка.part && partVariables(passport, ссылка.part).has(`--${ссылка.name}`)) {
+        continue;
       }
+
+      const где = дома.get(`--${ссылка.name}`);
+      if (где) {
+        flaws.push({
+          name: "variable-elsewhere",
+          where: `forms[${индекс}].${ссылка.where}.${ссылка.name}`,
+          means:
+            `переменную «--${ссылка.name}» объявляет паспорт, но на другой части — ` +
+            `${homesText(где)}. Здесь её никто не ставит: правило приедет на страницу с ` +
+            "неразрешимым значением. Перенеси правило на ту часть либо адресуй её по предку",
+        });
+        continue;
+      }
+
+      flaws.push({
+        name: "outside-vocabulary",
+        where: `forms[${индекс}].${ссылка.where}.${ссылка.name}`,
+        means:
+          `форма просит роль «${ссылка.name}», которой нет ни в словаре, ни в паспорте. Ни одна ` +
+          "палитра её не задаст, и правило приедет на страницу с неразрешимым значением",
+      });
     }
   });
 
@@ -419,13 +503,14 @@ export function checkOutfit(outfit: Outfit, parts: LookParts): readonly OutfitFl
  *
  * @param outfit наряд — ссылки и правки
  * @param parts откуда брать палитру и формы по именам
+ * @param lookup чем найти паспорт по имени компонента — тем же способом, что в порождении
  * @returns надеваемый вид и отчёт о сборке
  * @throws {OutfitRefused} если в наряде есть хоть один изъян
  */
-export function assemble(outfit: Outfit, parts: LookParts): Assembled {
+export function assemble(outfit: Outfit, parts: LookParts, lookup: PassportLookup): Assembled {
   const done = trace(`assemble(${outfit.name})`);
 
-  const flaws = checkOutfit(outfit, parts);
+  const flaws = checkOutfit(outfit, parts, lookup);
   if (flaws.length > 0) throw new OutfitRefused(outfit.name, flaws);
 
   const palette = parts.palettes.find((кандидат) => кандидат.name === outfit.palette)!;
