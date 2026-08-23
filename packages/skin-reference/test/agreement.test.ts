@@ -32,17 +32,25 @@
 // второй, и если сходятся они, то расхождению взяться неоткуда.
 
 import { ask, load, withChrome } from "@omnifield/live-check";
-import { generateSkinCss } from "@omnifield/probe-web-skin";
+import { assemble, generateSkinCss, type Outfit } from "@omnifield/probe-web-skin";
 import { flattenCss } from "@omnifield/probe-web-skin/flat";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import { PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { referenceSkin } from "../src/index.js";
+import { referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
+import { части } from "./assembled.js";
 
-/** ДОРОГА РЕДАКТОРА: порождение как есть — вложенная форма, браузер разворачивает её сам. */
-const дорогаРедактора = generateSkinCss(referenceSkin, passportOf);
+/**
+ * ДОРОГА РЕДАКТОРА: СБОРКА трёх записей, затем порождение как есть — вложенная форма, браузер
+ * разворачивает её сам.
+ *
+ * Сборка теперь стоит на ОБЕИХ дорогах (`PWEB-78`), и это не удлинение пробы, а её предмет: вид
+ * складывается из палитры, форм и наряда, и совпадать обязан СОБРАННЫЙ вид, а не порождение
+ * одной записи.
+ */
+const дорогаРедактора = generateSkinCss(assemble(referenceOutfit, части).skin, passportOf);
 
 /**
  * ДОРОГА ПРИЛОЖЕНИЯ: запись сначала уезжает в хранилище и приезжает обратно, и только потом
@@ -52,8 +60,17 @@ const дорогаРедактора = generateSkinCss(referenceSkin, passportOf
  * ссылку — проверялось бы не то: потерянное при сериализации поле, значение, которого JSON не
  * знает, и съехавший порядок ключей проехали бы мимо, а именно они и разводят вид молча.
  */
-const изХранилища = JSON.parse(JSON.stringify(referenceSkin)) as typeof referenceSkin;
-const дорогаПриложения = flattenCss(generateSkinCss(изХранилища, passportOf));
+const изХранилища = {
+  palette: JSON.parse(JSON.stringify(referencePalette)) as typeof referencePalette,
+  forms: JSON.parse(JSON.stringify(referenceForms)) as typeof referenceForms,
+  outfit: JSON.parse(JSON.stringify(referenceOutfit)) as Outfit,
+};
+const дорогаПриложения = flattenCss(
+  generateSkinCss(
+    assemble(изХранилища.outfit, { palettes: [изХранилища.palette], forms: изХранилища.forms }).skin,
+    passportOf,
+  ),
+);
 
 /** Координаты берём у НАСТОЯЩИХ паспортов кита: выдуманные проверяли бы наше представление. */
 function координата(component: string, part: string): string {
@@ -170,9 +187,19 @@ function расхождения(первый: Снимок, второй: Сни
  * и обязана уметь замечать.
  */
 const испорченнаяДорога = дорогаПриложения.replace(
-  "background: var(--бренд-9)",
-  "background: var(--бренд-3)",
+  "background: var(--акцент-9)",
+  "background: var(--акцент-3)",
 );
+
+/**
+ * НАРЯД С ТОЧЕЧНОЙ ПРАВКОЙ — материал для проб про границу правки и порядок источников.
+ *
+ * Свой, а не эталонный: у эталона правок нет намеренно (правка — признание, что палитра
+ * компоненту не подошла). Проверять механизм правки на записи, которая им не пользуется, было бы
+ * нечем, а заводить правку в эталоне ради пробы значило бы соврать про сам эталон.
+ */
+const сПравкой: Outfit = { ...referenceOutfit, overrides: { button: { "space-4": "0px" } } };
+const дорогаСПравкой = generateSkinCss(assemble(сПравкой, части).skin, passportOf);
 
 const снимки: Record<string, Снимок> = {};
 
@@ -184,6 +211,7 @@ beforeAll(async () => {
       ["редактор-тёмная", дорогаРедактора, true],
       ["приложение-тёмная", дорогаПриложения, true],
       ["порча-светлая", испорченнаяДорога, false],
+      ["правка-светлая", дорогаСПравкой, false],
     ] as const) {
       await load(call, страница(css, тёмная));
       снимки[имя] = JSON.parse(await ask(call, ЗАМЕР)) as Снимок;
@@ -211,9 +239,20 @@ describe("дороги действительно ДВЕ", () => {
     expect(вложенных(дорогаПриложения)).toBe(0);
   });
 
-  it("оборот через хранилище настоящий: другая запись, то же содержимое", () => {
-    expect(изХранилища).not.toBe(referenceSkin);
-    expect(изХранилища).toEqual(referenceSkin);
+  it("оборот через хранилище настоящий: другие записи, то же содержимое", () => {
+    // Оборот идёт у ВСЕХ ТРЁХ записей: наряд ссылается именами, и потеряй хранилище имя формы —
+    // сборка отказала бы, а потеряй значение палитры — вид разошёлся бы молча.
+    expect(изХранилища.palette).not.toBe(referencePalette);
+    expect(изХранилища.palette).toEqual(referencePalette);
+    expect(изХранилища.forms).toEqual(referenceForms);
+    expect(изХранилища.outfit).toEqual(referenceOutfit);
+  });
+
+  it("на обеих дорогах стоит СБОРКА — совпадать обязан собранный вид", () => {
+    // Собери одна дорога, а другая возьми готовое — проба сравнивала бы разные предметы и
+    // молчала бы ровно там, где сборка и расходится.
+    expect(дорогаРедактора).toContain("--акцент-9:");
+    expect(дорогаПриложения).toContain("--акцент-9:");
   });
 });
 
@@ -247,5 +286,32 @@ describe("вид совпадает — в обеих половинах", () =>
 
     expect(разошлись.length).toBeGreaterThan(0);
     expect(разошлись.join(" ")).toContain("кнопка-умолчание.background-color");
+  });
+});
+
+describe("точечная правка: границы и порядок источников — на живом узле", () => {
+  // То, чего текст показать не может. Правка переобъявляет роль на координате компонента, а
+  // победит ли она — вопрос каскада и наследования, то есть браузера. `jsdom` слои игнорирует
+  // целиком и на такой вопрос не отвечает вовсе.
+
+  // Роль для правки выбрана та, которой пользуются ОБА замеряемых компонента (`space-4` — отступ
+  // и у кнопки, и у поверхности). Возьми мы роль, которую сосед не адресует, второй конец пробы
+  // оказался бы пустым: он проходил бы и на правке, протёкшей наружу.
+
+  it("ПРАВКА БЬЁТ ФОРМУ: внутри своего компонента роль стала другой", () => {
+    const без = снимки["редактор-светлая"]!["кнопка-умолчание"]!["padding-left"];
+    const с = снимки["правка-светлая"]!["кнопка-умолчание"]!["padding-left"];
+
+    expect(без).not.toBe("0px");
+    expect(с).toBe("0px");
+  });
+
+  it("и НЕ ДЕЙСТВУЕТ за его границами: соседний компонент остался при палитре", () => {
+    // Второй конец той же пробы, и он важнее первого: правка, протёкшая наружу, — это уже не
+    // правка компонента, а вторая палитра, заведённая молча.
+    const сосед = снимки["правка-светлая"]!["поверхность-вариация"]!["padding-left"];
+
+    expect(сосед).toBe(снимки["редактор-светлая"]!["поверхность-вариация"]!["padding-left"]);
+    expect(сосед).not.toBe("0px");
   });
 });

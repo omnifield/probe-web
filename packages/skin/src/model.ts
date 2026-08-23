@@ -39,6 +39,7 @@ export {
   ancestorSelector,
   markSelector,
   nodeSelector,
+  componentSelector,
   partSelector,
   safeName,
   stateSelector,
@@ -69,3 +70,22 @@ export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";
 // то же самое, что и порождение: какие семена законны и что скин объявляет на самом деле.
 export type { SizeRefusal, SizeSeed } from "./sizes.js";
 export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes.js";
+
+// ВИД ДЕЛИТСЯ НА ТРИ (`PWEB-78`): палитра, форма, наряд — записи, складываемые ПРИ НАДЕВАНИИ.
+// `Skin` от этого не снят: он стал тем, что сборка производит. Разбор — в `look.ts`.
+export type {
+  Assembled,
+  Form,
+  LookParts,
+  Outfit,
+  OutfitFlaw,
+  OutfitFlawName,
+  OutfitReport,
+  Palette,
+} from "./look.js";
+export { assemble, checkOutfit, OutfitRefused } from "./look.js";
+
+// СЛОВАРЬ — машинный контракт между тремя записями. Наружу, потому что его спрашивают все:
+// редактор перечисляет роли человеку, хранилище отказывает неполной палитре, проба проверяет.
+export type { Role, RoleKind } from "./vocabulary.js";
+export { knownRole, ROLE_NAMES, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";

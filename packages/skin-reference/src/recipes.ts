@@ -35,7 +35,7 @@
 //
 // ## Цвет адресуется СТУПЕНЬЮ, а не значением
 //
-// Ни одного цветового литерала: правило называет ступень (`var(--бренд-9)`), и от этого скин
+// Ни одного цветового литерала: правило называет ступень (`var(--акцент-9)`), и от этого скин
 // пересеваем. Ступени назначены зоной значений — 9 сплошной акцент, 10 он же при наведении,
 // 8 сильная граница и кольцо фокуса, 11 текст низкого контраста, 12 высокого, `contrast` — текст
 // поверх сплошной. Правило, написанное против назначения, сломало бы обещания контраста, и
@@ -44,7 +44,7 @@
 // Заливка и текст объявляются В ОДНОМ правиле везде, где есть текст. Это не стилистика: счёт
 // читаемости считает ПАРУ, и текст без названного рядом фона уезжает у него в «посчитать нечем».
 
-import type { SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 /** Переход вида — один на весь эталон: разные длительности у соседних кнопок выглядят браком. */
 const переход = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
@@ -85,7 +85,7 @@ const кнопка: SlotRecipe = {
         // именно на неё дано обещание контраста против фонов приложения.
         "focus-visible": {
           props: {
-            outline: "var(--border-width-2) solid var(--бренд-8)",
+            outline: "var(--border-width-2) solid var(--акцент-8)",
             outlineOffset: "var(--space-1)",
           },
         },
@@ -99,8 +99,8 @@ const кнопка: SlotRecipe = {
         busy: { props: { cursor: "progress" } },
         // Раскрытая и нажатая — состояния кнопки-переключателя: она остаётся видимо включённой,
         // пока раскрыт её список или пока она нажата.
-        expanded: { props: { borderColor: "var(--бренд-8)" } },
-        pressed: { props: { borderColor: "var(--бренд-8)", fontWeight: "var(--weight-semibold)" } },
+        expanded: { props: { borderColor: "var(--акцент-8)" } },
+        pressed: { props: { borderColor: "var(--акцент-8)", fontWeight: "var(--weight-semibold)" } },
       },
     },
   },
@@ -108,15 +108,15 @@ const кнопка: SlotRecipe = {
     главная: {
       root: {
         props: {
-          background: "var(--бренд-9)",
-          color: "var(--бренд-contrast)",
+          background: "var(--акцент-9)",
+          color: "var(--акцент-contrast)",
           // Рамка есть и невидима НАМЕРЕННО: она держит коробку сплошной кнопки того же
           // размера, что у обведённой. Счёт читаемости назовёт её «посчитать нечем» — и это
           // верный ответ: что лежит под полностью прозрачным, значение не говорит.
           borderColor: "transparent",
         },
         states: {
-          hover: { props: { background: "var(--бренд-10)", color: "var(--бренд-contrast)" } },
+          hover: { props: { background: "var(--акцент-10)", color: "var(--акцент-contrast)" } },
         },
       },
     },
@@ -232,7 +232,7 @@ const гармошка: SlotRecipe = {
       states: {
         open: { props: { borderColor: "var(--нейтраль-7)" } },
         disabled: { props: { opacity: "0.5" } },
-        focus: { props: { borderColor: "var(--бренд-8)" } },
+        focus: { props: { borderColor: "var(--акцент-8)" } },
       },
     },
     itemTrigger: {
@@ -260,7 +260,7 @@ const гармошка: SlotRecipe = {
         active: { props: { background: "var(--нейтраль-5)", color: "var(--нейтраль-12)" } },
         "focus-visible": {
           props: {
-            outline: "var(--border-width-2) solid var(--бренд-8)",
+            outline: "var(--border-width-2) solid var(--акцент-8)",
             outlineOffset: "calc(var(--border-width-2) * -1)",
           },
         },
@@ -353,11 +353,20 @@ const сетка: SlotRecipe = {
   },
 };
 
-/** Рецепты эталона: имя компонента (оно же `data-scope`) → рецепт. */
-export const рецепты: Readonly<Record<string, SlotRecipe>> = {
-  accordion: гармошка,
-  button: кнопка,
-  flow: поток,
-  grid: сетка,
-  surface: поверхность,
-};
+/**
+ * ФОРМЫ ЭТАЛОНА — по одной на компонент, каждая самостоятельная запись (`PWEB-78`).
+ *
+ * Форм у компонента может быть сколько угодно; у эталона по одной, и это тоже решение: он
+ * доказывает механику, а не показывает ассортимент. Имя формы называет её саму, а не компонент:
+ * второй формой кнопки станет «кнопка-плоская», и обе будут законны.
+ *
+ * Значений здесь нет ни одного: форма адресует РОЛИ, а величину даёт палитра. Это и есть разрез
+ * «значение — употребление», ради которого вид разделили.
+ */
+export const referenceForms: readonly Form[] = [
+  { name: "гармошка-эталон", component: "accordion", recipe: гармошка },
+  { name: "кнопка-эталон", component: "button", recipe: кнопка },
+  { name: "поток-эталон", component: "flow", recipe: поток },
+  { name: "сетка-эталон", component: "grid", recipe: сетка },
+  { name: "поверхность-эталон", component: "surface", recipe: поверхность },
+];

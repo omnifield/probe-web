@@ -30,7 +30,7 @@
 // первой: утечь нечему. Держи мы это фильтром — правки образца рано или поздно уехали бы в файл
 // скина, и приложение получило бы вид, привязанный к идентификаторам чужого стенда.
 
-import type { PassportLookup } from "./address.js";
+import { componentSelector, type PassportLookup } from "./address.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
 import { cssProperty } from "./property.js";
 import { skinValues } from "./seeds.js";
@@ -131,7 +131,11 @@ function darkPairs(skin: Skin): (readonly [string, string])[] {
  * В тёмный блок едет только ОТЛИЧАЮЩЕЕСЯ: половины пересекаются почти целиком, и печатать
  * совпадающее второй раз значило бы удваивать файл ради строк, которые ничего не меняют.
  */
-function variablesText(skin: Skin, dark: readonly (readonly [string, string])[]): string[] {
+function variablesText(
+  skin: Skin,
+  dark: readonly (readonly [string, string])[],
+  lookup: PassportLookup,
+): string[] {
   const blocks: string[] = [];
   const light = skinValues(skin, "light");
 
@@ -145,6 +149,38 @@ function variablesText(skin: Skin, dark: readonly (readonly [string, string])[])
   // До `PWEB-64` они приезжали приложению общим листом — мимо скина, вторым путём к тому же
   // результату. Что сюда не едет и почему — `sizes.ts`.
   blocks.push(...sizeBlocks(skin, "  "));
+
+  // Точечные правки наряда — ПОСЛЕДНИМИ, и не ради порядка чтения: они переопределяют роль в
+  // границах одного компонента, а значит обязаны стоять после того, что определяют.
+  blocks.push(...overrideBlocks(skin, lookup));
+
+  return blocks;
+}
+
+/**
+ * Печатает точечные правки наряда: роль, переопределённая В ГРАНИЦАХ одного компонента.
+ *
+ * Адрес — координата компонента (`[data-scope="таблица"]`), а не его часть и не узел: правка
+ * принадлежит компоненту целиком, и его поддерево получает новое значение НАСЛЕДОВАНИЕМ. Отсюда
+ * же и обратное свойство, ради которого форма и выбрана: за пределами компонента роль остаётся
+ * той, что задала палитра, — не потому что мы обещали, а потому что объявления на другом узле
+ * соседям не видно.
+ *
+ * Гонки весов здесь нет вовсе: корневое объявление и объявление на компоненте стоят на РАЗНЫХ
+ * узлах, то есть не соперничают, а наследуются.
+ */
+function overrideBlocks(skin: Skin, lookup: PassportLookup): string[] {
+  const blocks: string[] = [];
+
+  for (const [component, правки] of Object.entries(skin.overrides ?? {})) {
+    const passport = lookup(component);
+    const selector = passport ? componentSelector(passport) : undefined;
+
+    // Паспорта нет — правку печатать НЕКУДА, и выдумывать признак нельзя: селектор, собранный
+    // догадкой, попадал бы неизвестно куда. Изъян этого рода называет проверка наряда до
+    // сборки; здесь остаётся молча пропустить, а не написать наугад.
+    if (selector) blocks.push(valuesText(selector, Object.entries(правки)));
+  }
 
   return blocks;
 }
@@ -288,7 +324,7 @@ export function generateSkinCss(
       "   Править бесполезно: следующее порождение перезапишет.\n" +
       "   Адреса собраны из анатомии компонентов, руками селекторы не писались. */",
     SKIN_LAYER,
-    [...variablesText(skin, dark), ...keyframesText(skin), ...rules.map(ruleText)],
+    [...variablesText(skin, dark, lookup), ...keyframesText(skin), ...rules.map(ruleText)],
     modeText(dark),
   );
 

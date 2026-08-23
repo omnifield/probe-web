@@ -3,12 +3,18 @@
 // Считает их не проба: у механики для этого есть `skinGaps` и `skinContrast`, и второй счёт был
 // бы вторым ответом на тот же вопрос. Проба спрашивает и сверяет с РЕШЕНИЕМ — тем, что записано
 // в шапке `recipes.ts`.
+//
+// Спрашиваются они по СОБРАННОМУ наряду, а не по форме и не по палитре (`PWEB-78`): контраст
+// перестал быть свойством части — форма, написанная под одну палитру, может лечь на другую, и
+// читаемость становится свойством СОЧЕТАНИЯ. У части её спросить нечем: у формы нет значений.
 
 import { skinContrast, skinGaps } from "@omnifield/probe-web-skin";
 import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
 import { describe, expect, it } from "vitest";
 
-import { referenceSkin } from "../src/index.js";
+import { собранный } from "./assembled.js";
+
+const referenceSkin = собранный.skin;
 
 const паспорта = Object.values(PASSPORTS);
 

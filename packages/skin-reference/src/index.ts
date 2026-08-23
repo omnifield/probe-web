@@ -1,10 +1,16 @@
-// ЭТАЛОННЫЙ СКИН ФРЕЙМВОРКА — одна настоящая запись, проходящая механику целиком (`PWEB-75`).
+// ЭТАЛОННЫЙ ВИД ФРЕЙМВОРКА — три настоящие записи, проходящие механику целиком (`PWEB-75`).
 //
-// ## Это ЗАПИСЬ, а не лист и не набор переменных
+// ## Три записи, а не одна (`PWEB-78`)
 //
-// Наружу отсюда едет `Skin` — переменные и рецепты одной единицей. Ни строки CSS, ни готового
-// файла стилей: текст из записи порождает механика, у потребителя и в тот момент, когда он его
-// попросит. Отгрузи мы лист — фреймворк снова начал бы одевать сбоку, только под новым именем.
+// Наружу едут ПАЛИТРА, ФОРМЫ и НАРЯД. Компоненты приходят от разных поставщиков, и одна запись на
+// всё требовала бы человека, который опишет вид всех компонентов сразу, — такого человека нет.
+// Наряд связывает палитру и формы ИМЕНАМИ; складывает их сборка, при надевании.
+//
+// ## Это ЗАПИСИ, а не лист и не набор переменных
+//
+// Ни строки CSS, ни готового файла стилей: текст порождает механика — у потребителя и в тот
+// момент, когда он его попросит. Отгрузи мы лист — фреймворк снова начал бы одевать сбоку, только
+// под новым именем.
 //
 // ## Почему это ОТДЕЛЬНАЯ поставка
 //
@@ -19,7 +25,7 @@
 //
 // ## В собранном файле НЕТ НИ ОДНОГО ИМПОРТА
 //
-// Тип `Skin` приходит `import type` и стирается при эмите. Значит поставка это чистые данные:
+// Типы записей приходят `import type` и стираются при эмите. Значит поставка это чистые данные:
 // потребитель, взявший эталон, не получает вместе с ним ни механики, ни кита — он приносит их
 // сам одноранговыми, теми версиями, что стоят у него. Две копии формы паспорта разъехались бы.
 //
@@ -30,29 +36,38 @@
 // работает целиком; дать дом рядам, ушедшим из общего листа; и быть СВОИМ материалом для гейта
 // совпадения редактора с приложением.
 
-import type { Skin } from "@omnifield/probe-web-skin/model";
+import type { Outfit } from "@omnifield/probe-web-skin/model";
 
-import { рецепты } from "./recipes.js";
-import { переменные } from "./variables.js";
+import { referenceForms } from "./recipes.js";
+import { referencePalette } from "./variables.js";
+
+export { referenceForms } from "./recipes.js";
+export { referencePalette } from "./variables.js";
 
 /**
- * ЭТАЛОННЫЙ СКИН.
+ * ЭТАЛОННЫЙ НАРЯД — третья запись: ссылки на палитру и формы плюс точечные правки.
  *
- * Имя годится и для атрибута на корне, и для имени порождённого файла — правило формы держит
- * хранилище, а здесь достаточно того, что имя пригодно к селектору.
+ * ССЫЛКАМИ, а не копиями: пересеяли палитру — наряд следует за ней сам. Копия дала бы вчерашний
+ * слепок, и смена бренда перестала бы что-либо менять молча.
+ *
+ * **Точечных правок здесь НЕТ, и это тоже ответ.** Правка — признание, что палитра компоненту не
+ * подошла; у эталона все пятеро одеты одной палитрой, и заводить исключение ради демонстрации
+ * механизма значило бы соврать про сам эталон. Счёт правок механика отдаёт значением — у нас он
+ * ноль, и это лучшее, что он может показать.
  *
  * ```ts
- * import { referenceSkin } from "@omnifield/probe-web-skin-reference";
- * import { generateSkinCss } from "@omnifield/probe-web-skin";
+ * import { referenceOutfit, referencePalette, referenceForms } from "@omnifield/probe-web-skin-reference";
+ * import { assemble, generateSkinCss } from "@omnifield/probe-web-skin";
  * import { passportOf } from "@omnifield/probe-web-ui/passport";
  *
- * const css = generateSkinCss(referenceSkin, passportOf);
+ * const { skin, report } = assemble(referenceOutfit, { palettes: [referencePalette], forms: referenceForms });
+ * const css = generateSkinCss(skin, passportOf);
  * ```
  */
-export const referenceSkin: Skin = {
+export const referenceOutfit: Outfit = {
   name: "reference",
-  variables: переменные,
-  recipes: рецепты,
+  palette: referencePalette.name,
+  forms: referenceForms.map((form) => form.name),
 };
 
 /**
@@ -65,4 +80,4 @@ export const referenceSkin: Skin = {
  * адресованы. Это проверяется машиной (`skinGaps` отвечает пустым перечнем), а не объявляется
  * здесь; разбор решения — в шапке `recipes.ts`.
  */
-export const DRESSED: readonly string[] = Object.keys(рецепты).toSorted();
+export const DRESSED: readonly string[] = referenceForms.map((form) => form.component).toSorted();

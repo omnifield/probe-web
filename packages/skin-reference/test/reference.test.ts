@@ -7,14 +7,17 @@
 // Материал берётся у КИТА, а не собирается пробой: паспорта настоящие, и адреса порождаются из
 // их анатомии. Собери проба паспорт сама — она проверяла бы наше представление о ките.
 
-import { checkSkin, generateSkinCss, skinValues } from "@omnifield/probe-web-skin";
+import { assemble, checkOutfit, checkSkin, generateSkinCss, skinValues } from "@omnifield/probe-web-skin";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
-import { DRESSED, referenceSkin } from "../src/index.js";
+import { DRESSED, referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
+import { собранный, части } from "./assembled.js";
 
-const css = generateSkinCss(referenceSkin, passportOf);
+const referenceSkin = собранный.skin;
+
+const css = generateSkinCss(собранный.skin, passportOf);
 
 /** Объявления `--имя` из текста: имя → все его значения, в порядке появления. */
 function declared(text: string): Map<string, string[]> {
@@ -25,11 +28,33 @@ function declared(text: string): Map<string, string[]> {
   return found;
 }
 
-describe("эталон объявлен СКИНОМ, а не листом", () => {
-  it("это запись переменных и рецептов, а не текст стилей", () => {
+describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не листом", () => {
+  it("палитра, формы и наряд — записи, а не текст стилей", () => {
     // Проверяется форма поставки, а не намерение: отгрузи мы лист — фреймворк снова одевал бы
     // сбоку, просто под другим именем.
-    expect(typeof referenceSkin).toBe("object");
+    expect(typeof referencePalette).toBe("object");
+    expect(referenceForms).toHaveLength(DRESSED.length);
+    expect(referenceOutfit.forms).toEqual(referenceForms.map((form) => form.name));
+  });
+
+  it("наряд ССЫЛАЕТСЯ на палитру именем, а не копирует её", () => {
+    // Копия дала бы вчерашний слепок: пересеяли палитру, а наряд остался прежним — молча.
+    expect(referenceOutfit.palette).toBe(referencePalette.name);
+    expect(JSON.stringify(referenceOutfit)).not.toContain("oklch");
+  });
+
+  it("палитра закрывает словарь, а формы просят только его роли — до надевания", () => {
+    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
+  });
+
+  it("сборка отдаёт отчёт: одеты все пятеро, точечных правок ноль", () => {
+    // Ноль правок — лучшее, что счёт может показать: правка это признание, что палитра
+    // компоненту не подошла, а у эталона все пятеро одеты одной.
+    expect(собранный.report.dressed).toEqual([...DRESSED]);
+    expect(собранный.report.overrides).toBe(0);
+  });
+
+  it("собранный вид — тот же `Skin`, что и раньше: он остался формой СБОРКИ", () => {
     expect(referenceSkin.variables).toBeDefined();
     expect(Object.keys(referenceSkin.recipes).toSorted()).toEqual([...DRESSED]);
   });
@@ -73,7 +98,7 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
     for (const half of ["light", "dark"] as const) {
       const names = посеяно(half);
 
-      for (const scale of ["бренд", "нейтраль", "опасность"]) {
+      for (const scale of ["акцент", "нейтраль", "опасность"]) {
         expect(names, `${half}: шкала «${scale}»`).toContain(`${scale}-9`);
         expect(names, `${half}: контрастная «${scale}»`).toContain(`${scale}-contrast`);
       }
@@ -101,17 +126,16 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
   });
 
   it("пересев меняет ВЕСЬ вид: другое семя — другие значения обеих половин", () => {
-    const пересеян = {
-      ...referenceSkin,
-      variables: {
-        ...referenceSkin.variables,
-        scales: { ...referenceSkin.variables?.scales, бренд: "oklch(0.55 0.2 140)" },
-      },
-    };
+    // Пересев идёт через ПАЛИТРУ, а не через собранный вид: наряд ссылается именем, значит
+    // достаточно подменить запись палитры — и весь вид следует за ней.
+    const пересеян = assemble(referenceOutfit, {
+      ...части,
+      palettes: [{ ...referencePalette, scales: { ...referencePalette.scales, акцент: "oklch(0.55 0.2 140)" } }],
+    }).skin;
 
     for (const half of ["light", "dark"] as const) {
-      expect(skinValues(пересеян, half).get("бренд-9")?.value).not.toBe(
-        skinValues(referenceSkin, half).get("бренд-9")?.value,
+      expect(skinValues(пересеян, half).get("акцент-9")?.value).not.toBe(
+        skinValues(referenceSkin, half).get("акцент-9")?.value,
       );
     }
   });

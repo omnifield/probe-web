@@ -70,39 +70,41 @@ describe("что уезжает в тарбол", () => {
 });
 
 describe("в чистой установке эталон работает, а не только импортируется", () => {
-  it("запись разрешается и несёт рецепты", () => {
+  it("три записи разрешаются, и наряд ссылается на палитру именем", () => {
     const printed = runInInstall(
       install,
-      `import { referenceSkin, DRESSED } from ${JSON.stringify(PKG)};
-       console.log([referenceSkin.name, DRESSED.length, Object.keys(referenceSkin.recipes).length].join(" "));`,
+      `import { referenceOutfit, referencePalette, referenceForms, DRESSED } from ${JSON.stringify(PKG)};
+       console.log([referenceOutfit.name, DRESSED.length, referenceForms.length, referenceOutfit.palette === referencePalette.name].join(" "));`,
     );
 
-    expect(printed).toBe("reference 5 5");
+    expect(printed).toBe("reference 5 5 true");
   });
 
-  it("МЕХАНИКА ПОРОЖДАЕТ ИЗ НЕЁ CSS — вот это и есть «работает»", () => {
+  it("МЕХАНИКА СОБИРАЕТ И ПОРОЖДАЕТ — вот это и есть «работает»", () => {
     const printed = runInInstall(
       install,
-      `import { referenceSkin } from ${JSON.stringify(PKG)};
-       import { checkSkin, generateSkinCss } from "@omnifield/probe-web-skin";
+      `import { referenceOutfit, referencePalette, referenceForms } from ${JSON.stringify(PKG)};
+       import { assemble, checkSkin, generateSkinCss } from "@omnifield/probe-web-skin";
        import { passportOf } from "@omnifield/probe-web-ui/passport";
-       const flaws = checkSkin(referenceSkin, passportOf);
-       const css = generateSkinCss(referenceSkin, passportOf);
-       process.stdout.write([flaws.length, css.includes("--бренд-9:"), css.includes("color-scheme: light")].join(" "));`,
+       const { skin, report } = assemble(referenceOutfit, { palettes: [referencePalette], forms: referenceForms });
+       const flaws = checkSkin(skin, passportOf);
+       const css = generateSkinCss(skin, passportOf);
+       process.stdout.write([flaws.length, report.dressed.length, css.includes("--акцент-9:"), css.includes("color-scheme: light")].join(" "));`,
     );
 
-    expect(printed).toBe("0 true true");
+    expect(printed).toBe("0 5 true true");
   });
 
   it("положительный контроль: испорченная запись в ТОЙ ЖЕ установке получает отказ", () => {
     // Без него зелёные две пробы выше значили бы и «работает», и «до проверки не дошло».
     const refused = runInInstall(
       install,
-      `import { referenceSkin } from ${JSON.stringify(PKG)};
-       import { generateSkinCss } from "@omnifield/probe-web-skin";
+      `import { referenceOutfit, referencePalette, referenceForms } from ${JSON.stringify(PKG)};
+       import { assemble, generateSkinCss } from "@omnifield/probe-web-skin";
        import { passportOf } from "@omnifield/probe-web-ui/passport";
-       const порча = { ...referenceSkin, variables: { ...referenceSkin.variables, scales: { бренд: "не-цвет" } } };
-       generateSkinCss(порча, passportOf);`,
+       const порча = { ...referencePalette, scales: { ...referencePalette.scales, акцент: "не-цвет" } };
+       const { skin } = assemble(referenceOutfit, { palettes: [порча], forms: referenceForms });
+       generateSkinCss(skin, passportOf);`,
     );
 
     expect(refused).toMatch(/^ОТКАЗ:/);
