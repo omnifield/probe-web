@@ -34,7 +34,10 @@ export default defineConfig({
           name: "dom",
           environment: "jsdom",
           include: ["test/*.test.tsx"],
-          exclude: ["test/kit.test.tsx"],
+          // Пробы на живом ките отобраны ИМЕНЕМ (`kit*`), а не перечнем файлов: перечень
+          // пришлось бы дописывать на каждой новой пробе, и забытая строка молча уехала бы в
+          // проект, чей конвейер чужой JSX не преобразует.
+          exclude: ["test/kit*.test.tsx"],
         },
       },
       {
@@ -42,7 +45,7 @@ export default defineConfig({
         test: {
           name: "kit",
           environment: "jsdom",
-          include: ["test/kit.test.tsx"],
+          include: ["test/kit*.test.tsx"],
           // Кит и его основания приезжают веткой `solid` — НЕпреобразованным JSX. Это их
           // обещание потребителю, а не недосмотр: трансформация Solid компиляторная, и
           // применяет её тот, кто собирает приложение. Значит применяем её и мы, иначе проба

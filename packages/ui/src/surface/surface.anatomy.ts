@@ -20,7 +20,10 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { definePassport } from "../passport-form.js";
+import { defineSettings, definePassport } from "../passport-form.js";
+// ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
+// остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
+import type { SurfaceProps } from "./surface.jsx";
 
 /** Части поверхности. Она одна: плоскость — это один узел. */
 export const anatomy = createAnatomy("surface").parts("root");
@@ -60,5 +63,11 @@ export const passport = definePassport({
     // быть не может — иначе он объявил бы вид, которого не умеет проверить.
     means: "имя вариации поверхности; его даёт человек в редакторе, кит пропускает насквозь",
     mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня поверхность не принимает.
+  settings: defineSettings<SurfaceProps>({}),
+  assembly: {
+    means: "поверхность с содержимым",
+    tree: { part: "root", children: [{ genus: "text", value: "Поверхность" }] },
   },
 });

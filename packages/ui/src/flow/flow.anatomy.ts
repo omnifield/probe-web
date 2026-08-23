@@ -22,7 +22,10 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { definePassport } from "../passport-form.js";
+import { defineSettings, definePassport } from "../passport-form.js";
+// ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
+// остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
+import type { FlowProps } from "./flow.jsx";
 
 /** Части потока: сам поток и место одного элемента в нём. */
 export const anatomy = createAnatomy("flow").parts("root", "item");
@@ -66,5 +69,19 @@ export const passport = definePassport({
   variantAxis: {
     means: "имя вариации потока; его даёт человек в редакторе, кит пропускает насквозь",
     mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня ряд не принимает: направление у него — раскладочное свойство,
+  // то есть ВИД, и приезжает скином (решение «раскладочные свойства это ВИД»).
+  settings: defineSettings<FlowProps>({}),
+  // Два элемента, а не один: предмет ряда — расстояние МЕЖДУ, а между одним его не бывает.
+  assembly: {
+    means: "ряд из двух элементов",
+    tree: {
+      part: "root",
+      children: [
+        { part: "item", children: [{ genus: "text", value: "Первый" }] },
+        { part: "item", children: [{ genus: "text", value: "Второй" }] },
+      ],
+    },
   },
 });

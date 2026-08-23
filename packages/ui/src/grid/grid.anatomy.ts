@@ -24,7 +24,10 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { definePassport } from "../passport-form.js";
+import { defineSettings, definePassport } from "../passport-form.js";
+// ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
+// остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
+import type { GridProps } from "./grid.jsx";
 
 /** Части сетки: сама сетка и место одного элемента в ней. */
 export const anatomy = createAnatomy("grid").parts("root", "cell");
@@ -68,5 +71,21 @@ export const passport = definePassport({
   variantAxis: {
     means: "имя вариации сетки; его даёт человек в редакторе, кит пропускает насквозь",
     mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня сетка не принимает: число колонок — раскладочное свойство,
+  // то есть ВИД, и приезжает скином.
+  settings: defineSettings<GridProps>({}),
+  // Четыре ячейки: на одной не видно ни колонок, ни рядов, а сетка — про них.
+  assembly: {
+    means: "сетка из четырёх ячеек",
+    tree: {
+      part: "root",
+      children: [
+        { part: "cell", children: [{ genus: "text", value: "Ячейка 1" }] },
+        { part: "cell", children: [{ genus: "text", value: "Ячейка 2" }] },
+        { part: "cell", children: [{ genus: "text", value: "Ячейка 3" }] },
+        { part: "cell", children: [{ genus: "text", value: "Ячейка 4" }] },
+      ],
+    },
   },
 });
