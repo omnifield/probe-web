@@ -40,9 +40,9 @@
 // Проба берёт наш ОТВЕТ, а не чужую функцию: чужую зону проверяет её владелец, а мы проверяем
 // то, на что опираемся.
 
-import { createRegistry, RenderTree, type AssemblyTree, type ReadablePassport } from "@omnifield/probe-web-assembly";
+import { createRegistry, RenderTree, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
-import { Button } from "@omnifield/probe-web-ui";
+import { kitOf } from "@omnifield/probe-web-ui";
 import { admits, passportOf } from "@omnifield/probe-web-ui/passport";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -63,8 +63,10 @@ afterEach(() => {
 });
 
 const registry = createRegistry({
-  components: { button: Button },
-  passports: { button: passportOf("button") as ReadablePassport },
+  // ПАРА поставщика, а не карта компонентов рядом с паспортами (`PWEB-85`). Кит отдаёт паспорт
+  // вместе с тем, чем рисуется каждая его часть, — собери мы карту у себя, она разошлась бы с
+  // анатомией молча, и добавленная китом часть осталась бы неодетой.
+  components: { button: kitOf("button")! },
   admits,
 });
 

@@ -32,10 +32,9 @@ import {
   RenderTree,
   sketchOf,
   type AssemblyTree,
-  type ReadablePassport,
 } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
-import { Button, Surface } from "@omnifield/probe-web-ui";
+import { kitOf } from "@omnifield/probe-web-ui";
 import { admits, coordinateOf, passportOf, PASSPORTS } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
 import { afterEach, describe, expect, it } from "vitest";
@@ -106,10 +105,13 @@ const passageSkin: Skin = {
 // ── ОБВЯЗКА ──────────────────────────────────────────────────────────────────────────────────
 
 const registry = createRegistry({
-  components: { button: Button, surface: Surface },
-  passports: {
-    button: passportOf("button") as ReadablePassport,
-    surface: passportOf("surface") as ReadablePassport,
+  // ПАРА поставщика (`PWEB-85`): паспорт вместе с тем, чем рисуется каждая его часть. Составной
+  // компонент от этого перестал быть особым случаем — часть достаётся тем же ходом, что корень,
+  // и собирать карту частей у себя больше не надо. Ровно этого не хватало `PWEB-87`.
+  components: {
+    accordion: kitOf("accordion")!,
+    button: kitOf("button")!,
+    surface: kitOf("surface")!,
   },
   admits,
 });
@@ -211,7 +213,28 @@ function passageTree(props: Readonly<Record<string, unknown>> = {}): AssemblyTre
   );
   if (!подпись.ok) throw new Error(подпись.refusal);
 
-  return подпись.tree;
+  // ── СОДЕРЖИМОЕ РЯДОМ С ЧАСТЬЮ СОСТАВНОГО КОМПОНЕНТА (`PWEB-88`) ────────────────────────
+  //
+  // Тот самый случай, на котором `PWEB-83` и был найден: кнопка раздела пускает внутрь и свою
+  // часть-указатель, и текст. До пары поставщика (`PWEB-85`) собрать составной компонент в
+  // пробе было нечем — карту частей пришлось бы писать самим, то есть закреплять догадку. Пара
+  // это сняла: часть достаётся тем же ходом, что корень.
+  let дерево = подпись.tree;
+  const вложить = (узел: Parameters<typeof insertNode>[2], владелец: string): void => {
+    const шаг = insertNode(дерево, registry, узел, владелец);
+    if (!шаг.ok) throw new Error(`${шаг.refusal}: ${шаг.means}`);
+    дерево = шаг.tree;
+  };
+
+  вложить({ id: "раскрывашка", type: "accordion" }, "surface");
+  вложить({ id: "раздел", type: "accordion.item" }, "раскрывашка");
+  вложить({ id: "заголовок", type: "accordion.itemTrigger" }, "раздел");
+  // Подпись кладётся ПЕРВОЙ и остаётся первой после того, как рядом встала часть: именно это и
+  // было невыразимо — не «текст есть», а «текст стоит там, куда его положили».
+  вложить({ id: "название", genus: "text", value: "раздел" }, "заголовок");
+  вложить({ id: "стрелка", type: "accordion.itemIndicator" }, "заголовок");
+
+  return дерево;
 }
 
 describe("дерево → живая разметка → координата", () => {
@@ -260,7 +283,11 @@ describe("содержимое — УЗЕЛ РЯДОМ с соседями, а �
     const корень = поверхность(mount(() => <RenderedTree />));
 
     expect(корень.textContent).toContain("рядом");
-    expect(корень.querySelectorAll("button")).toHaveLength(2);
+    // Считаем ПРЯМЫХ детей и по координате кнопки: у раскрывашки внутри свой `button`, и поиск
+    // по имени тега считал бы её тоже — проба перестала бы говорить про то, про что написана.
+    expect(
+      [...корень.children].filter((узел) => узел.matches('[data-scope="button"]')),
+    ).toHaveLength(2);
   });
 
   it("ПОРЯДОК выразим: подпись стоит МЕЖДУ соседями, куда её и положили", () => {
@@ -279,6 +306,54 @@ describe("содержимое — УЗЕЛ РЯДОМ с соседями, а �
     expect(первая).toBeGreaterThanOrEqual(0);
     expect(подпись).toBeGreaterThan(первая);
     expect(подпись).toBeLessThan(вторая);
+  });
+});
+
+describe("содержимое рядом с ЧАСТЬЮ составного компонента", () => {
+  // Тот самый случай, на котором `PWEB-83` и был найден: паспорт кнопки раздела объявлял и
+  // часть-указатель, и текст, а дерево выражало одно из двух — подпись молча отбрасывалась.
+  //
+  // В проход он вошёл только теперь: до пары поставщика (`PWEB-85`) собрать составной компонент
+  // в пробе было нечем, и `PWEB-87` эту строку честно не добрал.
+
+  /**
+   * Селектор части раскрывашки — СОБРАННЫЙ ИЗ АНАТОМИИ, а не написанный.
+   *
+   * Написать его руками нельзя: в анатомии часть зовётся `itemIndicator`, а в разметку кит
+   * подписывает её `item-indicator`. Проба, написавшая имя сама, ищет то, чего в документе нет,
+   * и отвечает «не нашлось» вместо «не совпало» — оплачено здесь же, на первом прогоне.
+   */
+  function координата(part: "itemTrigger" | "itemIndicator"): string {
+    return Object.entries(PASSPORTS.accordion!.anatomy.build()[part].attrs)
+      .map(([имя, значение]) => `[${имя}="${значение}"]`)
+      .join("");
+  }
+
+  /** Кнопка раздела в живой разметке — по координате из анатомии, а не по имени тега. */
+  function заголовок(host: HTMLElement): HTMLElement {
+    return host.querySelector(координата("itemTrigger"))!;
+  }
+
+  it("доехали ОБА: и подпись, и часть-указатель", () => {
+    // Проверяется вместе, потому что порознь каждое проходило и до починки: выживал ровно один
+    // из двух, и выживал молча.
+    const кнопка = заголовок(mount(() => <RenderedTree />));
+
+    expect(кнопка).toBeTruthy();
+    expect(кнопка.textContent).toContain("раздел");
+    expect(кнопка.querySelector(координата("itemIndicator"))).toBeTruthy();
+  });
+
+  it("ПОРЯДОК относительно части выразим: подпись стоит перед указателем", () => {
+    const дети = [...заголовок(mount(() => <RenderedTree />)).childNodes];
+    const подпись = дети.findIndex((узел) => узел.textContent?.trim() === "раздел");
+    const указатель = дети.findIndex(
+      (узел) => узел instanceof HTMLElement && узел.matches(координата("itemIndicator")),
+    );
+
+    expect(подпись).toBeGreaterThanOrEqual(0);
+    expect(указатель).toBeGreaterThanOrEqual(0);
+    expect(подпись).toBeLessThan(указатель);
   });
 });
 
