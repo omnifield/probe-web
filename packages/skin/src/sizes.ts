@@ -63,6 +63,7 @@ import {
   type DerivedStep,
 } from "@omnifield/probe-web-style";
 
+import { fluidExpression, fluidRefusals, isFluid } from "./fluid.js";
 import type { Skin, SkinVariables } from "./recipe.js";
 import { trace } from "./trace.js";
 
@@ -140,8 +141,17 @@ export function sizeValues(skin: Skin): Map<string, string> {
   const done = trace(`sizeValues(${skin.name})`);
   const values = new Map<string, string>();
 
-  for (const [seed, value] of Object.entries(skin.variables?.dimensions ?? {})) {
-    if (BY_SEED.has(seed) || seed === DENSITY_TOKEN) values.set(seed, value);
+  for (const [seed, declaration] of Object.entries(skin.variables?.dimensions ?? {})) {
+    if (!BY_SEED.has(seed) && seed !== DENSITY_TOKEN) continue;
+
+    // Семя, объявленное ПОЛЮСАМИ, печатается выражением — здесь и только здесь. Ступени этого
+    // не замечают вовсе: они множат семя, а чем оно оказалось, их не касается. Ровно поэтому
+    // текучесть и не ломает ни плотность, ни посадку на сетку — она третий множитель, а не
+    // замена выражения.
+    values.set(
+      seed,
+      isFluid(declaration) ? fluidExpression(declaration) : declaration,
+    );
   }
 
   for (const scale of declaredScales(skin.variables)) {
@@ -168,6 +178,12 @@ export function sizeValues(skin: Skin): Map<string, string> {
 export function sizeRefusals(variables: SkinVariables | undefined): readonly SizeRefusal[] {
   const sown = variables?.dimensions ?? {};
   const refusals: SizeRefusal[] = [];
+
+  for (const [seed, declaration] of Object.entries(sown)) {
+    if (isFluid(declaration)) {
+      for (const bad of fluidRefusals(seed, declaration)) refusals.push(bad);
+    }
+  }
 
   for (const seed of Object.keys(sown)) {
     if (BY_SEED.has(seed) || seed === DENSITY_TOKEN) continue;

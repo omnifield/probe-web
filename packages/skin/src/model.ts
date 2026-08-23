@@ -71,6 +71,12 @@ export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";
 export type { SizeRefusal, SizeSeed } from "./sizes.js";
 export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes.js";
 
+// ТЕКУЧИЙ РАЗМЕР (`PWEB-80`): семя объявляется полюсами, выражение печатает механика. Наружу —
+// потому что спрашивают все: редактор показывает человеку края, хранилище проверяет запись,
+// проба сверяет вычисленное.
+export type { DimensionSeed, FluidPole, FluidRefusal, FluidReport, FluidSeed } from "./fluid.js";
+export { fluidExpression, fluidPoles, fluidRefusals, isFluid } from "./fluid.js";
+
 // ВИД ДЕЛИТСЯ НА ТРИ (`PWEB-78`): палитра, форма, наряд — записи, складываемые ПРИ НАДЕВАНИИ.
 // `Skin` от этого не снят: он стал тем, что сборка производит. Разбор — в `look.ts`.
 export type {

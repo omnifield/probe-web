@@ -4,7 +4,7 @@
 // проверяться. Настоящий вид живёт в эталонном скине (`packages/skin-reference`), и сюда он не
 // едет — здесь механика.
 
-import type { Form, Outfit, Palette } from "../src/model.js";
+import type { Form, LookParts, Outfit, Palette } from "../src/model.js";
 
 /** Ряды без семени: имена приходят из словаря, значения — дело палитры. */
 const РЯДЫ: Readonly<Record<string, string>> = {
@@ -149,4 +149,10 @@ export const наряд: Outfit = {
   palette: "синяя",
   forms: ["кнопка-строгая", "поверхность-простая"],
   overrides: { button: { "radius-md": "0px" } },
+};
+
+/** Части, из которых собираются пробные наряды: ровно то, что отдаст хранилище. */
+export const части: LookParts = {
+  palettes: [синяя, зелёная, неполная, слепая, трёхшкальная],
+  forms: [кнопка, поверхность, кнопкаПлоская, кнопкаЧужая, кнопкаСвоя],
 };

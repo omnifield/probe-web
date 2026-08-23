@@ -19,27 +19,9 @@ import {
   skinGaps,
   skinValues,
   VOCABULARY,
-  type LookParts,
 } from "../src/index.js";
 import { buttonPassport, lookup } from "./passports.js";
-import {
-  зелёная,
-  кнопка,
-  кнопкаПлоская,
-  кнопкаСвоя,
-  кнопкаЧужая,
-  наряд,
-  неполная,
-  поверхность,
-  синяя,
-  слепая,
-  трёхшкальная,
-} from "./looks.js";
-
-const части: LookParts = {
-  palettes: [синяя, зелёная, неполная, слепая, трёхшкальная],
-  forms: [кнопка, поверхность, кнопкаПлоская, кнопкаЧужая, кнопкаСвоя],
-};
+import { кнопка, наряд, синяя, части } from "./looks.js";
 
 /** Объявления `--имя` из текста по селекторам: селектор → имя → значение. */
 function блоки(css: string): Map<string, Map<string, string>> {

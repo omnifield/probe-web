@@ -38,6 +38,7 @@
 // Три места, откуда приходит значение, без объявленного порядка превращают вопрос «почему этот
 // угол квадратный» в неотвечаемый. Порядок проверяется пробой, а не обещанием.
 
+import { fluidPoles, isFluid, type FluidReport } from "./fluid.js";
 import type { Keyframes, Skin, SkinVariables, SlotRecipe } from "./recipe.js";
 import { trace } from "./trace.js";
 import { knownRole, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";
@@ -143,6 +144,14 @@ export interface OutfitReport {
   readonly overrides: number;
   /** Правки по компонентам: кому сколько. Сорок у одного и сорок у сорока — разные болезни. */
   readonly overridesBy: Readonly<Record<string, number>>;
+  /**
+   * ТЕКУЧИЕ СЕМЕНА — вычисленное значение на каждом полюсе (`PWEB-80`).
+   *
+   * Отчёт, а не отказ, и там, где отказывать не по чему: пола у кегля нет, и назначить его самим
+   * значило бы решить за автора, каким должен быть вид. Но одиннадцать пикселей на узком полюсе
+   * автор обязан увидеть ПРИ ЗАПИСИ, а не найти на телефоне.
+   */
+  readonly fluid: readonly FluidReport[];
 }
 
 /** Что вышло из сборки: надеваемый вид и отчёт о том, из чего он сложился. */
@@ -424,6 +433,11 @@ export function assemble(outfit: Outfit, parts: LookParts): Assembled {
     (имя) => parts.forms.find((кандидат) => кандидат.name === имя)!,
   );
 
+  const fluid = Object.entries(palette.dimensions ?? {})
+    .filter(([, declaration]) => isFluid(declaration))
+    .map(([seed, declaration]) => fluidPoles(seed, declaration as never))
+    .filter((отчёт): отчёт is FluidReport => отчёт !== null);
+
   const overridesBy: Record<string, number> = {};
   for (const [component, правки] of Object.entries(outfit.overrides ?? {})) {
     overridesBy[component] = Object.keys(правки).length;
@@ -452,6 +466,7 @@ export function assemble(outfit: Outfit, parts: LookParts): Assembled {
       dressed: forms.map((form) => form.component).toSorted(),
       overrides: Object.values(overridesBy).reduce((сумма, счёт) => сумма + счёт, 0),
       overridesBy,
+      fluid,
     },
   };
 }
