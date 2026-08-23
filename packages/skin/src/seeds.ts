@@ -48,12 +48,15 @@ import {
   tryParseColor,
   type ColorRefusal,
   type ScaleMode,
-} from "@omnifield/probe-web-style/values";
-// Узкий вход, а не корень: корень зоны значений объявляет Solid одноранговым, а трогает его один
-// файл — реактивный контроллер темы. Модель скина отдаётся подпутём без отрисовки, и тянуть
-// реактивность за построением шкалы ей не за что (`PWEB-44`).
+} from "@omnifield/probe-web-style";
+// Корень, а не подпуть. Подпуть `/values` заводился как вход БЕЗ реактивности: корень зоны
+// значений объявлял Solid одноранговым, а модель скина отдаётся без отрисовки и тянуть его за
+// построением шкалы не должна была (`PWEB-44`). Реактивной части там больше нет, Solid зоне не
+// нужен вовсе — и второй двери к одному и тому же коду не держим (`PWEB-57`). Обещание «модель
+// без Solid» при этом не на слове: его держит ребро собранного файла в `test/surface.test.ts`.
 
 import type { ScaleDeclaration, SeededScale, Skin, SkinVariables } from "./recipe.js";
+import { sizeValues } from "./sizes.js";
 import { trace } from "./trace.js";
 
 /** Половина скина. */
@@ -220,5 +223,12 @@ export function skinValues(skin: Skin, half: SkinHalf): Map<string, SkinValue> {
  * @param skin скин целиком
  */
 export function valueNames(skin: Skin): Set<string> {
-  return new Set([...skinValues(skin, "light").keys(), ...skinValues(skin, "dark").keys()]);
+  return new Set([
+    ...skinValues(skin, "light").keys(),
+    ...skinValues(skin, "dark").keys(),
+    // Размерные ступени объявлены скином ровно так же, как цветные, и от режима не зависят:
+    // половина у них одна. Не включи мы их сюда — `var(--space-3)` уезжал бы в изъяны на
+    // каждом посеянном скине, то есть проверка отвергала бы собственный вывод механики.
+    ...sizeValues(skin).keys(),
+  ]);
 }

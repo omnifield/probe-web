@@ -30,26 +30,23 @@ const json = (body: unknown, status = 200): Response =>
   });
 
 /**
- * Поднимает подставную службу и кладёт в неё записи.
+ * Поднимает подставную службу и кладёт в неё скины.
  *
- * Ярлык вида различает роль: эталон — отправная точка для всех, свой скин принадлежит тому, кто
- * его сделал. Служба ролей не понимает и отбирает по ярлыку, не заглядывая внутрь, — проба идёт
- * тем же путём.
+ * Служба отбирает по ярлыку вида, не заглядывая внутрь, — проба идёт тем же путём.
  *
- * @param skins эталоны
- * @param own пользовательские скины
+ * @param skins что должно лежать в хранилище на момент пробы
  */
-export function serveSkins(skins: readonly Skin[] | Skin, own: readonly Skin[] = []): void {
-  const references = Array.isArray(skins) ? skins : [skins];
+export function serveSkins(skins: readonly Skin[] | Skin): void {
+  const list = Array.isArray(skins) ? skins : [skins];
 
   stored.length = 0;
 
-  for (const [index, skin] of [...references, ...own].entries()) {
+  for (const [index, skin] of list.entries()) {
     stored.push({
       id: `rec-${index + 1}`,
       label: skin.name,
       name: skin.name,
-      kind: index < references.length ? "skin-reference" : "skin",
+      kind: "skin",
       state: skin,
     });
   }

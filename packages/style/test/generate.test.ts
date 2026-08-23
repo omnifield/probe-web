@@ -2,10 +2,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { baseCss, themesCss } from "../src/css/generate.js";
+import { baseCss } from "../src/css/generate.js";
 import { WRITTEN_BASE } from "../src/css/written.js";
-import { DERIVED_TOKENS } from "../src/dimension.js";
-import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
 import { readBuilt } from "./helpers/css.js";
 
 // ГЕЙТ ПОРОЖДЕНИЯ ПО ТРЕБОВАНИЮ (`PWEB-20`).
@@ -32,9 +30,8 @@ describe("порождённое совпадает с поставкой", () =
     expect(baseCss()).toBe(readBuilt("base.css"));
   });
 
-  it("дефолтная палитра", () => {
-    expect(themesCss()).toBe(readBuilt("themes.css"));
-  });
+  // Палитры среди артефактов больше нет: надеваемой палитры по умолчанию у зоны не осталось
+  // (`PWEB-50`). Артефакт остался один, и это проверяется отдельно — `pack.test.ts`.
 });
 
 describe("порождение не зависит от прошлой сборки", () => {
@@ -56,14 +53,19 @@ describe("порождение не зависит от прошлой сбор�
     expect(readdirSync(sourceDir)).not.toContain("base.css");
   });
 
-  it("состав выведен из данных зоны — каждая ступень и каждая роль на месте", () => {
-    // Гейт против возврата ручного списка: перечни живут массивами в TS, и порождённое
-    // обязано следовать за ними, а не за текстом, набранным когда-то руками.
+  it("порождение отдаёт РОВНО шапку и ручную часть — побайтово", () => {
+    // Прежде проверялось, что каждая ступень доехала из массивов в TS: гейт против возврата
+    // ручного списка. Списка больше нет вовсе — лист везёт только сброс (`PWEB-66`).
+    //
+    // Обязательство осталось другое: порождение не имеет права ДОБАВИТЬ что-нибудь от себя.
+    // Сверяем без вырезания комментариев, и это не педантизм — замером показано, что версия со
+    // стрипом пропускала возврат печати КОММЕНТАРИЕМ (границы осей уезжали в лист именно так).
+    // Комментарий в чужом файле знанием не является, а место в поставке занимает.
     const css = baseCss();
+    const header = /^\/\*[\s\S]*?\*\/\n\n/.exec(css);
 
-    for (const token of [...DERIVED_TOKENS, ...ROLE_TOKENS, ...LEGACY_TOKENS]) {
-      expect(css, `--${token} не попал в порождённое`).toContain(`--${token}:`);
-    }
+    expect(header, "шапка порождённого файла пропала").not.toBeNull();
+    expect(css.slice(header![0].length)).toBe(`${WRITTEN_BASE.trimEnd()}\n`);
   });
 
   it("сборочный сценарий только пишет на диск — склейки в нём нет", () => {
@@ -76,8 +78,6 @@ describe("порождение не зависит от прошлой сбор�
       "derivedCss",
       "axesCss",
       "layerCss",
-      "rolesCss",
-      "legacyCss",
       "themeModelToCss",
     ]) {
       expect(script, `${piece} зовётся мимо порождения`).not.toContain(piece);
@@ -86,6 +86,5 @@ describe("порождение не зависит от прошлой сбор�
 
   it("порождение повторяемо: два вызова дают один и тот же текст", () => {
     expect(baseCss()).toBe(baseCss());
-    expect(themesCss()).toBe(themesCss());
   });
 });

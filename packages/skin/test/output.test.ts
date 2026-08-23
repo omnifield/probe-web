@@ -26,7 +26,7 @@ import { generateSketchCss, generateSkinCss } from "../src/generate.js";
 import { lookup } from "./passports.js";
 import { nestedEdits, nestedSkin } from "./skins.js";
 
-const skinCss = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
+const skinCss = generateSkinCss(nestedSkin, lookup);
 const sketchCss = generateSketchCss(nestedEdits, lookup);
 
 describe("текст порождения — вложенная форма", () => {
@@ -62,7 +62,7 @@ describe("текст порождения — плоская форма", () => 
 
 describe("устойчивость", () => {
   it("порождение: два вызова подряд дают один и тот же текст", () => {
-    const twice = generateSkinCss(nestedSkin, lookup, { tokens: ["space-3"] });
+    const twice = generateSkinCss(nestedSkin, lookup);
 
     expect(twice).toBe(skinCss);
   });

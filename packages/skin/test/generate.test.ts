@@ -12,11 +12,11 @@ import { generateSketchCss, generateSkinCss, SkinRefused } from "../src/generate
 import { FORCE_ATTRIBUTE, LAYER_ORDER, NODE_ATTRIBUTE, SKETCH_LAYER, SKIN_LAYER } from "../src/marks.js";
 import type { SketchEdit, Skin } from "../src/model.js";
 import { skinRules } from "../src/rules.js";
+import { inLayer } from "./helpers/layers.js";
 import { buttonPassport, lookup } from "./passports.js";
-import { buttonSkin, VOCABULARY } from "./skins.js";
+import { buttonSkin } from "./skins.js";
 
-const vocabulary = { tokens: VOCABULARY };
-const skinCss = generateSkinCss(buttonSkin, lookup, vocabulary);
+const skinCss = generateSkinCss(buttonSkin, lookup);
 
 const edits: readonly SketchEdit[] = [
   {
@@ -29,7 +29,7 @@ const edits: readonly SketchEdit[] = [
     },
   },
 ];
-const sketchCss = generateSketchCss(edits, lookup, vocabulary);
+const sketchCss = generateSketchCss(edits, lookup);
 
 /**
  * Правила текста — с селекторами и телами, как их видит парсер.
@@ -153,7 +153,7 @@ describe("принудительный признак — тот же генер
   it("отдельных правил под предпросмотр не появилось: правил ровно столько, сколько собрано", () => {
     // Если бы принудительный признак приезжал ВТОРЫМ правилом — то есть если бы предпросмотр
     // порождал что-то своё, — правил в тексте оказалось бы больше собранных. Считаем.
-    const built = skinRules(buttonSkin, lookup, vocabulary).rules.length;
+    const built = skinRules(buttonSkin, lookup).rules.length;
     const printed = rulesOf(skinCss).filter((rule) => !rule.selector.startsWith(":root")).length;
 
     expect(printed).toBe(built);
@@ -191,13 +191,18 @@ describe("машинный разрез: генератор отдаёт ТОЛ�
 
 describe("переменные и движения", () => {
   it("светлая половина встаёт на корень, тёмная — на класс режима", () => {
-    const roots = rulesOf(skinCss).filter((rule) => rule.selector.startsWith(":root"));
+    // Отбираем блоки ПАРЫ по её содержимому, а не по позиции: на корне живёт ещё и размерный
+    // набор, и он не половина — режим его не двигает (`PWEB-64`). Отбор по порядку сломался бы
+    // от появления любого соседа рядом, ничего при этом не проверив.
+    const halves = rulesOf(skinCss)
+      .filter(inLayer)
+      .filter((rule) => rule.nodes.some((node) => node.type === "decl" && node.prop === "--skin-ink"));
 
-    expect(roots.map((rule) => rule.selector)).toEqual([":root", ":root.dark, :root .dark"]);
+    expect(halves.map((rule) => rule.selector)).toEqual([":root", ":root.dark, :root .dark"]);
   });
 
   it("имя переменной уезжает с двумя дефисами, как записано в зоне значений", () => {
-    const light = rulesOf(skinCss).find((rule) => rule.selector === ":root")!;
+    const light = rulesOf(skinCss).find((rule) => inLayer(rule) && rule.selector === ":root")!;
 
     expect(light.toString()).toContain("--skin-ink:");
   });

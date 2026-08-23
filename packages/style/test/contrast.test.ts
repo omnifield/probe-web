@@ -9,7 +9,7 @@ import {
   buildChartScale,
   buildScale,
 } from "../src/scale.js";
-import { DEFAULT_SEEDS, SCALE_NAMES } from "../src/tokens.js";
+import { SEEDS } from "./helpers/seeds.js";
 
 // ГЕЙТ КОНТРАСТА — главный тест зоны. Обещание ступени (`kb:PROBEWEB-12`, пункт 4) не
 // «дизайнер посмотрел», а машина посчитала: без него смена бренда молча уводит продукт из
@@ -41,9 +41,9 @@ const checkPromises = (scale: ScaleValues, label: string): void => {
 
 describe("обещания контраста — дефолтная пара", () => {
   for (const mode of MODES) {
-    for (const name of SCALE_NAMES) {
+    for (const name of Object.keys(SEEDS) as (keyof typeof SEEDS)[]) {
       it(`шкала ${name}, режим ${mode}`, () => {
-        checkPromises(buildScale(DEFAULT_SEEDS[name], mode), `${name}/${mode}`);
+        checkPromises(buildScale(SEEDS[name], mode), `${name}/${mode}`);
       });
     }
   }
@@ -71,8 +71,8 @@ describe("категориальные цвета данных", () => {
   // На графике цвет — НОСИТЕЛЬ ИНФОРМАЦИИ, а не оформление: 1.4.11 применяется в полную силу.
   for (const mode of MODES) {
     it(`ряды графика дают 3:1 к фону приложения — режим ${mode}`, () => {
-      const backdrop = buildScale(DEFAULT_SEEDS.neutral, mode);
-      for (const [index, value] of buildChartScale(DEFAULT_SEEDS.brand, mode).entries()) {
+      const backdrop = buildScale(SEEDS.neutral, mode);
+      for (const [index, value] of buildChartScale(SEEDS.brand, mode).entries()) {
         for (const step of ["1", "2"] as const) {
           expect(
             contrastRatio(value, backdrop[step]),
@@ -85,7 +85,7 @@ describe("категориальные цвета данных", () => {
     it(`ряды графика различимы между собой по тону — режим ${mode}`, () => {
       // Один цвет на два ряда читается как один ряд. Тона разведены на 360/5 градусов;
       // проверяем, что генератор их не схлопнул отображением в охват.
-      const hues = buildChartScale(DEFAULT_SEEDS.brand, mode).map(
+      const hues = buildChartScale(SEEDS.brand, mode).map(
         (value) => parseColor(value).h,
       );
       expect(new Set(hues.map((hue) => Math.round(hue))).size).toBe(hues.length);

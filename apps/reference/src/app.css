@@ -1,14 +1,23 @@
-/* Оформление ПОТРЕБИТЕЛЯ. Кит безголовый (`kb:PROBEWEB-4`): ни один примитив не везёт класса
-   по умолчанию, поэтому весь внешний вид страницы живёт здесь — и это не пример стиля, а
-   проверка контракта. Файл цепляется ТОЛЬКО за две вещи:
+/* Оформление ПОТРЕБИТЕЛЯ: раскладка страницы и одежда тех примитивов, у которых ещё нет
+   паспорта. Кит безголовый (`kb:PROBEWEB-4`): ни один примитив не везёт класса по умолчанию,
+   поэтому раскладка живёт здесь. Файл цепляется ТОЛЬКО за две вещи:
 
      • `data-slot` — зацепка, которую примитив ставит ДО спреда пропсов;
-     • токены темы (`var(--primary)`, `var(--radius-md)`) из `@omnifield/probe-web-style`.
+     • ИМЕНА СКИНА (`var(--app-round)`, `var(--app-fade)`) — их объявляет `src/skin.ts`.
 
-   Ни одного селектора по внутренностям kobalte и ни одного литерального цвета. Отсюда и
-   свойство гейта: снимут зацепку в зоне `ui` — страница разъедется целиком, а не «немного
-   поедет»; уедет токен из зоны `style` — свойство станет недействительным и место
-   поломки будет видно глазом. */
+   ЗНАЧЕНИЙ ОБЩЕГО ЛИСТА ЗДЕСЬ НЕТ НИ ОДНОГО (ступень 2 роадмапа). Прежде скругления и
+   длительности приезжали `--radius-md` и `--motion-fast`, то есть мимо скина: покрасить они
+   ничего не могли, но это был второй путь к тому же результату, а человек, собравший вид в
+   редакторе, увидел бы у себя другое. Теперь всякое значение вида приходит скином — снимут
+   скин, и вид уйдёт целиком, а не «немного поедет».
+
+   Цветовых ролей здесь тоже нет ни одной (`PWEB-52`): цвет — решение автора скина, а наш скин
+   его не принимает. Приложение без цвета обязано быть голым по цвету, и голое оно потому, что
+   вкуса ему никто не дал, а не потому, что что-то сломалось. Нативный вид контролов рисует
+   браузер, `currentColor` наследуется от него.
+
+   Свойство гейта от этого не пропало, а переехало: снимут зацепку в зоне `ui` — страница
+   разъедется целиком; сломается порождение скина — уйдёт вид, и место поломки видно глазом. */
 
 .app {
   max-width: 34rem;
@@ -40,9 +49,8 @@
 .app__done {
   margin: 0;
   padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  background-color: var(--accent);
-  color: var(--accent-foreground);
+  border: 1px solid;
+  border-radius: var(--app-round);
 }
 
 /* --- Поле: подпись, ввод, пояснение, ошибка ------------------------------------------- */
@@ -55,48 +63,38 @@
 
 [data-slot="label"] {
   font-size: 0.875rem;
-  color: var(--muted-foreground);
 }
 
 [data-slot="input"],
 [data-slot="textarea"] {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--input);
-  border-radius: var(--radius-md);
-  background-color: var(--background);
-  color: var(--foreground);
+  border-radius: var(--app-round);
   font: inherit;
 }
 
-[data-slot="input"]:focus-visible,
-[data-slot="textarea"]:focus-visible,
-[data-slot="button"]:focus-visible,
-[data-slot="toggle"]:focus-visible,
-[data-slot="select-trigger"]:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Состояния приезжают атрибутами, а не классами: примитив их ставит, CSS читает. */
+/* Состояния приезжают атрибутами, а не классами: примитив их ставит, CSS читает. Разница
+   видна БЕЗ цвета — толщиной рамки: цветом её показать нечем, а показать надо. */
 [data-slot="input"][data-invalid],
 [data-slot="textarea"][data-invalid] {
-  border-color: var(--destructive);
+  border-width: 2px;
 }
 
-[data-slot="field-description"] {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-
+[data-slot="field-description"],
 [data-slot="field-error"] {
   font-size: 0.8125rem;
-  color: var(--destructive);
 }
 
-/* --- Кнопки и переключатель ------------------------------------------------------------ */
+/* --- Переключатель и триггер списка ------------------------------------------------------
+   КНОПКИ ЗДЕСЬ БОЛЬШЕ НЕТ: её вид объявляет РЕЦЕПТ скина (`src/skin.ts`) — она единственный
+   компонент кита с паспортом, то есть единственный, чей вид сегодня выразим рецептом. Двух
+   путей к одному виду не заводим: пока правило висело и здесь, и там, побеждало бы это, а
+   скин молча ничего не значил.
 
-[data-slot="button"],
+   Переключатель и триггер списка паспорта ещё не имеют и скинов не имеют вовсе — их одежда
+   остаётся тут и переедет той же волной, что и паспорта. Вид у них ТОТ ЖЕ, что у кнопки: это
+   не копия ради копии, а то, что рецепт объявит за них, когда сможет. */
+
 [data-slot="toggle"],
 [data-slot="select-trigger"] {
   display: inline-flex;
@@ -104,47 +102,38 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background-color: var(--secondary);
-  color: var(--secondary-foreground);
+  border-radius: var(--app-round);
   font: inherit;
   cursor: pointer;
-  transition: opacity var(--motion-fast) var(--ease-out);
+  transition: opacity var(--app-fade) var(--app-fade-ease);
 }
 
-[data-slot="button"][data-disabled],
-[data-slot="button"]:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
+/* Нажатое состояние переключателя — не цветом: рамка вдавлена внутрь. */
 [data-slot="toggle"][data-pressed] {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  border-color: var(--primary);
+  border-style: inset;
 }
 
 /* Варианты кнопки отправки собраны `createStyle` в `app.tsx` — то есть вторым, JS-путём
    стилизации. Классы здесь именованные (не утилитарные): Tailwind контракт зон не
-   объявляет, а `cn` работает и без него. */
+   объявляет, а `cn` работает и без него.
+
+   У деятельного варианта своего правила НЕТ намеренно: базовый вид кнопки объявляет рецепт, а
+   правило `opacity: 1` отсюда перебивало бы его приглушение у отключённой кнопки. Оформление
+   потребителя живёт ВНЕ слоёв и потому сильнее любого скинового правила — это цена, которую
+   стоит знать: чем меньше оформление говорит о том, что уже сказал скин, тем меньше мест, где
+   они могут разойтись. */
 .app-submit {
   align-self: flex-start;
 }
 
-.app-submit--active {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  border-color: var(--primary);
-}
-
 .app-submit--waiting {
-  background-color: var(--muted);
-  color: var(--muted-foreground);
+  opacity: 0.7;
 }
 
 /* --- Спиннер: кольцо рисует потребитель --------------------------------------------------
-   Примитив даёт только `role="status"` — вращающееся кольцо это CSS, и живёт он тут. */
+   Примитив даёт только `role="status"` — вращающееся кольцо это CSS, и живёт он тут.
+   `currentColor` — не выбор цвета, а отказ от него: кольцо берёт цвет текста, каким бы он
+   ни был у голой страницы. */
 
 [data-slot="spinner"] {
   display: inline-block;
@@ -152,8 +141,8 @@
   height: 1em;
   border: 2px solid currentColor;
   border-top-color: transparent;
-  border-radius: var(--radius-full);
-  animation: app-spin var(--motion-slow) var(--ease-linear) infinite;
+  border-radius: var(--app-round-ring);
+  animation: app-spin var(--app-spin-time) var(--app-spin-ease) infinite;
 }
 
 @keyframes app-spin {
@@ -170,17 +159,19 @@
 
 /* --- Список ------------------------------------------------------------------------------
    `SelectContent` приводит в документ два узла (позиционер floating-ui и панель) — названное
-   отступление от 1-to-1, задокументированное в зоне `ui`. Красим панель, позиционер не
-   трогаем: его геометрию считает kobalte. */
+   отступление от 1-to-1, задокументированное в зоне `ui`. Одеваем панель, позиционер не
+   трогаем: его геометрию считает kobalte.
+
+   Фона у панели нет: он приходил цветовой ролью, а цвет — решение автора скина, которого наш
+   скин не принимает (`PWEB-52`). На голой странице панель
+   ложится поверх содержимого прозрачной — это ВИДНО и это правда: одеть её некому. Подставить
+   сюда свой цвет значило бы отгрузить приложению половину скина второй раз. */
 
 [data-slot="select-content"] {
   min-width: 12rem;
   padding: 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background-color: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--shadow-md);
+  border: 1px solid;
+  border-radius: var(--app-round);
 }
 
 [data-slot="select-listbox"] {
@@ -197,13 +188,13 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--app-round-item);
   cursor: pointer;
 }
 
+/* Подсветка наведённого — подчёркиванием: цвета фона взять неоткуда. */
 [data-slot="select-item"][data-highlighted] {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
+  text-decoration: underline;
 }
 
 [data-slot="separator"] {
@@ -211,5 +202,5 @@
   height: 1px;
   margin: 0;
   border: 0;
-  background-color: var(--border);
+  border-top: 1px solid;
 }

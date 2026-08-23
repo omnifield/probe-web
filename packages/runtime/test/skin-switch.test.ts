@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { applySkin, makeSkinSwitch, type SkinSource } from "../src/index.js";
+import { makeSkinSwitch, type SkinSource } from "../src/index.js";
 
 const STORAGE_KEY = "probe-web:skin";
 
@@ -73,8 +73,8 @@ describe("надевание и снятие", () => {
 
     expect(seen("--radius")).toBe("1.3rem");
     expect(root().getAttribute("data-skin")).toBe("twitter");
-    expect(after).toBe("twitter");
-    expect(skin.worn()).toBe("twitter");
+    expect(after).toEqual({ name: "twitter", mode: "light" });
+    expect(skin.worn()).toEqual({ name: "twitter", mode: "light" });
   });
 
   it("снимает скин — остаётся ГОЛЫЙ КИТ: ни листа, ни опознания, ни значений", async () => {
@@ -163,26 +163,122 @@ describe("механика необязательна", () => {
   });
 });
 
-describe("режим отдельно от скина", () => {
-  it("надевание и снятие скина не трогают тёмную пару", async () => {
-    applySkin({ mode: "dark" });
-    const skin = makeSkinSwitch(givenSource());
+// Режим — ПОЛОВИНА СКИНА, и дверь к нему одна: его называют при надевании. Отдельной ручки
+// нет намеренно — она была бы вторым ответом на вопрос «во что одета страница».
+describe("половина приезжает вместе со скином", () => {
+  it("НАЗВАННАЯ половина ставится", async () => {
+    await makeSkinSwitch(givenSource()).wear("twitter", { mode: "dark" });
 
-    await skin.wear("twitter");
-    expect(root().classList.contains("dark")).toBe(true);
-
-    skin.takeOff();
     expect(root().classList.contains("dark")).toBe(true);
   });
 
-  it("смена режима не трогает надетый скин", async () => {
+  it("названная сильнее запомненной — её называют сейчас, запомненную выбрали когда-то", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter", { mode: "dark" });
+
+    await skin.wear("brutal", { mode: "light" });
+
+    expect(root().classList.contains("dark")).toBe(false);
+    expect(skin.worn()).toEqual({ name: "brutal", mode: "light" });
+  });
+
+  it("не названа — встаёт ЗАПОМНЕННАЯ: выбор человека ждал своей половины", async () => {
+    await makeSkinSwitch(givenSource()).wear("twitter", { mode: "dark" });
+
+    // Следующий заход: документ чист, память та же.
+    document.head.innerHTML = "";
+    root().removeAttribute("data-skin");
+    root().classList.remove("dark");
+
+    await makeSkinSwitch(givenSource()).wear("brutal");
+
+    expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("НЕ НАЗВАНА И НЕ ЗАПОМНЕНА — не ставится ничего: свою половину назовёт сам скин", async () => {
+    // Система говорит тёмный — и это ничего не меняет. Без неё проба была бы пустой: «не
+    // поставили» и «поставили светлую» на документе выглядят одинаково.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("dark"),
+      media: query,
+    }));
+
+    await makeSkinSwitch(givenSource()).wear("twitter");
+
+    expect(root().classList.contains("dark")).toBe(false);
+    expect(root().className).toBe("");
+  });
+
+  it("«не ставится ничего» — это НЕ ТРОГАЕМ: половину, стоящую на странице, не сбрасываем", async () => {
+    // Страница пришла тёмной сама — так одевается статическая страница без механики. Нам её
+    // половину не называли и мы её не помним; значит и мнения о ней у нас нет. Подставь мы
+    // светлую «по умолчанию» — механика молча раздела бы чужой выбор, и на чистом документе
+    // этого было бы не видно: светлая половина и есть отсутствие класса.
+    root().classList.add("dark");
+
+    await makeSkinSwitch(givenSource()).wear("twitter");
+
+    expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("снятие уносит половину вместе со скином — голое состояние целиком голое", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter", { mode: "dark" });
+
+    skin.takeOff();
+
+    expect(root().classList.contains("dark")).toBe(false);
+    expect(root().className).toBe("");
+  });
+
+  it("снятая половина не забыта: следующий скин надевается с ней же", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter", { mode: "dark" });
+    skin.takeOff();
+
+    await skin.wear("brutal");
+
+    expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("половина читается с корня, а не из памяти — одеться могли и без нас", async () => {
     const skin = makeSkinSwitch(givenSource());
     await skin.wear("twitter");
+    root().classList.add("dark");
 
-    applySkin({ mode: "dark" });
+    expect(skin.worn()).toEqual({ name: "twitter", mode: "dark" });
+  });
 
-    expect(skin.worn()).toBe("twitter");
-    expect(seen("--radius")).toBe("1.3rem");
+  // Шестой пункт потока, и он проверяется, а не подразумевается.
+  it("ЧЕЛОВЕК, ВЫБРАВШИЙ СКИН И ПОЛОВИНУ, В СЛЕДУЮЩИЙ ЗАХОД ВИДИТ ИХ ЖЕ", async () => {
+    await makeSkinSwitch(givenSource()).wear("brutal", { mode: "dark" });
+
+    // Перезагрузка: документ пришёл чистым, хранилище — нет.
+    document.head.innerHTML = "";
+    root().removeAttribute("data-skin");
+    root().classList.remove("dark");
+
+    const next = makeSkinSwitch(givenSource());
+
+    expect(await next.restore()).toEqual({ name: "brutal", mode: "dark" });
+    expect(seen("--radius")).toBe("0rem");
+    expect(root().classList.contains("dark")).toBe(true);
+  });
+
+  it("запасная половина от приложения ставится, когда памяти нет — это его выбор", async () => {
+    const skin = makeSkinSwitch(givenSource(), { fallback: { skin: "twitter", mode: "dark" } });
+
+    expect(await skin.restore()).toEqual({ name: "twitter", mode: "dark" });
+  });
+
+  it("запомненная половина сильнее запасной — человек уже выбрал", async () => {
+    await makeSkinSwitch(givenSource()).wear("brutal", { mode: "light" });
+    root().removeAttribute("data-skin");
+    document.head.innerHTML = "";
+
+    const next = makeSkinSwitch(givenSource(), { fallback: { skin: "twitter", mode: "dark" } });
+
+    expect(await next.restore()).toEqual({ name: "brutal", mode: "light" });
   });
 });
 
@@ -195,7 +291,7 @@ describe("память выбора", () => {
     root().removeAttribute("data-skin");
 
     const next = makeSkinSwitch(givenSource());
-    expect(await next.restore()).toBe("brutal");
+    expect(await next.restore()).toEqual({ name: "brutal", mode: "light" });
     expect(seen("--radius")).toBe("0rem");
   });
 
@@ -216,12 +312,12 @@ describe("память выбора", () => {
   });
 
   it("СНЯТЫЙ скин не воскресает: восстановление уважает снятое и умолчания не надевает", async () => {
-    const skin = makeSkinSwitch(givenSource(), { fallback: "twitter" });
+    const skin = makeSkinSwitch(givenSource(), { fallback: { skin: "twitter" } });
     await skin.wear("brutal");
     skin.takeOff();
 
     root().removeAttribute("data-skin");
-    const next = makeSkinSwitch(givenSource(), { fallback: "twitter" });
+    const next = makeSkinSwitch(givenSource(), { fallback: { skin: "twitter" } });
 
     expect(await next.restore()).toBeNull();
     expect(ours()).toHaveLength(0);
@@ -233,10 +329,10 @@ describe("память выбора", () => {
     document.head.innerHTML = "";
 
     const shrunk = makeSkinSwitch(givenSource({ twitter: SKINS.twitter }), {
-      fallback: "twitter",
+      fallback: { skin: "twitter" },
     });
 
-    expect(await shrunk.restore()).toBe("twitter");
+    expect((await shrunk.restore())?.name).toBe("twitter");
   });
 
   it("запомненного нет и умолчание не названо — остаётся голый кит, а не первый из перечня", async () => {
@@ -253,14 +349,15 @@ describe("память выбора", () => {
     expect(localStorage.getItem("их:скин")).toContain("brutal");
   });
 
-  it("память скина и память пресета не стирают друг друга", async () => {
-    applySkin({ preset: "twitter", mode: "dark" });
-    await makeSkinSwitch(givenSource()).wear("brutal");
-    applySkin({ mode: "light" });
+  it("половина, которую не называли, в памяти не трогается", async () => {
+    const skin = makeSkinSwitch(givenSource());
+    await skin.wear("twitter", { mode: "dark" });
+
+    await skin.wear("brutal");
 
     const record = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as Record<string, unknown>;
 
-    expect(record).toEqual({ preset: "twitter", mode: "light", skin: "brutal" });
+    expect(record).toEqual({ skin: "brutal", mode: "dark" });
   });
 
   it("хранилище недоступно — надевание всё равно работает: память это удобство", async () => {

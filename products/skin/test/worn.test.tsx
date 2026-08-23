@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { casesOf, rootPartOf } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
-import { deleteSkin, listSkins, SKIN_SOURCE, StoreDown, StoreRefused } from "../src/skins/index.js";
+import { SKIN_SOURCE, StoreDown } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
 import { FIXTURE } from "./fixtures.js";
 import { dropStore, restoreStore, serveSkins } from "./store-stub.js";
@@ -65,7 +65,7 @@ describe("скин надевается", () => {
     await skin.wear(FIXTURE.name);
 
     expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name);
-    expect(skin.worn()).toBe(FIXTURE.name);
+    expect(skin.worn()?.name).toBe(FIXTURE.name);
   });
 
   it("правило цепляется за узел, который рисует витрина", async () => {
@@ -120,35 +120,6 @@ describe("скин снимается", () => {
 
     expect(node).not.toBeNull();
     expect((node?.textContent ?? "").length).toBeGreaterThan(0);
-  });
-});
-
-describe("эталоны", () => {
-  it("перечень объединяет эталоны и свои, эталоны первыми", async () => {
-    const mine = { ...FIXTURE, name: "моя-проба" };
-    serveSkins([FIXTURE], [mine]);
-
-    const records = await listSkins();
-
-    expect(records.map((item) => item.name)).toEqual([FIXTURE.name, "моя-проба"]);
-    expect(records.map((item) => item.reference)).toEqual([true, false]);
-  });
-
-  it("эталон не удаляется — с него начинают, а не его правят", async () => {
-    serveSkins([FIXTURE]);
-
-    const [reference] = await listSkins();
-
-    await expect(deleteSkin(reference!)).rejects.toBeInstanceOf(StoreRefused);
-  });
-
-  it("свой скин удаляется", async () => {
-    const mine = { ...FIXTURE, name: "моя-проба" };
-    serveSkins([], [mine]);
-
-    const [own] = await listSkins();
-
-    await expect(deleteSkin(own!)).resolves.toBeUndefined();
   });
 });
 

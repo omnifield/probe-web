@@ -1,8 +1,9 @@
 import { configDefaults, defineConfig } from "vitest/config";
 
 // Два проекта, потому что тесты живут в разных мирах:
-//   • dom — механика тем: нужен документ (JSDOM) и браузерная ветка разрешения `solid-js`,
-//     иначе приедет серверная сборка ядра;
+//   • dom — то, что спрашивает ЖИВОЙ документ: каскад, класс на корне, `getComputedStyle`.
+//     Раньше сюда же ходила механика тем и тянула браузерную ветку разрешения `solid-js`;
+//     механики больше нет (`PWEB-56`), и Solid зоне не нужен вовсе;
 //   • node — контракт токенов, инвариант base.css и упаковка: тут работают файловая
 //     система, `pnpm pack`, разрешение по `exports` и прогон `tsc`
 //     в установке потребителя, и браузерные условия им мешают.
@@ -15,13 +16,15 @@ import { configDefaults, defineConfig } from "vitest/config";
 //
 // Теперь список ведётся с той стороны, где он КОРОТКИЙ и меняется редко: миру документа нужны
 // три файла, всё прочее по построению уезжает в node. Новая проба попадает в прогон сама.
-const DOM_TESTS = ["test/theme.test.ts", "test/trace.test.ts", "test/foreign-values.test.ts"];
+// Гейт режима меряет ЖИВЫМ документом: каскад, класс на корне, `getComputedStyle`. Он тут
+// один — остальным пробам зоны документ не нужен, и это следствие того, что зона к документу
+// не прикасается (`PWEB-56`).
+const DOM_TESTS = ["test/mode.test.ts"];
 
 export default defineConfig({
   test: {
     projects: [
       {
-        resolve: { conditions: ["development", "browser"] },
         test: {
           name: "dom",
           environment: "jsdom",

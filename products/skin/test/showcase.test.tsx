@@ -13,7 +13,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
-import { readSkin } from "@omnifield/probe-web-runtime";
 import {
   type ComponentPassport,
   GROUPS,
@@ -125,17 +124,15 @@ describe("случаи", () => {
 });
 
 describe("хедер", () => {
-  it("список скинов — просто список: ролей человек в нём не читает", async () => {
+  it("список скинов — просто список, без ролей и групп", async () => {
     const host = mount(() => <App />);
 
     await vi.waitFor(() => {
       expect(host.querySelectorAll(".head__select option").length).toBeGreaterThan(1);
     });
 
-    // Защита от удаления живёт в хранилище, а не в подписях: человек берёт любой скин и делает
-    // из него свой, и объяснять ему устройство записей в списке незачем.
+    // Ролей у записей нет: человек берёт любой скин и делает из него свой.
     expect(host.querySelectorAll("optgroup")).toHaveLength(0);
-    expect(host.textContent ?? "").not.toContain("эталон");
   });
 
   it("скин выбирается списком, и «снят» — полноправный пункт", async () => {
@@ -174,13 +171,31 @@ describe("хедер", () => {
     );
   });
 
-  it("режим переключается механикой приложения", () => {
+  it("режима без скина не предлагают — переключать нечего", async () => {
+    serveSkins([]);
+
     const host = mount(() => <App />);
-    const [light] = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
 
-    light?.click();
+    await vi.waitFor(() => expect(host.textContent ?? "").toContain("Скинов в службе нет"));
+    expect(host.querySelectorAll(".modes__item")).toHaveLength(0);
+  });
 
-    expect(readSkin().mode).toBe("light");
+  it("со скином половина меняется надеванием того же скина", async () => {
+    const host = mount(() => <App />);
+
+    const dark = await vi.waitFor(() => {
+      const buttons = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
+      expect(buttons).toHaveLength(2);
+      return buttons[1] as HTMLButtonElement;
+    });
+
+    dark.click();
+
+    // Половина принадлежит скину, а не документу: второй ручки под неё нет, и тёмная половина
+    // видна на корне ровно потому, что скин надет именно в ней.
+    await vi.waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(true),
+    );
   });
 });
 

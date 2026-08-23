@@ -1,128 +1,87 @@
-import { createRoot } from "solid-js";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { createThemeController, registerTheme } from "../src/theme.js";
-import { LEGACY_TOKENS, ROLE_TOKENS } from "../src/roles.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
+import * as surface from "../src/index.js";
+import { DERIVED_TOKENS } from "../src/dimension.js";
+import { LAYER_TOKENS } from "../src/layer.js";
 
-// ГЕЙТ ПО СУЩЕСТВУ (`PWEB-3`, п. 2–3).
+// ГЕЙТ ПО СУЩЕСТВУ (`PWEB-3`, п. 2–3): наш набор значений — ОДИН ИЗ поставщиков, а не
+// фундамент. Оформление, собранное из чужих значений, обязано быть законным.
 //
-// Проверка «взял наш токен» отвечает на вопрос о ПРОИСХОЖДЕНИИ значения, а спрашивать надо о
-// его поведении: следует ли значение за режимом и за выбранной палитрой. Разница видна ровно
-// на этой пробе — оформление, собранное из ЧУЖИХ значений, первую проверку не проходит, а
-// вторую проходит. Пока проходит только первая, наш набор значений — фундамент, а не один из
-// поставщиков, и право скина не брать наши значения держится словом.
+// ВОПРОС ТОТ ЖЕ, ОТВЕЧАЕТ НА НЕГО ДРУГОЕ (`PWEB-56`). Раньше гейт показывал это ПОЛОЖИТЕЛЬНО:
+// брал чужие имена, вёз их механикой тем и смотрел, что они следуют за режимом и палитрой. Той
+// механики больше нет — реестр тем и контроллер сняты вместе с предметом.
 //
-// Здесь нет ни одного нашего токена, ни одного нашего инструмента и ни одной строки нашего
-// CSS: `base.css` в этом прогоне не подключён вовсе. Всё, что берётся у нас, — механика тем,
-// то есть способ выбрать палитру и режим, а не сами значения.
+// Пробу можно было бы удалить вслед за ними, и это была бы ошибка: исчез ВЕЗУЩИЙ, а
+// обязательство осталось. Поэтому она отвечает теперь СИЛЬНЕЕ прежнего — не «чужие значения
+// тоже едут», а «зона вообще ничего не кладёт на документ». Фундаментом нельзя быть, не
+// прикоснувшись к документу; а раз прикосновения нет ни одного, право чужого набора держится
+// построением, а не обещанием.
+//
+// Кто теперь кладёт значения на документ — скин: его файл объявляет переменные под своими
+// именами. Наши имена он вправе не знать вовсе.
 
-/** Чужой набор значений: имена придуманы другим поставщиком, состав его собственный. */
-const FOREIGN_LIGHT = { ink: "#111111", paper: "#fdfdfd", rule: "1px" };
-const FOREIGN_DARK = { ink: "#eeeeee", paper: "#0b0b0b", rule: "1px" };
+const SRC = resolve(import.meta.dirname, "..", "src");
 
-/** Второй чужой поставщик — другой состав и другие значения, пересечение только по `ink`. */
-const OTHER_LIGHT = { ink: "#2b3a67", edge: "#c9d4ff" };
+/**
+ * Все `.ts` зоны, рекурсивно, с вырезанными комментариями: правило про КОД, а не про прозу в
+ * доках — иначе гейт спотыкался бы о собственные объяснения.
+ */
+function code(dir = SRC): Array<[name: string, text: string]> {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return code(path);
+    if (!entry.name.endsWith(".ts")) return [];
+    const text = readFileSync(path, "utf8").replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "");
+    return [[path.slice(SRC.length + 1), text] as [string, string]];
+  });
+}
 
-const read = (doc: Document, name: string): string =>
-  doc.defaultView?.getComputedStyle(doc.documentElement).getPropertyValue(name).trim() ?? "";
+describe("зона не прикасается к документу", () => {
+  it("на поверхности нет ни одной функции, которая что-то куда-то ставит", () => {
+    // Перечень ЗАПРЕЩЁННОГО здесь не годится: он устареет на первом же новом имени. Смотрим с
+    // другой стороны — что вообще торчит наружу, и убеждаемся, что ни одно имя не про DOM.
+    const exported = Object.entries(surface).filter(([, value]) => typeof value === "function");
+    const names = exported.map(([name]) => name);
 
-describe("проба честна: взятые имена — чужие", () => {
-  // Без этой проверки проба тихо перестала бы быть про чужие значения: достаточно, чтобы
-  // одно из имён совпало с нашим, и «оформление без наших значений» уже неправда, а прогон
-  // остаётся зелёным.
-  it("ни одно имя из проб не входит в наши перечни", () => {
-    const ours = new Set<string>([
-      ...SCALE_TOKENS,
-      ...THEME_META_TOKENS,
-      ...ROLE_TOKENS,
-      ...LEGACY_TOKENS,
-    ]);
+    expect(names.length, "поверхность пуста — проба смотрит не туда").toBeGreaterThan(5);
+    for (const name of names) {
+      expect(
+        /register|controller|apply|mount|inject|attach|set[A-Z]/.test(name),
+        `${name} похоже на постановщик значений — зона снова трогает документ`,
+      ).toBe(false);
+    }
+  });
 
-    for (const name of [
-      ...Object.keys(FOREIGN_LIGHT),
-      ...Object.keys(FOREIGN_DARK),
-      ...Object.keys(OTHER_LIGHT),
-    ]) {
-      expect(ours.has(name), `${name} — наше имя, проба перестала быть про чужие значения`).toBe(
+  it("ни один исходник зоны не пишет в документ", () => {
+    // Вторая сторона: имя может быть каким угодно, а запись всё равно случится. Спрашиваем сам
+    // код. `getComputedStyle` и чтение здесь не при чём — ищем именно ЗАПИСЬ.
+    const writes = /document\.(head|body|createElement|documentElement)|\.appendChild|\.setAttribute|classList/;
+
+    const guilty = code()
+      .filter(([, text]) => writes.test(text))
+      .map(([name]) => name);
+
+    expect(guilty, "зона пишет в документ — она снова фундамент, а не поставщик").toEqual([]);
+  });
+
+});
+
+describe("наши имена — перечень, а не обязательство", () => {
+  it("зона объявляет имена, но не объявляет, что ими надо пользоваться", () => {
+    // Перечни на поверхности есть и нужны: по ним потребитель узнаёт, какие имена МЫ считаем
+    // ролями. Обязательства в них нет — это словарь, а не анкета, которую обязаны заполнить.
+    // Перечень наших имён — то, что зона объявляет СЕГОДНЯ: производные ступени и слои.
+    // Контракт темы отсюда ушёл вместе со сборщиком тем (`PWEB-66`).
+    const ours = new Set<string>([...DERIVED_TOKENS, ...LAYER_TOKENS]);
+
+    expect(ours.size).toBeGreaterThan(30);
+    // Чужие имена не пересекаются с нашими — значит скин на них законен и по составу тоже.
+    for (const foreign of ["ink", "paper", "rule", "edge", "skin-surface", "skin-brand"]) {
+      expect(ours.has(foreign), `${foreign} — наше имя, пример перестал быть про чужие`).toBe(
         false,
       );
     }
-  });
-});
-
-describe("чужой набор значений едет механикой тем", () => {
-  it("значение следует за РЕЖИМОМ", () => {
-    createRoot((dispose) => {
-      const controller = createThemeController({
-        themes: [{ name: "foreign", light: FOREIGN_LIGHT, dark: FOREIGN_DARK }],
-        initialTheme: "foreign",
-      });
-
-      expect(read(document, "--ink")).toBe("#111111");
-      controller.toggleMode();
-      expect(read(document, "--ink")).toBe("#eeeeee");
-      controller.toggleMode();
-      expect(read(document, "--ink")).toBe("#111111");
-
-      controller.setTheme(undefined);
-      dispose();
-    });
-  });
-
-  it("значение следует за ВЫБРАННОЙ палитрой", () => {
-    createRoot((dispose) => {
-      registerTheme({ name: "foreign", light: FOREIGN_LIGHT, dark: FOREIGN_DARK });
-      registerTheme({ name: "other", light: OTHER_LIGHT });
-
-      const controller = createThemeController({ initialTheme: "foreign" });
-      expect(read(document, "--ink")).toBe("#111111");
-
-      controller.setTheme("other");
-      expect(read(document, "--ink")).toBe("#2b3a67");
-      // Состав у поставщиков разный, и это законно: палитра — товар целиком, а не заполнение
-      // нашей анкеты. Значение, которого во второй палитре нет, просто перестаёт объявляться.
-      expect(read(document, "--paper")).toBe("");
-      expect(read(document, "--edge")).toBe("#c9d4ff");
-
-      controller.setTheme(undefined);
-      dispose();
-    });
-  });
-
-  it("палитра снята — значений нет, и это рабочее состояние, а не поломка", () => {
-    createRoot((dispose) => {
-      const controller = createThemeController({
-        themes: [{ name: "foreign", light: FOREIGN_LIGHT }],
-        initialTheme: "foreign",
-      });
-
-      expect(read(document, "--ink")).toBe("#111111");
-      controller.setTheme(undefined);
-      expect(read(document, "--ink")).toBe("");
-      expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
-
-      dispose();
-    });
-  });
-
-  it("наших токенов на документе нет ни одного — проверка их и не спрашивает", () => {
-    // Оборотная сторона гейта: если бы механика тем везла с собой наш набор, чужая палитра
-    // приезжала бы «поверх нашего», и «без наших значений» было бы неправдой. Тут смотрим
-    // прямо: ни ядро, ни роли на корне не объявлены, а вид при этом работает.
-    createRoot((dispose) => {
-      const controller = createThemeController({
-        themes: [{ name: "foreign", light: FOREIGN_LIGHT }],
-        initialTheme: "foreign",
-      });
-
-      for (const token of [...SCALE_TOKENS.slice(0, 5), ...ROLE_TOKENS.slice(0, 5)]) {
-        expect(read(document, `--${token}`), `--${token} приехал вместе с механикой`).toBe("");
-      }
-      expect(read(document, "--ink")).toBe("#111111");
-
-      controller.setTheme(undefined);
-      dispose();
-    });
   });
 });

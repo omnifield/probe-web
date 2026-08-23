@@ -12,7 +12,7 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as runtime from "../src/index.js";
-import { applySkin, mount } from "../src/index.js";
+import { makeSkinSwitch, mount } from "../src/index.js";
 
 const FLAG = "__PROBE_WEB_RUNTIME_TRACE__";
 
@@ -40,7 +40,7 @@ describe("поверхность", () => {
   // объявления стережёт `surface.test.ts` по собранному `dist/index.d.ts` — там он наш.
   it("наружу торчит ровно названный перечень", () => {
     expect(Object.keys(runtime).sort()).toEqual(
-      ["mount", "applySkin", "readSkin", "restoreSkin", "checkStyleOrder", "makeSkinSwitch"].sort(),
+      ["mount", "checkStyleOrder", "makeSkinSwitch"].sort(),
     );
   });
 });
@@ -164,7 +164,7 @@ describe("механика скина и живое дерево", () => {
   // Единственное место, где механика встречается с настоящим Solid-приложением. Оба
   // утверждения — про ГРАНИЦУ механики, и оба названы в `kb:PROBEWEB-13` главным условием.
 
-  it("смена пресета не перемонтирует поддерево (инвариант 9)", () => {
+  it("смена скина не перемонтирует поддерево (инвариант 9)", async () => {
     givenRoot();
     let disposed = 0;
 
@@ -179,14 +179,15 @@ describe("механика скина и живое дерево", () => {
     const node = document.querySelector('[data-testid="panel"]');
     expect(node).not.toBeNull();
 
-    applySkin({ preset: "twitter", mode: "dark" });
-    applySkin({ preset: "dense" });
+    const skin = makeSkinSwitch({ names: () => ["twitter", "dense"], css: () => ":root {}" });
+    await skin.wear("twitter", { mode: "dark" });
+    await skin.wear("dense");
 
     // Тот же САМЫЙ узел, а не такой же: пересозданное поддерево сломало бы открытые панели,
-    // фокус и ввод ради того, что делается сменой атрибута на корне.
+    // фокус и ввод ради того, что делается листом стилей и значениями на корне.
     expect(document.querySelector('[data-testid="panel"]')).toBe(node);
     expect(disposed).toBe(0);
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dense");
+    expect(document.documentElement.getAttribute("data-skin")).toBe("dense");
   });
 
   it("приложение, НЕ позвавшее механику, поднимается и работает как раньше", () => {

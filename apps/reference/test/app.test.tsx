@@ -114,7 +114,9 @@ describe("отправка", () => {
     const button = one<HTMLButtonElement>(host, '[data-slot="button"]');
     button.click();
 
-    expect(taken).toEqual([{ mail: "me@example.com", city: null, comment: "срочно" }]);
+    expect(taken).toEqual([
+      { mail: "me@example.com", city: null, comment: "срочно", urgent: false },
+    ]);
     expect(button.getAttribute("aria-busy")).toBe("true");
     expect(button.disabled).toBe(true);
     expect(one(host, '[data-slot="spinner"]').getAttribute("role")).toBe("status");
@@ -141,24 +143,42 @@ describe("отправка", () => {
   });
 });
 
-describe("тема — механика зоны `style` под кнопкой зоны `ui`", () => {
-  it("переключает режим на документе и объявляет своё состояние атрибутом", () => {
-    const host = mount(() => <App />);
+describe("переключатель — состояние приложения под кнопкой зоны `ui`", () => {
+  // Прежде этот блок стерёг переключение РЕЖИМА документа. Договорённости, которую он
+  // стерёг, больше нет: режим — половина скина (`PWEB-52`), скина у эталона нет, и красноты
+  // по несуществующему обещанию здесь быть не должно. Шов остался тот же — нажатое состояние
+  // объявляется атрибутом, а не классом, — и стережётся на признаке, который что-то значит.
+
+  it("объявляет нажатое состояние атрибутом и доносит его до заявки", async () => {
+    const { send, taken, finish } = controlledSend();
+    const host = mount(() => <App send={send} />);
     const toggle = one<HTMLButtonElement>(host, '[data-slot="toggle"]');
 
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(toggle.hasAttribute("data-pressed")).toBe(false);
+    expect(toggle.textContent).toBe("Обычно");
 
     toggle.click();
 
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(toggle.hasAttribute("data-pressed")).toBe(true);
-    expect(toggle.textContent).toBe("Тёмная");
+    expect(toggle.textContent).toBe("Срочно");
 
-    toggle.click();
+    type(one<HTMLInputElement>(host, '[data-slot="input"]'), "me@example.com");
+    one<HTMLButtonElement>(host, '[data-slot="button"]').click();
+    finish();
+    await Promise.resolve();
+
+    expect(taken[0]?.urgent).toBe(true);
+  });
+
+  it("режим документа не трогает НИКТО — страница голая, ставить его нечем", () => {
+    // Негатив по существу: цвет приезжает скином, скина здесь нет. Появится на документе
+    // класс режима или имя палитры — значит приложение снова одевает себя само, мимо скина.
+    const host = mount(() => <App />);
+
+    one<HTMLButtonElement>(host, '[data-slot="toggle"]').click();
 
     expect(document.documentElement.classList.contains("dark")).toBe(false);
-    expect(toggle.textContent).toBe("Светлая");
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
 });
 

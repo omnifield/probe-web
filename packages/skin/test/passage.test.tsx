@@ -327,7 +327,9 @@ describe("надет → снят: проход целиком и повторя
 
     await skin.wear(passageSkin.name, { remember: false });
 
-    expect(skin.worn()).toBe(passageSkin.name);
+    // Ответ надевания — во что одета страница целиком: имя И половина. Спрашиваем имя: предмет
+    // прохода — «скин надет и виден», а половина у него своя проба, в шве с рантаймом.
+    expect(skin.worn()?.name).toBe(passageSkin.name);
     expect(fill(first!)).not.toBe(BARE);
     expect(getComputedStyle(first!).display).toBe("inline-flex");
 

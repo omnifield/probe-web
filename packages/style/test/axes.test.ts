@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { AXES, axesCss, axisOf, type AxisBound } from "../src/axes.js";
+import { SIZE_SEEDS } from "./helpers/seeds.js";
+
+import { AXES, axisOf, type AxisBound } from "../src/axes.js";
 import {
   DENSITY_CEILING,
   DENSITY_FLOOR,
@@ -98,8 +100,8 @@ describe("оси вида и их границы", () => {
 
     // Границы не складываются, а перемножаются: на нижней плотности порог для семени равен
     // ровно нынешнему семени, то есть запаса нет.
-    expect(Number.parseFloat(control.fallback) * factor * DENSITY_FLOOR).toBeCloseTo(minRem, 10);
-    expect(floor).toBeLessThan(Number.parseFloat(control.fallback));
+    expect(Number.parseFloat(SIZE_SEEDS[control.seed]!) * factor * DENSITY_FLOOR).toBeCloseTo(minRem, 10);
+    expect(floor).toBeLessThan(Number.parseFloat(SIZE_SEEDS[control.seed]!));
   });
 
   it("единица оси совпадает с единицей семени шкалы", () => {
@@ -110,21 +112,14 @@ describe("оси вида и их границы", () => {
         expect(axis.unit, `${axis.token} — не шкала, значит множитель`).toBe("множитель");
         continue;
       }
-      const unit = /[\d.]+([a-z%]*)$/.exec(scale.fallback)?.[1];
+      const unit = /[\d.]+([a-z%]*)$/.exec(SIZE_SEEDS[scale.seed]!)?.[1];
       expect(axis.unit, `единица ${axis.token}`).toBe(unit);
     }
   });
 
-  it("границы уезжают в поставку — тем же способом, что и границы плотности", () => {
-    // Семена задаёт тот, кто пишет ТЕМУ, а тему пишут в CSS. Отправить его за границами в
-    // TS-модуль — это отправить его никуда: он подставит свои, что уже однажды и случилось.
-    const css = axesCss();
-    for (const axis of AXES) expect(css, `ось --${axis.token}`).toContain(`--${axis.token}`);
-    expect(css).toContain("НЕ требования");
-    expect(css).toContain("НЕПРЕРЫВНЫ");
-    // Блок объявляет ЗНАНИЕ, а не ось: ни одного токена он не заводит.
-    expect(css).not.toMatch(/^\s*--[\w-]+:/m);
-  });
+  // Проба «границы уезжают комментарием в базовый слой» снята вместе с печатью (`PWEB-66`):
+  // комментарий в чужом файле знанием не является — его не прочтёт машина и не найдёт тот, кто
+  // строит ползунок. Знание живёт данными и проверяется выше.
 
   it("диапазон непрерывен — «правильных» ступеней у базы нет ни у одной оси", () => {
     // Вопрос потребителя был прямым: между полом и потолком диапазон непрерывный или у базы

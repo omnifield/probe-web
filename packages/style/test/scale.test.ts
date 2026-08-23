@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { contrastRatio } from "../src/color/contrast.js";
 import { parseColor } from "../src/color/parse.js";
+import { SEEDS } from "./helpers/seeds.js";
 import {
   CONTRAST_PROMISES,
   NO_PROMISE,
@@ -10,13 +11,6 @@ import {
   type ScaleKey,
   buildScale,
 } from "../src/scale.js";
-import { LEGACY_ALIASES, ROLES, ROLE_TOKENS, legacyCss, rolesCss } from "../src/roles.js";
-import {
-  DEFAULT_SEEDS,
-  SCALE_TOKENS,
-  createTheme,
-  type ThemeTokens,
-} from "../src/tokens.js";
 
 // Тесты МОДЕЛИ: что ступень значит и что от неё нельзя отнять. Контраст проверяется отдельно
 // (`contrast.test.ts`) — здесь всё остальное, ради чего модель и брали.
@@ -27,7 +21,7 @@ const ALL_KEYS: ScaleKey[] = [...SCALE_STEPS.map((step) => `${step}` as ScaleKey
 const EVERY_STEP: string[] = [...ALL_KEYS, ...SCALE_STEPS.map((step) => `a${step}`)];
 
 describe("модель ступеней", () => {
-  const scale = buildScale(DEFAULT_SEEDS.brand, "light");
+  const scale = buildScale(SEEDS.brand, "light");
 
   it("двенадцать ступеней и подпись на сплошной — ни одной пропущенной", () => {
     expect(Object.keys(scale).sort()).toEqual([...ALL_KEYS].sort());
@@ -85,8 +79,8 @@ describe("модель ступеней", () => {
 });
 
 describe("тёмная шкала — СВОЯ, а не перевёрнутая светлая", () => {
-  const light = buildScale(DEFAULT_SEEDS.neutral, "light");
-  const dark = buildScale(DEFAULT_SEEDS.neutral, "dark");
+  const light = buildScale(SEEDS.neutral, "light");
+  const dark = buildScale(SEEDS.neutral, "dark");
 
   it("ступень тёмной шкалы не равна зеркальной ступени светлой", () => {
     // Инверсия ломает назначение: фон элемента становится текстом (`kb:PROBEWEB-12`, п.1).
@@ -117,67 +111,10 @@ describe("тёмная шкала — СВОЯ, а не перевёрнутая
   });
 });
 
-describe("смена бренда — ОДНО значение", () => {
-  const before = createTheme({ name: "before" });
-  const after = createTheme({ name: "after", brand: "#0f6fde" });
-
-  const changed = (a: ThemeTokens, b: ThemeTokens, prefix: string): string[] =>
-    SCALE_TOKENS.filter((token) => token.startsWith(prefix) && a[token] !== b[token]);
-
-  it("перекрашивает шкалу бренда целиком — и сплошной ряд, и альфа-ряд", () => {
-    // 12 сплошных + 12 альфа + подпись на сплошном.
-    expect(changed(before.light, after.light, "brand-").length).toBe(25);
-    expect(changed(before.dark!, after.dark!, "brand-").length).toBe(25);
-  });
-
-  it("не трогает шкалы, которых не касались", () => {
-    expect(changed(before.light, after.light, "neutral-")).toEqual([]);
-    expect(changed(before.light, after.light, "danger-")).toEqual([]);
-  });
-
-  it("не трогает РОЛИ — они ссылаются на ступень, а не хранят цвет", () => {
-    // Ради этого разделение и вводилось: имена, за которые цепляется потребитель, переживают
-    // смену бренда.
-    expect(rolesCss()).toBe(rolesCss());
-    for (const token of ROLE_TOKENS) {
-      expect(Object.keys(after.light)).not.toContain(token);
-    }
-  });
-});
-
-describe("семантический слой", () => {
-  it("каждая роль ссылается на СУЩЕСТВУЮЩИЙ токен шкалы", () => {
-    for (const role of ROLES) {
-      expect(SCALE_TOKENS, `роль --${role.name}`).toContain(role.token);
-    }
-  });
-
-  it("у каждой роли объявлено назначение, и имя не начинается с номера ступени", () => {
-    for (const role of ROLES) {
-      expect(role.purpose, `роль --${role.name}`).toBeTruthy();
-      expect(role.name).not.toMatch(/-\d+$/);
-    }
-  });
-
-  it("роли не хранят цвет — только ссылку на ступень", () => {
-    const css = rolesCss();
-    expect(css.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/oklch\(|#[0-9a-f]{3,8}\b/i);
-    for (const role of ROLES) {
-      expect(css).toContain(`--${role.name}: var(--${role.token});`);
-    }
-  });
-
-  it("прежний плоский набор выражен через роли, а не оставлен значениями", () => {
-    const css = legacyCss();
-    for (const alias of LEGACY_ALIASES) {
-      expect(ROLE_TOKENS, `псевдоним --${alias.name}`).toContain(alias.role);
-      expect(css).toContain(`--${alias.name}: var(--${alias.role});`);
-    }
-  });
-
-  it("устаревшее имя не занимает имя роли — иначе одно объявление затирало бы другое", () => {
-    for (const alias of LEGACY_ALIASES) {
-      expect(ROLE_TOKENS).not.toContain(alias.name);
-    }
-  });
-});
+// РАЗДЕЛ «СМЕНА БРЕНДА — ОДНО ЗНАЧЕНИЕ» СНЯТ (`PWEB-66`, вторым заходом). Он стоял на
+// `createTheme` — сборщике ТЕМЫ, а темы как единицы больше нет: единицей стал скин, и
+// пересевает он себя сам, вызывая `buildScale` напрямую.
+//
+// Обязательство при этом не потерялось и не ослабло: «поменял семя — поменялась вся половина»
+// проверяется там, где это теперь и происходит, — в `packages/skin` на его собственных семенах.
+// Здесь остаётся то, что он зовёт: построение половины из одного значения, и оно проверено выше.

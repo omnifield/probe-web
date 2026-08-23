@@ -10,13 +10,12 @@ import type { SkinMode } from "./index.js";
  * Запомненное — ПО ПОЛЯМ, и отсутствие поля значимо.
  *
  * `skin: null` — «человек снял скин», а `skin` отсутствует — «про скин ничего не записано».
- * Разница несущая: восстановление обязано уважать снятое и не надевать взамен него умолчание
+ * Разница несущая: восстановление обязано уважать снятое и не надевать взамен него запасное
  * приложения, иначе снять скин между заходами оказалось бы невозможно.
  */
 export interface Remembered {
-  preset?: string | null;
-  mode?: SkinMode;
   skin?: string | null;
+  mode?: SkinMode;
 }
 
 /**
@@ -72,10 +71,8 @@ export function recall(key: string): Remembered | null {
   }
   if (typeof parsed !== "object" || parsed === null) return null;
 
-  const record = parsed as { preset?: unknown; mode?: unknown; skin?: unknown };
-  const kept: Remembered = {
-    preset: typeof record.preset === "string" && record.preset !== "" ? record.preset : null,
-  };
+  const record = parsed as { mode?: unknown; skin?: unknown };
+  const kept: Remembered = {};
 
   const mode = asMode(record.mode);
   if (mode !== null) kept.mode = mode;

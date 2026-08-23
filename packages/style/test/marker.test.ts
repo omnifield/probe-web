@@ -1,10 +1,9 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { BASE_MARKER } from "../src/marker.js";
-import { DEFAULT_THEME_MODEL, themeModelToCss } from "../src/model.js";
-import { DEFAULT_PALETTE, paletteSelector } from "../src/palette.js";
-import { SCALE_TOKENS, THEME_META_TOKENS } from "../src/tokens.js";
-import { readBuilt, rules, unthemedRules } from "./helpers/css.js";
+import { readBuilt, rules } from "./helpers/css.js";
 
 // ГЕЙТ МАРКЕРА ПРИЕЗДА БАЗЫ (`tasker:PROBEWEB-78`, контракт — `kb:PROBEWEB-13`).
 //
@@ -15,90 +14,114 @@ import { readBuilt, rules, unthemedRules } from "./helpers/css.js";
 //
 // Цена ошибки здесь несимметрична: имя уезжает в скелет, а тот кладётся потребителю
 // `placed-once` и не обновляется никогда.
+//
+// МАРКЕР ПЕРЕЕХАЛ НА СБРОС (`PWEB-66`): кастом-свойств в листе не осталось ни одного, и
+// предъявлять приезд стало нечем, кроме самого сброса.
+//
+// ПРОБ СТАЛО МЕНЬШЕ, И ЭТО НЕ ОСЛАБЛЕНИЕ. Четыре из них спрашивали про ПАЛИТРУ: не объявлен ли
+// маркер ею, виден ли он документу без неё, не перекрывает ли она его. Палитры не существует —
+// сборщик тем снят вместе с предметом, и вопросы исчезли вместе со своей второй стороной, а не
+// были отпущены.
 
-const name = BASE_MARKER.slice(2);
+const SRC = resolve(import.meta.dirname, "..", "src");
+const name = BASE_MARKER.property;
 const base = readBuilt("base.css");
-const themes = readBuilt("themes.css");
 
 describe("BASE_MARKER", () => {
-  it("это готовое кастом-свойство: чужая проверка отказывает на имени без `--`", () => {
-    // `checkStyleOrder()` (`runtime`) ждёт имя с двумя дефисами и на другом бросает сразу:
-    // проверка, которая НИКОГДА не найдёт маркер, кричала бы на исправном приложении.
-    expect(BASE_MARKER.startsWith("--")).toBe(true);
-    expect(name.length).toBeGreaterThan(0);
+  it("это ПАРА: свойство и ожидаемое значение, взять одно без другого нельзя", () => {
+    // Условие формы. Свойство без значения — проверка, которая врёт зелёным: `box-sizing` есть
+    // у каждого элемента всегда. Две константы рядом дали бы потребителю выбрать имя и забыть
+    // значение, поэтому экспорт ОДИН и он неделим.
+    expect(BASE_MARKER.property, "у маркера нет свойства").toBeTruthy();
+    expect(BASE_MARKER.value, "у маркера нет ожидаемого значения").toBeTruthy();
+    expect(Object.isFrozen(BASE_MARKER), "пару можно разобрать на месте").toBe(true);
+
+    // Кастом-свойством маркер быть больше не может: их в листе не осталось ни одного.
+    expect(name.startsWith("--"), "маркер снова кастом-свойство — носителя такого в листе нет")
+      .toBe(false);
+  });
+
+  it("печатается ИМЕНЕМ СВОЙСТВА — так его ищет эталон в тексте листа", () => {
+    // Проба стоит здесь, а не в чужой зоне, потому что форма печати — наше обещание. Эталон
+    // подставляет маркер в строку и ищет подстроку в собранном CSS; сломай мы печать —
+    // покраснеет он, а причина будет тут.
+    expect(`${BASE_MARKER}`).toBe(BASE_MARKER.property);
+    expect(readBuilt("base.css")).toContain(`${BASE_MARKER}:`);
   });
 
   it("объявлен собранным `base.css` — иначе он не отвечает на свой вопрос", () => {
-    const declared = rules(base).some((rule) => rule.declarations.has(name));
-    expect(declared, `--${name} не объявлен базовым слоем`).toBe(true);
+    const declared = rules(base).some((rule) => rule.plain.has(name));
+    expect(declared, `${name} не объявлен базовым слоем`).toBe(true);
   });
 
-  it("НЕ входит в контракт темы — палитра не вправе его объявить", () => {
-    // Главное свойство, и держится оно контрактом, а не тем, что сегодня в файле его нет:
-    // токен вне контракта темы не может приехать ни с одной палитрой — ни с нашей, ни с
-    // чужой. Уехав в палитру, маркер стёр бы разницу между «базы нет» и «палитра не
-    // выбрана», а `runtime` различает ровно эти два состояния.
-    expect([...SCALE_TOKENS, ...THEME_META_TOKENS]).not.toContain(name);
-  });
-
-  it("не объявлен ни поставляемой палитрой, ни любой другой из того же генератора", () => {
-    // Вторая сторона того же: контракт контрактом, а в файл смотрим отдельно — палитра
-    // рождается генератором, и проверять надо то, что он выдаёт, а не то, что мы о нём
-    // думаем. Берём и дефолтную палитру из поставки, и произвольную с мета и правками.
-    const custom = themeModelToCss({
-      ...DEFAULT_THEME_MODEL,
-      id: "ocean",
-      meta: { radius: "1.3rem" },
-      darkOverrides: { "neutral-1": "oklch(0.205 0.008 248)" },
-    });
-
-    for (const [what, css] of [
-      ["поставка", themes],
-      ["произвольная палитра", custom],
-    ] as const) {
-      const painted = rules(css).filter((rule) => rule.declarations.has(name));
-      expect(painted.map((rule) => rule.selector), `маркер объявлен палитрой (${what})`).toEqual(
-        [],
-      );
-    }
-  });
-
-  it("находится на документе БЕЗ палитры — иначе `no-skin` не отличить от `missing-base`", () => {
-    // После `kb:PROBEWEB-18` документ без `data-theme` — законное состояние: красить нечему,
-    // но база приехала. Маркер обязан находиться именно там, иначе механика скажет «порядок
-    // нарушен» приложению, которое всего лишь не выбрало пресет.
-    const declared = unthemedRules(base, themes).some((rule) => rule.declarations.has(name));
-    expect(declared, `--${name} не виден документу без палитры`).toBe(true);
-  });
-
-  it("его значение не зависит от палитры: ни одного `var()` внутри", () => {
-    // Токен, посчитанный из семени, разрешился бы через фолбэк и годился бы тоже. Но маркер
-    // с `var()` отвечает сразу на два вопроса, и разбираться, какой из них дал пустую
-    // строку, придётся в чужой зоне.
-    const values = unthemedRules(base, themes)
-      .map((rule) => rule.declarations.get(name))
+  it("значение из пары — то самое, что стоит в листе", () => {
+    // Второй копии значения в зоне нет: и лист, и маркер печатаются из одной записи сброса.
+    // Разъедься они — маркер сравнивал бы документ с тем, чего мы не объявляли.
+    const values = rules(base)
+      .map((rule) => rule.plain.get(name))
       .filter((value): value is string => value !== undefined);
 
     expect(values.length).toBeGreaterThan(0);
-    for (const value of values) expect(value, `значение --${name} зависит от палитры`).not.toContain("var(");
+    for (const value of values) expect(value).toBe(BASE_MARKER.value);
+  });
+
+  it("ожидаемое значение ОТЛИЧАЕТСЯ от умолчания браузера", () => {
+    // Иначе проверка истинна всегда: свойство есть у каждого элемента, и непустой ответ
+    // ничего не доказывает. Умолчание `box-sizing` — `content-box`, и разницу видно.
+    expect(BASE_MARKER.value).not.toBe("content-box");
+  });
+
+
+
+
+  it("его значение — литерал: ни одного `var()`", () => {
+    // Маркер с `var()` отвечал бы сразу на два вопроса, и разбираться, какой из них дал пустую
+    // строку, пришлось бы в чужой зоне.
+    const values = rules(base)
+      .map((rule) => rule.plain.get(name))
+      .filter((value): value is string => value !== undefined);
+
+    expect(values.length).toBeGreaterThan(0);
+    for (const value of values) {
+      expect(value, `значение ${name} зависит от палитры`).not.toContain("var(");
+    }
   });
 
   it("объявлен безусловно — браузер, не поддержавший условие, тоже его видит", () => {
     // Маркер под `@supports` означал бы, что «база не приехала» слышит тот, у кого база как
     // раз приехала, — просто движок постарше.
     const unconditional = rules(base).filter(
-      (rule) => rule.declarations.has(name) && !rule.selector.startsWith("@"),
+      (rule) => rule.plain.has(name) && !rule.selector.startsWith("@"),
     );
 
-    expect(unconditional.length, `--${name} объявлен только под условием`).toBeGreaterThan(0);
+    expect(unconditional.length, `${name} объявлен только под условием`).toBeGreaterThan(0);
   });
 
-  it("палитра поверх базы маркер НЕ перекрывает — проверено на обоих селекторах палитры", () => {
-    for (const mode of ["light", "dark"] as const) {
-      const rule = rules(themes).find(
-        (item) => item.selector === paletteSelector(DEFAULT_PALETTE, mode),
-      );
-      expect(rule?.declarations.has(name), `палитра (${mode}) перебивает маркер`).toBe(false);
-    }
+  it("второй копии значения в зоне нет — и лист, и маркер печатаются из одной записи", () => {
+    // Условие задачи, и держится оно обходом исходников, а не обещанием. Значение, выписанное
+    // где-нибудь ещё литералом, разъедется с записью сброса молча: лист останется прежним, а
+    // маркер начнёт сравнивать документ с тем, чего мы не объявляли.
+    //
+    // Комментарии вырезаны: объяснить решение, не назвав значения, нельзя, и объяснение не
+    // должно само себя красить.
+    const sources = readdirSync(SRC, { recursive: true, encoding: "utf8" })
+      .filter((name) => typeof name === "string" && name.endsWith(".ts"))
+      .map((name) => [
+        name,
+        readFileSync(resolve(SRC, name as string), "utf8").replace(
+          /\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+          "",
+        ),
+      ] as const);
+
+    // Считаем ВХОЖДЕНИЯ, а не файлы: замером показано, что вторая копия заводится ровно там
+    // же, где первая, — в шаблоне листа рядом с записью (`${RESET_PROOF.property}: border-box`).
+    // Проверка по файлам такую копию пропускала.
+    const found = sources.flatMap(([name, code]) =>
+      [...code.matchAll(new RegExp(BASE_MARKER.value, "g"))].map(() => name),
+    );
+
+    expect(found, "значение сброса записано больше чем один раз").toEqual(["css/written.ts"]);
   });
+
 });

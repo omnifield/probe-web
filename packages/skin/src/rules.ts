@@ -56,6 +56,7 @@ import type {
   StyleObject,
 } from "./recipe.js";
 import { seedRefusals, valueNames } from "./seeds.js";
+import { sizeRefusals } from "./sizes.js";
 import { note, trace } from "./trace.js";
 
 /**
@@ -71,6 +72,7 @@ import { note, trace } from "./trace.js";
  *  • `variant-unaddressable` — ось вариаций выражена не атрибутом: имя в разметку не попадёт;
  *  • `unsafe-name`         — имя не годится внутрь селектора;
  *  • `bad-seed`            — семя шкалы не разбирается как цвет: лестницу из него не построить;
+ *  • `bad-size`            — размерный набор не сходится: имени шкалы нет либо плотность не названа;
  *  • `unknown-value`       — ссылка на значение, которого нет в словаре, и без запасного;
  *  • `empty-value`         — значение пусто: правило было бы мёртвым;
  *  • `free-selector`       — вложенный ключ, не являющийся ни псевдоэлементом, ни at-правилом.
@@ -85,6 +87,7 @@ export type SkinFlawName =
   | "variant-unaddressable"
   | "unsafe-name"
   | "bad-seed"
+  | "bad-size"
   | "unknown-value"
   | "empty-value"
   | "free-selector";
@@ -711,6 +714,12 @@ export function skinRules(
       `${bad.means}. Из такого семени лестница не строится, и ступени шкалы «${bad.scale}» ` +
         "объявленными не считаются",
     );
+  }
+
+  // Размерный набор — тот же род изъяна и та же причина назвать его ПЕРВЫМ: следом за
+  // непосеянной шкалой в перечень посыплются ссылки на её ступени.
+  for (const bad of sizeRefusals(skin.variables)) {
+    flaws.add("bad-size", `variables.dimensions.${bad.seed}`, bad.means);
   }
 
   // Переменные — половина скина, и значение в них такое же значение: ссылка на несуществующее

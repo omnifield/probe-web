@@ -2,10 +2,18 @@
 // Читаем ровно те файлы, которые уедут в тарбол, иначе проба подтверждала бы фикстуру.
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Корень пакета обвеса. */
-export const ROOT = fileURLToPath(new URL("..", import.meta.url));
+/**
+ * Корень пакета обвеса.
+ *
+ * Путь собирается `node:path`, а не `new URL(…, import.meta.url)`: под документным движком
+ * глобальный `URL` — движковый, файловую схему он не разбирает, и проба падала бы на разборе
+ * собственного адреса. `fileURLToPath` берёт строку и парсит её сам, поэтому работает в обоих
+ * прогонах одинаково.
+ */
+export const ROOT = `${resolve(fileURLToPath(import.meta.url), "../..")}/`;
 
 export interface SettingSpec {
   readonly title: string;
@@ -36,9 +44,7 @@ export interface Manifest {
   readonly baser: Declaration;
 }
 
-export const manifest = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
-) as Manifest;
+export const manifest = JSON.parse(readFileSync(`${ROOT}package.json`, "utf-8")) as Manifest;
 
 export const declaration = manifest.baser;
 

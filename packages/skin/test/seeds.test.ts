@@ -4,7 +4,7 @@
 // семя — поменялся весь вид, обе половины, а правила остались как были. Проверяется сменой
 // семени, а не рассуждением.
 
-import { CONTRAST_PROMISES, contrastRatio } from "@omnifield/probe-web-style/values";
+import { CONTRAST_PROMISES, contrastRatio } from "@omnifield/probe-web-style";
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 

@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 //   • mount — браузерный: JSDOM + JSX-трансформ + условия разрешения `development`/`browser`.
 //     Без условий `solid-js/web` отдаёт СЕРВЕРНУЮ сборку и `render()` падает
 //     «Client-only API called on the server side» (норма доки, фонд `solid-docs-testing`).
-//   • skin — механика подключения скина: тот же JSDOM, но БЕЗ Solid и без JSX-трансформа.
+//   • skin — надевание скина и проверка порядка: тот же JSDOM, но БЕЗ Solid и без JSX-трансформа.
 //     Отсутствие плагина здесь несущее, а не экономия: механика обязана работать без Solid —
 //     скелет зовёт её до монтирования, — и проба, поднимающая Solid, доказывала бы обратное.
 //   • surface — сборочный: тут запускается `pnpm pack` и читается тарбол, браузерные
@@ -32,7 +32,7 @@ export default defineConfig({
         test: {
           name: "skin",
           environment: "jsdom",
-          include: ["test/skin.test.ts", "test/skin-switch.test.ts"],
+          include: ["test/skin-switch.test.ts", "test/style-order.test.ts"],
         },
       },
       {

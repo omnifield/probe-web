@@ -1,0 +1,14 @@
+{
+  "//": [
+    "Сборка ТИПОВ. JS собирает `scripts/build.mjs` (esbuild) — здесь остаются только",
+    "декларации: их собирает тот же компилятор, что проверяет код."
+  ],
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

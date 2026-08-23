@@ -32,8 +32,6 @@ export type DerivedStep =
 export interface DerivedScale {
   /** Имя токена-семени (без `--`). */
   seed: string;
-  /** Значение семени по умолчанию — оно же подставляется как fallback в `var()`. */
-  fallback: string;
   /** Умножается ли шкала осью плотности. */
   density: boolean;
   /**
@@ -63,7 +61,6 @@ export interface DerivedScale {
 export const DERIVED_SCALES: readonly DerivedScale[] = [
   {
     seed: "radius",
-    fallback: "0.5rem",
     density: false,
     snap: false,
     basis:
@@ -81,7 +78,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
   },
   {
     seed: "space",
-    fallback: "0.25rem",
     density: true,
     snap: true,
     // ИМЯ СТУПЕНИ РАВНО ЕЁ МНОЖИТЕЛЮ, а не порядковому номеру. Порядковый номер был причиной,
@@ -113,7 +109,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
     // имён, что цветовые роли текста, и `--text-muted` рядом с `--text-sm` читались бы как
     // одна шкала. Контракт, в котором имя не говорит, что это — цвет или размер, не контракт.
     seed: "font-size",
-    fallback: "1rem",
     density: true,
     // Единственная плотная шкала, которая на сетку 0.25rem НЕ садится. Причина — в
     // `GRID_NOTE`, и она проверяемая, а не вкусовая: сетка схлопывает ступени отношений.
@@ -152,7 +147,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
     // колонка — на плотном виде в ту же ширину влезало бы БОЛЬШЕ знаков, чем названо в имени
     // ступени, и число в имени перестало бы быть правдой.
     seed: "column",
-    fallback: "0.5rem",
     density: true,
     snap: true,
     basis:
@@ -167,7 +161,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
   },
   {
     seed: "control-height",
-    fallback: "2.5rem",
     density: true,
     snap: true,
     basis:
@@ -180,7 +173,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
   },
   {
     seed: "border-width",
-    fallback: "1px",
     density: false,
     snap: false,
     basis: "кратные семени; толщина границы не масштабируется плотностью — иначе плотный режим её стирает",
@@ -196,7 +188,6 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
     // такое свойство недействительным (CSS Variables 1, §3). Ступень `--tracking-normal`
     // осталась на месте — переименовано семя, а не то, за что цепляется потребитель.
     seed: "tracking",
-    fallback: "0em",
     density: false,
     snap: false,
     basis: "смещения от нормального трекинга в em — межбуквенный интервал следует за кеглем",
@@ -365,110 +356,27 @@ export const DENSITY_CEILING = 1.5;
 export const DENSITY_NOTE =
   "плотность — равномерное изменение всей вещи, поэтому ось берёт и геометрию, и типографику. Умножает: интервалы, высоты контролов, кегль, ширины колонок. Форму она не трогает — скругления, толщины границ и трекинг: это форма, а не размер. Прежнее основание («кегль не трогаем, иначе 1.4.4 Resize Text») снято сознательно и с причиной: 1.4.4 требует возможности увеличить текст вдвое, а не запрещает множитель меньше единицы, и вся шкала выражена в rem — настройка пользователя уважается при любой плотности. Размер текста защищает не запрет оси, а её нижняя граница, и та выведена из нормы 2.5.8, а не назначена.";
 
-const seedRef = (scale: DerivedScale): string => `var(--${scale.seed}, ${scale.fallback})`;
-
-const densityRef = `var(--${DENSITY_TOKEN}, ${DENSITY_DEFAULT})`;
-
-/**
- * Значение одной ступени БЕЗ посадки на сетку — выражение ПЕРВОГО объявления.
- *
- * У шкалы без `snap` оно единственное. У шкалы со `snap` это подстраховка: ровно её видит
- * браузер, который не поддерживает `round()`. Значение остаётся производным от семени и
- * плотности, то есть живым и сохраняющим отношения ступеней, — теряется только посадка на
- * сетку, а не сама геометрия.
- */
-export function stepValue(scale: DerivedScale, step: DerivedStep): string {
-  if ("value" in step) return step.value;
-
-  const seed = seedRef(scale);
-
-  if ("offset" in step) {
-    // Смещение нулевое — это само семя. `calc(var(--radius))` работал бы, но лишняя обёртка
-    // в контракте читается как «здесь что-то считается», а здесь ничего не считается.
-    return step.offset ? `calc(${seed} ${step.offset})` : seed;
-  }
-
-  const parts = [seed];
-  if (step.factor !== 1) parts.push(String(step.factor));
-  if (scale.density) parts.push(densityRef);
-  return parts.length === 1 ? seed : `calc(${parts.join(" * ")})`;
-}
-
-/**
- * Значение ступени, посаженное на сетку, — ВТОРОЕ объявление, то самое, что стоит под
- * `@supports`. `null` у шкалы без `snap`: подстраховывать там нечего, второго объявления
- * такая шкала не получает вовсе.
- *
- * Сажаем на сетку СНАРУЖИ произведения, а не внутрь: округлять надо итог, а не сомножитель.
- * Округлённое семя дало бы одинаковые ступени (0.25rem × d при любом d из диапазона садится
- * обратно в 0.25rem) — то есть выключило бы плотность, а не сохранило сетку.
- */
-export function snappedValue(scale: DerivedScale, step: DerivedStep): string | null {
-  if (!scale.snap) return null;
-  return `round(nearest, ${stepValue(scale, step)}, ${GRID_STEP})`;
-}
+// ПЕЧАТИ ЗДЕСЬ НЕТ ВОВСЕ (`PWEB-66`, вторым заходом). Были `seedRef`, `stepValue`,
+// `snappedValue` — они собирали значение ступени в текст. Печатать нам некому: лист везёт один
+// сброс, а ступени печатает СКИН, и делает это своим кодом (`packages/skin/src/sizes.ts`).
+//
+// Замер показал, что наш и его собиратели совпадали алгоритмом и расходились ровно одним:
+// наш подставлял в `var()` запасное значение, его — нет, и в комментарии у него написано
+// почему. Оставить свой значило бы держать вторую копию одного печатающего, которая при первой
+// же правке разъедется молча.
+//
+// Вместе с ними ушло поле `fallback`: оно и было тем запасным значением. Данные о ФОРМЕ шкалы
+// — семя, множители, смещения, плотность, посадка на сетку — на месте; ушло рекомендованное
+// ЗНАЧЕНИЕ семени, то есть вкус, а вкус живёт в эталонном скине.
 
 /** Полный перечень имён производных ступеней — для контракта и доки. */
 export const DERIVED_TOKENS: readonly string[] = DERIVED_SCALES.flatMap((scale) =>
   scale.steps.map((step) => step.name),
 );
 
-/** Генерация CSS-блока производных шкал для `base.css`. */
-export function derivedCss(): string {
-  const blocks = DERIVED_SCALES.map((scale) => {
-    // Про сетку суффикса нет намеренно: у плотных шкал это сказано в самом `basis`, и сказано
-    // с причиной. Второй раз тем же комментарием — два места, где написано одно и то же.
-    //
-    // А вот про ОТСУТСТВИЕ здесь округления сказать обязательно: иначе читатель `base.css`
-    // видит ступень без `round()` рядом с `basis`, который обещает сетку, и решает, что сетка
-    // отвалилась. Она ниже, и почему она ниже — там же.
-    const head = `  /* ${scale.seed}: ${scale.basis}${scale.density ? "; масштабируется плотностью" : ""} */`;
-    const fallback = scale.snap
-      ? ["  /* Без round() НАМЕРЕННО: на сетку значение сажает второе объявление, под @supports. */"]
-      : [];
-    const lines = scale.steps.map((step) => `  --${step.name}: ${stepValue(scale, step)};`);
-    return [head, ...fallback, ...lines].join("\n");
-  });
-
-  const fixed = [
-    "  /* Без шкалы намеренно — отношения и нормированные ряды, а не размеры. */",
-    ...FIXED_TOKENS.map((token) => `  --${token.name}: ${token.value};`),
-  ].join("\n");
-
-  // Ось плотности объявлена ЗДЕСЬ, а не в теме: это не значение палитры, а ручка, которую
-  // потребитель крутит на контейнере. Объявление в `:root` даёт ей видимое значение по
-  // умолчанию, переопределение на любом предке перебивает его наследованием.
-  const density = [
-    `  /* Ось плотности: ${DENSITY_NOTE}`,
-    `     Сетка: ${GRID_NOTE}`,
-    `     Нижняя граница — ${DENSITY_FLOOR}, и она выведена из нормы: ниже неё нижняя ступень`,
-    `     контрола уходит под минимальный размер цели 24×24 CSS-пикселя (WCAG 2.2, 2.5.8).`,
-    `     Верхняя — ${DENSITY_CEILING}, и это ПРЕДЕЛ ПОДДЕРЖКИ, а не требование доступности:`,
-    `     по норме крупнее не хуже, выше просто кончаются наши пробы и обещания. */`,
-    `  --${DENSITY_TOKEN}: ${DENSITY_DEFAULT};`,
-  ].join("\n");
-
-  const root = `:root {\n${[density, ...blocks, fixed].join("\n\n")}\n}`;
-
-  // Второй блок. Он ОБЯЗАН стоять после первого — на этом порядке держится всё решение:
-  // `@supports` специфичности не добавляет, побеждает объявление, которое позже.
-  const snapped = DERIVED_SCALES.filter((scale) => scale.snap).map((scale) => {
-    const head = `    /* ${scale.seed} — на сетку ${GRID_STEP} */`;
-    const lines = scale.steps.map((step) => `    --${step.name}: ${snappedValue(scale, step)};`);
-    return [head, ...lines].join("\n");
-  });
-
-  const guarded = [
-    `/* ПОДСТРАХОВКА round(): ${ROUND_FALLBACK_NOTE}`,
-    `   Проверяется сама round() и в той же форме, в какой используется, — не кастомное`,
-    `   свойство (оно приняло бы любой поток токенов и проба была бы истинной всегда) и без`,
-    `   var() (объявление с var() считается действительным на разборе). */`,
-    `@supports ${ROUND_SUPPORT_TEST} {`,
-    "  :root {",
-    snapped.join("\n\n"),
-    "  }",
-    "}",
-  ].join("\n");
-
-  return `${root}\n\n${guarded}`;
-}
+// ПЕЧАТИ В ЛИСТ ЗДЕСЬ БОЛЬШЕ НЕТ (`PWEB-66`). Была `derivedCss()` — блок производных шкал с
+// осью плотности и подстраховкой `@supports`. Базовый слой печатает теперь только сброс.
+//
+// ЗНАНИЕ ОСТАЛОСЬ ЦЕЛИКОМ и остаётся сознательно: `DERIVED_SCALES`, `GRID_STEP`,
+// `ROUND_SUPPORT_TEST`, `DENSITY_TOKEN` — данные на поверхности, из них печатает СКИН. Снести
+// их вслед за печатью значило бы сломать соседа не сборкой, а видом, то есть тише всего.
