@@ -1,16 +1,22 @@
-// Модель и адресация: дерево, обратный ход, поддерево, разрешение адреса, разбор адреса.
+// Модель и адресация: дерево, обратный ход, поддерево, разбор адреса, складывание пар.
 //
-// Пробы разрешения адреса перенесены из `src/__tests__/resolve.test.ts` старого репозитория
-// (109 строк) — предмет тот же, изменилось только имя вызова и то, что теперь возвращается
-// `unknown`. Остальное здесь новое: прежняя механика адреса части не знала, потому что не
-// знала и паспортов.
+// Прежде здесь же проверялся разрешатель адреса — спуск по вложенной карте компонентов, — и он
+// СНЯТ вместе с самой картой (`PWEB-85`): реестр складывается из пар поставщика, часть берётся
+// по имени, спускаться некуда. Взамен проверяется то, ради чего это делалось: у корня один
+// адрес, и разрешение идёт по тому же адресу, который отдаёт разбор.
 
 import { describe, expect, it } from "vitest";
 
-import { createRegistry, knownComponents, readAddress, resolveComponent } from "../src/registry.js";
-import { resolveAddress } from "../src/resolve.js";
+import {
+  checkRegistry,
+  createRegistry,
+  knownComponents,
+  readAddress,
+  resolveComponent,
+  type ReadableComponent,
+} from "../src/registry.js";
 import { ancestorsOf, nodeOf, rootOf, subtreeOf, type AssemblyTree } from "../src/tree.js";
-import { spec } from "./passports.js";
+import { RULE, spec } from "./passports.js";
 
 const Component = () => null;
 
@@ -62,38 +68,15 @@ describe("дерево", () => {
   });
 });
 
-describe("разрешение адреса", () => {
-  const map = { button: Component, ui: { forms: { field: Component } } };
-
-  it("идёт по адресу через точку", () => {
-    expect(resolveAddress(map, "button")).toBe(Component);
-    expect(resolveAddress(map, "ui.forms.field")).toBe(Component);
-  });
-
-  it("отдаёт `undefined` на несуществующий адрес и на пустой", () => {
-    expect(resolveAddress(map, "нет")).toBeUndefined();
-    expect(resolveAddress(map, "ui.forms.нет")).toBeUndefined();
-    expect(resolveAddress(map, "ui.нет.field")).toBeUndefined();
-    expect(resolveAddress(map, "")).toBeUndefined();
-  });
-
-  it("помнит найденное и промахи — по одному реестру, не путая соседний", () => {
-    const first = { same: Component };
-    const second = { same: () => null };
-
-    expect(resolveAddress(first, "same")).toBe(Component);
-    expect(resolveAddress(second, "same")).not.toBe(Component);
-    expect(resolveAddress(first, "same")).toBe(Component);
-  });
-
-  it("отдаёт ветку карты как есть — решение принимает вызывающий", () => {
-    expect(resolveAddress(map, "ui")).toBe(map.ui);
-  });
-});
-
 describe("реестр", () => {
   const registry = createRegistry(
-    spec({ layout: Component, button: Component, icon: Component, accordion: { itemTrigger: Component } }),
+    spec({
+      layout: Component,
+      button: Component,
+      icon: Component,
+      accordion: Component,
+      "ui.button": Component,
+    }),
   );
 
   it("разбирает адрес компонента: часть — корневая", () => {
@@ -127,23 +110,98 @@ describe("реестр", () => {
     expect(readAddress(registry, "")).toBeUndefined();
   });
 
-  it("отдаёт компонент по адресу, а ветку карты — нет", () => {
+  it("отдаёт компонент по адресу — и корень достаётся тем же ходом, что часть", () => {
     expect(resolveComponent(registry, "button")).toBe(Component);
     expect(resolveComponent(registry, "accordion.itemTrigger")).toBe(Component);
-    expect(resolveComponent(registry, "accordion")).toBeUndefined();
+    // Корень СОСТАВНОГО компонента — раньше здесь лежала ветка карты, и он не разрешался вовсе
+    // (`PWEB-85`). Теперь он берётся из пары поставщика, как любая другая часть.
+    expect(resolveComponent(registry, "accordion")).toBe(Component);
     expect(resolveComponent(registry, "нет")).toBeUndefined();
+  });
+
+  it("у корня ОДИН адрес: обе записи ведут в одно место и к одному компоненту", () => {
+    // Второй адрес тому же узлу — это второй источник правды: сохранённые деревья разъехались бы
+    // по способу записи, а скин цеплялся бы к одной из двух записей.
+    const целиком = readAddress(registry, "accordion");
+    const корневаяЧасть = readAddress(registry, "accordion.root");
+
+    expect(корневаяЧасть?.address).toBe(целиком?.address);
+    expect(корневаяЧасть?.part).toBe(целиком?.part);
+    expect(resolveComponent(registry, "accordion.root")).toBe(
+      resolveComponent(registry, "accordion"),
+    );
+  });
+
+  it("разрешение идёт по ТОМУ ЖЕ адресу, который отдаёт разбор", () => {
+    // Совпадение двух сторон, а не совпадение с ожиданием пробы: разъедься они — редактор
+    // адресовал бы узел одним способом, а рисовал по другому.
+    for (const address of knownComponents(registry)) {
+      const read = readAddress(registry, address);
+      expect(read?.address).toBe(address);
+      expect(resolveComponent(registry, read?.address ?? "")).toBeTypeOf("function");
+    }
   });
 
   it("перечисляет известные компоненты по адресу", () => {
     expect(knownComponents(registry)).toEqual([
       "accordion",
       "button",
-      "half",
       "icon",
       "layout",
-      "popover",
       "ui.button",
-      "открытый",
+    ]);
+  });
+});
+
+describe("пара поставщика: паспорт и карта частей", () => {
+  // `PWEB-85`. Сверку ключей делает поставщик, который её написал (кит — `defineKitComponent`),
+  // но форма пары открыта любому. Приедет пара, собранная без сверки, — механика обязана назвать
+  // пробел ИМЕНЕМ: неодетая часть выглядит как пустое место, и человек пойдёт чинить вёрстку.
+
+  it("целая пара изъянов не даёт", () => {
+    expect(checkRegistry(createRegistry(spec({ accordion: Component })))).toEqual([]);
+  });
+
+  it("не пара вовсе — реестр не собирается, и отказ называет адрес", () => {
+    // Прежняя форма входа (карта компонентов рядом с перечнем паспортов) сюда больше не ложится.
+    // Пропусти мы её молча — падение случилось бы посреди отрисовки, где его съедает граница
+    // ошибок узла, и человек увидел бы пустое место вместо причины.
+    expect(() =>
+      createRegistry({
+        components: { button: Component as unknown as ReadableComponent },
+        ...RULE,
+      }),
+    ).toThrow(/button/);
+  });
+
+  it("часть анатомии без компонента названа именем и частью", () => {
+    const дырявый = createRegistry(
+      spec({ accordion: { root: Component, item: Component, itemTrigger: Component } }),
+    );
+
+    expect(checkRegistry(дырявый)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ flaw: "part-uncharted", component: "accordion", part: "itemContent" }),
+        expect.objectContaining({ flaw: "part-uncharted", component: "accordion", part: "itemIndicator" }),
+      ]),
+    );
+  });
+
+  it("по части лежит не компонент — позвать нечего, и это тоже названо", () => {
+    const мёртвый = createRegistry(spec({ button: { root: "не компонент" } }));
+
+    expect(checkRegistry(мёртвый)).toEqual([
+      expect.objectContaining({ flaw: "part-not-callable", component: "button", part: "root" }),
+    ]);
+    // И отрисовке такой узел не достаётся: позвать строку нечем.
+    expect(resolveComponent(мёртвый, "button")).toBeUndefined();
+  });
+
+  it("в карте часть, которой нет в анатомии, — адресовать её нечем", () => {
+    const лишний = createRegistry(spec({ button: { root: Component, придуманная: Component } }));
+
+    expect(checkRegistry(лишний)).toEqual([
+      expect.objectContaining({ flaw: "part-astray", component: "button", part: "придуманная" }),
     ]);
   });
 });

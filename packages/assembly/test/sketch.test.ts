@@ -103,17 +103,19 @@ describe("образец компонента", () => {
   it("часть, допускающая саму себя, разворачивается один раз — спуск конечен", () => {
     // Вложенное меню и дерево объявляются именно так, и это законная запись паспорта.
     const nested = createRegistry({
-      components: { menu: { item: Component } },
-      passports: {
+      components: {
         menu: {
-          component: "menu",
-          genus: "component",
-          anatomy: { keys: () => ["root", "item"] },
-          root: "root",
-          parts: [
-            { name: "root", accepts: [{ kind: "part", name: "item" }] },
-            { name: "item", accepts: [{ kind: "part", name: "item" }] },
-          ],
+          passport: {
+            component: "menu",
+            genus: "component",
+            anatomy: { keys: () => ["root", "item"] },
+            root: "root",
+            parts: [
+              { name: "root", accepts: [{ kind: "part", name: "item" }] },
+              { name: "item", accepts: [{ kind: "part", name: "item" }] },
+            ],
+          },
+          parts: { root: Component, item: Component },
         },
       },
       admits: (part, candidate) =>

@@ -21,11 +21,23 @@ const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8"))
   files: string[];
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
 };
 
 describe("манифест", () => {
   it("два подпути: механика целиком и модель без отрисовки", () => {
     expect(Object.keys(manifest.exports)).toEqual([".", "./model"]);
+  });
+
+  it("кит — ПРОБНАЯ зависимость, и направление держится манифестом", () => {
+    // Механика знает ФОРМУ паспорта и пары, а не их поставщика (`PWEB-85`). Уедь кит в поставку
+    // — потребитель механики получил бы кит вместе с ней, а второй поставщик компонентов стал бы
+    // гостем в чужом доме.
+    const кит = "@omnifield/probe-web-ui";
+
+    expect(Object.keys(manifest.dependencies ?? {})).not.toContain(кит);
+    expect(Object.keys(manifest.peerDependencies ?? {})).not.toContain(кит);
+    expect(Object.keys(manifest.devDependencies ?? {})).toContain(кит);
   });
 
   it("ветка `solid` объявлена ДО `default` — иначе условие не выберется", () => {
@@ -63,11 +75,18 @@ describe("собранное", () => {
     expect(model).not.toContain("<span");
   });
 
+  it("собранное не знает кита ни одной строкой — форма едет, поставщик нет", () => {
+    for (const file of ["index.js", "model.js", "index.d.ts", "model.d.ts"]) {
+      expect(read(file)).not.toContain("probe-web-ui");
+    }
+  });
+
   it("подпуть `./model` отдаёт модель, правила и правки", () => {
     const model = read("model.js");
 
     for (const name of [
       "createRegistry",
+      "checkRegistry",
       "readAddress",
       "canContain",
       "canAdmit",

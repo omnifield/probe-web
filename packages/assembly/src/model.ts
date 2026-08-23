@@ -33,11 +33,21 @@ export {
   subtreeOf,
 } from "./tree.js";
 
-export type { ComponentMap } from "./resolve.js";
-export { resolveAddress } from "./resolve.js";
-
-export type { Address, Registry, RegistrySpec } from "./registry.js";
-export { createRegistry, knownComponents, readAddress, resolveComponent } from "./registry.js";
+export type {
+  Address,
+  ReadableComponent,
+  Registry,
+  RegistryFlaw,
+  RegistryFlawName,
+  RegistrySpec,
+} from "./registry.js";
+export {
+  checkRegistry,
+  createRegistry,
+  knownComponents,
+  readAddress,
+  resolveComponent,
+} from "./registry.js";
 
 export type {
   AllowedInside,

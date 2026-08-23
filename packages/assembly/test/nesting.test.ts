@@ -25,7 +25,10 @@ const registry = createRegistry(
     button: Component,
     icon: Component,
     открытый: Component,
-    accordion: { item: Component, itemTrigger: Component, itemContent: Component },
+    accordion: Component,
+    popover: Component,
+    half: Component,
+    "ui.button": Component,
   }),
 );
 

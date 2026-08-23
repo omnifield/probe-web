@@ -111,9 +111,40 @@ export const PASSPORTS = {
 /** Правило допуска кита — то самое, что читают все читатели паспорта. */
 export const RULE = { admits };
 
-/** Реестр для проб: карту компонентов подставляет вызывающий. */
+/** Паспорт по адресу проб; неизвестный адрес — ошибка самой пробы, а не предмет проверки. */
+const passportAt = (address: string): ReadablePassport => {
+  const found = (PASSPORTS as Readonly<Record<string, ReadablePassport>>)[address];
+  if (!found) throw new Error(`в пробах нет паспорта под адресом «${address}»`);
+  return found;
+};
+
+/**
+ * Пара поставщика для проб: паспорт отсюда, карта частей — от вызывающего (`PWEB-85`).
+ *
+ * Вызывающий даёт либо ОДИН компонент — тогда им рисуются все части паспорта, — либо карту
+ * «часть → компонент», когда пробе важно различать части в разметке. Первая форма короче и
+ * годится там, где предмет пробы адресация, а не то, во что узел разворачивается.
+ */
+export const supplied = (address: string, drawn: unknown) => {
+  // Готовая пара проезжает как есть: так пробы кладут компонент под чужим паспортом (падающий
+  // узел с паспортом кнопки) — случай редкий, но выражать его иначе нечем.
+  if (drawn && typeof drawn === "object" && "passport" in drawn) {
+    return drawn as { passport: ReadablePassport; parts: Readonly<Record<string, unknown>> };
+  }
+
+  const passport = passportAt(address);
+  const parts =
+    typeof drawn === "function"
+      ? Object.fromEntries(passport.anatomy.keys().map((part) => [part, drawn]))
+      : (drawn as Readonly<Record<string, unknown>>);
+
+  return { passport, parts };
+};
+
+/** Реестр для проб: адрес → чем рисуются его части. Паспорта подставляются отсюда. */
 export const spec = (components: Record<string, unknown>) => ({
-  components,
-  passports: PASSPORTS,
+  components: Object.fromEntries(
+    Object.entries(components).map(([address, drawn]) => [address, supplied(address, drawn)]),
+  ),
   ...RULE,
 });

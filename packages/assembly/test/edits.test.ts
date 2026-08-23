@@ -14,7 +14,8 @@ const registry = createRegistry(
     layout: Component,
     button: Component,
     icon: Component,
-    accordion: { item: Component, itemTrigger: Component },
+    accordion: Component,
+    popover: Component,
   }),
 );
 

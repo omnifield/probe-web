@@ -18,7 +18,7 @@ import { createRegistry } from "../src/registry.js";
 import { RenderTree, type EditOverlayProps, type ErrorFallbackProps } from "../src/render.jsx";
 import type { AssemblyTree } from "../src/tree.js";
 import { cleanup, mount } from "./dom.jsx";
-import { PASSPORTS, RULE } from "./passports.js";
+import { PASSPORTS, spec } from "./passports.js";
 
 afterEach(cleanup);
 
@@ -79,23 +79,21 @@ const Boom: Component = () => {
   throw new Error("узел не собрался");
 };
 
-const registry = createRegistry({
-  components: {
+const registry = createRegistry(
+  spec({
     layout: Layout,
     button: Button,
     icon: Icon,
-    boom: Boom,
-    // Компонент И пространство имён разом — так устроены namespace-компоненты кита
-    // (`Popover.Trigger`), и реестр их принимает как есть: разрешение адреса идёт по
-    // свойствам, а свойства есть и у функции.
-    popover: Object.assign(Popover, { trigger: Trigger, content: Layout }),
-    ui: { button: Button },
-  },
-  // `boom` — компонент, который падает при отрисовке; паспорт ему нужен кнопочный: предмет
-  // пробы в том, что упавший узел не уносит соседей, а не в его вложенности.
-  passports: { ...PASSPORTS, boom: PASSPORTS.button },
-  ...RULE,
-});
+    // Составной компонент отдаётся ПАРОЙ: паспорт и то, чем рисуется каждая его часть
+    // (`PWEB-85`). Вложенной карты адресов больше нет — части лежат по своим именам.
+    popover: { root: Popover, trigger: Trigger, content: Layout },
+    // Тот же компонент под чужим пространством имён: адрес и имя совпадать не обязаны.
+    "ui.button": Button,
+    // `boom` — компонент, который падает при отрисовке; паспорт ему нужен кнопочный: предмет
+    // пробы в том, что упавший узел не уносит соседей, а не в его вложенности.
+    boom: { passport: PASSPORTS.button, parts: { root: Boom } },
+  }),
+);
 
 const tree = (nodes: AssemblyTree["components"]["nodes"], root = "page"): AssemblyTree => ({
   components: { root, nodes },
@@ -240,18 +238,17 @@ describe("содержимое — узел дерева", () => {
     </div>
   );
 
-  const гармошка = createRegistry({
-    components: {
-      accordion: Object.assign(Часть("root"), {
+  const гармошка = createRegistry(
+    spec({
+      accordion: {
+        root: Часть("root"),
         item: Часть("item"),
         itemTrigger: Часть("item-trigger"),
         itemIndicator: Часть("item-indicator"),
         itemContent: Часть("item-content"),
-      }),
-    },
-    passports: { accordion: PASSPORTS.accordion },
-    ...RULE,
-  });
+      },
+    }),
+  );
 
   /** Кнопка раздела с указателем и подписью; порядок задаётся списком детей. */
   const кнопкаРаздела = (children: readonly string[]) =>

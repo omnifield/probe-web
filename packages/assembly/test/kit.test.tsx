@@ -14,26 +14,38 @@
 //
 // Кит здесь — `devDependency`; в поставку механики он не едет.
 
-import { Button, kitOf, Popover, PopoverTrigger, type PartComponent } from "@omnifield/probe-web-ui";
+import { kitOf, Popover, PopoverTrigger } from "@omnifield/probe-web-ui";
 import { admits, coordinateOf, passportOf } from "@omnifield/probe-web-ui/passport";
-import type { Component } from "solid-js";
-import { createComponent } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { ReadablePassport } from "../src/passport-read.js";
 import { coordinateOfType } from "../src/coordinate.js";
-import { createRegistry } from "../src/registry.js";
+import {
+  checkRegistry,
+  createRegistry,
+  readAddress,
+  resolveComponent,
+  type ReadableComponent,
+} from "../src/registry.js";
 import { RenderTree } from "../src/render.jsx";
 import type { AssemblyTree } from "../src/tree.js";
 import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);
 
-const registry = createRegistry({
-  components: { button: Button },
-  passports: { button: passportOf("button") as ReadablePassport },
-  admits,
-});
+/**
+ * Пара поставщика по имени компонента — то, из чего складывается реестр (`PWEB-85`).
+ *
+ * Присваивание к `ReadableComponent` и есть проверка формы: не подойди пара кита механике как
+ * есть — не собрались бы типы, и это покраснело бы здесь, а не у потребителя через выпуск.
+ */
+const пара = (component: string): ReadableComponent => {
+  const kit = kitOf(component);
+  if (!kit) throw new Error(`кит не отдаёт компонента «${component}»`);
+  return kit;
+};
+
+const registry = createRegistry({ components: { button: пара("button") }, admits });
 
 const tree: AssemblyTree = {
   components: {
@@ -56,6 +68,31 @@ const tree: AssemblyTree = {
     },
   },
 };
+
+describe("пара поставщика складывается в реестр как есть", () => {
+  // `PWEB-85`. Предмет — ШОВ: пара, собранная и сверенная у поставщика, ложится в реестр без
+  // единого преобразования, и переписанного перечня частей в потребителе не остаётся.
+
+  it("пара кита не даёт ни одного изъяна — карта покрывает анатомию", () => {
+    const весь = createRegistry({
+      components: { button: пара("button"), accordion: пара("accordion") },
+      admits,
+    });
+
+    expect(checkRegistry(весь)).toEqual([]);
+  });
+
+  it("каждая часть анатомии разрешается в компонент — по адресу из разбора", () => {
+    const kit = пара("accordion");
+    const реестр = createRegistry({ components: { accordion: kit }, admits });
+
+    for (const part of kit.passport.anatomy.keys()) {
+      const адрес = part === kit.passport.root ? "accordion" : `accordion.${part}`;
+      expect(readAddress(реестр, адрес)?.address).toBe(адрес);
+      expect(resolveComponent(реестр, адрес)).toBeTypeOf("function");
+    }
+  });
+});
 
 describe("дерево из настоящих компонентов кита", () => {
   it("рисуется по данным", () => {
@@ -140,10 +177,11 @@ describe("композиция на живом ките", () => {
 
   const составной = createRegistry({
     components: {
-      button: Button,
-      popover: Object.assign(Popover, { trigger: PopoverTrigger }),
+      button: пара("button"),
+      // Пары у окна нет по той же причине, что и паспорта: компонент ещё не объявлен. Складываем
+      // её здесь той же формой — механике неоткуда узнать, кто её собрал.
+      popover: { passport: окно, parts: { root: Popover, trigger: PopoverTrigger } },
     },
-    passports: { button: passportOf("button") as ReadablePassport, popover: окно },
     admits,
   });
 
@@ -221,35 +259,11 @@ describe("содержимое рядом с частью — на живой г
   // раздела допустимы СРАЗУ и часть-указатель, и содержимое двух родов. Прежняя форма показывала
   // одно из двух — есть вложенная часть, подпись молча пропадала.
   //
-  // Карта частей берётся у поставщика (`kitOf`, `PWEB-84`), а не собирается здесь по догадке:
-  // плоские имена кита (`AccordionItemTrigger`) с адресами через точку не совпадают ни одним.
+  // Пара берётся у поставщика целиком (`kitOf`, `PWEB-84`/`PWEB-85`), а не складывается здесь:
+  // плоские имена кита (`AccordionItemTrigger`) с адресами через точку не совпадают ни одним, и
+  // собранная тут карта была бы догадкой, которую никто не сверит с анатомией.
 
-  /**
-   * Карта компонентов по адресам: корень компонента плюс его части свойствами.
-   *
-   * Обёртка вокруг корня, а не дописывание частей в сам экспорт кита: чужой компонент — не наше
-   * место, и правка его на время прогона осталась бы у всех проб файла.
-   */
-  const картаЧастей = (component: string) => {
-    const kit = kitOf(component);
-    if (!kit) throw new Error(`кит не отдаёт компонента «${component}»`);
-
-    const parts = kit.parts as Readonly<Record<string, PartComponent>>;
-    const Root = parts[kit.passport.root] as Component<Record<string, unknown>>;
-    const ветви: Record<string, PartComponent> = {};
-    for (const [part, Comp] of Object.entries(parts)) {
-      if (part !== kit.passport.root) ветви[part] = Comp;
-    }
-
-    const Ветка: Component<Record<string, unknown>> = (props) => createComponent(Root, props);
-    return Object.assign(Ветка, ветви);
-  };
-
-  const гармошка = createRegistry({
-    components: { accordion: картаЧастей("accordion") },
-    passports: { accordion: passportOf("accordion") as ReadablePassport },
-    admits,
-  });
+  const гармошка = createRegistry({ components: { accordion: пара("accordion") }, admits });
 
   /**
    * Раздел гармошки: кнопка с указателем и подписью. Порядок детей задаёт вызывающий — им же

@@ -231,11 +231,11 @@ export function ownersAdmitting(
   candidate: Admission,
   component?: string,
 ): PossibleOwner[] {
-  const scope = component === undefined ? Object.keys(registry.passports) : [component];
+  const scope = component === undefined ? Object.keys(registry.components) : [component];
   const found: PossibleOwner[] = [];
 
   for (const componentAddress of scope) {
-    const passport = registry.passports[componentAddress];
+    const passport = registry.components[componentAddress]?.passport;
     if (!passport) continue;
 
     for (const part of passport.parts) {
