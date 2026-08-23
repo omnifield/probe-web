@@ -5,3 +5,4 @@
 
 export { Grid, GridCell, type GridCellProps, type GridProps } from "./grid.jsx";
 export { anatomy, parts, passport } from "./grid.anatomy.js";
+export { kit } from "./grid.kit.js";

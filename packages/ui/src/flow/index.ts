@@ -5,3 +5,4 @@
 
 export { Flow, FlowItem, type FlowItemProps, type FlowProps } from "./flow.jsx";
 export { anatomy, parts, passport } from "./flow.anatomy.js";
+export { kit } from "./flow.kit.js";

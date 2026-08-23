@@ -25,7 +25,8 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate": "node scripts/generate.mjs",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "pnpm run build && vitest run"
   },

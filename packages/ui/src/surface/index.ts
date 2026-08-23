@@ -5,3 +5,4 @@
 
 export { Surface, type SurfaceProps } from "./surface.jsx";
 export { anatomy, parts, passport } from "./surface.anatomy.js";
+export { kit } from "./surface.kit.js";

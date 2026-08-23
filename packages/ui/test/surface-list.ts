@@ -134,6 +134,7 @@ export const EXPECTED_SURFACE = [
   "ImageFallback",
   "ImageImg",
   "Input",
+  "KIT",
   "Label",
   "Link",
   "Menubar",
@@ -280,6 +281,8 @@ export const EXPECTED_SURFACE = [
   "TooltipContent",
   "TooltipPortal",
   "TooltipTrigger",
+  "defineKitComponent",
+  "kitOf",
   "parseColor",
   "toaster",
 ];
