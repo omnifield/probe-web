@@ -33,12 +33,12 @@ import {
 } from "solid-js";
 
 import {
-  listSkins,
-  readSkin,
+  assembleOutfit,
   EMPTY_HINT,
+  listOutfits,
   SERVICE_HINT,
   SKIN_SOURCE,
-  type SkinRecord,
+  type StoreRecord,
 } from "../skins/index.js";
 import {
   casesOf,
@@ -286,7 +286,7 @@ function Head(props: {
   state: string | null;
   view: View;
   worn: string | null;
-  records: readonly SkinRecord[] | undefined;
+  records: readonly StoreRecord[] | undefined;
   failure: unknown;
   mode: SkinMode;
   onPart: (part: string) => void;
@@ -424,18 +424,16 @@ export function App() {
     void SKIN.wear(current.name, { mode }).then(setWorn);
   };
 
-  // Перечень — из СЛУЖБЫ. Запасного списка нет: витрина без службы показывает голый кит и
-  // называет причину с адресом, а не подсовывает встроенное под видом хранимого.
-  const [records] = createResource(() => listSkins());
+  // Перечень НАРЯДОВ — из СЛУЖБЫ. Части по отдельности не надеваются, поэтому в списке стоят
+  // наряды: палитру и формы человек видит в редакторе, а не здесь.
+  const [records] = createResource(() => listOutfits());
 
-  // ЗАПИСЬ надетого скина — тоже из службы: имена вариаций живут в ней, и взять их больше
-  // неоткуда. Паспорт их не знает, витрина не придумывает.
+  // СОБРАННЫЙ ВИД надетого наряда — из тех же частей, которыми его одела механика. Имена
+  // вариаций живут в форме, и взять их больше неоткуда: паспорт их не знает, витрина не
+  // придумывает.
   const [wornSkin] = createResource(
     () => worn()?.name,
-    async (name: string) => {
-      const record = (await listSkins()).find((item) => item.name === name);
-      return record === undefined ? undefined : readSkin(record.id);
-    },
+    async (name: string) => (await assembleOutfit(name)).skin,
   );
 
   /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */

@@ -5,9 +5,7 @@
 //
 // Служба здесь ровно такая, какой её описывает контракт хранилища: кладёт непрозрачный кусок под
 // `state`, отдаёт перечень БЕЗ содержимого и запись целиком по идентификатору. Никакого разбора
-// скина в ней нет — его нет и в настоящей.
-
-import type { Skin } from "@omnifield/probe-web-skin/model";
+// вида в ней нет — его нет и в настоящей.
 
 interface StoredRecord {
   id: string;
@@ -30,26 +28,35 @@ const json = (body: unknown, status = 200): Response =>
   });
 
 /**
- * Поднимает подставную службу и кладёт в неё скины.
+ * Поднимает подставную службу и кладёт в неё записи вида.
  *
- * Служба отбирает по ярлыку вида, не заглядывая внутрь, — проба идёт тем же путём.
+ * Части и наряды кладутся вместе, каждая своим ярлыком: служба отбирает по ярлыку, не заглядывая
+ * внутрь, — проба идёт тем же путём.
  *
- * @param skins что должно лежать в хранилище на момент пробы
+ * @param parts что должно лежать в хранилище: `{ palettes, forms, outfits }`
  */
-export function serveSkins(skins: readonly Skin[] | Skin): void {
-  const list = Array.isArray(skins) ? skins : [skins];
-
+export function serveLook(parts: {
+  palettes?: readonly { name: string }[];
+  forms?: readonly { name: string }[];
+  outfits?: readonly { name: string }[];
+}): void {
   stored.length = 0;
 
-  for (const [index, skin] of list.entries()) {
-    stored.push({
-      id: `rec-${index + 1}`,
-      label: skin.name,
-      name: skin.name,
-      kind: "skin",
-      state: skin,
-    });
-  }
+  const put = (kind: string, list: readonly { name: string }[] = []) => {
+    for (const record of list) {
+      stored.push({
+        id: `rec-${stored.length + 1}`,
+        label: record.name,
+        name: record.name,
+        kind,
+        state: record,
+      });
+    }
+  };
+
+  put("palette", parts.palettes);
+  put("form", parts.forms);
+  put("outfit", parts.outfits);
 
   original ??= globalThis.fetch;
 

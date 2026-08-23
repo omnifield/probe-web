@@ -26,10 +26,10 @@ import { casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js
 import { REGISTRY } from "../src/showcase/registry.js";
 
 import { cleanup, mount } from "./dom.jsx";
-import { FIXTURE } from "./fixtures.js";
-import { restoreStore, serveSkins } from "./store-stub.js";
+import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
+import { restoreStore, serveLook } from "./store-stub.js";
 
-beforeEach(() => serveSkins([FIXTURE]));
+beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 
 afterEach(() => {
   restoreStore();
@@ -53,7 +53,7 @@ describe("перечень", () => {
 
 /** Поток случаев кнопки при развёрнутых осях — то, что видит человек по умолчанию. */
 const stream = (): ShowcaseCase[] =>
-  casesOf("button", { part: rootPartOf("button"), variants: Object.keys(FIXTURE.recipes.button?.variants ?? {}) });
+  casesOf("button", { part: rootPartOf("button"), variants: Object.keys(FORM.recipe.variants ?? {}) });
 
 describe("случаи", () => {
   it("дерево случая — образец компонента, а не своя разметка", () => {
@@ -100,7 +100,7 @@ describe("случаи", () => {
   });
 
   it("фильтр отбирает и человеческие случаи — у них тоже есть координата", () => {
-    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
+    const variants = Object.keys(FORM.recipe.variants ?? {});
     const hover = casesOf("button", { part: "root", state: "hover", variants });
     const disabled = casesOf("button", { part: "root", state: "disabled", variants });
 
@@ -113,7 +113,7 @@ describe("случаи", () => {
   });
 
   it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
-    const variants = Object.keys(FIXTURE.recipes.button?.variants ?? {});
+    const variants = Object.keys(FORM.recipe.variants ?? {});
     const all = casesOf("button", { part: "root", variants });
     const one = casesOf("button", { part: "root", variant: variants[0] ?? null, state: "hover", variants });
 
@@ -145,7 +145,7 @@ describe("хедер", () => {
 
     // Первый пункт — снятие: голый кит это рабочее состояние продукта, а не отсутствие выбора.
     expect(select.options[0]?.value).toBe("");
-    expect([...select.options].map((option) => option.value)).toContain(FIXTURE.name);
+    expect([...select.options].map((option) => option.value)).toContain(OUTFIT.name);
   });
 
   it("выбор списком надевает скин, пустой пункт — снимает", async () => {
@@ -156,11 +156,11 @@ describe("хедер", () => {
       return found as HTMLSelectElement;
     });
 
-    select.value = FIXTURE.name;
+    select.value = OUTFIT.name;
     select.dispatchEvent(new Event("change", { bubbles: true }));
 
     await vi.waitFor(() =>
-      expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name),
+      expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name),
     );
 
     select.value = "";
@@ -172,7 +172,7 @@ describe("хедер", () => {
   });
 
   it("режима без скина не предлагают — переключать нечего", async () => {
-    serveSkins([]);
+    serveLook({});
 
     const host = mount(() => <App />);
 
@@ -285,7 +285,7 @@ describe("отрисовка", () => {
     // законно — называть нечего.
     await vi.waitFor(() => {
       const shown = host.textContent ?? "";
-      for (const name of Object.keys(FIXTURE.recipes.button?.variants ?? {})) {
+      for (const name of Object.keys(FORM.recipe.variants ?? {})) {
         expect(shown).toContain(name);
       }
     });

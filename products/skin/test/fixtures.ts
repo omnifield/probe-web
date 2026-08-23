@@ -1,50 +1,91 @@
-// МАТЕРИАЛ ПРОБ — скин-фикстура.
+// МАТЕРИАЛ ПРОБ — три записи вида: палитра, форма, наряд.
 //
-// ## Почему он здесь, если скинов в коде зоны нет
+// ## Почему они здесь, если содержимого в коде зоны нет
 //
-// Скинов нет в ПОСТАВКЕ и в источнике: витрина не читает встроенного содержимого, и запасного
-// перечня у неё не существует. Пробам же нужно что-то класть в подставную службу — иначе шов со
-// службой проверять не на чем.
+// Содержимого нет в ПОСТАВКЕ и в источнике: витрина не читает встроенного, запасного перечня у
+// неё не существует. Пробам же нужно что-то класть в подставную службу — иначе шов с ней
+// проверять не на чем.
 //
-// Разница не формальная и держится машиной: этот файл лежит в `test/`, его не видит ни один
-// модуль зоны, и проба `naked.test.ts` требует, чтобы в `src/` не было ни одной записи скина.
-// Появись фикстура в источнике — она стала бы тем самым вторым перечнем.
+// Разница держится машиной: файл лежит в `test/`, его не видит ни один модуль зоны, а проба
+// требует, чтобы в `src/` записей вида не было вовсе.
 //
 // ## Фикстура нарочно бедная
 //
-// Одна часть, одна вариация, два состояния. Богатая фикстура проверяла бы саму себя: чем больше
-// в ней написано, тем больше шансов, что проба зелёная из-за её содержимого, а не из-за работы
-// механики. Всё, что нужно пробам, — чтобы запись была ЗАКОННОЙ и адресуемой.
+// Одна шкала на роль, один компонент, две вариации. Богатая проверяла бы саму себя: чем больше в
+// ней написано, тем больше шансов, что проба зелёная из-за её содержимого, а не из-за работы
+// механики. Всё, что нужно пробам, — чтобы записи были ЗАКОННЫМИ и собирались.
 
-import type { Skin } from "@omnifield/probe-web-skin/model";
+import type { Form, Outfit, Palette } from "@omnifield/probe-web-skin/model";
 
-/** Законный скин кнопки — минимальный из возможных. */
-export const FIXTURE: Skin = {
-  name: "проба",
-  variables: {
-    light: { "skin-ink": "#101014", "skin-fill": "#e8e8ef" },
-    dark: { "skin-ink": "#f2f2f7", "skin-fill": "#1c1c22" },
+/** Ряды без семени: их не построишь — они называются целиком. */
+const РЯДЫ = {
+  "leading-none": "1",
+  "leading-tight": "1.2",
+  "leading-snug": "1.35",
+  "leading-normal": "1.5",
+  "leading-relaxed": "1.7",
+  "weight-normal": "400",
+  "weight-medium": "500",
+  "weight-semibold": "600",
+  "weight-bold": "700",
+  "motion-instant": "75ms",
+  "motion-fast": "150ms",
+  "motion-normal": "250ms",
+  "motion-slow": "400ms",
+  "ease-linear": "linear",
+  "ease-in": "cubic-bezier(0.4, 0, 1, 1)",
+  "ease-out": "cubic-bezier(0, 0, 0.2, 1)",
+  "ease-in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
+};
+
+/** Законная палитра — словарь закрыт целиком. */
+export const PALETTE: Palette = {
+  name: "проба-палитра",
+  scales: { акцент: "#3457d5", нейтраль: "#6b7280", опасность: "#d13438" },
+  dimensions: {
+    radius: "12px",
+    space: "0.5rem",
+    "font-size": "1rem",
+    column: "1rem",
+    "control-height": "2.5rem",
+    "border-width": "1px",
+    tracking: "0em",
+    density: "1",
   },
-  recipes: {
-    button: {
-      base: {
-        root: {
-          props: {
-            background: "var(--skin-fill)",
-            color: "var(--skin-ink)",
-            borderRadius: "0.4rem",
-          },
-          states: {
-            hover: { props: { opacity: 0.9 } },
-            disabled: { props: { opacity: 0.5 } },
-          },
+  light: РЯДЫ,
+};
+
+/** Законная форма кнопки — ни одного значения, только ссылки на роли. */
+export const FORM: Form = {
+  name: "проба-кнопка",
+  component: "button",
+  recipe: {
+    base: {
+      root: {
+        props: {
+          background: "var(--нейтраль-1)",
+          color: "var(--нейтраль-12)",
+          borderRadius: "var(--radius-md)",
+        },
+        states: {
+          hover: { props: { background: "var(--нейтраль-3)" } },
+          disabled: { props: { opacity: 0.5 } },
         },
       },
-      variants: {
-        главная: { root: { props: { fontWeight: 600 } } },
-        тихая: { root: { props: { background: "transparent" } } },
-      },
-      defaultVariant: "главная",
     },
+    variants: {
+      главная: {
+        root: { props: { background: "var(--акцент-9)", color: "var(--акцент-contrast)" } },
+      },
+      тихая: { root: { props: { background: "var(--нейтраль-2)" } } },
+    },
+    defaultVariant: "главная",
   },
+};
+
+/** Наряд — ссылки на части. */
+export const OUTFIT: Outfit = {
+  name: "проба",
+  palette: PALETTE.name,
+  forms: [FORM.name],
 };
