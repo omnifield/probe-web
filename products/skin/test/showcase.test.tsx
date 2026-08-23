@@ -70,9 +70,12 @@ describe("случаи", () => {
 
     for (const item of stream()) {
       expect(item.tree.components.root).toBe(sketch?.components.root);
-      expect(Object.keys(item.tree.components.nodes)).toEqual(
-        Object.keys(sketch?.components.nodes ?? {}),
-      );
+
+      // Узлы образца — все на месте и ни одного лишнего сверх ПОДПИСИ: её кладёт витрина как
+      // потребитель, и кладёт узлом содержимого, а не своей разметкой.
+      const свои = Object.keys(item.tree.components.nodes).filter((id) => id !== "подпись");
+
+      expect(свои).toEqual(Object.keys(sketch?.components.nodes ?? {}));
     }
   });
 
@@ -400,15 +403,15 @@ describe("отрисовка", () => {
     expect(host.querySelector(".gaps")).toBeNull();
   });
 
-  it("переход в форму меняет предмет показа: случаи уступают правке", async () => {
+  it("переход в правку добавляет настройки, а показ оставляет на месте", async () => {
     const host = mount(() => <App />);
-    const [, форма] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
+    const [, правка] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
 
-    форма?.click();
+    правка?.click();
 
-    // Части приезжают из паспорта сразу, а черновик — из службы; ждём именно правку, потому что
-    // до её прихода экран честно говорит, что править нечем.
-    await vi.waitFor(() => expect(host.querySelector(".form__parts")).not.toBeNull());
-    expect(host.querySelectorAll(".case")).toHaveLength(0);
+    // Настройки приходят СБОКУ: цвета крутят на компонентах, а не в пустоте, поэтому случаи
+    // остаются видны. Уведи мы их — человек выбирал бы цвет по образцу.
+    await vi.waitFor(() => expect(host.querySelector(".knobs")).not.toBeNull());
+    expect(host.querySelectorAll(".case").length).toBeGreaterThan(0);
   });
 });

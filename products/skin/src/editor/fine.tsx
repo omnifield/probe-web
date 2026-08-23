@@ -1,30 +1,24 @@
-// ЭКРАН ФОРМЫ — как компонент использует общие значения.
+// ТОНКАЯ НАСТРОЙКА — правка по адресам, для тех, кому нужен CSS.
 //
-// Единственное место продукта, где встречаются паспорт и палитра: паспорт говорит, ЧТО у
-// компонента есть (части, состояния), палитра — ЧЕМ это красить (роли), а форма связывает одно с
-// другим. Ни паспорт, ни палитра друг о друге не знают, и знать не должны.
+// Третья ступень панели и самая глубокая: человек называет свойство сам и сам выбирает координату
+// (часть · вариация · состояние). Большинству это не нужно, поэтому раздел свёрнут, — но без него
+// редактор был бы потолком: всё, чего не выразили ручки, выражается здесь.
 //
-// ## Три колонки — три вопроса
+// ## Долг одевания стоит рядом с частями
 //
-//   • слева: **что у компонента есть** и что из этого ещё не одето (`skinGaps`);
-//   • в центре: **как это выглядит прямо сейчас** — тот же случай, что на витрине, порождённый
-//     теми же осями, а не отдельный предпросмотр, написанный руками;
-//   • справа: **что написано на выбранной координате** — и что приходит на неё от базы.
+// Число у части — что паспорт объявил, а форма ещё не адресует (`skinGaps`). Это не украшение:
+// одевающий приходит сюда доделывать, и перечень «чего не хватает» — его список работ.
 //
 // ## Правка едет через надевание, а не через стиль на узле
 //
-// Показ в центре одет ЧЕРНОВИКОМ (`DRAFT_NAME`): правка собирается в вид механикой и надевается,
-// как надевается сохранённый наряд. Разбор — в `skins/draft.ts`; коротко: стиль на узле адресует
-// узел, а скин адресует координату, и вид, посчитанный вторым путём, отличался бы от
-// сохранённого.
+// Показ одет ЧЕРНОВИКОМ (`DRAFT_NAME`): правка собирается в вид механикой и надевается, как
+// надевается сохранённый наряд. Разбор — в `skins/draft.ts`.
 
-import { RenderTree } from "@omnifield/probe-web-assembly";
 import type { Form, SkinGap } from "@omnifield/probe-web-skin/model";
 import { VOCABULARY } from "@omnifield/probe-web-skin/model";
 import { For, Show, createMemo, createSignal } from "solid-js";
 
-import { axisCases, partsOf, statesOfPart } from "../showcase/cases.js";
-import { REGISTRY } from "../showcase/registry.js";
+import { partsOf, statesOfPart } from "../showcase/cases.js";
 import { inherited, styleAt, withProp, type Spot } from "./spot.js";
 
 /** Значение для выбора «база» — вариации с пустым именем не бывает, столкнуться не с чем. */
@@ -93,14 +87,11 @@ function PropRow(props: {
  * вторую правду о том, что сейчас правится, — а первая уже есть у источника вида, который этим
  * черновиком одевает показ.
  */
-export function FormEditor(props: {
+export function Fine(props: {
   component: string;
   draft: Form | null;
   gaps: readonly SkinGap[];
-  trouble: unknown;
   onDraft: (form: Form) => void;
-  onSave: (form: Form) => void;
-  saving: boolean;
 }) {
   // ВЫБОР ХРАНИТСЯ ВМЕСТЕ С КОМПОНЕНТОМ, а не рядом с ним. Части и состояния у каждого свои, и
   // выбор, переживший смену компонента, указывал бы на часть, которой у нового нет: экран
@@ -133,20 +124,6 @@ export function FormEditor(props: {
   /** Приходящее на координату от базы и от вариации — показывается бледным, а не пустым. */
   const from = createMemo(() => Object.entries(inherited(recipe(), spot())));
 
-  /**
-   * Случай для показа — тот же, что порождает витрина.
-   *
-   * Вариация берётся конкретная: база (`null`) в разметке означает «атрибута нет», а значит
-   * действует умолчание скина, и показывать под подписью «база» надо именно его.
-   */
-  const shown = () =>
-    axisCases(props.component, {
-      part: part(),
-      variant: variant() ?? recipe().defaultVariant ?? variants()[0] ?? "",
-      state: state(),
-      variants: variants(),
-    })[0];
-
   const правка = (name: string, value: string | undefined): void => {
     const form = props.draft;
     if (!form) return;
@@ -161,7 +138,7 @@ export function FormEditor(props: {
       </datalist>
 
       <Show
-        when={props.draft}
+        when={props.draft !== null}
         fallback={
           <p class="page__empty">
             Править нечем: наряд не надет. Форма пишется поверх палитры — наденьте наряд справа
@@ -169,8 +146,7 @@ export function FormEditor(props: {
           </p>
         }
       >
-        {(form) => (
-          <>
+        <>
             <aside class="form__parts">
               <h2 class="form__title">части</h2>
 
@@ -203,8 +179,7 @@ export function FormEditor(props: {
               </p>
             </aside>
 
-            <section class="form__stage">
-              <div class="form__coords">
+            <section class="form__coords">
                 <label class="axes__field">
                   <span class="axes__label">вариация</span>
                   <select
@@ -238,19 +213,6 @@ export function FormEditor(props: {
                     </For>
                   </select>
                 </label>
-              </div>
-
-              <Show when={shown()} fallback={<p class="page__empty">Показать нечего.</p>}>
-                {(случай) => (
-                  <div class="form__show">
-                    <RenderTree tree={случай().tree} registry={REGISTRY} />
-                  </div>
-                )}
-              </Show>
-
-              <p class="form__note">
-                Показан черновик: правка одета механикой, тем же путём, что сохранённый наряд.
-              </p>
             </section>
 
             <aside class="form__props">
@@ -302,23 +264,8 @@ export function FormEditor(props: {
                 </button>
               </form>
 
-              <div class="form__save">
-                <button
-                  type="button"
-                  class="form__button form__button--main"
-                  disabled={props.saving}
-                  onClick={() => props.onSave(form())}
-                >
-                  {props.saving ? "сохраняю…" : `сохранить «${form().name}»`}
-                </button>
-
-                <Show when={props.trouble}>
-                  <p class="form__trouble">{String(props.trouble)}</p>
-                </Show>
-              </div>
             </aside>
-          </>
-        )}
+        </>
       </Show>
     </article>
   );

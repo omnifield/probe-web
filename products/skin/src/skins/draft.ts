@@ -1,4 +1,4 @@
-// ЧЕРНОВИК ФОРМЫ — правка, которую видно до сохранения.
+// ЧЕРНОВИК — правка, которую видно до сохранения.
 //
 // ## Почему черновик надевается, а не подставляется
 //
@@ -18,16 +18,19 @@
 // служба ────┘   (палитра и прочие формы наряда)
 // ```
 //
+// ## Под правкой И ЦВЕТА, И ФОРМА
+//
+// Человек не крутит цвета в пустоте: он смотрит на компонент и крутит их на нём. Разделение на
+// записи — устройство хранения, а не устройство работы, и черновик держит обе стороны разом:
+// правка цвета и правка формы приезжают в показ одним и тем же движением.
+//
 // ## Наряд черновика собирается здесь, а не берётся готовым
 //
 // Форма правится ДО того, как её включили в наряд: новая форма компонента, которого ещё никто не
 // одевал, в наряде не перечислена. Брать наряд как есть значило бы показывать человеку голый
 // компонент, пока он его одевает.
-//
-// Поэтому наряд черновика — временный: палитра текущего наряда, его формы, а форма правимого
-// компонента заменена черновиком.
 
-import { assemble, type Form, type Outfit } from "@omnifield/probe-web-skin/model";
+import { assemble, type Form, type Outfit, type Palette } from "@omnifield/probe-web-skin/model";
 
 import { readOutfit, readParts, StoreRefused } from "./store.js";
 
@@ -39,8 +42,14 @@ import { readOutfit, readParts, StoreRefused } from "./store.js";
  */
 export const DRAFT_NAME = "draft";
 
-/** Правимая форма, либо `null` — редактор не открыт. Одна на сессию: правят по одной. */
-let holding: Form | null = null;
+/** Что лежит под правкой: цвета, форма правимого компонента, либо и то и другое. */
+export interface Draft {
+  readonly palette?: Palette;
+  readonly form?: Form;
+}
+
+/** Правимое, либо `null` — редактор не открыт. Одно на сессию: правят по одному. */
+let holding: Draft | null = null;
 
 /** Наряд, поверх которого правят: из него берутся палитра и остальные формы. */
 let over: string | null = null;
@@ -48,16 +57,16 @@ let over: string | null = null;
 /**
  * Кладёт черновик под правку.
  *
- * @param form правимая форма, `null` — редактор закрыт
+ * @param draft правимое, `null` — редактор закрыт
  * @param outfit имя наряда, поверх которого правим
  */
-export function hold(form: Form | null, outfit?: string): void {
-  holding = form;
+export function hold(draft: Draft | null, outfit?: string): void {
+  holding = draft;
   if (outfit !== undefined) over = outfit;
 }
 
 /** Что сейчас правится. `null` — ничего. */
-export function held(): Form | null {
+export function held(): Draft | null {
   return holding;
 }
 
@@ -68,9 +77,9 @@ export function held(): Form | null {
  * нечем, а показать вместо него прежний вид значило бы соврать про правку.
  */
 export async function draftLook() {
-  const form = holding;
+  const draft = holding;
 
-  if (!form) throw new StoreRefused("черновика нет — править нечего");
+  if (!draft) throw new StoreRefused("черновика нет — править нечего");
 
   const parts = await readParts();
   const base = over === null ? undefined : await readOutfit(over);
@@ -82,14 +91,33 @@ export async function draftLook() {
     );
   }
 
-  // Форма компонента заменяется целиком, а не сливается: черновик и есть форма этого
-  // компонента, и слияние дало бы правило, которого нет ни в одной записи.
-  const others = parts.forms.filter((кандидат) => кандидат.component !== form.component);
+  // Форма компонента заменяется ЦЕЛИКОМ, а не сливается: черновик и есть форма этого
+  // компонента, и слияние дало бы правило, которого нет ни в одной записи. С палитрой то же.
+  const others = draft.form
+    ? parts.forms.filter((кандидат) => кандидат.component !== draft.form?.component)
+    : parts.forms;
+
+  const forms = draft.form ? [...others, draft.form] : others;
+  const palettes = draft.palette
+    ? [...parts.palettes.filter((кандидат) => кандидат.name !== draft.palette?.name), draft.palette]
+    : parts.palettes;
+
   const outfit: Outfit = {
     ...base,
     name: DRAFT_NAME,
-    forms: [...base.forms.filter((имя) => others.some((ф) => ф.name === имя)), form.name],
+    forms: forms.filter((форма) => базовая(base, форма, draft)).map((форма) => форма.name),
   };
 
-  return assemble(outfit, { palettes: parts.palettes, forms: [...others, form] });
+  return assemble(outfit, { palettes, forms });
+}
+
+/**
+ * Входит ли форма в наряд черновика.
+ *
+ * Правимая — всегда: её ради и открыт редактор, а в наряде она может ещё не значиться. Прочие —
+ * только те, что наряд перечислял: чужая форма, приехавшая из службы, в этом наряде не участвует
+ * и показывать её здесь значило бы одеть компонент тем, чем его никто не одевал.
+ */
+function базовая(base: Outfit, form: Form, draft: Draft): boolean {
+  return form.name === draft.form?.name || base.forms.includes(form.name);
 }

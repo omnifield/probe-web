@@ -25,7 +25,13 @@
 // на ячейке. Образец даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
 
-import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
+import {
+  insertNode,
+  isContent,
+  sketchOf,
+  updateNode,
+  type AssemblyTree,
+} from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import {
   passportOf,
@@ -138,8 +144,22 @@ function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
 }
 
 /**
- * Собирает случай: образец плюс условие. Вариация и содержимое ложатся на корень, состояние — на
- * узел выбранной части.
+ * ПОДПИСЬ ОБРАЗЦА — чем наполняется компонент на витрине.
+ *
+ * Содержимое кладёт ПОТРЕБИТЕЛЬ, а не кит и не скин: паспорт лишь объявляет, что внутрь пускают
+ * текст. Витрина здесь и есть потребитель, поэтому подпись её — но живёт она перечнем, а не
+ * зашита в сборку случая: у гармошки подписей несколько и они разные, у кнопки одна.
+ */
+const ПОДПИСИ: Readonly<Record<string, string>> = {
+  button: "Кнопка",
+};
+
+/**
+ * Собирает случай: образец плюс условие. Вариация ложится на корень, состояние — на узел
+ * выбранной части, подпись — отдельным УЗЛОМ СОДЕРЖИМОГО.
+ *
+ * Узлом, а не пропом: у части, принимающей и текст, и вложенную часть, порядок между ними иначе
+ * не выразить, и механика отрисовки props.children у такого узла не рисует вовсе.
  *
  * Отказ механики — **исключение**, а не значение, и это единственное такое место в зоне: отказ
  * означает, что случай написан против паспорта, то есть дефект нашей записи, а не состояние
@@ -161,17 +181,24 @@ function build(
   const onRoot = updateNode(sketch, root, { props: rootProps });
 
   if (!onRoot.ok) throw new Error(`витрина: случай отвергнут механикой — ${onRoot.means}`);
-  if (stateMark === undefined || partAddress === undefined) return onRoot.tree;
 
-  const target = nodeOfPart(onRoot.tree, partAddress);
+  const подпись = ПОДПИСИ[component];
+  const наполнено =
+    подпись === undefined
+      ? onRoot
+      : insertNode(onRoot.tree, REGISTRY, { id: "подпись", genus: "text", value: подпись }, root);
+
+  if (!наполнено.ok) throw new Error(`витрина: подпись не легла — ${наполнено.means}`);
+  if (stateMark === undefined || partAddress === undefined) return наполнено.tree;
+
+  const target = nodeOfPart(наполнено.tree, partAddress);
 
   // Части нет в образце — состояние не ставим и молчим: это законно, часть могла не попасть в
-  // образец (содержимое потребителя механика внутрь не кладёт). Отказывать здесь значило бы
-  // ронять показ из-за выбора оси.
-  if (target === undefined) return onRoot.tree;
+  // образец. Отказывать здесь значило бы ронять показ из-за выбора оси.
+  if (target === undefined) return наполнено.tree;
 
   const props = target === root ? { ...rootProps, ...stateProps(stateMark) } : stateProps(stateMark);
-  const onPart = updateNode(onRoot.tree, target, { props });
+  const onPart = updateNode(наполнено.tree, target, { props });
 
   if (!onPart.ok) throw new Error(`витрина: состояние не легло на часть — ${onPart.means}`);
 
@@ -233,7 +260,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
         title: [variant ?? "без вариации", part, state?.name ?? "обычное"].join(" · "),
         note: state?.means ?? "вид без состояния — то, с чего начинается всё остальное",
         at: { part, variant, state: state?.name ?? null },
-        tree: build(component, { children: "Кнопка", ...variantProps }, address, state?.mark),
+        tree: build(component, variantProps, address, state?.mark),
       });
     }
   }

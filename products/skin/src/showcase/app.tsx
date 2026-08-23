@@ -23,7 +23,7 @@
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
 import { skinGaps } from "@omnifield/probe-web-skin";
-import type { Form } from "@omnifield/probe-web-skin/model";
+import type { Form, Palette } from "@omnifield/probe-web-skin/model";
 import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   createEffect,
@@ -35,15 +35,18 @@ import {
   Show,
 } from "solid-js";
 
-import { FormEditor } from "../editor/form.jsx";
+import { Fine } from "../editor/fine.jsx";
+import { Panel } from "../editor/panel.jsx";
 import {
   assembleOutfit,
+  type Draft,
   DRAFT_NAME,
   draftLook,
   EMPTY_HINT,
   hold,
   KINDS,
   listOutfits,
+  readOutfit,
   readParts,
   replace,
   SERVICE_HINT,
@@ -440,7 +443,7 @@ export function App() {
 
   // Перечень НАРЯДОВ — из СЛУЖБЫ. Части по отдельности не надеваются, поэтому в списке стоят
   // наряды: палитру и формы человек видит в редакторе, а не здесь.
-  const [records] = createResource(() => listOutfits());
+  const [records, { refetch: refetchRecords }] = createResource(() => listOutfits());
 
   // СОБРАННЫЙ ВИД надетого наряда — из тех же частей, которыми его одела механика. Имена
   // вариаций живут в форме, и взять их больше неоткуда: паспорт их не знает, витрина не
@@ -482,7 +485,7 @@ export function App() {
   // ЧЕРНОВИК ФОРМЫ. Живёт здесь, а не в редакторе, по той же причине, по которой там же живёт
   // надетое: показ одевается черновиком, и вторая правда о том, что сейчас правится, развела бы
   // правку и показ.
-  const [draft, setDraftSignal] = createSignal<Form | null>(null);
+  const [draft, setDraftSignal] = createSignal<Draft | null>(null);
   const [saving, setSaving] = createSignal(false);
   const [trouble, setTrouble] = createSignal<unknown>(null);
 
@@ -499,11 +502,11 @@ export function App() {
    * надетое к тому моменту могло смениться. Взяв его в момент действия человека, мы возвращаем
    * показ туда, откуда человек ушёл, а не туда, где он оказался.
    */
-  const setDraft = (form: Form | null, надето: string | undefined) => {
-    setDraftSignal(form);
-    hold(form, надето);
+  const setDraft = (черновик: Draft | null, надето: string | undefined) => {
+    setDraftSignal(черновик);
+    hold(черновик, надето);
 
-    if (form === null) {
+    if (черновик === null) {
       if (надето !== undefined) void SKIN.wear(надето, { remember: false }).then(setWorn);
       return;
     }
@@ -530,10 +533,17 @@ export function App() {
     }
 
     try {
-      const { forms } = await readParts();
+      const [{ forms, palettes }, наряд] = await Promise.all([readParts(), readOutfit(надето)]);
       const своя = forms.find((форма) => форма.component === component);
+      const цвета = palettes.find((кандидат) => кандидат.name === наряд?.palette);
 
-      setDraft(своя ?? { name: `${надето}-${component}`, component, recipe: {} }, надето);
+      setDraft(
+        {
+          ...(цвета ? { palette: цвета } : {}),
+          form: своя ?? { name: `${надето}-${component}`, component, recipe: {} },
+        },
+        надето,
+      );
     } catch (cause) {
       setTrouble(cause);
     }
@@ -546,14 +556,63 @@ export function App() {
    * черновику, которым он одет. Переодень мы его на наряд — экран мигнул бы и вернулся к тому
    * же виду, сообщив о работе, которой не было.
    */
-  const saveDraft = (форма: Form) => {
+  /**
+   * Сохраняет ЦВЕТА под именем.
+   *
+   * Имя своё — значит новая запись; прежнее — значит правка той, которую тянут другие скины, и
+   * увидят они её сразу. Так решил хозяин продукта: палитра одна, копий не заводим.
+   */
+  const savePalette = (имя: string, черновик: Draft | null) => {
+    const цвета = черновик?.palette;
+    if (!цвета) return;
+
     setSaving(true);
-    void replace(KINDS.form, форма, `Форма: ${форма.component}`)
+    void replace(KINDS.palette, { ...цвета, name: имя }, `Цвета: ${имя}`)
       .then(() => {
         setTrouble(null);
+        setDraftSignal({ ...черновик, palette: { ...цвета, name: имя } });
       })
       .catch(setTrouble)
       .finally(() => setSaving(false));
+  };
+
+  /**
+   * Сохраняет СКИН: форму компонента и сочетание «эти цвета плюс эти формы» под именем.
+   *
+   * Форма уезжает вместе со скином, а не отдельной кнопкой: человек правил вид кнопки, а не «две
+   * записи», и просить его сохранить их порознь значило бы показать ему наше устройство хранения.
+   */
+  const saveSkin = async (имя: string, черновик: Draft | null, поверх: string | undefined) => {
+    if (!черновик?.form) return;
+
+    setSaving(true);
+
+    try {
+      const прежний = поверх === undefined ? undefined : await readOutfit(поверх);
+      const форма: Form = { ...черновик.form, name: `${имя}-${черновик.form.component}` };
+      const цвета = черновик.palette;
+
+      await replace(KINDS.form, форма, `Форма: ${форма.component}`);
+
+      const формы = [
+        ...(прежний?.forms ?? []).filter((чужая) => !чужая.endsWith(`-${форма.component}`)),
+        форма.name,
+      ];
+
+      await replace(
+        KINDS.outfit,
+        { name: имя, palette: цвета?.name ?? прежний?.palette ?? "", forms: формы },
+        `Скин: ${имя}`,
+      );
+
+      setTrouble(null);
+      setDraftSignal({ ...черновик, form: форма });
+      await refetchRecords();
+    } catch (cause) {
+      setTrouble(cause);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /** Переход между видами: уход из формы снимает черновик. Приход открывает его эффектом ниже. */
@@ -648,20 +707,7 @@ export function App() {
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
             {(component) => (
-              <Show
-                when={view() === "showcase"}
-                fallback={
-                  <FormEditor
-                    component={component()}
-                    draft={draft()}
-                    gaps={gaps() ?? []}
-                    trouble={trouble()}
-                    saving={saving()}
-                    onDraft={(форма) => setDraft(форма, worn()?.name)}
-                    onSave={saveDraft}
-                  />
-                }
-              >
+              <div class="work" classList={{ "work--editing": view() === "form" }}>
                 <ComponentPage
                   component={component()}
                   variants={variants()}
@@ -669,7 +715,32 @@ export function App() {
                   variant={variant()}
                   state={state()}
                 />
-              </Show>
+
+                {/* ПОКАЗ ОСТАЁТСЯ НА МЕСТЕ, когда человек правит: он крутит цвета не в пустоте,
+                    а на компонентах, и панель приходит СБОКУ, а не вместо них. */}
+                <Show when={view() === "form"}>
+                  <Panel
+                    palette={draft()?.palette ?? null}
+                    form={draft()?.form ?? null}
+                    gaps={gaps() ?? []}
+                    saving={saving()}
+                    trouble={trouble()}
+                    onPalette={(цвета: Palette) =>
+                      setDraft({ ...draft(), palette: цвета }, worn()?.name)
+                    }
+                    onSavePalette={(имя: string) => savePalette(имя, draft())}
+                    onSaveSkin={(имя: string) => void saveSkin(имя, draft(), worn()?.name)}
+                    fine={
+                      <Fine
+                        component={component()}
+                        draft={draft()?.form ?? null}
+                        gaps={gaps() ?? []}
+                        onDraft={(форма) => setDraft({ ...draft(), form: форма }, worn()?.name)}
+                      />
+                    }
+                  />
+                </Show>
+              </div>
             )}
           </Show>
         </main>

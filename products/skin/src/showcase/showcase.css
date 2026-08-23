@@ -677,3 +677,142 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   РАБОЧАЯ ОБЛАСТЬ: показ и настройки рядом.
+
+   Человек крутит цвета НА КОМПОНЕНТАХ, а не в пустоте, поэтому панель приходит сбоку, а не
+   вместо показа. Показ при этом не сжимается в щель: панель фиксированной ширины, остальное —
+   показу.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-block-size: 100%;
+}
+
+.work--editing {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+}
+
+.knobs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-2);
+  padding: var(--ui-gap-4);
+  border-inline-start: 1px solid var(--ui-line);
+  background: var(--ui-surface);
+}
+
+.knobs__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-2);
+  padding-block-end: var(--ui-gap-2);
+  border-block-end: 1px solid var(--ui-line);
+}
+
+.knobs__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-1);
+  padding: var(--ui-gap-2) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.knobs__title {
+  font-weight: 600;
+}
+
+.knobs__means,
+.knobs__note {
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+}
+
+.knobs__note {
+  margin: 0;
+}
+
+.knobs__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+}
+
+.knobs__save {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+  padding-block-start: var(--ui-gap-2);
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-1);
+}
+
+.knob__name {
+  font-size: var(--ui-size-sm);
+}
+
+.knob__field {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-gap-2);
+}
+
+/* Родной выбор цвета: пипетка и недавние цвета у человека уже есть, свой отнял бы их даром. */
+.knob__color {
+  inline-size: 2.5rem;
+  block-size: 2rem;
+  padding: 0;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.knob__range {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.knob__value {
+  flex: none;
+  min-inline-size: 4rem;
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
+  text-align: end;
+}
+
+.knob__value--quiet {
+  color: var(--ui-ink-quiet);
+  text-align: start;
+}
+
+/* Тонкая настройка внутри панели: колонки ей уже не по ширине — идёт в столбик. */
+.knobs .form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+  padding: 0;
+}
+
+@media (width < 60rem) {
+  .work--editing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .knobs {
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--ui-line);
+  }
+}

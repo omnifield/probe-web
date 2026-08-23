@@ -180,9 +180,9 @@ export async function readOutfit(name: string): Promise<Outfit | undefined> {
  * @param record запись целиком; у неё обязано быть поле `name`
  * @param label имя для человека; не названо — берётся машинное
  */
-export async function save(
+export async function save<Запись extends { name: string }>(
   kind: string,
-  record: { name: string },
+  record: Запись,
   label?: string,
 ): Promise<StoreRecord> {
   const response = await ask(BASE, {
@@ -211,9 +211,9 @@ export async function save(
  * @param record запись — её имя и есть ключ замены
  * @param label человеческая подпись
  */
-export async function replace(
+export async function replace<Запись extends { name: string }>(
   kind: string,
-  record: { name: string },
+  record: Запись,
   label?: string,
 ): Promise<StoreRecord> {
   const прежние = await listOf(kind);

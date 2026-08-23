@@ -28,7 +28,7 @@ import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { draftLook, DRAFT_NAME } from "./draft.js";
 import { listOutfits, readOutfit, readParts, StoreRefused } from "./store.js";
 
-export { DRAFT_NAME, draftLook, held, hold } from "./draft.js";
+export { type Draft, DRAFT_NAME, draftLook, held, hold } from "./draft.js";
 export {
   EMPTY_HINT,
   KINDS,
