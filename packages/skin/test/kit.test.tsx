@@ -21,12 +21,15 @@ import postcss, { type Rule } from "postcss";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { flattenCss } from "../src/flatten.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { FORCE_ATTRIBUTE } from "../src/marks.js";
 import { partSelector } from "../src/address.js";
 import { lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
 import { cleanup, mount } from "./dom.jsx";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSkinCss } = withPassports(lookup);
 
 afterEach(cleanup);
 
@@ -34,7 +37,7 @@ const passport = passportOf("button")!;
 // Развёрнуто намеренно: генератор отдаёт вложенную форму, а jsdom не понимает ни вложенности,
 // ни слоёв. Оба разворота — ограничение окружения пробы, а не поставки; в браузере вложенная
 // форма работает как есть.
-const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup));
+const skinCss = flattenCss(generateSkinCss(buttonSkin));
 
 /** Селекторы порождённого скина — те, что относятся к координатам, а не к корню документа. */
 const selectors: string[] = [];

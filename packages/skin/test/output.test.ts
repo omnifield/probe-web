@@ -22,12 +22,15 @@
 import { describe, expect, it } from "vitest";
 
 import { flattenCss } from "../src/flatten.js";
-import { generateSketchCss, generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { lookup } from "./passports.js";
 import { nestedEdits, nestedSkin } from "./skins.js";
 
-const skinCss = generateSkinCss(nestedSkin, lookup);
-const sketchCss = generateSketchCss(nestedEdits, lookup);
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSketchCss, generateSkinCss } = withPassports(lookup);
+
+const skinCss = generateSkinCss(nestedSkin);
+const sketchCss = generateSketchCss(nestedEdits);
 
 describe("текст порождения — вложенная форма", () => {
   it("скин со всем разрешённым вложением", async () => {
@@ -62,7 +65,7 @@ describe("текст порождения — плоская форма", () => 
 
 describe("устойчивость", () => {
   it("порождение: два вызова подряд дают один и тот же текст", () => {
-    const twice = generateSkinCss(nestedSkin, lookup);
+    const twice = generateSkinCss(nestedSkin);
 
     expect(twice).toBe(skinCss);
   });

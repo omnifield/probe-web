@@ -32,15 +32,15 @@
 // второй, и если сходятся они, то расхождению взяться неоткуда.
 
 import { ask, load, withChrome, type Call } from "@omnifield/live-check";
-import { assemble, generateSkinCss, type Outfit } from "@omnifield/probe-web-skin";
+import { type Outfit } from "@omnifield/probe-web-skin";
 import { flattenCss } from "@omnifield/probe-web-skin/flat";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
-import { PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
+import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
 import postcss from "postcss";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
-import { части } from "./assembled.js";
+import { assemble, generateSkinCss, части } from "./assembled.js";
 
 /**
  * ДОРОГА РЕДАКТОРА: СБОРКА трёх записей, затем порождение как есть — вложенная форма, браузер
@@ -50,7 +50,7 @@ import { части } from "./assembled.js";
  * складывается из палитры, форм и наряда, и совпадать обязан СОБРАННЫЙ вид, а не порождение
  * одной записи.
  */
-const дорогаРедактора = generateSkinCss(assemble(referenceOutfit, части, passportOf).skin, passportOf);
+const дорогаРедактора = generateSkinCss(assemble(referenceOutfit, части).skin);
 
 /**
  * ДОРОГА ПРИЛОЖЕНИЯ: запись сначала уезжает в хранилище и приезжает обратно, и только потом
@@ -67,9 +67,10 @@ const изХранилища = {
 };
 const дорогаПриложения = flattenCss(
   generateSkinCss(
-    assemble(изХранилища.outfit, { palettes: [изХранилища.palette], forms: изХранилища.forms }, passportOf)
-      .skin,
-    passportOf,
+    assemble(изХранилища.outfit, {
+      palettes: [изХранилища.palette],
+      forms: изХранилища.forms,
+    }).skin,
   ),
 );
 
@@ -200,7 +201,7 @@ const испорченнаяДорога = дорогаПриложения.repl
  * нечем, а заводить правку в эталоне ради пробы значило бы соврать про сам эталон.
  */
 const сПравкой: Outfit = { ...referenceOutfit, overrides: { button: { "space-4": "0px" } } };
-const дорогаСПравкой = generateSkinCss(assemble(сПравкой, части, passportOf).skin, passportOf);
+const дорогаСПравкой = generateSkinCss(assemble(сПравкой, части).skin);
 
 const снимки: Record<string, Снимок> = {};
 

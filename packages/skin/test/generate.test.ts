@@ -8,15 +8,17 @@
 import postcss, { type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
-import { generateSketchCss, generateSkinCss, SkinRefused } from "../src/generate.js";
+import { SkinRefused, withPassports } from "../src/generate.js";
 import { FORCE_ATTRIBUTE, LAYER_ORDER, NODE_ATTRIBUTE, SKETCH_LAYER, SKIN_LAYER } from "../src/marks.js";
 import type { SketchEdit, Skin } from "../src/model.js";
-import { skinRules } from "../src/rules.js";
 import { inLayer } from "./helpers/layers.js";
 import { buttonPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
 
-const skinCss = generateSkinCss(buttonSkin, lookup);
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSketchCss, generateSkinCss, skinRules } = withPassports(lookup);
+
+const skinCss = generateSkinCss(buttonSkin);
 
 const edits: readonly SketchEdit[] = [
   {
@@ -29,7 +31,7 @@ const edits: readonly SketchEdit[] = [
     },
   },
 ];
-const sketchCss = generateSketchCss(edits, lookup);
+const sketchCss = generateSketchCss(edits);
 
 /**
  * Правила текста — с селекторами и телами, как их видит парсер.
@@ -97,7 +99,7 @@ describe("текст разбирается и лежит в своём слое
         },
       },
     };
-    const css = generateSkinCss(skin, lookup);
+    const css = generateSkinCss(skin);
 
     expect(rulesOf(css).some((rule) => rule.selector.endsWith("::before"))).toBe(true);
     expect(css).toContain("@media (min-width: 40rem)");
@@ -153,7 +155,7 @@ describe("принудительный признак — тот же генер
   it("отдельных правил под предпросмотр не появилось: правил ровно столько, сколько собрано", () => {
     // Если бы принудительный признак приезжал ВТОРЫМ правилом — то есть если бы предпросмотр
     // порождал что-то своё, — правил в тексте оказалось бы больше собранных. Считаем.
-    const built = skinRules(buttonSkin, lookup).rules.length;
+    const built = skinRules(buttonSkin).rules.length;
     const printed = rulesOf(skinCss).filter((rule) => !rule.selector.startsWith(":root")).length;
 
     expect(printed).toBe(built);
@@ -185,7 +187,7 @@ describe("машинный разрез: генератор отдаёт ТОЛ�
   it("разрез держится входом, а не отбором: скин на вход правок не приходит вовсе", () => {
     // Проверяем свойство, а не реализацию: правки, порождённые с ПУСТЫМ перечнем, дают текст
     // без единого правила — значит взяться правилам скина там неоткуда.
-    expect(rulesOf(generateSketchCss([], lookup))).toEqual([]);
+    expect(rulesOf(generateSketchCss([]))).toEqual([]);
   });
 });
 
@@ -226,7 +228,6 @@ describe("имя свойства", () => {
   it("дефисное начертание не трогается", () => {
     const css = generateSkinCss(
       { name: "п", recipes: { button: { base: { root: { props: { "z-index": "1" } } } } } },
-      lookup,
     );
 
     expect(css).toContain("z-index: 1;");
@@ -240,7 +241,7 @@ describe("отказ", () => {
       recipes: { button: { base: { root: { props: { color: "var(--нет-такого)" } } } } },
     };
 
-    expect(() => generateSkinCss(broken, lookup)).toThrow(SkinRefused);
+    expect(() => generateSkinCss(broken)).toThrow(SkinRefused);
   });
 
   it("отказ несёт ВСЕ изъяны сразу — человек чинит запись целиком", () => {
@@ -257,7 +258,7 @@ describe("отказ", () => {
     };
 
     try {
-      generateSkinCss(broken, lookup);
+      generateSkinCss(broken);
       expect.unreachable("порождение обязано было отказать");
     } catch (error) {
       expect(error).toBeInstanceOf(SkinRefused);
@@ -272,7 +273,6 @@ describe("отказ", () => {
     expect(() =>
       generateSketchCss(
         [{ node: "btn", component: "нету", part: "root", style: { props: { color: "red" } } }],
-        lookup,
       ),
     ).toThrow(SkinRefused);
   });

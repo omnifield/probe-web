@@ -57,15 +57,16 @@ export { referencePalette } from "./variables.js";
  *
  * ```ts
  * import { referenceOutfit, referencePalette, referenceForms } from "@omnifield/probe-web-skin-reference";
- * import { assemble, generateSkinCss } from "@omnifield/probe-web-skin";
+ * import { withPassports } from "@omnifield/probe-web-skin";
  * import { passportOf } from "@omnifield/probe-web-ui/passport";
  *
- * const { skin, report } = assemble(
- *   referenceOutfit,
- *   { palettes: [referencePalette], forms: referenceForms },
- *   passportOf,
- * );
- * const css = generateSkinCss(skin, passportOf);
+ * const { assemble, generateSkinCss } = withPassports(passportOf);
+ *
+ * const { skin, report } = assemble(referenceOutfit, {
+ *   palettes: [referencePalette],
+ *   forms: referenceForms,
+ * });
+ * const css = generateSkinCss(skin);
  * ```
  */
 export const referenceOutfit: Outfit = {

@@ -7,9 +7,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import {
-  assemble,
   fluidBar,
   fluidExpression,
   fluidPoles,
@@ -19,6 +18,9 @@ import {
 } from "../src/index.js";
 import { lookup } from "./passports.js";
 import { синяя, наряд, части } from "./looks.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { assemble, generateSkinCss } = withPassports(lookup);
 
 /** Полюса интервалов: те же, что автор писал руками до `PWEB-80`. */
 const интервал: FluidSeed = { narrow: "0.375rem", wide: "0.5rem", between: ["366px", "1200px"] };
@@ -172,7 +174,6 @@ describe("КЕГЕЛЬ НЕ ОТВЕРГАЕТСЯ — вместо отказа
     const { report } = assemble(
       { ...наряд, palette: "текучая" },
       { ...части, palettes: [...части.palettes, текучая] },
-      lookup,
     );
 
     expect(report.fluid.map((строка) => строка.seed)).toEqual(["font-size"]);
@@ -182,16 +183,15 @@ describe("КЕГЕЛЬ НЕ ОТВЕРГАЕТСЯ — вместо отказа
   it("палитра без полюсов отчёта не рождает: постоянное значение — её право", () => {
     // Умолчаний не заводим: не объявила полюсов — осталась при постоянном значении, и это не
     // пробел, а выбор.
-    expect(assemble(наряд, части, lookup).report.fluid).toEqual([]);
+    expect(assemble(наряд, части).report.fluid).toEqual([]);
   });
 });
 
 describe("текучесть НЕ ломает плотность и посадку на сетку", () => {
   const текучая = { ...синяя, name: "текучая", dimensions: { ...синяя.dimensions, space: интервал } };
   const css = generateSkinCss(
-    assemble({ ...наряд, palette: "текучая" }, { ...части, palettes: [...части.palettes, текучая] }, lookup)
+    assemble({ ...наряд, palette: "текучая" }, { ...части, palettes: [...части.palettes, текучая] })
       .skin,
-    lookup,
   );
 
   it("семя стало выражением, а ступени этого не заметили", () => {

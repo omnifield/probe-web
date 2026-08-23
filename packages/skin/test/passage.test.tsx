@@ -41,10 +41,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { skinContrast } from "../src/contrast.js";
 import { flattenCss } from "../src/flatten.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import type { Skin } from "../src/model.js";
 import { skinGaps } from "../src/coverage.js";
 import { cleanup, mount } from "./dom.jsx";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSkinCss } = withPassports(passportOf);
 
 // ── МАТЕРИАЛ ─────────────────────────────────────────────────────────────────────────────────
 
@@ -118,7 +121,7 @@ const registry = createRegistry({
 
 /** Текст скина, годный для jsdom: развёрнутая вложенность и развёрнутые слои. */
 function wearable(skin: Skin): string {
-  return postcss([layers()]).process(flattenCss(generateSkinCss(skin, passportOf)), {
+  return postcss([layers()]).process(flattenCss(generateSkinCss(skin)), {
     from: undefined,
   }).css;
 }
@@ -358,7 +361,7 @@ describe("содержимое рядом с ЧАСТЬЮ составного �
 });
 
 describe("рецепт → CSS", () => {
-  const css = generateSkinCss(passageSkin, passportOf);
+  const css = generateSkinCss(passageSkin);
 
   it("кнопка одета ЦЕЛИКОМ — непокрытого по ней не осталось", () => {
     expect(skinGaps(passageSkin, [PASSPORTS.button!])).toEqual([]);

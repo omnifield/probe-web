@@ -9,11 +9,13 @@ import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 import { skinContrast } from "../src/contrast.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import type { Skin } from "../src/model.js";
-import { checkSkin } from "../src/rules.js";
 import { NOT_SEEDED, skinValues, valueNames } from "../src/seeds.js";
 import { buttonPassport, lookup } from "./passports.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { checkSkin, generateSkinCss } = withPassports(lookup);
 
 const SEED = "oklch(0.28 0.006 285)";
 const OTHER = "oklch(0.55 0.21 27)";
@@ -57,7 +59,7 @@ const LIGHT = ":root";
 const DARK = ":root.dark, :root .dark";
 
 describe("обе половины строятся", () => {
-  const css = generateSkinCss(sown(SEED), lookup);
+  const css = generateSkinCss(sown(SEED));
 
   it("светлая половина несёт все ступени шкалы и контрастную", () => {
     const light = block(css, LIGHT);
@@ -90,7 +92,6 @@ describe("обе половины строятся", () => {
   it("объявленные ряды приезжают, необъявленные — нет", () => {
     const rich = generateSkinCss(
       { ...sown(SEED), variables: { scales: { бренд: { seed: SEED, alpha: true, scrim: true } } } },
-      lookup,
     );
     const light = block(rich, LIGHT);
 
@@ -102,7 +103,6 @@ describe("обе половины строятся", () => {
   it("затемнение под слоем от режима не зависит — в тёмный блок оно не едет", () => {
     const rich = generateSkinCss(
       { ...sown(SEED), variables: { scales: { бренд: { seed: SEED, scrim: true } } } },
-      lookup,
     );
 
     expect(block(rich, LIGHT).has("бренд-scrim")).toBe(true);
@@ -111,8 +111,8 @@ describe("обе половины строятся", () => {
 });
 
 describe("скин пересеваем: правило следует за семенем", () => {
-  const first = generateSkinCss(sown(SEED), lookup);
-  const second = generateSkinCss(sown(OTHER), lookup);
+  const first = generateSkinCss(sown(SEED));
+  const second = generateSkinCss(sown(OTHER));
 
   /** Правила без блоков значений — то, что описывает вид. */
   function ruleTexts(css: string): string[] {
@@ -143,8 +143,8 @@ describe("скин пересеваем: правило следует за се
       },
     });
 
-    const before = generateSkinCss(literal(SEED), lookup);
-    const after = generateSkinCss(literal(OTHER), lookup);
+    const before = generateSkinCss(literal(SEED));
+    const after = generateSkinCss(literal(OTHER));
 
     expect(ruleTexts(after)).toEqual(ruleTexts(before));
     expect(after).toContain("#334455");
@@ -157,26 +157,26 @@ describe("правка человека переживает перегенер�
   const skin = sown(SEED, { dark: { "бренд-9": "#123456" } });
 
   it("правка тёмной половины уезжает в файл вместо построенного", () => {
-    const css = generateSkinCss(skin, lookup);
+    const css = generateSkinCss(skin);
 
     expect(block(css, DARK).get("бренд-9")).toBe("#123456");
   });
 
   it("светлая половина при этом остаётся построенной", () => {
-    const css = generateSkinCss(skin, lookup);
+    const css = generateSkinCss(skin);
 
     expect(block(css, LIGHT).get("бренд-9")).toBe(
-      block(generateSkinCss(sown(SEED), lookup), LIGHT).get("бренд-9"),
+      block(generateSkinCss(sown(SEED)), LIGHT).get("бренд-9"),
     );
   });
 
   it("правка переживает СМЕНУ СЕМЕНИ — ради этого граница и названа", () => {
-    const resown = generateSkinCss(sown(OTHER, { dark: { "бренд-9": "#123456" } }), lookup);
+    const resown = generateSkinCss(sown(OTHER, { dark: { "бренд-9": "#123456" } }));
 
     expect(block(resown, DARK).get("бренд-9")).toBe("#123456");
     // Остальные ступени тёмной при этом пересеялись.
     expect(block(resown, DARK).get("бренд-8")).not.toBe(
-      block(generateSkinCss(skin, lookup), DARK).get("бренд-8"),
+      block(generateSkinCss(skin), DARK).get("бренд-8"),
     );
   });
 
@@ -211,11 +211,11 @@ describe("пути смешиваются — первое молчание, н�
   };
 
   it("одна шкала семенем, другое значение литералом — законно", () => {
-    expect(checkSkin(mixed, lookup)).toEqual([]);
+    expect(checkSkin(mixed)).toEqual([]);
   });
 
   it("оба вида значений едут в файл", () => {
-    const css = generateSkinCss(mixed, lookup);
+    const css = generateSkinCss(mixed);
 
     expect(block(css, LIGHT).get("своё")).toBe("#101010");
     expect(block(css, LIGHT).has("бренд-1")).toBe(true);
@@ -231,7 +231,7 @@ describe("пути смешиваются — первое молчание, н�
 
 describe("ссылка на ступень известна проверке", () => {
   it("`var(--бренд-9)` изъяном не считается", () => {
-    expect(checkSkin(sown(SEED), lookup)).toEqual([]);
+    expect(checkSkin(sown(SEED))).toEqual([]);
   });
 
   it("ступень, которой шкала не даёт, — по-прежнему изъян", () => {
@@ -243,7 +243,7 @@ describe("ссылка на ступень известна проверке", (
       },
     };
 
-    expect(checkSkin(typo, lookup).map((flaw) => flaw.name)).toEqual(["unknown-value"]);
+    expect(checkSkin(typo).map((flaw) => flaw.name)).toEqual(["unknown-value"]);
   });
 
   it("необъявленный ряд тоже изъян: `alpha` не просили — имён нет", () => {
@@ -255,7 +255,7 @@ describe("ссылка на ступень известна проверке", (
       },
     };
 
-    expect(noAlpha && checkSkin(noAlpha, lookup).map((flaw) => flaw.name)).toEqual([
+    expect(noAlpha && checkSkin(noAlpha).map((flaw) => flaw.name)).toEqual([
       "unknown-value",
     ]);
   });
@@ -280,15 +280,15 @@ describe("негодное семя — изъян записи, а не пол�
   it("проверка НЕ бросает, а называет причину", () => {
     // До `PWEB-45` построение шкалы бросало, и обещанный «перечень изъянов значением» падал
     // исключением посреди перечня.
-    expect(() => checkSkin(rotten, lookup)).not.toThrow();
-    expect(checkSkin(rotten, lookup).map((flaw) => flaw.name)).toEqual([
+    expect(() => checkSkin(rotten)).not.toThrow();
+    expect(checkSkin(rotten).map((flaw) => flaw.name)).toEqual([
       "bad-seed",
       "unknown-value",
     ]);
   });
 
   it("причина названа первой: следом за ней сыплются ссылки на ступени", () => {
-    const [first] = checkSkin(rotten, lookup);
+    const [first] = checkSkin(rotten);
 
     expect(first?.name).toBe("bad-seed");
     expect(first?.where).toBe("variables.scales.бренд");
@@ -296,7 +296,7 @@ describe("негодное семя — изъян записи, а не пол�
   });
 
   it("порождение отказывает по-своему, а не чужим исключением", () => {
-    expect(() => generateSkinCss(rotten, lookup)).toThrow(/не порождён/);
+    expect(() => generateSkinCss(rotten)).toThrow(/не порождён/);
   });
 
   it("полупрозрачное семя названо полупрозрачным, а не опечаткой", () => {
@@ -305,7 +305,7 @@ describe("негодное семя — изъян записи, а не пол�
       variables: { scales: { бренд: "rgb(0 0 0 / 50%)" } },
       recipes: {},
     };
-    const [flaw] = checkSkin(translucent, lookup);
+    const [flaw] = checkSkin(translucent);
 
     expect(flaw?.name).toBe("bad-seed");
     expect(flaw?.means).toContain("полупрозрач");
