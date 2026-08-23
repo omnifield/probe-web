@@ -5,6 +5,7 @@
 // — проверялась бы не та дорога, по которой вид приезжает на самом деле.
 
 import { assemble, type Assembled, type LookParts } from "@omnifield/probe-web-skin";
+import { passportOf } from "@omnifield/probe-web-ui/passport";
 
 import { referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
 
@@ -12,4 +13,4 @@ import { referenceForms, referenceOutfit, referencePalette } from "../src/index.
 export const части: LookParts = { palettes: [referencePalette], forms: referenceForms };
 
 /** Эталон, собранный в надеваемый вид. */
-export const собранный: Assembled = assemble(referenceOutfit, части);
+export const собранный: Assembled = assemble(referenceOutfit, части, passportOf);

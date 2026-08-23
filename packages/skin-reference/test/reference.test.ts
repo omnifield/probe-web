@@ -51,7 +51,40 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
   });
 
   it("палитра закрывает словарь, а формы просят только его роли — до надевания", () => {
-    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
+    expect(checkOutfit(referenceOutfit, части, passportOf)).toEqual([]);
+  });
+
+  it("РАСКРЫТИЕ ПИШЕТ СКИН: гармошка адресует переменную, объявленную паспортом", () => {
+    // Вторая сторона объявления (`PWEB-93`). Кит меряет узел и кладёт `--height` на содержимое,
+    // объявив это паспортом; анимации он не привозит — её пишет скин. Взять высоту больше
+    // неоткуда: `auto` не анимируется, а придумать число за чужое содержимое нельзя.
+    const гармошка = referenceForms.find((form) => form.component === "accordion")!;
+
+    expect(JSON.stringify(гармошка.recipe)).toContain("var(--height)");
+  });
+
+  it("МУТАЦИЯ: убери переменную из паспорта — форма гармошки краснеет с именем и частью", () => {
+    // Паспорт приезжает ДОВОДОМ, и мутируется довод — копии чужой зоны для этого не нужно.
+    // Проверка наряда получает паспорта тем же способом, что и порождение, и это здесь видно:
+    // подмена на входе доезжает до изъяна.
+    const безВысоты = (component: string) => {
+      const passport = passportOf(component);
+      if (!passport || component !== "accordion") return passport;
+
+      return {
+        ...passport,
+        parts: passport.parts.map((часть) =>
+          часть.name === "itemContent" ? { ...часть, variables: [] } : часть,
+        ),
+      };
+    };
+
+    // Контроль стоит выше: на настоящих паспортах изъянов ноль — значит краснота ниже не случайна.
+    const flaws = checkOutfit(referenceOutfit, части, безВысоты);
+
+    expect(flaws.map((flaw) => flaw.name)).toContain("outside-vocabulary");
+    expect(flaws[0]?.means).toContain("height");
+    expect(flaws[0]?.where).toContain("itemContent");
   });
 
   it("сборка отдаёт отчёт: одеты все пятеро, точечных правок ноль", () => {
@@ -124,7 +157,7 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
 
     expect(употреблено.length).toBeLessThan(SCALE_ROLES.length);
     expect(употреблено).toContain("акцент");
-    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
+    expect(checkOutfit(referenceOutfit, части, passportOf)).toEqual([]);
   });
 
   it("ни один цвет не выписан литералом — иначе скин перестал бы быть пересеваемым", () => {
@@ -153,7 +186,7 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
     const пересеян = assemble(referenceOutfit, {
       ...части,
       palettes: [{ ...referencePalette, scales: { ...referencePalette.scales, акцент: "oklch(0.55 0.2 140)" } }],
-    }).skin;
+    }, passportOf).skin;
 
     for (const half of ["light", "dark"] as const) {
       expect(skinValues(пересеян, half).get("акцент-9")?.value).not.toBe(

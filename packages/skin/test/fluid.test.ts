@@ -172,6 +172,7 @@ describe("КЕГЕЛЬ НЕ ОТВЕРГАЕТСЯ — вместо отказа
     const { report } = assemble(
       { ...наряд, palette: "текучая" },
       { ...части, palettes: [...части.palettes, текучая] },
+      lookup,
     );
 
     expect(report.fluid.map((строка) => строка.seed)).toEqual(["font-size"]);
@@ -181,14 +182,15 @@ describe("КЕГЕЛЬ НЕ ОТВЕРГАЕТСЯ — вместо отказа
   it("палитра без полюсов отчёта не рождает: постоянное значение — её право", () => {
     // Умолчаний не заводим: не объявила полюсов — осталась при постоянном значении, и это не
     // пробел, а выбор.
-    expect(assemble(наряд, части).report.fluid).toEqual([]);
+    expect(assemble(наряд, части, lookup).report.fluid).toEqual([]);
   });
 });
 
 describe("текучесть НЕ ломает плотность и посадку на сетку", () => {
   const текучая = { ...синяя, name: "текучая", dimensions: { ...синяя.dimensions, space: интервал } };
   const css = generateSkinCss(
-    assemble({ ...наряд, palette: "текучая" }, { ...части, palettes: [...части.palettes, текучая] }).skin,
+    assemble({ ...наряд, palette: "текучая" }, { ...части, palettes: [...части.palettes, текучая] }, lookup)
+      .skin,
     lookup,
   );
 

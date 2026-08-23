@@ -86,13 +86,13 @@ describe("случаи", () => {
     for (const item of stream()) {
       expect(item.tree.components.root).toBe(sketch?.components.root);
 
-      // Узлы образца — все на месте и ни одного лишнего сверх ПОДПИСИ: её кладёт витрина как
-      // потребитель, и кладёт узлом содержимого, а не своей разметкой.
-      const свои = Object.keys(item.tree.components.nodes).filter(
-        (id) => !id.startsWith("подпись-"),
-      );
+      // Части — все и ровно те, что в анатомии. Содержимое сюда не считается: его кладёт
+      // ПОСТАВЩИК в своей базовой сборке, и сколько там подписей — его дело, не наше.
+      const части = Object.values(item.tree.components.nodes)
+        .filter((node) => !isContent(node))
+        .map((node) => node.id);
 
-      expect(свои).toEqual(Object.keys(sketch?.components.nodes ?? {}));
+      expect(части).toEqual(Object.keys(sketch?.components.nodes ?? {}));
     }
   });
 
