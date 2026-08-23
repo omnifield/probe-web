@@ -36,6 +36,19 @@ import {
 import { REGISTRY } from "./registry.js";
 
 /**
+ * Ось «ВСЕ» — положение, при котором ось не фиксируется, а разворачивается в поток случаев.
+ *
+ * Отдельным значением, а не `null` и не отсутствием поля, ровно потому, что «все» и «обычное» —
+ * РАЗНЫЕ положения одной оси, и раньше они были склеены. Склейка стоила стартового вида: человек
+ * приходил смотреть вариации, а получал их произведение на состояния, и обычный вид кнопки —
+ * тот, ради которого он и пришёл, — лежал вперемешку с наведёнными и отключёнными.
+ */
+export const ANY = "*";
+
+/** Положение оси: названное значение либо «все». */
+export type Axis<T> = T | typeof ANY;
+
+/**
  * Координата случая — где он стоит по осям.
  *
  * Есть у КАЖДОГО случая, включая человеческий: «занята» это состояние `busy`, «длинная подпись» —
@@ -70,10 +83,15 @@ export interface ShowcaseCase {
 export interface Slice {
   /** Часть, чьё состояние показываем. Не названа — корневая. */
   readonly part?: string;
-  /** Имя вариации; `null` — развернуть по всем, включая умолчание. */
-  readonly variant?: string | null;
-  /** Имя состояния; `null` — развернуть по всем, включая обычное. */
-  readonly state?: string | null;
+  /** Вариация: имя либо {@link ANY} — развернуть по всем. */
+  readonly variant: Axis<string>;
+  /**
+   * Состояние: имя, `null` — ОБЫЧНОЕ (ни одного признака не поставлено), либо {@link ANY}.
+   *
+   * Три положения, а не два: обычный вид — полноправный выбор, а не «фильтр не задан». С него
+   * показ и начинается, потому что всё остальное — отклонения от него.
+   */
+  readonly state: Axis<string | null>;
   /** Имена вариаций надетого скина — оси взять больше неоткуда. */
   readonly variants: readonly string[];
 }
@@ -186,14 +204,19 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   // УМОЛЧАНИЯ ОТДЕЛЬНОЙ СТРОКОЙ НЕТ. Скин объявляет умолчание именем, и «атрибут не поставлен»
   // — тот же адрес, что названная умолчательная вариация. Показывать их порознь значило бы
   // обещать два разных вида там, где вид один.
-  const variants =
-    slice.variant === undefined || slice.variant === null ? slice.variants : [slice.variant];
+  const variants = slice.variant === ANY ? slice.variants : [slice.variant];
 
   const states = statesOfPart(component, part);
+
+  // ОБЫЧНОЕ — это `undefined` в перечне: признака не ставится ни одного. Оно идёт ПЕРВЫМ и в
+  // положении «все», потому что состояния читаются как отклонения от обычного вида, а отклонение
+  // показывать раньше того, от чего оно отклоняется, — значит показывать его без опоры.
   const shown =
-    slice.state === undefined || slice.state === null
+    slice.state === ANY
       ? [undefined, ...states]
-      : states.filter((state) => state.name === slice.state);
+      : slice.state === null
+        ? [undefined]
+        : states.filter((state) => state.name === slice.state);
 
   const cases: ShowcaseCase[] = [];
 
@@ -305,15 +328,17 @@ export function casesOf(component: string, slice: Slice): ShowcaseCase[] {
 /**
  * Стоит ли случай в срезе: названная ось обязана совпасть, ось «все» пропускает любой.
  *
+ * Обычное состояние — тоже названное положение (`null`), и совпадать оно обязано так же строго:
+ * человеческий случай про наведение в обычном срезе показывал бы наведённый вид под подписью
+ * «обычное».
+ *
  * Часть сравнивается с корневой по умолчанию — случай, не назвавший части, про корень и есть.
  */
 function inSlice(item: ShowcaseCase, component: string, slice: Slice): boolean {
   const part = slice.part ?? rootPartOf(component);
 
   if ((item.at.part ?? rootPartOf(component)) !== part) return false;
-  if (slice.variant !== undefined && slice.variant !== null && item.at.variant !== slice.variant) {
-    return false;
-  }
+  if (slice.variant !== ANY && item.at.variant !== slice.variant) return false;
 
-  return !(slice.state !== undefined && slice.state !== null && item.at.state !== slice.state);
+  return slice.state === ANY || item.at.state === slice.state;
 }

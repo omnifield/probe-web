@@ -41,13 +41,23 @@ import {
   type StoreRecord,
 } from "../skins/index.js";
 import {
+  ANY,
   casesOf,
   partsOf,
   rootPartOf,
   statesOfPart,
+  type Axis,
   type ShowcaseCase,
 } from "./cases.js";
 import { REGISTRY } from "./registry.js";
+
+/**
+ * Обычное состояние в списке выбора — ПУСТЫМ значением.
+ *
+ * Пустое взято нарочно: именем состояния оно быть не может ни у одного паспорта, а значит выбор
+ * «обычное» не столкнётся с состоянием, которое кто-то так назовёт.
+ */
+const PLAIN = "";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
 const COMPONENTS = knownComponents(REGISTRY);
@@ -139,6 +149,9 @@ function Case(props: { item: ShowcaseCase }) {
  * Ось в положении «все» разворачивается в поток случаев, названная — фиксируется. Так один и тот
  * же показ годится компоненту любого размера: что разворачивать, решает человек.
  *
+ * У состояния положений ТРИ: обычное · все · названное. Обычное — не «фильтр не задан», а сам
+ * вид компонента, когда с ним ничего не происходит; всё прочее показывает отклонения от него.
+ *
  * Часть «всех» не имеет намеренно: состояние всегда чьё-то, и «состояние вообще» — не адрес.
  * Перечень состояний следует за выбранной частью: словарь у каждой части свой.
  */
@@ -146,11 +159,11 @@ function Axes(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
+  variant: Axis<string>;
+  state: Axis<string | null>;
   onPart: (part: string) => void;
-  onVariant: (variant: string | null) => void;
-  onState: (state: string | null) => void;
+  onVariant: (variant: Axis<string>) => void;
+  onState: (state: Axis<string | null>) => void;
 }) {
   return (
     <div class="axes">
@@ -171,13 +184,11 @@ function Axes(props: {
         <span class="axes__label">вариация</span>
         <select
           class="axes__select"
-          value={props.variant ?? ""}
+          value={props.variant}
           disabled={props.variants.length === 0}
-          onChange={(event) =>
-            props.onVariant(event.currentTarget.value === "" ? null : event.currentTarget.value)
-          }
+          onChange={(event) => props.onVariant(event.currentTarget.value)}
         >
-          <option value="">все</option>
+          <option value={ANY}>все</option>
           <For each={props.variants}>{(name) => <option value={name}>{name}</option>}</For>
         </select>
       </label>
@@ -186,12 +197,15 @@ function Axes(props: {
         <span class="axes__label">состояние</span>
         <select
           class="axes__select"
-          value={props.state ?? ""}
+          value={props.state ?? PLAIN}
           onChange={(event) =>
-            props.onState(event.currentTarget.value === "" ? null : event.currentTarget.value)
+            props.onState(event.currentTarget.value === PLAIN ? null : event.currentTarget.value)
           }
         >
-          <option value="">все</option>
+          {/* ОБЫЧНОЕ первым и выбранным: с него начинают смотреть, остальное — отклонения от
+              него. «Все» стоит рядом и остаётся одним движением руки. */}
+          <option value={PLAIN}>обычное</option>
+          <option value={ANY}>все</option>
           <For each={statesOfPart(props.component, props.part)}>
             {(state) => <option value={state.name}>{state.name}</option>}
           </For>
@@ -220,8 +234,8 @@ function ComponentPage(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
+  variant: Axis<string>;
+  state: Axis<string | null>;
   view: View;
 }) {
   const cases = () =>
@@ -282,16 +296,16 @@ function Head(props: {
   component: string;
   variants: readonly string[];
   part: string;
-  variant: string | null;
-  state: string | null;
+  variant: Axis<string>;
+  state: Axis<string | null>;
   view: View;
   worn: string | null;
   records: readonly StoreRecord[] | undefined;
   failure: unknown;
   mode: SkinMode;
   onPart: (part: string) => void;
-  onVariant: (variant: string | null) => void;
-  onState: (state: string | null) => void;
+  onVariant: (variant: Axis<string>) => void;
+  onState: (state: Axis<string | null>) => void;
   onView: (view: View) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
@@ -391,18 +405,21 @@ function Head(props: {
 export function App() {
   const [current, setCurrentSignal] = createSignal(COMPONENTS[0] ?? "");
 
-  // ОСИ. Часть по умолчанию корневая, остальные оси развёрнуты: одевающий приходит смотреть, что
-  // одето, а не искать, где это включается.
+  // ОСИ. Часть по умолчанию корневая, вариации развёрнуты, состояние — ОБЫЧНОЕ.
+  //
+  // Пришедший на витрину смотрит сперва на то, как компонент выглядит, когда с ним ничего не
+  // происходит: это и есть его вид, а наведённый и отключённый — отклонения. Развернув обе оси
+  // сразу, мы показывали бы произведение, в котором обычный вид приходится выискивать.
   const [part, setPart] = createSignal(rootPartOf(COMPONENTS[0] ?? ""));
-  const [variant, setVariant] = createSignal<string | null>(null);
-  const [state, setState] = createSignal<string | null>(null);
+  const [variant, setVariant] = createSignal<Axis<string>>(ANY);
+  const [state, setState] = createSignal<Axis<string | null>>(null);
   const [view, setView] = createSignal<View>("showcase");
 
   /** Смена компонента сбрасывает оси: чужая часть и чужое состояние на нём не значат ничего. */
   const setCurrent = (component: string) => {
     setCurrentSignal(component);
     setPart(rootPartOf(component));
-    setVariant(null);
+    setVariant(ANY);
     setState(null);
   };
 

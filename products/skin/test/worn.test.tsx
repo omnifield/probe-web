@@ -17,7 +17,7 @@
 import { RenderTree } from "@omnifield/probe-web-assembly";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { casesOf, rootPartOf } from "../src/showcase/cases.js";
+import { ANY, casesOf, rootPartOf } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
 import { SKIN_SOURCE, StoreDown } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
@@ -72,7 +72,7 @@ describe("скин надевается", () => {
     const skin = await wearing();
     await skin.wear(OUTFIT.name);
 
-    const base = casesOf("button", { part: rootPartOf("button"), variants: [] })[0];
+    const base = casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: [] })[0];
     const host = mount(() => <RenderTree tree={base?.tree} registry={REGISTRY} />);
     const node = host.querySelector('[data-scope="button"][data-part="root"]');
 
@@ -114,7 +114,7 @@ describe("скин снимается", () => {
     await skin.wear(OUTFIT.name);
     skin.takeOff();
 
-    const base = casesOf("button", { part: rootPartOf("button"), variants: [] })[0];
+    const base = casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: [] })[0];
     const host = mount(() => <RenderTree tree={base?.tree} registry={REGISTRY} />);
     const node = host.querySelector('[data-scope="button"][data-part="root"]');
 

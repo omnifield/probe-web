@@ -22,7 +22,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/showcase/app.jsx";
-import { casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
+import { ANY, casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
 
 import { cleanup, mount } from "./dom.jsx";
@@ -51,9 +51,16 @@ describe("перечень", () => {
   });
 });
 
-/** Поток случаев кнопки при развёрнутых осях — то, что видит человек по умолчанию. */
+/** Имена вариаций пробной формы — оси взять больше неоткуда, их объявляет скин. */
+const VARIANTS = Object.keys(FORM.recipe.variants ?? {});
+
+/** Поток случаев кнопки при ОБЕИХ развёрнутых осях: вариации × состояния. */
 const stream = (): ShowcaseCase[] =>
-  casesOf("button", { part: rootPartOf("button"), variants: Object.keys(FORM.recipe.variants ?? {}) });
+  casesOf("button", { part: rootPartOf("button"), variant: ANY, state: ANY, variants: VARIANTS });
+
+/** Стартовый срез витрины: все вариации, состояние обычное. */
+const plain = (): ShowcaseCase[] =>
+  casesOf("button", { part: rootPartOf("button"), variant: ANY, state: null, variants: VARIANTS });
 
 describe("случаи", () => {
   it("дерево случая — образец компонента, а не своя разметка", () => {
@@ -88,6 +95,25 @@ describe("случаи", () => {
     }
   });
 
+  it("стартовый срез — все вариации в обычном состоянии", () => {
+    // Первым человек смотрит НА ВИД, а не на отклонения от него: наведённое и отключённое
+    // читаются как «что происходит с этим видом», и показывать их вперемешку с ним значит
+    // заставлять его выискивать.
+    const axes = plain().filter((item) => item.origin === "axis");
+
+    expect(axes).toHaveLength(VARIANTS.length);
+    expect(axes.map((item) => item.at.variant)).toEqual(VARIANTS);
+    expect(axes.every((item) => item.at.state === null)).toBe(true);
+  });
+
+  it("обычное и «все» — разные положения оси, а не одно", () => {
+    // Прежде они были склеены, и стартовый вид был произведением осей. Разница должна быть
+    // видна машине, иначе она снова схлопнется.
+    expect(stream().length).toBeGreaterThan(plain().length);
+    expect(stream().some((item) => item.at.state !== null)).toBe(true);
+    expect(plain().some((item) => item.at.state !== null)).toBe(false);
+  });
+
   it("первая вариация — та, что скин объявил умолчанием", () => {
     // Отдельной строки «умолчание» нет: скин называет умолчание именем, и «атрибут не поставлен»
     // — тот же адрес. Две строки обещали бы два разных вида там, где вид один.
@@ -100,14 +126,20 @@ describe("случаи", () => {
 
   it("случаи есть у каждого компонента перечня", () => {
     for (const component of knownComponents(REGISTRY)) {
-      expect(casesOf(component, { part: rootPartOf(component), variants: [] }).length).toBeGreaterThan(0);
+      const slice = { part: rootPartOf(component), variant: ANY, state: null, variants: [] };
+
+      expect(casesOf(component, slice).length).toBeGreaterThan(0);
     }
   });
 
   it("фильтр отбирает и человеческие случаи — у них тоже есть координата", () => {
-    const variants = Object.keys(FORM.recipe.variants ?? {});
-    const hover = casesOf("button", { part: "root", state: "hover", variants });
-    const disabled = casesOf("button", { part: "root", state: "disabled", variants });
+    const hover = casesOf("button", { part: "root", variant: ANY, state: "hover", variants: VARIANTS });
+    const disabled = casesOf("button", {
+      part: "root",
+      variant: ANY,
+      state: "disabled",
+      variants: VARIANTS,
+    });
 
     // Человеческие случаи стоят в своих координатах: в срезе по наведению их быть не должно,
     // иначе фильтр читается как неработающий.
@@ -118,9 +150,13 @@ describe("случаи", () => {
   });
 
   it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
-    const variants = Object.keys(FORM.recipe.variants ?? {});
-    const all = casesOf("button", { part: "root", variants });
-    const one = casesOf("button", { part: "root", variant: variants[0] ?? null, state: "hover", variants });
+    const all = stream();
+    const one = casesOf("button", {
+      part: "root",
+      variant: VARIANTS[0] ?? ANY,
+      state: "hover",
+      variants: VARIANTS,
+    });
 
     expect(all.length).toBeGreaterThan(one.length);
     // Зафиксированный срез — ровно один осевой случай плюс человеческие.
@@ -204,7 +240,34 @@ describe("хедер", () => {
   });
 });
 
+/** Ставит ось состояний в названное положение — то же движение, что делает рукой человек. */
+function chooseState(host: HTMLElement, value: string): void {
+  const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
+
+  stateAxis!.value = value;
+  stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 describe("оси — фильтр, а не раскладка", () => {
+  it("витрина открывается на обычном виде, а не на произведении осей", async () => {
+    const host = mount(() => <App />);
+
+    // Пришедший смотреть кнопки видит ВАРИАЦИИ — по одной карточке на каждую, — а не их
+    // произведение на состояния, среди которого обычный вид пришлось бы выискивать.
+    //
+    // Ждём наряда: до его прихода вариаций нет вовсе, и поток состоит из человеческих случаев.
+    await vi.waitFor(() => {
+      const плоские = [...host.querySelectorAll(".case__title")].filter((node) =>
+        (node.textContent ?? "").includes("обычное"),
+      );
+
+      expect(плоские).toHaveLength(Object.keys(FORM.recipe.variants ?? {}).length);
+    });
+
+    expect(host.querySelector("[data-force]")).toBeNull();
+    expect(host.querySelector("[data-disabled]")).toBeNull();
+  });
+
   it("выбор состояния сужает поток случаев", async () => {
     const host = mount(() => <App />);
     const before = await vi.waitFor(() => {
@@ -213,11 +276,17 @@ describe("оси — фильтр, а не раскладка", () => {
       return cards.length;
     });
 
-    const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
-    stateAxis!.value = "hover";
-    stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
+    chooseState(host, ANY);
 
-    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(before));
+    const развёрнуто = await vi.waitFor(() => {
+      const cards = host.querySelectorAll(".case");
+      expect(cards.length).toBeGreaterThan(before);
+      return cards.length;
+    });
+
+    chooseState(host, "hover");
+
+    await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeLessThan(развёрнуто));
   });
 
   it("витрина не рисует внутри компонента ничего своего", async () => {
@@ -270,12 +339,18 @@ describe("отрисовка", () => {
   it("состояние, которое ставит кит, доезжает до разметки", async () => {
     const host = mount(() => <App />);
 
+    // Ось состояний стоит на ОБЫЧНОМ: показ начинается с вида, а не с отклонений от него.
+    // Состояния надо развернуть — ровно так же, как это делает рукой человек.
+    chooseState(host, ANY);
+
     // Случаи появляются после того, как приедет надетый наряд: вариации живут в нём.
     await vi.waitFor(() => expect(host.querySelector("[data-disabled]")).not.toBeNull());
   });
 
   it("псевдосостояние показано признаком — браузерное нам недоступно", async () => {
     const host = mount(() => <App />);
+
+    chooseState(host, ANY);
 
     // Вариации приезжают из надетого наряда, поэтому случаи появляются не в первый кадр.
     await vi.waitFor(() => {
