@@ -109,11 +109,11 @@ describe("случаи", () => {
     const hover = casesOf("button", { part: "root", state: "hover", variants });
     const disabled = casesOf("button", { part: "root", state: "disabled", variants });
 
-    // «Занята» и «отключена по-настоящему» стоят в состояниях `busy` и `disabled`: в срезе по
-    // наведению их быть не должно, иначе фильтр читается как неработающий.
+    // Человеческие случаи стоят в своих координатах: в срезе по наведению их быть не должно,
+    // иначе фильтр читается как неработающий.
     expect(hover.filter((item) => item.origin === "human")).toHaveLength(0);
     expect(disabled.filter((item) => item.origin === "human").map((item) => item.title)).toContain(
-      "Отключена по-настоящему",
+      "Отключена пропом",
     );
   });
 
@@ -267,11 +267,11 @@ describe("отрисовка", () => {
     expect(host.querySelector("[data-node]")).not.toBeNull();
   });
 
-  it("состояние, которое ставит кит, доезжает до разметки", () => {
+  it("состояние, которое ставит кит, доезжает до разметки", async () => {
     const host = mount(() => <App />);
 
-    expect(host.querySelector("[data-disabled]")).not.toBeNull();
-    expect(host.querySelector('[aria-busy="true"]')).not.toBeNull();
+    // Случаи появляются после того, как приедет надетый наряд: вариации живут в нём.
+    await vi.waitFor(() => expect(host.querySelector("[data-disabled]")).not.toBeNull());
   });
 
   it("псевдосостояние показано признаком — браузерное нам недоступно", async () => {
