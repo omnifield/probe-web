@@ -23,7 +23,7 @@
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
 import { skinGaps } from "@omnifield/probe-web-skin";
-import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+import type { Form } from "@omnifield/probe-web-skin/model";
 import { GROUPS, groupOf, PASSPORTS, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   createEffect,
@@ -35,8 +35,7 @@ import {
   Show,
 } from "solid-js";
 
-import { Fine } from "../editor/fine.jsx";
-import { Panel } from "../editor/panel.jsx";
+import { EditScreen } from "../editor/screen.jsx";
 import {
   assembleOutfit,
   type Draft,
@@ -706,41 +705,35 @@ export function App() {
 
         <main class="main">
           <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+            {/* ВИТРИНА И ПРАВКА — РАЗНЫЕ ЭКРАНЫ (решение user 2026-08-23).
+                На витрине СМОТРЯТ: меняют скин, сверяют обе половины, листают компоненты.
+                Настроек здесь нет ни одной — иначе показ перестаёт быть показом.
+                В правке ПРАВЯТ: показана та координата, над которой работают, а не весь поток
+                вариаций. Разный предмет — разный показ. */}
             {(component) => (
-              <div class="work" classList={{ "work--editing": view() === "form" }}>
-                <ComponentPage
-                  component={component()}
-                  variants={variants()}
-                  part={part()}
-                  variant={variant()}
-                  state={state()}
-                />
-
-                {/* ПОКАЗ ОСТАЁТСЯ НА МЕСТЕ, когда человек правит: он крутит цвета не в пустоте,
-                    а на компонентах, и панель приходит СБОКУ, а не вместо них. */}
-                <Show when={view() === "form"}>
-                  <Panel
-                    palette={draft()?.palette ?? null}
-                    form={draft()?.form ?? null}
-                    gaps={gaps() ?? []}
-                    saving={saving()}
-                    trouble={trouble()}
-                    onPalette={(цвета: Palette) =>
-                      setDraft({ ...draft(), palette: цвета }, worn()?.name)
-                    }
-                    onSavePalette={(имя: string) => savePalette(имя, draft())}
-                    onSaveSkin={(имя: string) => void saveSkin(имя, draft(), worn()?.name)}
-                    fine={
-                      <Fine
-                        component={component()}
-                        draft={draft()?.form ?? null}
-                        gaps={gaps() ?? []}
-                        onDraft={(форма) => setDraft({ ...draft(), form: форма }, worn()?.name)}
-                      />
-                    }
+              <Show
+                when={view() === "form"}
+                fallback={
+                  <ComponentPage
+                    component={component()}
+                    variants={variants()}
+                    part={part()}
+                    variant={variant()}
+                    state={state()}
                   />
-                </Show>
-              </div>
+                }
+              >
+                <EditScreen
+                  component={component()}
+                  draft={draft()}
+                  gaps={gaps() ?? []}
+                  saving={saving()}
+                  trouble={trouble()}
+                  onDraft={(черновик) => setDraft(черновик, worn()?.name)}
+                  onSavePalette={(имя: string) => savePalette(имя, draft())}
+                  onSaveSkin={(имя: string) => void saveSkin(имя, draft(), worn()?.name)}
+                />
+              </Show>
             )}
           </Show>
         </main>

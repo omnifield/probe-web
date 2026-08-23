@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { isContent, knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
+import { KIT } from "@omnifield/probe-web-ui";
 import {
   type ComponentPassport,
   GROUPS,
@@ -41,15 +42,29 @@ afterEach(() => {
 
 describe("перечень", () => {
   it("приходит из реестра", () => {
-    expect(knownComponents(REGISTRY)).toEqual(["button"]);
+    // Перечень — тот, что отдаёт кит, а не тот, что успели вписать мы: компонент нового выпуска
+    // появляется в пульте сам, вместе со своим долгом одевания.
+    expect(knownComponents(REGISTRY)).toEqual(Object.keys(KIT).sort());
   });
 
-  it("у каждого компонента перечня есть паспорт — иначе одевать его нечем", () => {
+  it("у каждого компонента перечня есть паспорт и карта частей — иначе одевать его нечем", () => {
     for (const component of knownComponents(REGISTRY)) {
-      expect(REGISTRY.passports[component]).toBeDefined();
+      const пара = REGISTRY.components[component] as { passport?: unknown; parts?: unknown };
+
+      expect(пара.passport).toBeDefined();
+      expect(пара.parts).toBeDefined();
     }
   });
 });
+
+/** Выбирает компонент в перечне — перечень теперь весь кит, и первый в нём не кнопка. */
+function pick(host: HTMLElement, component: string): void {
+  const пункт = [...host.querySelectorAll<HTMLButtonElement>(".rail__item")].find(
+    (кнопка) => (кнопка.textContent ?? "").trim() === component,
+  );
+
+  пункт?.click();
+}
 
 /** Имена вариаций пробной формы — оси взять больше неоткуда, их объявляет скин. */
 const VARIANTS = Object.keys(FORM.recipe.variants ?? {});
@@ -73,7 +88,9 @@ describe("случаи", () => {
 
       // Узлы образца — все на месте и ни одного лишнего сверх ПОДПИСИ: её кладёт витрина как
       // потребитель, и кладёт узлом содержимого, а не своей разметкой.
-      const свои = Object.keys(item.tree.components.nodes).filter((id) => id !== "подпись");
+      const свои = Object.keys(item.tree.components.nodes).filter(
+        (id) => !id.startsWith("подпись-"),
+      );
 
       expect(свои).toEqual(Object.keys(sketch?.components.nodes ?? {}));
     }
@@ -168,6 +185,8 @@ describe("хедер", () => {
   it("список скинов — просто список, без ролей и групп", async () => {
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     await vi.waitFor(() => {
       expect(host.querySelectorAll(".head__select option").length).toBeGreaterThan(1);
     });
@@ -178,6 +197,8 @@ describe("хедер", () => {
 
   it("скин выбирается списком, и «снят» — полноправный пункт", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const select = await vi.waitFor(() => {
       const found = host.querySelector<HTMLSelectElement>(".head__select");
       expect(found?.options.length).toBeGreaterThan(1);
@@ -191,6 +212,8 @@ describe("хедер", () => {
 
   it("выбор списком надевает скин, пустой пункт — снимает", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const select = await vi.waitFor(() => {
       const found = host.querySelector<HTMLSelectElement>(".head__select");
       expect(found?.options.length).toBeGreaterThan(1);
@@ -217,12 +240,16 @@ describe("хедер", () => {
 
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     await vi.waitFor(() => expect(host.textContent ?? "").toContain("Скинов в службе нет"));
     expect(host.querySelectorAll(".modes__item")).toHaveLength(0);
   });
 
   it("со скином половина меняется надеванием того же скина", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
 
     const dark = await vi.waitFor(() => {
       const buttons = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
@@ -252,6 +279,8 @@ describe("оси — фильтр, а не раскладка", () => {
   it("витрина открывается на обычном виде, а не на произведении осей", async () => {
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     // Пришедший смотреть кнопки видит ВАРИАЦИИ — по одной карточке на каждую, — а не их
     // произведение на состояния, среди которого обычный вид пришлось бы выискивать.
     //
@@ -270,6 +299,8 @@ describe("оси — фильтр, а не раскладка", () => {
 
   it("выбор состояния сужает поток случаев", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const before = await vi.waitFor(() => {
       const cards = host.querySelectorAll(".case");
       expect(cards.length).toBe(Object.keys(FORM.recipe.variants ?? {}).length);
@@ -292,6 +323,8 @@ describe("оси — фильтр, а не раскладка", () => {
   it("витрина не рисует внутри компонента ничего своего", async () => {
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     await vi.waitFor(() => expect(host.querySelectorAll(".case").length).toBeGreaterThan(0));
 
     // Подсветка части отсюда убрана: она рисовала рамку ВНУТРИ каждой кнопки, и компонент
@@ -306,6 +339,8 @@ describe("оси — фильтр, а не раскладка", () => {
 describe("перечень по разделам", () => {
   it("раздел компонента приходит из его паспорта, а не из перечня витрины", () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const passport = passportOf("button");
     const shown = host.textContent ?? "";
 
@@ -324,6 +359,8 @@ describe("перечень по разделам", () => {
 describe("отрисовка", () => {
   it("кнопка приходит с адресными атрибутами анатомии", () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const node = host.querySelector('[data-scope="button"][data-part="root"]');
 
     expect(node).not.toBeNull();
@@ -333,11 +370,15 @@ describe("отрисовка", () => {
   it("узел адресуем механикой сборки — правке образца есть за что зацепиться", () => {
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     expect(host.querySelector("[data-node]")).not.toBeNull();
   });
 
   it("состояние, которое ставит кит, доезжает до разметки", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
 
     // Ось состояний стоит на ОБЫЧНОМ: показ начинается с вида, а не с отклонений от него.
     // Состояния надо развернуть — ровно так же, как это делает рукой человек.
@@ -349,6 +390,8 @@ describe("отрисовка", () => {
 
   it("псевдосостояние показано признаком — браузерное нам недоступно", async () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
 
     chooseState(host, ANY);
 
@@ -365,6 +408,8 @@ describe("отрисовка", () => {
   it("имена вариаций приходят из записи НАДЕТОГО скина, а не из паспорта", async () => {
     const host = mount(() => <App />);
 
+    pick(host, "button");
+
     // Ждём службу: перечень и запись приезжают запросами, и до их прихода вариаций нет
     // законно — называть нечего.
     await vi.waitFor(() => {
@@ -380,6 +425,8 @@ describe("отрисовка", () => {
 
   it("оси перечисляют части и состояния ИЗ ПАСПОРТА, а не из своего словаря", () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const passport = passportOf("button");
     const options = [...host.querySelectorAll(".axes__select option")].map(
       (option) => option.textContent ?? "",
@@ -393,6 +440,8 @@ describe("отрисовка", () => {
 
   it("витрина показывает вид, а не техничку", () => {
     const host = mount(() => <App />);
+
+    pick(host, "button");
     const shown = host.textContent ?? "";
 
     // Долг одевания, перечень частей с назначениями и паспортные факты уехали из витрины
@@ -403,15 +452,4 @@ describe("отрисовка", () => {
     expect(host.querySelector(".gaps")).toBeNull();
   });
 
-  it("переход в правку добавляет настройки, а показ оставляет на месте", async () => {
-    const host = mount(() => <App />);
-    const [, правка] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
-
-    правка?.click();
-
-    // Настройки приходят СБОКУ: цвета крутят на компонентах, а не в пустоте, поэтому случаи
-    // остаются видны. Уведи мы их — человек выбирал бы цвет по образцу.
-    await vi.waitFor(() => expect(host.querySelector(".knobs")).not.toBeNull());
-    expect(host.querySelectorAll(".case").length).toBeGreaterThan(0);
-  });
 });

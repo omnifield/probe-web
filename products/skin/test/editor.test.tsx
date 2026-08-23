@@ -32,9 +32,21 @@ afterEach(() => {
   localStorage.clear();
 });
 
-/** Открывает правку и дожидается, пока черновик приедет из службы. */
+/** Выбирает компонент в перечне — перечень теперь весь кит, и первый в нём не кнопка. */
+function pick(host: HTMLElement, component: string): void {
+  const пункт = [...host.querySelectorAll<HTMLButtonElement>(".rail__item")].find(
+    (кнопка) => (кнопка.textContent ?? "").trim() === component,
+  );
+
+  пункт?.click();
+}
+
+/** Открывает правку кнопки и дожидается, пока черновик приедет из службы. */
 async function openEditor(): Promise<HTMLElement> {
   const host = mount(() => <App />);
+
+  pick(host, "button");
+
   const [, правка] = [...host.querySelectorAll<HTMLButtonElement>(".views__item")];
 
   правка?.click();
@@ -71,13 +83,14 @@ function rowOf(host: HTMLElement, name: string): HTMLElement | undefined {
 }
 
 describe("цвет и форма в одном месте", () => {
-  it("компоненты остаются на виду, когда человек крутит настройки", async () => {
+  it("правка показывает КОМПОНЕНТ, а не образец цвета", async () => {
     const host = await openEditor();
 
-    // Крутят НЕ в пустоте: показ никуда не уходит, панель приходит сбоку. Уведи мы случаи —
-    // человек выбирал бы цвет по образцу, а не по тому, как он лёг на кнопку.
-    expect(host.querySelectorAll(".case").length).toBeGreaterThan(0);
-    expect(host.querySelector(".work--editing")).not.toBeNull();
+    // Крутят не в пустоте: рядом с настройками стоит живой компонент в правимой координате.
+    // Витринного потока здесь нет — это другой экран и другой вопрос.
+    expect(host.querySelector(".stage__show")).not.toBeNull();
+    expect(host.querySelector('[data-scope="button"]')).not.toBeNull();
+    expect(host.querySelectorAll(".case")).toHaveLength(0);
   });
 
   it("ручек ровно столько, сколько намерений в словаре", async () => {
@@ -176,8 +189,8 @@ describe("что показано", () => {
   });
 
   it("состояния в выборе — тоже паспортные", async () => {
-    const host = await openFine();
-    const options = [...host.querySelectorAll(".form__coords option")].map(
+    const host = await openEditor();
+    const options = [...host.querySelectorAll(".stage__coords option")].map(
       (узел) => узел.textContent ?? "",
     );
 
@@ -187,8 +200,8 @@ describe("что показано", () => {
   });
 
   it("вариации в выборе — из ЗАПИСИ, потому что имена принадлежат скину", async () => {
-    const host = await openFine();
-    const options = [...host.querySelectorAll(".form__coords option")].map(
+    const host = await openEditor();
+    const options = [...host.querySelectorAll(".stage__coords option")].map(
       (узел) => узел.textContent ?? "",
     );
 
@@ -203,7 +216,7 @@ describe("что показано", () => {
     // База кнопки в фикстуре объявляет фон и цвет — они свои, со снятием.
     expect(rowOf(host, "background")?.className).not.toContain("prop--inherited");
 
-    const [вариация] = [...host.querySelectorAll<HTMLSelectElement>(".form__coords select")];
+    const [, вариация] = [...host.querySelectorAll<HTMLSelectElement>(".stage__coords select")];
     вариация!.value = "главная";
     вариация!.dispatchEvent(new Event("change", { bubbles: true }));
 

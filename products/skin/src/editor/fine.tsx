@@ -18,14 +18,8 @@ import type { Form, SkinGap } from "@omnifield/probe-web-skin/model";
 import { VOCABULARY } from "@omnifield/probe-web-skin/model";
 import { For, Show, createMemo, createSignal } from "solid-js";
 
-import { partsOf, statesOfPart } from "../showcase/cases.js";
+import { partsOf } from "../showcase/cases.js";
 import { inherited, styleAt, withProp, type Spot } from "./spot.js";
-
-/** Значение для выбора «база» — вариации с пустым именем не бывает, столкнуться не с чем. */
-const BASE = "";
-
-/** Значение для выбора «обычное» — состояния с пустым именем тоже не бывает. */
-const PLAIN = "";
 
 /**
  * Имена ролей для подсказки ввода.
@@ -91,32 +85,17 @@ export function Fine(props: {
   component: string;
   draft: Form | null;
   gaps: readonly SkinGap[];
+  /** Координата приходит С ЭКРАНА: от неё зависит показ, а показ здесь не рисуется. */
+  spot: Spot;
+  onSpot: (patch: Partial<Spot>) => void;
   onDraft: (form: Form) => void;
 }) {
-  // ВЫБОР ХРАНИТСЯ ВМЕСТЕ С КОМПОНЕНТОМ, а не рядом с ним. Части и состояния у каждого свои, и
-  // выбор, переживший смену компонента, указывал бы на часть, которой у нового нет: экран
-  // показывал бы пустоту, а человек читал бы её как «здесь ничего не одето».
-  const [chosen, setChosen] = createSignal<(Spot & { component: string }) | null>(null);
   const [adding, setAdding] = createSignal("");
 
-  const spot = (): Spot => {
-    const выбор = chosen();
+  const spot = (): Spot => props.spot;
+  const part = () => props.spot.part;
 
-    return выбор && выбор.component === props.component
-      ? { part: выбор.part, variant: выбор.variant, state: выбор.state }
-      : { part: partsOf(props.component)[0] ?? "", variant: null, state: null };
-  };
-
-  const part = () => spot().part;
-  const variant = () => spot().variant;
-  const state = () => spot().state;
-
-  /** Двигает координату, оставляя прочие оси на месте. */
-  const choose = (patch: Partial<Spot>): void => {
-    setChosen({ component: props.component, ...spot(), ...patch });
-  };
   const recipe = () => props.draft?.recipe ?? {};
-  const variants = () => Object.keys(recipe().variants ?? {});
 
   /** Написанное на координате. */
   const own = createMemo(() => Object.entries(styleAt(recipe(), spot())));
@@ -160,7 +139,7 @@ export function Fine(props: {
                       class="form__part"
                       aria-pressed={part() === имя}
                       // Смена части сбрасывает состояние: словарь состояний у каждой части свой.
-                      onClick={() => choose({ part: имя, state: null })}
+                      onClick={() => props.onSpot({ part: имя, state: null })}
                     >
                       <span class="form__part-name">{имя}</span>
                       <Show when={долг().length > 0}>
@@ -179,45 +158,9 @@ export function Fine(props: {
               </p>
             </aside>
 
-            <section class="form__coords">
-                <label class="axes__field">
-                  <span class="axes__label">вариация</span>
-                  <select
-                    class="axes__select"
-                    value={variant() ?? BASE}
-                    onChange={(event) =>
-                      choose({
-                        variant: event.currentTarget.value === BASE ? null : event.currentTarget.value,
-                      })
-                    }
-                  >
-                    <option value={BASE}>база</option>
-                    <For each={variants()}>{(имя) => <option value={имя}>{имя}</option>}</For>
-                  </select>
-                </label>
-
-                <label class="axes__field">
-                  <span class="axes__label">состояние</span>
-                  <select
-                    class="axes__select"
-                    value={state() ?? PLAIN}
-                    onChange={(event) =>
-                      choose({
-                        state: event.currentTarget.value === PLAIN ? null : event.currentTarget.value,
-                      })
-                    }
-                  >
-                    <option value={PLAIN}>обычное</option>
-                    <For each={statesOfPart(props.component, part())}>
-                      {(состояние) => <option value={состояние.name}>{состояние.name}</option>}
-                    </For>
-                  </select>
-                </label>
-            </section>
-
             <aside class="form__props">
               <h2 class="form__title">
-                {part()} · {variant() ?? "база"} · {state() ?? "обычное"}
+                {part()} · {props.spot.variant ?? "база"} · {props.spot.state ?? "обычное"}
               </h2>
 
               <For each={own()}>

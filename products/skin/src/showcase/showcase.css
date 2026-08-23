@@ -816,3 +816,46 @@ body {
     border-block-start: 1px solid var(--ui-line);
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ЭКРАН ПРАВКИ: показ той координаты, над которой работают, и настройки рядом.
+
+   Витринного потока здесь нет намеренно — это другой экран и другой вопрос: на витрине смотрят
+   компонент целиком, здесь правят одно место.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+  min-inline-size: 0;
+  padding: var(--ui-gap-4);
+}
+
+.stage__coords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-3);
+}
+
+.stage__show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 10rem;
+  padding: var(--ui-gap-5, 1.5rem);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-sunk);
+}
+
+/* Показ не растягивает компонент на всю ширину: кнопка шириной в экран — не то, что человек
+   собирается получить. Ограничение снимается тем, что компонент сам решает свою ширину. */
+.stage__show > * {
+  max-inline-size: 100%;
+}
+
+.stage__note {
+  margin: 0;
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+}
