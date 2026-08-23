@@ -67,10 +67,8 @@ export interface CaseAt {
 /** Один случай: компонент, поставленный в координату. */
 export interface ShowcaseCase {
   readonly id: string;
-  /** Чем условие названо — координатой, из которой случай и порождён. */
+  /** Чем условие названо — вариацией, из которой случай и порождён. */
   readonly title: string;
-  /** Зачем случай показан. Случай без повода не показывают. */
-  readonly note: string;
   /** Где случай стоит по осям — по этому его и отбирает фильтр. */
   readonly at: CaseAt;
   /** Дерево случая: образец компонента плюс условие. */
@@ -79,7 +77,13 @@ export interface ShowcaseCase {
 
 /** Срез осей: что развернуть, а что зафиксировать. */
 export interface Slice {
-  /** Часть, чьё состояние показываем. Не названа — корневая. */
+  /**
+   * Часть, чьё состояние показываем. НЕ НАЗВАНА — состояния берутся у всех частей сразу.
+   *
+   * На витрине части нет и быть не должно (решение user 2026-08-23): смотрящий думает
+   * «наведение», а не «наведение корневой части». Часть остаётся адресом ВНУТРИ — состояние
+   * ставится на тот узел, чья часть его объявила, — но выбирать её человеку незачем.
+   */
   readonly part?: string;
   /** Вариация: имя либо {@link ANY} — развернуть по всем. */
   readonly variant: Axis<string>;
@@ -119,6 +123,27 @@ export function addressOfPart(component: string, part: string): string {
 /** Состояния части — из паспорта. Часть без добавки состояний не объявляла: перечень пуст. */
 export function statesOfPart(component: string, part: string): readonly PassportState[] {
   return passportOf(component)?.parts.find((item) => item.name === part)?.states ?? [];
+}
+
+/**
+ * СОСТОЯНИЯ КОМПОНЕНТА — по всем частям, склеенные по имени.
+ *
+ * Смотрящему принадлежит компонент, а не его части: «раскрыт» у гармошки объявлен на пункте, на
+ * указателе и на кнопке раздела, но состояние это ОДНО. Показывать его трижды значило бы обещать
+ * три разных вида там, где вид один.
+ *
+ * @param component адрес компонента в реестре
+ */
+export function statesOfComponent(component: string): readonly PassportState[] {
+  const собранные = new Map<string, PassportState>();
+
+  for (const часть of partsOf(component)) {
+    for (const state of statesOfPart(component, часть)) {
+      if (!собранные.has(state.name)) собранные.set(state.name, state);
+    }
+  }
+
+  return [...собранные.values()];
 }
 
 /** Части компонента — из анатомии: она источник, добавка паспорта лишь приписка к ней. */
@@ -371,8 +396,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
 
   if (!passport) return [];
 
-  const part = slice.part ?? passport.root;
-  const address = addressOfPart(component, part);
+  const части = slice.part === undefined ? partsOf(component) : [slice.part];
   const axis = passport.variantAxis.mark;
 
   // УМОЛЧАНИЯ ОТДЕЛЬНОЙ СТРОКОЙ НЕТ. Скин объявляет умолчание именем, и «атрибут не поставлен»
@@ -384,7 +408,20 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   const named = slice.variants.length > 0 ? slice.variants : [null];
   const variants: readonly (string | null)[] = slice.variant === ANY ? named : [slice.variant];
 
-  const states = statesOfPart(component, part);
+  // СОСТОЯНИЯ СОБИРАЮТСЯ ПО ВСЕМ ЧАСТЯМ и склеиваются по имени: «раскрыт» у гармошки объявлен и
+  // на пункте, и на указателе, и на кнопке раздела — это ОДНО состояние компонента, показанное
+  // тремя частями сразу, а не три разных случая.
+  //
+  // Часть при этом не теряется: она остаётся адресом, по которому признак ставится на узел.
+  const собранные = new Map<string, { state: PassportState; part: string }>();
+
+  for (const часть of части) {
+    for (const state of statesOfPart(component, часть)) {
+      if (!собранные.has(state.name)) собранные.set(state.name, { state, part: часть });
+    }
+  }
+
+  const states = [...собранные.values()];
 
   // ОБЫЧНОЕ — это `undefined` в перечне: признака не ставится ни одного. Оно идёт ПЕРВЫМ и в
   // положении «все», потому что состояния читаются как отклонения от обычного вида, а отклонение
@@ -394,7 +431,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
       ? [undefined, ...states]
       : slice.state === null
         ? [undefined]
-        : states.filter((state) => state.name === slice.state);
+        : states.filter(({ state }) => state.name === slice.state);
 
   const cases: ShowcaseCase[] = [];
 
@@ -402,13 +439,17 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
     const variantProps =
       variant === null || axis.kind !== "attribute" ? {} : { [axis.name]: variant };
 
-    for (const state of shown) {
+    for (const место of shown) {
+      const state = место?.state;
+      const part = место?.part ?? slice.part ?? passport.root;
+      const address = addressOfPart(component, part);
+
       cases.push({
         id: `axis:${variant ?? "-"}:${part}:${state?.name ?? "-"}`,
-        title: [variant ?? "без вариации", part, state?.name ?? "обычное"].join(" · "),
-        // Подписи у обычного вида НЕТ: объяснять «вид без состояния» нечего — это и есть
-        // компонент, а фраза под каждой второй карточкой была шумом, а не сведением.
-        note: state?.means ?? "",
+        // ПОДПИСЬ — ВАРИАЦИЯ И СОСТОЯНИЕ, и ничего больше (решение user 2026-08-23). Ни части —
+        // это адрес внутри записи, — ни паспортного объяснения: «кнопку держат нажатой» под
+        // карточкой с нажатой кнопкой не сообщает ничего, чего не видно.
+        title: variant ?? "без вариации",
         at: { part, variant, state: state?.name ?? null },
         tree: build(component, variantProps, address, state?.mark, state?.name),
       });

@@ -427,9 +427,8 @@ body {
 .case {
   display: flex;
   flex-direction: column;
-  gap: var(--ui-gap-2);
   margin: 0;
-  padding: var(--ui-gap-3);
+  padding: var(--ui-gap-4);
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-radius);
   background: var(--ui-surface);
@@ -441,38 +440,43 @@ body {
   grid-column: 1 / -1;
 }
 
-/* `max-content` нужен измерению: так `scrollWidth` показывает ЕСТЕСТВЕННУЮ ширину содержимого, а
-   не ширину колонки, в которую его уже сжали. */
-/* ПОДЛОЖКИ ПОД КОМПОНЕНТОМ НЕТ. Она была фоном показа, а читалась как часть вида: тёмный
-   прямоугольник вокруг светлой кнопки — это уже оформление, которого скин не объявлял. Показ
-   стоит на том же полотне, что и всё остальное, и вид отвечает сам за себя. */
+/* КАРТОЧКА: сверху написано, на что смотришь, ниже — сам компонент.
+
+   Порядок не декоративный. Прочитав «primary · наведение», человек знает, что перед ним, и
+   смотрит уже осмысленно; подпись под картинкой заставляет сперва угадывать, а потом сверяться. */
 .case__stage {
   display: flex;
   align-items: center;
   justify-content: center;
   min-block-size: 4rem;
-  inline-size: max-content;
-  max-inline-size: 100%;
-  padding: var(--ui-gap-4);
+  inline-size: 100%;
+  padding: var(--ui-gap-4) 0 0;
 }
 
 .case__caption {
   display: flex;
-  flex-direction: column;
-  gap: var(--ui-gap-1);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ui-gap-2);
+  padding-block-end: var(--ui-gap-2);
+  border-block-end: 1px solid var(--ui-line);
 }
 
-.case__note {
-  color: var(--ui-ink-quiet);
-  font-size: var(--ui-size-sm);
-}
-
-/* Случай подписан КООРДИНАТОЙ — тем же адресом, которым его адресует скин, — поэтому и набран
-   моноширинным: это адрес, а не фраза. */
+/* ВАРИАЦИЯ — имя из записи скина, поэтому моноширинным: это адрес, а не фраза. */
 .case__title {
   font-family: var(--ui-mono);
   font-size: var(--ui-size-sm);
-  font-weight: 400;
+  font-weight: 600;
+}
+
+/* СОСТОЯНИЕ — рядом и тише: это уточнение к вариации, а не второе её имя. */
+.case__state {
+  padding: 0 var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-ink-quiet);
+  font-family: var(--ui-mono);
+  font-size: var(--ui-size-sm);
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

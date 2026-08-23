@@ -111,14 +111,13 @@ describe("случаи", () => {
     }
   });
 
-  it("каждый случай назван координатой, а объяснение — только там, где есть что объяснить", () => {
+  it("случай назван ВАРИАЦИЕЙ, и ничем сверх неё", () => {
     for (const item of stream()) {
-      expect(item.title.length).toBeGreaterThan(0);
+      expect(item.title).toBe(item.at.variant ?? "без вариации");
 
-      // Состояние объясняет ПАСПОРТ («указатель над кнопкой»), и это сведение. У обычного вида
-      // объяснять нечего: фраза под каждой второй карточкой была шумом.
-      if (item.at.state === null) expect(item.note).toBe("");
-      else expect(item.note.length).toBeGreaterThan(0);
+      // Ни части, ни паспортного объяснения: «кнопку держат нажатой» под карточкой с нажатой
+      // кнопкой не сообщает ничего, чего не видно (решение user 2026-08-23).
+      expect(item.title).not.toContain("·");
     }
   });
 
@@ -144,8 +143,8 @@ describe("случаи", () => {
     // — тот же адрес. Две строки обещали бы два разных вида там, где вид один.
     const [первый] = stream();
 
-    expect(первый?.title).toContain(Object.keys(FORM.recipe.variants ?? {})[0] ?? "");
-    expect(первый?.title).toContain("обычное");
+    expect(первый?.title).toBe(Object.keys(FORM.recipe.variants ?? {})[0] ?? "");
+    expect(первый?.at.state).toBeNull();
     expect(stream().some((item) => item.title.includes("умолчание"))).toBe(false);
   });
 
@@ -273,7 +272,8 @@ describe("хедер", () => {
 
 /** Ставит ось состояний в названное положение — то же движение, что делает рукой человек. */
 function chooseState(host: HTMLElement, value: string): void {
-  const [, , stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
+  // Осей на витрине две — вариация и состояние; части среди них больше нет.
+  const [, stateAxis] = [...host.querySelectorAll<HTMLSelectElement>(".axes__select")];
 
   stateAxis!.value = value;
   stateAxis!.dispatchEvent(new Event("change", { bubbles: true }));
@@ -290,8 +290,10 @@ describe("оси — фильтр, а не раскладка", () => {
     //
     // Ждём наряда: до его прихода вариаций нет вовсе, и поток состоит из человеческих случаев.
     await vi.waitFor(() => {
-      const плоские = [...host.querySelectorAll(".case__title")].filter((node) =>
-        (node.textContent ?? "").includes("обычное"),
+      // Обычный вид узнаётся по отсутствию подписи состояния: карточка называет вариацию, и
+      // только её.
+      const плоские = [...host.querySelectorAll(".case")].filter(
+        (карточка) => карточка.querySelector(".case__state") === null,
       );
 
       expect(плоские).toHaveLength(Object.keys(FORM.recipe.variants ?? {}).length);
@@ -427,17 +429,19 @@ describe("отрисовка", () => {
     expect(JSON.stringify(passportOf("button"))).not.toContain("главная");
   });
 
-  it("оси перечисляют части и состояния ИЗ ПАСПОРТА, а не из своего словаря", () => {
+  it("ось состояний перечисляет ПАСПОРТНЫЕ состояния — всех частей сразу", () => {
     const host = mount(() => <App />);
 
     pick(host, "button");
-    const passport = passportOf("button");
+
     const options = [...host.querySelectorAll(".axes__select option")].map(
       (option) => option.textContent ?? "",
     );
 
-    for (const part of passport?.parts ?? []) {
-      expect(options).toContain(part.name);
+    // Части в осях НЕТ: смотрящий думает «наведение», а не «наведение корневой части». Сами
+    // состояния при этом собраны по всем частям — у составного компонента они живут не на корне.
+    for (const part of passportOf("button")?.parts ?? []) {
+      expect(options).not.toContain(part.name);
       for (const state of part.states) expect(options).toContain(state.name);
     }
   });
