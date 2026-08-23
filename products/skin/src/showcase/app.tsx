@@ -134,7 +134,7 @@ function Case(props: { item: ShowcaseCase }) {
         <RenderTree tree={props.item.tree} registry={REGISTRY} />
       </div>
       <figcaption class="case__caption">
-        <b class="case__title" classList={{ "case__title--axis": props.item.origin === "axis" }}>
+        <b class="case__title">
           {props.item.title}
         </b>
         <span class="case__note">{props.item.note}</span>

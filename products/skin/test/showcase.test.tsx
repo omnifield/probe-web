@@ -99,11 +99,9 @@ describe("случаи", () => {
     // Первым человек смотрит НА ВИД, а не на отклонения от него: наведённое и отключённое
     // читаются как «что происходит с этим видом», и показывать их вперемешку с ним значит
     // заставлять его выискивать.
-    const axes = plain().filter((item) => item.origin === "axis");
-
-    expect(axes).toHaveLength(VARIANTS.length);
-    expect(axes.map((item) => item.at.variant)).toEqual(VARIANTS);
-    expect(axes.every((item) => item.at.state === null)).toBe(true);
+    expect(plain()).toHaveLength(VARIANTS.length);
+    expect(plain().map((item) => item.at.variant)).toEqual(VARIANTS);
+    expect(plain().every((item) => item.at.state === null)).toBe(true);
   });
 
   it("обычное и «все» — разные положения оси, а не одно", () => {
@@ -132,21 +130,17 @@ describe("случаи", () => {
     }
   });
 
-  it("фильтр отбирает и человеческие случаи — у них тоже есть координата", () => {
-    const hover = casesOf("button", { part: "root", variant: ANY, state: "hover", variants: VARIANTS });
-    const disabled = casesOf("button", {
-      part: "root",
-      variant: ANY,
-      state: "disabled",
-      variants: VARIANTS,
-    });
+  it("случаев мимо осей на витрине нет", () => {
+    // Витрина показывает КООРДИНАТЫ. Случаи вроде «длинная подпись» и «в узком месте» —
+    // не вариации и не состояния; в потоке вариаций они отвечают не на тот вопрос, с которым
+    // сюда приходят, и уехали в раздел проверок редактора (решение user 2026-08-23).
+    for (const item of stream()) {
+      expect(item.title).toContain(item.at.variant);
+    }
 
-    // Человеческие случаи стоят в своих координатах: в срезе по наведению их быть не должно,
-    // иначе фильтр читается как неработающий.
-    expect(hover.filter((item) => item.origin === "human")).toHaveLength(0);
-    expect(disabled.filter((item) => item.origin === "human").map((item) => item.title)).toContain(
-      "Отключена пропом",
-    );
+    const hover = casesOf("button", { part: "root", variant: ANY, state: "hover", variants: VARIANTS });
+
+    expect(hover).toHaveLength(VARIANTS.length);
   });
 
   it("оси разворачиваются и фиксируются: срез меняет состав потока", () => {
@@ -159,8 +153,8 @@ describe("случаи", () => {
     });
 
     expect(all.length).toBeGreaterThan(one.length);
-    // Зафиксированный срез — ровно один осевой случай плюс человеческие.
-    expect(one.filter((item) => item.origin === "axis")).toHaveLength(1);
+    // Обе оси названы — случай ровно один.
+    expect(one).toHaveLength(1);
   });
 });
 
@@ -272,7 +266,7 @@ describe("оси — фильтр, а не раскладка", () => {
     const host = mount(() => <App />);
     const before = await vi.waitFor(() => {
       const cards = host.querySelectorAll(".case");
-      expect(cards.length).toBeGreaterThan(3);
+      expect(cards.length).toBe(Object.keys(FORM.recipe.variants ?? {}).length);
       return cards.length;
     });
 
