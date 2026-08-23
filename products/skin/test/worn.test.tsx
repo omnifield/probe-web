@@ -65,7 +65,7 @@ describe("скин надевается", () => {
     await skin.wear(FIXTURE.name);
 
     expect(document.documentElement.getAttribute("data-skin")).toBe(FIXTURE.name);
-    expect(skin.worn()).toBe(FIXTURE.name);
+    expect(skin.worn()?.name).toBe(FIXTURE.name);
   });
 
   it("правило цепляется за узел, который рисует витрина", async () => {

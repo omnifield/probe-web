@@ -13,7 +13,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
-import { readSkin } from "@omnifield/probe-web-runtime";
 import {
   type ComponentPassport,
   GROUPS,
@@ -181,18 +180,22 @@ describe("хедер", () => {
     expect(host.querySelectorAll(".modes__item")).toHaveLength(0);
   });
 
-  it("со скином режим переключается механикой приложения", async () => {
+  it("со скином половина меняется надеванием того же скина", async () => {
     const host = mount(() => <App />);
 
-    const light = await vi.waitFor(() => {
-      const [first] = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
-      expect(first).toBeDefined();
-      return first as HTMLButtonElement;
+    const dark = await vi.waitFor(() => {
+      const buttons = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")];
+      expect(buttons).toHaveLength(2);
+      return buttons[1] as HTMLButtonElement;
     });
 
-    light.click();
+    dark.click();
 
-    expect(readSkin().mode).toBe("light");
+    // Половина принадлежит скину, а не документу: второй ручки под неё нет, и тёмная половина
+    // видна на корне ровно потому, что скин надет именно в ней.
+    await vi.waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(true),
+    );
   });
 });
 

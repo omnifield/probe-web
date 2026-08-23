@@ -21,15 +21,7 @@
 // бы с первой ровно тогда, когда одна из них научится чему-то новому.
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
-// `readSkin` из механики приложения читает КОРЕНЬ (что надето и в каком режиме), а одноимённая
-// функция хранилища читает ЗАПИСЬ. Предметы разные, имена совпали — развожу их псевдонимом, а не
-// переименованием чужого.
-import {
-  applySkin,
-  makeSkinSwitch,
-  readSkin as readRoot,
-  type SkinMode,
-} from "@omnifield/probe-web-runtime";
+import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
 import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   createResource,
@@ -419,15 +411,17 @@ export function App() {
     setPart(value);
     setState(null);
   };
-  const [worn, setWorn] = createSignal<string | null>(null);
+  // НАДЕТОЕ — это имя И половина вместе: половина принадлежит скину, а не документу, и второй
+  // ручки под неё не существует. Нет скина — нет и половины.
+  const [worn, setWorn] = createSignal<SkinWorn | null>(null);
 
-  // РЕЖИМ переключается механикой приложения, а не классом в разметке: пара для тёмного —
-  // ответственность скина, и проверять её надо тем же путём, которым режим меняет потребитель.
-  const [mode, setModeSignal] = createSignal<SkinMode>(readRoot().mode);
+  /** Сменить половину — значит надеть тот же скин в другой половине. Другого пути нет. */
+  const setMode = (mode: SkinMode) => {
+    const current = worn();
 
-  const setMode = (value: SkinMode) => {
-    applySkin({ mode: value });
-    setModeSignal(readRoot().mode);
+    if (current === null) return;
+
+    void SKIN.wear(current.name, { mode }).then(setWorn);
   };
 
   // Перечень — из СЛУЖБЫ. Запасного списка нет: витрина без службы показывает голый кит и
@@ -436,10 +430,13 @@ export function App() {
 
   // ЗАПИСЬ надетого скина — тоже из службы: имена вариаций живут в ней, и взять их больше
   // неоткуда. Паспорт их не знает, витрина не придумывает.
-  const [wornSkin] = createResource(worn, async (name: string) => {
-    const record = (await listSkins()).find((item) => item.name === name);
-    return record === undefined ? undefined : readSkin(record.id);
-  });
+  const [wornSkin] = createResource(
+    () => worn()?.name,
+    async (name: string) => {
+      const record = (await listSkins()).find((item) => item.name === name);
+      return record === undefined ? undefined : readSkin(record.id);
+    },
+  );
 
   /** Имена вариаций надетого скина для показанного компонента. Нет скина — называть нечего. */
   const variants = (): readonly string[] =>
@@ -459,6 +456,9 @@ export function App() {
           return;
         }
 
+        // Механика за человека не придумывает: не вспомнилось — не надето. Витрина же существует
+        // ради показа, поэтому первый скин надевает САМА и НЕ запоминает: чужое умолчание
+        // выбором человека не является.
         const [first] = await SKIN.names();
         if (first !== undefined) setWorn(await SKIN.wear(first, { remember: false }));
       } catch (cause) {
@@ -521,10 +521,10 @@ export function App() {
           variant={variant()}
           state={state()}
           view={view()}
-          worn={worn()}
+          worn={worn()?.name ?? null}
+          mode={worn()?.mode ?? "light"}
           records={records()}
           failure={records.error}
-          mode={mode()}
           onPart={choosePart}
           onVariant={setVariant}
           onState={setState}
