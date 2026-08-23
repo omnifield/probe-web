@@ -149,7 +149,9 @@ function Case(props: { item: ShowcaseCase }) {
         <b class="case__title">
           {props.item.title}
         </b>
-        <span class="case__note">{props.item.note}</span>
+        <Show when={props.item.note !== ""}>
+          <span class="case__note">{props.item.note}</span>
+        </Show>
       </figcaption>
     </figure>
   );

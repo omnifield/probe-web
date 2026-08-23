@@ -111,10 +111,14 @@ describe("случаи", () => {
     }
   });
 
-  it("каждый случай назван и объяснён — случай без повода не показывают", () => {
+  it("каждый случай назван координатой, а объяснение — только там, где есть что объяснить", () => {
     for (const item of stream()) {
       expect(item.title.length).toBeGreaterThan(0);
-      expect(item.note.length).toBeGreaterThan(0);
+
+      // Состояние объясняет ПАСПОРТ («указатель над кнопкой»), и это сведение. У обычного вида
+      // объяснять нечего: фраза под каждой второй карточкой была шумом.
+      if (item.at.state === null) expect(item.note).toBe("");
+      else expect(item.note.length).toBeGreaterThan(0);
     }
   });
 

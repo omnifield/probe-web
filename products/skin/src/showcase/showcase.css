@@ -443,6 +443,9 @@ body {
 
 /* `max-content` нужен измерению: так `scrollWidth` показывает ЕСТЕСТВЕННУЮ ширину содержимого, а
    не ширину колонки, в которую его уже сжали. */
+/* ПОДЛОЖКИ ПОД КОМПОНЕНТОМ НЕТ. Она была фоном показа, а читалась как часть вида: тёмный
+   прямоугольник вокруг светлой кнопки — это уже оформление, которого скин не объявлял. Показ
+   стоит на том же полотне, что и всё остальное, и вид отвечает сам за себя. */
 .case__stage {
   display: flex;
   align-items: center;
@@ -451,8 +454,6 @@ body {
   inline-size: max-content;
   max-inline-size: 100%;
   padding: var(--ui-gap-4);
-  border-radius: var(--ui-radius-sm);
-  background: var(--ui-surface-sunk);
 }
 
 .case__caption {
@@ -844,8 +845,6 @@ body {
   justify-content: center;
   min-block-size: 10rem;
   padding: var(--ui-gap-5, 1.5rem);
-  border-radius: var(--ui-radius-sm);
-  background: var(--ui-surface-sunk);
 }
 
 /* Показ не растягивает компонент на всю ширину: кнопка шириной в экран — не то, что человек

@@ -251,10 +251,19 @@ const ПОВТОРЫ: Readonly<Record<string, { readonly part: string; readonly 
  * Это НЕ вид и не скин: это то, что потребитель обязан передать компоненту, чтобы тот работал.
  */
 const ПРОПЫ: Readonly<
-  Record<string, Readonly<Record<string, (номер: number) => Record<string, unknown>>>>
+  Record<string, Readonly<Record<string, (номер: number, состояние: string | null) => Record<string, unknown>>>>
 > = {
   accordion: {
-    root: () => ({ defaultValue: ["раздел-1"], collapsible: true, multiple: true }),
+    // ОБЫЧНЫЙ ВИД — ЗАКРЫТЫЙ. Раскрытость это состояние, и показывать её в срезе «обычное»
+    // значило бы отвечать состоянием на вопрос о виде без состояний.
+    //
+    // В срезе раскрытости открыта ПАРА разделов, а не один: так видно и раскрытый, и закрытый
+    // разом — то есть саму разницу, ради которой на срез и смотрят.
+    root: (_номер, состояние) => ({
+      defaultValue: состояние === "open" ? ["раздел-1", "раздел-2"] : [],
+      collapsible: true,
+      multiple: true,
+    }),
     item: (номер) => ({ value: `раздел-${номер + 1}` }),
   },
 };
@@ -275,6 +284,7 @@ function build(
   rootProps: Readonly<Record<string, unknown>>,
   partAddress?: string,
   stateMark?: PassportMark,
+  stateName?: string,
 ): AssemblyTree {
   const sketch = sketchOf(REGISTRY, component);
 
@@ -295,8 +305,9 @@ function build(
 
   for (const [часть, props] of Object.entries(ПРОПЫ[component] ?? {})) {
     for (const [номер, узел] of nodesOfPart(наполнено, addressOfPart(component, часть)).entries()) {
+      const своё = props(номер, stateName ?? null);
       const шаг = updateNode(наполнено, узел, {
-        props: узел === root ? { ...rootProps, ...props(номер) } : props(номер),
+        props: узел === root ? { ...rootProps, ...своё } : своё,
       });
 
       if (!шаг.ok) throw new Error(`витрина: проп образца не лёг — ${шаг.means}`);
@@ -395,9 +406,11 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
       cases.push({
         id: `axis:${variant ?? "-"}:${part}:${state?.name ?? "-"}`,
         title: [variant ?? "без вариации", part, state?.name ?? "обычное"].join(" · "),
-        note: state?.means ?? "вид без состояния — то, с чего начинается всё остальное",
+        // Подписи у обычного вида НЕТ: объяснять «вид без состояния» нечего — это и есть
+        // компонент, а фраза под каждой второй карточкой была шумом, а не сведением.
+        note: state?.means ?? "",
         at: { part, variant, state: state?.name ?? null },
-        tree: build(component, variantProps, address, state?.mark),
+        tree: build(component, variantProps, address, state?.mark, state?.name),
       });
     }
   }

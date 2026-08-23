@@ -21,14 +21,14 @@ import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);
 
-/** Рисует первый случай гармошки в названном срезе и отдаёт разметку. */
-function draw(state: string | null = null): HTMLElement {
-  const [случай] = casesOf("accordion", {
-    part: "root",
-    variant: ANY,
-    state,
-    variants: ["plain"],
-  });
+/**
+ * Рисует первый случай гармошки в названном срезе и отдаёт разметку.
+ *
+ * Часть названа вместе с состоянием, потому что состояния принадлежат ЧАСТЯМ: раскрытости у
+ * корня нет вовсе, и спрашивать её там — спрашивать не по адресу.
+ */
+function draw(state: string | null = null, part = "root"): HTMLElement {
+  const [случай] = casesOf("accordion", { part, variant: ANY, state, variants: ["plain"] });
 
   return mount(() => <RenderTree tree={случай?.tree} registry={REGISTRY} />);
 }
@@ -110,12 +110,25 @@ describe("повтор части", () => {
 });
 
 describe("состояние живёт не на корне", () => {
-  it("раскрытость принадлежит ПУНКТУ, и её видно на нём", () => {
+  it("обычный вид — ЗАКРЫТЫЙ: раскрытость это состояние, а не вид", () => {
     const host = draw();
-    const корень = host.querySelector('[data-part="root"]');
-    const пункт = host.querySelector('[data-part="item"]');
 
-    expect(пункт?.getAttribute("data-state")).toBe("open");
+    for (const пункт of host.querySelectorAll('[data-part="item"]')) {
+      expect(пункт.getAttribute("data-state")).toBe("closed");
+    }
+  });
+
+  it("раскрытость принадлежит ПУНКТУ, и в своём срезе её видно на нём", () => {
+    const host = draw("open", "item");
+    const корень = host.querySelector('[data-part="root"]');
+    const открытые = [...host.querySelectorAll('[data-part="item"]')].filter(
+      (пункт) => пункт.getAttribute("data-state") === "open",
+    );
+
+    // Открыта ПАРА, а не один: в срезе раскрытости надо видеть и раскрытый, и закрытый разом —
+    // то есть саму разницу, ради которой на срез и смотрят.
+    expect(открытые.length).toBeGreaterThan(1);
+    expect(открытые.length).toBeLessThan(host.querySelectorAll('[data-part="item"]').length);
     // На корне такого атрибута не появляется — паспорт этого и не обещал.
     expect(корень?.hasAttribute("data-state")).toBe(false);
   });
