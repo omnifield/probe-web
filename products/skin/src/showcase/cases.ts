@@ -25,15 +25,10 @@
 // на ячейке. Образец даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
 
-import {
-  insertNode,
-  isContent,
-  sketchOf,
-  updateNode,
-  type AssemblyTree,
-} from "@omnifield/probe-web-assembly";
+import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import {
+  baseAssemblyOf,
   passportOf,
   type PassportMark,
   type PassportState,
@@ -174,131 +169,17 @@ function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
 }
 
 /**
- * Размножает часть вместе со всем, что под ней.
+ * Собирает случай: экземпляр компонента плюс условие.
  *
- * Копия собирается механикой узел за узлом (`insertNode`), а не склейкой дерева руками: правила
- * вложенности проверяет она, и обойди мы её — витрина показывала бы то, чего редактор собрать не
- * даст, а расхождение вскрылось бы у человека, а не здесь.
- */
-function repeat(tree: AssemblyTree, address: string, times: number): AssemblyTree {
-  const образцовый = nodeOfPart(tree, address);
-  let текущее = tree;
-
-  if (образцовый === undefined) return tree;
-
-  for (let копия = 1; копия < times; копия += 1) {
-    const перенести = (откуда: string, владелец: string): void => {
-      const узел = текущее.components.nodes[откуда];
-
-      if (!узел || isContent(узел)) return;
-
-      const шаг = insertNode(
-        текущее,
-        REGISTRY,
-        { id: `${откуда}-${копия + 1}`, type: узел.type },
-        владелец,
-      );
-
-      if (!шаг.ok) throw new Error(`витрина: повтор части не лёг — ${шаг.means}`);
-
-      текущее = шаг.tree;
-
-      for (const ребёнок of узел.children) перенести(ребёнок, `${откуда}-${копия + 1}`);
-    };
-
-    const владелец = текущее.components.nodes[образцовый]?.parentId;
-
-    if (владелец === null || владелец === undefined) break;
-
-    перенести(образцовый, владелец);
-  }
-
-  return текущее;
-}
-
-/**
- * Одна подпись образца: в какую часть кладём и что именно.
+ * ЭКЗЕМПЛЯР БЕРЁТСЯ У ПОСТАВЩИКА. Прежде витрина держала три своих перечня — сколько раз
+ * повторить часть, какие пропы дать киту, чтобы тот заработал, и чем наполнить части, — и всё
+ * это было знанием о компоненте, которого у показа быть не должно. Я сам решил, что разделов
+ * три; следующий пульт решил бы иначе, и оба показывали бы «гармошку» по-разному.
  *
- * Значение — функция номера, потому что при повторе части подписи бывают разные: разделы человек
- * различает по названию, а стрелка у всех одна. Нумеруй мы всё подряд — у второго раздела
- * появилась бы «стрелка 2», то есть подпись соврала бы о том, что это другая вещь.
- */
-interface Подпись {
-  readonly part: string;
-  readonly value: (номер: number) => string;
-}
-
-/**
- * ЧЕМ НАПОЛНЯЕТСЯ ОБРАЗЕЦ на витрине.
- *
- * Содержимое кладёт ПОТРЕБИТЕЛЬ, а не кит и не скин: паспорт лишь объявляет, что внутрь пускают
- * текст. Витрина здесь и есть потребитель, поэтому подписи её — но живут они перечнем, а не
- * зашиты в сборку случая: у гармошки их несколько и они разные, у кнопки одна.
- *
- * Кладутся УЗЛАМИ и первыми среди детей: у кнопки раздела уже есть указатель, и порядок
- * «подпись, потом стрелка» выразим только так. Пропом `children` подпись класть нельзя вовсе —
- * механика назовёт это изъяном `content-in-props`, и правильно: у части, принимающей и текст, и
- * часть, порядок между ними пропом не выражается.
- */
-const ПОДПИСИ: Readonly<Record<string, readonly Подпись[]>> = {
-  button: [{ part: "root", value: () => "Кнопка" }],
-  accordion: [
-    { part: "itemTrigger", value: (номер) => (номер === 0 ? "Раздел" : `Раздел ${номер + 1}`) },
-    { part: "itemIndicator", value: () => "⌄" },
-    {
-      part: "itemContent",
-      value: () => "Здесь лежит то, что раскрывают: текст, поля, другой компонент.",
-    },
-  ],
-};
-
-/**
- * СКОЛЬКО РАЗ ПОВТОРИТЬ ЧАСТЬ, чтобы показ был честным.
- *
- * Образец даёт по одному узлу на часть — этого хватает кнопке и не хватает гармошке: главное в
- * её виде это РАЗДЕЛИТЕЛИ, а между одним пунктом их не бывает. Одетый вид, показанный на одном
- * разделе, умолчал бы о половине формы.
- *
- * Повтор — решение ВИТРИНЫ, а не паспорта: сколько разделов у гармошки, знает тот, кто её
- * ставит на страницу. Поэтому перечень здесь, а не в ките.
- */
-const ПОВТОРЫ: Readonly<Record<string, { readonly part: string; readonly times: number }>> = {
-  accordion: { part: "item", times: 3 },
-};
-
-/**
- * ПРОПЫ ОБРАЗЦА — то, без чего кит не заработает.
- *
- * Гармошке нужен ключ раздела: без него Ark не знает, какой пункт раскрывать, и складывает
- * `undefined` в идентификаторы. Раскрытый пункт назван здесь же — закрытая гармошка на витрине
- * показывала бы только кнопки, а содержимое, которое тоже одето, осталось бы невидимым.
- *
- * Это НЕ вид и не скин: это то, что потребитель обязан передать компоненту, чтобы тот работал.
- */
-const ПРОПЫ: Readonly<
-  Record<string, Readonly<Record<string, (номер: number, состояние: string | null) => Record<string, unknown>>>>
-> = {
-  accordion: {
-    // ОБЫЧНЫЙ ВИД — ЗАКРЫТЫЙ. Раскрытость это состояние, и показывать её в срезе «обычное»
-    // значило бы отвечать состоянием на вопрос о виде без состояний.
-    //
-    // В срезе раскрытости открыта ПАРА разделов, а не один: так видно и раскрытый, и закрытый
-    // разом — то есть саму разницу, ради которой на срез и смотрят.
-    root: (_номер, состояние) => ({
-      defaultValue: состояние === "open" ? ["раздел-1", "раздел-2"] : [],
-      collapsible: true,
-      multiple: true,
-    }),
-    item: (номер) => ({ value: `раздел-${номер + 1}` }),
-  },
-};
-
-/**
- * Собирает случай: образец плюс условие. Вариация ложится на корень, состояние — на узел
- * выбранной части, подпись — отдельным УЗЛОМ СОДЕРЖИМОГО.
- *
- * Узлом, а не пропом: у части, принимающей и текст, и вложенную часть, порядок между ними иначе
- * не выразить, и механика отрисовки props.children у такого узла не рисует вовсе.
+ * Теперь базовую сборку объявляет тот, кто компонент написал (`assembly` в паспорте), а витрина
+ * её поднимает. Нет объявленной сборки — берётся образец из анатомии: одна часть, ни повторов,
+ * ни наполнения. Кнопке этого хватает, составному компоненту нет, и его поставщик обязан сборку
+ * объявить.
  *
  * Отказ механики — **исключение**, а не значение, и это единственное такое место в зоне: отказ
  * означает, что случай написан против паспорта, то есть дефект нашей записи, а не состояние
@@ -309,58 +190,28 @@ function build(
   rootProps: Readonly<Record<string, unknown>>,
   partAddress?: string,
   stateMark?: PassportMark,
-  stateName?: string,
 ): AssemblyTree {
-  const sketch = sketchOf(REGISTRY, component);
+  const passport = passportOf(component);
+  const основа = passport ? baseAssemblyOf(passport, component) : undefined;
+  const sketch = основа ?? sketchOf(REGISTRY, component);
 
   if (!sketch) {
     throw new Error(`витрина: компонента «${component}» нет в реестре — случай собрать не из чего`);
   }
 
   const root = sketch.components.root;
-  const onRoot = updateNode(sketch, root, { props: rootProps });
+  const было = (sketch as AssemblyTree).components.nodes[root];
+
+  // ПРОПЫ СЛИВАЮТСЯ, А НЕ ЗАМЕЩАЮТСЯ: в объявленной сборке на корне уже стоит то, без чего кит
+  // не работает (у гармошки — какой раздел раскрыт). Положи мы поверх одну вариацию, экземпляр
+  // поставщика развалился бы, а выглядело бы это как «скин сломал компонент».
+  const onRoot = updateNode(sketch as AssemblyTree, root, {
+    props: { ...(!было || isContent(было) ? {} : было.props), ...rootProps },
+  });
 
   if (!onRoot.ok) throw new Error(`витрина: случай отвергнут механикой — ${onRoot.means}`);
 
-  const повтор = ПОВТОРЫ[component];
-  let наполнено: AssemblyTree =
-    повтор === undefined
-      ? onRoot.tree
-      : repeat(onRoot.tree, addressOfPart(component, повтор.part), повтор.times);
-
-  for (const [часть, props] of Object.entries(ПРОПЫ[component] ?? {})) {
-    for (const [номер, узел] of nodesOfPart(наполнено, addressOfPart(component, часть)).entries()) {
-      const своё = props(номер, stateName ?? null);
-      const шаг = updateNode(наполнено, узел, {
-        props: узел === root ? { ...rootProps, ...своё } : своё,
-      });
-
-      if (!шаг.ok) throw new Error(`витрина: проп образца не лёг — ${шаг.means}`);
-
-      наполнено = шаг.tree;
-    }
-  }
-
-  for (const [место, подпись] of (ПОДПИСИ[component] ?? []).entries()) {
-    for (const [номер, узел] of nodesOfPart(
-      наполнено,
-      addressOfPart(component, подпись.part),
-    ).entries()) {
-      // Первой среди детей: «подпись, потом стрелка», а не наоборот. Порядок — то, ради чего
-      // содержимое вообще стало узлом.
-      const шаг = insertNode(
-        наполнено,
-        REGISTRY,
-        { id: `подпись-${место}-${номер}`, genus: "text", value: подпись.value(номер) },
-        узел,
-        0,
-      );
-
-      if (!шаг.ok) throw new Error(`витрина: подпись не легла — ${шаг.means}`);
-
-      наполнено = шаг.tree;
-    }
-  }
+  const наполнено: AssemblyTree = onRoot.tree;
 
   if (stateMark === undefined || partAddress === undefined) return наполнено;
 
@@ -451,7 +302,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
         // карточкой с нажатой кнопкой не сообщает ничего, чего не видно.
         title: variant ?? "без вариации",
         at: { part, variant, state: state?.name ?? null },
-        tree: build(component, variantProps, address, state?.mark, state?.name),
+        tree: build(component, variantProps, address, state?.mark),
       });
     }
   }
