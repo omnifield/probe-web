@@ -60,7 +60,7 @@ export async function assembleOutfit(name: string) {
 
   // Изъяны наряда механика отвергает целиком, а не отдаёт вид с ошибкой рядом: вид с изъяном
   // доехал бы до страницы и выглядел там как испорченный, а не как незаконный.
-  return assemble(outfit, await readParts());
+  return assemble(outfit, await readParts(), passportOf);
 }
 
 /**
