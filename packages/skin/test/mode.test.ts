@@ -36,11 +36,14 @@ import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 import { flattenCss } from "../src/flatten.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { DARK_CLASS } from "../src/marks.js";
 import type { Skin } from "../src/model.js";
 import { inLayer } from "./helpers/layers.js";
 import { lookup } from "./passports.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSkinCss } = withPassports(lookup);
 
 /** Скин с обеими половинами: пара записана человеком, значения половин расходятся. */
 const paired: Skin = {
@@ -86,11 +89,11 @@ function declarations(css: string): { value: string; layered: boolean }[] {
 
 describe("надетый скин называет свою половину", () => {
   it("светлая половина названа — ответ даёт скин, а не умолчание браузера", () => {
-    expect(answer([generateSkinCss(paired, lookup)])).toBe("light");
+    expect(answer([generateSkinCss(paired)])).toBe("light");
   });
 
   it("под классом режима надета тёмная — и страница отвечает «тёмная»", () => {
-    expect(answer([generateSkinCss(paired, lookup)], true)).toBe("dark");
+    expect(answer([generateSkinCss(paired)], true)).toBe("dark");
   });
 
   it("проба не слепа: без листа скина документ не отвечает ничего", () => {
@@ -105,14 +108,14 @@ describe("тёмная называется тогда, когда она ест
   it("у скина без тёмной половины ответ остаётся светлым и ПОД КЛАССОМ РЕЖИМА", () => {
     // Иначе получилось бы ровно то расхождение, ради которого задача заведена, только своими
     // руками: системные элементы затемнены, компоненты — нет, потому что затемнять было нечем.
-    expect(answer([generateSkinCss(lightOnly, lookup)], true)).toBe("light");
+    expect(answer([generateSkinCss(lightOnly)], true)).toBe("light");
   });
 
   it("«тёмной нет» — это отсутствие объявления, а не второе светлое", () => {
-    expect(declarations(generateSkinCss(lightOnly, lookup)).map((decl) => decl.value)).toEqual([
+    expect(declarations(generateSkinCss(lightOnly)).map((decl) => decl.value)).toEqual([
       "light",
     ]);
-    expect(declarations(generateSkinCss(paired, lookup)).map((decl) => decl.value)).toEqual([
+    expect(declarations(generateSkinCss(paired)).map((decl) => decl.value)).toEqual([
       "light",
       "dark",
     ]);
@@ -125,7 +128,7 @@ describe("объявление стоит ВНЕ слоя — иначе оно 
   // молча любая чужая таблица рядом. jsdom этого не покажет — он слои игнорирует, а не
   // упорядочивает.
   it("ни одно объявление режима не лежит в слое", () => {
-    for (const css of [generateSkinCss(paired, lookup), generateSkinCss(lightOnly, lookup)]) {
+    for (const css of [generateSkinCss(paired), generateSkinCss(lightOnly)]) {
       expect(declarations(css).map((decl) => decl.layered)).not.toContain(true);
     }
   });
@@ -133,7 +136,7 @@ describe("объявление стоит ВНЕ слоя — иначе оно 
   it("а сам скин из слоя никуда не делся — вне его живёт ТОЛЬКО ответ о режиме", () => {
     const outside: string[] = [];
 
-    postcss.parse(generateSkinCss(paired, lookup)).walkRules((rule) => {
+    postcss.parse(generateSkinCss(paired)).walkRules((rule) => {
       if (!inLayer(rule)) outside.push(rule.toString());
     });
 
@@ -142,8 +145,8 @@ describe("объявление стоит ВНЕ слоя — иначе оно 
   });
 
   it("плоская форма ответ не теряет — обе формы описывают один и тот же вид", () => {
-    expect(declarations(flattenCss(generateSkinCss(paired, lookup)))).toEqual(
-      declarations(generateSkinCss(paired, lookup)),
+    expect(declarations(flattenCss(generateSkinCss(paired)))).toEqual(
+      declarations(generateSkinCss(paired)),
     );
   });
 });

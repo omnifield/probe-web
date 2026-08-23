@@ -12,8 +12,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { Skin } from "../src/model.js";
-import { checkSkin } from "../src/rules.js";
+import { withPassports } from "../src/bound.js";
 import { lookup } from "./passports.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { checkSkin } = withPassports(lookup);
 
 /** Скин из одного значения — самая узкая проба, какую можно поставить. */
 function withValue(value: string, variables?: Skin["variables"]): Skin {
@@ -25,7 +28,7 @@ function withValue(value: string, variables?: Skin["variables"]): Skin {
 }
 
 function flaws(skin: Skin, tokens?: string[]) {
-  return checkSkin(skin, lookup, tokens ? { tokens } : {});
+  return checkSkin(skin, tokens ? { tokens } : {});
 }
 
 describe("ссылка на значение", () => {

@@ -63,6 +63,17 @@ export function safeName(name: string): boolean {
  * Перечень компонентов приходит СНАРУЖИ — он принадлежит реестру, — а обходу нужен вызов по
  * имени. Место сборки одно, чтобы каждый читатель перечня не заводил свою карту.
  *
+ * Наружу отдаётся ТЕМ ЖЕ входом, что и тип `PassportLookup` (`PWEB-95`): половина механики просит
+ * читатель, половина — перечень, и без выведенной сборки держатель перечня обязан был написать
+ * свою карту, то есть сделать ровно то, против чего написан абзац выше.
+ *
+ * ```ts
+ * import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
+ * import { passportLookup, withPassports } from "@omnifield/probe-web-skin";
+ *
+ * const { assemble, generateSkinCss } = withPassports(passportLookup(Object.values(PASSPORTS)));
+ * ```
+ *
  * @param passports паспорта, которые считаются известными
  */
 export function passportLookup(

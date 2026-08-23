@@ -38,10 +38,12 @@ const pipeline = postcss([nested()]);
  * Разворачивает вложенный CSS в плоский.
  *
  * ```ts
- * import { generateSkinCss } from "@omnifield/probe-web-skin";
+ * import { withPassports } from "@omnifield/probe-web-skin";
  * import { flattenCss } from "@omnifield/probe-web-skin/flat";
  *
- * writeFileSync("ночь.css", flattenCss(generateSkinCss(skin, passportOf)));
+ * const { generateSkinCss } = withPassports(passportOf);
+ *
+ * writeFileSync("ночь.css", flattenCss(generateSkinCss(skin)));
  * ```
  *
  * Принимает любой CSS, а не только наш: предмет здесь — форма записи, а не её происхождение.

@@ -31,6 +31,7 @@
 // скина, и приложение получило бы вид, привязанный к идентификаторам чужого стенда.
 
 import { componentSelector, type PassportLookup } from "./address.js";
+import { withPassports as withPassportsOnModel, type BoundModel } from "./bound.js";
 import { DARK_CLASS, LAYER_ORDER, SKETCH_LAYER, SKIN_LAYER } from "./marks.js";
 import { cssProperty } from "./property.js";
 import { skinValues } from "./seeds.js";
@@ -290,11 +291,17 @@ function layered(
  * Порождает файл стилей СКИНА.
  *
  * ```ts
- * import { passportOf, PASSPORTS } from "@omnifield/probe-web-ui/passport";
+ * import { passportOf } from "@omnifield/probe-web-ui/passport";
  * import { SCALE_TOKENS } from "@omnifield/probe-web-style";
+ * import { withPassports } from "@omnifield/probe-web-skin";
  *
- * const css = generateSkinCss(skin, passportOf, { tokens: SCALE_TOKENS });
+ * const { generateSkinCss } = withPassports(passportOf);
+ * const css = generateSkinCss(skin, { tokens: SCALE_TOKENS });
  * ```
+ *
+ * Источником эта подпись НЕ распоряжается: наружу она не выходит вовсе, а приезжает связанной
+ * (`withPassports` ниже). Причина — `PWEB-94`: назови источник и здесь, и в проверке наряда, и
+ * два одинаково полных по именам источника разойдутся молча.
  *
  * Словарь значений передаётся снаружи намеренно: скин вправе стоять на нашем наборе, на чужом
  * или ни на каком, и зависимость отсюда на набор значений сделала бы «инструменты необязательны»
@@ -362,4 +369,47 @@ export function generateSketchCss(
 
   done();
   return css;
+}
+
+/**
+ * Механика скина целиком, СВЯЗАННАЯ с источником паспортов: модель плюс печать.
+ *
+ * Надмножество `BoundModel` — ровно то же отношение, что между входами пакета: корень это
+ * `./model` плюс порождение.
+ */
+export interface BoundSkin extends BoundModel {
+  /** Порождает файл стилей скина. Бросает `SkinRefused` на изъяне. */
+  generateSkinCss(skin: Skin, vocabulary?: ValueVocabulary): string;
+  /** Порождает файл стилей правок образца. Бросает `SkinRefused` на изъяне. */
+  generateSketchCss(edits: readonly SketchEdit[], vocabulary?: ValueVocabulary): string;
+}
+
+/**
+ * Связывает механику скина с источником паспортов — ЕДИНСТВЕННАЯ дверь к порождению (`PWEB-94`).
+ *
+ * ```ts
+ * import { passportOf } from "@omnifield/probe-web-ui/passport";
+ * import { withPassports } from "@omnifield/probe-web-skin";
+ *
+ * const { assemble, generateSkinCss } = withPassports(passportOf);
+ *
+ * const { skin, report } = assemble(наряд, части);  // источник назван ОДИН раз — выше
+ * const css = generateSkinCss(skin);                 // второму доводу взяться неоткуда
+ * ```
+ *
+ * Свободной подписи `generateSkinCss(skin, lookup)` на поверхности пакета НЕТ и «для
+ * совместимости» рядом не оставлено: это был бы ровно тот второй путь, против которого задача.
+ *
+ * Половина модели собирается не здесь, а `withPassports` из `bound.ts`: связка одна, а состав её
+ * модельной части объявлен в одном месте.
+ *
+ * @param lookup чем найти паспорт по имени компонента
+ * @returns вызовы модели и печати, у которых второго источника взяться неоткуда
+ */
+export function withPassports(lookup: PassportLookup): BoundSkin {
+  return {
+    ...withPassportsOnModel(lookup),
+    generateSkinCss: (skin, vocabulary) => generateSkinCss(skin, lookup, vocabulary),
+    generateSketchCss: (edits, vocabulary) => generateSketchCss(edits, lookup, vocabulary),
+  };
 }

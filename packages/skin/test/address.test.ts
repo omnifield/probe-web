@@ -13,11 +13,14 @@ import {
   markSelector,
   nodeSelector,
   partSelector,
+  passportLookup,
   safeName,
   stateSelector,
   variantAlternatives,
   variantSelector,
+  type PassportLookup,
 } from "../src/address.js";
+import { withPassports } from "../src/bound.js";
 import { FORCE_ATTRIBUTE, NODE_ATTRIBUTE } from "../src/marks.js";
 import { buttonPassport, fieldPassport } from "./passports.js";
 
@@ -151,5 +154,32 @@ describe("пригодность имени", () => {
     expect(safeName('вот"такое')).toBe(false);
     expect(safeName("вот\\такое")).toBe(false);
     expect(safeName("")).toBe(false);
+  });
+});
+
+describe("сборщик читателя — место одно, и оно наружу (`PWEB-95`)", () => {
+  // Половина механики просит ЧИТАТЕЛЯ, половина — ПЕРЕЧЕНЬ, и сходятся они здесь. Пока сборка не
+  // была выведена, держатель перечня обязан был написать свою карту — то есть сделать ровно то,
+  // что запрещает шапка этой функции.
+
+  it("перечень превращается в читатель: своё имя находится, чужое — нет", () => {
+    const читатель: PassportLookup = passportLookup([buttonPassport, fieldPassport]);
+
+    expect(читатель(buttonPassport.component)).toBe(buttonPassport);
+    expect(читатель(fieldPassport.component)).toBe(fieldPassport);
+    expect(читатель("нездешний")).toBeUndefined();
+  });
+
+  it("держатель перечня связывает механику В ДВА ХОДА, а не пишет карту сам", () => {
+    // Ровно тот путь, ради которого сборка и выведена: перечень → читатель → связка (`PWEB-94`).
+    const { checkSkin } = withPassports(passportLookup([buttonPassport]));
+
+    expect(checkSkin({ name: "проба", recipes: {} })).toEqual([]);
+    expect(
+      checkSkin({
+        name: "проба",
+        recipes: { нездешний: { base: { root: { props: { color: "red" } } } } },
+      }).map((flaw) => flaw.name),
+    ).toEqual(["unknown-component"]);
   });
 });

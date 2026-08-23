@@ -29,9 +29,13 @@
 // Снят скин — имени нет вовсе, и вид уходит целиком. Это и есть машинная разница между «вид от
 // скина» и «вид сбоку».
 
-import { generateSkinCss, type Skin } from "@omnifield/probe-web-skin";
+import { withPassports, type Skin } from "@omnifield/probe-web-skin";
 import { makeSkinSwitch, type SkinSwitch } from "@omnifield/probe-web-runtime";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
+
+// Источник паспортов называется ОДИН РАЗ на файл и дальше едет связкой (`PWEB-94`): у связанных
+// вызовов довода для второго источника нет, и разойтись проверке с порождением нечем.
+const { generateSkinCss } = withPassports(passportOf);
 
 /**
  * Скин страницы: семя скруглений, имена для оформления и вид кнопки.
@@ -114,7 +118,7 @@ const SOURCE = {
     if (name !== REFERENCE_SKIN.name) {
       throw new Error(`[reference] скина «${name}» здесь нет — надевать нечего`);
     }
-    return generateSkinCss(REFERENCE_SKIN, passportOf);
+    return generateSkinCss(REFERENCE_SKIN);
   },
 };
 

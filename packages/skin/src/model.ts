@@ -35,12 +35,17 @@ export {
 } from "./marks.js";
 
 export type { PassportLookup } from "./address.js";
+// `passportLookup` едет наружу ТЕМ ЖЕ входом, что и тип (`PWEB-95`): место сборки карты одно, и
+// объявить это в комментарии, не отдав саму сборку, значило потребовать от каждого держателя
+// перечня написать свою карту — ровно то, что запрещено. Держатель перечня теперь связывает
+// механику в два хода: `withPassports(passportLookup(PASSPORTS))`.
 export {
   ancestorSelector,
   markSelector,
   nodeSelector,
   componentSelector,
   partSelector,
+  passportLookup,
   safeName,
   stateSelector,
   variantSelector,
@@ -56,7 +61,13 @@ export type {
   SketchRules,
   ValueVocabulary,
 } from "./rules.js";
-export { checkSketch, checkSkin, sketchRules, skinRules } from "./rules.js";
+
+// ИСТОЧНИК ПАСПОРТОВ НАЗЫВАЕТСЯ ОДИН РАЗ (`PWEB-94`). Проверки скина, правок образца и наряда
+// приезжают связанными, а свободных подписей с доводом-источником на поверхности не осталось:
+// пока они были, подпись разрешала проверить одним источником, а породить другим. Разбор — в
+// `bound.ts`.
+export type { BoundModel } from "./bound.js";
+export { withPassports } from "./bound.js";
 
 export type { SkinGap, SkinGapKind } from "./coverage.js";
 export { skinGaps } from "./coverage.js";
@@ -96,7 +107,7 @@ export type {
   OutfitReport,
   Palette,
 } from "./look.js";
-export { assemble, checkOutfit, OutfitRefused } from "./look.js";
+export { OutfitRefused } from "./look.js";
 
 // СЛОВАРЬ — машинный контракт между тремя записями. Наружу, потому что его спрашивают все:
 // редактор перечисляет роли человеку, хранилище отказывает неполной палитре, проба проверяет.

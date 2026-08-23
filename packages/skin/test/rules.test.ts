@@ -7,19 +7,22 @@ import { describe, expect, it } from "vitest";
 
 import { partSelector } from "../src/address.js";
 import type { Skin } from "../src/model.js";
-import { checkSkin, skinRules } from "../src/rules.js";
+import { withPassports } from "../src/bound.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { checkSkin, skinRules } = withPassports(lookup);
 
 
 /** Собирает правила пробного скина — вход, к которому сводится большинство проверок ниже. */
 function rules(skin: Skin = buttonSkin) {
-  return skinRules(skin, lookup);
+  return skinRules(skin);
 }
 
 /** Имена изъянов — сравнивать удобнее их, а пояснение читает человек. */
 function names(skin: Skin) {
-  return checkSkin(skin, lookup).map((flaw) => flaw.name);
+  return checkSkin(skin).map((flaw) => flaw.name);
 }
 
 describe("рецепт собирается целиком", () => {
@@ -114,7 +117,7 @@ describe("предок — вторая половина адреса", () => {
   };
 
   it("правило предка адресует владельца слева, а часть — справа", () => {
-    const rule = skinRules(skin, lookup).rules.find((r) => r.selector.includes(" "))!;
+    const rule = skinRules(skin).rules.find((r) => r.selector.includes(" "))!;
     const owner = partSelector(fieldPassport, "root")!;
     const own = partSelector(fieldPassport, "control")!;
 
@@ -122,7 +125,7 @@ describe("предок — вторая половина адреса", () => {
   });
 
   it("состояние предка считается условием — правило встаёт позже безусловного", () => {
-    const list = skinRules(skin, lookup).rules;
+    const list = skinRules(skin).rules;
 
     expect(list[0]!.conditions).toBe(0);
     expect(list.at(-1)!.conditions).toBe(2);
@@ -150,7 +153,7 @@ describe("предок — вторая половина адреса", () => {
 
 describe("именованные отказы", () => {
   it("компонент без паспорта", () => {
-    expect(checkSkin(buttonSkin, emptyLookup).map((f) => f.name)).toEqual([
+    expect(withPassports(emptyLookup).checkSkin(buttonSkin).map((f) => f.name)).toEqual([
       "unknown-component",
     ]);
   });
@@ -264,7 +267,6 @@ describe("пустое правило в вывод не едет", () => {
   it("часть без свойств правила не порождает", () => {
     const list = skinRules(
       { name: "п", recipes: { button: { base: { root: {} } } } },
-      lookup,
     ).rules;
 
     expect(list).toEqual([]);

@@ -16,11 +16,13 @@
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
-import { checkSkin } from "../src/rules.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import type { Skin } from "../src/model.js";
 import { SIZE_SEEDS, sizeValues } from "../src/sizes.js";
 import { lookup } from "./passports.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { checkSkin, generateSkinCss } = withPassports(lookup);
 
 /** Скин, посеявший интервалы: одно семя плюс плотность. */
 const sown: Skin = {
@@ -50,7 +52,7 @@ function declared(css: string): Map<string, string[]> {
 }
 
 describe("посеял семя — получил всю лестницу", () => {
-  const css = generateSkinCss(sown, lookup);
+  const css = generateSkinCss(sown);
 
   it("объявлено и само семя, и все его ступени", () => {
     const names = declared(css);
@@ -87,17 +89,17 @@ describe("НЕТ СЕМЕНИ — НЕТ ЗНАЧЕНИЙ", () => {
   it("а правило, адресующее непосеянную ступень, — изъян записи, и порождение отказывает", () => {
     // Главный гейт задачи. Умолчание сбоку здесь именно поэтому и невозможно: подставить нечего,
     // и вместо тихой подстановки человек получает названную причину.
-    const flaws = checkSkin(bare, lookup);
+    const flaws = checkSkin(bare);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("unknown-value");
-    expect(() => generateSkinCss(bare, lookup)).toThrow(/не порождён/);
+    expect(() => generateSkinCss(bare)).toThrow(/не порождён/);
   });
 
   it("ни одно объявление размерного набора не несёт запасного значения", () => {
     // Мутация из задачи: подсунь запасное значение в генератор — краснеет здесь. Проверяется
     // ВЕСЬ вывод, а не одна ступень: подстраховка, добавленная «на всякий случай» в одну шкалу,
     // так же тиха, как добавленная во все.
-    for (const [name, values] of declared(generateSkinCss(sown, lookup))) {
+    for (const [name, values] of declared(generateSkinCss(sown))) {
       for (const value of values) {
         expect(`${name}: ${value}`).not.toMatch(/var\(\s*--[^\s,)]+\s*,/u);
       }
@@ -108,7 +110,7 @@ describe("НЕТ СЕМЕНИ — НЕТ ЗНАЧЕНИЙ", () => {
 describe("что скин назвал неправильно — сказано ему, а не проглочено", () => {
   it("имени шкалы не существует — изъян с перечнем законных семян", () => {
     const skin: Skin = { name: "опечатка", variables: { dimensions: { spacing: "1rem" } }, recipes: {} };
-    const flaws = checkSkin(skin, lookup);
+    const flaws = checkSkin(skin);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("bad-size");
     expect(flaws.find((flaw) => flaw.name === "bad-size")?.means).toContain("space");
@@ -120,7 +122,7 @@ describe("что скин назвал неправильно — сказано
     // называем.
     const skin: Skin = { name: "без-плотности", variables: { dimensions: { space: "0.25rem" } }, recipes: {} };
 
-    expect(checkSkin(skin, lookup).map((flaw) => flaw.name)).toContain("bad-size");
+    expect(checkSkin(skin).map((flaw) => flaw.name)).toContain("bad-size");
   });
 
   it("шкала НЕплотная плотности не требует — требование выведено из данных, а не назначено", () => {
@@ -128,7 +130,7 @@ describe("что скин назвал неправильно — сказано
     // просить за неё плотность было бы придуманным правилом.
     const skin: Skin = { name: "скругление", variables: { dimensions: { radius: "0.5rem" } }, recipes: {} };
 
-    expect(checkSkin(skin, lookup)).toEqual([]);
+    expect(checkSkin(skin)).toEqual([]);
   });
 });
 

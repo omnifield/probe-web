@@ -51,11 +51,14 @@ import postcss from "postcss";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { skinContrast } from "../src/contrast.js";
-import { generateSketchCss, generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { nodeSelector } from "../src/address.js";
 import type { SketchEdit, Skin } from "../src/model.js";
 import { lookup } from "./passports.js";
 import { cleanup, mount } from "./dom.jsx";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSketchCss, generateSkinCss } = withPassports(lookup);
 
 afterEach(() => {
   cleanup();
@@ -99,7 +102,7 @@ describe("шов с механикой сборки: признак узла", (
     // своим селектором. Переименует она признак — попадать станет некуда, и проба покраснеет.
     expect(node.matches(nodeSelector("btn-1"))).toBe(true);
 
-    for (const selector of selectorsOf(generateSketchCss(edits, lookup))) {
+    for (const selector of selectorsOf(generateSketchCss(edits))) {
       expect(node.matches(selector)).toBe(true);
     }
   });
@@ -133,7 +136,7 @@ describe("шов с рантаймом: тёмная пара", () => {
   };
 
   /** Селектор тёмной половины — тот, что порождён, а не записанный в пробе. */
-  const css = generateSkinCss(skin, lookup);
+  const css = generateSkinCss(skin);
   const darkSelector = selectorsOf(css).find((selector) =>
     selector.startsWith(":root") && selector !== ":root",
   )!;
@@ -286,7 +289,7 @@ describe("шов с базовым слоем: вклад базы в режим
   it("надет скин — отвечает та половина, которую назвал он", () => {
     // Он же положительный контроль: без него «база молчит» проходило бы и на замере, который
     // не умеет замечать вообще ничего.
-    sheets(base, generateSkinCss(skin, lookup));
+    sheets(base, generateSkinCss(skin));
 
     expect(mode()).not.toBe(silence);
     expect(mode()).toBe("light");
@@ -295,7 +298,7 @@ describe("шов с базовым слоем: вклад базы в режим
   });
 
   it("скин снят — база молчит снова", () => {
-    const [, worn] = sheets(base, generateSkinCss(skin, lookup));
+    const [, worn] = sheets(base, generateSkinCss(skin));
 
     expect(mode()).toBe("light");
     worn!.remove();

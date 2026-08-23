@@ -7,10 +7,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { flattenCss } from "../src/flatten.js";
-import { generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { note, trace } from "../src/trace.js";
 import { lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSkinCss } = withPassports(lookup);
 
 const FLAG = "__PROBE_WEB_SKIN_TRACE__";
 
@@ -42,7 +45,7 @@ describe("по умолчанию молчит", () => {
   it("целое порождение проходит молча", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
 
-    generateSkinCss(buttonSkin, lookup);
+    generateSkinCss(buttonSkin);
 
     expect(debug).not.toHaveBeenCalled();
   });
@@ -63,7 +66,7 @@ describe("включается флагом", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
     (globalThis as Flagged)[FLAG] = true;
 
-    generateSkinCss(buttonSkin, lookup);
+    generateSkinCss(buttonSkin);
 
     const lines = debug.mock.calls.map((call) => String(call[0]));
 
@@ -77,7 +80,7 @@ describe("включается флагом", () => {
     const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
     (globalThis as Flagged)[FLAG] = true;
 
-    flattenCss(generateSkinCss(buttonSkin, lookup));
+    flattenCss(generateSkinCss(buttonSkin));
 
     expect(debug.mock.calls.map((call) => String(call[0])).some((l) => l.includes("flattenCss"))).toBe(
       true,

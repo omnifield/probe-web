@@ -103,10 +103,10 @@ describe("разворачиватель необязателен: вложен�
     // значит вложенная форма доезжает до текста без разворачивателя.
     const printed = runInInstall(
       install,
-      `import { generateSkinCss } from ${JSON.stringify(PKG)};
+      `import { withPassports } from ${JSON.stringify(PKG)};
+       const { generateSkinCss } = withPassports(() => undefined);
        const css = generateSkinCss(
          { name: "проба", variables: { light: { a: "#fff" } }, recipes: {} },
-         () => undefined,
        );
        console.log(css.includes("--a: #fff;"));`,
     );

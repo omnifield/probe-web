@@ -9,7 +9,7 @@
 // сломанном. Поэтому «страница обязана потерять вид, если снять скин» проверяется живым
 // браузером (`tools/live-check/`), а след замера живёт в узле задачи.
 
-import { generateSkinCss } from "@omnifield/probe-web-skin";
+import { withPassports } from "@omnifield/probe-web-skin";
 import { baseCss } from "@omnifield/probe-web-style/generate";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { readFileSync } from "node:fs";
@@ -20,6 +20,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { dressApp, REFERENCE_SKIN } from "../src/skin";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+
+/** Источник паспортов назван один раз — тем же способом, каким его называет сама страница. */
+const { generateSkinCss } = withPassports(passportOf);
 
 /** Текст оформления потребителя — тот самый файл, который уедет в бандл. */
 function styling(): string {
@@ -49,7 +52,7 @@ describe("значения приходят скином, а не общим л�
   it("всё, что оформление адресует, объявляет скин", () => {
     // Обратная сторона того же гейта. Без неё «из листа не берём» выполнялось бы и опечаткой:
     // имя, которого не объявляет никто, тоже не из листа — а страница осталась бы без вида.
-    const skin = declared(generateSkinCss(REFERENCE_SKIN, passportOf));
+    const skin = declared(generateSkinCss(REFERENCE_SKIN));
     const orphans = [...referenced(styling())].filter((name) => !skin.has(name));
 
     expect(orphans).toEqual([]);
@@ -58,7 +61,7 @@ describe("значения приходят скином, а не общим л�
   it("скругления посеяны, а не выписаны ступенями", () => {
     // Пересеваемость — то, ради чего семя вообще существует: поменял одно значение, поехал весь
     // вид. Выписанные ступени дали бы тот же кадр и отняли бы это свойство молча.
-    const css = generateSkinCss(REFERENCE_SKIN, passportOf);
+    const css = generateSkinCss(REFERENCE_SKIN);
 
     expect(REFERENCE_SKIN.variables?.dimensions).toEqual({ radius: "0.5rem" });
     expect(css).toContain("--radius-md: calc(var(--radius) - 2px)");
@@ -70,7 +73,7 @@ describe("значения приходят скином, а не общим л�
   it("скин одевает кнопку рецептом, а не переменными", () => {
     // Половин у скина не бывает: набор значений без единого правила вида — это то, что
     // фреймворк только что перестал возить. Адрес собран из анатомии, руками не написан.
-    const css = generateSkinCss(REFERENCE_SKIN, passportOf);
+    const css = generateSkinCss(REFERENCE_SKIN);
 
     expect(css).toContain('[data-scope="button"][data-part="root"]');
     expect(css).toContain("border-radius: var(--app-round)");

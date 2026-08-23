@@ -15,6 +15,10 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { withPassports, type PassportLookup } from "../src/index.js";
+import { lookup } from "./passports.js";
+import { наряд, части } from "./looks.js";
+
 const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Собранный файл поставки как текст. */
@@ -90,6 +94,19 @@ describe("что каждый вход тянет за собой", () => {
     expect(typeof model.skinGaps).toBe("function");
     expect(typeof model.skinValues).toBe("function");
   });
+
+  it("сборщик читателя едет ТЕМ ЖЕ входом, что и его тип (`PWEB-95`)", async () => {
+    // Тип `PassportLookup` отдавал `./model`, а самой сборки не отдавал никто — и держатель
+    // перечня обязан был написать свою карту, то есть завести вторую. Проба спрашивает оба входа:
+    // тип проверяет компилятор (аннотация ниже), наличие сборки — прогон.
+    const model = await import("../src/model.js");
+    const root = await import("../src/index.js");
+
+    const читатель: PassportLookup = model.passportLookup([]);
+
+    expect(typeof читатель).toBe("function");
+    expect(typeof root.passportLookup).toBe("function");
+  });
 });
 
 describe("что уезжает, а что остаётся", () => {
@@ -113,9 +130,11 @@ describe("что уезжает, а что остаётся", () => {
 });
 
 describe("второго генератора нет", () => {
-  it("поверхность знает одно порождение скина и одно — правок образца", async () => {
-    const surface = await import("../src/index.js");
-    const generators = Object.keys(surface).filter((name) => name.startsWith("generate"));
+  it("связка знает одно порождение скина и одно — правок образца", async () => {
+    const { withPassports } = await import("../src/index.js");
+    const generators = Object.keys(withPassports(() => undefined)).filter((name) =>
+      name.startsWith("generate"),
+    );
 
     expect(generators.toSorted()).toEqual(["generateSketchCss", "generateSkinCss"]);
   });
@@ -124,5 +143,69 @@ describe("второго генератора нет", () => {
     const surface = await import("../src/index.js");
 
     expect(Object.keys(surface).some((name) => /preview|предпросмотр/i.test(name))).toBe(false);
+  });
+});
+
+describe("источник паспортов называется ОДИН раз (`PWEB-94`)", () => {
+  // Гейт задачи. Пока источник был доводом каждого вызова, подпись разрешала проверить наряд
+  // одним источником, а породить другим: совсем чужой падал громко, а два одинаково полных ПО
+  // ИМЕНАМ, но разных по анатомии, расходились молча — правило целилось в атрибуты, которых на
+  // узле нет. Держит это теперь ПОДПИСЬ, и проверяется это здесь.
+
+  it("свободного порождения на поверхности не осталось — ни в корне, ни в `./model`", async () => {
+    const root = await import("../src/index.js");
+    const model = await import("../src/model.js");
+
+    for (const surface of [root, model]) {
+      for (const name of [
+        "generateSkinCss",
+        "generateSketchCss",
+        "assemble",
+        "checkOutfit",
+        "checkSkin",
+        "checkSketch",
+        "skinRules",
+        "sketchRules",
+      ]) {
+        expect(name in surface, name).toBe(false);
+      }
+    }
+  });
+
+  it("связка одна на оба входа, и корневая — НАДМНОЖЕСТВО модельной", async () => {
+    // Тот же шов, что и у всего остального в этом пакете: делит входы то, что попадёт в сборку
+    // потребителя. Хранилищу печатать нечего, поэтому в `./model` её и нет.
+    const root = await import("../src/index.js");
+    const model = await import("../src/model.js");
+
+    const корневая = Object.keys(root.withPassports(() => undefined)).toSorted();
+    const модельная = Object.keys(model.withPassports(() => undefined)).toSorted();
+
+    expect(модельная).toEqual([
+      "assemble",
+      "checkOutfit",
+      "checkSketch",
+      "checkSkin",
+      "sketchRules",
+      "skinRules",
+    ]);
+    expect(корневая).toEqual([...модельная, "generateSkinCss", "generateSketchCss"].toSorted());
+  });
+
+  it("МУТАЦИЯ: породить одним источником, а проверить другим — не собирается", () => {
+    // Держит эту пробу КОМПИЛЯТОР, а не прогон: тело ниже не исполняется — исполнять в нём нечего.
+    // Верни кто-нибудь свободную подпись рядом со связкой — `@ts-expect-error` останется без
+    // ошибки, и покраснеет `pnpm lint`, назвав причину. Прогоном такое не ловится вовсе.
+    function мутация(): void {
+      const { assemble, generateSkinCss } = withPassports(lookup);
+      const { skin } = assemble(наряд, части);
+
+      // @ts-expect-error источник называется один раз — связкой, а не доводом вызова
+      generateSkinCss(skin, lookup);
+      // @ts-expect-error то же и у сборки: доводов у неё два — наряд и части
+      assemble(наряд, части, lookup);
+    }
+
+    expect(typeof мутация).toBe("function");
   });
 });

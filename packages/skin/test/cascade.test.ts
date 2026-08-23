@@ -20,11 +20,14 @@ import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 import { flattenCss } from "../src/flatten.js";
-import { generateSketchCss, generateSkinCss } from "../src/generate.js";
+import { withPassports } from "../src/generate.js";
 import { NODE_ATTRIBUTE } from "../src/marks.js";
 import type { SketchEdit } from "../src/model.js";
 import { lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { generateSketchCss, generateSkinCss } = withPassports(lookup);
 
 /** Цвет, который ставит скин базой, и цвет, которым его перебивает правка образца. */
 const SKIN_COLOUR = "rgb(1, 2, 3)";
@@ -33,7 +36,7 @@ const SKETCH_COLOUR = "rgb(9, 9, 9)";
 // Генератор отдаёт ВЛОЖЕННУЮ форму — браузеру она годится как есть, а jsdom её не понимает так
 // же, как не понимает слои. Поэтому проба разворачивает и то и другое: обе вещи — ограничение
 // окружения пробы, а не поставки.
-const skinCss = flattenCss(generateSkinCss(buttonSkin, lookup));
+const skinCss = flattenCss(generateSkinCss(buttonSkin));
 
 const edits: readonly SketchEdit[] = [
   {
@@ -43,7 +46,7 @@ const edits: readonly SketchEdit[] = [
     style: { props: { backgroundColor: SKETCH_COLOUR } },
   },
 ];
-const sketchCss = flattenCss(generateSketchCss(edits, lookup));
+const sketchCss = flattenCss(generateSketchCss(edits));
 
 /** Слои — в вес селектора, как это делает браузер, только заранее. */
 function withLayers(css: string): string {

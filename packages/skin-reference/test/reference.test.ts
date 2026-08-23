@@ -8,10 +8,7 @@
 // их анатомии. Собери проба паспорт сама — она проверяла бы наше представление о ките.
 
 import {
-  assemble,
-  checkOutfit,
-  checkSkin,
-  generateSkinCss,
+  withPassports,
   SCALE_ROLES,
   skinValues,
 } from "@omnifield/probe-web-skin";
@@ -20,11 +17,12 @@ import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 import { DRESSED, referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
-import { собранный, части } from "./assembled.js";
+import { assemble, generateSkinCss, собранный, части } from "./assembled.js";
 
 const referenceSkin = собранный.skin;
 
-const css = generateSkinCss(собранный.skin, passportOf);
+const { checkOutfit, checkSkin } = withPassports(passportOf);
+const css = generateSkinCss(собранный.skin);
 
 /** Объявления `--имя` из текста: имя → все его значения, в порядке появления. */
 function declared(text: string): Map<string, string[]> {
@@ -51,7 +49,7 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
   });
 
   it("палитра закрывает словарь, а формы просят только его роли — до надевания", () => {
-    expect(checkOutfit(referenceOutfit, части, passportOf)).toEqual([]);
+    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
   });
 
   it("РАСКРЫТИЕ ПИШЕТ СКИН: гармошка адресует переменную, объявленную паспортом", () => {
@@ -80,7 +78,7 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
     };
 
     // Контроль стоит выше: на настоящих паспортах изъянов ноль — значит краснота ниже не случайна.
-    const flaws = checkOutfit(referenceOutfit, части, безВысоты);
+    const flaws = withPassports(безВысоты).checkOutfit(referenceOutfit, части);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("outside-vocabulary");
     expect(flaws[0]?.means).toContain("height");
@@ -107,7 +105,7 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
 
 describe("порождение проходит без изъянов", () => {
   it("механика не нашла в записи ни одного изъяна", () => {
-    expect(checkSkin(referenceSkin, passportOf)).toEqual([]);
+    expect(checkSkin(referenceSkin)).toEqual([]);
   });
 
   it("текст порождается и разбирается парсером", () => {
@@ -157,7 +155,7 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
 
     expect(употреблено.length).toBeLessThan(SCALE_ROLES.length);
     expect(употреблено).toContain("акцент");
-    expect(checkOutfit(referenceOutfit, части, passportOf)).toEqual([]);
+    expect(checkOutfit(referenceOutfit, части)).toEqual([]);
   });
 
   it("ни один цвет не выписан литералом — иначе скин перестал бы быть пересеваемым", () => {
@@ -186,7 +184,7 @@ describe("ОБЕ ПОЛОВИНЫ СТРОЯТСЯ ИЗ СЕМЯН — это п
     const пересеян = assemble(referenceOutfit, {
       ...части,
       palettes: [{ ...referencePalette, scales: { ...referencePalette.scales, акцент: "oklch(0.55 0.2 140)" } }],
-    }, passportOf).skin;
+    }).skin;
 
     for (const half of ["light", "dark"] as const) {
       expect(skinValues(пересеян, half).get("акцент-9")?.value).not.toBe(

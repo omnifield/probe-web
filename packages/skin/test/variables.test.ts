@@ -12,16 +12,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  checkOutfit,
   knownRole,
   ROLE_NAMES,
   type Form,
   type LookParts,
   type Skin,
 } from "../src/index.js";
-import { checkSkin } from "../src/rules.js";
+import { withPassports } from "../src/bound.js";
 import { fieldPassport, lookup } from "./passports.js";
 import { наряд, части } from "./looks.js";
+
+// Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
+const { checkOutfit, checkSkin } = withPassports(lookup);
 
 /** Скин из одного правила: часть просит имя. */
 function скин(component: string, part: string, value: string): Skin {
@@ -47,7 +49,7 @@ function форма(component: string, part: string, value: string): Form {
 
 /** Изъяны наряда, собранного вокруг одной формы. */
 function изъяны(form: Form) {
-  return checkOutfit(...наряды(form), lookup);
+  return checkOutfit(...наряды(form));
 }
 
 /** Паспорт БЕЗ объявленной переменной — тот же во всём остальном. */
@@ -69,7 +71,7 @@ describe("объявленная переменная законна НА СВО
   it("правило проезжает обеими дверями — и порождением, и нарядом", () => {
     // Живая гармошка: `--height` объявлен на содержимом, `setBy: kit`. Кит меряет узел и кладёт
     // его туда сам — значит переменная наблюдаема, значит скин вправе её адресовать.
-    expect(checkSkin(скин("accordion", "itemContent", "var(--height)"), lookup)).toEqual([]);
+    expect(checkSkin(скин("accordion", "itemContent", "var(--height)"))).toEqual([]);
     expect(изъяны(форма("accordion", "itemContent", "var(--height)"))).toEqual([]);
   });
 
@@ -88,7 +90,7 @@ describe("объявленная переменная законна НА СВО
     const своя = форма(fieldPassport.component, "label", "var(--label-width)");
 
     expect(изъяны(своя)).toEqual([]);
-    expect(checkSkin(скин(fieldPassport.component, "label", "var(--label-width)"), lookup)).toEqual([]);
+    expect(checkSkin(скин(fieldPassport.component, "label", "var(--label-width)"))).toEqual([]);
   });
 });
 
@@ -103,7 +105,7 @@ describe("на ЧУЖОЙ части — изъян, и причина назв�
   });
 
   it("обе двери отвечают одно — и обе называют дом", () => {
-    const [flaw] = checkSkin(скин("accordion", "itemTrigger", "var(--height)"), lookup);
+    const [flaw] = checkSkin(скин("accordion", "itemTrigger", "var(--height)"));
 
     expect(flaw?.name).toBe("variable-elsewhere");
     expect(flaw?.means).toContain("accordion.itemContent");
@@ -129,22 +131,26 @@ describe("на ЧУЖОЙ части — изъян, и причина назв�
   });
 });
 
-describe("паспорта приходят ТЕМ ЖЕ способом, что в порождении", () => {
-  it("подмени паспорт на входе — краснеют ОБЕ двери, значит путь один", () => {
+describe("источник паспортов на пути ОДИН", () => {
+  it("подмени источник — краснеют ОБЕ двери, значит путь один", () => {
     // Настоящая проба на единственность пути. Заведись у проверки наряда свой источник паспортов
     // — «взять из кита напрямую», «спросить PASSPORTS» — подмена на входе оставила бы её зелёной,
     // и мы узнали бы об этом на первом же ките, приехавшем не из этой сборки.
     //
-    // Копии чужой зоны для этого не нужно: паспорт приезжает ДОВОДОМ, и мутируется довод.
+    // Копии чужой зоны для этого не нужно: источник называется СВЯЗКОЙ, и подменяется связка.
     const слепой = безПеременной("accordion", "itemContent");
     const правило = "var(--height)";
 
     // Контроль: на настоящих паспортах обе двери молчат — иначе краснота ниже ничего не значит.
-    expect(checkSkin(скин("accordion", "itemContent", правило), lookup)).toEqual([]);
+    expect(checkSkin(скин("accordion", "itemContent", правило))).toEqual([]);
     expect(изъяны(форма("accordion", "itemContent", правило))).toEqual([]);
 
-    expect(checkSkin(скин("accordion", "itemContent", правило), слепой)[0]?.name).toBe("unknown-value");
-    expect(checkOutfit(...наряды(форма("accordion", "itemContent", правило)), слепой)[0]?.name).toBe(
+    // Подмена делается ОДНИМ движением — связкой на слепом источнике: доводом источник больше не
+    // приходит ни в одну из дверей, и разойтись им нечем (`PWEB-94`).
+    const слепые = withPassports(слепой);
+
+    expect(слепые.checkSkin(скин("accordion", "itemContent", правило))[0]?.name).toBe("unknown-value");
+    expect(слепые.checkOutfit(...наряды(форма("accordion", "itemContent", правило)))[0]?.name).toBe(
       "outside-vocabulary",
     );
   });
