@@ -107,6 +107,34 @@ body {
   overflow: hidden;
 }
 
+/* На узком экране перечень уезжает наверх строкой, а показ занимает всё: колонка в 12rem рядом
+   с показом на телефоне отнимает у него половину ширины. */
+@media (width < 48rem) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--ui-gap-2);
+    align-items: center;
+    overflow-x: auto;
+    border-inline-end: none;
+    border-block-end: 1px solid var(--ui-line-soft);
+  }
+
+  .rail__list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .rail__group {
+    margin-block-start: 0;
+  }
+}
+
 /* `min-block-size: 0` обязателен: без него ячейка сетки не даёт содержимому сжаться, и прокрутка
    уезжает на весь документ — то есть ровно то, что мы разводим. */
 .stack {
@@ -387,9 +415,11 @@ body {
 
 /* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
 
+/* `min()` вместо голого `minmax`: на узком экране колонка не может быть шире самого экрана, и
+   сетка перестаёт выпирать за край вместо того, чтобы схлопнуться в одну колонку. */
 .cases {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
   gap: var(--ui-gap-3);
   align-items: start;
 }

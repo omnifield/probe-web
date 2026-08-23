@@ -183,10 +183,11 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   const address = addressOfPart(component, part);
   const axis = passport.variantAxis.mark;
 
+  // УМОЛЧАНИЯ ОТДЕЛЬНОЙ СТРОКОЙ НЕТ. Скин объявляет умолчание именем, и «атрибут не поставлен»
+  // — тот же адрес, что названная умолчательная вариация. Показывать их порознь значило бы
+  // обещать два разных вида там, где вид один.
   const variants =
-    slice.variant === undefined || slice.variant === null
-      ? [null, ...slice.variants]
-      : [slice.variant];
+    slice.variant === undefined || slice.variant === null ? slice.variants : [slice.variant];
 
   const states = statesOfPart(component, part);
   const shown =
@@ -203,7 +204,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
     for (const state of shown) {
       cases.push({
         id: `axis:${variant ?? "-"}:${part}:${state?.name ?? "-"}`,
-        title: [variant ?? "умолчание", part, state?.name ?? "обычное"].join(" · "),
+        title: [variant ?? "без вариации", part, state?.name ?? "обычное"].join(" · "),
         note: state?.means ?? "вид без состояния — то, с чего начинается всё остальное",
         origin: "axis",
         at: { part, variant, state: state?.name ?? null },

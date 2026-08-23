@@ -88,9 +88,14 @@ describe("случаи", () => {
     }
   });
 
-  it("первый случай — умолчание без состояния: с него начинается всё остальное", () => {
-    expect(stream()[0]?.title).toContain("умолчание");
-    expect(stream()[0]?.title).toContain("обычное");
+  it("первая вариация — та, что скин объявил умолчанием", () => {
+    // Отдельной строки «умолчание» нет: скин называет умолчание именем, и «атрибут не поставлен»
+    // — тот же адрес. Две строки обещали бы два разных вида там, где вид один.
+    const [первый] = stream();
+
+    expect(первый?.title).toContain(Object.keys(FORM.recipe.variants ?? {})[0] ?? "");
+    expect(первый?.title).toContain("обычное");
+    expect(stream().some((item) => item.title.includes("умолчание"))).toBe(false);
   });
 
   it("случаи есть у каждого компонента перечня", () => {
@@ -269,13 +274,17 @@ describe("отрисовка", () => {
     expect(host.querySelector('[aria-busy="true"]')).not.toBeNull();
   });
 
-  it("псевдосостояние показано признаком — браузерное нам недоступно", () => {
+  it("псевдосостояние показано признаком — браузерное нам недоступно", async () => {
     const host = mount(() => <App />);
-    const forced = [...host.querySelectorAll("[data-force]")].map((node) =>
-      node.getAttribute("data-force"),
-    );
 
-    expect(forced).toEqual(expect.arrayContaining(["hover", "focus-visible", "active"]));
+    // Вариации приезжают из надетого наряда, поэтому случаи появляются не в первый кадр.
+    await vi.waitFor(() => {
+      const forced = [...host.querySelectorAll("[data-force]")].map((node) =>
+        node.getAttribute("data-force"),
+      );
+
+      expect(forced).toEqual(expect.arrayContaining(["hover", "focus-visible", "active"]));
+    });
   });
 
   it("имена вариаций приходят из записи НАДЕТОГО скина, а не из паспорта", async () => {
