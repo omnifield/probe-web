@@ -31,6 +31,7 @@
 // компонент, пока он его одевает.
 
 import { assemble, type Form, type Outfit, type Palette } from "@omnifield/probe-web-skin/model";
+import { passportOf } from "@omnifield/probe-web-ui/passport";
 
 import { readOutfit, readParts, StoreRefused } from "./store.js";
 
@@ -108,7 +109,7 @@ export async function draftLook() {
     forms: forms.filter((форма) => базовая(base, форма, draft)).map((форма) => форма.name),
   };
 
-  return assemble(outfit, { palettes, forms });
+  return assemble(outfit, { palettes, forms }, passportOf);
 }
 
 /**
