@@ -249,6 +249,10 @@ export const passport = definePassport({
         ],
       },
       byDefault: "vertical",
+      // Проверено на живом узле (`PWEB-104`): признак приезжает атрибутом на КАЖДОЙ части.
+      // `multiple` и `collapsible` своего признака не имеют вовсе — `data-multiple` и
+      // `data-collapsible` в разметке не появляются, поэтому у них поле не объявлено.
+      mark: { kind: "attribute", name: "data-orientation" },
     },
     multiple: {
       means: "можно ли держать раскрытыми несколько разделов сразу",

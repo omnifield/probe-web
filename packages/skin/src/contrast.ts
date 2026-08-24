@@ -376,6 +376,10 @@ function applies(rule: SkinRule, at: ContrastAddress, fallbackVariant: string | 
   // Предок в правиле — условие снаружи узла. Правило от предка складывается только с адресом,
   // который этого же предка называет; иначе мы сложили бы вид, действующий не всегда.
   if (coordinate.ancestor) return false;
+  // Настройка — то же самое и по той же причине (`PWEB-103`): чем компонент оказался, адрес
+  // читаемости не называет, а вид по настройке действует не на всяком узле. Сложи мы его —
+  // горизонтальная гармошка отдавала бы свои цвета в счёт вертикальной, и молча.
+  if (coordinate.settings) return false;
 
   if (coordinate.variants.length > 0) {
     const named = at.variants.length > 0
