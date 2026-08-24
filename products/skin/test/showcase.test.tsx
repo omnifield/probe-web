@@ -25,10 +25,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/showcase/app.jsx";
 import { ANY, casesOf, rootPartOf, type ShowcaseCase } from "../src/showcase/cases.js";
 import { REGISTRY } from "../src/showcase/registry.js";
+import { SERVICE_HINT } from "../src/skins/index.js";
 
 import { cleanup, mount } from "./dom.jsx";
 import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
-import { restoreStore, serveLook } from "./store-stub.js";
+import { dropStore, restoreStore, serveLook } from "./store-stub.js";
 
 beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 
@@ -267,6 +268,63 @@ describe("хедер", () => {
     await vi.waitFor(() =>
       expect(document.documentElement.classList.contains("dark")).toBe(true),
     );
+  });
+
+  it("служба упала при смене половины — надетое остаётся, а отказ назван", async () => {
+    const host = mount(() => <App />);
+
+    pick(host, "button");
+
+    // Отказ проверяется на НАДЕТОМ: пока ничего не надето, отказу нечего было бы ронять.
+    await vi.waitFor(() =>
+      expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name),
+    );
+
+    const dark = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")][1];
+
+    dropStore();
+    dark?.click();
+
+    // ПРИЧИНА НАЗВАНА, а не проглочена: у отказа службы починка своя — её поднимают, — и адрес с
+    // командой человеку нужнее текста ошибки движка. Строка на странице же доказывает, что отказ
+    // закрыт: незакрытый не дошёл бы до неё, а прогон проб свалил бы целиком.
+    const беда = await vi.waitFor(() => {
+      const said = host.querySelector(".head__trouble")?.textContent ?? "";
+      expect(said).toContain("служба не отвечает");
+      return said;
+    });
+
+    expect(беда).toContain(SERVICE_HINT);
+
+    // Полусостояния нет: половина не сменилась, но и надетое с корня не слетело — механика
+    // оставляет прежний лист, пока нового текста нет, и витрине после отказа менять нечего.
+    expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name);
+  });
+
+  it("запись пережила компонент — причина названа НА СТРАНИЦЕ, а не в отладчике", async () => {
+    // Форма на компонент, которого в ките нет: ровно то, что случится, когда компонент уедет из
+    // выпуска, а наряд, которым его одели, останется лежать в службе.
+    const сирота = { ...FORM, name: "проба-сирота", component: "которого-нет" };
+    const наряд = { ...OUTFIT, forms: [сирота.name] };
+
+    serveLook({ palettes: [PALETTE], forms: [сирота], outfits: [наряд] });
+
+    const host = mount(() => <App />);
+
+    // Причина ЧЕЛОВЕКУ и на том языке, на котором её чинят: паспорт объявляют в ките. Молчание
+    // здесь означало бы голый кит при живой службе и полном списке скинов — и ни слова почему.
+    const беда = await vi.waitFor(() => {
+      const said = host.querySelector(".head__trouble")?.textContent ?? "";
+      expect(said).toContain("которого-нет");
+      return said;
+    });
+
+    expect(беда).toContain("паспорта компонента");
+
+    // Подсказки про службу здесь НЕТ намеренно: служба жива, поднимать её незачем, и увести
+    // человека к ней значило бы назвать не ту починку.
+    expect(беда).not.toContain(SERVICE_HINT);
+    expect(document.documentElement.hasAttribute("data-skin")).toBe(false);
   });
 });
 

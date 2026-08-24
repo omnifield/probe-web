@@ -14,7 +14,7 @@
 //   5. черновик собирается тем же путём, что сохранённая запись;
 //   6. унаследованное отличимо от пустого — иначе человек пишет заново то, что уже сказано.
 
-import { generateSkinCss } from "@omnifield/probe-web-skin";
+import { withPassports } from "@omnifield/probe-web-skin";
 import { SCALE_ROLES, type Form, type Palette } from "@omnifield/probe-web-skin/model";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import { createSignal } from "solid-js";
@@ -26,6 +26,9 @@ import { type Draft, draftLook, hold } from "../src/skins/index.js";
 import { cleanup, mount } from "./dom.jsx";
 import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
 import { restoreStore, serveLook } from "./store-stub.js";
+
+// Проба ходит тем же путём, что зона: источник паспортов назван один раз связкой (`PWEB-94`).
+const { generateSkinCss } = withPassports(passportOf);
 
 beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 
@@ -234,7 +237,7 @@ describe("черновик собирается тем же путём, что �
     hold({ palette: PALETTE, form: { ...FORM, recipe: { ...FORM.recipe } } }, OUTFIT.name);
 
     const { skin } = await draftLook();
-    const css = generateSkinCss(skin, passportOf);
+    const css = generateSkinCss(skin);
 
     // Тот же путь — те же координаты в листе: правка, посчитанная в обход, адресовала бы узел.
     expect(css).toContain('[data-scope="button"][data-part="root"]');
