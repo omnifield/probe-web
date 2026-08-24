@@ -14,10 +14,12 @@
   // нет ничего: его самого нет.
   "initializeCommand": "docker network create omnifield-gateway 2>/dev/null || true",
 
-  // Канон-чистые инварианты (kb:DEVOPSER-3): peer-alias в общей сети omnifield-gateway
-  // (видят tasker/knowledger по имени), host-gateway, НОЛЬ host-портов (single-origin —
-  // наружу только дверь :8080; verdaccio :4873 остаётся внутренним), контейнер переживает
-  // рестарт демона.
+  // Инварианты сети: peer-alias в общей сети omnifield-gateway (соседи видят контейнер по
+  // имени), host-gateway, НОЛЬ host-портов — наружу ничего не публикуем; verdaccio :4873
+  // остаётся внутренним. Контейнер переживает рестарт демона.
+  //
+  // Служб tasker/knowledger в этой сети больше нет (сняты 2026-08-24) — сеть осталась ради
+  // соседей, которые есть.
   "runArgs": [
     "--network=omnifield-gateway",
     "--network-alias=probe-web",
