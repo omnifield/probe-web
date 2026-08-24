@@ -29,7 +29,7 @@
     "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
-    "test": "pnpm run build && vitest run"
+    "test": "vitest run"
   },
   "dependencies": {
     "vite-plugin-solid": "^2.11.14"

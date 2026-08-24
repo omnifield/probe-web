@@ -27,7 +27,7 @@
     "build": "tsc -p tsconfig.build.json && node scripts/build-css.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
-    "test": "pnpm run build && vitest run"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
