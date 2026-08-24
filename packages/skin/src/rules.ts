@@ -31,19 +31,22 @@
 // При равном числе состояний порядок — по происхождению: база, вариация, пересечение.
 // Пересечение собрано автором последним и последним же побеждает.
 
-import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport, PassportState } from "@omnifield/probe-web-ui/passport";
+import { addressesView } from "@omnifield/probe-web-ui/passport";
 
 import {
   anyOf,
   ancestorSelector,
+  markSelector,
   nodeSelector,
   partSelector,
   safeName,
-  stateSelector,
+  stateOf,
   variantAlternatives,
   variantSelector,
   type PassportLookup,
 } from "./address.js";
+import { isMotion, motionsIn, MOTION_FAMILIES } from "./motion.js";
 import type {
   AncestorStyle,
   CompoundVariant,
@@ -56,7 +59,13 @@ import type {
   StyleObject,
 } from "./recipe.js";
 import { seedRefusals, valueNames } from "./seeds.js";
-import { homesText, partVariables, variableHomes, type VariableHome } from "./variables.js";
+import {
+  homesText,
+  partVariables,
+  referenceVerdict,
+  variableHomes,
+  type VariableHome,
+} from "./variables.js";
 import { sizeRefusals } from "./sizes.js";
 import { note, trace } from "./trace.js";
 
@@ -67,6 +76,9 @@ import { note, trace } from "./trace.js";
  *  • `unknown-component`   — рецепт на компонент, паспорта у которого нет;
  *  • `unknown-part`        — части нет в анатомии компонента;
  *  • `unknown-state`       — состояния часть не объявляла;
+ *  • `view-unaddressable`  — ВИД адресован признаком, который приезжает не всегда: правило встало
+ *    бы не на все узлы. Сам адрес при этом законен — под ним законно ДВИЖЕНИЕ, ради которого
+ *    состояние и объявлено. Граница между ними — `motion.ts`;
  *  • `unknown-ancestor`    — компонента-предка или его части нет;
  *  • `unknown-variant`     — пересечение или умолчание называет вариацию, которой в рецепте нет;
  *  • `default-missing`     — вариации есть, а умолчание не названо;
@@ -83,6 +95,7 @@ export type SkinFlawName =
   | "unknown-component"
   | "unknown-part"
   | "unknown-state"
+  | "view-unaddressable"
   | "unknown-ancestor"
   | "unknown-variant"
   | "default-missing"
@@ -275,12 +288,33 @@ function checkStyle(
 }
 
 /**
- * Проверяет ОДНО значение.
+ * МЁРТВОЕ ЛИ ЗНАЧЕНИЕ: число обязано быть конечным, строка — непустой.
  *
- * Вынесено отдельно, потому что читателей два: свойства правила и ступени именованного
- * движения. Форма у них разная — у движения вложенность это `from`/`to`/`50%`, а не селектор, —
- * а требование к значению одно, и второй его копии быть не должно.
+ * Вынесено отдельно, потому что читателей два: свойства правила и ступени именованного движения.
+ * Ссылки у них судятся по-разному — правило по своей части, движение по месту применения
+ * (`PWEB-101`), — а вот «значение мёртвое» одинаково для обоих и от места не зависит.
+ *
+ * @returns есть ли в значении что ещё разбирать — то есть строка ли это, и живая ли. У числа
+ *   ссылок не бывает, поэтому конечное число тоже отвечает «нет»
  */
+function checkEmpty(value: string | number, at: string, flaws: Flaws): boolean {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      flaws.add("empty-value", at, "число не является значением");
+      return false;
+    }
+    return false;
+  }
+
+  if (value.trim() === "") {
+    flaws.add("empty-value", at, "пустое значение — правило было бы мёртвым");
+    return false;
+  }
+
+  return true;
+}
+
+/** Проверяет ОДНО значение правила: живое ли оно и разрешимы ли его ссылки. */
 function checkValue(
   value: string | number,
   at: string,
@@ -288,28 +322,24 @@ function checkValue(
   flaws: Flaws,
   homes: Map<string, VariableHome[]> = new Map(),
 ): void {
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) flaws.add("empty-value", at, "число не является значением");
-    return;
-  }
+  if (!checkEmpty(value, at, flaws)) return;
 
-  if (value.trim() === "") {
-    flaws.add("empty-value", at, "пустое значение — правило было бы мёртвым");
-    return;
-  }
+  for (const [, name, fallback] of (value as string).matchAll(VAR_REFERENCE)) {
+    if (fallback === ",") continue;
 
-  for (const [, name, fallback] of value.matchAll(VAR_REFERENCE)) {
-    if (fallback === "," || known.has(name)) continue;
+    // ОТВЕТ спрашивается у одного места (`variables.ts`), СЛОВА пишутся здесь: у правила и у
+    // ступени движения разная починка, и общее сообщение отправляло бы половину людей чинить не то.
+    const verdict = referenceVerdict(name!, known, homes);
+    if (verdict.kind === "known") continue;
 
     // ОБЪЯВЛЕНА, НО НЕ ЗДЕСЬ — отдельный изъян, а не оттенок предыдущего (`PWEB-93`). Причина
     // другая и починка другая: правило переносят на ту часть или адресуют её по предку, а не
     // дописывают роль в палитру. Слей мы их — человек пошёл бы чинить не то.
-    const где = homes.get(name!);
-    if (где) {
+    if (verdict.kind === "elsewhere") {
       flaws.add(
         "variable-elsewhere",
         at,
-        `переменную «${name}» объявляет паспорт, но на другой части — ${homesText(где)}. ` +
+        `переменную «${name}» объявляет паспорт, но на другой части — ${homesText(verdict.homes)}. ` +
           "Здесь её никто не ставит: правило приедет на страницу с неразрешимым значением. " +
           "Перенеси правило на ту часть либо адресуй её по предку",
       );
@@ -326,17 +356,16 @@ function checkValue(
 }
 
 /**
- * Проверяет именованное движение: ступени и значения в них.
+ * Проверяет ФОРМУ именованного движения: ступени и то, что значения не пусты.
  *
  * Вложенность у движения своя и селектором не является: `from`, `to`, `50%` — это ступени, а не
  * адреса. Гонять их через проверку свободного селектора значило бы отвергнуть законную запись.
+ *
+ * Форма от места применения НЕ зависит и проверяется РАЗ (`PWEB-101`): пустое значение остаётся
+ * пустым на любой части, и повторять этот изъян по числу мест значило бы отдать человеку один
+ * дефект в трёх экземплярах.
  */
-function checkKeyframes(
-  frames: StyleObject,
-  where: string,
-  known: Set<string>,
-  flaws: Flaws,
-): void {
+function checkKeyframeShape(frames: StyleObject, where: string, flaws: Flaws): void {
   for (const [stop, style] of Object.entries(frames)) {
     if (style === undefined) continue;
 
@@ -355,9 +384,119 @@ function checkKeyframes(
         continue;
       }
 
-      checkValue(value, `${at}.${property}`, known, flaws);
+      checkEmpty(value, `${at}.${property}`, flaws);
     }
   }
+}
+
+/**
+ * МЕСТО ПРИМЕНЕНИЯ движения — часть, на которой стоит `animation:`.
+ *
+ * `null` — движение не применено ни одним правилом: узла у него нет, и словарь ему остаётся
+ * корневой.
+ */
+type MotionSite = { readonly component: string; readonly part: string } | null;
+
+/**
+ * Проверяет ССЫЛКИ именованного движения — словарём ТОГО МЕСТА, где движение применено
+ * (`PWEB-101`).
+ *
+ * Замерено: `var()` внутри кадра разрешается на АНИМИРУЕМОМ элементе, а не там, где записан блок.
+ * Значит спрашивать «известно ли имя» в отрыве от части — спрашивать про элемент, которого нет:
+ * так `--height`, объявленная содержимым гармошки, приезжала изъяном в движении, которое на этом
+ * самом содержимом и стоит.
+ *
+ * Мера при этом прежняя (`PWEB-93`): применено движение на части, которая переменной не
+ * объявляла, — это тот же `variable-elsewhere`, и назван в нём тот, кто виноват, — движение
+ * вместе с частью.
+ *
+ * @param frames ступени движения
+ * @param where место в записи: `keyframes.<имя>`
+ * @param movement имя движения — оно едет в сообщение, а не только в `where`
+ * @param site часть, на которой движение применено, либо `null`
+ * @param known словарь этого места: общий плюс переменные его части
+ * @param homes где живут переменные паспортов
+ */
+function checkKeyframeReferences(
+  frames: StyleObject,
+  where: string,
+  movement: string,
+  site: MotionSite,
+  known: Set<string>,
+  homes: Map<string, VariableHome[]>,
+  flaws: Flaws,
+): void {
+  const место = site
+    ? `движение «${movement}» применено на части «${site.component}.${site.part}»`
+    : `движение «${movement}» не применено ни одним правилом, и узла у него нет`;
+
+  for (const [stop, style] of Object.entries(frames)) {
+    if (typeof style !== "object" || style === undefined) continue;
+
+    for (const [property, value] of Object.entries(style)) {
+      if (value === undefined || typeof value === "object" || typeof value === "number") continue;
+
+      const at = `${where}.${stop}.${property}`;
+
+      for (const [, name, fallback] of value.matchAll(VAR_REFERENCE)) {
+        if (fallback === ",") continue;
+
+        const verdict = referenceVerdict(name!, known, homes);
+        if (verdict.kind === "known") continue;
+
+        if (verdict.kind === "elsewhere") {
+          flaws.add(
+            "variable-elsewhere",
+            at,
+            `${место}, а переменную «${name}» объявляет паспорт на другой части — ` +
+              `${homesText(verdict.homes)}. Ступень движения разрешается на том узле, где стоит ` +
+              "`animation:`, и там её никто не ставит. Применяй движение на той части либо " +
+              "перенеси значение в правило, адресующее её",
+          );
+          continue;
+        }
+
+        flaws.add(
+          "unknown-value",
+          at,
+          `${место}, а имя «${name}» не объявлено ни скином, ни словарём, ни паспортом. Браузер ` +
+            `выбросит ступень целиком. Запасное значение — \`var(${name}, …)\` — снимает отказ`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * ГДЕ ПРИМЕНЕНО каждое движение: имя → части, на которых стоит `animation:`.
+ *
+ * Считается по ГОТОВЫМ ПРАВИЛАМ, а не вторым обходом рецепта: обход рецептов в зоне один, и
+ * второй его экземпляр разошёлся бы с первым на первом же новом виде адреса. Часть у правила уже
+ * есть — она и есть место применения.
+ *
+ * Повторы схлопываются: движение, применённое базой и состоянием одной части, — это ОДНО место,
+ * и судить его дважды значило бы отдать человеку один изъян в двух экземплярах.
+ */
+function motionSites(
+  rules: readonly SkinRule[],
+  declared: ReadonlySet<string>,
+): Map<string, { component: string; part: string }[]> {
+  const found = new Map<string, { component: string; part: string }[]>();
+  if (declared.size === 0) return found;
+
+  for (const rule of rules) {
+    const { component, part } = rule.coordinate;
+
+    for (const movement of motionsIn(rule.style, declared)) {
+      const места = found.get(movement) ?? [];
+      if (места.some((место) => место.component === component && место.part === part)) continue;
+
+      места.push({ component, part });
+      found.set(movement, места);
+    }
+  }
+
+  return found;
 }
 
 /** Есть ли в объекте хоть одно объявление: пустое правило в текст не едет. */
@@ -394,6 +533,20 @@ interface Walk<Mark> {
   mark(cursor: Cursor): Mark;
 }
 
+/**
+ * НЕНАДЁЖНЫЙ ПРИЗНАК, набранный в адрес: где он объявлен и само объявление.
+ *
+ * Хранится объявление целиком, а не одна оговорка из него: обстоятельство человеку читается
+ * оттуда же, откуда прочитано решение, и переписывать текст в своё поле значило бы завести вторую
+ * его копию. Записи заводятся ТОЛЬКО там, где `addressesView` сказал «виду не годится», — значит
+ * `absentWhen` у них объявлен по построению.
+ */
+interface UnreliableMark {
+  readonly component: string;
+  readonly part: string;
+  readonly state: PassportState;
+}
+
 /** ПЕРЕМЕННОЕ: где обход сейчас находится и что уже набрал в селектор. */
 interface Cursor {
   readonly passport: ComponentPassport;
@@ -418,6 +571,15 @@ interface Cursor {
    * наша часть, и записывать предку покрытие значило бы объявить одетым то, чему вида не дали.
    */
   readonly states: readonly string[];
+  /**
+   * Признаки адреса, которые приезжают НЕ ВСЕГДА, — свои и предка вперемешку.
+   *
+   * Пусто — адрес надёжен целиком, и правило под ним обычное. Непусто — вид по такому адресу
+   * встал бы не на все узлы, и законно здесь только движение (`motion.ts`). Копится по пути, а не
+   * спрашивается в конце: состояние, из-за которого адрес стал ненадёжным, набирается на одном
+   * уровне обхода, а правило рождается на другом — глубже или у предка.
+   */
+  readonly unreliable: readonly UnreliableMark[];
   /** Предок и его состояния, если обход спустился в правило от предка. */
   readonly ancestor?: RuleCoordinate["ancestor"];
   /** Число условий адреса — им задаётся порядок при равном весе селектора. */
@@ -453,6 +615,63 @@ function coordinateOf(cursor: Cursor): { coordinate: RuleCoordinate } {
   };
 }
 
+/**
+ * Имена свойств ВИДА в объекте — всё, что не движение.
+ *
+ * Вложенное считается вместе со своим владельцем: `@media` и псевдоэлемент меняют условие и
+ * место, а не род объявления — цвет внутри медиазапроса остаётся видом и под ненадёжным признаком
+ * встанет ровно так же не везде.
+ */
+function viewProperties(style: StyleObject): string[] {
+  const names: string[] = [];
+
+  for (const [key, value] of Object.entries(style)) {
+    if (value === undefined) continue;
+
+    if (typeof value === "object") {
+      names.push(...viewProperties(value));
+      continue;
+    }
+
+    if (!isMotion(key)) names.push(key);
+  }
+
+  return names;
+}
+
+/**
+ * Проверяет, что под НЕНАДЁЖНЫМ признаком стоит только движение.
+ *
+ * Отказ именованный и правило при этом ПОРОЖДАЕТСЯ — как и всякое правило с изъяном: гейт здесь
+ * не отбор, а `SkinRefused` у порождения, и вырезать половину записи за автора значило бы отдать
+ * ему вид, которого он не писал. Редактору же нужен ответ, а не молчание.
+ *
+ * Один изъян на блок, а не на свойство: причина у них одна и починка одна, а перечень из десяти
+ * строк утопил бы в себе ту, что читать надо.
+ */
+function checkMotionOnly(style: StyleObject, where: string, cursor: Cursor, flaws: Flaws): void {
+  if (cursor.unreliable.length === 0) return;
+
+  const view = viewProperties(style);
+  if (view.length === 0) return;
+
+  const marks = cursor.unreliable
+    .map(
+      ({ component, part, state }) =>
+        `«${state.name}» части «${part}» компонента «${component}» (${state.absentWhen})`,
+    )
+    .join("; ");
+
+  flaws.add(
+    "view-unaddressable",
+    where,
+    `вид адресован признаком, который приезжает не всегда: ${marks}. Правило встало бы не на все ` +
+      `узлы, и одевающий узнал бы об этом глазами, а не машиной. Под таким адресом законно только ` +
+      `движение (${MOTION_FAMILIES.join(", ")}), ради которого состояние и объявлено; вид ` +
+      `(${view.join(", ")}) адресуй через предка, который держит это состояние надёжно`,
+  );
+}
+
 /** Разворачивает вид под одним селектором: свои свойства, затем состояния части. */
 function growLocal<Mark>(
   cursor: Cursor,
@@ -462,6 +681,7 @@ function growLocal<Mark>(
 ): void {
   if (style.props && declares(style.props)) {
     checkStyle(style.props, `${where}.props`, cursor.known, walk.flaws, walk.homes);
+    checkMotionOnly(style.props, `${where}.props`, cursor, walk.flaws);
     walk.out.push({
       ...walk.mark(cursor),
       selector: cursor.prefix === "" ? cursor.own : `${cursor.prefix} ${cursor.own}`,
@@ -472,9 +692,9 @@ function growLocal<Mark>(
   }
 
   for (const [state, nested] of Object.entries(style.states ?? {})) {
-    const mark = stateSelector(cursor.passport, cursor.part, state);
+    const declared = stateOf(cursor.passport, cursor.part, state);
 
-    if (mark === undefined) {
+    if (declared === undefined) {
       walk.flaws.add(
         "unknown-state",
         `${where}.states.${state}`,
@@ -487,8 +707,17 @@ function growLocal<Mark>(
     growLocal(
       {
         ...cursor,
-        own: cursor.own + mark,
+        own: cursor.own + markSelector(state, declared.mark),
         states: [...cursor.states, state],
+        // Пометку читает `addressesView` ВЛАДЕЛЬЦА ФОРМЫ, а не наше условие по полю: читателей под
+        // вид уже несколько, и второе решение «годится ли признак адресом» разъехалось бы с первым
+        // молча, оставаясь зелёным.
+        unreliable: addressesView(declared)
+          ? cursor.unreliable
+          : [
+              ...cursor.unreliable,
+              { component: cursor.passport.component, part: cursor.part, state: declared },
+            ],
         conditions: cursor.conditions + 1,
       },
       nested,
@@ -508,7 +737,7 @@ function growAncestor<Mark>(
   const owner = walk.lookup(ancestor.component);
   const prefix = owner && ancestorSelector(owner, ancestor.part, ancestor.states);
 
-  if (!prefix) {
+  if (!owner || !prefix) {
     walk.flaws.add(
       "unknown-ancestor",
       where,
@@ -518,10 +747,22 @@ function growAncestor<Mark>(
     return;
   }
 
+  // Ненадёжный признак ПРЕДКА делает адрес ненадёжным ровно так же, как свой: вид получает наша
+  // часть, но условие стоит слева и приезжает не всегда. Разбери мы только свои состояния — то же
+  // самое правило проходило бы зелёным, стоило написать его через предка.
+  const unreliable = (ancestor.states ?? []).flatMap((state) => {
+    const declared = stateOf(owner, ancestor.part, state);
+
+    return declared && !addressesView(declared)
+      ? [{ component: ancestor.component, part: ancestor.part, state: declared }]
+      : [];
+  });
+
   growLocal(
     {
       ...cursor,
       prefix,
+      unreliable: [...cursor.unreliable, ...unreliable],
       ancestor: {
         component: ancestor.component,
         part: ancestor.part,
@@ -567,6 +808,8 @@ function growPart<Mark>(
     prefix: "",
     variants: variant.names,
     states: [],
+    // Адрес части сам по себе надёжен: ненадёжным его делают только состояния — свои и предка.
+    unreliable: [],
     conditions: 0,
     origin,
   };
@@ -795,12 +1038,43 @@ export function skinRules(
     growRecipe(passport, recipe, where, walk);
   }
 
+  // ДВИЖЕНИЕ СУДЯТ ПО МЕСТУ ПРИМЕНЕНИЯ (`PWEB-101`), поэтому оно проверяется ПОСЛЕ рецептов:
+  // раньше мест применения ещё нет, и вопрос «известно ли имя» задавать некуда.
+  const применено = motionSites(out, new Set(Object.keys(skin.keyframes ?? {})));
+
   for (const [name, frames] of Object.entries(skin.keyframes ?? {})) {
     if (!safeName(name)) {
       flaws.add("unsafe-name", `keyframes.${name}`, "имя движения не годится в CSS");
       continue;
     }
-    checkKeyframes(frames, `keyframes.${name}`, known, flaws);
+
+    const where = `keyframes.${name}`;
+    checkKeyframeShape(frames, where, flaws);
+
+    const места = применено.get(name) ?? [];
+
+    if (места.length === 0) {
+      // Не применено — узла нет, и разрешиться на странице могли бы только имена корня. Судим
+      // прежним словарём: молчание здесь скрыло бы опечатку до того дня, когда движение применят.
+      checkKeyframeReferences(frames, where, name, null, known, walk.homes, flaws);
+      continue;
+    }
+
+    for (const место of места) {
+      const passport = lookup(место.component);
+
+      checkKeyframeReferences(
+        frames,
+        where,
+        name,
+        место,
+        // Словарь МЕСТА: общий плюс переменные его части — тот же, которым судится правило,
+        // стоящее на этой части (`growParts`).
+        passport ? new Set([...known, ...partVariables(passport, место.part)]) : known,
+        walk.homes,
+        flaws,
+      );
+    }
   }
 
   done();
@@ -880,6 +1154,9 @@ export function sketchRules(
       prefix: "",
       variants: [],
       states: [],
+      // Правка образца адресует ОДНО МЕСТО, но состояния читает из того же паспорта — значит и
+      // ненадёжный признак у неё тот же самый, и правило по нему точно так же встанет не всегда.
+      unreliable: [],
       conditions: 0,
       origin: 0,
     };

@@ -39,7 +39,17 @@
 // угол квадратный» в неотвечаемый. Порядок проверяется пробой, а не обещанием.
 
 import { fluidPoles, isFluid, type FluidReport } from "./fluid.js";
-import type { Keyframes, PartStyles, Skin, SkinVariables, SlotRecipe } from "./recipe.js";
+import { motionsIn } from "./motion.js";
+import type {
+  Keyframes,
+  LocalStyle,
+  PartStyle,
+  PartStyles,
+  Skin,
+  SkinVariables,
+  SlotRecipe,
+  StyleObject,
+} from "./recipe.js";
 import { trace } from "./trace.js";
 import { homesText, partVariables, variableHomes } from "./variables.js";
 import { knownRole, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";
@@ -232,9 +242,68 @@ function paletteValues(palette: Palette): Set<string> {
 /** Ссылка формы на имя: где она стоит и на какой ЧАСТИ. */
 interface FormReference {
   readonly name: string;
-  /** Часть, на которой стоит правило. `null` — движение: оно принадлежит форме целиком. */
+  /**
+   * Часть, СЛОВАРЁМ КОТОРОЙ судится ссылка.
+   *
+   * У правила это часть, на которой оно стоит. У ступени именованного движения — часть, на
+   * которой движение ПРИМЕНЕНО (`PWEB-101`): кадр разрешается на анимируемом узле, а не там, где
+   * записан блок. `null` — движение не применено ни одним правилом: узла у него нет, и остаётся
+   * общий словарь.
+   */
   readonly part: string | null;
   readonly where: string;
+  /** Имя движения — если ссылка приехала из его ступеней. Едет в сообщение: виноват не «где-то». */
+  readonly movement?: string;
+}
+
+/**
+ * Все блоки свойств внутри вида одной части: свои, состояний и правил по предку.
+ *
+ * Нужны ровно для одного вопроса — ГДЕ применено движение (`PWEB-101`), — и потому собираются
+ * блоками, а не текстом: спрашивать надо СВОЙСТВО (`animation`), а поиск по строке принял бы за
+ * применение любое совпадение имени.
+ *
+ * Правило по предку одевает по-прежнему НАШУ часть, значит и движение в нём применено на ней же.
+ */
+function propsIn(style: LocalStyle | PartStyle): StyleObject[] {
+  const found: StyleObject[] = [];
+
+  if (style.props) found.push(style.props);
+  for (const nested of Object.values(style.states ?? {})) found.push(...propsIn(nested));
+  for (const ancestor of (style as PartStyle).ancestors ?? []) found.push(...propsIn(ancestor.style));
+
+  return found;
+}
+
+/**
+ * ГДЕ ФОРМА ПРИМЕНЯЕТ каждое движение: имя движения → части, на которых стоит `animation:`.
+ *
+ * Обход свой, а не общий с порождением, по той же причине, что и у `formRefs`: скина здесь ещё
+ * нет. Общий у них ОТВЕТ — что в блоке свойств считается применением движения (`motionsIn`), — и
+ * второй его копии быть не должно: разъехавшись, они назвали бы одну запись законной до сборки и
+ * незаконной после.
+ */
+function motionParts(form: Form): Map<string, Set<string>> {
+  const declared = new Set(Object.keys(form.keyframes ?? {}));
+  const found = new Map<string, Set<string>>();
+
+  if (declared.size === 0) return found;
+
+  const собрать = (styles: PartStyles | undefined): void => {
+    for (const [part, style] of Object.entries(styles ?? {})) {
+      for (const props of propsIn(style)) {
+        for (const movement of motionsIn(props, declared)) {
+          found.set(movement, (found.get(movement) ?? new Set<string>()).add(part));
+        }
+      }
+    }
+  };
+
+  собрать(form.recipe.base);
+  for (const styles of Object.values(form.recipe.variants ?? {})) собрать(styles);
+  for (const compound of form.recipe.compoundVariants ?? []) собрать(compound.style);
+
+  return found;
 }
 
 /** Имена из `var(--…)` в одном куске записи. */
@@ -274,9 +343,28 @@ function formRefs(form: Form): FormReference[] {
     parts(compound.style, `compoundVariants[${index}]`);
   }
 
-  // Движение принадлежит форме целиком, а не одной части (`recipe.ts`), поэтому переменной части
-  // в нём быть не может: ставить её было бы некому.
-  for (const name of refsIn(form.keyframes)) found.push({ name, part: null, where: "keyframes" });
+  // ДВИЖЕНИЕ СУДЯТ ПО МЕСТУ ПРИМЕНЕНИЯ (`PWEB-101`). Прежде здесь стояло «переменной части в нём
+  // быть не может: ставить её было бы некому» — и это оказалось неверно ровно наоборот: ставит её
+  // кит на том самом узле, где движение и применено. Блок `@keyframes` сам по себе не одевает
+  // ничего, а `var()` внутри кадра разрешается на анимируемом элементе.
+  const применено = motionParts(form);
+
+  for (const [movement, frames] of Object.entries(form.keyframes ?? {})) {
+    const части = [...(применено.get(movement) ?? [])];
+    const where = `keyframes.${movement}`;
+
+    for (const name of refsIn(frames)) {
+      // Не применено — узла нет, и словарь остаётся общим: судим как прежде.
+      if (части.length === 0) {
+        found.push({ name, part: null, where });
+        continue;
+      }
+
+      // Применено на нескольких — законно там, где законно у каждой: спрашиваем по одному разу
+      // за часть, и незаконная назовётся своим именем, не утянув за собой законную.
+      for (const part of части) found.push({ name, part, where, movement });
+    }
+  }
 
   return found;
 }
@@ -481,13 +569,20 @@ export function checkOutfit(
       // Роли она при этом не становится — палитра её не задаёт и задать не может.
       if (ссылка.part && partVariables(passport, ссылка.part).has(`--${ссылка.name}`)) continue;
 
+      // ВИНОВАТЫЙ НАЗЫВАЕТСЯ ЦЕЛИКОМ (`PWEB-101`): у ссылки из ступеней движения виноваты двое —
+      // само движение и та часть, на которой его применили, — и человеку нужны оба. Без части он
+      // не знает, куда переносить `animation:`; без движения — какой блок кадров смотреть.
+      const место = ссылка.movement
+        ? `движение «${ссылка.movement}» применено на части «${ссылка.part}», а `
+        : "";
+
       const где = дома.get(`--${ссылка.name}`);
       if (где) {
         flaws.push({
           name: "variable-elsewhere",
           where: `forms[${индекс}].${ссылка.where}.${ссылка.name}`,
           means:
-            `переменную «--${ссылка.name}» объявляет паспорт, но на другой части — ` +
+            `${место}переменную «--${ссылка.name}» объявляет паспорт, но на другой части — ` +
             `${homesText(где)}. Здесь её никто не ставит: правило приедет на страницу с ` +
             "неразрешимым значением. Перенеси правило на ту часть либо адресуй её по предку",
         });
@@ -498,8 +593,8 @@ export function checkOutfit(
         name: "outside-vocabulary",
         where: `forms[${индекс}].${ссылка.where}.${ссылка.name}`,
         means:
-          `форма просит роль «${ссылка.name}», которой нет ни в словаре, ни в паспорте. Ни одна ` +
-          "палитра её не задаст, и правило приедет на страницу с неразрешимым значением",
+          `${место}форма просит роль «${ссылка.name}», которой нет ни в словаре, ни в паспорте. ` +
+          "Ни одна палитра её не задаст, и правило приедет на страницу с неразрешимым значением",
       });
     }
   });

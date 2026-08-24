@@ -19,7 +19,7 @@ import {
   VOCABULARY,
 } from "../src/index.js";
 import { buttonPassport, lookup } from "./passports.js";
-import { кнопка, наряд, синяя, части } from "./looks.js";
+import { гармошкаДвижением, кнопка, наряд, синяя, части } from "./looks.js";
 
 // Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
 const { assemble, checkOutfit, checkSkin, generateSkinCss } = withPassports(lookup);
@@ -148,6 +148,53 @@ describe("СЛОВАРЬ работает контрактом", () => {
     const flaws = checkOutfit({ ...наряд, forms: ["кнопка-строгая", "кнопка-плоская"] }, части);
 
     expect(flaws.map((flaw) => flaw.name)).toContain("component-twice");
+  });
+});
+
+describe("ссылку в кадрах судят ПО МЕСТУ ПРИМЕНЕНИЯ — и до сборки тоже (`PWEB-101`)", () => {
+  // Ответ обязан совпасть с тем, что даст порождение: разъедься они — одна и та же запись была бы
+  // законной до надевания и незаконной после, и правым оказался бы тот, кого спросили последним.
+
+  const сДвижением = { ...наряд, forms: ["гармошка-движением"] };
+
+  it("движение на своей части проходит проверку наряда", () => {
+    expect(checkOutfit(сДвижением, части)).toEqual([]);
+  });
+
+  it("и собирается: отказа больше нет там, где раскрытие иначе не написать", () => {
+    // Прежде здесь стоял `OutfitRefused`, и это закрывало ЕДИНСТВЕННЫЙ путь: измеренную высоту
+    // кит кладёт на содержимое, второго адреса у неё нет, а `auto` не анимируется.
+    expect(() => assemble(сДвижением, части)).not.toThrow();
+    expect(generateSkinCss(assemble(сДвижением, части).skin)).toContain("@keyframes раскрытие");
+  });
+
+  it("НЕ НА ТОЙ части — изъян, и названы в нём движение и часть", () => {
+    const плохой = { ...наряд, forms: ["гармошка-не-там"] };
+    const [flaw, ...остальные] = checkOutfit(плохой, части);
+
+    expect(остальные).toEqual([]);
+    expect(flaw?.name).toBe("variable-elsewhere");
+    expect(flaw?.where).toContain("keyframes.раскрытие");
+    expect(flaw?.means).toContain("«раскрытие»");
+    expect(flaw?.means).toContain("itemTrigger");
+    expect(() => assemble(плохой, части)).toThrow(OutfitRefused);
+  });
+
+  it("МУТАЦИЯ: сними применение — и та же запись снова краснеет", () => {
+    // Проба самой границы: законность приезжает от `animation:`, а не от блока кадров. Не будь
+    // места применения — судить было бы нечем, и старый ответ («объявлена на другой части»)
+    // возвращается.
+    const безПрименения = {
+      ...гармошкаДвижением,
+      name: "гармошка-без-применения",
+      recipe: { base: { itemContent: { props: { overflow: "hidden" } } } },
+    };
+    const flaws = checkOutfit(
+      { ...наряд, forms: [безПрименения.name] },
+      { ...части, forms: [...части.forms, безПрименения] },
+    );
+
+    expect(flaws.map((flaw) => flaw.name)).toEqual(["variable-elsewhere"]);
   });
 });
 

@@ -52,13 +52,37 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
     expect(checkOutfit(referenceOutfit, части)).toEqual([]);
   });
 
-  it("РАСКРЫТИЕ ПИШЕТ СКИН: гармошка адресует переменную, объявленную паспортом", () => {
+  it("РАСКРЫТИЕ ПИШЕТ СКИН — именованным движением по своему признаку (`PWEB-98`)", () => {
     // Вторая сторона объявления (`PWEB-93`). Кит меряет узел и кладёт `--height` на содержимое,
     // объявив это паспортом; анимации он не привозит — её пишет скин. Взять высоту больше
     // неоткуда: `auto` не анимируется, а придумать число за чужое содержимое нельзя.
+    //
+    // Мера теперь стоит в КАДРАХ, а не в правиле, и это предмет пробы: правило по надёжному
+    // предку клало высоту и в покое, где кит держит меру нулём, — раздел, открытый изначально,
+    // схлопывался. Ступень же разрешается на анимируемом узле и только пока движение идёт.
     const гармошка = referenceForms.find((form) => form.component === "accordion")!;
 
-    expect(JSON.stringify(гармошка.recipe)).toContain("var(--height)");
+    expect(JSON.stringify(гармошка.keyframes)).toContain("var(--height)");
+    expect(JSON.stringify(гармошка.recipe)).not.toContain("var(--height)");
+
+    // И применено оно на СОДЕРЖИМОМ — том узле, куда кит кладёт меру. Применённое на соседе, оно
+    // было бы законным по форме и мёртвым по делу.
+    const содержимое = гармошка.recipe.base?.["itemContent"];
+
+    expect(содержимое?.states?.["open"]?.props?.["animation"]).toContain("раскрытие");
+    expect(содержимое?.states?.["closed"]?.props?.["animation"]).toContain("закрытие");
+  });
+
+  it("ПРОСЬБУ ДВИГАТЬ ПОМЕНЬШЕ движение не теряет: у обоих есть своя оговорка", () => {
+    // Переход её имел с самого начала, и при переезде на кадры её легко было бы обронить — тише
+    // всего теряется то, что уже работало.
+    const гармошка = referenceForms.find((form) => form.component === "accordion")!;
+    const содержимое = гармошка.recipe.base?.["itemContent"];
+    const тише = "@media (prefers-reduced-motion: reduce)";
+
+    for (const состояние of ["open", "closed"] as const) {
+      expect(содержимое?.states?.[состояние]?.props?.[тише]).toEqual({ animation: "none" });
+    }
   });
 
   it("МУТАЦИЯ: убери переменную из паспорта — форма гармошки краснеет с именем и частью", () => {
@@ -82,7 +106,12 @@ describe("эталон объявлен ТРЕМЯ ЗАПИСЯМИ, а не л�
 
     expect(flaws.map((flaw) => flaw.name)).toContain("outside-vocabulary");
     expect(flaws[0]?.means).toContain("height");
-    expect(flaws[0]?.where).toContain("itemContent");
+    // Место в записи — блок кадров, а виноватые названы в тексте: движение вместе с частью, на
+    // которой оно применено (`PWEB-101`). Без части человек не знает, куда переносить
+    // `animation:`, без движения — какой блок смотреть.
+    expect(flaws[0]?.where).toContain("keyframes.раскрытие");
+    expect(flaws[0]?.means).toContain("«раскрытие»");
+    expect(flaws[0]?.means).toContain("itemContent");
   });
 
   it("сборка отдаёт отчёт: одеты все пятеро, точечных правок ноль", () => {

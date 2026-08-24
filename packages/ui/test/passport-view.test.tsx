@@ -223,3 +223,76 @@ describe("читатель не прибит к киту", () => {
     expect(partOf(списокPassport, "такой-части-нет")).toBeUndefined();
   });
 });
+
+// Ненадёжный признак у ЧУЖОГО поставщика (`PWEB-97`): гармошка — не привилегия, и мост обязан
+// отбрасывать такое состояние у любого, кто его объявил. Своя анатомия здесь потому, что список
+// выше проверяется на точный словарь состояний, а предмет этой пробы — второе состояние рядом с
+// надёжным: только на паре видно, что отброшено ровно одно.
+const шторкаAnatomy = createAnatomy("шторка").parts("root");
+const шторкаParts = шторкаAnatomy.build();
+const шторкаPassport = definePassport({
+  anatomy: шторкаAnatomy,
+  package: "@чужой/пакет",
+  genus: "component",
+  root: "root",
+  settings: {},
+  parts: [
+    {
+      name: "root",
+      means: "шторка целиком",
+      states: [
+        {
+          name: "open",
+          means: "шторка раскрыта",
+          mark: { kind: "attribute", name: "data-state", value: "open" },
+          absentWhen: "раскрытие прошло без анимации — поставщик снимает признак целиком",
+        },
+        { name: "disabled", means: "шторку не двигают", mark: { kind: "attribute", name: "data-disabled" } },
+      ],
+    },
+  ],
+  variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+});
+
+const сРаскрывашкой = (component: string) =>
+  component === шторкаPassport.component ? шторкаPassport : undefined;
+
+/** Узел шторки со всеми признаками сразу — и надёжным, и ненадёжным. */
+function узелШторки(...attrs: Array<[string, string]>): Element {
+  const node = document.createElement("div");
+
+  for (const [name, value] of Object.entries(шторкаParts.root.attrs)) node.setAttribute(name, value);
+  for (const [name, value] of attrs) node.setAttribute(name, value);
+
+  return node;
+}
+
+describe("состояние, чей признак приезжает не всегда, адресом ВИДА не становится", () => {
+  it("признак на узле есть, а в координате состояния нет — решает объявление", () => {
+    // Самая важная половина. Отсеивай мост по наличию признака — состояние попадало бы в
+    // координату ровно в те моменты, когда признак приехал, и правило выглядело бы рабочим у
+    // того, кто его написал, а молчало бы у всех остальных.
+    const node = узелШторки(["data-state", "open"], ["data-disabled", ""]);
+
+    expect(node.getAttribute("data-state")).toBe("open");
+    expect(coordinateOf(node, сРаскрывашкой)?.states).toEqual(["disabled"]);
+  });
+
+  it("предок с таким состоянием тоже его не отдаёт — правило у моста одно на оба места", () => {
+    // Предок читается тем же средством, и написать для него второе правило значило бы завести
+    // расхождение внутри одного файла.
+    const предок = узелШторки(["data-state", "open"]);
+    const host = mount(() => <Button>Сохранить</Button>);
+
+    предок.append(one(host, "button"));
+    document.body.append(предок);
+
+    expect(coordinateOf(one(предок, "button"), (c) => сРаскрывашкой(c) ?? kit(c))?.ancestor).toEqual({
+      component: "шторка",
+      part: "root",
+      states: [],
+    });
+
+    предок.remove();
+  });
+});

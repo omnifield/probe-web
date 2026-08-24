@@ -39,6 +39,7 @@
     "eslint": "^10.8.1",
     "postcss": "^8.5.14",
     "postcss-nested": "^7.0.2",
+    "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }

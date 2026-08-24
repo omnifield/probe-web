@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { partSelector } from "../src/address.js";
-import type { Skin } from "../src/model.js";
+import type { LocalStyle, Skin } from "../src/model.js";
 import { withPassports } from "../src/bound.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
@@ -260,6 +260,222 @@ describe("именованные отказы", () => {
     });
 
     expect(flaws).toEqual(["unknown-part", "unknown-state"]);
+  });
+});
+
+describe("ненадёжный признак: вид отвергается, движение остаётся (`PWEB-99`)", () => {
+  // Материал ЖИВОЙ: у содержимого гармошки раскрытость объявлена вместе с оговоркой — признак
+  // приезжает не всегда (`absentWhen`). Пометку читает `addressesView` владельца формы, и проба
+  // проверяет именно тот случай, ради которого граница заведена.
+
+  /** Рецепт, одевающий содержимое гармошки по его СОБСТВЕННОЙ раскрытости. */
+  function поСвоему(style: LocalStyle): Skin {
+    return {
+      name: "п",
+      recipes: { accordion: { base: { itemContent: { states: { open: style } } } } },
+    };
+  }
+
+  it("вид по такому признаку — изъян", () => {
+    expect(names(поСвоему({ props: { height: "var(--height)" } }))).toEqual([
+      "view-unaddressable",
+    ]);
+  });
+
+  it("ДВИЖЕНИЕ по нему законно: иначе анимации раскрытия не написать вовсе", () => {
+    expect(names(поСвоему({ props: { animation: "раскрытие 200ms ease-out" } }))).toEqual([]);
+  });
+
+  it("адресовать состояние по-прежнему есть чем: правило порождается", () => {
+    const list = skinRules(поСвоему({ props: { animation: "раскрытие 200ms" } })).rules;
+
+    expect(list).toHaveLength(1);
+    expect(list[0]!.selector).toContain('[data-state="open"]');
+  });
+
+  it("движение и вид в одном блоке — изъян, и назван в нём ВИД, а не движение", () => {
+    const [flaw] = checkSkin(
+      поСвоему({ props: { animation: "раскрытие 200ms", height: "var(--height)" } }),
+    );
+
+    expect(flaw!.name).toBe("view-unaddressable");
+    expect(flaw!.where).toBe("recipes.accordion.base.itemContent.states.open.props");
+    expect(flaw!.means).toContain("height");
+    expect(flaw!.means).not.toContain("animation: ");
+  });
+
+  it("вид внутри at-правила прячется не лучше: условие меняет место, а не род", () => {
+    expect(
+      names(
+        поСвоему({ props: { "@media (min-width: 40rem)": { height: "var(--height)" } } }),
+      ),
+    ).toEqual(["view-unaddressable"]);
+  });
+
+  it("семейство, а не перечень имён: длинноты движения проходят обе", () => {
+    // `animationTimeline` и `transition-behavior` моложе исходных спецификаций. Выпиши мы имена
+    // поимённо, автор скина получал бы изъян на законном CSS, а починка была бы у нас.
+    expect(
+      names(
+        поСвоему({ props: { animationTimeline: "auto", "transition-behavior": "allow-discrete" } }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("МУТАЦИЯ: надёжный признак ТОГО ЖЕ ИМЕНИ изъяном не становится", () => {
+    // Раскрытость ПУНКТА объявлена без оговорки, и вид по ней законен. Решай проба по имени
+    // состояния, а не по пометке — покраснело бы и это.
+    expect(
+      names({
+        name: "п",
+        recipes: {
+          accordion: { base: { item: { states: { open: { props: { color: "red" } } } } } },
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it("тот же признак у ПРЕДКА — тот же изъян: условие стоит слева и приезжает не всегда", () => {
+    // Адрес здесь нарочно искусственный — содержимое пунктy не предок, — и предмет пробы не
+    // одежда, а вторая половина адреса: разбери обход только свои состояния, то же самое правило
+    // проходило бы зелёным, стоило написать его через предка.
+    expect(
+      names({
+        name: "п",
+        recipes: {
+          accordion: {
+            base: {
+              itemIndicator: {
+                ancestors: [
+                  {
+                    component: "accordion",
+                    part: "itemContent",
+                    states: ["open"],
+                    style: { props: { color: "red" } },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      }),
+    ).toEqual(["view-unaddressable"]);
+  });
+
+  it("правка образца читает состояния из того же паспорта — и получает тот же изъян", () => {
+    const { checkSketch } = withPassports(lookup);
+
+    expect(
+      checkSketch([
+        {
+          node: "узел-1",
+          component: "accordion",
+          part: "itemContent",
+          style: { states: { open: { props: { height: "var(--height)" } } } },
+        },
+      ]).map((flaw) => flaw.name),
+    ).toEqual(["view-unaddressable"]);
+  });
+});
+
+describe("ссылку в кадрах судят ПО МЕСТУ ПРИМЕНЕНИЯ (`PWEB-101`)", () => {
+  // Материал ЖИВОЙ и он же тот, ради которого граница сдвинута: `--height` объявляет паспорт на
+  // содержимом гармошки, кит кладёт её туда же, и раскрытие пишется движением по тому же узлу.
+  // Прежде механика судила блок кадров САМ ПО СЕБЕ и отвечала «объявлена на другой части» — то
+  // есть спрашивала про элемент, которого в блоке нет вовсе.
+
+  /** Скин, применяющий движение на названной части гармошки. */
+  function применённое(...parts: string[]): Skin {
+    return {
+      name: "п",
+      keyframes: {
+        раскрытие: { from: { height: "0" }, to: { height: "var(--height)" } },
+      },
+      recipes: {
+        accordion: {
+          base: Object.fromEntries(
+            parts.map((part) => [part, { props: { animation: "раскрытие 320ms ease-out" } }]),
+          ),
+        },
+      },
+    };
+  }
+
+  it("на части, ОБЪЯВИВШЕЙ переменную, — законно", () => {
+    expect(names(применённое("itemContent"))).toEqual([]);
+  });
+
+  it("на части БЕЗ неё — изъян, и названы в нём ДВИЖЕНИЕ и ЧАСТЬ", () => {
+    const [flaw, ...остальные] = checkSkin(применённое("itemTrigger"));
+
+    expect(остальные).toEqual([]);
+    expect(flaw!.name).toBe("variable-elsewhere");
+    expect(flaw!.where).toBe("keyframes.раскрытие.to.height");
+    // Виноватые оба: без части человек не знает, куда переносить `animation:`, без движения — в
+    // какой блок кадров смотреть.
+    expect(flaw!.means).toContain("«раскрытие»");
+    expect(flaw!.means).toContain("accordion.itemTrigger");
+    expect(flaw!.means).toContain("accordion.itemContent");
+  });
+
+  it("применено на НЕСКОЛЬКИХ — законно там, где законно у каждой", () => {
+    const flaws = checkSkin(применённое("itemContent", "itemTrigger"));
+
+    // Ровно один: законная часть не утягивает за собой незаконную, а незаконная — законную.
+    expect(flaws).toHaveLength(1);
+    expect(flaws[0]!.means).toContain("accordion.itemTrigger");
+    expect(flaws[0]!.means).not.toContain("accordion.itemContent»");
+  });
+
+  it("МУТАЦИЯ: `PWEB-93` не ослаблена — не применённое движение судится прежним словарём", () => {
+    // Тот же блок кадров и та же одетая часть, но `animation:` не написан нигде: узла у движения
+    // нет, и разрешиться на странице могли бы только имена корня. Пройди он здесь зелёным —
+    // правило «переменная законна на своей части» обходилось бы записью движения, которое просто
+    // не применили.
+    const [flaw] = checkSkin({
+      ...применённое("itemContent"),
+      recipes: { accordion: { base: { itemContent: { props: { color: "red" } } } } },
+    });
+
+    expect(flaw?.name).toBe("variable-elsewhere");
+    expect(flaw?.means).toContain("не применено ни одним правилом");
+  });
+
+  it("имени нет ни у кого — тот же суд, другое имя изъяна", () => {
+    const skin = применённое("itemContent");
+    const [flaw] = checkSkin({
+      ...skin,
+      keyframes: { раскрытие: { to: { height: "var(--нет-такого)" } } },
+    });
+
+    expect(flaw?.name).toBe("unknown-value");
+    expect(flaw?.means).toContain("«раскрытие»");
+    expect(flaw?.means).toContain("accordion.itemContent");
+  });
+
+  it("применением считают `animation` и `animation-name`, а не всё семейство", () => {
+    // `animation-timeline` называет ШКАЛУ, а не движение. Спроси мы семейство целиком —
+    // совпадение имён выдумало бы применение там, где его нет, и человек чинил бы правило,
+    // которое ничего не применяет.
+    const длиннотой = применённое();
+    const место = (props: Record<string, string>): Skin => ({
+      ...длиннотой,
+      recipes: { accordion: { base: { itemContent: { props } } } },
+    });
+
+    expect(names(место({ animationName: "раскрытие" }))).toEqual([]);
+    expect(names(место({ animationTimeline: "раскрытие" }))).toEqual(["variable-elsewhere"]);
+  });
+
+  it("ФОРМА движения судится РАЗ, сколько бы мест ни было", () => {
+    // Пустая ступень остаётся пустой на любой части: повтори мы этот изъян по числу мест — человек
+    // получил бы один дефект в двух экземплярах и пошёл бы искать второй.
+    const flaws = checkSkin({
+      ...применённое("itemContent", "itemTrigger"),
+      keyframes: { раскрытие: { to: { height: "  " } } },
+    });
+
+    expect(flaws.filter((flaw) => flaw.name === "empty-value")).toHaveLength(1);
   });
 });
 

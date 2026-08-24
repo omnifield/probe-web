@@ -35,7 +35,7 @@
 // Значит `:is(:hover, [data-force~="hover"])` весит ровно столько же, сколько `:hover`, и
 // каскад от появления принудительного признака не сдвигается ни на единицу.
 
-import type { ComponentPassport, PassportMark } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport, PassportMark, PassportState } from "@omnifield/probe-web-ui/passport";
 import { partOf } from "@omnifield/probe-web-ui/passport";
 
 import { FORCE_ATTRIBUTE, NODE_ATTRIBUTE } from "./marks.js";
@@ -147,6 +147,30 @@ export function markSelector(state: string, mark: PassportMark): string {
 }
 
 /**
+ * ОБЪЯВЛЕНИЕ состояния части — то, из чего порождается селектор.
+ *
+ * Отдельным чтением, потому что спрашивают у него ДВА разных ответа: чем состояние выражено в
+ * разметке (`mark` — отсюда селектор) и годится ли признак адресом вида (`absentWhen` — это решает
+ * `addressesView` владельца формы). Ищи их обход двумя заходами, у одного объявления оказалось бы
+ * два чтения, расходящихся молча.
+ *
+ * Наружу пакета не едет: своей копии формы паспорта зона не заводит, а читателю снаружи достаточно
+ * `partOf` из самого паспорта.
+ *
+ * @param passport паспорт компонента
+ * @param part имя части
+ * @param state имя состояния
+ * @returns объявление, либо `undefined` — если часть такого состояния не объявляла
+ */
+export function stateOf(
+  passport: ComponentPassport,
+  part: string,
+  state: string,
+): PassportState | undefined {
+  return partOf(passport, part)?.states.find((declared) => declared.name === state);
+}
+
+/**
  * Селектор состояния ЧАСТИ.
  *
  * @param passport паспорт компонента
@@ -159,9 +183,9 @@ export function stateSelector(
   part: string,
   state: string,
 ): string | undefined {
-  const mark = partOf(passport, part)?.states.find((declared) => declared.name === state)?.mark;
+  const declared = stateOf(passport, part, state);
 
-  return mark === undefined ? undefined : markSelector(state, mark);
+  return declared === undefined ? undefined : markSelector(state, declared.mark);
 }
 
 /**
