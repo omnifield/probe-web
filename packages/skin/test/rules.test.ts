@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { partSelector } from "../src/address.js";
-import type { LocalStyle, Skin } from "../src/model.js";
+import type { LocalStyle, PartStyle, Skin } from "../src/model.js";
 import { withPassports } from "../src/bound.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
@@ -375,6 +375,122 @@ describe("ненадёжный признак: вид отвергается, д
         },
       ]).map((flaw) => flaw.name),
     ).toEqual(["view-unaddressable"]);
+  });
+});
+
+describe("вариация живёт на КОРНЕ, а не на каждой части (`PWEB-103`)", () => {
+  // Ось вариаций объявляет КОМПОНЕНТ (`variantAxis`), одна на него целиком, и на узлах её несёт
+  // корень: имя пишет потребитель, и пишет он его там, где ставит компонент. На вложенных частях
+  // этого атрибута не бывает физически — их ставит кит, а кит про вариацию не знает.
+  //
+  // Прежде селектор вариации приклеивался к каждой части, и совпадало это с правдой ровно на
+  // корне. Для остальных рождалось МЁРТВОЕ правило: адрес требовал атрибут, которого на узле нет,
+  // и молчали об этом все — правило есть, вид не приезжает (`SKINED-5`, п. 2).
+
+  /** Рецепт пробного поля: одна вариация, вид на корне и на вложенной части. */
+  function поле(control: PartStyle, root: PartStyle = { props: { color: "blue" } }): Skin {
+    return {
+      name: "п",
+      recipes: {
+        field: {
+          base: { control: { props: { color: "red" } } },
+          variants: { крупное: { root, control } },
+          defaultVariant: "крупное",
+        },
+      },
+    };
+  }
+
+  /** Селекторы правил вариации — в порядке порождения. */
+  function адреса(skin: Skin): string[] {
+    return skinRules(skin).rules.filter((rule) => rule.origin > 0).map((rule) => rule.selector);
+  }
+
+  it("на НЕ-корневой части адрес идёт через КОРЕНЬ, а не через свой атрибут", () => {
+    const [, вложенная] = адреса(поле({ props: { color: "green" } }));
+
+    // Предок слева, своя часть справа — ровно та форма, которой уже возится состояние владельца.
+    expect(вложенная).toContain('[data-part="root"]');
+    expect(вложенная).toContain('[data-variant="крупное"]');
+    expect(вложенная).toMatch(/\) \[data-scope="field"\]\[data-part="control"\]$/u);
+    // Мёртвого адреса больше нет: на самой части атрибута вариации не требуется.
+    expect(вложенная).not.toMatch(/\[data-part="control"\][^ ]*\[data-variant/u);
+  });
+
+  it("на КОРНЕ не изменилось ничего: там признак и живёт", () => {
+    const [корневая] = адреса(поле({ props: { color: "green" } }));
+
+    expect(корневая).toBe(
+      '[data-scope="field"][data-part="root"]:is([data-variant="крупное"], :not([data-variant]))',
+    );
+  });
+
+  it("ВЕС не растёт: условие поставила механика, и каскад от этого не сдвигается", () => {
+    // `:where()` — потому что автор предка не писал. Без него правило вариации на вложенной части
+    // весило бы пять доводов против трёх у правила состояния той же части и перебивало бы его,
+    // хотя порядком распоряжается механика, а не вес.
+    const [, вложенная] = адреса(поле({ props: { color: "green" } }));
+
+    expect(вложенная.startsWith(":where(")).toBe(true);
+  });
+
+  it("вариация НЕ ТЕРЯЕТСЯ, когда у правила есть объявленный предок", () => {
+    // Префикс накапливается, а не заменяется. Подмени его правило по предку — вариация исчезла бы
+    // из адреса молча, и правило встало бы на все вариации сразу.
+    const [, поПредку] = адреса(
+      поле({
+        ancestors: [
+          {
+            component: "field",
+            part: "root",
+            states: ["invalid"],
+            style: { props: { color: "pink" } },
+          },
+        ],
+      }),
+    );
+
+    expect(поПредку).toContain('[data-variant="крупное"]');
+    expect(поПредку).toContain("[data-invalid]");
+    expect(поПредку.indexOf("data-variant")).toBeLessThan(поПредку.indexOf("data-invalid"));
+  });
+
+  it("ПЕРЕСЕЧЕНИЕ идёт тем же путём — второго разрешения адреса нет", () => {
+    const skin: Skin = {
+      name: "п",
+      recipes: {
+        field: {
+          base: { control: { props: { color: "red" } } },
+          variants: { крупное: { root: { props: { color: "blue" } } } },
+          defaultVariant: "крупное",
+          compoundVariants: [
+            { variants: ["крупное"], style: { control: { props: { color: "gray" } } } },
+          ],
+        },
+      },
+    };
+    const [пересечение] = skinRules(skin).rules.filter((rule) => rule.origin === 2);
+
+    expect(пересечение!.selector.startsWith(":where(")).toBe(true);
+    expect(пересечение!.selector).toContain('[data-part="root"]');
+  });
+
+  it("корня нет в анатомии — `unknown-ancestor`, без нового имени изъяна ради случая", () => {
+    // Причина та же, что у объявленного предка: узла, на котором живёт признак, у компонента нет.
+    // Значит и ответ тот же — своего имени этот случай не заводит.
+    const безКорня = withPassports((component) =>
+      component === "field" ? { ...fieldPassport, root: "нетакой" } : lookup(component),
+    );
+    const flaws = безКорня.checkSkin(поле({ props: { color: "green" } }));
+
+    expect(flaws.map((flaw) => flaw.name)).toContain("unknown-ancestor");
+    expect(flaws[0]!.means).toContain("вариаци");
+  });
+
+  it("БАЗА не трогается вовсе: без вариации предок в адрес не приезжает", () => {
+    const [база] = skinRules(поле({ props: { color: "green" } })).rules;
+
+    expect(база!.selector).toBe('[data-scope="field"][data-part="control"]');
   });
 });
 
