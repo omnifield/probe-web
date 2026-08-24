@@ -377,13 +377,27 @@ export function App() {
   // ручки под неё не существует. Нет скина — нет и половины.
   const [worn, setWorn] = createSignal<SkinWorn | null>(null);
 
+  /**
+   * Ставит надетое по ответу механики, а отказ гасит с НАЗВАННОЙ причиной.
+   *
+   * Отказ показанное не рушит: механика полусостояний не оставляет — пока текста нет, на корне и
+   * в листе стоит прежнее, — и витрине после отказа менять нечего. А вот оставить сам отказ
+   * незакрытым нельзя: необработанное отклонение человеку не говорит ничего и валит прогон проб
+   * целиком, хотя на странице всё законно.
+   */
+  const wearing = (attempt: Promise<SkinWorn | null>): void => {
+    void attempt.then(setWorn).catch((cause: unknown) => {
+      console.debug("скин не надет: служба отказала", cause);
+    });
+  };
+
   /** Сменить половину — значит надеть тот же скин в другой половине. Другого пути нет. */
   const setMode = (mode: SkinMode) => {
     const current = worn();
 
     if (current === null) return;
 
-    void SKIN.wear(current.name, { mode }).then(setWorn);
+    wearing(SKIN.wear(current.name, { mode }));
   };
 
   // Перечень НАРЯДОВ — из СЛУЖБЫ. Части по отдельности не надеваются, поэтому в списке стоят
@@ -428,7 +442,7 @@ export function App() {
   });
 
   const wear = (name: string) => {
-    void SKIN.wear(name).then(setWorn);
+    wearing(SKIN.wear(name));
   };
 
   const takeOff = () => {

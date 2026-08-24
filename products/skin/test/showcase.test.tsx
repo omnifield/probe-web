@@ -28,11 +28,12 @@ import { REGISTRY } from "../src/showcase/registry.js";
 
 import { cleanup, mount } from "./dom.jsx";
 import { FORM, OUTFIT, PALETTE } from "./fixtures.js";
-import { restoreStore, serveLook } from "./store-stub.js";
+import { dropStore, restoreStore, serveLook } from "./store-stub.js";
 
 beforeEach(() => serveLook({ palettes: [PALETTE], forms: [FORM], outfits: [OUTFIT] }));
 
 afterEach(() => {
+  vi.restoreAllMocks();
   restoreStore();
   cleanup();
   document.documentElement.removeAttribute("data-skin");
@@ -267,6 +268,35 @@ describe("хедер", () => {
     await vi.waitFor(() =>
       expect(document.documentElement.classList.contains("dark")).toBe(true),
     );
+  });
+
+  it("служба упала при смене половины — надетое остаётся, а отказ назван", async () => {
+    const сказано = vi.spyOn(console, "debug").mockImplementation(() => undefined);
+    const host = mount(() => <App />);
+
+    pick(host, "button");
+
+    // Отказ проверяется на НАДЕТОМ: пока ничего не надето, отказу нечего было бы ронять.
+    await vi.waitFor(() =>
+      expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name),
+    );
+
+    const dark = [...host.querySelectorAll<HTMLButtonElement>(".modes__item")][1];
+
+    dropStore();
+    dark?.click();
+
+    // ПРИЧИНА НАЗВАНА, а не проглочена: незакрытый отказ человеку не говорит ничего, а прогон
+    // проб валит целиком — притом что показанное на странице законно.
+    await vi.waitFor(() =>
+      expect(сказано.mock.calls.some(([текст]) => текст === "скин не надет: служба отказала")).toBe(
+        true,
+      ),
+    );
+
+    // Полусостояния нет: половина не сменилась, но и надетое с корня не слетело — механика
+    // оставляет прежний лист, пока нового текста нет, и витрине после отказа менять нечего.
+    expect(document.documentElement.getAttribute("data-skin")).toBe(OUTFIT.name);
   });
 });
 

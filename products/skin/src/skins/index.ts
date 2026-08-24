@@ -20,8 +20,7 @@
 // Механика приложения принимает источник снаружи и про нас не знает ничего. Ей нужны две вещи:
 // перечень имён и ТЕКСТ стилей по имени. Файла с адресом на этом пути нет ни на одном шаге.
 
-import { generateSkinCss } from "@omnifield/probe-web-skin";
-import { assemble } from "@omnifield/probe-web-skin/model";
+import { withPassports } from "@omnifield/probe-web-skin";
 import type { SkinSource } from "@omnifield/probe-web-runtime";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 
@@ -45,6 +44,11 @@ export {
   type StoreRecord,
 } from "./store.js";
 
+// ИСТОЧНИК ПАСПОРТОВ НАЗВАН ЗДЕСЬ ОДИН РАЗ, и дальше едет связкой (`PWEB-94`). У связанных
+// вызовов довода для второго источника нет, поэтому проверка наряда и порождение не могут
+// разойтись молча: это держит подпись, а не наша договорённость с собой.
+const { assemble, generateSkinCss } = withPassports(passportOf);
+
 /**
  * Собирает наряд по имени и отдаёт готовый вид вместе с отчётом сборки.
  *
@@ -60,7 +64,7 @@ export async function assembleOutfit(name: string) {
 
   // Изъяны наряда механика отвергает целиком, а не отдаёт вид с ошибкой рядом: вид с изъяном
   // доехал бы до страницы и выглядел там как испорченный, а не как незаконный.
-  return assemble(outfit, await readParts(), passportOf);
+  return assemble(outfit, await readParts());
 }
 
 /**
@@ -78,7 +82,6 @@ export const SKIN_SOURCE: SkinSource = {
       // пути. Второй путь до узла — стиль поверх разметки — адресовал бы узел вместо
       // координаты, и правка выглядела бы иначе, чем то, что сохранится.
       (name === DRAFT_NAME ? await draftLook() : await assembleOutfit(name)).skin,
-      passportOf,
     ),
 
   // Черновика в перечне НЕТ намеренно: он не выбирается списком, он надевается редактором на

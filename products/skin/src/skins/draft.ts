@@ -30,10 +30,14 @@
 // одевал, в наряде не перечислена. Брать наряд как есть значило бы показывать человеку голый
 // компонент, пока он его одевает.
 
-import { assemble, type Form, type Outfit, type Palette } from "@omnifield/probe-web-skin/model";
+import { withPassports, type Form, type Outfit, type Palette } from "@omnifield/probe-web-skin/model";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 
 import { readOutfit, readParts, StoreRefused } from "./store.js";
+
+// Связка своя, а не привезённая из `index.ts`: витрина зовёт черновик, и импорт назад завёл бы
+// круг. Источник от этого не раздваивается — он один и тот же, назван один раз на файл (`PWEB-94`).
+const { assemble } = withPassports(passportOf);
 
 /**
  * Имя, под которым надевается черновик.
@@ -109,7 +113,7 @@ export async function draftLook() {
     forms: forms.filter((форма) => базовая(base, форма, draft)).map((форма) => форма.name),
   };
 
-  return assemble(outfit, { palettes, forms }, passportOf);
+  return assemble(outfit, { palettes, forms });
 }
 
 /**
