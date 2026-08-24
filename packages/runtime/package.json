@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-runtime",
   "version": "0.1.0",
-  "description": "Рантайм probe-web: mount() и контракт #root — то, что зовёт скелет у потребителя (kb:PROBEWEB-4).",
+  "description": "Рантайм probe-web: mount() и контракт #root — то, что зовёт скелет у потребителя (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,

@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-ui",
   "version": "0.1.0",
-  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (kb:PROBEWEB-4).",
+  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,

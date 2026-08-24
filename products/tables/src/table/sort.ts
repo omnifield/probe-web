@@ -1,7 +1,7 @@
 // Сравнение значений для сортировки.
 //
 // Две вещи взяты у канона SQL и обе с ценой, названной вслух (сверка 2026-08-11,
-// `tasker:TABLES-5`):
+// `TABLES-5`):
 //
 // 1. **Пустое значение больше любого непустого.** PostgreSQL: «By default, null values sort as
 //    if larger than any non-null value; that is, NULLS FIRST is the default for DESC order, and

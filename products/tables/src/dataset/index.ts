@@ -2,7 +2,7 @@
 //
 // Модуль намеренно маленький и без Solid: показ значения и сведение значений это про данные,
 // а не про разметку. Растёт он только по надобности; каноническая форма входа (адаптеры,
-// `tasker:TABLES-3`) — следующий и объявленный шаг, а не тихое расползание.
+// `TABLES-3`) — следующий и объявленный шаг, а не тихое расползание.
 
 export { aggregate, type Aggregated, type AggregatableField } from "./aggregate.js";
 export { DEFAULT_LOCALE, type Formatted, formatValue } from "./format.js";

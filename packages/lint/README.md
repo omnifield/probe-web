@@ -6,7 +6,7 @@
 проверка». Зона существует ради второй формы: у канона, который нельзя прогнать, нет
 способа узнать, что он перестал соблюдаться.
 
-Контракт зон целиком — `kb:PROBEWEB-4`; он ведётся architect'ом, эта страница его не
+Контракт зон целиком — `PROBEWEB-4`; он ведётся architect'ом, эта страница его не
 заменяет, а пересказывает со стороны пакета.
 
 ## Одна точка наружу
@@ -136,7 +136,7 @@ Upstream-пресет плагина (`solid.configs["flat/typescript"]`, вер
 намеренно: она позволила бы тихо вернуться в исходное состояние в каждом отдельном проекте.
 Кому нужно иначе — переопределяет своей секцией ниже по массиву, и это видно в его конфиге.
 
-Решение об уровне — за architect (`kb:PROBEWEB-4`); здесь описано то, что пресет делает
+Решение об уровне — за architect (`PROBEWEB-4`); здесь описано то, что пресет делает
 сегодня, и почему предложено именно так.
 
 ## Разбор — Babel, а не `@typescript-eslint/parser`
@@ -244,7 +244,7 @@ ERR_MODULE_NOT_FOUND  @omnifield/probe-web-lint/dist/index.js
 ## Версия и публикация
 
 Версию поднимает **architect при публикации**, не владелец зоны в коммите. Реестр — GitHub
-Packages (`kb:PROBEWEB-4`).
+Packages (`PROBEWEB-4`).
 
 [plugin]: https://github.com/solidjs-community/eslint-plugin-solid
 [r-reactivity]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/reactivity.md

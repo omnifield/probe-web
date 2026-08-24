@@ -23,7 +23,7 @@ afterEach(() => {
  *
  * Шпион описан СТРУКТУРНО, а не через `ReturnType<typeof vi.spyOn>`: тот generic, и его
  * `mock.calls` разворачивается в `any[]` — в приложении, доказывающем типизацию цепочки,
- * `any` быть не должно нигде (`tasker:PROBEWEB-14`).
+ * `any` быть не должно нигде (`PROBEWEB-14`).
  */
 function ours(spy: { mock: { calls: unknown[][] } }): string[] {
   return spy.mock.calls

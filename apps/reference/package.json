@@ -2,7 +2,7 @@
   "name": "@omnifield/probe-web-reference",
   "version": "0.0.0",
   "private": true,
-  "description": "Эталонное приложение probe-web: гейт сборки всей цепочки. В реестр не едет (kb:PROBEWEB-4).",
+  "description": "Эталонное приложение probe-web: гейт сборки всей цепочки. В реестр не едет (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {

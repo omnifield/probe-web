@@ -83,7 +83,7 @@ describe("тёмная шкала — СВОЯ, а не перевёрнутая
   const dark = buildScale(SEEDS.neutral, "dark");
 
   it("ступень тёмной шкалы не равна зеркальной ступени светлой", () => {
-    // Инверсия ломает назначение: фон элемента становится текстом (`kb:PROBEWEB-12`, п.1).
+    // Инверсия ломает назначение: фон элемента становится текстом (`PROBEWEB-12`, п.1).
     for (const step of SCALE_STEPS) {
       const mirrored = light[`${13 - step}` as ScaleKey];
       expect(dark[`${step}` as ScaleKey], `ступень ${step}`).not.toBe(mirrored);

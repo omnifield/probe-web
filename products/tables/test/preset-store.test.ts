@@ -2,7 +2,7 @@
 //
 // Главное здесь не «кладётся и достаётся», а два свойства, которые ломаются молча:
 //   • из хранилища приходит ЧУЖОЙ ВВОД — читатель обязан прогнать его через `parseFilter`;
-//   • в поставляемой части зоны нет ни одного `fetch` (`kb:PROBEWEB-8`).
+//   • в поставляемой части зоны нет ни одного `fetch` (`PROBEWEB-8`).
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";

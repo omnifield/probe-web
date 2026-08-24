@@ -12,7 +12,7 @@ import { defineConfig } from "vitest/config";
 //     условия здесь только мешали бы.
 //
 // `vite-plugin-solid` стоит в devDependencies и НЕ едет потребителю: build-инструмент в
-// зависимостях рантайма — тот самый дефект, ради которого зона отделена (kb:PROBEWEB-4).
+// зависимостях рантайма — тот самый дефект, ради которого зона отделена (PROBEWEB-4).
 export default defineConfig({
   test: {
     // В `surface` идёт настоящий `pnpm pack` — дефолтных 5с не хватает.
