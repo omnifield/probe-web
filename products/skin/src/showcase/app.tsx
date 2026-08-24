@@ -32,6 +32,7 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
 } from "solid-js";
 
 import {
@@ -46,6 +47,8 @@ import {
 import {
   ANY,
   casesOf,
+  defaultSettings,
+  settingsOf,
   statesOfComponent,
   type Axis,
   type ShowcaseCase,
@@ -188,8 +191,10 @@ function Axes(props: {
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
+  settings: Readonly<Record<string, unknown>>;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
+  onSetting: (name: string, value: unknown) => void;
 }) {
   return (
     <div class="axes">
@@ -224,6 +229,45 @@ function Axes(props: {
           </For>
         </select>
       </label>
+
+      {/* ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ (`PWEB-89`) — рядом с осями, но это НЕ ось: вариация и
+          состояние показывают вид, настройка меняет поведение и разметку. Перечень объявляет
+          поставщик, и витрина своего не ведёт — иначе гармошка навсегда осталась бы такой,
+          какой её однажды показали: без закрытия последнего раздела и в одном положении. */}
+      <For each={settingsOf(props.component)}>
+        {(setting) => (
+          <label class="axes__field" title={setting.means}>
+            <span class="axes__label">{setting.title}</span>
+            <Show
+              when={setting.values.kind === "choice" ? setting.values : null}
+              fallback={
+                <input
+                  class="axes__flag"
+                  type="checkbox"
+                  checked={props.settings[setting.name] === true}
+                  onChange={(event) => props.onSetting(setting.name, event.currentTarget.checked)}
+                />
+              }
+            >
+              {(выбор) => (
+                <select
+                  class="axes__select"
+                  value={String(props.settings[setting.name] ?? setting.byDefault)}
+                  onChange={(event) => props.onSetting(setting.name, event.currentTarget.value)}
+                >
+                  <For each={выбор().options}>
+                    {(option) => (
+                      <option value={option.value} title={option.means}>
+                        {option.means}
+                      </option>
+                    )}
+                  </For>
+                </select>
+              )}
+            </Show>
+          </label>
+        )}
+      </For>
     </div>
   );
 }
@@ -248,6 +292,7 @@ function ComponentPage(props: {
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
+  settings: Readonly<Record<string, unknown>>;
 }) {
   // Часть не называется: на витрине её нет, и состояние ставится на ту часть, которая его
   // объявила, — это знает сборка случая, а не показ.
@@ -256,6 +301,7 @@ function ComponentPage(props: {
       variant: props.variant,
       state: props.state,
       variants: props.variants,
+      settings: props.settings,
     });
 
   return (
@@ -301,9 +347,11 @@ function Head(props: {
   records: readonly StoreRecord[] | undefined;
   failure: unknown;
   refusal: string | null;
+  settings: Readonly<Record<string, unknown>>;
   mode: SkinMode;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
+  onSetting: (name: string, value: unknown) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
   onMode: (mode: SkinMode) => void;
@@ -337,8 +385,10 @@ function Head(props: {
           variants={props.variants}
           variant={props.variant}
           state={props.state}
+          settings={props.settings}
           onVariant={props.onVariant}
           onState={props.onState}
+          onSetting={props.onSetting}
         />
       </div>
 
@@ -402,12 +452,28 @@ export function App() {
   const [variant, setVariant] = createSignal<Axis<string>>(ANY);
   const [state, setState] = createSignal<Axis<string | null>>(null);
 
+  // НАСТРОЙКИ ПОСТАВЩИКА — чем компонент может быть. Начальное положение берётся у паспорта, а не
+  // из пустоты: «не названо» и «названо умолчанием» обязаны быть одним положением, иначе список в
+  // шапке показывал бы одно, а показ работал бы по другому.
+  // Начальное положение снимается ОДИН раз и намеренно вне слежения: дальше настройки меняет
+  // человек, а на смену компонента их перезаводит `setCurrent`. Слежение здесь означало бы, что
+  // выбор человека затирается при любом чтении текущего компонента.
+  const [settings, setSettings] = createSignal<Record<string, unknown>>(
+    untrack(() => defaultSettings(current())),
+  );
+
   /** Смена компонента сбрасывает оси: чужое состояние на нём не значит ничего. */
   const setCurrent = (component: string) => {
     setCurrentSignal(component);
     setVariant(ANY);
     setState(null);
+    // Настройки тоже чужие: `collapsible` у гармошки ничего не значит для кнопки, а её умолчания
+    // объявляет её собственный паспорт.
+    setSettings(defaultSettings(component));
   };
+
+  const setSetting = (name: string, value: unknown) =>
+    setSettings((прежние) => ({ ...прежние, [name]: value }));
   // НАДЕТОЕ — это имя И половина вместе: половина принадлежит скину, а не документу, и второй
   // ручки под неё не существует. Нет скина — нет и половины.
   const [worn, setWorn] = createSignal<SkinWorn | null>(null);
@@ -547,8 +613,10 @@ export function App() {
           records={records()}
           failure={records.error}
           refusal={refusal()}
+          settings={settings()}
           onVariant={setVariant}
           onState={setState}
+          onSetting={setSetting}
           onWear={wear}
           onTakeOff={takeOff}
           onMode={setMode}
@@ -562,6 +630,7 @@ export function App() {
                 variants={variants()}
                 variant={variant()}
                 state={state()}
+                settings={settings()}
               />
             )}
           </Show>
