@@ -30,7 +30,9 @@ import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
 import {
   baseAssemblyOf,
   passportOf,
+  SETTINGS,
   type PassportMark,
+  type PassportSetting,
   type PassportState,
 } from "@omnifield/probe-web-ui/passport";
 
@@ -91,6 +93,16 @@ export interface Slice {
   readonly state: Axis<string | null>;
   /** Имена вариаций надетого скина — оси взять больше неоткуда. */
   readonly variants: readonly string[];
+  /**
+   * НАСТРОЙКИ ПОСТАВЩИКА — чем компонент МОЖЕТ БЫТЬ (`PWEB-89`).
+   *
+   * Не вид и не состояние, а третье: настройка меняет поведение, разметку и доступность —
+   * вертикальная гармошка и горизонтальная это разные клавиши и разные `aria`. Знает их тот, кто
+   * компонент написал, поэтому перечень берётся у паспорта, а не у нас.
+   *
+   * Не названы — компонент показывается таким, каким его объявил поставщик своими умолчаниями.
+   */
+  readonly settings?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -149,6 +161,49 @@ export function partsOf(component: string): readonly string[] {
 /** Корневая часть компонента — с неё начинается дерево, на неё смотрят по умолчанию. */
 export function rootPartOf(component: string): string {
   return passportOf(component)?.root ?? "";
+}
+
+/** Настройка компонента вместе с её именем и человеческой подписью — витрине для перечня. */
+export interface ShowcaseSetting {
+  /** Ключ настройки: им же она уезжает пропом на корень. */
+  readonly name: string;
+  /** Подпись человеку — из закрытого перечня поставщика, а не наша. */
+  readonly title: string;
+  /** Что настройка делает. */
+  readonly means: string;
+  /** Какие значения принимает: признак или выбор. */
+  readonly values: PassportSetting["values"];
+  /** Что действует, когда настройка не названа. */
+  readonly byDefault: string | boolean;
+}
+
+/**
+ * ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ — перечень настроек из паспорта (`PWEB-89`).
+ *
+ * Своего перечня витрина не ведёт и подписи не придумывает: и то и другое объявляет поставщик, а
+ * два перечня разошлись бы на первом же его выпуске. Компонент, ничего не объявивший, отдаёт
+ * пустой перечень — показывать нечего, и это законно.
+ */
+export function settingsOf(component: string): readonly ShowcaseSetting[] {
+  const settings = passportOf(component)?.settings ?? {};
+
+  return Object.entries(settings).map(([name, setting]) => ({
+    name,
+    title: SETTINGS[name as keyof typeof SETTINGS] ?? name,
+    means: setting.means,
+    values: setting.values,
+    byDefault: setting.byDefault,
+  }));
+}
+
+/**
+ * Умолчания настроек — то, чем компонент работает, пока человек ничего не трогал.
+ *
+ * Берутся у паспорта, а не подразумеваются пустотой: «не названо» и «названо умолчанием» должны
+ * быть одним положением, иначе показ разошёлся бы с тем, что человек видит в списке.
+ */
+export function defaultSettings(component: string): Record<string, unknown> {
+  return Object.fromEntries(settingsOf(component).map((s) => [s.name, s.byDefault]));
 }
 
 /**
@@ -287,8 +342,13 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   const cases: ShowcaseCase[] = [];
 
   for (const variant of variants) {
-    const variantProps =
-      variant === null || axis.kind !== "attribute" ? {} : { [axis.name]: variant };
+    // Настройки ложатся ПОД вариацию: вариация — имя вида и принадлежит скину, настройка —
+    // поведение и принадлежит поставщику. Совпасть по ключу им негде, а порядок называет, кто
+    // кого перекрывает, если однажды совпадут.
+    const variantProps = {
+      ...(slice.settings ?? {}),
+      ...(variant === null || axis.kind !== "attribute" ? {} : { [axis.name]: variant }),
+    };
 
     for (const место of shown) {
       const state = место?.state;
