@@ -309,10 +309,100 @@ body {
 
 /* ── показ ────────────────────────────────────────────────────────────────────────────── */
 
-.main {
+/* Показ и панель свойств — РЯДОМ, каждый со своей прокруткой: показ длинный сам по себе, а общая
+   прокрутка уводила бы панель за экран ровно тогда, когда правка настройки нужна на виду. */
+.content {
+  display: flex;
   min-block-size: 0;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-block-size: 0;
+  min-inline-size: 0;
   padding: var(--ui-gap-6);
   overflow: auto;
+}
+
+/* Панель свойств: фиксированная колонка, не сжимается вместе с показом. Компонент без
+   объявленных настроек её не рисует вовсе — `SettingsPanel` решает это сам. */
+.props {
+  flex: 0 0 auto;
+  inline-size: 16rem;
+  min-block-size: 0;
+  padding: var(--ui-gap-6) var(--ui-gap-4);
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--ui-line-soft);
+  background: var(--ui-surface-sunk);
+}
+
+.props__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-1);
+  margin-block-end: var(--ui-gap-4);
+}
+
+.props__title {
+  font-size: var(--ui-size-sm);
+}
+
+.props__note {
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-xs);
+}
+
+.props__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+}
+
+.props__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-1);
+}
+
+.props__label {
+  color: var(--ui-ink-quiet);
+  font-size: var(--ui-size-sm);
+}
+
+.props__select {
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+  color: inherit;
+  font: inherit;
+}
+
+.props__select:focus-visible,
+.props__flag:focus-visible {
+  outline: var(--ui-focus);
+}
+
+.props__flag {
+  inline-size: var(--ui-gap-4);
+  block-size: var(--ui-gap-4);
+  accent-color: var(--ui-accent);
+}
+
+/* На узком экране панель не помещается рядом с показом: под колонку в 16rem ему остался бы
+   обрывок ширины, а настройка нужна реже, чем сам вид. */
+@media (width < 48rem) {
+  .content {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .props {
+    inline-size: auto;
+    border-inline-start: none;
+    border-block-start: 1px solid var(--ui-line-soft);
+  }
 }
 
 /* Ширина не ограничивается: показ занимает всё, что дали. Сетка вариаций растёт в стороны, и
@@ -410,18 +500,6 @@ body {
 }
 
 .axes__select:focus-visible {
-  outline: var(--ui-focus);
-}
-
-/* Настройка-признак — выключателем, а не списком из «да» и «нет»: паспорт объявляет её признаком,
-   и показать её выбором значило бы соврать о типе пропа. */
-.axes__flag {
-  inline-size: var(--ui-gap-4);
-  block-size: var(--ui-gap-4);
-  accent-color: var(--ui-accent);
-}
-
-.axes__flag:focus-visible {
   outline: var(--ui-focus);
 }
 
