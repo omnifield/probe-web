@@ -319,6 +319,9 @@ importers:
       postcss-nested:
         specifier: ^7.0.2
         version: 7.0.2(postcss@8.5.26)
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
