@@ -2,7 +2,7 @@
   "name": "@probe-web/presets",
   "version": "0.0.0",
   "private": true,
-  "description": "Зона presets: служба, которая хранит непрозрачный JSON и отдаёт обратно. Формата фильтра НЕ понимает (kb:PROBEWEB-8). Приватная — в реестр не едет (kb:PROBEWEB-5).",
+  "description": "Зона presets: служба, которая хранит непрозрачный JSON и отдаёт обратно. Формата фильтра НЕ понимает (PROBEWEB-8). Приватная — в реестр не едет (PROBEWEB-5).",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {

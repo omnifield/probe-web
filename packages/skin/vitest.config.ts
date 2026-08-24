@@ -12,7 +12,7 @@ import { defineConfig } from "vitest/config";
 //     же причина, что у зон `ui`, `runtime` и `assembly`).
 //
 // Пресет `@omnifield/probe-web-build/vitest` сюда НЕ подключается: направление зависимостей
-// между зонами одностороннее (`kb:PROBEWEB-4`), и пресет не для собственных проб пакета.
+// между зонами одностороннее (`PROBEWEB-4`), и пресет не для собственных проб пакета.
 
 export default defineConfig({
   test: {

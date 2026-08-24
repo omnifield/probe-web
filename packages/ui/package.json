@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-ui",
   "version": "0.1.0",
-  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (kb:PROBEWEB-4).",
+  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -24,11 +24,11 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "pnpm run generate && node scripts/build.mjs",
+    "build": "node scripts/build.mjs",
     "generate": "node scripts/generate.mjs",
-    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
-    "test": "pnpm run build && vitest run"
+    "test": "vitest run"
   },
   "//nx": [
     "ПОРОЖДЕНИЕ — ОТДЕЛЬНЫЙ ШАГ СО СВОИМИ ВЫХОДАМИ (`PWEB-86`).",
@@ -59,9 +59,9 @@
         "outputs": ["{projectRoot}/src/passport.ts", "{projectRoot}/src/kit.ts"]
       },
       "build": { "dependsOn": ["^build", "generate"] },
-      "typecheck": { "dependsOn": ["^build", "generate"] },
-      "lint": { "dependsOn": ["^build", "generate"] },
-      "test": { "dependsOn": ["^build", "generate"] }
+      "typecheck": { "dependsOn": ["build", "^build"] },
+      "lint": { "dependsOn": ["build", "^build"] },
+      "test": { "dependsOn": ["build", "^build"] }
     }
   },
   "dependencies": {

@@ -63,7 +63,7 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   // отдаёт адрес внутреннему — тому, чем узел является визуально (`PWEB-25`).
   //
   // `data-slot` пока остаётся рядом с адресом анатомии: имена слотов — обязательство зоны
-  // (`kb:PROBEWEB-12`, п.7), и снять его без мажора нельзя. Уедет он вместе с переездом
+  // (`PROBEWEB-12`, п.7), и снять его без мажора нельзя. Уедет он вместе с переездом
   // оформления на адреса анатомии — это выпуск architect'а, а не побочная правка кита.
   return <KobalteButton {...slot} {...(clean as ButtonRootProps)} {...address} />;
 });

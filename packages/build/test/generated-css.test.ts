@@ -26,6 +26,18 @@ const depDir = resolve(here, "fixture-dep");
 const depDist = join(depDir, "dist");
 const depMarks = join(depDir, "src", "css", "marks.ts");
 const depWritten = join(depDist, "css", "written.css");
+/**
+ * СВОЙ угол в сборке соседа — `dist/css`, и трогает проба только его (`PWEB-100`).
+ *
+ * Раньше здесь убиралась вся `dist` соседа, и это стоило мигающей пробы: раннер гоняет файлы
+ * ПАРАЛЛЕЛЬНО, а `dev-source.test.ts` кладёт в ту же папку свой `built.js` и тут же проверяет,
+ * что он на месте. Один прогон из трёх-пяти он находил пустоту — и краснела чужая проба, не эта.
+ *
+ * Общий ресурс делится по объявлению, а не по удаче: каждая проба убирает ровно то, что сама
+ * кладёт. Последовательный прогон файлов «починил» бы симптом и оставил связь, которая
+ * выстрелит на следующем соседе.
+ */
+const depDistCss = join(depDist, "css");
 
 /** Модуль приложения, тянущий CSS-подпуть, который сосед порождает. */
 const MADE_PROBE = "/src/generated-css-probe.ts";
@@ -33,9 +45,9 @@ const MADE_PROBE = "/src/generated-css-probe.ts";
 /** Модуль приложения, тянущий CSS-подпуть того же соседа, у которого порождателя нет. */
 const WRITTEN_PROBE = "/src/written-css-probe.ts";
 
-/** Убирает сборку соседа целиком — состояние свежего клона, где `build` ещё не запускали. */
+/** Убирает СВОЙ угол сборки соседа — состояние свежего клона, где `build` ещё не запускали. */
 function removeDist(): void {
-  rmSync(depDist, { recursive: true, force: true });
+  rmSync(depDistCss, { recursive: true, force: true });
 }
 
 /** Кладёт написанный руками CSS соседа — тот, который перехватывать НЕЛЬЗЯ. */
@@ -109,8 +121,10 @@ describe("свежий клон: CSS соседа порождается в мо
     removeDist();
   });
 
-  it("сборки соседа не существует — проба зеленеет не от файла на диске", () => {
-    expect(existsSync(depDist)).toBe(false);
+  it("собранного CSS соседа не существует — проба зеленеет не от файла на диске", () => {
+    // Спрашиваем про СВОЙ угол (`dist/css`), а не про всю `dist`: соседняя проба держит в той
+    // же папке свой файл, и вопрос «есть ли там вообще что-нибудь» отвечал бы про неё.
+    expect(existsSync(depDistCss)).toBe(false);
   });
 
   it("браузер идёт по адресу CSS-подпутя соседа", () => {
@@ -129,9 +143,9 @@ describe("свежий клон: CSS соседа порождается в мо
 
       const updated = await fetchUntil(server, cssImport(probe), "--fixture-gamma");
       expect(updated).toContain("--fixture-gamma");
-      // Сборки соседа не появилось и от этого: свежесть держится порождением, а не тем, что
+      // Собранного CSS не появилось и от этого: свежесть держится порождением, а не тем, что
       // кто-то по дороге собрал пакет.
-      expect(existsSync(depDist)).toBe(false);
+      expect(existsSync(depDistCss)).toBe(false);
     } finally {
       writeFileSync(depMarks, original, "utf8");
     }

@@ -58,7 +58,7 @@ export const block = (css: string, selector: string): Record<string, string> | u
 };
 
 /**
- * Правила, которые подходят документу БЕЗ имени палитры. После `kb:PROBEWEB-18` это законное
+ * Правила, которые подходят документу БЕЗ имени палитры. После `PROBEWEB-18` это законное
  * состояние: атрибута нет — красить нечему, но геометрия обязана работать.
  */
 export const unthemedRules = (...files: string[]): Rule[] =>

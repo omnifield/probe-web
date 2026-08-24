@@ -299,7 +299,7 @@ export const EXPECTED_SURFACE = [
  * по дороге в декларации, роняет прогон у нас, а не сборку у потребителя.
  *
  * `Color` попал сюда не по нашему выбору: он уже стоит в публичных пропах `ColorArea` и
- * `ColorSlider` (`kb:PROBEWEB-4`, поправка 2026-08-18). Цена связи с `@kobalte/core` названа в
+ * `ColorSlider` (`PROBEWEB-4`, поправка 2026-08-18). Цена связи с `@kobalte/core` названа в
  * `src/colors.ts`.
  */
 export const EXPECTED_TYPE_SURFACE = ["Color"];

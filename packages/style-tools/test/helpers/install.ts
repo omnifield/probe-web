@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 // Это НАМЕРЕННАЯ КОПИЯ такой же механики зоны `packages/style`, а не общий модуль: пакеты
 // разъезжаются в самостоятельные поставки, и общий тестовый модуль между ними стал бы
 // связью ровно там, где мы её только что разрезали. Тот же довод, по которому `trace`
-// живёт копией в двух пакетах (`kb:PROBEWEB-4`).
+// живёт копией в двух пакетах (`PROBEWEB-4`).
 
 export const PKG = "@omnifield/probe-web-style-tools";
 export const pkgRoot = resolve(import.meta.dirname, "..", "..");

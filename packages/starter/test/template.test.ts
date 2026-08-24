@@ -49,7 +49,7 @@ describe("манифест скелета", () => {
 
   it("берёт версии наших пакетов настройками, а не хардкодом", () => {
     // Версию в шаблоне не хардкодим: дефолт проставляет architect при публикации, и
-    // незаполненная у локации настройка едет за нашими выпусками (`kb:PROBEWEB-4`).
+    // незаполненная у локации настройка едет за нашими выпусками (`PROBEWEB-4`).
     // Это же снимает блокировку между зонами — starter не ждёт ничьей публикации.
     const source = readTemplate("package.json.ejs");
     for (const setting of ["runtimeVersion", "buildVersion", "uiVersion", "styleVersion"]) {
@@ -86,7 +86,7 @@ describe("манифест скелета", () => {
 
   it("называет style явно, а не транзитивно через ui", () => {
     // Приложение импортирует CSS стилевого слоя напрямую (`main.tsx`), а строгий менеджер
-    // пакетов транзитивный импорт не разрешит. Это не избыточность (`kb:PROBEWEB-4`).
+    // пакетов транзитивный импорт не разрешит. Это не избыточность (`PROBEWEB-4`).
     const own = render(defaults);
     expect(own.dependencies).toHaveProperty(STYLE);
     expect(readTemplate("main.tsx")).toContain(`"${STYLE}/base.css"`);
@@ -116,7 +116,7 @@ describe("сборка у потребителя", () => {
     // проба по сырому тексту падала бы на собственной доке.
     const code = config.replace(/^\s*\/\/.*$/gm, "").trim();
     // Всё, что обязано двигаться, спрятано за точкой: назови плагин или порт здесь —
-    // и он замёрзнет у каждого потребителя навсегда (`kb:PROBEWEB-4`).
+    // и он замёрзнет у каждого потребителя навсегда (`PROBEWEB-4`).
     expect(code).not.toMatch(/solid|plugins|\bserver\b|\bport\b/);
     expect(code.split("\n")).toHaveLength(3);
   });

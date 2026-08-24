@@ -1,6 +1,12 @@
-// harness-config.mjs — единый источник роль-модели как ДАННЫХ (kb:BRAIN2-12): читает
-// `.omnifield/harness.yaml` (пресет-сид, доставленный плагином mode:seed) и отдаёт хукам
-// зоны/пути, пины моделей, число архитекторов, git-доступ по роли. Ноль хардкода зон.
+// harness-config.mjs — единый источник роль-модели как ДАННЫХ: читает `.claude/harness.yaml`
+// и отдаёт хукам зоны/пути, пины моделей, число архитекторов, git-доступ по роли. Ноль
+// хардкода зон.
+//
+// ДОМ ФАЙЛА СМЕНИЛСЯ (2026-08-24). Раньше конфиг лежал в `.omnifield/` — пространстве имён
+// станка, который клал его сюда сидом. Станка больше нет, и держать живой файл в его папке
+// значило бы поминать покойника при каждой правке. Вместе с домом сняты слоты, адресовавшие
+// службы, которых тоже не стало: `services`, `checkpoints`, `grabli`, `pilots`. Обвес больше
+// не рассказывает сессии, куда ходить, — он отвечает только за то, что проверяет машиной.
 //
 // Зависимостей нет (хуки Claude Code стартуют голым node). YAML парсится подмножеством
 // (scalar + вложенные map'ы + inline flow-массив `[a, b]` для paths[] — ровно то, что нужно
@@ -37,20 +43,6 @@ export const DEFAULT_CONFIG = {
   models: { ...MODEL_DEFAULTS },
   zones: {},
   git: { ...GIT_INVARIANT },
-  // Слот grabli (BRAIN2-7): куда агенты пишут затыки/грабли. Дефолта нет — если продукт
-  // не задал, запись грабли не адресована (правило рамки остаётся, но канал не сконфигурен).
-  grabli: null,
-  // Слот services (BRAIN2-9): базы omnifield-сервисов — доступ curl'ом (НЕ MCP). Адрес
-  // зависит от окружения (сосед по docker-сети vs дверь через хост). null → не сконфигурен.
-  services: null,
-  // Слот pilots (BRAIN2-59): раздел пилотов — общая площадка продуктов, где меха обкатывается
-  // ДО каталога канонов. Ключи — имена сервисов (как в services): знание в knowledger, работа
-  // и ступень в tasker. null → продукт раздела не знает, правило молчит.
-  pilots: null,
-  // Слот checkpoints (BRAIN2-58): корень чекпойнтов ролей — состояние прогона, чтобы
-  // переезд/рестарт контейнера не стоил сессии. null → продукт раздела не завёл, и тогда
-  // харнесс про чекпойнт МОЛЧИТ (адрес не выдумываем), как и с grabli.
-  checkpoints: null,
 };
 
 /** Коэрция скалярного YAML-значения: quotes strip, int, bool, иначе строка. */
@@ -141,55 +133,20 @@ export function normalizeConfig(parsed) {
     models: { ...MODEL_DEFAULTS, ...(c.models && typeof c.models === "object" ? c.models : {}) },
     zones: normalizeZones(c.zones),
     git: { ...GIT_INVARIANT, ...(c.git && typeof c.git === "object" ? c.git : {}) },
-    grabli: c.grabli && typeof c.grabli === "object" ? c.grabli : DEFAULT_CONFIG.grabli,
-    services: c.services && typeof c.services === "object" ? c.services : DEFAULT_CONFIG.services,
-    checkpoints:
-      c.checkpoints && typeof c.checkpoints === "object"
-        ? c.checkpoints
-        : DEFAULT_CONFIG.checkpoints,
-    pilots: c.pilots && typeof c.pilots === "object" ? c.pilots : DEFAULT_CONFIG.pilots,
   };
 }
 
-/** Целевой ws для записи граблей/затыков (BRAIN2-7), либо null если слот не сконфигурен. */
-export function grabliTarget(config) {
-  const ws = config?.grabli?.workspace;
-  return typeof ws === "string" && ws.trim() ? ws.trim() : null;
-}
-
-/** База сервиса (`tasker`/`knowledger`) из слота services — доступ curl'ом; null если не задан. */
-export function serviceBase(config, name) {
-  const b = config?.services?.[name];
-  return typeof b === "string" && b.trim() ? b.trim().replace(/\/+$/, "") : null;
-}
-
 /**
- * Раздел пилотов в сервисе (`tasker`/`knowledger`) из слота pilots (BRAIN2-59) — ws, где меха
- * живёт до каталога канонов; null, если не задан. Ключи те же, что у `services`: раздел
- * двусторонний (знание в knowledger, работа и ступень в tasker), и адрес у каждой стороны свой.
- * Сами ступени и критерии выхода здесь НЕ живут — они данные раздела, канон в `kb:PILOT-1`.
+ * Читает `.claude/harness.yaml` из cwd; нет файла/парс упал → DEFAULT_CONFIG.
+ *
+ * Деградация БЕЗОПАСНА, но НЕ безобидна: зоны пусты → ни один owner-scope не резолвится, и
+ * governance режет ему всякую правку («boundary неизвестна»). Это верное поведение — владелец
+ * без границы опаснее владельца без прав, — но означает, что пропажу файла увидит первым
+ * овнер, а не тот, кто её устроил. Поэтому её отдельно называет doctor.
  */
-export function pilotWorkspace(config, service) {
-  const ws = config?.pilots?.[service];
-  return typeof ws === "string" && ws.trim() ? ws.trim() : null;
-}
-
-/**
- * Корень чекпойнтов ролей (BRAIN2-58): `{ workspace, root }`, либо null — слот не объявлен.
- * Адрес несёт `root` (ключ узла-корня): без него называть нечего, и правило молчит целиком.
- * `workspace` справочный (в каком ws искать) — пуст, значит null, но адрес остаётся годным.
- */
-export function checkpointsTarget(config) {
-  const root = config?.checkpoints?.root;
-  if (typeof root !== "string" || !root.trim()) return null;
-  const ws = config?.checkpoints?.workspace;
-  return { workspace: typeof ws === "string" && ws.trim() ? ws.trim() : null, root: root.trim() };
-}
-
-/** Читает `.omnifield/harness.yaml` из cwd; нет файла/парс упал → DEFAULT_CONFIG. */
 export function loadConfig(cwd = process.cwd()) {
   try {
-    const text = readFileSync(join(cwd, ".omnifield", "harness.yaml"), "utf8");
+    const text = readFileSync(join(cwd, ".claude", "harness.yaml"), "utf8");
     return normalizeConfig(parseYaml(text));
   } catch {
     return { ...DEFAULT_CONFIG, git: { ...GIT_INVARIANT } };
@@ -290,11 +247,11 @@ export function knownScopes(config) {
  * Расстояние Дамерау—Левенштейна, вариант с СОСЕДНИМИ перестановками (OSA): вставка ·
  * удаление · замена · перестановка соседей — каждая ценой 1. Перестановка самый частый класс
  * человеческой опечатки, и по коротким именам зон промахиваются именно так: на чистом
- * Левенштейне `mian` против `main` стоило две правки и в порог не попадало (tasker:BRAIN2-63).
+ * Левенштейне `mian` против `main` стоило две правки и в порог не попадало.
  * Полный unrestricted-вариант тут не нужен — этого класса достаточно.
  *
  * Двадцать строк внутри вместо готовой либы — осознанно: обвес ставится в ЧУЖИЕ репозитории,
- * и ноль зависимостей у него дороже (решение architect, tasker:BRAIN2-61).
+ * и ноль зависимостей у него дороже (решение architect, ).
  */
 export function editDistance(a, b) {
   if (a === b) return 0;

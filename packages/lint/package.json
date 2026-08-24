@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-lint",
   "version": "0.1.0",
-  "description": "Пресет ESLint поверх eslint-plugin-solid: канон Solid, выраженный машиной (kb:PROBEWEB-4).",
+  "description": "Пресет ESLint поверх eslint-plugin-solid: канон Solid, выраженный машиной (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -23,7 +23,7 @@
     "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
-    "test": "pnpm run build && vitest run"
+    "test": "vitest run"
   },
   "dependencies": {
     "@babel/core": "^8.0.1",

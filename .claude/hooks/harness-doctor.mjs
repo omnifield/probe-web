@@ -15,7 +15,7 @@
 // не может (режимов материализации в записи нет, `merge` отменён), поэтому деградацию делаем
 // ГРОМКОЙ: доктор сверяет эталонный блок регистрации с настоящим settings.json и печатает
 // строку, которую нужно дописать. Это не обход формы — механизм не подменяется, называется то,
-// что механизм назвать не может (tasker:BRAIN2-41 §4).
+// что механизм назвать не может.
 
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -23,20 +23,16 @@ import { dirname, join, resolve } from "node:path";
 import { argv } from "node:process";
 import { fileURLToPath } from "node:url";
 import {
-  checkpointsTarget,
   gitAccess,
-  grabliTarget,
   knownScopes,
   loadConfig,
   needsOnboarding,
   overlappingZones,
   PLACEHOLDER_PRODUCT,
   parseYaml,
-  pilotWorkspace,
   rejectedZoneNames,
   resolveScope,
   roleOf,
-  serviceBase,
   validateConfig,
   zonePaths,
   zoneReality,
@@ -107,65 +103,30 @@ export function registrationFix(missing) {
 }
 
 /**
- * Где лежит эталонный блок регистрации. Объявление у него ОДНО (`settings.hooks.json` в
- * contentRoot обвеса) — ищем его там, где в этой раскладке живёт содержимое обвеса:
- *   1) рядом с самим доктором (`harness/hooks/` → `harness/`) — исходник и ручной бандл;
- *   2) у потребителя доктор лежит в `.claude/hooks/`, а содержимое — в пакете: находим пакет
- *      по ЛИЧНОСТИ среди объявленных в `baser.json` (имя пакета — доставка, оно переезжает).
- * Не нашли — говорим вслух: проверка НЕ выполнена (молчаливый зелёный хуже отсутствующего).
+ * ЭТАЛОН РЕГИСТРАЦИИ — здесь, рядом с хуками, которые он называет.
+ *
+ * Раньше эталон искался в пакете обвеса: его клал станок, и `baser.json` говорил, в каком
+ * пакете смотреть. Станка нет, пакета нет, и искать больше негде — а проверка нужна: хук,
+ * лежащий в `.claude/hooks/` и не зарегистрированный в `settings.json`, не исполняется вовсе
+ * и молчит об этом.
+ *
+ * Поэтому эталон стал ДАННЫМИ этого файла. Он рядом с самими хуками: добавляя хук, его
+ * дописывают сюда — и доктор сразу говорит, чего не хватает в `settings.json`.
  */
-export function findRegistrationBlock(cwd, moduleUrl) {
-  const sibling = fileURLToPath(new URL(`../${REGISTRATION_BLOCK}`, moduleUrl));
-  if (existsSync(sibling)) return { path: sibling, via: "рядом с доктором (contentRoot обвеса)" };
-
-  const consumerManifest = join(cwd, "package.json");
-  if (!existsSync(consumerManifest)) return null;
-  let sources = [];
-  try {
-    sources = JSON.parse(readFileSync(join(cwd, "baser.json"), "utf8"))?.sources ?? [];
-  } catch {
-    return null;
-  }
-  const require = createRequire(consumerManifest);
-  for (const entry of sources) {
-    const use = entry?.use;
-    if (typeof use !== "string") continue;
-    try {
-      const manifestPath = require.resolve(`${use}/package.json`);
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      if (manifest?.baser?.source?.id !== SOURCE_ID) continue;
-      const path = join(
-        dirname(manifestPath),
-        manifest.baser.source.contentRoot,
-        REGISTRATION_BLOCK,
-      );
-      if (existsSync(path)) return { path, via: `пакет ${use}` };
-    } catch {
-      // пакет не резолвится / манифест не читается — идём к следующему источнику
-    }
-  }
-  return null;
-}
+export const EXPECTED_REGISTRATIONS = [
+  { event: "PreToolUse", matcher: "Bash|PowerShell", command: "node .claude/hooks/git-gate.mjs" },
+  {
+    event: "PreToolUse",
+    matcher: "Edit|Write|NotebookEdit|MultiEdit",
+    command: "node .claude/hooks/governance.mjs",
+  },
+  { event: "SessionStart", matcher: null, command: "node .claude/hooks/main-session-marker.mjs" },
+  { event: "SessionStart", matcher: null, command: "node .claude/hooks/scope-identity.mjs" },
+];
 
 /** Отчёт по регистрации хуков: строки для печати. */
-export function registrationReport(cwd, moduleUrl, { ok, bad, warn }) {
+export function registrationReport(cwd, _moduleUrl, { ok, bad, warn }) {
   const lines = [];
-  const ref = findRegistrationBlock(cwd, moduleUrl);
-  if (!ref) {
-    lines.push(warn("эталонный блок регистрации не найден — проверка хуков НЕ выполнена"));
-    lines.push(
-      `    → он живёт в пакете обвеса (${REGISTRATION_BLOCK}); поставь пакет либо запусти доктора из бандла.`,
-    );
-    return lines;
-  }
-  let block;
-  try {
-    block = JSON.parse(readFileSync(ref.path, "utf8"));
-  } catch {
-    lines.push(bad(`эталонный блок регистрации не читается: ${ref.path}`));
-    return lines;
-  }
-
   const settingsPath = join(cwd, CONSUMER_SETTINGS);
   let settings = null;
   try {
@@ -175,24 +136,21 @@ export function registrationReport(cwd, moduleUrl, { ok, bad, warn }) {
   }
   if (settings === null) {
     lines.push(bad(`${CONSUMER_SETTINGS} не найден/не читается — ни один хук не подключён`));
-    lines.push("    → положи файл заново (обвес кладёт его один раз, класс placed-once).");
+    lines.push("    → без него не работают ни граница зоны, ни git-гейт, ни баннер роли.");
     return lines;
   }
 
-  const declared = declaredRegistrations(block);
-  const missing = missingRegistrations(settings, block);
+  const declared = EXPECTED_REGISTRATIONS;
+  const missing = declared.filter((r) => !isRegistered(settings, r));
   if (!missing.length) {
     lines.push(
-      ok(
-        `хуки зарегистрированы в ${CONSUMER_SETTINGS}: ${declared.length}/${declared.length} (эталон — ${ref.via})`,
-      ),
+      ok(`хуки зарегистрированы в ${CONSUMER_SETTINGS}: ${declared.length}/${declared.length}`),
     );
   } else {
     lines.push(bad(`хуки НЕ зарегистрированы: ${missing.length} из ${declared.length}`));
     for (const r of missing)
       lines.push(`    - ${r.event}${r.matcher ? ` [${r.matcher}]` : ""} → ${r.command}`);
-    lines.push(`    ПРИЧИНА: ${CONSUMER_SETTINGS} кладётся один раз (placed-once) — регистрация`);
-    lines.push("    новых хуков сама не приезжает. Допиши в `hooks` вручную:");
+    lines.push("    Допиши в `hooks`:");
     for (const line of registrationFix(missing)) lines.push(`      ${line}`);
   }
 
@@ -219,7 +177,7 @@ export function registrationReport(cwd, moduleUrl, { ok, bad, warn }) {
 //
 // Наше дело — сказать ПРАВДУ о том, есть машина или нет: рамка требует зелёный pre-commit, и
 // агент, который считает, что его проверят, ведёт себя иначе, чем тот, кто знает, что не
-// проверят (случай owner-сессии baser, tasker:BRAIN2-52).
+// проверят (случай owner-сессии baser, ).
 
 /** Каталог `.git`: папка либо файл `gitdir: …` (worktree/submodule). null — репозитория нет. */
 export function gitDirOf(cwd) {
@@ -318,7 +276,7 @@ export function report(cwd, moduleUrl) {
   p("");
 
   // --- конфиг ----------------------------------------------------------------
-  const yamlPath = join(cwd, ".omnifield", "harness.yaml");
+  const yamlPath = join(cwd, ".claude", "harness.yaml");
   let raw = null;
   try {
     raw = parseYaml(readFileSync(yamlPath, "utf8"));
@@ -328,10 +286,10 @@ export function report(cwd, moduleUrl) {
   const config = loadConfig(cwd);
 
   if (!raw) {
-    p(bad(".omnifield/harness.yaml не найден/не читается"));
+    p(bad(".claude/harness.yaml не найден/не читается"));
     p("    → main-сессия заведётся на дефолте; owner-сессии НЕ смогут стартовать (нет зон).");
   } else {
-    p(ok(".omnifield/harness.yaml прочитан"));
+    p(ok(".claude/harness.yaml прочитан"));
     const av = raw.apiVersion ?? "(нет)";
     const kind = raw.kind ?? "(нет)";
     p(`    apiVersion: ${av} · kind: ${kind}  (справочно — станком не валидируются)`);
@@ -355,40 +313,9 @@ export function report(cwd, moduleUrl) {
     p(ok(`продукт: ${config.product}`));
   }
   p(`архитекторов сконфигурено: ${config.architects}`);
-  const grabli = grabliTarget(config);
-  if (grabli) p(ok(`grabli-ws: ${grabli} (затыки/грабли пишем сюда)`));
-  else p(warn("grabli-ws не задан (`grabli.workspace`) — канал записи граблей не сконфигурен"));
-  const tsk = serviceBase(config, "tasker");
-  const kb = serviceBase(config, "knowledger");
-  if (tsk || kb) {
-    p(ok(`services (доступ curl'ом, НЕ MCP): tasker=${tsk ?? "—"} · knowledger=${kb ?? "—"}`));
-    p(
-      `    проверь связь: curl -s ${tsk ?? "<tasker>"}/healthz  (нет ответа → сэндбокс off / смени адрес)`,
-    );
-  } else {
-    p(warn("services не заданы (`services.tasker/.knowledger`) — базы сервисов не сконфигурены"));
-  }
-  const pilotKb = pilotWorkspace(config, "knowledger");
-  const pilotTsk = pilotWorkspace(config, "tasker");
-  if (pilotKb || pilotTsk) {
-    p(
-      ok(
-        `раздел пилотов: knowledger=${pilotKb ?? "—"} · tasker=${pilotTsk ?? "—"} (ходит architect)`,
-      ),
-    );
-  } else {
-    p("  · раздел пилотов не задан (`pilots.tasker/.knowledger`) — правило молчит (штатно)");
-  }
-  const checkpoints = checkpointsTarget(config);
-  if (checkpoints) {
-    p(
-      ok(
-        `чекпойнты ролей: корень ${checkpoints.root}${checkpoints.workspace ? ` (ws ${checkpoints.workspace})` : ""} — адрес назовёт баннер роли`,
-      ),
-    );
-  } else {
-    p("  · чекпойнты не заданы (`checkpoints.root`) — про чекпойнт харнесс молчит (штатно)");
-  }
+  // Слоты служб (tasker/knowledger/grabli/пилоты/чекпойнты) сняты 2026-08-24 вместе с самими
+  // службами. Доктор про них молчит намеренно: строка «не сконфигурено» про то, чего не
+  // существует, читается как недоделка и раз за разом посылает чинить несуществующее.
   p("");
 
   // --- зоны ------------------------------------------------------------------

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { BASE_MARKER } from "../src/marker.js";
 import { readBuilt, rules } from "./helpers/css.js";
 
-// ГЕЙТ МАРКЕРА ПРИЕЗДА БАЗЫ (`tasker:PROBEWEB-78`, контракт — `kb:PROBEWEB-13`).
+// ГЕЙТ МАРКЕРА ПРИЕЗДА БАЗЫ (`PROBEWEB-78`, контракт — `PROBEWEB-13`).
 //
 // Пробы держат СВОЙСТВА маркера, а не его сегодняшнее имя: ни одна из них не знает, какой
 // именно это токен. Проба на строку сломалась бы при первом законном переименовании и не

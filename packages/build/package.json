@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-build",
   "version": "0.1.0",
-  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig и пресет vitest за тремя подпутями (kb:PROBEWEB-4).",
+  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig и пресет vitest за тремя подпутями (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -29,7 +29,7 @@
     "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
-    "test": "pnpm run build && vitest run"
+    "test": "vitest run"
   },
   "dependencies": {
     "vite-plugin-solid": "^2.11.14"
