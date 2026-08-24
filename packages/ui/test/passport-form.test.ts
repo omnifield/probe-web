@@ -28,6 +28,7 @@ import {
   GROUPS,
   groupOf,
   type PassportGenus,
+  type PassportMark,
   type PassportPart,
   type PassportState,
 } from "../src/passport-form.js";
@@ -285,6 +286,43 @@ describe("форма отвергает настройку не из переч�
     expect(() =>
       объявить({ вертикально: { means: "своё имя", values: { kind: "flag" }, byDefault: false } }),
     ).toThrow(/вертикально/);
+  });
+});
+
+// НАСТРОЙКА МОЖЕТ НЕСТИ `mark` — тем же типом, что состояние (`PassportState.mark`, `PWEB-104`).
+//
+// Поле необязательное: настройка меняет ПОВЕДЕНИЕ и не обязана иметь видимый след — `multiple` и
+// `collapsible` у гармошки своего атрибута не имеют вовсе. Проба стережёт обе стороны: старый
+// паспорт без поля собирается как прежде, а объявленный `mark` доезжает до паспорта без изменений.
+describe("настройка может нести mark — как у состояния", () => {
+  const анатомия = createAnatomy("проба-mark").parts("root");
+
+  const объявить = (mark?: PassportMark) =>
+    definePassport({
+      anatomy: анатомия,
+      package: "@проба/пакет",
+      genus: "component",
+      root: "root",
+      parts: [{ name: "root", means: "корень", states: [] }],
+      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      settings: {
+        multiple: {
+          means: "признак для пробы",
+          values: { kind: "flag" },
+          byDefault: false,
+          ...(mark ? { mark } : {}),
+        },
+      },
+    });
+
+  it("настройка без mark собирается как прежде — поле необязательно", () => {
+    expect(объявить().settings.multiple?.mark).toBeUndefined();
+  });
+
+  it("объявленный mark доезжает до паспорта как есть", () => {
+    const mark: PassportMark = { kind: "attribute", name: "data-multiple" };
+
+    expect(объявить(mark).settings.multiple?.mark).toEqual(mark);
   });
 });
 

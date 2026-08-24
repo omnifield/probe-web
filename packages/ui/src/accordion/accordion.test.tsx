@@ -517,6 +517,29 @@ describe("паспорт: настройки наблюдаемы на живо�
     );
   });
 
+  // Адрес настройки (`PassportSetting.mark`, `PWEB-104`): объявленный признак обязан совпасть с
+  // тем, что реально стоит на узле, — читая имя атрибута ИЗ паспорта, а не повторяя строку
+  // `"data-orientation"` руками, проба ловит расхождение объявления с разметкой, а не только факт
+  // наличия какого-то атрибута.
+  it("`orientation` несёт mark — тот же атрибут, что реально стоит на узле", () => {
+    const mark = passport.settings.orientation!.mark;
+
+    if (!mark || mark.kind !== "attribute") throw new Error("orientation.mark объявлен не атрибутом");
+
+    const узел = mount(() => <Справка value={["доставка"]} />);
+
+    expect(узел.querySelector(`[${mark.name}]`)?.getAttribute(mark.name)).toBe(
+      passport.settings.orientation!.byDefault,
+    );
+  });
+
+  it("`multiple` и `collapsible` mark не несут — у гармошки нет `data-multiple`/`data-collapsible`", () => {
+    // Ровно та находка, из-за которой поле в форме сделано необязательным: вывести адрес из имени
+    // настройки нельзя, у этих двух признака в разметке попросту нет.
+    expect(passport.settings.multiple!.mark).toBeUndefined();
+    expect(passport.settings.collapsible!.mark).toBeUndefined();
+  });
+
   it("`multiple` меняет ПОВЕДЕНИЕ: без неё раскрыт один раздел, с ней — два", async () => {
     const одиночная = mount(() => (
       <Accordion defaultValue={["доставка"]}>
