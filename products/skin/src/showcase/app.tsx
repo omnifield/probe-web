@@ -191,10 +191,8 @@ function Axes(props: {
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
-  settings: Readonly<Record<string, unknown>>;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
-  onSetting: (name: string, value: unknown) => void;
 }) {
   return (
     <div class="axes">
@@ -229,46 +227,77 @@ function Axes(props: {
           </For>
         </select>
       </label>
-
-      {/* ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ (`PWEB-89`) — рядом с осями, но это НЕ ось: вариация и
-          состояние показывают вид, настройка меняет поведение и разметку. Перечень объявляет
-          поставщик, и витрина своего не ведёт — иначе гармошка навсегда осталась бы такой,
-          какой её однажды показали: без закрытия последнего раздела и в одном положении. */}
-      <For each={settingsOf(props.component)}>
-        {(setting) => (
-          <label class="axes__field" title={setting.means}>
-            <span class="axes__label">{setting.title}</span>
-            <Show
-              when={setting.values.kind === "choice" ? setting.values : null}
-              fallback={
-                <input
-                  class="axes__flag"
-                  type="checkbox"
-                  checked={props.settings[setting.name] === true}
-                  onChange={(event) => props.onSetting(setting.name, event.currentTarget.checked)}
-                />
-              }
-            >
-              {(выбор) => (
-                <select
-                  class="axes__select"
-                  value={String(props.settings[setting.name] ?? setting.byDefault)}
-                  onChange={(event) => props.onSetting(setting.name, event.currentTarget.value)}
-                >
-                  <For each={выбор().options}>
-                    {(option) => (
-                      <option value={option.value} title={option.means}>
-                        {option.means}
-                      </option>
-                    )}
-                  </For>
-                </select>
-              )}
-            </Show>
-          </label>
-        )}
-      </For>
     </div>
+  );
+}
+
+/**
+ * ПАНЕЛЬ СВОЙСТВ — ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ (`PWEB-89`), отдельной колонкой справа.
+ *
+ * Не фильтр показа и не ось: вариация и состояние отбирают, какие случаи видно, а настройка
+ * меняет сам ЭКЗЕМПЛЯР — поведение и разметку, вертикальная гармошка и горизонтальная это разные
+ * клавиши и разные `aria`. Смешать её с осями значило бы поставить рядом два разных вопроса:
+ * «что показать» и «чем это является».
+ *
+ * Перечень объявляет ПОСТАВЩИК, витрина своего не ведёт — иначе гармошка навсегда осталась бы
+ * такой, какой её однажды показали: без закрытия последнего раздела и в одном положении.
+ *
+ * Компонент без объявленных настроек панель не рисует вовсе: пустая колонка сбоку — вопрос без
+ * ответа, а не честное «здесь настраивать нечего».
+ */
+function SettingsPanel(props: {
+  component: string;
+  settings: Readonly<Record<string, unknown>>;
+  onSetting: (name: string, value: unknown) => void;
+}) {
+  return (
+    <Show when={settingsOf(props.component).length > 0}>
+      <aside class="props">
+        <div class="props__head">
+          <b class="props__title">Свойства</b>
+          <span class="props__note">чем компонент может быть — задаёт поставщик</span>
+        </div>
+
+        <div class="props__list">
+          <For each={settingsOf(props.component)}>
+            {(setting) => (
+              <label class="props__field" title={setting.means}>
+                <span class="props__label">{setting.title}</span>
+                <Show
+                  when={setting.values.kind === "choice" ? setting.values : null}
+                  fallback={
+                    <input
+                      class="props__flag"
+                      type="checkbox"
+                      checked={props.settings[setting.name] === true}
+                      onChange={(event) =>
+                        props.onSetting(setting.name, event.currentTarget.checked)
+                      }
+                    />
+                  }
+                >
+                  {(выбор) => (
+                    <select
+                      class="props__select"
+                      value={String(props.settings[setting.name] ?? setting.byDefault)}
+                      onChange={(event) => props.onSetting(setting.name, event.currentTarget.value)}
+                    >
+                      <For each={выбор().options}>
+                        {(option) => (
+                          <option value={option.value} title={option.means}>
+                            {option.means}
+                          </option>
+                        )}
+                      </For>
+                    </select>
+                  )}
+                </Show>
+              </label>
+            )}
+          </For>
+        </div>
+      </aside>
+    </Show>
   );
 }
 
@@ -347,11 +376,9 @@ function Head(props: {
   records: readonly StoreRecord[] | undefined;
   failure: unknown;
   refusal: string | null;
-  settings: Readonly<Record<string, unknown>>;
   mode: SkinMode;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
-  onSetting: (name: string, value: unknown) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
   onMode: (mode: SkinMode) => void;
@@ -385,10 +412,8 @@ function Head(props: {
           variants={props.variants}
           variant={props.variant}
           state={props.state}
-          settings={props.settings}
           onVariant={props.onVariant}
           onState={props.onState}
-          onSetting={props.onSetting}
         />
       </div>
 
@@ -613,28 +638,40 @@ export function App() {
           records={records()}
           failure={records.error}
           refusal={refusal()}
-          settings={settings()}
           onVariant={setVariant}
           onState={setState}
-          onSetting={setSetting}
           onWear={wear}
           onTakeOff={takeOff}
           onMode={setMode}
         />
 
-        <main class="main">
-          <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+        {/* Показ и свойства — РЯДОМ, а не друг под другом: правка настройки должна быть видна на
+            том же экране, без прокрутки к панели и обратно. */}
+        <div class="content">
+          <main class="main">
+            <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+              {(component) => (
+                <ComponentPage
+                  component={component()}
+                  variants={variants()}
+                  variant={variant()}
+                  state={state()}
+                  settings={settings()}
+                />
+              )}
+            </Show>
+          </main>
+
+          <Show when={current()}>
             {(component) => (
-              <ComponentPage
+              <SettingsPanel
                 component={component()}
-                variants={variants()}
-                variant={variant()}
-                state={state()}
                 settings={settings()}
+                onSetting={setSetting}
               />
             )}
           </Show>
-        </main>
+        </div>
       </div>
     </div>
   );
