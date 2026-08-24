@@ -31,7 +31,11 @@
 // При равном числе состояний порядок — по происхождению: база, вариация, пересечение.
 // Пересечение собрано автором последним и последним же побеждает.
 
-import type { ComponentPassport, PassportState } from "@omnifield/probe-web-ui/passport";
+import type {
+  ComponentPassport,
+  PassportSetting,
+  PassportState,
+} from "@omnifield/probe-web-ui/passport";
 import { addressesView } from "@omnifield/probe-web-ui/passport";
 
 import {
@@ -96,6 +100,8 @@ export type SkinFlawName =
   | "unknown-component"
   | "unknown-part"
   | "unknown-state"
+  | "unknown-setting"
+  | "setting-unaddressable"
   | "view-unaddressable"
   | "unknown-ancestor"
   | "unknown-variant"
@@ -150,6 +156,14 @@ export interface RuleCoordinate {
    * автором рецепта.
    */
   readonly variants: readonly string[];
+  /**
+   * НАСТРОЙКИ, при которых правило действует: имя настройки → её значение.
+   *
+   * Пусто и отсутствует — при любых: настройка условием в этот адрес не входит. Отдельно от
+   * вариаций, хотя в селектор они встают одинаково: вариацию выбирает автор скина, настройку —
+   * тот, кто ставит компонент, и читателю адреса эта разница нужна (`PWEB-103`).
+   */
+  readonly settings?: Readonly<Record<string, string>>;
   /** Состояния СВОЕЙ части, набранные к этому правилу. */
   readonly states: readonly string[];
   /** Предок и его состояния — если правило от них зависит. */
@@ -565,6 +579,8 @@ interface Cursor {
   readonly prefix: string;
   /** Имена вариаций, при которых правило действует. Пусто — при любой. */
   readonly variants: readonly string[];
+  /** Настройки, при которых правило действует. Пусто — при любых. */
+  readonly settings?: Readonly<Record<string, string>>;
   /**
    * Состояния СВОЕЙ части, набранные к этому месту.
    *
@@ -590,17 +606,25 @@ interface Cursor {
 }
 
 /**
- * Вариация на входе обхода: селектор и ИМЕНА, которые он выражает.
+ * УСЛОВИЕ КОМПОНЕНТА на входе обхода: селектор и то, что он выражает.
  *
- * Пара, а не одна строка: селектор нужен печати, имена — адресу. Восстанавливать имена из
- * селектора обратно значило бы разбирать собственную же запись.
+ * Условий этого рода два — вариация и настройка, — и канал у них ОДИН (`PWEB-103`). Не для
+ * краткости: оба объявлены у компонента, оба живут на его узле, и оба обязаны встать в адрес
+ * одинаково — своим селектором на корне и предком на всякой другой части. Разведи мы их на два
+ * канала, второй пришлось бы учить тому же размещению заново, и разошлись бы они молча.
+ *
+ * Селектор и имена ПАРОЙ, а не одной строкой: селектор нужен печати, имена — адресу.
+ * Восстанавливать имена из селектора обратно значило бы разбирать собственную же запись.
  */
 interface Variant {
   readonly selector: string;
+  /** Имена вариаций, которые выражает селектор. */
   readonly names: readonly string[];
+  /** Настройки, при которых правило действует: имя настройки → её значение. */
+  readonly settings?: Readonly<Record<string, string>>;
 }
 
-/** «При любой вариации» — так адресована база. */
+/** «При любом условии компонента» — так адресована база. */
 const ANY_VARIANT: Variant = { selector: "", names: [] };
 
 /** Подпись правила из рецепта — его адрес. */
@@ -611,6 +635,7 @@ function coordinateOf(cursor: Cursor): { coordinate: RuleCoordinate } {
       part: cursor.part,
       variants: cursor.variants,
       states: cursor.states,
+      ...(cursor.settings ? { settings: cursor.settings } : {}),
       ...(cursor.ancestor ? { ancestor: cursor.ancestor } : {}),
     },
   };
@@ -846,6 +871,7 @@ function growPart<Mark>(
     // такие же известные имена, как ступени палитры, и разница только в том, кто их ставит.
     known: new Set([...walk.known, ...partVariables(passport, part)]),
     own: own + своя,
+    ...(variant.settings ? { settings: variant.settings } : {}),
     // Веса префикс не добавляет (`noWeight`): условие сюда поставила механика, а не автор, и
     // каскад от нашего решения сдвигаться не вправе.
     prefix: noWeight(корень),
@@ -931,9 +957,113 @@ function growRecipe<Mark>(
     growParts(passport, { selector, names: [name] }, 1, parts, at, walk);
   }
 
+  growSettings(passport, recipe, where, walk);
+
   for (const [index, compound] of (recipe.compoundVariants ?? []).entries()) {
     growCompound(passport, recipe, compound, `${where}.compoundVariants[${index}]`, walk);
   }
+}
+
+/**
+ * Разворачивает вид по НАСТРОЙКАМ — тем же обходом, что и вариации (`PWEB-103`).
+ *
+ * Своего размещения в адресе здесь НЕТ и заводиться не должно: условие уезжает в тот же канал
+ * (`Variant`), и куда его поставить — на свой селектор корня или предком для вложенной части —
+ * решает `growPart`, один раз и для обоих родов условия. Ровно поэтому эта функция не резолвит
+ * адрес, а только называет условие: она отвечает на «чем настройка видна», а не на «где она
+ * стоит».
+ *
+ * Порядок: настройки идут ПОСЛЕ базы и ДО вариаций, и происхождение у них общее с вариацией
+ * (`origin: 1`). Значит при равном весе побеждает вариация — вид, который автор скина выбрал
+ * САМ, а не тот, что достался ему от устройства компонента. Обратный порядок означал бы, что
+ * поворот гармошки перекрашивает кнопку мимо воли одевающего.
+ */
+function growSettings<Mark>(
+  passport: ComponentPassport,
+  recipe: SlotRecipe,
+  where: string,
+  walk: Walk<Mark>,
+): void {
+  for (const [name, byValue] of Object.entries(recipe.settings ?? {})) {
+    const at = `${where}.settings.${name}`;
+    const declared = passport.settings?.[name];
+
+    if (declared === undefined) {
+      walk.flaws.add(
+        "unknown-setting",
+        at,
+        `компонент «${passport.component}» настройки «${name}» не объявлял. Перечень настроек ` +
+          "закрыт и принадлежит тому, кто компонент написал: правило по выдуманному имени " +
+          "адресует то, чего у компонента нет",
+      );
+      continue;
+    }
+
+    // МЕСТА МОЖЕТ НЕ БЫТЬ, и это законно: настройка меняет ПОВЕДЕНИЕ и следа в разметке не
+    // обязана оставлять (`multiple`, `collapsible` у гармошки — ровно такие). Значит отвечаем
+    // прямо, а не порождаем правило, которое не встанет ни на один узел.
+    if (declared.mark === undefined) {
+      walk.flaws.add(
+        "setting-unaddressable",
+        at,
+        `настройка «${name}» компонента «${passport.component}» места в разметке не объявила ` +
+          "(`PassportSetting.mark`): она меняет поведение, а следа, за который цепляется вид, " +
+          "не оставляет. Адресовать нечем — правило встало бы мимо всех узлов",
+      );
+      continue;
+    }
+
+    if (declared.mark.kind !== "attribute") {
+      // Тот же довод, что у оси вариаций: значение настройки пишет потребитель в разметку, а
+      // псевдоклассы ставит браузер. Псевдоклассом настройка выражена быть не может.
+      walk.flaws.add(
+        "setting-unaddressable",
+        at,
+        `настройка «${name}» компонента «${passport.component}» выражена не атрибутом — её ` +
+          "значение в разметку не попадает, и адресовать его нечем",
+      );
+      continue;
+    }
+
+    for (const [value, parts] of Object.entries(byValue)) {
+      const место = `${at}.${value}`;
+
+      if (!settingValues(declared).includes(value)) {
+        walk.flaws.add(
+          "unknown-setting",
+          место,
+          `настройка «${name}» значения «${value}» не принимает. Принимает — ` +
+            `${settingValues(declared).join(", ")}; правило по чужому значению не встанет никуда`,
+        );
+        continue;
+      }
+
+      growParts(
+        passport,
+        {
+          // Признак настройки собирается ТЕМ ЖЕ переводом, что признак состояния (`markSelector`):
+          // вопрос у них один — чем условие видно в разметке, — и второго ответа на него быть не
+          // должно. Имя атрибута называет паспорт, значение называет рецепт.
+          selector: markSelector(value, { ...declared.mark, value: declared.mark.value ?? value }),
+          names: [],
+          settings: { [name]: value },
+        },
+        1,
+        parts,
+        место,
+        walk,
+      );
+    }
+  }
+}
+
+/** Значения, которые настройка принимает, — как объявил паспорт. */
+function settingValues(setting: PassportSetting): string[] {
+  return setting.values.kind === "choice"
+    ? setting.values.options.map((option) => option.value)
+    // Признак: у него два значения, и оба объявлены самим родом настройки. Перечня в паспорте нет
+    // не потому, что его забыли, — он выводится, и второй его копии заводить незачем.
+    : ["true", "false"];
 }
 
 /** Разворачивает одно пересечение: перечисленные вариации и состояния — в один адрес. */

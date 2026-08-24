@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { partSelector } from "../src/address.js";
-import type { LocalStyle, PartStyle, Skin } from "../src/model.js";
+import type { LocalStyle, PartStyle, PartStyles, Skin } from "../src/model.js";
 import { withPassports } from "../src/bound.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
@@ -491,6 +491,124 @@ describe("вариация живёт на КОРНЕ, а не на каждой
     const [база] = skinRules(поле({ props: { color: "green" } })).rules;
 
     expect(база!.selector).toBe('[data-scope="field"][data-part="control"]');
+  });
+});
+
+describe("настройка адресуется ТЕМ ЖЕ путём, что вариация (`PWEB-103`)", () => {
+  // Материал живой: гармошка объявляет `orientation` вместе с её местом в разметке
+  // (`mark: data-orientation`, `PWEB-104`), а `multiple` и `collapsible` — без места: они меняют
+  // поведение и следа не оставляют. Обе половины нужны, и обе проверяются здесь.
+
+  /** Рецепт гармошки, одевающий названную часть при горизонтальном положении. */
+  function положение(part: string, style: PartStyles[string] = { props: { color: "red" } }): Skin {
+    return {
+      name: "п",
+      recipes: {
+        accordion: { settings: { orientation: { horizontal: { [part]: style } } } },
+      },
+    };
+  }
+
+  it("на КОРНЕ — свой признак, без предка: там настройка и видна", () => {
+    const [правило] = skinRules(положение("root")).rules;
+
+    expect(правило!.selector).toBe(
+      '[data-scope="accordion"][data-part="root"][data-orientation="horizontal"]',
+    );
+  });
+
+  it("на ВЛОЖЕННОЙ части — через корень, тем же префиксом, что у вариации", () => {
+    // Тот же код и то же размещение: паспорт объявляет настройку у КОМПОНЕНТА, значит признак
+    // несёт его узел. Что Zag дублирует атрибут на все части — приятный факт, но полагаться на
+    // него значило бы гадать о чужой разметке.
+    const [правило] = skinRules(положение("item")).rules;
+
+    expect(правило!.selector).toBe(
+      ':where([data-scope="accordion"][data-part="root"][data-orientation="horizontal"]) ' +
+        '[data-scope="accordion"][data-part="item"]',
+    );
+  });
+
+  it("условие уезжает в АДРЕС правила, а не только в селектор", () => {
+    // Читателям адреса (покрытие, читаемость) нужно знать, что вид условный: иначе счёт сложит
+    // горизонтальный вид с вертикальным и посчитает пару, которой не бывает.
+    const [правило] = skinRules(положение("root")).rules;
+
+    expect(правило!.coordinate.settings).toEqual({ orientation: "horizontal" });
+    expect(правило!.coordinate.variants).toEqual([]);
+  });
+
+  it("состояния и предок поверх настройки складываются, а не спорят", () => {
+    const list = skinRules(
+      положение("itemContent", {
+        states: { closed: { props: { color: "blue" } } },
+        ancestors: [
+          {
+            component: "accordion",
+            part: "item",
+            states: ["open"],
+            style: { props: { color: "green" } },
+          },
+        ],
+      }),
+    ).rules;
+
+    for (const правило of list) {
+      expect(правило.selector).toContain('[data-orientation="horizontal"]');
+    }
+    expect(list.at(-1)!.selector).toContain("[data-state=\"open\"]");
+  });
+
+  it("настройки такой у компонента НЕТ — `unknown-setting`", () => {
+    const flaws = checkSkin({
+      name: "п",
+      recipes: { accordion: { settings: { нетакой: { да: { root: { props: { color: "red" } } } } } } },
+    });
+
+    expect(flaws.map((flaw) => flaw.name)).toEqual(["unknown-setting"]);
+    expect(flaws[0]!.means).toContain("нетакой");
+  });
+
+  it("значения такого настройка НЕ ПРИНИМАЕТ — тот же изъян, другое место", () => {
+    const flaws = checkSkin(положение("root")).length;
+    const кривое = checkSkin({
+      name: "п",
+      recipes: {
+        accordion: { settings: { orientation: { наискосок: { root: { props: { color: "red" } } } } } },
+      },
+    });
+
+    // Контроль рядом: на объявленном значении изъянов ноль, значит краснота ниже не случайна.
+    expect(flaws).toBe(0);
+    expect(кривое.map((flaw) => flaw.name)).toEqual(["unknown-setting"]);
+    expect(кривое[0]!.means).toContain("vertical");
+  });
+
+  it("МЕСТА У НАСТРОЙКИ НЕТ — `setting-unaddressable`, и это законный случай", () => {
+    // `multiple` меняет поведение и следа в разметке не оставляет. Прежде такое правило молча
+    // порождалось бы и не вставало никуда — ровно тот класс мёртвых правил, который чинится.
+    const flaws = checkSkin({
+      name: "п",
+      recipes: {
+        accordion: { settings: { multiple: { true: { root: { props: { color: "red" } } } } } },
+      },
+    });
+
+    expect(flaws.map((flaw) => flaw.name)).toEqual(["setting-unaddressable"]);
+    expect(flaws[0]!.means).toContain("поведение");
+  });
+
+  it("МЁРТВЫХ ПРАВИЛ не остаётся: изъян есть — правила нет", () => {
+    // Вторая половина того же: механика не только называет причину, но и не отдаёт адрес, по
+    // которому вид не приедет.
+    const { rules } = skinRules({
+      name: "п",
+      recipes: {
+        accordion: { settings: { multiple: { true: { root: { props: { color: "red" } } } } } },
+      },
+    });
+
+    expect(rules).toEqual([]);
   });
 });
 
