@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { partSelector } from "../src/address.js";
-import type { Skin } from "../src/model.js";
+import type { LocalStyle, Skin } from "../src/model.js";
 import { withPassports } from "../src/bound.js";
 import { buttonPassport, emptyLookup, fieldPassport, lookup } from "./passports.js";
 import { buttonSkin } from "./skins.js";
@@ -260,6 +260,121 @@ describe("именованные отказы", () => {
     });
 
     expect(flaws).toEqual(["unknown-part", "unknown-state"]);
+  });
+});
+
+describe("ненадёжный признак: вид отвергается, движение остаётся (`PWEB-99`)", () => {
+  // Материал ЖИВОЙ: у содержимого гармошки раскрытость объявлена вместе с оговоркой — признак
+  // приезжает не всегда (`absentWhen`). Пометку читает `addressesView` владельца формы, и проба
+  // проверяет именно тот случай, ради которого граница заведена.
+
+  /** Рецепт, одевающий содержимое гармошки по его СОБСТВЕННОЙ раскрытости. */
+  function поСвоему(style: LocalStyle): Skin {
+    return {
+      name: "п",
+      recipes: { accordion: { base: { itemContent: { states: { open: style } } } } },
+    };
+  }
+
+  it("вид по такому признаку — изъян", () => {
+    expect(names(поСвоему({ props: { height: "var(--height)" } }))).toEqual([
+      "view-unaddressable",
+    ]);
+  });
+
+  it("ДВИЖЕНИЕ по нему законно: иначе анимации раскрытия не написать вовсе", () => {
+    expect(names(поСвоему({ props: { animation: "раскрытие 200ms ease-out" } }))).toEqual([]);
+  });
+
+  it("адресовать состояние по-прежнему есть чем: правило порождается", () => {
+    const list = skinRules(поСвоему({ props: { animation: "раскрытие 200ms" } })).rules;
+
+    expect(list).toHaveLength(1);
+    expect(list[0]!.selector).toContain('[data-state="open"]');
+  });
+
+  it("движение и вид в одном блоке — изъян, и назван в нём ВИД, а не движение", () => {
+    const [flaw] = checkSkin(
+      поСвоему({ props: { animation: "раскрытие 200ms", height: "var(--height)" } }),
+    );
+
+    expect(flaw!.name).toBe("view-unaddressable");
+    expect(flaw!.where).toBe("recipes.accordion.base.itemContent.states.open.props");
+    expect(flaw!.means).toContain("height");
+    expect(flaw!.means).not.toContain("animation: ");
+  });
+
+  it("вид внутри at-правила прячется не лучше: условие меняет место, а не род", () => {
+    expect(
+      names(
+        поСвоему({ props: { "@media (min-width: 40rem)": { height: "var(--height)" } } }),
+      ),
+    ).toEqual(["view-unaddressable"]);
+  });
+
+  it("семейство, а не перечень имён: длинноты движения проходят обе", () => {
+    // `animationTimeline` и `transition-behavior` моложе исходных спецификаций. Выпиши мы имена
+    // поимённо, автор скина получал бы изъян на законном CSS, а починка была бы у нас.
+    expect(
+      names(
+        поСвоему({ props: { animationTimeline: "auto", "transition-behavior": "allow-discrete" } }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("МУТАЦИЯ: надёжный признак ТОГО ЖЕ ИМЕНИ изъяном не становится", () => {
+    // Раскрытость ПУНКТА объявлена без оговорки, и вид по ней законен. Решай проба по имени
+    // состояния, а не по пометке — покраснело бы и это.
+    expect(
+      names({
+        name: "п",
+        recipes: {
+          accordion: { base: { item: { states: { open: { props: { color: "red" } } } } } },
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it("тот же признак у ПРЕДКА — тот же изъян: условие стоит слева и приезжает не всегда", () => {
+    // Адрес здесь нарочно искусственный — содержимое пунктy не предок, — и предмет пробы не
+    // одежда, а вторая половина адреса: разбери обход только свои состояния, то же самое правило
+    // проходило бы зелёным, стоило написать его через предка.
+    expect(
+      names({
+        name: "п",
+        recipes: {
+          accordion: {
+            base: {
+              itemIndicator: {
+                ancestors: [
+                  {
+                    component: "accordion",
+                    part: "itemContent",
+                    states: ["open"],
+                    style: { props: { color: "red" } },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      }),
+    ).toEqual(["view-unaddressable"]);
+  });
+
+  it("правка образца читает состояния из того же паспорта — и получает тот же изъян", () => {
+    const { checkSketch } = withPassports(lookup);
+
+    expect(
+      checkSketch([
+        {
+          node: "узел-1",
+          component: "accordion",
+          part: "itemContent",
+          style: { states: { open: { props: { height: "var(--height)" } } } },
+        },
+      ]).map((flaw) => flaw.name),
+    ).toEqual(["view-unaddressable"]);
   });
 });
 

@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { skinGaps, type SkinGap } from "../src/coverage.js";
 import type { Skin } from "../src/model.js";
-import { buttonPassport, fieldPassport } from "./passports.js";
+import { accordionPassport, buttonPassport, fieldPassport } from "./passports.js";
 import { buttonSkin, dressedSkin } from "./skins.js";
 
 /** Пробелы одним компактным перечнем — сравнивать удобнее их, а пояснение читает человек. */
@@ -184,6 +184,31 @@ describe("границы", () => {
     expect(gaps).toContain("field.root:disabled");
     // Сам `control` при этом одет — правило с предком даёт вид именно ему.
     expect(gaps).not.toContain("field.control");
+  });
+
+  it("состояние, чей признак приезжает НЕ ВСЕГДА, в долг не идёт (`PWEB-99`)", () => {
+    const skin: Skin = {
+      name: "гармошка",
+      recipes: {
+        accordion: {
+          base: {
+            item: { props: { display: "flex" } },
+            itemContent: { props: { display: "block" } },
+          },
+        },
+      },
+    };
+    const gaps = shorthand(skinGaps(skin, [accordionPassport]));
+
+    // Раскрытость СОДЕРЖИМОГО объявлена с оговоркой: правило вида по ней было бы изъяном
+    // (`view-unaddressable`), и требовать её покрытие значило бы толкать автора ровно к тому, что
+    // механика тут же отвергнет.
+    expect(gaps).not.toContain("accordion.itemContent:open");
+    // Остальные состояния той же части в долг идут: пометка снимает одно состояние, а не часть.
+    expect(gaps).toContain("accordion.itemContent:closed");
+    // МУТАЦИЯ решением по имени: у ПУНКТА раскрытость надёжна, и вида она требует. Отбирай
+    // покрытие по имени состояния, а не по пометке — эта строка бы не сработала.
+    expect(gaps).toContain("accordion.item:open");
   });
 
   it("скин с изъяном считается тоже: человеку нужен ответ, а не отказ", () => {

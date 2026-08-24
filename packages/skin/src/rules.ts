@@ -31,19 +31,22 @@
 // При равном числе состояний порядок — по происхождению: база, вариация, пересечение.
 // Пересечение собрано автором последним и последним же побеждает.
 
-import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport, PassportState } from "@omnifield/probe-web-ui/passport";
+import { addressesView } from "@omnifield/probe-web-ui/passport";
 
 import {
   anyOf,
   ancestorSelector,
+  markSelector,
   nodeSelector,
   partSelector,
   safeName,
-  stateSelector,
+  stateOf,
   variantAlternatives,
   variantSelector,
   type PassportLookup,
 } from "./address.js";
+import { isMotion, MOTION_FAMILIES } from "./motion.js";
 import type {
   AncestorStyle,
   CompoundVariant,
@@ -67,6 +70,9 @@ import { note, trace } from "./trace.js";
  *  • `unknown-component`   — рецепт на компонент, паспорта у которого нет;
  *  • `unknown-part`        — части нет в анатомии компонента;
  *  • `unknown-state`       — состояния часть не объявляла;
+ *  • `view-unaddressable`  — ВИД адресован признаком, который приезжает не всегда: правило встало
+ *    бы не на все узлы. Сам адрес при этом законен — под ним законно ДВИЖЕНИЕ, ради которого
+ *    состояние и объявлено. Граница между ними — `motion.ts`;
  *  • `unknown-ancestor`    — компонента-предка или его части нет;
  *  • `unknown-variant`     — пересечение или умолчание называет вариацию, которой в рецепте нет;
  *  • `default-missing`     — вариации есть, а умолчание не названо;
@@ -83,6 +89,7 @@ export type SkinFlawName =
   | "unknown-component"
   | "unknown-part"
   | "unknown-state"
+  | "view-unaddressable"
   | "unknown-ancestor"
   | "unknown-variant"
   | "default-missing"
@@ -394,6 +401,20 @@ interface Walk<Mark> {
   mark(cursor: Cursor): Mark;
 }
 
+/**
+ * НЕНАДЁЖНЫЙ ПРИЗНАК, набранный в адрес: где он объявлен и само объявление.
+ *
+ * Хранится объявление целиком, а не одна оговорка из него: обстоятельство человеку читается
+ * оттуда же, откуда прочитано решение, и переписывать текст в своё поле значило бы завести вторую
+ * его копию. Записи заводятся ТОЛЬКО там, где `addressesView` сказал «виду не годится», — значит
+ * `absentWhen` у них объявлен по построению.
+ */
+interface UnreliableMark {
+  readonly component: string;
+  readonly part: string;
+  readonly state: PassportState;
+}
+
 /** ПЕРЕМЕННОЕ: где обход сейчас находится и что уже набрал в селектор. */
 interface Cursor {
   readonly passport: ComponentPassport;
@@ -418,6 +439,15 @@ interface Cursor {
    * наша часть, и записывать предку покрытие значило бы объявить одетым то, чему вида не дали.
    */
   readonly states: readonly string[];
+  /**
+   * Признаки адреса, которые приезжают НЕ ВСЕГДА, — свои и предка вперемешку.
+   *
+   * Пусто — адрес надёжен целиком, и правило под ним обычное. Непусто — вид по такому адресу
+   * встал бы не на все узлы, и законно здесь только движение (`motion.ts`). Копится по пути, а не
+   * спрашивается в конце: состояние, из-за которого адрес стал ненадёжным, набирается на одном
+   * уровне обхода, а правило рождается на другом — глубже или у предка.
+   */
+  readonly unreliable: readonly UnreliableMark[];
   /** Предок и его состояния, если обход спустился в правило от предка. */
   readonly ancestor?: RuleCoordinate["ancestor"];
   /** Число условий адреса — им задаётся порядок при равном весе селектора. */
@@ -453,6 +483,63 @@ function coordinateOf(cursor: Cursor): { coordinate: RuleCoordinate } {
   };
 }
 
+/**
+ * Имена свойств ВИДА в объекте — всё, что не движение.
+ *
+ * Вложенное считается вместе со своим владельцем: `@media` и псевдоэлемент меняют условие и
+ * место, а не род объявления — цвет внутри медиазапроса остаётся видом и под ненадёжным признаком
+ * встанет ровно так же не везде.
+ */
+function viewProperties(style: StyleObject): string[] {
+  const names: string[] = [];
+
+  for (const [key, value] of Object.entries(style)) {
+    if (value === undefined) continue;
+
+    if (typeof value === "object") {
+      names.push(...viewProperties(value));
+      continue;
+    }
+
+    if (!isMotion(key)) names.push(key);
+  }
+
+  return names;
+}
+
+/**
+ * Проверяет, что под НЕНАДЁЖНЫМ признаком стоит только движение.
+ *
+ * Отказ именованный и правило при этом ПОРОЖДАЕТСЯ — как и всякое правило с изъяном: гейт здесь
+ * не отбор, а `SkinRefused` у порождения, и вырезать половину записи за автора значило бы отдать
+ * ему вид, которого он не писал. Редактору же нужен ответ, а не молчание.
+ *
+ * Один изъян на блок, а не на свойство: причина у них одна и починка одна, а перечень из десяти
+ * строк утопил бы в себе ту, что читать надо.
+ */
+function checkMotionOnly(style: StyleObject, where: string, cursor: Cursor, flaws: Flaws): void {
+  if (cursor.unreliable.length === 0) return;
+
+  const view = viewProperties(style);
+  if (view.length === 0) return;
+
+  const marks = cursor.unreliable
+    .map(
+      ({ component, part, state }) =>
+        `«${state.name}» части «${part}» компонента «${component}» (${state.absentWhen})`,
+    )
+    .join("; ");
+
+  flaws.add(
+    "view-unaddressable",
+    where,
+    `вид адресован признаком, который приезжает не всегда: ${marks}. Правило встало бы не на все ` +
+      `узлы, и одевающий узнал бы об этом глазами, а не машиной. Под таким адресом законно только ` +
+      `движение (${MOTION_FAMILIES.join(", ")}), ради которого состояние и объявлено; вид ` +
+      `(${view.join(", ")}) адресуй через предка, который держит это состояние надёжно`,
+  );
+}
+
 /** Разворачивает вид под одним селектором: свои свойства, затем состояния части. */
 function growLocal<Mark>(
   cursor: Cursor,
@@ -462,6 +549,7 @@ function growLocal<Mark>(
 ): void {
   if (style.props && declares(style.props)) {
     checkStyle(style.props, `${where}.props`, cursor.known, walk.flaws, walk.homes);
+    checkMotionOnly(style.props, `${where}.props`, cursor, walk.flaws);
     walk.out.push({
       ...walk.mark(cursor),
       selector: cursor.prefix === "" ? cursor.own : `${cursor.prefix} ${cursor.own}`,
@@ -472,9 +560,9 @@ function growLocal<Mark>(
   }
 
   for (const [state, nested] of Object.entries(style.states ?? {})) {
-    const mark = stateSelector(cursor.passport, cursor.part, state);
+    const declared = stateOf(cursor.passport, cursor.part, state);
 
-    if (mark === undefined) {
+    if (declared === undefined) {
       walk.flaws.add(
         "unknown-state",
         `${where}.states.${state}`,
@@ -487,8 +575,17 @@ function growLocal<Mark>(
     growLocal(
       {
         ...cursor,
-        own: cursor.own + mark,
+        own: cursor.own + markSelector(state, declared.mark),
         states: [...cursor.states, state],
+        // Пометку читает `addressesView` ВЛАДЕЛЬЦА ФОРМЫ, а не наше условие по полю: читателей под
+        // вид уже несколько, и второе решение «годится ли признак адресом» разъехалось бы с первым
+        // молча, оставаясь зелёным.
+        unreliable: addressesView(declared)
+          ? cursor.unreliable
+          : [
+              ...cursor.unreliable,
+              { component: cursor.passport.component, part: cursor.part, state: declared },
+            ],
         conditions: cursor.conditions + 1,
       },
       nested,
@@ -508,7 +605,7 @@ function growAncestor<Mark>(
   const owner = walk.lookup(ancestor.component);
   const prefix = owner && ancestorSelector(owner, ancestor.part, ancestor.states);
 
-  if (!prefix) {
+  if (!owner || !prefix) {
     walk.flaws.add(
       "unknown-ancestor",
       where,
@@ -518,10 +615,22 @@ function growAncestor<Mark>(
     return;
   }
 
+  // Ненадёжный признак ПРЕДКА делает адрес ненадёжным ровно так же, как свой: вид получает наша
+  // часть, но условие стоит слева и приезжает не всегда. Разбери мы только свои состояния — то же
+  // самое правило проходило бы зелёным, стоило написать его через предка.
+  const unreliable = (ancestor.states ?? []).flatMap((state) => {
+    const declared = stateOf(owner, ancestor.part, state);
+
+    return declared && !addressesView(declared)
+      ? [{ component: ancestor.component, part: ancestor.part, state: declared }]
+      : [];
+  });
+
   growLocal(
     {
       ...cursor,
       prefix,
+      unreliable: [...cursor.unreliable, ...unreliable],
       ancestor: {
         component: ancestor.component,
         part: ancestor.part,
@@ -567,6 +676,8 @@ function growPart<Mark>(
     prefix: "",
     variants: variant.names,
     states: [],
+    // Адрес части сам по себе надёжен: ненадёжным его делают только состояния — свои и предка.
+    unreliable: [],
     conditions: 0,
     origin,
   };
@@ -880,6 +991,9 @@ export function sketchRules(
       prefix: "",
       variants: [],
       states: [],
+      // Правка образца адресует ОДНО МЕСТО, но состояния читает из того же паспорта — значит и
+      // ненадёжный признак у неё тот же самый, и правило по нему точно так же встанет не всегда.
+      unreliable: [],
       conditions: 0,
       origin: 0,
     };
