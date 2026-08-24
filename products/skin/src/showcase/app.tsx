@@ -22,6 +22,8 @@
 
 import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
+import { SkinRefused } from "@omnifield/probe-web-skin";
+import { OutfitRefused } from "@omnifield/probe-web-skin/model";
 import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   createResource,
@@ -38,6 +40,7 @@ import {
   listOutfits,
   SERVICE_HINT,
   SKIN_SOURCE,
+  StoreDown,
   type StoreRecord,
 } from "../skins/index.js";
 import {
@@ -82,6 +85,32 @@ const BY_GROUP = Object.entries(GROUPS)
 
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
+
+/**
+ * ПРИЧИНА ОТКАЗА — человеку, а не в отладчик.
+ *
+ * Сообщение механики в строку шапки не годится: оно многострочное и с ярлыком пакета. Изъяны при
+ * этом приезжают перечнем, и берётся ПЕРВЫЙ со счётом остальных: чинить начинают всё равно с
+ * одного, а весь перечень человек видит в редакторе, где правит запись.
+ *
+ * Подсказка про службу тут добавляется РОВНО одному случаю — когда службы и нет. Отказ сборки её
+ * не получает намеренно: служба жива, а чинится запись или паспорт в ките, и «подними службу»
+ * увело бы человека не туда.
+ */
+function reasonOf(cause: unknown): string {
+  if (cause instanceof OutfitRefused || cause instanceof SkinRefused) {
+    const [first] = cause.flaws;
+    const rest = cause.flaws.length - 1;
+
+    if (first === undefined) return cause.name;
+
+    return `${first.where}: ${first.means}${rest > 0 ? ` · и ещё изъянов: ${rest}` : ""}`;
+  }
+
+  if (cause instanceof StoreDown) return `${cause.message} · ${SERVICE_HINT}`;
+
+  return cause instanceof Error ? cause.message : String(cause);
+}
 
 /** Порог, за которым карточка перестаёт делить строку с соседями. */
 const WIDE_AT = 380;
@@ -271,6 +300,7 @@ function Head(props: {
   worn: string | null;
   records: readonly StoreRecord[] | undefined;
   failure: unknown;
+  refusal: string | null;
   mode: SkinMode;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
@@ -287,6 +317,11 @@ function Head(props: {
     if (props.failure !== undefined) {
       return `${String((props.failure as Error).message)} · ${SERVICE_HINT}`;
     }
+
+    // ТРЕТЬЕ состояние, и порядок здесь не случаен: службы нет — надевать нечего вообще, и об
+    // этом говорят первым. Отказ надевания идёт следом: список пришёл, скин выбран, а вида нет —
+    // без этой строки человек видел бы голый кит и ни слова о том, почему.
+    if (props.refusal !== null) return props.refusal;
 
     return (props.records?.length ?? 0) === 0 ? `Скинов в службе нет · ${EMPTY_HINT}` : null;
   };
@@ -385,10 +420,21 @@ export function App() {
    * незакрытым нельзя: необработанное отклонение человеку не говорит ничего и валит прогон проб
    * целиком, хотя на странице всё законно.
    */
+  // ОТКАЗ НАДЕВАНИЯ — состояние витрины, а не строка в отладчике. Сборка отвергает наряд целиком:
+  // запись, пережившая компонент, перестаёт собираться вся, — и молчащая витрина оставила бы
+  // человека с голым китом и без причины, при живой службе и полном списке скинов.
+  const [refusal, setRefusal] = createSignal<string | null>(null);
+
   const wearing = (attempt: Promise<SkinWorn | null>): void => {
-    void attempt.then(setWorn).catch((cause: unknown) => {
-      console.debug("скин не надет: служба отказала", cause);
-    });
+    void attempt
+      .then((next) => {
+        setRefusal(null);
+        setWorn(next);
+      })
+      .catch((cause: unknown) => {
+        console.debug("скин не надет", cause);
+        setRefusal(reasonOf(cause));
+      });
   };
 
   /** Сменить половину — значит надеть тот же скин в другой половине. Другого пути нет. */
@@ -436,7 +482,10 @@ export function App() {
         const [first] = await SKIN.names();
         if (first !== undefined) setWorn(await SKIN.wear(first, { remember: false }));
       } catch (cause) {
+        // Первый заход — тот самый случай, когда молчание дороже всего: человек ничего не выбирал
+        // и не узнал бы даже, что выбранное когда-то надевалось.
         console.debug("скин не надет на первом заходе", cause);
+        setRefusal(reasonOf(cause));
       }
     })();
   });
@@ -497,6 +546,7 @@ export function App() {
           mode={worn()?.mode ?? "light"}
           records={records()}
           failure={records.error}
+          refusal={refusal()}
           onVariant={setVariant}
           onState={setState}
           onWear={wear}
