@@ -378,6 +378,107 @@ describe("ненадёжный признак: вид отвергается, д
   });
 });
 
+describe("ссылку в кадрах судят ПО МЕСТУ ПРИМЕНЕНИЯ (`PWEB-101`)", () => {
+  // Материал ЖИВОЙ и он же тот, ради которого граница сдвинута: `--height` объявляет паспорт на
+  // содержимом гармошки, кит кладёт её туда же, и раскрытие пишется движением по тому же узлу.
+  // Прежде механика судила блок кадров САМ ПО СЕБЕ и отвечала «объявлена на другой части» — то
+  // есть спрашивала про элемент, которого в блоке нет вовсе.
+
+  /** Скин, применяющий движение на названной части гармошки. */
+  function применённое(...parts: string[]): Skin {
+    return {
+      name: "п",
+      keyframes: {
+        раскрытие: { from: { height: "0" }, to: { height: "var(--height)" } },
+      },
+      recipes: {
+        accordion: {
+          base: Object.fromEntries(
+            parts.map((part) => [part, { props: { animation: "раскрытие 320ms ease-out" } }]),
+          ),
+        },
+      },
+    };
+  }
+
+  it("на части, ОБЪЯВИВШЕЙ переменную, — законно", () => {
+    expect(names(применённое("itemContent"))).toEqual([]);
+  });
+
+  it("на части БЕЗ неё — изъян, и названы в нём ДВИЖЕНИЕ и ЧАСТЬ", () => {
+    const [flaw, ...остальные] = checkSkin(применённое("itemTrigger"));
+
+    expect(остальные).toEqual([]);
+    expect(flaw!.name).toBe("variable-elsewhere");
+    expect(flaw!.where).toBe("keyframes.раскрытие.to.height");
+    // Виноватые оба: без части человек не знает, куда переносить `animation:`, без движения — в
+    // какой блок кадров смотреть.
+    expect(flaw!.means).toContain("«раскрытие»");
+    expect(flaw!.means).toContain("accordion.itemTrigger");
+    expect(flaw!.means).toContain("accordion.itemContent");
+  });
+
+  it("применено на НЕСКОЛЬКИХ — законно там, где законно у каждой", () => {
+    const flaws = checkSkin(применённое("itemContent", "itemTrigger"));
+
+    // Ровно один: законная часть не утягивает за собой незаконную, а незаконная — законную.
+    expect(flaws).toHaveLength(1);
+    expect(flaws[0]!.means).toContain("accordion.itemTrigger");
+    expect(flaws[0]!.means).not.toContain("accordion.itemContent»");
+  });
+
+  it("МУТАЦИЯ: `PWEB-93` не ослаблена — не применённое движение судится прежним словарём", () => {
+    // Тот же блок кадров и та же одетая часть, но `animation:` не написан нигде: узла у движения
+    // нет, и разрешиться на странице могли бы только имена корня. Пройди он здесь зелёным —
+    // правило «переменная законна на своей части» обходилось бы записью движения, которое просто
+    // не применили.
+    const [flaw] = checkSkin({
+      ...применённое("itemContent"),
+      recipes: { accordion: { base: { itemContent: { props: { color: "red" } } } } },
+    });
+
+    expect(flaw?.name).toBe("variable-elsewhere");
+    expect(flaw?.means).toContain("не применено ни одним правилом");
+  });
+
+  it("имени нет ни у кого — тот же суд, другое имя изъяна", () => {
+    const skin = применённое("itemContent");
+    const [flaw] = checkSkin({
+      ...skin,
+      keyframes: { раскрытие: { to: { height: "var(--нет-такого)" } } },
+    });
+
+    expect(flaw?.name).toBe("unknown-value");
+    expect(flaw?.means).toContain("«раскрытие»");
+    expect(flaw?.means).toContain("accordion.itemContent");
+  });
+
+  it("применением считают `animation` и `animation-name`, а не всё семейство", () => {
+    // `animation-timeline` называет ШКАЛУ, а не движение. Спроси мы семейство целиком —
+    // совпадение имён выдумало бы применение там, где его нет, и человек чинил бы правило,
+    // которое ничего не применяет.
+    const длиннотой = применённое();
+    const место = (props: Record<string, string>): Skin => ({
+      ...длиннотой,
+      recipes: { accordion: { base: { itemContent: { props } } } },
+    });
+
+    expect(names(место({ animationName: "раскрытие" }))).toEqual([]);
+    expect(names(место({ animationTimeline: "раскрытие" }))).toEqual(["variable-elsewhere"]);
+  });
+
+  it("ФОРМА движения судится РАЗ, сколько бы мест ни было", () => {
+    // Пустая ступень остаётся пустой на любой части: повтори мы этот изъян по числу мест — человек
+    // получил бы один дефект в двух экземплярах и пошёл бы искать второй.
+    const flaws = checkSkin({
+      ...применённое("itemContent", "itemTrigger"),
+      keyframes: { раскрытие: { to: { height: "  " } } },
+    });
+
+    expect(flaws.filter((flaw) => flaw.name === "empty-value")).toHaveLength(1);
+  });
+});
+
 describe("пустое правило в вывод не едет", () => {
   it("часть без свойств правила не порождает", () => {
     const list = skinRules(
