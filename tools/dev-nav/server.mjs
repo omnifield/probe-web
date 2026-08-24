@@ -45,8 +45,36 @@ const CANDIDATES = [
   { id: "presets", label: "Служба пресетов (API)", port: 8787 },
 ];
 
-/** Какая зона показывается сейчас. */
-let current = CANDIDATES[0].id;
+/**
+ * Какая зона показывается КАЖДОМУ СМОТРЯЩЕМУ — своя, куки, а не общая переменная.
+ *
+ * Прежде здесь была одна `current` на весь сервер, и это дало реальный дефект (SKINED-5, п.4):
+ * двое смотрящих через один пульт видят одну и ту же зону, и переключение одного молча уносит
+ * вид другого — без единого клика с его стороны. Найдено не догадкой: `/__nav/switch` живым
+ * запросом переключил зону, `/__nav/status` живым запросом показал, что она сменилась у ВСЕХ.
+ *
+ * `defaultZone` — на кого ориентироваться совсем новому смотрящему, у которого куки ещё нет.
+ */
+let defaultZone = CANDIDATES[0].id;
+
+/** Куки запроса как карту имя→значение. Разбор узкий: нам нужно одно имя. */
+function cookiesOf(headers) {
+  const raw = headers["cookie"];
+  const map = new Map();
+  if (!raw) return map;
+  for (const part of raw.split(";")) {
+    const i = part.indexOf("=");
+    if (i === -1) continue;
+    map.set(part.slice(0, i).trim(), part.slice(i + 1).trim());
+  }
+  return map;
+}
+
+/** Зона ЭТОГО смотрящего — из его куки; нет куки или зона неведома — умолчание. */
+function zoneOf(headers) {
+  const zone = cookiesOf(headers).get("zone");
+  return zone && CANDIDATES.some((z) => z.id === zone) ? zone : defaultZone;
+}
 
 /** Корень репозитория. */
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -221,13 +249,16 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/__nav/status") {
     const zones = await survey();
     res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({ current, zones }));
+    res.end(JSON.stringify({ current: zoneOf(req.headers), zones }));
     return;
   }
 
   if (url.pathname === "/__nav/switch") {
     const wanted = url.searchParams.get("zone") ?? "";
-    if (CANDIDATES.some((zone) => zone.id === wanted)) current = wanted;
+    if (CANDIDATES.some((zone) => zone.id === wanted)) {
+      defaultZone = wanted; // умолчание для следующего НОВОГО смотрящего — не для уже открытых
+      res.setHeader("set-cookie", `zone=${wanted}; Path=/; SameSite=Lax`);
+    }
     res.writeHead(204);
     res.end();
     return;
@@ -242,9 +273,10 @@ const server = createServer(async (req, res) => {
     });
   }
 
-  // Всё остальное — выбранной зоне, путь как есть.
+  // Всё остальное — зоне ЭТОГО смотрящего (куки), путь как есть.
+  const zone = zoneOf(req.headers);
   const proxy = httpRequest(
-    { host: "127.0.0.1", port: portOf(current), path: req.url, method: req.method, headers: req.headers },
+    { host: "127.0.0.1", port: portOf(zone), path: req.url, method: req.method, headers: req.headers },
     (answer) => {
       res.writeHead(answer.statusCode ?? 502, answer.headers);
       answer.pipe(res);
@@ -255,7 +287,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(502, { "content-type": "text/html; charset=utf-8" });
     res.end(
       `<body style="font:14px system-ui;padding:24px;background:#14161a;color:#e6e8ec">
-       <p>Зона <b>${current}</b> не отвечает на порту ${portOf(current)}.</p>
+       <p>Зона <b>${zone}</b> не отвечает на порту ${portOf(zone)}.</p>
        <p>Подними её дев-сервер и нажми ↻ на пульте.</p></body>`,
     );
   });
@@ -269,7 +301,7 @@ server.on("upgrade", (req, socket, head) => {
   // Без этой строки её вебсокет уехал бы в зону и там оборвался.
   if ((req.url ?? "").startsWith(BASE)) return;
 
-  const upstream = connect({ host: "127.0.0.1", port: portOf(current) }, () => {
+  const upstream = connect({ host: "127.0.0.1", port: portOf(zoneOf(req.headers)) }, () => {
     upstream.write(
       `${req.method} ${req.url} HTTP/1.1\r\n` +
         Object.entries(req.headers)
