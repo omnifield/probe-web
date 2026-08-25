@@ -46,6 +46,10 @@ beforeAll(() => {
   // паспорта переехала физически, и зависимость на кит порвана вместе с ней. Разворачиватель
   // тоже не кладём: он и есть предмет проверки.
   link(install, "@omnifield/probe-web-style");
+  // НАСТОЯЩАЯ зависимость, не одноранговая (`PWEB-112`): `createAnatomy` реэкспортирован из
+  // `@zag-js/anatomy`, и `packages: "external"` у esbuild оставляет импорт внешним — установка
+  // обязана уметь его разрешить, как и всякий другой прод-пакет.
+  link(install, "@zag-js/anatomy");
 }, 120_000);
 
 afterAll(() => {
@@ -114,6 +118,19 @@ describe("разворачиватель необязателен: вложен�
     expect(printed).toBe("true");
   });
 
+  it("`createAnatomy` РАБОТАЕТ в установке — реэкспорт, а не только своя типизация (`PWEB-112`)", () => {
+    // Тот же довод, что у порождения выше: импорт мог бы пройти на ленивом графе, а объявление
+    // паспорта — нет, если бы реэкспорт был битым (не той версии, не той функции).
+    const printed = runInInstall(
+      install,
+      `import { createAnatomy } from ${JSON.stringify(PKG)};
+       const anatomy = createAnatomy("проба").parts("root");
+       console.log(anatomy.build().root.attrs["data-scope"]);`,
+    );
+
+    expect(printed).toBe("проба");
+  });
+
   it("а `./flat` в ТОЙ ЖЕ установке падает — положительный контроль", () => {
     // Без этой пробы зелёные три выше значили бы и «не нужен», и «до него не дошли».
     const refused = runInInstall(install, `await import(${JSON.stringify(`${PKG}/flat`)});`);
@@ -132,8 +149,12 @@ describe("разворачиватель необязателен: вложен�
       peerDependenciesMeta?: Record<string, { optional?: boolean }>;
     };
 
-    expect(manifest.dependencies).toBeUndefined();
+    // Разворачиватель — НЕ в `dependencies`, а в необязательном peer: обычная запись доставила
+    // бы его на диск даже тому, кто взял только вложенную форму. `@zag-js/anatomy` (`PWEB-112`) в
+    // `dependencies` законно стоит — это чужой предмет пробы, вес нулевой (пакет без своих
+    // зависимостей), и разворачивателя он не касается.
     for (const name of ["postcss", "postcss-nested"]) {
+      expect(manifest.dependencies?.[name]).toBeUndefined();
       expect(manifest.peerDependencies?.[name]).toBeDefined();
       expect(manifest.peerDependenciesMeta?.[name]?.optional).toBe(true);
     }

@@ -64,6 +64,7 @@ export type {
 export {
   addressesView,
   admits,
+  createAnatomy,
   defineSettings,
   definePassport,
   GROUPS,

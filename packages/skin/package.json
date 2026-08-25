@@ -32,6 +32,9 @@
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@zag-js/anatomy": "^1.43.1"
+  },
   "peerDependencies": {
     "@omnifield/probe-web-style": "^0.1.0",
     "postcss": "^8.5.14",
@@ -45,7 +48,6 @@
     "@omnifield/probe-web-style": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
-    "@zag-js/anatomy": "^1.43.1",
     "esbuild": "^0.27.7",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
