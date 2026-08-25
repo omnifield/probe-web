@@ -34,78 +34,15 @@
 // ради которого гейт заведён.
 
 import { ask, load, withChrome, type Call } from "@omnifield/live-check";
-import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
-import { build } from "esbuild";
-import { createRequire } from "node:module";
-import { dirname } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { referenceForms, referenceOutfit, referencePalette } from "../src/index.js";
 import { assemble, generateSkinCss, собранный } from "./assembled.js";
+import { движенияНа, координата, собратьКит, СТРАНИЦА, тык as тыкПо } from "./helpers/kit.js";
 
-const require = createRequire(import.meta.url);
-
-/** Адрес части — из анатомии кита, руками селекторы не пишем. */
-function координата(part: string): string {
-  const attrs = PASSPORTS["accordion"]!.anatomy.build()[part]!.attrs as Record<string, string>;
-
-  return Object.entries(attrs)
-    .map(([имя, значение]) => `[${имя}="${значение}"]`)
-    .join("");
-}
-
-const СОДЕРЖИМОЕ = координата("itemContent");
-const КНОПКА = координата("itemTrigger");
-const ПУНКТ = координата("item");
-
-/**
- * НАСТОЯЩИЙ КИТ В БРАУЗЕРЕ — собирается из поставки на месте, а не лежит рядом слепком.
- *
- * Точка входа берёт `solid-js` ТЕМ ЖЕ разрешением, что и сам кит: она собирается из папки его
- * поставки. Своей зависимости на реактивность зона не заводит — эталон это данные, ему Solid не
- * нужен ни на грамм; нужен он только этой странице, и берётся у того, кто его и так тянет.
- */
-async function собратьКит(): Promise<string> {
-  const вход = require.resolve("@omnifield/probe-web-ui");
-  const точка = `
-    import { render, createComponent } from "solid-js/web";
-    import { KIT } from ${JSON.stringify(вход)};
-
-    const { passport, parts } = KIT["accordion"];
-
-    const рисовать = (узел) =>
-      "genus" in узел
-        ? узел.value
-        : createComponent(parts[узел.part], {
-            ...узел.props,
-            get children() {
-              return (узел.children ?? []).map(рисовать);
-            },
-          });
-
-    render(() => рисовать(passport.assembly.tree), document.getElementById("корень"));
-    window.__собрано = true;
-  `;
-
-  const собрано = await build({
-    stdin: { contents: точка, resolveDir: dirname(вход), loader: "js" },
-    bundle: true,
-    format: "iife",
-    platform: "browser",
-    // Условие `solid` НЕ спрашиваем: оно отдаёт непреобразованный JSX, а трансформации у нас
-    // здесь нет. Берём ветку `default` — ту же, которой пользуется потребитель без Solid-сборки.
-    conditions: ["browser", "import", "default"],
-    write: false,
-    logLevel: "silent",
-  });
-
-  return собрано.outputFiles[0]!.text;
-}
-
-/** Страница: место для листа скина и корень, в который кит рисует свою сборку. */
-const СТРАНИЦА =
-  '<!doctype html><html><head><style id="скин"></style></head>' +
-  '<body><div id="корень"></div></body></html>';
+const СОДЕРЖИМОЕ = координата("accordion", "itemContent");
+const КНОПКА = координата("accordion", "itemTrigger");
+const ПУНКТ = координата("accordion", "item");
 
 /**
  * Снимок всех трёх разделов: что видно человеку, а не что написано в правиле.
@@ -240,24 +177,8 @@ function различных(кадры: number[][], индекс: number): numbe
   return new Set(кадры.map((кадр) => кадр[индекс]!)).size;
 }
 
-/** Настоящий тычок указателем по кнопке раздела — с координатами, снятыми ЗАНОВО. */
-async function тык(call: Call, номер: number): Promise<void> {
-  const где = JSON.parse(
-    await ask(call, `JSON.stringify(document.querySelectorAll('${КНОПКА}')[${номер}].getBoundingClientRect())`),
-  ) as { x: number; y: number; width: number; height: number };
-
-  const точка = { x: Math.round(где.x + где.width / 2), y: Math.round(где.y + где.height / 2) };
-
-  for (const type of ["mousePressed", "mouseReleased"] as const) {
-    await call("Input.dispatchMouseEvent", {
-      ...точка,
-      type,
-      button: "left",
-      clickCount: 1,
-      buttons: type === "mousePressed" ? 1 : 0,
-    });
-  }
-}
+/** Тычок по кнопке раздела — тем же общим приёмом, что и у горизонтального гейта. */
+const тык = (call: Call, номер: number): Promise<void> => тыкПо(call, КНОПКА, номер);
 
 /** Один прогон: поднять страницу под этим листом и этой настройкой движения, снять протокол. */
 async function прогон(call: Call, кит: string, css: string, тише: boolean): Promise<Протокол> {
@@ -326,7 +247,7 @@ const сМутацией = generateSkinCss(
 const протоколы: Record<string, Протокол> = {};
 
 beforeAll(async () => {
-  const кит = await собратьКит();
+  const кит = await собратьКит("accordion");
 
   await withChrome(async (call) => {
     протоколы["эталон"] = await прогон(call, кит, эталон, false);
@@ -401,15 +322,36 @@ describe("раскрытие и закрытие идут КАДРАМИ — о�
     expect(после[1]!.пункт).toBe("open");
   });
 
-  it("раскрываемый раздел идёт кадрами, а не прыжком", () => {
-    expect(различных(протоколы["эталон"]!.переключение, 1)).toBeGreaterThan(5);
-  });
+  it("раскрываемый и закрываемый разделы ЗАПУСКАЮТ настоящую анимацию, а не прыгают", async () => {
+    // Спрошено у Web Animations API СРАЗУ после тычка, а не сосчитано по кадрам своего
+    // `requestAnimationFrame`-опроса: подсчёт различных кадров под настоящей нагрузкой воркспейса
+    // (несколько Chromium и сборок разом) плавал от частоты, с которой успевал выполниться НАШ
+    // поллер, — движение при этом было тем же самым. Найдено на живом прогоне: пять параллельных
+    // проектов дали проб «кадров два» там, где движение шло исправно.
+    //
+    // До `PWEB-98` закрытие шло без движения вовсе: машина раскрывашки, не увидев ИМЕНОВАННОГО
+    // движения, немедленно объявляла его законченным и прятала узел. Переход она не видит, и
+    // `getAnimations()` на закрывающемся узле в тот момент отвечал бы пустым списком — ровно это
+    // здесь и проверяется, только устойчивым к нагрузке способом.
+    await withChrome(async (call) => {
+      await load(call, СТРАНИЦА);
+      await ask(call, `document.getElementById("скин").textContent = ${JSON.stringify(эталон)}; true`);
+      await ask(call, `${await собратьКит("accordion")}\n;true`);
+      await ask(call, "new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))");
 
-  it("закрываемый — тоже: закрытие это движение, а не исчезновение", () => {
-    // До `PWEB-98` закрытие шло двумя значениями: машина раскрывашки, не увидев ИМЕНОВАННОГО
-    // движения, немедленно объявляла его законченным и прятала узел. Переход она не видит.
-    expect(различных(протоколы["эталон"]!.переключение, 0)).toBeGreaterThan(5);
-  });
+      await тык(call, 1);
+      const движения = await движенияНа(call, СОДЕРЖИМОЕ);
+
+      // ЕСТЬ СРЕДИ идущих НА ЭТОМ УЗЛЕ, а не РОВНО ОНО ОДНО: рядом играет и безусловный переход
+      // по цвету (база, `motion-fast`) — оба движения законны одновременно, и предмет пробы не
+      // «ничего больше не идёт», а «идёт ИМЕННО НАЗВАННОЕ движение на ИМЕННО ЭТОМ узле».
+      const идёт = (набор: typeof движения[number], name: string) =>
+        набор.some((a) => a.name === name && a.duration === 320 && a.playState === "running");
+
+      expect(идёт(движения[0]!, "закрытие"), JSON.stringify(движения[0])).toBe(true);
+      expect(идёт(движения[1]!, "раскрытие"), JSON.stringify(движения[1])).toBe(true);
+    });
+  }, 30_000);
 
   it("раскрытый тычком выглядит так же, как раскрытый изначально", () => {
     // Обе дороги к одному виду обязаны сойтись. Разойдись они — человек увидел бы, что раздел
@@ -450,9 +392,29 @@ describe("МУТАЦИЯ: движение убрано — раздел ост�
     expect(после[0]!.спрятан).toBe(true);
   });
 
-  it("и идёт БЕЗ кадров — иначе просьбу никто не услышал", () => {
+  it("и БЕЗ АНИМАЦИИ — иначе просьбу никто не услышал", async () => {
     // Второй конец: раздел «цел» и при движении тоже, значит проба выше сама по себе не отличила
     // бы тихий прогон от обычного.
-    expect(различных(протоколы["тише"]!.переключение, 1)).toBeLessThanOrEqual(2);
-  });
+    //
+    // Спрошено у Web Animations API, а не сосчитано по кадрам: подсчёт различных ширин здесь тоже
+    // плавал под настоящей нагрузкой воркспейса — Solid способен разнести один реактивный апдейт
+    // на несколько кадров растровки, и это законно даже БЕЗ единой CSS-анимации. `getAnimations()`
+    // отвечает про факт — анимация СОЗДАНА браузером или нет, — а не про то, сколько раз мы
+    // успели её опросить.
+    await withChrome(async (call) => {
+      await call("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+      });
+      await load(call, СТРАНИЦА);
+      await ask(call, `document.getElementById("скин").textContent = ${JSON.stringify(эталон)}; true`);
+      await ask(call, `${await собратьКит("accordion")}\n;true`);
+      await ask(call, "new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))");
+
+      await тык(call, 1);
+      const движения = await движенияНа(call, СОДЕРЖИМОЕ);
+
+      expect(движения[0]).toEqual([]);
+      expect(движения[1]).toEqual([]);
+    });
+  }, 30_000);
 });
