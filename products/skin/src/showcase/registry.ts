@@ -26,9 +26,12 @@
 // (`ReadablePassport`) для правила вложенности нужны ОБА сразу — она не наш рантайм и не наш
 // редактор, а общая механика, которой всё равно, кто поставщик. Витрина складывает их сама:
 // читатель редактора здесь и есть то самое место, которому этот срез предназначен.
+//
+// `Genus`/`Admission` у механики сборки взяты типовым импортом у той же формы, что описывает
+// `admits` (`PWEB-119`) — приведения типа на границе поэтому не нужно, оба поля собираются как
+// есть, и рассинхронизация типов ловится компилятором, а не встречей на живом узле.
 import {
   createRegistry,
-  type Admission,
   type ReadableComponent,
   type ReadablePart,
   type Registry,
@@ -50,16 +53,13 @@ function readable(component: string): ReadableComponent {
   return {
     passport: {
       component: passport.component,
-      // `Genus`/`Admission` у механики сборки — открытый `string`: она служит любому
-      // поставщику, а не только нашему закрытому перечню родов. Наши значения приходят из
-      // закрытого перечня (`PassportGenus`) — того же самого, просто более узким типом.
       genus: editorInfo.genus,
       anatomy: passport.anatomy,
       root: passport.root,
       parts: passport.parts.map(
         (part): ReadablePart => ({
           name: part.name,
-          accepts: editorInfo.parts[part.name]?.accepts as readonly Admission[] | undefined,
+          accepts: editorInfo.parts[part.name]?.accepts,
         }),
       ),
     },
@@ -76,5 +76,5 @@ function readable(component: string): ReadableComponent {
  */
 export const REGISTRY: Registry = createRegistry({
   components: Object.fromEntries(Object.keys(KIT).map((name) => [name, readable(name)])),
-  admits: admits as (part: ReadablePart, candidate: Admission) => boolean,
+  admits,
 });
