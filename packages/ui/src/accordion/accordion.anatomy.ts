@@ -263,6 +263,11 @@ export const passport = definePassport({
       means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой",
       values: { kind: "flag" },
       byDefault: false,
+      // Зависимость от `multiple` (`SKINED-7`). У Zag закрыть последний раскрытый раздел можно,
+      // если включено ХОТЯ БЫ ОДНО из двух — `canToggle = collapsible || multiple`
+      // (`@zag-js/accordion`, `accordion.machine.mjs`). При `multiple: true` закрытие уже
+      // разрешено самой `multiple`, и значение `collapsible` на поведение больше не влияет.
+      dependsOn: { on: "multiple", redundantWhen: true },
     },
   }),
   // РАБОЧИЙ ЭКЗЕМПЛЯР (`PWEB-89`).
