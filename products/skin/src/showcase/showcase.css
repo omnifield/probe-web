@@ -390,6 +390,44 @@ body {
   accent-color: var(--ui-accent);
 }
 
+/* Переключатель РОВНО на два положения — тот же приём, что режим (`.modes`), только во всю
+   ширину поля: выбор из двух не заслуживает выпадающего меню. */
+.props__switch {
+  display: flex;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-sm);
+  overflow: hidden;
+}
+
+.props__switch-item {
+  flex: 1;
+  padding: var(--ui-gap-1) var(--ui-gap-2);
+  border: none;
+  background: var(--ui-surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--ui-size-sm);
+  cursor: pointer;
+}
+
+.props__switch-item + .props__switch-item {
+  border-inline-start: 1px solid var(--ui-line);
+}
+
+.props__switch-item:hover {
+  background: var(--ui-tint);
+}
+
+.props__switch-item:focus-visible {
+  outline: var(--ui-focus);
+  outline-offset: -2px;
+}
+
+.props__switch-item[aria-checked="true"] {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent);
+}
+
 /* На узком экране панель не помещается рядом с показом: под колонку в 16rem ему остался бы
    обрывок ширины, а настройка нужна реже, чем сам вид. */
 @media (width < 48rem) {
@@ -506,10 +544,16 @@ body {
 /* ── случаи: один поток, ширина по содержимому ────────────────────────────────────────── */
 
 /* `min()` вместо голого `minmax`: на узком экране колонка не может быть шире самого экрана, и
-   сетка перестаёт выпирать за край вместо того, чтобы схлопнуться в одну колонку. */
+   сетка перестаёт выпирать за край вместо того, чтобы схлопнуться в одну колонку.
+
+   ПОЛ ПОДНЯТ до 22rem (было 15rem). Компонент с явной шириной (`inlineSize: 100%` — так пишет
+   форма гармошки, чтобы не прыгать при раскрытии) сам никогда не запросит разворот в
+   `case--wide`: `scrollWidth` при 100%-ширине равен тому, что дали, а не тому, что нужно. Не
+   чинить измерение под один компонент — поднять пол так, чтобы тесной колонки не было ни у
+   кого. */
 .cases {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
   gap: var(--ui-gap-3);
   align-items: start;
 }

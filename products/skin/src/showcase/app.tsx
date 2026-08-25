@@ -277,19 +277,52 @@ function SettingsPanel(props: {
                   }
                 >
                   {(выбор) => (
-                    <select
-                      class="props__select"
-                      value={String(props.settings[setting.name] ?? setting.byDefault)}
-                      onChange={(event) => props.onSetting(setting.name, event.currentTarget.value)}
+                    <Show
+                      when={выбор().options.length === 2}
+                      // Список — когда выбор действительно СПИСОК: три и больше именованных
+                      // положений. Ровно на двух список превращается в вопрос «да или нет
+                      // применительно к другому», и отвечать на него открыванием и закрыванием
+                      // меню — лишнее движение там, где хватает одного клика.
+                      fallback={
+                        <select
+                          class="props__select"
+                          value={String(props.settings[setting.name] ?? setting.byDefault)}
+                          onChange={(event) =>
+                            props.onSetting(setting.name, event.currentTarget.value)
+                          }
+                        >
+                          <For each={выбор().options}>
+                            {(option) => (
+                              <option value={option.value} title={option.means}>
+                                {option.means}
+                              </option>
+                            )}
+                          </For>
+                        </select>
+                      }
                     >
-                      <For each={выбор().options}>
-                        {(option) => (
-                          <option value={option.value} title={option.means}>
-                            {option.means}
-                          </option>
-                        )}
-                      </For>
-                    </select>
+                      <div class="props__switch" role="radiogroup" aria-label={setting.title}>
+                        <For each={выбор().options}>
+                          {(option) => {
+                            const текущее = () =>
+                              String(props.settings[setting.name] ?? setting.byDefault);
+
+                            return (
+                              <button
+                                type="button"
+                                class="props__switch-item"
+                                role="radio"
+                                aria-checked={текущее() === option.value}
+                                title={option.means}
+                                onClick={() => props.onSetting(setting.name, option.value)}
+                              >
+                                {option.means}
+                              </button>
+                            );
+                          }}
+                        </For>
+                      </div>
+                    </Show>
                   )}
                 </Show>
               </label>
