@@ -29,10 +29,10 @@ import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/p
 import { FORCE_ATTRIBUTE, settingApplies as passportSettingApplies } from "@omnifield/probe-web-skin/model";
 import {
   baseAssemblyOf,
+  editorInfoOf,
   passportOf,
   SETTINGS,
   type PassportMark,
-  type PassportSetting,
   type PassportState,
 } from "@omnifield/probe-web-ui/passport";
 
@@ -163,16 +163,27 @@ export function rootPartOf(component: string): string {
   return passportOf(component)?.root ?? "";
 }
 
+/** Значение выбора вместе с тем, что оно значит человеку — половина, которую держит редактор. */
+export interface ShowcaseSettingOption {
+  readonly value: string;
+  readonly means: string;
+}
+
+/** Какие значения настройка принимает — тот же признак/выбор, что и в рантайме, но с текстом. */
+export type ShowcaseSettingValues =
+  | { readonly kind: "flag" }
+  | { readonly kind: "choice"; readonly options: readonly ShowcaseSettingOption[] };
+
 /** Настройка компонента вместе с её именем и человеческой подписью — витрине для перечня. */
 export interface ShowcaseSetting {
   /** Ключ настройки: им же она уезжает пропом на корень. */
   readonly name: string;
   /** Подпись человеку — из закрытого перечня поставщика, а не наша. */
   readonly title: string;
-  /** Что настройка делает. */
+  /** Что настройка делает — из среза редактора (`PWEB-115`), паспорт рантайма этого не несёт. */
   readonly means: string;
-  /** Какие значения принимает: признак или выбор. */
-  readonly values: PassportSetting["values"];
+  /** Какие значения принимает: признак или выбор, с текстом на каждом варианте. */
+  readonly values: ShowcaseSettingValues;
   /** Что действует, когда настройка не названа. */
   readonly byDefault: string | boolean;
 }
@@ -183,17 +194,36 @@ export interface ShowcaseSetting {
  * Своего перечня витрина не ведёт и подписи не придумывает: и то и другое объявляет поставщик, а
  * два перечня разошлись бы на первом же его выпуске. Компонент, ничего не объявивший, отдаёт
  * пустой перечень — показывать нечего, и это законно.
+ *
+ * ДВА ИСТОЧНИКА (`PWEB-115`/`PWEB-118`): рантайм называет значения и умолчание, редактор — текст.
+ * Читаются оба и складываются в одну запись — так же, как читает их сам редактор.
  */
 export function settingsOf(component: string): readonly ShowcaseSetting[] {
   const settings = passportOf(component)?.settings ?? {};
+  const editorSettings = editorInfoOf(component)?.settings ?? {};
 
-  return Object.entries(settings).map(([name, setting]) => ({
-    name,
-    title: SETTINGS[name as keyof typeof SETTINGS] ?? name,
-    means: setting.means,
-    values: setting.values,
-    byDefault: setting.byDefault,
-  }));
+  return Object.entries(settings).map(([name, setting]) => {
+    const editor = editorSettings[name];
+
+    const values: ShowcaseSettingValues =
+      setting.values.kind === "choice"
+        ? {
+            kind: "choice",
+            options: setting.values.options.map((option) => ({
+              value: option.value,
+              means: editor?.options?.[option.value]?.means ?? option.value,
+            })),
+          }
+        : setting.values;
+
+    return {
+      name,
+      title: SETTINGS[name as keyof typeof SETTINGS] ?? name,
+      means: editor?.means ?? name,
+      values,
+      byDefault: setting.byDefault,
+    };
+  });
 }
 
 /**
@@ -252,10 +282,11 @@ function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
  * это было знанием о компоненте, которого у показа быть не должно. Я сам решил, что разделов
  * три; следующий пульт решил бы иначе, и оба показывали бы «гармошку» по-разному.
  *
- * Теперь базовую сборку объявляет тот, кто компонент написал (`assembly` в паспорте), а витрина
- * её поднимает. Нет объявленной сборки — берётся образец из анатомии: одна часть, ни повторов,
- * ни наполнения. Кнопке этого хватает, составному компоненту нет, и его поставщик обязан сборку
- * объявить.
+ * Теперь базовые сборки объявляет тот, кто компонент написал (`assemblies` в срезе редактора,
+ * `PWEB-115`/`PWEB-116`), а витрина поднимает ПЕРВУЮ — своего выбора между несколькими у неё нет,
+ * это работа редактора, не показа. Нет ни одной объявленной сборки — берётся образец из анатомии:
+ * одна часть, ни повторов, ни наполнения. Кнопке этого хватает, составному компоненту нет, и его
+ * поставщик обязан сборку объявить.
  *
  * Отказ механики — **исключение**, а не значение, и это единственное такое место в зоне: отказ
  * означает, что случай написан против паспорта, то есть дефект нашей записи, а не состояние
@@ -268,7 +299,8 @@ function build(
   stateMark?: PassportMark,
 ): AssemblyTree {
   const passport = passportOf(component);
-  const основа = passport ? baseAssemblyOf(passport, component) : undefined;
+  const assembly = editorInfoOf(component)?.assemblies[0];
+  const основа = passport && assembly ? baseAssemblyOf(passport, assembly) : undefined;
   const sketch = основа ?? sketchOf(REGISTRY, component);
 
   if (!sketch) {
