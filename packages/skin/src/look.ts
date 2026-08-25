@@ -276,6 +276,41 @@ function propsIn(style: LocalStyle | PartStyle): StyleObject[] {
 }
 
 /**
+ * ВСЕ ГРУППЫ `PartStyles` В РЕЦЕПТЕ — база, настройки, вариации, пересечения, с местом каждой.
+ *
+ * Заведена ПОСЛЕ того, как `formRefs` и `motionParts` уже существовали порознь (`PWEB-101`), и
+ * `settings` (`PWEB-103`) приехал в рецепт, не приехав в этот перечень: обе функции продолжали
+ * обходить старые три группы и молча пропускали четвёртую. Запись под настройкой оставалась
+ * НЕПРОВЕРЕННОЙ до сборки — ни ссылки на роли, ни законность движения, — и находилась это ровно
+ * тем способом, каким такие пробелы и находятся: настоящей записью, которая не должна была
+ * пройти (`PWEB-105`).
+ *
+ * Перечень один на обоих читателей: разъедься он снова на два обхода, третье поле рецепта
+ * когда-нибудь повторит эту же историю в третий раз.
+ */
+function recipeGroups(recipe: SlotRecipe): { where: string; styles: PartStyles }[] {
+  const groups: { where: string; styles: PartStyles }[] = [];
+
+  if (recipe.base) groups.push({ where: "base", styles: recipe.base });
+
+  for (const [setting, byValue] of Object.entries(recipe.settings ?? {})) {
+    for (const [value, styles] of Object.entries(byValue)) {
+      groups.push({ where: `settings.${setting}.${value}`, styles });
+    }
+  }
+
+  for (const [name, styles] of Object.entries(recipe.variants ?? {})) {
+    groups.push({ where: `variants.${name}`, styles });
+  }
+
+  (recipe.compoundVariants ?? []).forEach((compound, index) => {
+    groups.push({ where: `compoundVariants[${index}]`, styles: compound.style });
+  });
+
+  return groups;
+}
+
+/**
  * ГДЕ ФОРМА ПРИМЕНЯЕТ каждое движение: имя движения → части, на которых стоит `animation:`.
  *
  * Обход свой, а не общий с порождением, по той же причине, что и у `formRefs`: скина здесь ещё
@@ -289,19 +324,15 @@ function motionParts(form: Form): Map<string, Set<string>> {
 
   if (declared.size === 0) return found;
 
-  const собрать = (styles: PartStyles | undefined): void => {
-    for (const [part, style] of Object.entries(styles ?? {})) {
+  for (const { styles } of recipeGroups(form.recipe)) {
+    for (const [part, style] of Object.entries(styles)) {
       for (const props of propsIn(style)) {
         for (const movement of motionsIn(props, declared)) {
           found.set(movement, (found.get(movement) ?? new Set<string>()).add(part));
         }
       }
     }
-  };
-
-  собрать(form.recipe.base);
-  for (const styles of Object.values(form.recipe.variants ?? {})) собрать(styles);
-  for (const compound of form.recipe.compoundVariants ?? []) собрать(compound.style);
+  }
 
   return found;
 }
@@ -329,18 +360,11 @@ function refsIn(value: unknown): string[] {
  */
 function formRefs(form: Form): FormReference[] {
   const found: FormReference[] = [];
-  const parts = (styles: PartStyles | undefined, where: string): void => {
-    for (const [part, style] of Object.entries(styles ?? {})) {
+
+  for (const { where, styles } of recipeGroups(form.recipe)) {
+    for (const [part, style] of Object.entries(styles)) {
       for (const name of refsIn(style)) found.push({ name, part, where: `${where}.${part}` });
     }
-  };
-
-  parts(form.recipe.base, "base");
-  for (const [name, styles] of Object.entries(form.recipe.variants ?? {})) {
-    parts(styles, `variants.${name}`);
-  }
-  for (const [index, compound] of (form.recipe.compoundVariants ?? []).entries()) {
-    parts(compound.style, `compoundVariants[${index}]`);
   }
 
   // ДВИЖЕНИЕ СУДЯТ ПО МЕСТУ ПРИМЕНЕНИЯ (`PWEB-101`). Прежде здесь стояло «переменной части в нём
