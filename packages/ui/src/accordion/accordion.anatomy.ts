@@ -303,78 +303,297 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
     multiple: { means: "можно ли держать раскрытыми несколько разделов сразу" },
     collapsible: { means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой" },
   },
-  // РАБОЧИЙ ЭКЗЕМПЛЯР (`PWEB-89`).
+  // НЕСКОЛЬКО СБОРОК-ТЕМПЛЕЙТОВ (`PWEB-116`) — не одна витрина, а конструктор с инструкцией на
+  // несколько разных случаев. Агент, которому нужна гармошка с определённым устройством, берёт
+  // готовый рабочий экземпляр вместо того, чтобы придумывать его с нуля на каждый запрос.
   //
-  // Три раздела, а не один: главное в виде гармошки — РАЗДЕЛИТЕЛИ, а между одним разделом их не
-  // бывает. Показ на одном разделе умолчал бы о половине формы.
+  // Каждая сборка — НАСТОЯЩАЯ, тем же доводом, что и раньше (`PWEB-89`): собирается механикой
+  // сборки без доработки потребителем, проверено пробой на КАЖДОЙ записи (`test/
+  // base-assembly.test.tsx`), не только на первой.
   //
-  // Первый раскрыт: гармошка существует ради раскрытия, и экземпляр, в котором его не видно, не
-  // показывает работу. Раскрытость при этом остаётся СОСТОЯНИЕМ — тот, кто показывает состояния,
-  // ставит их своей осью поверх этой сборки.
+  // Оси, по которым сборки различаются, — и почему именно они, а не что-то ещё:
+  //   • число разделов — гармошка на 3 и гармошка на 6 показывают себя по-разному: у большой
+  //     список пунктов сам становится содержимым, у маленькой — нет;
+  //   • какой раздел раскрыт изначально — первый, последний или ни один: это то самое знание
+  //     поставщика (`value` в `defaultValue`), которое потребитель не выдумывает сам;
+  //   • `multiple` — раскрытых сразу несколько, а не один; без прохода `defaultValue` двумя
+  //     значениями ЭТОГО не увидеть, `multiple: true` в пропах корня — необходимый проп ИМЕННО
+  //     для этой сборки, а не вид (`PWEB-89`);
+  //   • композиция в `itemTrigger` — значок ПЕРЕД подписью, рядом с указателем раскрытия, а не
+  //     только раскрывашка сама по себе. Значок здесь плейсхолдер (`★`), тем же приёмом, что и
+  //     указатель (`⌄`): базовая сборка — данные, не код, и настоящий компонент `lucide-solid` в
+  //     ней не завести (`icon.anatomy.ts`, «база сборки нет»).
   //
-  // `value` у раздела — не вид и не состояние: без него Ark не знает, какой пункт раскрывать, и
-  // складывает `undefined` в идентификаторы. Это ровно то знание поставщика, ради которого
-  // базовая сборка и заводится: потребитель его не выдумывает.
-  assemblies: [{
-    means: "три раздела, первый раскрыт",
-    tree: {
-      part: "root",
-      props: { defaultValue: ["раздел-1"] },
-      children: [
-        {
-          part: "item",
-          props: { value: "раздел-1" },
-          children: [
-            {
-              part: "itemTrigger",
-              // Подпись ПЕРВОЙ, указатель следом: порядок содержимого относительно частей —
-              // решение автора вида, и выразим он только общим списком детей.
-              children: [
-                { genus: "text", value: "Раздел 1" },
-                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
-            },
-          ],
-        },
-        {
-          part: "item",
-          props: { value: "раздел-2" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Раздел 2" },
-                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Второй раздел закрыт." }],
-            },
-          ],
-        },
-        {
-          part: "item",
-          props: { value: "раздел-3" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Раздел 3" },
-                { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Третий раздел закрыт." }],
-            },
-          ],
-        },
-      ],
+  // Композицию с состояниями (наведённый, отключённый) сюда не кладём: у сборки нет оси
+  // состояний, состояние ставит тот, кто её показывает (см. выше про раскрытость).
+  assemblies: [
+    {
+      means: "три раздела, первый раскрыт",
+      tree: {
+        part: "root",
+        props: { defaultValue: ["раздел-1"] },
+        children: [
+          {
+            part: "item",
+            props: { value: "раздел-1" },
+            children: [
+              {
+                part: "itemTrigger",
+                // Подпись ПЕРВОЙ, указатель следом: порядок содержимого относительно частей —
+                // решение автора вида, и выразим он только общим списком детей.
+                children: [
+                  { genus: "text", value: "Раздел 1" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-2" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 2" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Второй раздел закрыт." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-3" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 3" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Третий раздел закрыт." }],
+              },
+            ],
+          },
+        ],
+      },
     },
-  }],
+    {
+      means: "три раздела, последний раскрыт",
+      tree: {
+        part: "root",
+        // Тот же счёт разделов, что у первой сборки, — разница только в том, КАКОЙ раскрыт.
+        // Совпади остальное, различие потерялось бы в шуме числа пунктов.
+        props: { defaultValue: ["раздел-3"] },
+        children: [
+          {
+            part: "item",
+            props: { value: "раздел-1" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 1" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Первый раздел закрыт." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-2" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 2" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Второй раздел закрыт." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-3" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 3" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      means: "два раздела раскрыты одновременно",
+      tree: {
+        part: "root",
+        // `multiple: true` — необходимый проп ЭТОЙ сборки: без него Zag игнорирует второе
+        // значение `defaultValue`, и «два раскрытых сразу» не соберётся, а тихо схлопнется
+        // до одного. Это не вид (там ему не место, `PWEB-89`) — это то, без чего сборка не
+        // работает, тот же смысл, что и у `value` раздела.
+        props: { multiple: true, defaultValue: ["раздел-1", "раздел-2"] },
+        children: [
+          {
+            part: "item",
+            props: { value: "раздел-1" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 1" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Первый раздел раскрыт." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-2" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 2" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Второй раздел тоже раскрыт." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-3" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: "Раздел 3" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Третий раздел закрыт." }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      means: "шесть разделов, ничего не раскрыто изначально",
+      tree: {
+        part: "root",
+        // Пустой перечень — то же честное умолчание, что и у настроек без значения: раскрытых
+        // нет, а не «забыли назвать». Шесть разделов — не про запас, а сама суть сборки: список
+        // длиннее, чем на глаз отличим от «ещё одного экземпляра трёх», сам становится
+        // содержимым, а не просто счётом.
+        props: { defaultValue: [] },
+        children: Array.from({ length: 6 }, (_, index) => {
+          const номер = index + 1;
+          const value = `раздел-${номер}`;
+
+          return {
+            part: "item",
+            props: { value },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "text", value: `Раздел ${номер}` },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: `Содержимое раздела ${номер}.` }],
+              },
+            ],
+          };
+        }),
+      },
+    },
+    {
+      means: "раздел со значком перед подписью",
+      tree: {
+        part: "root",
+        props: { defaultValue: ["раздел-1"] },
+        children: [
+          {
+            part: "item",
+            props: { value: "раздел-1" },
+            children: [
+              {
+                part: "itemTrigger",
+                // Значок ВЕДЁТ подпись, указатель раскрытия — следом за ней: композиция трёх
+                // содержимых сразу, а не только текст и указатель, как у остальных сборок.
+                children: [
+                  { genus: "icon", value: "★" },
+                  { genus: "text", value: "Раздел со значком" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
+              },
+            ],
+          },
+          {
+            part: "item",
+            props: { value: "раздел-2" },
+            children: [
+              {
+                part: "itemTrigger",
+                children: [
+                  { genus: "icon", value: "★" },
+                  { genus: "text", value: "Второй раздел со значком" },
+                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
+                ],
+              },
+              {
+                part: "itemContent",
+                children: [{ genus: "text", value: "Второй раздел закрыт." }],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
 });
