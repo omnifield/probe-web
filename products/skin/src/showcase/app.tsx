@@ -24,7 +24,7 @@ import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
 import { SkinRefused } from "@omnifield/probe-web-skin";
 import { OutfitRefused } from "@omnifield/probe-web-skin/model";
-import { editorInfoOf, GROUPS, groupOf } from "@omnifield/probe-web-ui/passport";
+import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   createResource,
   createSignal,
@@ -70,10 +70,9 @@ const COMPONENTS = knownComponents(REGISTRY);
 /**
  * Компоненты по разделам.
  *
- * Раздел объявляет САМ компонент (`group` в срезе редактора — `PWEB-115`/`PWEB-118`, паспорт
- * рантайма его не несёт), а перечень разделов и их подписи живут у формы паспорта. Своего перечня
- * витрина не заводит: назови она разделы сама — их стало бы два, и у следующего пульта третий.
- * Порядок разделов — порядок объявления в перечне, а не наш.
+ * Раздел объявляет САМ компонент (`group` в паспорте), а перечень разделов и их подписи живут у
+ * формы паспорта. Своего перечня витрина не заводит: назови она разделы сама — их стало бы два,
+ * и у следующего пульта третий. Порядок разделов — порядок объявления в перечне, а не наш.
  *
  * Пустые разделы не показываются: раздел без компонентов это обещание, которого никто не давал.
  */
@@ -82,8 +81,8 @@ const BY_GROUP = Object.entries(GROUPS)
     group,
     title,
     components: COMPONENTS.filter((component) => {
-      const editorInfo = editorInfoOf(component);
-      return editorInfo !== undefined && groupOf(editorInfo) === group;
+      const passport = passportOf(component);
+      return passport !== undefined && groupOf(passport) === group;
     }),
   }))
   .filter((section) => section.components.length > 0);

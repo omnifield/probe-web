@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 import { isContent, knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
 import { KIT } from "@omnifield/probe-web-ui";
 import {
-  editorInfoOf,
+  type ComponentPassport,
   GROUPS,
   groupOf,
   passportOf,
@@ -405,12 +405,11 @@ describe("перечень по разделам", () => {
     const host = mount(() => <App />);
 
     pick(host, "button");
-    const editorInfo = editorInfoOf("button");
+    const passport = passportOf("button");
     const shown = host.textContent ?? "";
 
-    expect(editorInfo?.group).toBeDefined();
-    expect(editorInfo).toBeDefined();
-    expect(shown).toContain(GROUPS[groupOf(editorInfo!)]);
+    expect(passport?.group).toBeDefined();
+    expect(shown).toContain(GROUPS[groupOf(passport as ComponentPassport)]);
   });
 
   it("подписи разделов берутся у формы паспорта — своего словаря витрина не ведёт", () => {
