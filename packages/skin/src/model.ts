@@ -41,13 +41,14 @@ export {
 //
 // Наружу — тем же подпутём, что и всегда: держатель реестра (кит, продуктовый пакет со своей
 // таблицей) объявляет паспорты этими типами и этой функцией, а не своей копией формы.
+//
+// Здесь — ТОЛЬКО срез РАНТАЙМА (`PWEB-115`): то, что действительно читают `generateSkinCss`/
+// `checkOutfit`/`assemble`. Род, группа, пакет, правило вложенности, сборки и все `means` —
+// срез РЕДАКТОРА, подпуть `./editor`, и здесь физически не переэкспортируются: держи их этот
+// барьер тоже пропускать — граница осталась бы обещанием, а не свойством модулей.
 export type {
-  ComponentGroup,
   ComponentPassport,
-  PassportAdmission,
   PassportAnatomy,
-  PassportComponentGenus,
-  PassportGenus,
   PassportMark,
   PassportPart,
   PassportSetting,
@@ -63,29 +64,12 @@ export type {
 } from "./passport-form.js";
 export {
   addressesView,
-  admits,
   createAnatomy,
   defineSettings,
   definePassport,
-  GROUPS,
-  groupOf,
   SETTINGS,
   settingApplies,
 } from "./passport-form.js";
-
-// БАЗОВАЯ СБОРКА (`PWEB-89`) — переехала вместе с формой: объявление рабочего экземпляра и его
-// разворот в плоское дерево не завязаны ни на один конкретный кит.
-export type {
-  BaseAssemblyContent,
-  BaseAssemblyElement,
-  BaseAssemblyNode,
-  BaseAssemblyTree,
-  PassportAssembly,
-  PassportAssemblyContent,
-  PassportAssemblyNode,
-  PassportAssemblyPart,
-} from "./passport-assembly.js";
-export { baseAssemblyOf, isAssemblyContent, isContentNode } from "./passport-assembly.js";
 
 // ЧИТАТЕЛЬ ПАСПОРТА ПОД ВИД (`PWEB-27`) — мост от живого узла к координате скина, тоже общий для
 // любого поставщика.

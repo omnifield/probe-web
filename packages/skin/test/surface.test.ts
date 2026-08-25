@@ -75,6 +75,14 @@ describe("что каждый вход тянет за собой", () => {
     expect(imports("flat.js")).toEqual(["postcss", "postcss-nested"]);
   });
 
+  it("`./editor`: ни одного чужого пакета — срез редактора не тянет даже анатомию (`PWEB-115`)", () => {
+    // `PassportGenus`/`PassportAdmission`/`defineEditorInfo` не нуждаются в `@zag-js/anatomy`
+    // напрямую: единственная связь со срезом рантайма — тип `ComponentPassport`, а тип стирается
+    // на сборке. Пустой перечень здесь — не случайность, а свойство границы: подрасти он хоть
+    // одним рёбром, значило бы, что срез редактора тянет за собой что-то, кроме своих данных.
+    expect(imports("editor.js")).toEqual([]);
+  });
+
   it("`./flat` отдаёт ТОЛЬКО разворот: широкий вход вернул бы postcss всем", async () => {
     const flat = await import("../src/flat.js");
 
@@ -111,9 +119,9 @@ describe("что каждый вход тянет за собой", () => {
 });
 
 describe("что уезжает, а что остаётся", () => {
-  it("все три подпути объявлены и указывают на собранные файлы", () => {
-    expect(Object.keys(manifest.exports)).toEqual([".", "./model", "./flat"]);
-    for (const name of ["index", "model", "flat"]) {
+  it("все четыре подпути объявлены и указывают на собранные файлы", () => {
+    expect(Object.keys(manifest.exports)).toEqual([".", "./model", "./flat", "./editor"]);
+    for (const name of ["index", "model", "flat", "editor"]) {
       expect(() => bundle(`${name}.js`)).not.toThrow();
       expect(() => bundle(`${name}.d.ts`)).not.toThrow();
     }
@@ -126,6 +134,39 @@ describe("что уезжает, а что остаётся", () => {
   it("ни Solid, ни отрисовки в поставке нет: механика превращает данные в текст", () => {
     for (const name of ["index.js", "model.js"]) {
       expect(bundle(name)).not.toContain("solid-js");
+    }
+  });
+});
+
+// СРЕЗ РЕДАКТОРА ОТДЕЛЁН ГРАНИЦЕЙ МОДУЛЕЙ, А НЕ ОБЕЩАНИЕМ (`PWEB-115`).
+//
+// Найдено на настоящей сборке `apps/reference`: `means` и текст сборки доезжали до браузера
+// целиком, хотя приложение их не читает. Здесь — тот же приём («настоящий бандл, грепнуть
+// строку»), только на уровне ЭТОЙ поставки: `index.ts`/`model.ts` физически не импортируют
+// `passport-editor.ts`/`passport-assembly.ts`, и esbuild кладёт в бандл только достижимое из
+// entry point — до всякой сборки потребителя.
+//
+// Отрицательный контроль без положительного значил бы либо «не попадает», либо «строка мимо
+// имени» — вторая проба ниже доказывает, что имя действительно оказалось бы в тексте, будь оно
+// достижимо: `defineEditorInfo` и `GROUPS` — настоящие идентификаторы `passport-editor.ts`, не
+// выдуманные ради пробы.
+describe("срез редактора отделён физически (`PWEB-115`)", () => {
+  const EDITOR_ONLY = ["defineEditorInfo", "baseAssemblyOf", "admits", "GROUPS"];
+
+  it("рантайм-входы не содержат НИ СТРОКИ редакторского кода", () => {
+    for (const name of ["index.js", "model.js"]) {
+      for (const needle of EDITOR_ONLY) {
+        expect(bundle(name)).not.toContain(needle);
+      }
+    }
+  });
+
+  it("положительный контроль: те же строки НАСТОЯЩИЕ — `./editor` их несёт", () => {
+    // Без этой пробы прошлая осталась бы неотличима от «искали не там»: три из четырёх
+    // идентификаторов — типы и функции, а `GROUPS` могло бы случайно не встретиться в минифайле.
+    // Здесь на том же СОБРАННОМ файле доказывается обратное.
+    for (const needle of ["defineEditorInfo", "GROUPS"]) {
+      expect(bundle("editor.js")).toContain(needle);
     }
   });
 });

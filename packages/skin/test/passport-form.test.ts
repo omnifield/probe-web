@@ -1,245 +1,26 @@
-// Гейт того, что форма паспорта РЕШАЕТ сама: правило вложенности (`PWEB-24`), место компонента
-// в перечне (`PWEB-34`) и годность состояния адресом вида (`PWEB-97`). Все три живут у формы по
-// одной причине — правило, написанное вторым читателем, разъезжается с написанным первым молча.
+// Гейт того, что форма паспорта РЕШАЕТ сама в СРЕЗЕ РАНТАЙМА: годность состояния адресом вида
+// (`PWEB-97`), обязательность настроек (`PWEB-92`), зависимость настройки от другой (`SKINED-7`),
+// отказ на переменной без кастом-свойства и на настройке не из перечня.
 //
-// Ниже сначала вложенность, затем группы, в конце — приход признака.
-//
-// Пробы кнопки сторожат ОБЪЯВЛЕНИЕ — что записано в её паспорте и доезжает ли объявленное до
-// живого узла. Здесь сторожится само правило: как читатель паспорта — редактор, механика сборки —
-// превращает записанное в ответ «пускать или отвергнуть».
-//
-// Разделены они намеренно. Правило одно на всех поставщиков компонентов, и проверять его на
-// единственном имеющемся компоненте значило бы проверять кнопку вместо правила: у кнопки одна
-// часть, своих детей нет, а умолчание не встречается вовсе. Части здесь поэтому синтетические —
-// они и есть предмет пробы.
-//
-// Родов три, и таблица подходимости несимметрична: значок — тоже компонент, компонент значком не
-// становится. Несимметричность и делает правило работающим: будь она в обе стороны, «только текст
-// или значок» не отвергало бы ничего.
+// Правило вложенности (`admits`, `PWEB-24`) и место компонента в перечне (`GROUPS`/`groupOf`,
+// `PWEB-34`) отсюда УЕХАЛИ (`PWEB-115`) — они читают срез РЕДАКТОРА, а не рантайм, и живут теперь
+// в `passport-editor.test.ts` вместе со сборкой, которая тем же ходом стала списком.
 //
 // ПОРТИРОВАНО из `packages/ui/test/passport-form.test.ts` при переезде формы (`PWEB-110`,
-// `PWEB-113`): файл проверял форму напрямую и не переехал вместе с ней — фикстуры `packages/skin`
-// (`test/passports.ts`, `rules.test.ts`) используют форму КОСВЕННО, как материал для проб CSS и
-// правил, а не как прямую проверку решений самой формы. Предмет и материал не пересказаны заново
-// — перенесены как были; поменялся только путь до модуля и то, что `createAnatomy` теперь берётся
-// оттуда же, откуда `definePassport` (реэкспорт, `PWEB-112`), а не вторым импортом того же пакета.
+// `PWEB-113`), затем разрезано на срез рантайма и срез редактора (`PWEB-115`).
 
 import { describe, expect, it } from "vitest";
 
 import {
   addressesView,
-  admits,
   createAnatomy,
   definePassport,
-  GROUPS,
-  groupOf,
   settingApplies,
-  type PassportGenus,
   type PassportMark,
-  type PassportPart,
   type PassportSetting,
   type PassportSettingName,
   type PassportState,
 } from "../src/passport-form.js";
-
-/** Часть с объявленным правилом. Состояния и назначение здесь ни при чём — их проба не трогает. */
-function part(accepts?: PassportPart["accepts"]): PassportPart {
-  return { name: "root", means: "часть для пробы", states: [], accepts };
-}
-
-/** Кандидат-содержимое названного рода. Своя часть кладётся вторым видом кандидата — по имени. */
-const content = (genus: PassportGenus) => ({ kind: "content", genus }) as const;
-
-describe("умолчание: часть, которая ничего не сказала", () => {
-  const молчит = part();
-
-  it.each<[string, PassportGenus]>([
-    ["текст", "text"],
-    ["значок", "icon"],
-    ["любой компонент", "component"],
-  ])("пускает %s — молчание это не запрет", (_, genus) => {
-    // Ради этого свойства поле и необязательное. Стань умолчанием запрет — часть, которой поле
-    // ещё не заполнили, перестала бы принимать содержимое, и паспорт соврал бы за неё.
-    expect(admits(молчит, content(genus))).toBe(true);
-  });
-
-  it("пускает и свою часть", () => {
-    expect(admits(молчит, { kind: "part", name: "item" })).toBe(true);
-  });
-});
-
-describe("пустой перечень: место занято самим компонентом", () => {
-  const занято = part([]);
-
-  it("не пускает ничего — ни содержимого, ни своих частей", () => {
-    // Прежнее `content: "none"`. Отличается от умолчания ровно тем, что сказано ЯВНО: пустой
-    // перечень — объявленный запрет, отсутствие перечня — отсутствие объявления.
-    expect(admits(занято, content("text"))).toBe(false);
-    expect(admits(занято, content("component"))).toBe(false);
-    expect(admits(занято, { kind: "part", name: "item" })).toBe(false);
-  });
-});
-
-describe("род допустимого", () => {
-  const кнопка = part([content("text"), content("icon")]);
-  const раскладка = part([content("component")]);
-
-  it("«только текст или значок» пускает текст и значок", () => {
-    expect(admits(кнопка, content("text"))).toBe(true);
-    expect(admits(кнопка, content("icon"))).toBe(true);
-  });
-
-  it("«только текст или значок» отвергает компонент", () => {
-    expect(admits(кнопка, content("component"))).toBe(false);
-  });
-
-  it("«любой компонент» пускает и значок — значок это тоже компонент", () => {
-    expect(admits(раскладка, content("icon"))).toBe(true);
-    expect(admits(раскладка, content("component"))).toBe(true);
-  });
-
-  it("«любой компонент» текста не пускает — текст компонентом не является", () => {
-    // Раскладке, которой нужен ещё и текст, придётся сказать это отдельно. Так честнее: узел с
-    // текстом внутри и узел с компонентом внутри — разные вещи для того, кто их одевает.
-    expect(admits(раскладка, content("text"))).toBe(false);
-  });
-
-  it("объявленный род не пускает содержимое ЧЕРЕЗ себя: место под значок компонентом не занять", () => {
-    expect(admits(part([content("icon")]), content("component"))).toBe(false);
-  });
-});
-
-describe("свои части и содержимое — один перечень", () => {
-  // Второго механизма нет намеренно: часть компонента и есть вложенный компонент, увиденный с
-  // другой стороны. Дерево одно, правило одно, перечень один.
-  const составная = part([
-    { kind: "part", name: "item" },
-    content("text"),
-  ]);
-
-  it("пускает названную свою часть", () => {
-    expect(admits(составная, { kind: "part", name: "item" })).toBe(true);
-  });
-
-  it("не пускает свою часть, которую не назвали", () => {
-    expect(admits(составная, { kind: "part", name: "indicator" })).toBe(false);
-  });
-
-  it("разрешение на свою часть не разрешает содержимое, и наоборот", () => {
-    expect(admits(составная, content("component"))).toBe(false);
-    expect(admits(part([content("component")]), { kind: "part", name: "item" })).toBe(false);
-  });
-});
-
-describe("группа — место компонента в перечне", () => {
-  // Перечень групп закрыт и живёт у формы, а не у пульта: заведи разделы витрина — их заведёт
-  // и редактор, по-своему, и два перечня разойдутся. Проба стережёт обе стороны закрытости —
-  // объявленное вне перечня не проходит, а неназванное не пропадает.
-  const анатомия = createAnatomy("проба").parts("root");
-  const объявить = (group?: string) =>
-    definePassport({
-      anatomy: анатомия,
-      package: "@проба/пакет",
-      genus: "component",
-      root: "root",
-      parts: [{ name: "root", means: "часть для пробы", states: [] }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
-      settings: {},
-      ...(group === undefined ? {} : { group: group as keyof typeof GROUPS }),
-    });
-
-  it("объявленная группа доезжает до паспорта как есть", () => {
-    expect(объявить("inputs").group).toBe("inputs");
-    expect(groupOf(объявить("inputs"))).toBe("inputs");
-  });
-
-  it("группа вне перечня ОТВЕРГАЕТСЯ, и отказ называет допустимое", () => {
-    // Типы закрывают перечень только для того, кто собирает типами; поставщик вправе приехать
-    // и без них, поэтому отказ обязан быть machine-проверкой, а не соглашением.
-    expect(() => объявить("мой-собственный-раздел")).toThrow(/не из перечня/);
-    expect(() => объявить("мой-собственный-раздел")).toThrow(/actions/);
-  });
-
-  it("компонент без группы из перечня не исчезает — он в «прочем»", () => {
-    const безГруппы = объявить();
-
-    expect(безГруппы.group).toBeUndefined();
-    expect(groupOf(безГруппы)).toBe("other");
-    expect(GROUPS[groupOf(безГруппы)]).toBe("Прочее");
-  });
-
-  it("у каждой группы есть подпись — иначе её напишет каждый пульт по-своему", () => {
-    const подписи = Object.values(GROUPS);
-
-    expect(подписи.length).toBeGreaterThan(0);
-    for (const подпись of подписи) expect(подпись.trim().length).toBeGreaterThan(0);
-    // Подписи не повторяются: два раздела с одним именем в перечне неразличимы.
-    expect(new Set(подписи).size).toBe(подписи.length);
-  });
-
-  it("запасная группа объявлена в самом перечне, а не рядом с ним", () => {
-    // Иначе умолчание оказалось бы разделом, которого в перечне нет, и пульт показал бы его
-    // без имени — либо придумал бы имя сам.
-    expect(Object.keys(GROUPS)).toContain(groupOf(объявить()));
-  });
-});
-
-// БАЗОВАЯ СБОРКА и ПЕРЕМЕННЫЕ УЗЛА (`PWEB-89`) — то, что форма отвергает при объявлении.
-//
-// Части здесь синтетические по той же причине, что и выше: проверяется ПРАВИЛО, а не гармошка.
-// Отказ на объявлении, а не значение в отчёте, — потому что сборка, не собирающаяся по
-// собственным правилам паспорта, не должна доехать до потребителя вовсе. Тем же приёмом отвергает
-// несобранную карту `defineKitComponent`.
-describe("форма отвергает сборку, не сходящуюся с паспортом", () => {
-  const анатомия = createAnatomy("проба").parts("root", "item");
-
-  /** Объявление с подставленной сборкой. Всё остальное — минимум, лишь бы паспорт собрался. */
-  const объявить = (assembly: unknown) =>
-    definePassport({
-      anatomy: анатомия,
-      package: "@проба/пакет",
-      genus: "component",
-      root: "root",
-      parts: [
-        { name: "root", means: "корень", states: [], accepts: [{ kind: "part", name: "item" }] },
-        { name: "item", means: "вложенная часть", states: [], accepts: [] },
-      ],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
-      settings: {},
-      assembly: assembly as never,
-    });
-
-  it("сходящаяся сборка объявляется молча", () => {
-    expect(
-      объявить({ means: "корень с частью", tree: { part: "root", children: [{ part: "item" }] } })
-        .assembly?.means,
-    ).toBe("корень с частью");
-  });
-
-  it("корень сборки — только корневая часть: иначе дерево не соберётся у потребителя", () => {
-    expect(() => объявить({ means: "не с корня", tree: { part: "item" } })).toThrow(/item/);
-  });
-
-  it("часть мимо анатомии отвергается с её именем — адресовать её нечем", () => {
-    expect(() =>
-      объявить({ means: "выдуманная часть", tree: { part: "root", children: [{ part: "тень" }] } }),
-    ).toThrow(/тень/);
-  });
-
-  it("недопустимое вложение отвергается ТЕМ ЖЕ правилом, которым его отвергнет редактор", () => {
-    // `item` не пускает внутрь ничего (пустой перечень). Собери поставщик экземпляр, которого
-    // редактор собрать не даст, — расхождение вскрылось бы у человека, а не здесь.
-    expect(() =>
-      объявить({
-        means: "текст внутрь занятого места",
-        tree: {
-          part: "root",
-          children: [{ part: "item", children: [{ genus: "text", value: "нельзя" }] }],
-        },
-      }),
-    ).toThrow(/item/);
-  });
-});
 
 describe("форма отвергает переменную, не являющуюся кастом-свойством", () => {
   const анатомия = createAnatomy("проба-переменных").parts("root");
@@ -247,22 +28,18 @@ describe("форма отвергает переменную, не являющ�
   const объявить = (variables: unknown) =>
     definePassport({
       anatomy: анатомия,
-      package: "@проба/пакет",
-      genus: "component",
       root: "root",
-      parts: [{ name: "root", means: "корень", states: [], variables: variables as never }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      parts: [{ name: "root", states: [], variables: variables as never }],
+      variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
       settings: {},
     });
 
   it("имя с двумя дефисами проходит", () => {
-    expect(
-      объявить([{ name: "--height", means: "высота", setBy: "kit" }]).parts[0]?.variables?.length,
-    ).toBe(1);
+    expect(объявить([{ name: "--height", setBy: "kit" }]).parts[0]?.variables?.length).toBe(1);
   });
 
   it("имя без дефисов отвергается: скин порождает из него `var(--…)` и получил бы мёртвое правило", () => {
-    expect(() => объявить([{ name: "height", means: "высота", setBy: "kit" }])).toThrow(/height/);
+    expect(() => объявить([{ name: "height", setBy: "kit" }])).toThrow(/height/);
   });
 });
 
@@ -272,29 +49,24 @@ describe("форма отвергает настройку не из переч�
   const объявить = (settings: unknown) =>
     definePassport({
       anatomy: анатомия,
-      package: "@проба/пакет",
-      genus: "component",
       root: "root",
-      parts: [{ name: "root", means: "корень", states: [] }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      parts: [{ name: "root", states: [] }],
+      variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
       settings: settings as never,
     });
 
   it("имя из перечня проходит", () => {
     expect(
-      Object.keys(
-        объявить({ multiple: { means: "несколько", values: { kind: "flag" }, byDefault: false } })
-          .settings,
-      ),
+      Object.keys(объявить({ multiple: { values: { kind: "flag" }, byDefault: false } }).settings),
     ).toEqual(["multiple"]);
   });
 
   it("своё имя отвергается — иначе один пульт покажет настройку, а второй не покажет вовсе", () => {
     // Типы стерегут TypeScript-поставщика; эта проверка — любого, включая приехавшего сборкой
-    // без типов. Ровно та же оговорка, что у перечня групп.
-    expect(() =>
-      объявить({ вертикально: { means: "своё имя", values: { kind: "flag" }, byDefault: false } }),
-    ).toThrow(/вертикально/);
+    // без типов. Ровно та же оговорка, что у перечня групп в срезе редактора.
+    expect(() => объявить({ вертикально: { values: { kind: "flag" }, byDefault: false } })).toThrow(
+      /вертикально/,
+    );
   });
 });
 
@@ -309,14 +81,11 @@ describe("настройка может нести mark — как у состо
   const объявить = (mark?: PassportMark) =>
     definePassport({
       anatomy: анатомия,
-      package: "@проба/пакет",
-      genus: "component",
       root: "root",
-      parts: [{ name: "root", means: "корень", states: [] }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      parts: [{ name: "root", states: [] }],
+      variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
       settings: {
         multiple: {
-          means: "признак для пробы",
           values: { kind: "flag" },
           byDefault: false,
           ...(mark ? { mark } : {}),
@@ -347,7 +116,7 @@ describe("настройка может нести mark — как у состо
 describe("settingApplies: действует ли настройка при текущих значениях", () => {
   it("настройка без dependsOn действует всегда", () => {
     const настройки: Readonly<Record<string, PassportSetting>> = {
-      сама: { means: "проба", values: { kind: "flag" }, byDefault: false },
+      сама: { values: { kind: "flag" }, byDefault: false },
     };
 
     expect(settingApplies(настройки, "сама", {})).toBe(true);
@@ -357,12 +126,10 @@ describe("settingApplies: действует ли настройка при те
   it("значение источника, названное явно, решает напрямую", () => {
     const настройки: Readonly<Record<string, PassportSetting>> = {
       плотность: {
-        means: "проба-источник",
-        values: { kind: "choice", options: [{ value: "высокая", means: "высокая" }] },
+        values: { kind: "choice", options: [{ value: "высокая" }] },
         byDefault: "низкая",
       },
       цвет: {
-        means: "проба — глушится высокой плотностью",
         values: { kind: "flag" },
         byDefault: false,
         dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
@@ -376,12 +143,10 @@ describe("settingApplies: действует ли настройка при те
   it("источник, не названный в значениях, решает СВОИМ умолчанием — тем же доводом, что у byDefault", () => {
     const глушащееУмолчание: Readonly<Record<string, PassportSetting>> = {
       плотность: {
-        means: "проба-источник",
-        values: { kind: "choice", options: [{ value: "низкая", means: "низкая" }] },
+        values: { kind: "choice", options: [{ value: "низкая" }] },
         byDefault: "высокая",
       },
       цвет: {
-        means: "проба",
         values: { kind: "flag" },
         byDefault: false,
         dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
@@ -396,12 +161,10 @@ describe("settingApplies: действует ли настройка при те
   it("источник без явного значения, чьё умолчание НЕ совпадает с redundantWhen, оставляет настройку в действии", () => {
     const настройки: Readonly<Record<string, PassportSetting>> = {
       плотность: {
-        means: "проба-источник",
-        values: { kind: "choice", options: [{ value: "высокая", means: "высокая" }] },
+        values: { kind: "choice", options: [{ value: "высокая" }] },
         byDefault: "низкая",
       },
       цвет: {
-        means: "проба",
         values: { kind: "flag" },
         byDefault: false,
         dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
@@ -416,19 +179,15 @@ describe("settingApplies: действует ли настройка при те
     // паспорта, а не только читается из руками собранной записи выше.
     const паспорт = definePassport({
       anatomy: createAnatomy("проба-зависимости").parts("root"),
-      package: "@проба/пакет",
-      genus: "component",
       root: "root",
-      parts: [{ name: "root", means: "корень", states: [] }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      parts: [{ name: "root", states: [] }],
+      variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
       settings: {
         orientation: {
-          means: "положение",
-          values: { kind: "choice", options: [{ value: "horizontal", means: "боком" }] },
+          values: { kind: "choice", options: [{ value: "horizontal" }] },
           byDefault: "vertical",
         },
         multiple: {
-          means: "проба",
           values: { kind: "flag" },
           byDefault: false,
           dependsOn: { on: "orientation", redundantWhen: "horizontal" },
@@ -446,14 +205,11 @@ describe("settingApplies: действует ли настройка при те
     expect(() =>
       definePassport({
         anatomy: createAnatomy("проба-сироты").parts("root"),
-        package: "@проба/пакет",
-        genus: "component",
         root: "root",
-        parts: [{ name: "root", means: "корень", states: [] }],
-        variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+        parts: [{ name: "root", states: [] }],
+        variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
         settings: {
           collapsible: {
-            means: "проба",
             values: { kind: "flag" },
             byDefault: false,
             dependsOn: { on: "multiple", redundantWhen: true },
@@ -479,11 +235,9 @@ describe("настройки обязательны — и обязательн�
 
   const общее = {
     anatomy: анатомия,
-    package: "@проба/пакет",
-    genus: "component",
     root: "root",
-    parts: [{ name: "root", means: "корень", states: [] }],
-    variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+    parts: [{ name: "root", states: [] }],
+    variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
   } as const;
 
   it("паспорт БЕЗ настроек не собирается: отказ типом и названный отказ на исполнении", () => {
@@ -493,7 +247,7 @@ describe("настройки обязательны — и обязательн�
 
     // Вторая половина — про поставщика, приехавшего сборкой без TypeScript: он обязан получить
     // НАЗВАННЫЙ отказ, а не безымянный `TypeError` из первого обхода записи. Тот же довод, что у
-    // закрытого перечня групп.
+    // закрытого перечня групп в срезе редактора.
     expect(без).toThrow(/паспорт без настроек/);
   });
 
@@ -511,7 +265,6 @@ describe("настройки обязательны — и обязательн�
 describe("признак, которого может не быть, адресом вида не является", () => {
   const надёжное: PassportState = {
     name: "open",
-    means: "раскрыто",
     mark: { kind: "attribute", name: "data-state", value: "open" },
   };
 
@@ -542,12 +295,10 @@ describe("признак, которого может не быть, адрес�
     // нём ничего; отдай он его виду — правило скина применялось бы через раз.
     const паспорт = definePassport({
       anatomy: createAnatomy("проба-прихода").parts("root"),
-      package: "@проба/пакет",
-      genus: "component",
-      root: "root",
       settings: {},
-      parts: [{ name: "root", means: "корень", states: [ненадёжное] }],
-      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      root: "root",
+      parts: [{ name: "root", states: [ненадёжное] }],
+      variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
     });
 
     const состояние = паспорт.parts[0].states[0];

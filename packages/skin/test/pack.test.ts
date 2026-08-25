@@ -66,6 +66,8 @@ describe("что уезжает в тарбол", () => {
         "dist/model.d.ts",
         "dist/flat.js",
         "dist/flat.d.ts",
+        "dist/editor.js",
+        "dist/editor.d.ts",
         "package.json",
         "README.md",
       ]),
@@ -177,6 +179,58 @@ describe("разворачиватель необязателен: вложен�
 
     for (const bucket of [manifest.dependencies, manifest.devDependencies, manifest.peerDependencies]) {
       expect(bucket?.["@omnifield/probe-web-ui"]).toBeUndefined();
+    }
+  });
+});
+
+describe("срез редактора отделён от рантайма ГРАНИЦЕЙ МОДУЛЕЙ, а не обещанием (`PWEB-115`)", () => {
+  it("`./editor` поднимается и работает целиком: определение, сверка с рантаймом, сборка", () => {
+    // Тот же довод, что у порождения и `createAnatomy` выше: импорт мог бы пройти на ленивом
+    // графе, а `defineEditorInfo` — нет, если бы сверка с рантаймом (части, состояния, сборки)
+    // была битой после переезда.
+    const printed = runInInstall(
+      install,
+      `import { createAnatomy, definePassport } from ${JSON.stringify(PKG)};
+       import { admits, baseAssemblyOf, defineEditorInfo, groupOf } from ${JSON.stringify(`${PKG}/editor`)};
+       const anatomy = createAnatomy("проба").parts("root");
+       const passport = definePassport({
+         anatomy,
+         root: "root",
+         parts: [{ name: "root", states: [] }],
+         variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
+         settings: {},
+       });
+       const editorInfo = defineEditorInfo(passport, {
+         package: "тест",
+         genus: "component",
+         variantAxis: { means: "вариация" },
+         parts: { root: { means: "корень" } },
+         assemblies: [{ means: "пусто", tree: { part: "root" } }],
+       });
+       console.log(
+         editorInfo.parts.root.means,
+         groupOf(editorInfo),
+         admits(editorInfo.parts.root, { kind: "part", name: "root" }),
+         !!baseAssemblyOf(passport, editorInfo.assemblies[0]),
+       );`,
+    );
+
+    expect(printed).toBe("корень other true true");
+  });
+
+  it("`dist/index.js` и `dist/model.js` не содержат НИ СТРОКИ редакторского кода", () => {
+    // Не потому, что кто-то пообещал не импортировать `./editor` из корня, а потому что граф
+    // импортов `index.ts`/`model.ts` физически не достигает `passport-editor.ts`/
+    // `passport-assembly.ts` — esbuild кладёт в бандл только достижимое из entry point. Тот же
+    // приём, что доказал нулевой байт lucide-solid (`PWEB-107`), — только на уровне ЭТОЙ поставки,
+    // а не приложения-потребителя (тот замер — за `apps/reference`, следующая задача `PWEB-115`).
+    const editorOnly = ["defineEditorInfo", "baseAssemblyOf", "admits", "GROUPS"];
+
+    for (const file of ["index.js", "model.js"]) {
+      const text = readFileSync(join(pkgRoot, "dist", file), "utf8");
+      for (const needle of editorOnly) {
+        expect(text).not.toContain(needle);
+      }
     }
   });
 });

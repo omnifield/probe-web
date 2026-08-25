@@ -17,6 +17,10 @@
     "./flat": {
       "types": "./dist/flat.d.ts",
       "default": "./dist/flat.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "default": "./dist/editor.js"
     }
   },
   "files": [

@@ -46,6 +46,10 @@
 
 import type { ComponentPassport } from "./passport-form.js";
 import { addressesView } from "./passport-form.js";
+// Тип-импорт: срез редактора не тянет за собой НИ ОДНОЙ привязки времени исполнения (`PWEB-115`).
+// Аннотация в сигнатуре `skinGaps` ничего не весит и не нарушает границу — стирается на
+// компиляции, как и всякий `import type`.
+import type { PassportEditorInfo } from "./passport-editor.js";
 import { partOf } from "./passport-view.js";
 
 import { passportLookup } from "./address.js";
@@ -110,10 +114,28 @@ export type SkinGap =
       readonly means: string;
     };
 
+/**
+ * Что состояние значит человеку — если срез редактора для него нашёлся.
+ *
+ * `undefined` — законный ответ, не отказ: `editorInfo` необязателен (`PWEB-115`), и большинство
+ * вызовов его не дают вовсе. Сообщение о пробеле в этом случае обходится без скобки, а не
+ * подставляет заглушку — заглушка выглядела бы как назначение, которого никто не объявлял.
+ */
+function meansOfState(
+  editors: readonly PassportEditorInfo[],
+  component: string,
+  part: string,
+  state: string,
+): string | undefined {
+  const editor = editors.find((entry) => entry.component === component);
+  return editor?.parts[part]?.states?.[state]?.means;
+}
+
 /** Собирает пробелы одного компонента. */
 function gapsOfComponent(
   passport: ComponentPassport,
   touched: { parts: ReadonlySet<string>; states: ReadonlySet<string> },
+  editors: readonly PassportEditorInfo[],
   gaps: SkinGap[],
 ): void {
   const component = passport.component;
@@ -145,12 +167,15 @@ function gapsOfComponent(
 
       if (touched.states.has(`${component}.${part}:${state.name}`)) continue;
 
+      const editorMeans = meansOfState(editors, component, part, state.name);
+      const suffix = editorMeans ? ` (${editorMeans})` : "";
+
       gaps.push({
         kind: "state",
         component,
         part,
         state: state.name,
-        means: `состояние «${state.name}» части «${part}» (${state.means}) объявлено, но ни одно ` +
+        means: `состояние «${state.name}» части «${part}»${suffix} объявлено, но ни одно ` +
           "правило скина его не адресует",
       });
     }
@@ -173,14 +198,28 @@ function gapsOfComponent(
  *
  * Скин с изъянами считается тоже: пока человек правит, ему нужен ответ, а не отказ.
  *
+ * `editorInfo` — необязательный ВТОРОЙ довод, а не поле у пробела (`PWEB-115`). Раньше сообщение
+ * о непокрытом состоянии несло его `means` прямо с паспорта; после разреза `means` принадлежит
+ * срезу редактора, а покрытие — читатель обеих сторон сразу, потому что живёт в модели, а не за
+ * подпутём `./editor`. Не дан — сообщение обходится без человеческого имени состояния в скобке, а
+ * не подставляет заглушку. Дан — редактор получает то же самое, что читал раньше, только вторым
+ * доводом, а не полем паспорта.
+ *
  * @param skin скин целиком
  * @param passports паспорта, покрытие по которым считать
+ * @param editorInfo срез редактора тех же компонентов — для человеческого текста пробела; без
+ *   него пробел остаётся точным, но без пояснения в скобке
  * @returns пробелы; пустой перечень — скин одел всё объявленное
  */
-export function skinGaps(skin: Skin, passports: Iterable<ComponentPassport>): readonly SkinGap[] {
+export function skinGaps(
+  skin: Skin,
+  passports: Iterable<ComponentPassport>,
+  editorInfo?: Iterable<PassportEditorInfo>,
+): readonly SkinGap[] {
   const done = trace(`skinGaps(${skin.name})`);
 
   const list = [...passports];
+  const editors = editorInfo ? [...editorInfo] : [];
   // Обход рецептов зовёт паспорт по имени — для предка, живущего в чужом дереве. Лукап собран из
   // того же перечня: второго источника паспортов у покрытия нет.
   const touched = dressed(skinRules(skin, passportLookup(list)).rules);
@@ -197,7 +236,7 @@ export function skinGaps(skin: Skin, passports: Iterable<ComponentPassport>): re
       continue;
     }
 
-    gapsOfComponent(passport, touched, gaps);
+    gapsOfComponent(passport, touched, editors, gaps);
   }
 
   done();
