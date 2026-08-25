@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, mount, nextTask } from "../../test/dom.jsx";
-import { addressesView } from "../passport-form.js";
+import { addressesView, settingApplies } from "../passport-form.js";
 import { coordinateOf, partOf, type PassportLookup } from "../passport-view.js";
 import { anatomy, parts, passport } from "./accordion.anatomy.js";
 import {
@@ -608,5 +608,39 @@ describe("паспорт: настройки наблюдаемы на живо�
     await дождаться(() => узлы(закрываемая, "item").filter(раскрыт).length === 0);
 
     expect(узлы(закрываемая, "item").filter(раскрыт).length).toBe(0);
+  });
+
+  // Зависимость `collapsible` от `multiple` (`SKINED-7`): у Zag закрыть последний раскрытый
+  // раздел можно, если включено ХОТЯ БЫ ОДНО из двух, — при `multiple` значение `collapsible`
+  // на поведение больше не влияет. Правило `settingApplies` проверено на чужом паспорте в
+  // `test/passport-form.test.ts`; здесь — что паспорт гармошки называет ЭТУ зависимость и что
+  // названное подтверждается на живом узле, а не только в записи.
+  it("`collapsible` зависит от `multiple`: паспорт называет это данными", () => {
+    expect(passport.settings.collapsible!.dependsOn).toEqual({
+      on: "multiple",
+      redundantWhen: true,
+    });
+
+    expect(settingApplies(passport.settings, "collapsible", { multiple: true })).toBe(false);
+    expect(settingApplies(passport.settings, "collapsible", { multiple: false })).toBe(true);
+    // `multiple` не названа явно — решает её собственное умолчание (`false`), и `collapsible`
+    // остаётся в действии, как и до этой связи.
+    expect(settingApplies(passport.settings, "collapsible", {})).toBe(true);
+  });
+
+  it("зависимость подтверждена на узле: при `multiple` последний раскрытый закрывается и БЕЗ `collapsible`", async () => {
+    const множественная = mount(() => (
+      <Accordion multiple defaultValue={["доставка"]}>
+        <AccordionItem value="доставка">
+          <AccordionItemTrigger>Доставка</AccordionItemTrigger>
+          <AccordionItemContent>Курьером</AccordionItemContent>
+        </AccordionItem>
+      </Accordion>
+    ));
+
+    нажать(узлы(множественная, "itemTrigger")[0]!);
+    await дождаться(() => узлы(множественная, "item").filter(раскрыт).length === 0);
+
+    expect(узлы(множественная, "item").filter(раскрыт).length).toBe(0);
   });
 });

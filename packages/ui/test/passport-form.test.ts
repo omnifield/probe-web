@@ -27,9 +27,12 @@ import {
   definePassport,
   GROUPS,
   groupOf,
+  settingApplies,
   type PassportGenus,
   type PassportMark,
   type PassportPart,
+  type PassportSetting,
+  type PassportSettingName,
   type PassportState,
 } from "../src/passport-form.js";
 
@@ -323,6 +326,135 @@ describe("настройка может нести mark — как у состо
     const mark: PassportMark = { kind: "attribute", name: "data-multiple" };
 
     expect(объявить(mark).settings.multiple?.mark).toEqual(mark);
+  });
+});
+
+// ЗАВИСИМОСТЬ НАСТРОЙКИ ОТ ДРУГОЙ — `settingApplies` (`SKINED-7`).
+//
+// Правило одно на всех поставщиков, и проверяется оно поэтому НЕ на гармошке: у гармошки
+// зависимость сегодня ровно одна («multiple» глушит «collapsible»), и проба на живом компоненте
+// стерегла бы её собственный паспорт, а не правило. Имена настроек ниже — «плотность» и «цвет» —
+// СВОИ, не из закрытого перечня SETTINGS и не пара «multiple»/«collapsible»: если бы функция читала
+// эти имена в упор, а не данные `dependsOn`, она бы здесь просто не сработала. Годится это потому,
+// что `settingApplies` принимает запись настроек значением, а не паспорт, — закрытый перечень
+// стережёт объявление (`definePassport`), а не саму функцию.
+describe("settingApplies: действует ли настройка при текущих значениях", () => {
+  it("настройка без dependsOn действует всегда", () => {
+    const настройки: Readonly<Record<string, PassportSetting>> = {
+      сама: { means: "проба", values: { kind: "flag" }, byDefault: false },
+    };
+
+    expect(settingApplies(настройки, "сама", {})).toBe(true);
+    expect(settingApplies(настройки, "сама", { сама: true })).toBe(true);
+  });
+
+  it("значение источника, названное явно, решает напрямую", () => {
+    const настройки: Readonly<Record<string, PassportSetting>> = {
+      плотность: {
+        means: "проба-источник",
+        values: { kind: "choice", options: [{ value: "высокая", means: "высокая" }] },
+        byDefault: "низкая",
+      },
+      цвет: {
+        means: "проба — глушится высокой плотностью",
+        values: { kind: "flag" },
+        byDefault: false,
+        dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
+      },
+    };
+
+    expect(settingApplies(настройки, "цвет", { плотность: "низкая" })).toBe(true);
+    expect(settingApplies(настройки, "цвет", { плотность: "высокая" })).toBe(false);
+  });
+
+  it("источник, не названный в значениях, решает СВОИМ умолчанием — тем же доводом, что у byDefault", () => {
+    const глушащееУмолчание: Readonly<Record<string, PassportSetting>> = {
+      плотность: {
+        means: "проба-источник",
+        values: { kind: "choice", options: [{ value: "низкая", means: "низкая" }] },
+        byDefault: "высокая",
+      },
+      цвет: {
+        means: "проба",
+        values: { kind: "flag" },
+        byDefault: false,
+        dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
+      },
+    };
+
+    // Умолчание источника СОВПАДАЕТ с redundantWhen — «не выставлено» и «выставлено умолчанием»
+    // здесь одно и то же положение, и настройка глушится молча, без единого явного значения.
+    expect(settingApplies(глушащееУмолчание, "цвет", {})).toBe(false);
+  });
+
+  it("источник без явного значения, чьё умолчание НЕ совпадает с redundantWhen, оставляет настройку в действии", () => {
+    const настройки: Readonly<Record<string, PassportSetting>> = {
+      плотность: {
+        means: "проба-источник",
+        values: { kind: "choice", options: [{ value: "высокая", means: "высокая" }] },
+        byDefault: "низкая",
+      },
+      цвет: {
+        means: "проба",
+        values: { kind: "flag" },
+        byDefault: false,
+        dependsOn: { on: "плотность" as PassportSettingName, redundantWhen: "высокая" },
+      },
+    };
+
+    expect(settingApplies(настройки, "цвет", {})).toBe(true);
+  });
+
+  it("работает на ПОЛНОМ паспорте чужого компонента, не гармошки", () => {
+    // Собранном через definePassport — доказано, что зависимость доезжает через объявление до
+    // паспорта, а не только читается из руками собранной записи выше.
+    const паспорт = definePassport({
+      anatomy: createAnatomy("проба-зависимости").parts("root"),
+      package: "@проба/пакет",
+      genus: "component",
+      root: "root",
+      parts: [{ name: "root", means: "корень", states: [] }],
+      variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+      settings: {
+        orientation: {
+          means: "положение",
+          values: { kind: "choice", options: [{ value: "horizontal", means: "боком" }] },
+          byDefault: "vertical",
+        },
+        multiple: {
+          means: "проба",
+          values: { kind: "flag" },
+          byDefault: false,
+          dependsOn: { on: "orientation", redundantWhen: "horizontal" },
+        },
+      },
+    });
+
+    expect(settingApplies(паспорт.settings, "multiple", { orientation: "vertical" })).toBe(true);
+    expect(settingApplies(паспорт.settings, "multiple", { orientation: "horizontal" })).toBe(false);
+  });
+
+  it("объявление отвергает зависимость от настройки, которой у компонента нет", () => {
+    // Названо, но отсутствует у ЭТОГО поставщика: `settingApplies` иначе читал бы `undefined`
+    // вместо умолчания чужой настройки молча — отказ ловит это на объявлении, а не у потребителя.
+    expect(() =>
+      definePassport({
+        anatomy: createAnatomy("проба-сироты").parts("root"),
+        package: "@проба/пакет",
+        genus: "component",
+        root: "root",
+        parts: [{ name: "root", means: "корень", states: [] }],
+        variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+        settings: {
+          collapsible: {
+            means: "проба",
+            values: { kind: "flag" },
+            byDefault: false,
+            dependsOn: { on: "multiple", redundantWhen: true },
+          },
+        },
+      }),
+    ).toThrow(/«collapsible».*«multiple»/);
   });
 });
 

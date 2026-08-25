@@ -220,6 +220,27 @@ export type PassportSettingValues =
   | { readonly kind: "flag" }
   | { readonly kind: "choice"; readonly options: readonly PassportSettingOption[] };
 
+/**
+ * ЗАВИСИМОСТЬ настройки от ДРУГОЙ настройки того же компонента (`SKINED-7`).
+ *
+ * У гармошки `collapsible` перестаёт что-либо решать, когда `multiple` включена: Zag пускает
+ * закрыть последний раскрытый раздел, если включено ХОТЯ БЫ ОДНО из двух (`canToggle = collapsible
+ * || multiple`), — при `multiple: true` закрытие уже разрешено, и значение `collapsible` на
+ * поведение не влияет. Это факт о ПОВЕДЕНИИ компонента, тот же род знания, что и сама настройка, и
+ * его знает поставщик — не пульт, который гадал бы по именам.
+ *
+ * Поле называет ЧУЖОЕ имя и ОДНО его значение — то, при котором эта настройка теряет действие.
+ * Не текст объяснения: ответ обязан быть вычислимым (`settingApplies`), а не написанным для
+ * человека, — иначе каждый пульт решал бы зависимость по-своему и расходился со вторым, оставаясь
+ * зелёным.
+ */
+export interface PassportSettingDependency {
+  /** Имя настройки, от чьего значения зависит эта. Из закрытого перечня, как и имя самой настройки. */
+  readonly on: PassportSettingName;
+  /** Значение `on`, ПРИ КОТОРОМ эта настройка теряет действие. */
+  readonly redundantWhen: string | boolean;
+}
+
 /** Настройка компонента: что делает, какие значения принимает и что действует без неё. */
 export interface PassportSetting {
   /** Что она делает — человеку и редактору. */
@@ -245,6 +266,14 @@ export interface PassportSetting {
    * Значение поля форма не толкует: адресом скина оно становится в механике скина, а не здесь.
    */
   readonly mark?: PassportMark;
+  /**
+   * От какой настройки эта зависит — необязательно, большинство настроек независимы.
+   *
+   * `settingApplies` — единственный законный читатель поля: пульт спрашивает данными, а не
+   * сравнивает имена настроек сам, иначе решение про `multiple` и `collapsible` осело бы в
+   * витрине частным случаем и не сработало бы у следующего поставщика с той же формой.
+   */
+  readonly dependsOn?: PassportSettingDependency;
 }
 
 /**
@@ -275,6 +304,38 @@ export type PassportSettings<Props> = Readonly<
  */
 export function defineSettings<Props>(settings: PassportSettings<Props>): PassportSettings<Props> {
   return settings;
+}
+
+/**
+ * Действует ли настройка `name` при ТЕКУЩИХ значениях, или её перебила чужая (`SKINED-7`).
+ *
+ * Ответ вычисляется, а не описывается словами: `dependsOn` называет чужое имя и значение, при
+ * котором своя настройка теряет действие, а эта функция сравнивает его с фактическим значением
+ * настройки-источника. Значение источника, которого нет в `values`, берётся его же умолчанием —
+ * тем же доводом, что у `byDefault`: «не выставлено» и «выставлено умолчанием» обязаны быть одним
+ * положением, а не двумя, совпадающими по неписаной договорённости.
+ *
+ * Живёт рядом с формой по той же причине, что `admits` и `addressesView`: правило одно на всех
+ * читателей паспорта — витрину, редактор, следующий пульт, — и решай каждый «действует ли
+ * настройка» по-своему, второе решение молча разъехалось бы с первым.
+ *
+ * @param settings настройки компонента — записью, как их отдаёт паспорт
+ * @param name имя проверяемой настройки
+ * @param values текущие значения настроек — то, что выставил человек в витрине или редакторе
+ */
+export function settingApplies(
+  settings: Readonly<Record<string, PassportSetting>>,
+  name: string,
+  values: Readonly<Record<string, unknown>>,
+): boolean {
+  const dependency = settings[name]?.dependsOn;
+
+  if (!dependency) return true;
+
+  const source = settings[dependency.on];
+  const actual = values[dependency.on] ?? source?.byDefault;
+
+  return actual !== dependency.redundantWhen;
 }
 
 /**
@@ -611,6 +672,17 @@ export function definePassport<Part extends string>(
     throw new Error(
       `настройки не из перечня: ${strange.join(", ")}; допустимы: ${Object.keys(SETTINGS).join(", ")}`,
     );
+  }
+
+  // Зависимость называет ЧУЖОЕ имя настройки, и имя обязано существовать у ЭТОГО ЖЕ компонента —
+  // иначе `settingApplies` спрашивал бы значение настройки, которой в записи нет, и молча читал бы
+  // `undefined` вместо умолчания чужой настройки.
+  for (const [name, setting] of Object.entries(spec.settings)) {
+    const on = setting.dependsOn?.on;
+
+    if (on !== undefined && !Object.hasOwn(spec.settings, on)) {
+      throw new Error(`настройка «${name}» зависит от «${on}», которой у компонента нет`);
+    }
   }
 
   // Переменная без двух дефисов — не кастом-свойство, а опечатка: скин порождает из неё
