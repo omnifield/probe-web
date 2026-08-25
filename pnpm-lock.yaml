@@ -362,6 +362,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@omnifield/probe-web-skin':
+        specifier: workspace:*
+        version: link:../skin
       '@zag-js/accordion':
         specifier: ^1.43.1
         version: 1.43.1
@@ -378,6 +381,9 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
+      '@omnifield/live-check':
+        specifier: workspace:*
+        version: link:../../tools/live-check
       '@omnifield/probe-web-lint':
         specifier: workspace:*
         version: link:../lint

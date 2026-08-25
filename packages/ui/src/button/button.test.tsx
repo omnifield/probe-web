@@ -21,12 +21,15 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { admits, GROUPS, groupOf, skinGaps, type Outfit } from "@omnifield/probe-web-skin/model";
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { admits, GROUPS, groupOf } from "../passport-form.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
 import { Popover, PopoverTrigger } from "../popover.jsx";
 import { Toggle } from "../toggle.jsx";
 import { anatomy, parts, passport } from "./button.anatomy.js";
 import { Button } from "./button.jsx";
+import { form } from "./button.recipe.js";
 
 afterEach(cleanup);
 
@@ -416,5 +419,23 @@ describe("паспорт: форма", () => {
     // зная имён пакетов заранее. Строка написана в паспорте руками — сверяем с манифестом,
     // иначе она разъедется с ним молча.
     expect(passport.package).toBe(manifest.name);
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `button.recipe.ts`): компонент доказывает себя сам — паспорт
+// кнопки МОЖНО одеть настоящей механикой скина целиком, а не только собрать типами. Раньше это
+// же доказывал отдельный пакет `packages/skin-reference` (снесён, `PWEB-110`).
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  // `assemble` бросает `OutfitRefused` на изъяне — не бросил, значит наряд собрался ЧЕСТНО, а не
+  // просто не упал мимо проверки.
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

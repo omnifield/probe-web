@@ -22,11 +22,20 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  addressesView,
+  coordinateOf,
+  partOf,
+  settingApplies,
+  skinGaps,
+  type Outfit,
+  type PassportLookup,
+} from "@omnifield/probe-web-skin/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cleanup, mount, nextTask } from "../../test/dom.jsx";
-import { addressesView, settingApplies } from "../passport-form.js";
-import { coordinateOf, partOf, type PassportLookup } from "../passport-view.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
 import { anatomy, parts, passport } from "./accordion.anatomy.js";
 import {
   Accordion,
@@ -35,6 +44,7 @@ import {
   AccordionItemIndicator,
   AccordionItemTrigger,
 } from "./accordion.jsx";
+import { form } from "./accordion.recipe.js";
 
 afterEach(cleanup);
 
@@ -612,9 +622,10 @@ describe("паспорт: настройки наблюдаемы на живо�
 
   // Зависимость `collapsible` от `multiple` (`SKINED-7`): у Zag закрыть последний раскрытый
   // раздел можно, если включено ХОТЯ БЫ ОДНО из двух, — при `multiple` значение `collapsible`
-  // на поведение больше не влияет. Правило `settingApplies` проверено на чужом паспорте в
-  // `test/passport-form.test.ts`; здесь — что паспорт гармошки называет ЭТУ зависимость и что
-  // названное подтверждается на живом узле, а не только в записи.
+  // на поведение больше не влияет. Общее правило `settingApplies` (форма — `PWEB-110`,
+  // `@omnifield/probe-web-skin`) проверяется тестами формы, а не здесь; здесь — что паспорт
+  // гармошки называет ЭТУ зависимость и что названное подтверждается на живом узле, а не только
+  // в записи.
   it("`collapsible` зависит от `multiple`: паспорт называет это данными", () => {
     expect(passport.settings.collapsible!.dependsOn).toEqual({
       on: "multiple",
@@ -642,5 +653,24 @@ describe("паспорт: настройки наблюдаемы на живо�
     await дождаться(() => узлы(множественная, "item").filter(раскрыт).length === 0);
 
     expect(узлы(множественная, "item").filter(раскрыт).length).toBe(0);
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `accordion.recipe.ts`): компонент доказывает себя сам —
+// паспорт гармошки МОЖНО одеть настоящей механикой скина целиком. Раньше это же доказывал
+// отдельный пакет `packages/skin-reference` (снесён, `PWEB-110`). Живые пробы раскрытия — прямое
+// продолжение того же доказательства настоящим браузером — живут РЯДОМ, в `accordion.live.test.ts`:
+// `esbuild`, которым `собратьКит` бандлит точку входа, несовместим с `jsdom`-окружением этого
+// файла (разбор — в шапке того файла), поэтому вынесены под отдельное окружение vitest.
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

@@ -10,7 +10,7 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { defineSettings, definePassport } from "../passport-form.js";
+import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { ButtonProps } from "./button.jsx";

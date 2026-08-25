@@ -63,13 +63,67 @@ function renderPassportEntry(folders) {
 // Перечень паспортов собирается обходом папок \`src/*/<имя>.anatomy.ts\`: компонент объявляет
 // себя в своей папке, и попадает в поставку самим фактом объявления. Руками этот файл не
 // ведётся — иначе он стал бы тем самым общим файлом, который правят все.
-
-import type { ComponentPassport } from "./passport-form.js";
+//
+// ФОРМА ПАСПОРТА (\`PWEB-110\`, \`PWEB-111\`) переехала в \`@omnifield/probe-web-skin\` — она общая
+// для любого поставщика компонентов, а не привилегия этого кита. Реэкспорт ниже ПОИМЁННЫЙ, а не
+// \`export *\`: \`/model\` несёт и чужое этому подпути (рецепты, палитру, словарь скина), а
+// \`@omnifield/probe-web-ui/passport\` обязан остаться тем же набором имён, что был до переезда
+// (жёсткое условие \`PWEB-110\`/\`PWEB-111\` — \`packages/assembly\` ходит сюда и не вправе
+// почувствовать перенос). Список сверен построчно со старыми \`passport-form.ts\`/
+// \`passport-view.ts\`/\`passport-assembly.ts\` на момент переезда.
+//
+// \`PASSPORTS\`/\`passportOf\` остаются здесь — это факт про ЭТОТ кит (какие компоненты у него
+// есть), а не про форму, и переезду не подлежат (\`PWEB-26\`, \`PWEB-110\`).
+export type {
+  BaseAssemblyContent,
+  BaseAssemblyElement,
+  BaseAssemblyNode,
+  BaseAssemblyTree,
+  ComponentGroup,
+  ComponentPassport,
+  PassportAdmission,
+  PassportAnatomy,
+  PassportAssembly,
+  PassportAssemblyContent,
+  PassportAssemblyNode,
+  PassportAssemblyPart,
+  PassportComponentGenus,
+  PassportGenus,
+  PassportLookup,
+  PassportMark,
+  PassportPart,
+  PassportSetting,
+  PassportSettingDependency,
+  PassportSettingName,
+  PassportSettingOption,
+  PassportSettings,
+  PassportSettingValues,
+  PassportSpec,
+  PassportState,
+  PassportVariable,
+  PassportVariantAxis,
+  SkinAncestor,
+  SkinCoordinate,
+} from "@omnifield/probe-web-skin/model";
+export {
+  addressesView,
+  admits,
+  baseAssemblyOf,
+  coordinateOf,
+  defineSettings,
+  definePassport,
+  GROUPS,
+  groupOf,
+  isAssemblyContent,
+  isContentNode,
+  partOf,
+  SETTINGS,
+  settingApplies,
+} from "@omnifield/probe-web-skin/model";
+// Реэкспорт (\`export ... from\`) не заводит локальное имя — \`ComponentPassport\` ниже нужен САМ
+// файлу, для \`PASSPORTS\`/\`passportOf\`, и берётся отдельным \`import type\`.
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 ${imports}
-
-export * from "./passport-assembly.js";
-export * from "./passport-form.js";
-export * from "./passport-view.js";
 
 /**
  * Паспорта пакета по имени компонента.

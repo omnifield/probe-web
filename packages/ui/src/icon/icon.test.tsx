@@ -17,11 +17,21 @@ import type { LucideProps } from "lucide-solid";
 import { createSignal, type Component } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  admits,
+  coordinateOf,
+  groupOf,
+  skinGaps,
+  type Outfit,
+  type PassportGenus,
+  type PassportLookup,
+} from "@omnifield/probe-web-skin/model";
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { admits, groupOf, type PassportGenus } from "../passport-form.js";
-import { coordinateOf, type PassportLookup } from "../passport-view.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
 import { anatomy, parts, passport } from "./icon.anatomy.js";
 import { Icon } from "./icon.jsx";
+import { form } from "./icon.recipe.js";
 
 afterEach(cleanup);
 
@@ -30,7 +40,7 @@ const manifest = JSON.parse(
   readFileSync(resolve(here, "..", "..", "package.json"), "utf8"),
 ) as { name: string };
 
-/** Кандидат-содержимое названного рода — тот же приём, что в `test/passport-form.test.ts`. */
+/** Кандидат-содержимое названного рода — тот же приём, что у `button.test.tsx`. */
 const content = (genus: PassportGenus) => ({ kind: "content", genus }) as const;
 
 /** Читатель паспорта — им же будет пользоваться редактор. */
@@ -185,5 +195,21 @@ describe("паспорт значка", () => {
       states: [],
       variant: "приглушённый",
     });
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `icon.recipe.ts`): компонент доказывает себя сам — паспорт
+// значка МОЖНО одеть настоящей механикой скина целиком. Единственный компонент, у которого этого
+// раньше не было вовсе (значок приехал позже эталона, `PWEB-107`) — находка закрыта здесь.
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

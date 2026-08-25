@@ -24,13 +24,13 @@ import { Dynamic } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { KIT } from "../src/index.js";
+import { PASSPORTS } from "../src/passport.js";
 import {
   baseAssemblyOf,
   isContentNode,
   type BaseAssemblyElement,
   type BaseAssemblyTree,
-} from "../src/passport-assembly.js";
-import { PASSPORTS } from "../src/passport.js";
+} from "@omnifield/probe-web-skin/model";
 import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);

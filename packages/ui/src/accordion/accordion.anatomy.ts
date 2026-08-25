@@ -67,13 +67,14 @@
 // умолчана.
 //
 // Поэтому состояние ОБЪЯВЛЕНО, а ненадёжность признака названа машиночитаемо — полем `absentWhen`
-// (форма — `passport-form.ts`). Читатель под вид отбрасывает такие состояния сам (`addressesView`,
-// и через него `coordinateOf`), читатель под движение читает их вместе с обстоятельством. Прежнее
-// молчание паспорта решало это за обоих и было неотличимо от «поставщик не посмотрел».
+// (форма — `@omnifield/probe-web-skin/model`, `PWEB-110`). Читатель под вид отбрасывает такие
+// состояния сам (`addressesView`, и через него `coordinateOf`), читатель под движение читает их
+// вместе с обстоятельством. Прежнее молчание паспорта решало это за обоих и было неотличимо от
+// «поставщик не посмотрел».
 
 import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
 
-import { defineSettings, definePassport, type PassportState } from "../passport-form.js";
+import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой целиком, и подпуть `./passport`
 // остаётся тем, чем продан, — данными без Solid и без Ark. Нужен он ровно для того, чтобы ключи
 // настроек сверялись с настоящими пропами компонента, а не с представлением о них.

@@ -18,10 +18,9 @@
 import { createAnatomy } from "@zag-js/anatomy";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { definePassport, coordinateOf, partOf, type PassportLookup } from "@omnifield/probe-web-skin/model";
 import { Button } from "../src/button/index.js";
 import { passport as buttonPassport } from "../src/button/button.anatomy.js";
-import { definePassport } from "../src/passport-form.js";
-import { coordinateOf, partOf, type PassportLookup } from "../src/passport-view.js";
 import { Popover, PopoverTrigger } from "../src/popover.jsx";
 import { cleanup, mount, one } from "./dom.jsx";
 
