@@ -35,13 +35,32 @@
 // Значит `:is(:hover, [data-force~="hover"])` весит ровно столько же, сколько `:hover`, и
 // каскад от появления принудительного признака не сдвигается ни на единицу.
 
-import type { ComponentPassport, PassportMark, PassportState } from "@omnifield/probe-web-ui/passport";
-import { partOf } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport, PassportMark, PassportState } from "./passport-form.js";
+import { partOf } from "./passport-view.js";
 
 import { FORCE_ATTRIBUTE, NODE_ATTRIBUTE } from "./marks.js";
 
 /** Чем найти паспорт по имени компонента. Форма взята у читателя паспорта под вид. */
 export type PassportLookup = (component: string) => ComponentPassport | undefined;
+
+/**
+ * ИМЕНА адресных атрибутов — `data-scope`/`data-part`, как их даёт `@zag-js/anatomy`.
+ *
+ * Здесь их держит `partSelector`/`componentSelector` НЕ ПРЯМО — они перебирают `attrs` из
+ * анатомии как есть, не называя имён (комментарий выше в этом файле). Константы нужны
+ * `passport-view.ts`: чтобы прочитать ЖИВОЙ узел и понять, чей он и какой частью является,
+ * нужно заранее знать, В КАКОМ атрибуте искать, — обратной связи «спроси анатомию» тут нет,
+ * анатомию ещё только предстоит найти по этому же имени.
+ *
+ * ЧУЖОЕ ИМЯ, унаследованное вместе с формой (`PWEB-110`, пересматривает `PWEB-26`). Кит держит
+ * ту же пару в `packages/ui/src/address.ts` — там ею пользуется свой, кит-specific механизм
+ * (`slot-chain.ts`), который остаётся в ките и трогать который здесь нельзя ни строкой. Общий
+ * дом для обеих копий был бы правильным ответом, но не в этом переезде.
+ */
+export const SCOPE = "data-scope";
+
+/** Имя атрибута части — см. `SCOPE`. */
+export const PART = "data-part";
 
 /**
  * Годится ли имя внутрь селектора.

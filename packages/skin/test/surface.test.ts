@@ -45,11 +45,11 @@ describe("что каждый вход тянет за собой", () => {
   // молча импорт — это ровно то, чего проба обязана не пропустить, и обнаруживается он только
   // сравнением всего списка.
 
-  it("корень: кит и набор значений, и ни следа postcss", () => {
-    expect(imports("index.js")).toEqual([
-      "@omnifield/probe-web-style",
-      "@omnifield/probe-web-ui/passport",
-    ]);
+  it("корень: только набор значений, и ни следа postcss", () => {
+    // Кита в этом рёбре БОЛЬШЕ НЕТ (`PWEB-110`): форма паспорта переехала физически, и
+    // порождённый бандл больше не тянет `@omnifield/probe-web-ui/passport` — цикл разорван
+    // физически, не только по факту.
+    expect(imports("index.js")).toEqual(["@omnifield/probe-web-style"]);
   });
 
   it("`./model`: то же самое — построение семенами это МОДЕЛЬ, и Solid она не тянет", () => {
@@ -64,10 +64,7 @@ describe("что каждый вход тянет за собой", () => {
     //
     // Обещание «модель без Solid» от смены двери не ослабло: держит его не имя входа, а
     // отдельная проба ниже — по СОБРАННОМУ файлу, а не по тому, как назван импорт.
-    expect(imports("model.js")).toEqual([
-      "@omnifield/probe-web-style",
-      "@omnifield/probe-web-ui/passport",
-    ]);
+    expect(imports("model.js")).toEqual(["@omnifield/probe-web-style"]);
   });
 
   it("`./flat`: только разворот, и ничего из зоны", () => {

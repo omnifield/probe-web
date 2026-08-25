@@ -31,12 +31,8 @@
 // При равном числе состояний порядок — по происхождению: база, вариация, пересечение.
 // Пересечение собрано автором последним и последним же побеждает.
 
-import type {
-  ComponentPassport,
-  PassportSetting,
-  PassportState,
-} from "@omnifield/probe-web-ui/passport";
-import { addressesView } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport, PassportSetting, PassportState } from "./passport-form.js";
+import { addressesView } from "./passport-form.js";
 
 import {
   anyOf,

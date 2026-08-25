@@ -44,8 +44,9 @@
 //     ДВИЖЕНИЯ, а движение — не вид, и покрытием оно не считается ни в одну сторону: «одел» здесь
 //     значит «дал вид», и это не меняется.
 
-import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
-import { addressesView, partOf } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport } from "./passport-form.js";
+import { addressesView } from "./passport-form.js";
+import { partOf } from "./passport-view.js";
 
 import { passportLookup } from "./address.js";
 import type { Skin } from "./recipe.js";

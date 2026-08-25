@@ -9,24 +9,15 @@
 // Место одно намеренно: сюда смотрят, когда спрашивают «на что мы опираемся у соседей». Разложи
 // эти пробы по предметным файлам — и вопрос перестанет иметь адрес.
 //
-// ## Имена: что здесь чинится
+// ## Шов «признак узла» СНЯТ ОТСЮДА (`PWEB-110`)
 //
-// `data-node` объявляет и ставит механика сборки (`assembly`), класс тёмной пары — `runtime` со
-// зоной значений. У нас они записаны вторыми копиями (`src/marks.ts`), потому что наружу ни одна
-// из зон их не отдаёт: у `assembly` это литерал прямо в отрисовке, у `runtime` — внутренняя
-// константа за замороженной поверхностью.
-//
-// Вторая копия опасна не тем, что она копия, а тем, КАК она ломается. Переименуют у хозяина —
-// здесь останется прежнее, генератор напишет селектор, который ни во что не попадает, и отказа
-// не будет: правило просто не сработает, а чинить пойдут ВИД.
-//
-// Эти пробы превращают тишину в красноту. Они не сверяют строки — они берут НАСТОЯЩИЙ вывод
-// чужой зоны и спрашивают, попадает ли в него наш селектор. Переименование у хозяина роняет
-// пробу в тот же прогон.
-//
-// **Это заплатка на время, а не решение.** Имя обязано приходить оттуда, где его ставят; один
-// дом для обоих — cross-zone решение, поднято архитектору. Обе зоны стоят здесь
-// `devDependency` — в поставку не едут.
+// Он проверял, что наш селектор попадает в узел, который нарисовала НАСТОЯЩАЯ механика сборки
+// (`@omnifield/probe-web-assembly`) поверх НАСТОЯЩЕГО кита (`@omnifield/probe-web-ui`). После
+// переезда формы паспорта в эту же зону кит здесь больше не бывает даже `devDependency` —
+// цикл разорван физически, не только по факту. Строку, доказывающую шов с живым `data-node`,
+// негде больше держать: названо архитектору как пробел, требующий нового дома (вместе с гейтом
+// `PWEB-98`/`kit.test.tsx`/`passage.test.tsx` — там же разбор, почему кит нельзя заменить
+// синтетикой, не обманув сам предмет пробы).
 //
 // ## Поведение: что здесь чинится
 //
@@ -40,10 +31,7 @@
 // Проба берёт наш ОТВЕТ, а не чужую функцию: чужую зону проверяет её владелец, а мы проверяем
 // то, на что опираемся.
 
-import { createRegistry, RenderTree, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinSource } from "@omnifield/probe-web-runtime";
-import { kitOf } from "@omnifield/probe-web-ui";
-import { admits, passportOf } from "@omnifield/probe-web-ui/passport";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
@@ -52,33 +40,17 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { skinContrast } from "../src/contrast.js";
 import { withPassports } from "../src/generate.js";
-import { nodeSelector } from "../src/address.js";
-import type { SketchEdit, Skin } from "../src/model.js";
-import { lookup } from "./passports.js";
-import { cleanup, mount } from "./dom.jsx";
+import type { Skin } from "../src/model.js";
+import { buttonPassport, lookup } from "./passports.js";
+import { cleanup } from "./dom.jsx";
 
 // Источник паспортов называется ОДИН раз (`PWEB-94`): дальше он приезжает связкой.
-const { generateSketchCss, generateSkinCss } = withPassports(lookup);
+const { generateSkinCss } = withPassports(lookup);
 
 afterEach(() => {
   cleanup();
   document.documentElement.className = "";
 });
-
-const registry = createRegistry({
-  // ПАРА поставщика, а не карта компонентов рядом с паспортами (`PWEB-85`). Кит отдаёт паспорт
-  // вместе с тем, чем рисуется каждая его часть, — собери мы карту у себя, она разошлась бы с
-  // анатомией молча, и добавленная китом часть осталась бы неодетой.
-  components: { button: kitOf("button")! },
-  admits,
-});
-
-const tree: AssemblyTree = {
-  components: {
-    root: "btn-1",
-    nodes: { "btn-1": { id: "btn-1", type: "button", parentId: null, children: [] } },
-  },
-};
 
 /** Селекторы порождённого текста — как их видит парсер, а не поиск подстроки. */
 function selectorsOf(css: string): string[] {
@@ -88,33 +60,6 @@ function selectorsOf(css: string): string[] {
   });
   return found;
 }
-
-describe("шов с механикой сборки: признак узла", () => {
-  const edits: readonly SketchEdit[] = [
-    { node: "btn-1", component: "button", part: "root", style: { props: { color: "red" } } },
-  ];
-
-  it("наш селектор правки образца попадает в узел, который нарисовала ЧУЖАЯ механика", () => {
-    const host = mount(() => <RenderTree tree={tree} registry={registry} />);
-    const node = host.querySelector("button")!;
-
-    // Не сверка строк: узел отрисован механикой сборки, признак поставила она, а спрашиваем мы
-    // своим селектором. Переименует она признак — попадать станет некуда, и проба покраснеет.
-    expect(node.matches(nodeSelector("btn-1"))).toBe(true);
-
-    for (const selector of selectorsOf(generateSketchCss(edits))) {
-      expect(node.matches(selector)).toBe(true);
-    }
-  });
-
-  it("координата и признак узла живут на ОДНОМ узле — это две области одного адреса", () => {
-    const host = mount(() => <RenderTree tree={tree} registry={registry} />);
-    const node = host.querySelector("button")!;
-
-    expect(node.matches('[data-scope="button"][data-part="root"]')).toBe(true);
-    expect(node.matches(nodeSelector("btn-1"))).toBe(true);
-  });
-});
 
 // ## Половина приезжает ВМЕСТЕ СО СКИНОМ, и дверь тут одна
 //
@@ -315,7 +260,7 @@ describe("шов с зоной значений: разбор цвета", () =>
       recipes: { button: { base: { root: { props: { color: "#949494", background } } } } },
     };
 
-    return skinContrast(skin, [passportOf("button")!]).notes.map((note) =>
+    return skinContrast(skin, [buttonPassport]).notes.map((note) =>
       note.kind === "low" ? `low ${note.half}` : `?${note.kind}`,
     );
   }

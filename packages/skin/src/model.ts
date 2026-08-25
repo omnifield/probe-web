@@ -34,6 +34,63 @@ export {
   SKIN_LAYER,
 } from "./marks.js";
 
+// ФОРМА ПАСПОРТА (`PWEB-110`, пересматривает `PWEB-26`) — переехала сюда физически: она общая
+// для любого поставщика компонентов, а не привилегия конкретного кита. Разбор критерия и то, что
+// НЕ переехало (`PASSPORTS`, `passportOf` — реестр и читатель реестра ЭТОГО кита, остались в
+// `@omnifield/probe-web-ui/passport`), — в шапке `passport-form.ts`.
+//
+// Наружу — тем же подпутём, что и всегда: держатель реестра (кит, продуктовый пакет со своей
+// таблицей) объявляет паспорты этими типами и этой функцией, а не своей копией формы.
+export type {
+  ComponentGroup,
+  ComponentPassport,
+  PassportAdmission,
+  PassportAnatomy,
+  PassportComponentGenus,
+  PassportGenus,
+  PassportMark,
+  PassportPart,
+  PassportSetting,
+  PassportSettingDependency,
+  PassportSettingName,
+  PassportSettingOption,
+  PassportSettings,
+  PassportSettingValues,
+  PassportSpec,
+  PassportState,
+  PassportVariable,
+  PassportVariantAxis,
+} from "./passport-form.js";
+export {
+  addressesView,
+  admits,
+  defineSettings,
+  definePassport,
+  GROUPS,
+  groupOf,
+  SETTINGS,
+  settingApplies,
+} from "./passport-form.js";
+
+// БАЗОВАЯ СБОРКА (`PWEB-89`) — переехала вместе с формой: объявление рабочего экземпляра и его
+// разворот в плоское дерево не завязаны ни на один конкретный кит.
+export type {
+  BaseAssemblyContent,
+  BaseAssemblyElement,
+  BaseAssemblyNode,
+  BaseAssemblyTree,
+  PassportAssembly,
+  PassportAssemblyContent,
+  PassportAssemblyNode,
+  PassportAssemblyPart,
+} from "./passport-assembly.js";
+export { baseAssemblyOf, isAssemblyContent, isContentNode } from "./passport-assembly.js";
+
+// ЧИТАТЕЛЬ ПАСПОРТА ПОД ВИД (`PWEB-27`) — мост от живого узла к координате скина, тоже общий для
+// любого поставщика.
+export type { SkinAncestor, SkinCoordinate } from "./passport-view.js";
+export { coordinateOf, partOf } from "./passport-view.js";
+
 export type { PassportLookup } from "./address.js";
 // `passportLookup` едет наружу ТЕМ ЖЕ входом, что и тип (`PWEB-95`): место сборки карты одно, и
 // объявить это в комментарии, не отдав саму сборку, значило потребовать от каждого держателя

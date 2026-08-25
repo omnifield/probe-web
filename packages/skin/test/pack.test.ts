@@ -41,10 +41,10 @@ let entries: string[];
 beforeAll(() => {
   ({ work, install, entries } = installFromTarball("probe-web-skin-pack-"));
 
-  // Кит и набор значений — ОБЯЗАТЕЛЬНЫЕ одноранговые: без них не работает ни один вход, и
-  // «вложенная форма не платит» про них ничего не обещает. Разворачиватель НЕ кладём: он и есть
-  // предмет проверки.
-  link(install, "@omnifield/probe-web-ui");
+  // Набор значений — ОБЯЗАТЕЛЬНЫЙ одноранговый: без него не работает ни один вход, и «вложенная
+  // форма не платит» про это ничего не обещает. Кита среди пиров БОЛЬШЕ НЕТ (`PWEB-110`): форма
+  // паспорта переехала физически, и зависимость на кит порвана вместе с ней. Разворачиватель
+  // тоже не кладём: он и есть предмет проверки.
   link(install, "@omnifield/probe-web-style");
 }, 120_000);
 
@@ -139,13 +139,23 @@ describe("разворачиватель необязателен: вложен�
     }
   });
 
-  it("кит и набор значений остались ОБЯЗАТЕЛЬНЫМИ: без них не работает ничего", () => {
+  it("набор значений остался ОБЯЗАТЕЛЬНЫМ: без него не работает ничего", () => {
     const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
       peerDependenciesMeta?: Record<string, { optional?: boolean }>;
     };
 
-    for (const name of ["@omnifield/probe-web-ui", "@omnifield/probe-web-style"]) {
-      expect(manifest.peerDependenciesMeta?.[name]).toBeUndefined();
+    expect(manifest.peerDependenciesMeta?.["@omnifield/probe-web-style"]).toBeUndefined();
+  });
+
+  it("кита среди зависимостей больше нет вовсе — цикл разорван физически (`PWEB-110`)", () => {
+    const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+
+    for (const bucket of [manifest.dependencies, manifest.devDependencies, manifest.peerDependencies]) {
+      expect(bucket?.["@omnifield/probe-web-ui"]).toBeUndefined();
     }
   });
 });
