@@ -31,14 +31,15 @@
 | **ноль стилей** | атрибутов `class` и `style` на узле не появляется само | `test/contract.test.tsx` |
 
 Отступление от принципа допустимо только с явным обоснованием в доке компонента. Все, что есть
-в зоне, названы; большинство привезены `@kobalte/core`, а не нами, — первое исключение
-(`lucide-solid`) названо отдельной строкой:
+в зоне, названы; большинство привезены `@kobalte/core`, а не нами, — исключения от других
+поставщиков (`lucide-solid`, `@zag-js/dom-query` у Ark) названы отдельными строками:
 
 | отступление | где | почему не снимается |
 |---|---|---|
 | **не 1-to-1** | всплывающая панель (`*-content`) | координаты пишутся в отдельный узел-позиционер |
 | **не 1-to-1** | стрелка (`*-arrow`) | внутри вектор, иначе её не повернуть за панелью |
-| **есть `style`** | спрятанные вводы (`checkbox-input`, `switch-input`, `radio-group-item-input`) | механика доступности: ввод остаётся ради фокуса и формы, но не виден |
+| **есть `style`** | спрятанные вводы (`switch-input`, `radio-group-item-input`) | механика доступности: ввод остаётся ради фокуса и формы, но не виден |
+| **есть `style`** | скрытый ввод чекбокса (`CheckboxHiddenInput`, Ark — без `data-slot`, раздел «Чекбокс») | тот же довод, другой поставщик: `@zag-js/dom-query`, не `@kobalte/core` |
 | **есть `style`** | числовой ввод (`number-field-input`) | `touch-action: none` — иначе жест прокрутки менял бы значение |
 | **не 1-to-1** | скрытый `<select>` поиска (`combobox-hidden-select`) | обёртка и технический ввод — обход особенностей Safari и Firefox |
 | **есть `style`** | всплывающие панели и стрелки | позиционирование, переменная начала трансформации, цвет стрелки — **зеркало панели потребителя** |
@@ -102,7 +103,7 @@
 | `Toast*` | составной, 8 частей + `toaster` | `Toast.*` |
 | `SegmentedControl*` | составной, 11 частей | `SegmentedControl.*` |
 | `ToggleGroup*` | составной, 2 части | `ToggleGroup.*` |
-| `Checkbox*` | составной, 7 частей | `Checkbox.*` |
+| `Checkbox*` | составной, 4 части, **на Ark** | `checkboxAnatomy` |
 | `Switch*` | составной, 7 частей | `Switch.*` |
 | `RadioGroup*` | составной, 10 частей | `RadioGroup.*` |
 | `ColorField*` | составной, 5 частей | `ColorField.*` |
@@ -207,7 +208,6 @@
 | составной `Toast` | `toast-region`, `toast-list`, `toast`, `toast-title`, `toast-description`, `toast-close`, `toast-progress-track`, `toast-progress-fill` |
 | составной `SegmentedControl` | `segmented-control`, `segmented-control-label`, `segmented-control-track`, `segmented-control-indicator`, `segmented-control-item`, `segmented-control-item-input`, `segmented-control-item-control`, `segmented-control-item-indicator`, `segmented-control-item-label`, `segmented-control-item-description`, `segmented-control-description`, `segmented-control-error` |
 | составной `ToggleGroup` | `toggle-group`, `toggle-group-item` |
-| составной `Checkbox` | `checkbox`, `checkbox-input`, `checkbox-control`, `checkbox-indicator`, `checkbox-label`, `checkbox-description`, `checkbox-error` |
 | составной `Switch` | `switch`, `switch-input`, `switch-control`, `switch-thumb`, `switch-label`, `switch-description`, `switch-error` |
 | составной `RadioGroup` | `radio-group`, `radio-group-label`, `radio-group-description`, `radio-group-error`, `radio-group-item`, `radio-group-item-input`, `radio-group-item-control`, `radio-group-item-indicator`, `radio-group-item-label`, `radio-group-item-description` |
 | составной `ColorField` | `color-field`, `color-field-label`, `color-field-input`, `color-field-description`, `color-field-error` |
@@ -1481,22 +1481,19 @@ import { type Color, ColorSlider, parseColor } from "@omnifield/probe-web-ui";
 - **`activationMode`** — не косметика: `automatic` переключает вкладку сразу при переходе
   стрелками, `manual` ждёт `Enter`. Для тяжёлого содержимого верно второе.
 
-## Флажок, переключатель, группа: почему частей много
+## Переключатель, группа: почему частей много
 
-`Checkbox`, `Switch` и `RadioGroup` разложены на части ровно как `Select` и семейство поля.
-Причина одна и практическая: **флажок нельзя одеть, не разобрав**. Нативный
-`<input type="checkbox">` не стилизуется, поэтому рынок везде делает одно и то же — настоящий
-ввод прячут (он несёт фокус, форму и доступность), а рисуют СОСЕДНИЙ узел.
+`Switch` и `RadioGroup` разложены на части ровно как `Select` и семейство поля. Причина одна и
+практическая: **их нельзя одеть, не разобрав**. Нативный `<input>` не стилизуется, поэтому рынок
+везде делает одно и то же — настоящий ввод прячут (он несёт фокус, форму и доступность), а рисуют
+СОСЕДНИЙ узел.
+
+**`Checkbox` в этот раздел больше не входит** — он переехал на Ark (`PWEB-114`, раздел «Чекбокс:
+паспорт из Ark» ниже) и разложен на части по ДРУГОЙ причине: адресуемости, а не только стилизации
+спрятанного ввода. Общий довод «нельзя одеть, не разобрав» у него остаётся тем же, а вот
+механика — уже нет.
 
 ```tsx
-<Checkbox checked={agreed()} onChange={setAgreed}>
-  <CheckboxInput />
-  <CheckboxControl>
-    <CheckboxIndicator>✓</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>Согласен</CheckboxLabel>
-</Checkbox>
-
 <Switch checked={dark()} onChange={setDark}>
   <SwitchInput />
   <SwitchControl>
@@ -1524,27 +1521,71 @@ import { type Color, ColorSlider, parseColor } from "@omnifield/probe-web-ui";
 Части обёрнуты **все**: полусоставной примитив одеть нельзя — у него оказалась бы одета рамка
 и гола отметка. Как и у поля, части читают контекст корня и вне него бросают ошибку.
 
-Три разницы, которые стоит знать заранее:
+Разницы, которые стоит знать заранее:
 
 - **`Switch` — это поле, `Toggle` — кнопка.** У переключателя есть `name`, значение и
   состояние ошибки, он уезжает в форму; `Toggle` (`button[aria-pressed]`) — действие. Выглядят
   похоже, но подменять одно другим значит платить доступностью.
-- **Отметка появляется, бегунок ездит.** `CheckboxIndicator` и `RadioGroupItemIndicator`
-  рендерятся ТОЛЬКО в выбранном состоянии (нужен узел всегда — `forceMount` насквозь), а
-  `SwitchThumb` есть всегда: ему нужен переход между положениями.
+- **Отметка появляется, бегунок ездит.** `RadioGroupItemIndicator` рендерится ТОЛЬКО в выбранном
+  состоянии (нужен узел всегда — `forceMount` насквозь), а `SwitchThumb` есть всегда: ему нужен
+  переход между положениями. У `CheckboxIndicator` (Ark) иначе — раздел «Чекбокс» ниже.
 - **`RadioGroupLabel` — это `span`, а не `label`.** Подпись группы относится ко всем вариантам
   сразу и уезжает в `aria-labelledby`; `for` связал бы её с одним.
 
 ### Названное отступление: спрятанный ввод несёт стиль
 
-Единственное место, где на узел приезжает `style` не от потребителя, — `checkbox-input`,
-`switch-input` и `radio-group-item-input`. Стиль ставит сам `@kobalte/core`
-(`visuallyHiddenStyles`), и это **не оформление, а механика доступности**: настоящий ввод
-обязан остаться в документе ради фокуса, формы и скринридера, но не должен быть виден.
+Единственное место, где на узел приезжает `style` не от потребителя, — `switch-input` и
+`radio-group-item-input`. Стиль ставит сам `@kobalte/core` (`visuallyHiddenStyles`), и это **не
+оформление, а механика доступности**: настоящий ввод обязан остаться в документе ради фокуса,
+формы и скринридера, но не должен быть виден.
 
-Отдавать это правило потребителю нельзя: не написав его, он получил бы двойной флажок — свой
-нарисованный и родной браузерный. Стиль потребителя при этом не затирается, а сливается с
-нашим, и это держится тестом, а не обещанием (`test/checkbox.test.tsx`).
+Отдавать это правило потребителю нельзя: не написав его, он получил бы двойной переключатель —
+свой нарисованный и родной браузерный. Стиль потребителя при этом не затирается, а сливается с
+нашим. `CheckboxHiddenInput` несёт тот же приём другим поставщиком — раздел «Чекбокс» ниже.
+
+## Чекбокс: паспорт из Ark, не флажок kobalte (`PWEB-114`)
+
+Первый компонент ФОРМЫ и первый после гармошки, взятый готовым у Ark, тем же приёмом: анатомия
+чужая (`@zag-js/checkbox/anatomy`, не `@ark-ui/solid/anatomy` — тот же довод, что у гармошки,
+«Паспорт компонента»), паспорт объявляется поверх. Заменяет прежний `Checkbox` на
+`@kobalte/core` целиком — не живёт рядом с ним: то же имя, другая механика, вторая копия
+разъехалась бы с первой на первом же расхождении.
+
+**Четыре адресуемые части, не семь.** Анатомия несёт `root · label · control · indicator` —
+паспорт покрывает их все. Тип-декларация внутри `@ark-ui/solid` называет ещё и `group` (для
+`CheckboxGroup`), но у САМОСТОЯТЕЛЬНОГО `@zag-js/checkbox`, откуда анатомия взята физически, этой
+части нет вовсе (проверено на рантайме, не на типе) — а `CheckboxGroup` в любом случае отдельный
+компонент, вне предмета `PWEB-114`. `CheckboxDescription`/`CheckboxError` тоже не переехали: это
+была композиция с `Field` у kobalte, а не часть анатомии чекбокса — понадобится, заведётся
+отдельно, своим паспортом.
+
+**Состояния — данные, а не псевдоклассы, и это находка.** У кнопки наведение и фокус выражены
+`:hover`/`:focus-visible`: их знает браузер. У чекбокса иначе — настоящий фокус лежит на
+СКРЫТОМ вводе, а не на видимых узлах, и браузерные псевдоклассы на них просто не сработают.
+Zag следит за указателем и фокусом сам и кладёт результат данными: `data-hover`, `data-active`,
+`data-focus`, `data-focus-visible`. Ни одного псевдокласса на четырёх адресуемых частях нет —
+проверено на живом узле (`checkbox.test.tsx`), а не предположено по аналогии с кнопкой.
+
+**`data-state` — три значения на словарном атрибуте**, не булев признак: `checked` / `unchecked`
+/ `indeterminate`. Все три объявлены отдельными состояниями паспорта — тем же приёмом, что
+`open`/`closed` у раскрытия гармошки.
+
+**Скрытый ввод без адреса — не пробел.** `CheckboxHiddenInput` не несёт `data-scope`/`data-part`:
+`getHiddenInputProps()` (`@zag-js/checkbox`) не спредит адрес анатомии вовсе. Часть, которую
+поставщик не адресовал, не адресуема ничем — паспорт её не выдумывает.
+
+```tsx
+import { Checkbox, CheckboxControl, CheckboxHiddenInput, CheckboxIndicator, CheckboxLabel }
+  from "@omnifield/probe-web-ui";
+
+<Checkbox checked={agreed()} onCheckedChange={({ checked }) => setAgreed(checked)}>
+  <CheckboxControl>
+    <CheckboxIndicator>✓</CheckboxIndicator>
+  </CheckboxControl>
+  <CheckboxLabel>Согласен с условиями</CheckboxLabel>
+  <CheckboxHiddenInput />
+</Checkbox>
+```
 
 ## Что НЕ делает пакет — и почему
 

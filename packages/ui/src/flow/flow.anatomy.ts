@@ -21,6 +21,7 @@
 // на каждый чих — лишние узлы, и паспорт этого не требует.
 
 import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { FlowProps } from "./flow.jsx";
@@ -32,54 +33,59 @@ export const anatomy = createAnatomy("flow").parts("root", "item");
 export const parts = anatomy.build();
 
 /**
- * Паспорт потока.
+ * Паспорт потока — срез РАНТАЙМА (`PWEB-115`).
  *
  * Состояний нет ни у одной части: раскладка не хранит ничего. Всё, что у неё есть, — адрес и
  * ось вариаций, и в этом её предмет: она существует, чтобы скину было к чему прицепить правило.
  */
 export const passport = definePassport({
   anatomy,
+  root: "root",
+  parts: [{ name: "root", states: [] }, { name: "item", states: [] }],
+  variantAxis: {
+    mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня ряд не принимает: направление у него — раскладочное свойство,
+  // то есть ВИД, и приезжает скином (решение «раскладочные свойства это ВИД»).
+  settings: defineSettings<FlowProps>({}),
+});
+
+/** Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка. */
+export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
   genus: "component",
   group: "layout",
-  root: "root",
-  parts: [
-    {
-      name: "root",
+  variantAxis: {
+    means: "имя вариации потока; его даёт человек в редакторе, кит пропускает насквозь",
+  },
+  parts: {
+    root: {
       means: "поток — элементы идут друг за другом по одной оси; какой именно, говорит скин",
-      states: [],
       accepts: [
         { kind: "part", name: "item" },
         { kind: "content", genus: "text" },
         { kind: "content", genus: "component" },
       ],
     },
-    {
-      name: "item",
+    item: {
       means: "место одного элемента в потоке — им адресуется «этот тянется, остальные по содержимому»",
-      states: [],
       accepts: [
         { kind: "content", genus: "text" },
         { kind: "content", genus: "component" },
       ],
     },
-  ],
-  variantAxis: {
-    means: "имя вариации потока; его даёт человек в редакторе, кит пропускает насквозь",
-    mark: { kind: "attribute", name: "data-variant" },
   },
-  // Настроек из закрытого перечня ряд не принимает: направление у него — раскладочное свойство,
-  // то есть ВИД, и приезжает скином (решение «раскладочные свойства это ВИД»).
-  settings: defineSettings<FlowProps>({}),
   // Два элемента, а не один: предмет ряда — расстояние МЕЖДУ, а между одним его не бывает.
-  assembly: {
-    means: "ряд из двух элементов",
-    tree: {
-      part: "root",
-      children: [
-        { part: "item", children: [{ genus: "text", value: "Первый" }] },
-        { part: "item", children: [{ genus: "text", value: "Второй" }] },
-      ],
+  assemblies: [
+    {
+      means: "ряд из двух элементов",
+      tree: {
+        part: "root",
+        children: [
+          { part: "item", children: [{ genus: "text", value: "Первый" }] },
+          { part: "item", children: [{ genus: "text", value: "Второй" }] },
+        ],
+      },
     },
-  },
+  ],
 });

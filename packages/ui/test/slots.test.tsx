@@ -41,15 +41,6 @@ import {
 } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button/index.js";
 import {
-  Checkbox,
-  CheckboxControl,
-  CheckboxDescription,
-  CheckboxError,
-  CheckboxIndicator,
-  CheckboxInput,
-  CheckboxLabel,
-} from "../src/checkbox.jsx";
-import {
   ColorArea,
   ColorAreaBackground,
   ColorAreaDescription,
@@ -372,16 +363,6 @@ function Scene() {
       <Field>
         <Textarea />
       </Field>
-
-      <Checkbox checked validationState="invalid">
-        <CheckboxInput />
-        <CheckboxControl>
-          <CheckboxIndicator>✓</CheckboxIndicator>
-        </CheckboxControl>
-        <CheckboxLabel>Согласен</CheckboxLabel>
-        <CheckboxDescription>Условия обслуживания</CheckboxDescription>
-        <CheckboxError>Без согласия нельзя</CheckboxError>
-      </Checkbox>
 
       <Switch checked validationState="invalid">
         <SwitchInput />

@@ -37,27 +37,16 @@ const списокAnatomy = createAnatomy("список").parts("root", "itemTri
 const списокParts = списокAnatomy.build();
 const списокPassport = definePassport({
   anatomy: списокAnatomy,
-  package: "@чужой/пакет",
-  genus: "component",
   root: "root",
   settings: {},
   parts: [
-    {
-      name: "root",
-      means: "список целиком",
-      states: [],
-      accepts: [{ kind: "part", name: "itemTrigger" }],
-    },
+    { name: "root", states: [] },
     {
       name: "itemTrigger",
-      means: "заголовок пункта, по которому нажимают",
-      states: [
-        { name: "expanded", means: "пункт раскрыт", mark: { kind: "attribute", name: "data-expanded" } },
-      ],
-      accepts: [{ kind: "content", genus: "text" }],
+      states: [{ name: "expanded", mark: { kind: "attribute", name: "data-expanded" } }],
     },
   ],
-  variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+  variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
 });
 
 /** Читатель редактора: и кит, и чужой поставщик — одной функцией, как оно и будет в редакторе. */
@@ -214,10 +203,9 @@ describe("читатель не прибит к киту", () => {
     expect(coordinateOf(node, registry)?.part).toBe("itemTrigger");
   });
 
-  it("часть паспорта достаётся по имени — вместе с назначением и словарём состояний", () => {
+  it("часть паспорта достаётся по имени — вместе со словарём состояний", () => {
     const часть = partOf(списокPassport, "itemTrigger");
 
-    expect(часть?.means).toBe("заголовок пункта, по которому нажимают");
     expect(часть?.states.map((state) => state.name)).toEqual(["expanded"]);
     expect(partOf(списокPassport, "такой-части-нет")).toBeUndefined();
   });
@@ -231,26 +219,22 @@ const шторкаAnatomy = createAnatomy("шторка").parts("root");
 const шторкаParts = шторкаAnatomy.build();
 const шторкаPassport = definePassport({
   anatomy: шторкаAnatomy,
-  package: "@чужой/пакет",
-  genus: "component",
   root: "root",
   settings: {},
   parts: [
     {
       name: "root",
-      means: "шторка целиком",
       states: [
         {
           name: "open",
-          means: "шторка раскрыта",
           mark: { kind: "attribute", name: "data-state", value: "open" },
           absentWhen: "раскрытие прошло без анимации — поставщик снимает признак целиком",
         },
-        { name: "disabled", means: "шторку не двигают", mark: { kind: "attribute", name: "data-disabled" } },
+        { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } },
       ],
     },
   ],
-  variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },
+  variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
 });
 
 const сРаскрывашкой = (component: string) =>

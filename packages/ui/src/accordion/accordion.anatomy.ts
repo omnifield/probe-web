@@ -75,6 +75,7 @@
 import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
 
 import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
+import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 // ТИП пропов — только тип: `import type` стирается сборкой целиком, и подпуть `./passport`
 // остаётся тем, чем продан, — данными без Solid и без Ark. Нужен он ровно для того, чтобы ключи
 // настроек сверялись с настоящими пропами компонента, а не с представлением о них.
@@ -89,14 +90,12 @@ export const parts = anatomy.build();
 /** Раскрытость — общий словарный атрибут Zag; он же стоит на пункте, содержимом и указателе. */
 const open: PassportState = {
   name: "open",
-  means: "раздел раскрыт — содержимое видно",
   mark: { kind: "attribute", name: "data-state", value: "open" },
 };
 
 /** Отключённость, выраженная данными: пункт целиком и всё, что в нём. */
 const disabled: PassportState = {
   name: "disabled",
-  means: "раздел отключён — раскрыть его нельзя",
   mark: { kind: "attribute", name: "data-disabled" },
 };
 
@@ -117,14 +116,12 @@ const openContent: PassportState = {
 /** Закрытость — тот же словарный атрибут другим значением. Он у содержимого приезжает всегда. */
 const closed: PassportState = {
   name: "closed",
-  means: "раздел закрыт — содержимое спрятано, но узел на месте",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
 };
 
 /** Фокус внутри раздела: его знает машина состояний, а не браузер, — поэтому атрибутом. */
 const focus: PassportState = {
   name: "focus",
-  means: "фокус стоит на кнопке этого раздела",
   mark: { kind: "attribute", name: "data-focus" },
 };
 
@@ -137,61 +134,30 @@ const focus: PassportState = {
  */
 export const passport = definePassport({
   anatomy,
-  // Поставщик — МЫ, а не Ark: наружу компонент уезжает нашей поставкой, и читатель паспорта
-  // ставит именно её. Совпадение с манифестом стережёт проба.
-  package: "@omnifield/probe-web-ui",
-  genus: "component",
-  // Место в перечне (`PWEB-34`): то, что разворачивают и сворачивают.
-  group: "disclosure",
   root: "root",
   parts: [
     {
       name: "root",
-      means: "набор разделов целиком — один узел вокруг всех пунктов",
       // Своих состояний у корня нет: раскрытость принадлежит ПУНКТУ, а не набору, и объявить
       // её здесь значило бы объявить ненаблюдаемое — на корне такого атрибута не появляется.
       states: [],
-      accepts: [{ kind: "part", name: "item" }],
     },
-    {
-      name: "item",
-      means: "один раздел — кнопка вместе со своим содержимым",
-      states: [open, disabled, focus],
-      accepts: [
-        { kind: "part", name: "itemTrigger" },
-        { kind: "part", name: "itemContent" },
-      ],
-    },
+    { name: "item", states: [open, disabled, focus] },
     {
       name: "itemTrigger",
-      means: "кнопка раздела — по ней раскрывают и закрывают",
       states: [
         open,
         focus,
-        {
-          // Не `data-disabled`: Zag ставит на кнопку НАСТОЯЩИЙ `disabled`, и цепляться скину
-          // надо за него. Проверено на живом узле.
-          name: "disabled",
-          means: "кнопка отключена — нажатие не раскрывает раздел",
-          mark: { kind: "pseudo", name: ":disabled" },
-        },
-        { name: "hover", means: "указатель над кнопкой", mark: { kind: "pseudo", name: ":hover" } },
-        {
-          name: "focus-visible",
-          means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний",
-          mark: { kind: "pseudo", name: ":focus-visible" },
-        },
-        { name: "active", means: "кнопку держат нажатой", mark: { kind: "pseudo", name: ":active" } },
-      ],
-      accepts: [
-        { kind: "part", name: "itemIndicator" },
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "icon" },
+        // Не `data-disabled`: Zag ставит на кнопку НАСТОЯЩИЙ `disabled`, и цепляться скину
+        // надо за него. Проверено на живом узле.
+        { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } },
+        { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
+        { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
+        { name: "active", mark: { kind: "pseudo", name: ":active" } },
       ],
     },
     {
       name: "itemContent",
-      means: "содержимое раздела — область, которую раскрывают",
       // Раскрытость объявлена ВМЕСТЕ с оговоркой: её признак приезжает не всегда (разбор в шапке
       // файла). Виду она адресом не служит — читатель под вид отбрасывает её сам, и раскрытый вид
       // содержимого по-прежнему адресуется через предка `item`. Движению она нужна: без неё нечем
@@ -202,36 +168,13 @@ export const passport = definePassport({
       // Без них анимации раскрытия не существует: `auto` не анимируется, а придумать число за
       // чужое содержимое нельзя. Переход по ним пишет СКИН — кит своей анимации не привозит.
       variables: [
-        {
-          name: "--height",
-          means: "измеренная высота раскрытого содержимого",
-          setBy: "kit",
-        },
-        {
-          name: "--width",
-          means: "измеренная ширина раскрытого содержимого — нужна горизонтальной гармошке",
-          setBy: "kit",
-        },
-      ],
-      // Внутрь раздела кладут что угодно — это место потребителя, а не наше: текст, значок,
-      // любой компонент. Пустой перечень здесь означал бы, что раскрывать нечего.
-      accepts: [
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "component" },
+        { name: "--height", setBy: "kit" },
+        { name: "--width", setBy: "kit" },
       ],
     },
-    {
-      name: "itemIndicator",
-      means: "указатель раскрытия — стрелка, которую кладёт потребитель",
-      states: [open, disabled, focus],
-      accepts: [
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "icon" },
-      ],
-    },
+    { name: "itemIndicator", states: [open, disabled, focus] },
   ],
   variantAxis: {
-    means: "имя вариации, которое даёт гармошке человек в редакторе; кит пропускает его насквозь",
     mark: { kind: "attribute", name: "data-variant" },
   },
   // ЧЕМ ГАРМОШКА МОЖЕТ БЫТЬ (`PWEB-89`). Все три пропа проходят насквозь и работают — до сих пор
@@ -241,13 +184,9 @@ export const passport = definePassport({
   // объявить настройку, которой у гармошки нет, и не даст забыть ту, что есть.
   settings: defineSettings<AccordionProps>({
     orientation: {
-      means: "как разложены разделы: сверху вниз или слева направо — от этого зависят клавиши и aria",
       values: {
         kind: "choice",
-        options: [
-          { value: "vertical", means: "сверху вниз" },
-          { value: "horizontal", means: "слева направо" },
-        ],
+        options: [{ value: "vertical" }, { value: "horizontal" }],
       },
       byDefault: "vertical",
       // Проверено на живом узле (`PWEB-104`): признак приезжает атрибутом на КАЖДОЙ части.
@@ -256,12 +195,10 @@ export const passport = definePassport({
       mark: { kind: "attribute", name: "data-orientation" },
     },
     multiple: {
-      means: "можно ли держать раскрытыми несколько разделов сразу",
       values: { kind: "flag" },
       byDefault: false,
     },
     collapsible: {
-      means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой",
       values: { kind: "flag" },
       byDefault: false,
       // Зависимость от `multiple` (`SKINED-7`). У Zag закрыть последний раскрытый раздел можно,
@@ -271,6 +208,101 @@ export const passport = definePassport({
       dependsOn: { on: "multiple", redundantWhen: true },
     },
   }),
+});
+
+/**
+ * Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка.
+ *
+ * Вложенность объявлена в ДВА уровня: пункт внутри корня, кнопка и содержимое внутри пункта.
+ * Это первое место, где правило вложенности вообще проверяемо: у кнопки внутренних частей нет,
+ * и обратное чтение («кто может быть предком») выводить было не из чего.
+ */
+export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
+  // Поставщик — МЫ, а не Ark: наружу компонент уезжает нашей поставкой, и читатель паспорта
+  // ставит именно её. Совпадение с манифестом стережёт проба.
+  package: "@omnifield/probe-web-ui",
+  genus: "component",
+  // Место в перечне (`PWEB-34`): то, что разворачивают и сворачивают.
+  group: "disclosure",
+  variantAxis: {
+    means: "имя вариации, которое даёт гармошке человек в редакторе; кит пропускает его насквозь",
+  },
+  parts: {
+    root: {
+      means: "набор разделов целиком — один узел вокруг всех пунктов",
+      accepts: [{ kind: "part", name: "item" }],
+    },
+    item: {
+      means: "один раздел — кнопка вместе со своим содержимым",
+      states: {
+        open: { means: "раздел раскрыт — содержимое видно" },
+        disabled: { means: "раздел отключён — раскрыть его нельзя" },
+        focus: { means: "фокус стоит на кнопке этого раздела" },
+      },
+      accepts: [
+        { kind: "part", name: "itemTrigger" },
+        { kind: "part", name: "itemContent" },
+      ],
+    },
+    itemTrigger: {
+      means: "кнопка раздела — по ней раскрывают и закрывают",
+      states: {
+        open: { means: "раздел раскрыт — содержимое видно" },
+        focus: { means: "фокус стоит на кнопке этого раздела" },
+        disabled: { means: "кнопка отключена — нажатие не раскрывает раздел" },
+        hover: { means: "указатель над кнопкой" },
+        "focus-visible": { means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний" },
+        active: { means: "кнопку держат нажатой" },
+      },
+      accepts: [
+        { kind: "part", name: "itemIndicator" },
+        { kind: "content", genus: "text" },
+        { kind: "content", genus: "icon" },
+      ],
+    },
+    itemContent: {
+      means: "содержимое раздела — область, которую раскрывают",
+      states: {
+        open: { means: "раздел раскрыт — содержимое видно" },
+        closed: { means: "раздел закрыт — содержимое спрятано, но узел на месте" },
+        disabled: { means: "раздел отключён — раскрыть его нельзя" },
+        focus: { means: "фокус стоит на кнопке этого раздела" },
+      },
+      variables: {
+        "--height": { means: "измеренная высота раскрытого содержимого" },
+        "--width": { means: "измеренная ширина раскрытого содержимого — нужна горизонтальной гармошке" },
+      },
+      // Внутрь раздела кладут что угодно — это место потребителя, а не наше: текст, значок,
+      // любой компонент. Пустой перечень здесь означал бы, что раскрывать нечего.
+      accepts: [
+        { kind: "content", genus: "text" },
+        { kind: "content", genus: "component" },
+      ],
+    },
+    itemIndicator: {
+      means: "указатель раскрытия — стрелка, которую кладёт потребитель",
+      states: {
+        open: { means: "раздел раскрыт — содержимое видно" },
+        disabled: { means: "раздел отключён — раскрыть его нельзя" },
+        focus: { means: "фокус стоит на кнопке этого раздела" },
+      },
+      accepts: [
+        { kind: "content", genus: "text" },
+        { kind: "content", genus: "icon" },
+      ],
+    },
+  },
+  settings: {
+    orientation: {
+      means: "как разложены разделы: сверху вниз или слева направо — от этого зависят клавиши и aria",
+      options: {
+        vertical: { means: "сверху вниз" },
+        horizontal: { means: "слева направо" },
+      },
+    },
+    multiple: { means: "можно ли держать раскрытыми несколько разделов сразу" },
+    collapsible: { means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой" },
+  },
   // РАБОЧИЙ ЭКЗЕМПЛЯР (`PWEB-89`).
   //
   // Три раздела, а не один: главное в виде гармошки — РАЗДЕЛИТЕЛИ, а между одним разделом их не
@@ -283,7 +315,7 @@ export const passport = definePassport({
   // `value` у раздела — не вид и не состояние: без него Ark не знает, какой пункт раскрывать, и
   // складывает `undefined` в идентификаторы. Это ровно то знание поставщика, ради которого
   // базовая сборка и заводится: потребитель его не выдумывает.
-  assembly: {
+  assemblies: [{
     means: "три раздела, первый раскрыт",
     tree: {
       part: "root",
@@ -344,5 +376,5 @@ export const passport = definePassport({
         },
       ],
     },
-  },
+  }],
 });

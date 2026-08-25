@@ -47,11 +47,14 @@ export async function собратьКит(
   доп: Readonly<Record<string, unknown>> = {},
 ): Promise<string> {
   const вход = require.resolve("@omnifield/probe-web-ui");
+  const паспортВход = require.resolve("@omnifield/probe-web-ui/passport");
   const точка = `
     import { render, createComponent } from "solid-js/web";
     import { KIT } from ${JSON.stringify(вход)};
+    import { editorInfoOf } from ${JSON.stringify(паспортВход)};
 
     const { passport, parts } = KIT[${JSON.stringify(component)}];
+    const [сборка] = editorInfoOf(${JSON.stringify(component)}).assemblies;
 
     const рисовать = (узел) =>
       "genus" in узел
@@ -64,7 +67,7 @@ export async function собратьКит(
             },
           });
 
-    render(() => рисовать(passport.assembly.tree), document.getElementById("корень"));
+    render(() => рисовать(сборка.tree), document.getElementById("корень"));
     window.__собрано = true;
   `;
 

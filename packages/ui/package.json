@@ -67,6 +67,7 @@
   "dependencies": {
     "@omnifield/probe-web-skin": "workspace:*",
     "@zag-js/accordion": "^1.43.1",
+    "@zag-js/checkbox": "^1.43.1",
     "lucide-solid": "^1.34.0"
   },
   "peerDependencies": {

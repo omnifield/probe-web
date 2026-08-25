@@ -9,7 +9,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   coordinateOf,
-  partOf,
   skinGaps,
   type Outfit,
   type PassportLookup,
@@ -18,7 +17,7 @@ import { cleanup, mount, one } from "../../test/dom.jsx";
 import { palette } from "../../test/palette.js";
 import { assemble, generateSkinCss } from "../../test/skin.js";
 import { passport as flowPassport } from "../flow/flow.anatomy.js";
-import { anatomy, parts, passport } from "./grid.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./grid.anatomy.js";
 import { Grid, GridCell } from "./grid.jsx";
 import { form } from "./grid.recipe.js";
 
@@ -85,7 +84,7 @@ describe("паспорт сетки", () => {
       </Grid>
     ));
 
-    const объявлено = (partOf(passport, "root")?.accepts ?? []).some(
+    const объявлено = (editorInfo.parts.root?.accepts ?? []).some(
       (a) => a.kind === "part" && a.name === "cell",
     );
 
@@ -113,8 +112,8 @@ describe("паспорт сетки", () => {
   it("состояний нет ни у одной части, группа и род объявлены", () => {
     for (const part of passport.parts) expect(part.states).toEqual([]);
 
-    expect(passport.group).toBe("layout");
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.group).toBe("layout");
+    expect(editorInfo.genus).toBe("component");
   });
 });
 

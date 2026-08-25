@@ -13,7 +13,7 @@ import { coordinateOf, skinGaps, type Outfit, type PassportLookup } from "@omnif
 import { cleanup, mount, one } from "../../test/dom.jsx";
 import { palette } from "../../test/palette.js";
 import { assemble, generateSkinCss } from "../../test/skin.js";
-import { anatomy, parts, passport } from "./surface.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./surface.anatomy.js";
 import { Surface } from "./surface.jsx";
 import { form } from "./surface.recipe.js";
 
@@ -78,8 +78,8 @@ describe("паспорт поверхности", () => {
   });
 
   it("группа и род объявлены из закрытых перечней", () => {
-    expect(passport.group).toBe("layout");
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.group).toBe("layout");
+    expect(editorInfo.genus).toBe("component");
   });
 
   it("узел превращается в координату — скину есть что адресовать", () => {

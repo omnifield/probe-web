@@ -17,19 +17,12 @@ import type { LucideProps } from "lucide-solid";
 import { createSignal, type Component } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  admits,
-  coordinateOf,
-  groupOf,
-  skinGaps,
-  type Outfit,
-  type PassportGenus,
-  type PassportLookup,
-} from "@omnifield/probe-web-skin/model";
+import { coordinateOf, skinGaps, type Outfit, type PassportLookup } from "@omnifield/probe-web-skin/model";
+import { admits, groupOf, type PassportGenus } from "@omnifield/probe-web-skin/editor";
 import { cleanup, mount, one } from "../../test/dom.jsx";
 import { palette } from "../../test/palette.js";
 import { assemble, generateSkinCss } from "../../test/skin.js";
-import { anatomy, parts, passport } from "./icon.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./icon.anatomy.js";
 import { Icon } from "./icon.jsx";
 import { form } from "./icon.recipe.js";
 
@@ -143,7 +136,7 @@ describe("паспорт значка", () => {
   });
 
   it("род объявлен `icon` — значок и есть тот кандидат, под который заведён `accepts` у кнопки и гармошки", () => {
-    expect(passport.genus).toBe("icon");
+    expect(editorInfo.genus).toBe("icon");
   });
 
   it("добавка покрывает РОВНО части анатомии — ни больше, ни меньше", () => {
@@ -159,8 +152,8 @@ describe("паспорт значка", () => {
   });
 
   it("группа не объявлена — значок в «прочем», умолчание рабочее", () => {
-    expect(passport.group).toBeUndefined();
-    expect(groupOf(passport)).toBe("other");
+    expect(editorInfo.group).toBeUndefined();
+    expect(groupOf(editorInfo)).toBe("other");
   });
 
   it("настроек из закрытого перечня нет — `size`/`color`/`strokeWidth` это пропы lucide, не SETTINGS", () => {
@@ -168,15 +161,15 @@ describe("паспорт значка", () => {
   });
 
   it("базовой сборки нет — обязательный проп `icon` это ссылка на компонент, не данные", () => {
-    expect(passport.assembly).toBeUndefined();
+    expect(editorInfo.assemblies).toEqual([]);
   });
 
   it("поставщик назван и совпадает с манифестом", () => {
-    expect(passport.package).toBe(manifest.name);
+    expect(editorInfo.package).toBe(manifest.name);
   });
 
   it("внутрь корня не кладут ничего — место занято самим значком", () => {
-    const root = passport.parts.find((part) => part.name === passport.root);
+    const root = editorInfo.parts[passport.root];
 
     if (!root) throw new Error("у значка нет добавки на корневую часть");
 

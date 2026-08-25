@@ -36,7 +36,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, mount, nextTask } from "../../test/dom.jsx";
 import { palette } from "../../test/palette.js";
 import { assemble, generateSkinCss } from "../../test/skin.js";
-import { anatomy, parts, passport } from "./accordion.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./accordion.anatomy.js";
 import {
   Accordion,
   AccordionItem,
@@ -385,7 +385,7 @@ describe("паспорт: вложенность в два уровня", () => 
   const declared = passport.parts.map((part) => part.name);
 
   it("правило вложенности ссылается только на существующие части", () => {
-    for (const part of passport.parts) {
+    for (const part of Object.values(editorInfo.parts)) {
       for (const allowed of part.accepts ?? []) {
         if (allowed.kind === "part") expect(declared).toContain(allowed.name);
       }
@@ -410,9 +410,9 @@ describe("паспорт: вложенность в два уровня", () => 
     // Ради этого гармошка и взята первой: у кнопки предка быть не могло, и половина адреса
     // правила скина оставалась непроверенной.
     const предки = (part: string) =>
-      passport.parts
-        .filter((owner) => (owner.accepts ?? []).some((a) => a.kind === "part" && a.name === part))
-        .map((owner) => owner.name);
+      Object.entries(editorInfo.parts)
+        .filter(([, owner]) => (owner.accepts ?? []).some((a) => a.kind === "part" && a.name === part))
+        .map(([name]) => name);
 
     expect(предки("item")).toEqual(["root"]);
     expect(предки("itemTrigger")).toEqual(["item"]);
@@ -466,12 +466,12 @@ describe("паспорт: форма", () => {
   it("поставщик — наша поставка, и строка совпадает с манифестом", () => {
     // Компонент приехал из Ark, а поставляем его МЫ: читатель паспорта ставит наш пакет, а не
     // чужой. Совпадение с манифестом стережёт проба — иначе строка разъехалась бы молча.
-    expect(passport.package).toBe(manifest.name);
+    expect(editorInfo.package).toBe(manifest.name);
   });
 
   it("группа и род объявлены из закрытых перечней", () => {
-    expect(passport.group).toBe("disclosure");
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.group).toBe("disclosure");
+    expect(editorInfo.genus).toBe("component");
   });
 
   it("имена состояний внутри части не повторяются", () => {
@@ -497,7 +497,9 @@ describe("паспорт: настройки наблюдаемы на живо�
     // Умолчание обязательно по той же причине, что у оси вариаций: без него «горизонтальная» и
     // «не указано» окажутся разными положениями, совпадающими по договорённости.
     for (const [name, setting] of Object.entries(passport.settings)) {
-      expect(setting.means.length, `настройка «${name}» без объяснения`).toBeGreaterThan(0);
+      const editorSetting = editorInfo.settings?.[name];
+
+      expect(editorSetting?.means.length, `настройка «${name}» без объяснения`).toBeGreaterThan(0);
       expect(setting.byDefault, `настройка «${name}» без умолчания`).toBeDefined();
     }
 

@@ -21,7 +21,13 @@ import { Surface } from "../src/surface/index.js";
 import ChevronDown from "lucide-solid/icons/chevron-down";
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button/index.js";
-import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import {
+  Checkbox,
+  CheckboxControl,
+  CheckboxHiddenInput,
+  CheckboxIndicator,
+  CheckboxLabel,
+} from "../src/checkbox/index.js";
 import { ColorArea, ColorAreaBackground, ColorAreaThumb } from "../src/color-area.jsx";
 import { ColorField, ColorFieldInput, ColorFieldLabel } from "../src/color-field.jsx";
 import { ColorSlider, ColorSliderThumb, ColorSliderTrack } from "../src/color-slider.jsx";
@@ -144,32 +150,52 @@ const PRIMITIVES = [
     ),
   },
   {
+    // Корень — `<label>` (Ark, `getRootProps()` нормализует `label`), не `<div>`, как было у
+    // kobalte: клик по подписи переключает отметку тем же узлом, что несёт адрес.
     name: "Checkbox",
-    tag: "div",
+    tag: "label",
     render: (props: Record<string, unknown>) => <Checkbox {...props} />,
   },
   {
-    name: "CheckboxInput",
+    name: "CheckboxHiddenInput",
     tag: "input",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
-        <CheckboxInput {...props} />
+        <CheckboxHiddenInput {...props} />
       </Checkbox>
     ),
   },
   {
-    // `as="p"` уводит часть от тега корня — иначе селектор `div` поймал бы сам корень.
+    // Тег корня — `label`, а не `div`: `querySelector("div")` не спутает control с ним.
+    // Внутренний `CheckboxIndicator` тоже `div`, но идёт ВТОРЫМ в порядке документа — первым
+    // найдётся control, снаружи.
     name: "CheckboxControl",
-    tag: "p",
+    tag: "div",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
-        <CheckboxControl as="p" {...props} />
+        <CheckboxControl {...props}>
+          <CheckboxIndicator>✓</CheckboxIndicator>
+        </CheckboxControl>
       </Checkbox>
     ),
   },
   {
+    // Без обёртки `CheckboxControl` — паспорт пускает индикатор и прямо в корень
+    // (`checkbox.anatomy.ts`), и тут это ровно то, что снимает столкновение тегов: единственный
+    // `div` в сцене — сам индикатор.
+    name: "CheckboxIndicator",
+    tag: "div",
+    render: (props: Record<string, unknown>) => (
+      <Checkbox>
+        <CheckboxIndicator {...props}>✓</CheckboxIndicator>
+      </Checkbox>
+    ),
+  },
+  {
+    // Подпись — `<span>` (Ark), не `<label>`, как было у kobalte: связь с вводом теперь держит
+    // корень, а не подпись.
     name: "CheckboxLabel",
-    tag: "label",
+    tag: "span",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
         <CheckboxLabel {...props} />
@@ -757,10 +783,11 @@ describe("обработчик потребителя доходит до узл
 });
 
 /**
- * Части, на которых `@kobalte/core` держит СВОЙ служебный стиль. Ни одна строка в нём не про
- * вид — это механика, и каждый случай разобран отдельным тестом в файле своего примитива:
+ * Части, на которых поставщик держит СВОЙ служебный стиль — `@kobalte/core` или (`CheckboxHiddenInput`,
+ * `PWEB-114`) `@zag-js/dom-query` у Ark. Ни одна строка в нём не про вид — это механика, и каждый
+ * случай разобран отдельным тестом в файле своего примитива:
  *
- *   • спрятанные вводы — `visuallyHiddenStyles`: настоящий `<input>` обязан остаться в
+ *   • спрятанные вводы — `visuallyHiddenStyle(s)`: настоящий `<input>` обязан остаться в
  *     документе ради фокуса, формы и скринридера, но не должен быть виден (`checkbox.test.tsx`);
  *   • числовой ввод — `touch-action: none`: иначе жест прокрутки по полю менял бы значение
  *     (`number-field.test.tsx`).
@@ -768,7 +795,7 @@ describe("обработчик потребителя доходит до узл
  * Список ЯВНЫЙ: проверка не ослаблена, у неё названы исключения.
  */
 const WITH_SERVICE_STYLE = new Set([
-  "CheckboxInput",
+  "CheckboxHiddenInput",
   "SwitchInput",
   "RadioGroupItemInput",
   "SegmentedControlItemInput",

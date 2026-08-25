@@ -175,7 +175,7 @@ describe("манифест", () => {
     // Равенство, а не вхождение: каждая новая зависимость поставки становится зависимостью
     // КАЖДОГО потребителя, и появиться она обязана решением architect, а не побочно.
     //
-    // Три обычные зависимости, и у каждой своя причина:
+    // Четыре обычные зависимости, и у каждой своя причина:
     //   • `@omnifield/probe-web-skin` (`PWEB-110`, `PWEB-111`) — форма паспорта (`definePassport`,
     //     `admits`, …) переехала туда физически: она общая для любого поставщика компонентов, а
     //     не привилегия этого кита, и каждый `*.anatomy.ts` зовёт её на исполнении, не только
@@ -185,6 +185,8 @@ describe("манифест", () => {
     //   • `@zag-js/accordion` — тот подпуть, где физически лежит анатомия гармошки (`PWEB-37`);
     //     Ark берёт её оттуда же, брать через него значило бы тянуть в подпуть данных ветку
     //     `solid` с JSX;
+    //   • `@zag-js/checkbox` (`PWEB-114`) — тот же приём, тот же довод: подпуть без Solid и без
+    //     машины состояний, анатомия чекбокса физически лежит там же, откуда её берёт Ark;
     //   • `lucide-solid` (`PWEB-107`) — РАНТАЙМ, но в бандл поставки не попадает ни строкой: кит
     //     ввозит из него только тип (`import type { LucideProps }`), а конкретный значок
     //     приходит пропом от потребителя, который импортирует его сам, точечно. Зависимость
@@ -193,6 +195,7 @@ describe("манифест", () => {
     expect(manifest.dependencies).toEqual({
       "@omnifield/probe-web-skin": expect.any(String),
       "@zag-js/accordion": expect.any(String),
+      "@zag-js/checkbox": expect.any(String),
       "lucide-solid": expect.any(String),
     });
   });
@@ -376,7 +379,6 @@ export const части: string[] = кнопка?.anatomy.keys() ?? [];
 export const адреса: string[] = Object.values(кнопка?.anatomy.build() ?? {}).map(
   (часть) => часть.selector,
 );
-export const назначения: string[] = кнопка?.parts.map((часть) => часть.means) ?? [];
 export const состояния: string[] =
   кнопка?.parts.flatMap((часть) => часть.states.map((состояние) => состояние.name)) ?? [];
 export const ось: string | undefined = кнопка?.variantAxis.mark.name;
@@ -416,11 +418,9 @@ import { definePassport } from "${PKG}/passport";
 
 export const паспорт = definePassport({
   anatomy: createAnatomy("проба").parts("root"),
-  package: "@проба/пакет",
-  genus: "component",
   root: "root",
-  parts: [{ name: "root", means: "корень", states: [] }],
-  variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },${settings}
+  parts: [{ name: "root", states: [] }],
+  variantAxis: { mark: { kind: "attribute", name: "data-variant" } },${settings}
 });
 `;
 
@@ -533,13 +533,14 @@ describe("паспорт из поставки", () => {
     // приезжают вызовом, а не полем: `@zag-js/anatomy` порождает атрибуты узла и селектор
     // стиля из одного объявления, и разъехаться им негде по построению.
     const passport = runInConsumer(
-      `import { GROUPS, groupOf, passportOf } from "${PKG}/passport";
+      `import { editorInfoOf, GROUPS, groupOf, passportOf } from "${PKG}/passport";
 
 const кнопка = passportOf("button");
+const editorInfo = editorInfoOf("button");
 
 console.log(JSON.stringify({
   component: кнопка.component,
-  package: кнопка.package,
+  package: editorInfo.package,
   root: кнопка.root,
   keys: кнопка.anatomy.keys(),
   attrs: кнопка.anatomy.build()[кнопка.root].attrs,
@@ -547,8 +548,8 @@ console.log(JSON.stringify({
   parts: кнопка.parts.map((часть) => часть.name),
   states: кнопка.parts.flatMap((часть) => часть.states.map((с) => с.name)),
   axis: кнопка.variantAxis.mark,
-  group: кнопка.group,
-  подписьГруппы: GROUPS[groupOf(кнопка)],
+  group: editorInfo.group,
+  подписьГруппы: GROUPS[groupOf(editorInfo)],
 }));`,
     ) as {
       component: string;
@@ -594,16 +595,17 @@ console.log(JSON.stringify({
     // каждый читатель написал бы своё правило поверх одних и тех же данных, и правила разошлись
     // бы молча: оба зелёные, дерево у каждого своё.
     const решение = runInConsumer(
-      `import { admits, passportOf } from "${PKG}/passport";
+      `import { admits, editorInfoOf, passportOf } from "${PKG}/passport";
 
 const кнопка = passportOf("button");
-const корень = кнопка.parts.find((часть) => часть.name === кнопка.root);
+const editorInfo = editorInfoOf("button");
+const корень = editorInfo.parts[кнопка.root];
 
 console.log(JSON.stringify({
-  genus: кнопка.genus,
+  genus: editorInfo.genus,
   подпись: admits(корень, { kind: "content", genus: "text" }),
   значок: admits(корень, { kind: "content", genus: "icon" }),
-  компонент: admits(корень, { kind: "content", genus: кнопка.genus }),
+  компонент: admits(корень, { kind: "content", genus: editorInfo.genus }),
 }));`,
     ) as { genus: string; подпись: boolean; значок: boolean; компонент: boolean };
 
@@ -657,12 +659,15 @@ console.log(JSON.stringify({
     // форму, которую читает механика сборки. Проверь мы здесь только запись, гейт был бы зелен и
     // на объявлении, которое ни во что не разворачивается.
     const снято = runInConsumer(
-      `import { baseAssemblyOf, passportOf, SETTINGS } from "${PKG}/passport";
+      `import { baseAssemblyOf, editorInfoOf, passportOf, SETTINGS } from "${PKG}/passport";
 
 const гармошка = passportOf("accordion");
+const editorInfo = editorInfoOf("accordion");
 const содержимое = гармошка.parts.find((часть) => часть.name === "itemContent");
-const дерево = baseAssemblyOf(гармошка);
-const подЧужимИменем = baseAssemblyOf(гармошка, "ui.accordion");
+const сборка = editorInfo.assemblies[0];
+const дерево = baseAssemblyOf(гармошка, сборка);
+const подЧужимИменем = baseAssemblyOf(гармошка, сборка, "ui.accordion");
+const значокБезСборки = editorInfoOf("icon").assemblies.length === 0 ? null : "есть";
 
 console.log(JSON.stringify({
   настройки: Object.keys(гармошка.settings).sort(),
@@ -678,7 +683,7 @@ console.log(JSON.stringify({
   подписи: Object.values(дерево.components.nodes).filter((узел) => узел.genus).map((узел) => узел.value),
   чужоеИмя: подЧужимИменем.components.root,
   чужиеАдреса: [...new Set(Object.values(подЧужимИменем.components.nodes).map((узел) => узел.type).filter(Boolean))].sort(),
-  безСборки: baseAssemblyOf({ ...гармошка, assembly: undefined }) === undefined ? null : "есть",
+  безСборки: значокБезСборки,
 }));`,
     ) as {
       настройки: string[];
@@ -728,8 +733,8 @@ console.log(JSON.stringify({
     expect(снято.чужоеИмя).toBe("ui.accordion");
     expect(снято.чужиеАдреса).toContain("ui.accordion.itemTrigger");
 
-    // Паспорт без сборки отдаёт `undefined` — честно, а не пустым деревом: пустое дерево
-    // выглядело бы как объявленный экземпляр, которого нет.
+    // Компонент, не объявивший сборку (значок), отдаёт ПУСТОЙ перечень — честно, а не пустым
+    // деревом: пустое дерево выглядело бы как объявленный экземпляр, которого нет.
     expect(снято.безСборки).toBeNull();
   });
 

@@ -23,6 +23,7 @@
 // необязательна: элементы, которым размещение не нужно, кладут в сетку напрямую.
 
 import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { GridProps } from "./grid.jsx";
@@ -34,56 +35,61 @@ export const anatomy = createAnatomy("grid").parts("root", "cell");
 export const parts = anatomy.build();
 
 /**
- * Паспорт сетки.
+ * Паспорт сетки — срез РАНТАЙМА (`PWEB-115`).
  *
  * Состояний нет, как и у потока: раскладка ничего не хранит. Число колонок сюда тоже не
  * попадает — это ВИД, и живёт он в правиле скина, а не в паспорте и не в разметке.
  */
 export const passport = definePassport({
   anatomy,
+  root: "root",
+  parts: [{ name: "root", states: [] }, { name: "cell", states: [] }],
+  variantAxis: {
+    mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня сетка не принимает: число колонок — раскладочное свойство,
+  // то есть ВИД, и приезжает скином.
+  settings: defineSettings<GridProps>({}),
+});
+
+/** Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка. */
+export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
   genus: "component",
   group: "layout",
-  root: "root",
-  parts: [
-    {
-      name: "root",
+  variantAxis: {
+    means: "имя вариации сетки; его даёт человек в редакторе, кит пропускает насквозь",
+  },
+  parts: {
+    root: {
       means: "сетка — общие дорожки, по которым элементы выравниваются и поперёк строк",
-      states: [],
       accepts: [
         { kind: "part", name: "cell" },
         { kind: "content", genus: "text" },
         { kind: "content", genus: "component" },
       ],
     },
-    {
-      name: "cell",
+    cell: {
       means: "место одного элемента в сетке — им адресуется «этот занимает две колонки»",
-      states: [],
       accepts: [
         { kind: "content", genus: "text" },
         { kind: "content", genus: "component" },
       ],
     },
-  ],
-  variantAxis: {
-    means: "имя вариации сетки; его даёт человек в редакторе, кит пропускает насквозь",
-    mark: { kind: "attribute", name: "data-variant" },
   },
-  // Настроек из закрытого перечня сетка не принимает: число колонок — раскладочное свойство,
-  // то есть ВИД, и приезжает скином.
-  settings: defineSettings<GridProps>({}),
   // Четыре ячейки: на одной не видно ни колонок, ни рядов, а сетка — про них.
-  assembly: {
-    means: "сетка из четырёх ячеек",
-    tree: {
-      part: "root",
-      children: [
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 1" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 2" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 3" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 4" }] },
-      ],
+  assemblies: [
+    {
+      means: "сетка из четырёх ячеек",
+      tree: {
+        part: "root",
+        children: [
+          { part: "cell", children: [{ genus: "text", value: "Ячейка 1" }] },
+          { part: "cell", children: [{ genus: "text", value: "Ячейка 2" }] },
+          { part: "cell", children: [{ genus: "text", value: "Ячейка 3" }] },
+          { part: "cell", children: [{ genus: "text", value: "Ячейка 4" }] },
+        ],
+      },
     },
-  },
+  ],
 });
