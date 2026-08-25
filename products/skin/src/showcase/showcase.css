@@ -384,10 +384,20 @@ body {
   outline: var(--ui-focus);
 }
 
+.props__select:disabled {
+  color: var(--ui-ink-quiet);
+  cursor: not-allowed;
+}
+
 .props__flag {
   inline-size: var(--ui-gap-4);
   block-size: var(--ui-gap-4);
   accent-color: var(--ui-accent);
+}
+
+.props__flag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Переключатель РОВНО на два положения — тот же приём, что режим (`.modes`), только во всю
@@ -426,6 +436,11 @@ body {
 .props__switch-item[aria-checked="true"] {
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
+}
+
+.props__switch-item:disabled {
+  color: var(--ui-ink-quiet);
+  cursor: not-allowed;
 }
 
 /* На узком экране панель не помещается рядом с показом: под колонку в 16rem ему остался бы

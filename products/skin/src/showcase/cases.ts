@@ -26,7 +26,7 @@
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
 
 import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
-import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
+import { FORCE_ATTRIBUTE, settingApplies as passportSettingApplies } from "@omnifield/probe-web-skin/model";
 import {
   baseAssemblyOf,
   passportOf,
@@ -204,6 +204,27 @@ export function settingsOf(component: string): readonly ShowcaseSetting[] {
  */
 export function defaultSettings(component: string): Record<string, unknown> {
   return Object.fromEntries(settingsOf(component).map((s) => [s.name, s.byDefault]));
+}
+
+/**
+ * Действует ли настройка ПРИ ТЕКУЩИХ значениях — паспорт объявляет зависимость данными
+ * (`PassportSetting.dependsOn`, `SKINED-7`), и спрашивать её надо этим полем, а не сравнением
+ * имён настроек руками: сравнение разошлось бы с паспортом на первом же новом поставщике.
+ *
+ * Пример — гармошка: `collapsible` перестаёт что-либо решать, когда `multiple` уже включена
+ * (`redundantWhen: true`), потому что Zag разрешает закрыть последний раздел, если включено ХОТЯ
+ * БЫ одно из двух.
+ *
+ * @param component адрес компонента в реестре
+ * @param name имя настройки, чью применимость спрашивают
+ * @param values текущие значения настроек компонента
+ */
+export function settingApplies(
+  component: string,
+  name: string,
+  values: Readonly<Record<string, unknown>>,
+): boolean {
+  return passportSettingApplies(passportOf(component)?.settings ?? {}, name, values);
 }
 
 /**
