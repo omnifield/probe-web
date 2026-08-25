@@ -11,11 +11,12 @@
 
 Контракт зон целиком — `PROBEWEB-4`; эта страница его не заменяет, а пересказывает со
 стороны пакета. Зависит от `solid-js`, `@kobalte/core` и `@ark-ui/solid` (все трое — peer),
-плюс четыре обычные зависимости поставки: `@omnifield/probe-web-skin` (форма паспорта — она
-физически переехала туда, `PWEB-110`, раздел «Форма — одна на всех поставщиков» ниже),
-`@zag-js/anatomy` (та же форма паспорта у Ark, `PWEB-2`), `@zag-js/accordion` (анатомия
-гармошки, `PWEB-37`) и `lucide-solid` (значок, `PWEB-107`) — из неё ввозится только ТИП, бандл
-поставки её не несёт (раздел «Значок» ниже).
+плюс три обычные зависимости поставки: `@omnifield/probe-web-skin` (форма паспорта — она
+физически переехала туда, `PWEB-110`, раздел «Форма — одна на всех поставщиков» ниже; тем же
+реэкспортом приезжает и `createAnatomy`, `PWEB-112` — `@zag-js/anatomy` сам по себе теперь
+только в `devDependencies`, ни один файл `src/` не зовёт его напрямую), `@zag-js/accordion`
+(анатомия гармошки, `PWEB-37`) и `lucide-solid` (значок, `PWEB-107`) — из неё ввозится только
+ТИП, бандл поставки её не несёт (раздел «Значок» ниже).
 
 ## Четыре принципа — и что каждый значит на практике
 
@@ -246,9 +247,14 @@
 
 [anatomy]: https://www.npmjs.com/package/@zag-js/anatomy
 
+**Берётся `createAnatomy` РЕЭКСПОРТОМ из `@omnifield/probe-web-skin`, а не напрямую из
+`@zag-js/anatomy` (`PWEB-112`).** Продукту со своим компонентом предложили бы то же самое —
+два разных npm-имени на один и тот же поток обновлялись бы независимо и разошлись бы молча.
+Имя одно: `createAnatomy` берут оттуда же, откуда и остальную форму паспорта.
+
 ```ts
 // packages/ui/src/button/button.anatomy.ts
-import { createAnatomy } from "@zag-js/anatomy";
+import { createAnatomy } from "@omnifield/probe-web-skin/model";
 
 export const anatomy = createAnatomy("button").parts("root");
 ```

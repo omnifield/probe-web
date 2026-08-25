@@ -22,9 +22,7 @@
 // (`grid-column`, `grid-area`) живут на РЕБЁНКЕ, а дети сетки — чужие компоненты. Ячейка
 // необязательна: элементы, которым размещение не нужно, кладут в сетку напрямую.
 
-import { createAnatomy } from "@zag-js/anatomy";
-
-import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { GridProps } from "./grid.jsx";

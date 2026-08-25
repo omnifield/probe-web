@@ -67,7 +67,6 @@
   "dependencies": {
     "@omnifield/probe-web-skin": "workspace:*",
     "@zag-js/accordion": "^1.43.1",
-    "@zag-js/anatomy": "^1.43.1",
     "lucide-solid": "^1.34.0"
   },
   "peerDependencies": {
@@ -81,6 +80,7 @@
     "@omnifield/live-check": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@types/node": "^24.10.1",
+    "@zag-js/anatomy": "^1.43.1",
     "esbuild": "^0.27.7",
     "esbuild-plugin-solid": "^0.6.0",
     "eslint": "^10.8.1",

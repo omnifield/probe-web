@@ -6,9 +6,7 @@
 // произвольный компонент; паспорт ниже делает это утверждение проверяемым на живом узле, а не
 // декорацией, которую никто не сверяет.
 
-import { createAnatomy } from "@zag-js/anatomy";
-
-import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { IconProps } from "./icon.jsx";

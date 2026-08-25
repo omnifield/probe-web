@@ -175,13 +175,13 @@ describe("манифест", () => {
     // Равенство, а не вхождение: каждая новая зависимость поставки становится зависимостью
     // КАЖДОГО потребителя, и появиться она обязана решением architect, а не побочно.
     //
-    // Четыре обычные зависимости, и у каждой своя причина:
+    // Три обычные зависимости, и у каждой своя причина:
     //   • `@omnifield/probe-web-skin` (`PWEB-110`, `PWEB-111`) — форма паспорта (`definePassport`,
     //     `admits`, …) переехала туда физически: она общая для любого поставщика компонентов, а
     //     не привилегия этого кита, и каждый `*.anatomy.ts` зовёт её на исполнении, не только
-    //     типом;
-    //   • `@zag-js/anatomy` — ДАННЫЕ паспорта: форма объявления (`PWEB-2`), той же функцией,
-    //     которой объявлены 69 компонентов Ark;
+    //     типом. `createAnatomy` (`@zag-js/anatomy`) едет ТЕМ ЖЕ путём — реэкспортом из skin, а
+    //     не вторым npm-именем на один поток (`PWEB-112`): пакет ушёл из ЭТИХ зависимостей в
+    //     `devDependencies` ровно потому, что теперь ни один файл `src/` не зовёт его напрямую;
     //   • `@zag-js/accordion` — тот подпуть, где физически лежит анатомия гармошки (`PWEB-37`);
     //     Ark берёт её оттуда же, брать через него значило бы тянуть в подпуть данных ветку
     //     `solid` с JSX;
@@ -193,7 +193,6 @@ describe("манифест", () => {
     expect(manifest.dependencies).toEqual({
       "@omnifield/probe-web-skin": expect.any(String),
       "@zag-js/accordion": expect.any(String),
-      "@zag-js/anatomy": expect.any(String),
       "lucide-solid": expect.any(String),
     });
   });
@@ -409,7 +408,10 @@ export const вид = passportOf("button")?.parts[0].color;
     writeConsumerTsconfig();
 
     const паспорт = (settings: string) =>
-      `import { createAnatomy } from "@zag-js/anatomy";
+      // `createAnatomy` — из `@omnifield/probe-web-skin`, не из `@zag-js/anatomy` напрямую
+      // (`PWEB-112`): чужой поставщик компонентов берёт форму ровно тем же реэкспортом, что и
+      // этот кит, — второго npm-имени на один поток у него быть не должно.
+      `import { createAnatomy } from "@omnifield/probe-web-skin/model";
 import { definePassport } from "${PKG}/passport";
 
 export const паспорт = definePassport({
@@ -814,12 +816,15 @@ console.log(JSON.stringify(passportOf("такого-компонента-нет"
   it("не тянет за собой ни Solid, ни `@kobalte/core`", () => {
     // Ради этого подпуть и отдельный. Утечка импорта означала бы, что чужой инструмент,
     // которому нужен перечень частей, обязан поставить себе весь рантайм примитивов.
-    // `@zag-js/anatomy` тут исключение и названо им: это и есть предмет чтения.
+    // `@omnifield/probe-web-skin` тут исключение и названо им: это и есть предмет чтения —
+    // форма паспорта, включая `createAnatomy`, приезжает РЕЭКСПОРТОМ оттуда (`PWEB-110`,
+    // `PWEB-112`), а не прямым импортом `@zag-js/anatomy` — второго npm-имени на один поток
+    // здесь больше нет.
     const bundle = readFileSync(join(install, "node_modules", PKG, "dist", "passport.js"), "utf8");
 
     expect(bundle).not.toContain("solid-js");
     expect(bundle).not.toContain("@kobalte/core");
-    expect(bundle).toContain("@zag-js/anatomy");
+    expect(bundle).toContain("@omnifield/probe-web-skin");
 
     // Анатомия компонента, приехавшего из Ark, берётся у ПЕРВОИСТОЧНИКА —
     // `@zag-js/accordion/anatomy`, — а не через `@ark-ui/solid/anatomy` (`PWEB-37`). Разница не
