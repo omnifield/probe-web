@@ -40,7 +40,6 @@
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-runtime": "workspace:*",
     "@omnifield/probe-web-style": "workspace:*",

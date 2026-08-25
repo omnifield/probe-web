@@ -232,9 +232,6 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-assembly':
-        specifier: workspace:*
-        version: link:../assembly
       '@omnifield/probe-web-lint':
         specifier: workspace:*
         version: link:../lint
