@@ -130,6 +130,7 @@ export const EXPECTED_SURFACE = [
   "FlowItem",
   "Grid",
   "GridCell",
+  "Icon",
   "Image",
   "ImageFallback",
   "ImageImg",

@@ -16,7 +16,9 @@ import { Accordion, AccordionItem, AccordionItemTrigger } from "../src/accordion
 import { Collapsible, CollapsibleTrigger } from "../src/collapsible.jsx";
 import { Flow, FlowItem } from "../src/flow/index.js";
 import { Grid, GridCell } from "../src/grid/index.js";
+import { Icon } from "../src/icon/index.js";
 import { Surface } from "../src/surface/index.js";
+import ChevronDown from "lucide-solid/icons/chevron-down";
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button/index.js";
 import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
@@ -381,6 +383,11 @@ const PRIMITIVES = [
     render: (props: Record<string, unknown>) => <Grid {...props} />,
   },
   {
+    name: "Icon",
+    tag: "svg",
+    render: (props: Record<string, unknown>) => <Icon icon={ChevronDown} {...props} />,
+  },
+  {
     name: "GridCell",
     tag: "span",
     render: (props: Record<string, unknown>) => (
@@ -732,6 +739,12 @@ describe("ref потребителя доезжает до DOM-узла", () => 
 
 describe("обработчик потребителя доходит до узла", () => {
   for (const primitive of PRIMITIVES) {
+    // `Element.click()` — метод `HTMLElement`, jsdom (как и спецификация) его на `SVGElement` не
+    // даёт: `Icon` рендерит `<svg>`, и вызов уронил бы пробу платформенной ошибкой раньше, чем
+    // дошёл бы до предмета проверки. Тот же обработчик на том же узле проверен диспетчеризацией
+    // события в `icon.test.tsx` — это не ослабление, а другой способ нажать.
+    if (primitive.name === "Icon") continue;
+
     it(primitive.name, () => {
       const onClick = vi.fn();
 
@@ -775,6 +788,17 @@ const WITH_SERVICE_STYLE = new Set([
   "ColorSliderThumb",
 ]);
 
+/**
+ * Части, на которых СВОЙ служебный класс держит ЧУЖОЙ поставщик компонента — не мы и не
+ * `@kobalte/core`. Первый случай пришёл вместе со значком (`PWEB-107`): `lucide-solid` кладёт
+ * `class="lucide lucide-icon lucide-…"` на каждый свой `<svg>` изнутри своего же `Icon`, который
+ * кит не переписывает (гейт требует настоящий узел `lucide-solid` без обёрток). Ни одна из этих
+ * строк не про НАШ вид — они не отвечают ни одному правилу скина `probe-web`, и разобраны здесь
+ * же, а не в файле примитива, ровно потому что это тот же род отступления, что у
+ * `WITH_SERVICE_STYLE`, только по другому атрибуту.
+ */
+const WITH_SERVICE_CLASS = new Set(["Icon"]);
+
 describe("стилей по умолчанию нет", () => {
   for (const primitive of PRIMITIVES) {
     it(primitive.name, () => {
@@ -784,7 +808,9 @@ describe("стилей по умолчанию нет", () => {
       // Ни класса, ни инлайнового стиля: оформление приезжает от потребителя, а не от нас.
       // Атрибут отсутствует целиком — пустая строка тоже считается провалом, потому что она
       // означает, что кто-то в цепочке всё-таки взялся за `class`.
-      expect(node?.hasAttribute("class")).toBe(false);
+      if (!WITH_SERVICE_CLASS.has(primitive.name)) {
+        expect(node?.hasAttribute("class")).toBe(false);
+      }
 
       if (!WITH_SERVICE_STYLE.has(primitive.name)) {
         expect(node?.hasAttribute("style")).toBe(false);
@@ -797,9 +823,17 @@ describe("class потребителя доезжает без примеси", 
   for (const primitive of PRIMITIVES) {
     it(primitive.name, () => {
       const host = mount(() => primitive.render({ class: "мой-класс" }));
+      const class_ = host.querySelector(primitive.tag)?.getAttribute("class");
 
-      // Ровно то, что передали: обёртка ничего не подмешивает и ничего не переставляет.
-      expect(host.querySelector(primitive.tag)?.getAttribute("class")).toBe("мой-класс");
+      // У большинства — ровно то, что передали: обёртка ничего не подмешивает и не переставляет.
+      // Исключение — `WITH_SERVICE_CLASS`, где своё уже подмешал ЧУЖОЙ поставщик компонента, а не
+      // мы; там достаточно, что переданное НЕ ПОТЕРЯЛОСЬ. Точный состав слитого класса — предмет
+      // `icon.test.tsx`, а не этого общего перечня.
+      if (WITH_SERVICE_CLASS.has(primitive.name)) {
+        expect(class_?.split(" ")).toContain("мой-класс");
+      } else {
+        expect(class_).toBe("мой-класс");
+      }
     });
   }
 });
