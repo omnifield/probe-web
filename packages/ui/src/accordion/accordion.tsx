@@ -14,66 +14,71 @@ import {
 import { dropAddress } from "../slot-chain.js";
 import { traceLife } from "../trace.js";
 
-// Раскрывающиеся разделы — ПЕРВЫЙ компонент кита, приехавший из Ark UI (`PWEB-37`).
+// Disclosure items — the FIRST component the kit took from Ark UI (`PWEB-37`).
 //
-// ## Что здесь изменилось по сравнению с прежней гармошкой
+// ## What changed compared to the previous accordion
 //
-// Прежняя стояла на `@kobalte/core` и несла зацепки `data-slot`. Эта стоит на `@ark-ui/solid`,
-// а адресуется АНАТОМИЕЙ — `data-scope="accordion"` плюс `data-part`, — и ставит их не наша
-// обёртка, а сам Ark. То есть шов «кит ↔ скин» здесь закрыт по построению: адрес и селектор
-// порождает одно объявление `@zag-js/anatomy`, и разъехаться им негде.
+// The previous one stood on `@kobalte/core` and carried `data-slot` hooks. This one stands on
+// `@ark-ui/solid`, and is addressed by ANATOMY — `data-scope="accordion"` plus `data-part` — set
+// not by our wrapper, but by Ark itself. That is, the "kit ↔ skin" seam is closed by
+// construction here: one `@zag-js/anatomy` declaration produces both the address and the
+// selector, and there is nowhere for them to drift apart.
 //
-// Зацепок `data-slot` у гармошки поэтому НЕТ ни одной, и это решение, а не пропуск: заводить
-// новому компоненту адреса снимаемой механики значило бы расширять то, от чего уходим. Прежние
-// имена (`accordion`, `accordion-header`, `accordion-trigger`, …) сняты вместе с прежним
-// компонентом — потребителей у них не было, проверено обходом дерева.
+// The accordion therefore carries NO `data-slot` hooks at all, and that is a decision, not an
+// oversight: giving a new component addresses for the mechanism being retired would expand
+// exactly what we are moving away from. The previous names (`accordion`, `accordion-header`,
+// `accordion-trigger`, …) were removed together with the previous component — they had no
+// consumers, checked by walking the tree.
 //
-// ## Адрес ставит Ark, а переписать его не даём мы
+// ## Ark sets the address, and we do not let it be overridden
 //
-// Атрибуты на узел кладёт сам Ark, но пропы потребителя он спредит ПОСЛЕ своих — то есть
-// написанный руками `data-scope` победил бы и узел соврал бы о том, чем он является. Решение
-// `PWEB-46` действует на весь кит, а не только на компоненты, чей адрес ставим мы, поэтому
-// обёртки снимают чужой адрес с пропов (`dropAddress`) и отдают Ark всё остальное как есть.
+// Ark itself puts the attributes on the node, but it spreads the consumer's props AFTER its own —
+// meaning a hand-written `data-scope` would win, and the node would lie about what it is.
+// `PWEB-46`'s decision applies to the whole kit, not only to components whose address we set
+// ourselves, so the wrappers strip any foreign address from props (`dropAddress`) and hand Ark
+// everything else as is.
 //
-// ## Частей пять, и заголовка среди них нет
+// ## Five parts, and a header is not one of them
 //
-// `root · item · itemTrigger · itemContent · itemIndicator` — перечень приезжает готовым, своей
-// анатомии мы не заводим. Заголовочной части у Ark нет, и это не пробел кита: паттерн WAI-ARIA
-// просит обернуть кнопку раздела в заголовок нужного УРОВНЯ, а уровень зависит от места на
-// странице и известен только потребителю. Обёртка — его узел:
+// `root · item · itemTrigger · itemContent · itemIndicator` — the list arrives ready-made, we
+// declare no anatomy of our own. Ark has no header part, and that is not a kit gap: the
+// WAI-ARIA pattern asks for the item's trigger to be wrapped in a heading of the right LEVEL, and
+// the level depends on the page's own structure, known only to the consumer. The wrapper is
+// their node:
 //
-//     <h3><AccordionItemTrigger>Доставка</AccordionItemTrigger></h3>
+//     <h3><AccordionItemTrigger>Shipping</AccordionItemTrigger></h3>
 //
-// ## Закрытый раздел остаётся в документе
+// ## A collapsed item stays in the document
 //
-// Прежняя гармошка закрытое содержимое УДАЛЯЛА. Эта его прячет: узел остаётся с `hidden` и
-// `data-state="closed"`. Для оформления это разница по существу — несуществующий узел нельзя
-// ни анимировать, ни измерить, — и она названа здесь, чтобы не открылась на первом переходе.
+// The previous accordion REMOVED collapsed content. This one hides it: the node stays, with
+// `hidden` and `data-state="closed"`. For styling this is a difference of substance — a node
+// that does not exist can be neither animated nor measured — and it is named here so it does not
+// surface as a surprise on the first transition.
 //
-// Высоту Zag меряет сам и отдаёт кастом-свойствами `--height` / `--width` на узле содержимого;
-// чем её выражать — переход, `grid-template-rows`, ничего — решает скин. Своей анимации кит не
-// привозит, как и прежде.
+// Zag measures the height itself and hands it back as custom properties `--height` / `--width`
+// on the content node; how to express it — a transition, `grid-template-rows`, nothing — is the
+// skin's call. The kit brings no animation of its own, same as before.
 
-/** Пропсы `Accordion` — корня набора разделов. */
+/** Props of `Accordion` — the root of the item set. */
 export type AccordionProps = ArkRootProps;
 
 /**
- * Корень набора — ОДИН узел плюс контекст.
+ * The set's root — ONE node plus context.
  *
- * Держит открытые разделы (`value` / `defaultValue` / `onValueChange`), `multiple` (можно ли
- * держать открытыми несколько) и `collapsible` (можно ли закрыть последний открытый).
+ * Holds the expanded items (`value` / `defaultValue` / `onValueChange`), `multiple` (can several
+ * stay expanded at once), and `collapsible` (can the last expanded one be closed).
  *
  * @example
  * ```tsx
- * <Accordion multiple defaultValue={["доставка"]}>
- *   <AccordionItem value="доставка">
+ * <Accordion multiple defaultValue={["shipping"]}>
+ *   <AccordionItem value="shipping">
  *     <h3>
  *       <AccordionItemTrigger>
- *         Доставка
+ *         Shipping
  *         <AccordionItemIndicator>▾</AccordionItemIndicator>
  *       </AccordionItemTrigger>
  *     </h3>
- *     <AccordionItemContent>Курьером и самовывозом</AccordionItemContent>
+ *     <AccordionItemContent>Courier and pickup</AccordionItemContent>
  *   </AccordionItem>
  * </Accordion>
  * ```
@@ -84,14 +89,14 @@ export function Accordion(props: AccordionProps) {
   return <ArkRoot {...dropAddress(props)} />;
 }
 
-/** Пропсы `AccordionItem`. */
+/** Props of `AccordionItem`. */
 export type AccordionItemProps = ArkItemProps;
 
 /**
- * Один раздел — ОДИН узел плюс контекст своих частей. Обязателен проп `value`.
+ * One item — ONE node plus context for its own parts. `value` is required.
  *
- * Раздел и есть то место, ради которого гармошка взята первой составной: узлов у него
- * несколько, координата скина одна, и покрашенный раз он одевается во всех разделах сразу.
+ * The item is exactly the reason the accordion was taken as the first composite component: it
+ * has several nodes, one skin coordinate, and once dressed, every item is dressed at once.
  */
 export function AccordionItem(props: AccordionItemProps) {
   traceLife("ui.accordion-item");
@@ -99,14 +104,14 @@ export function AccordionItem(props: AccordionItemProps) {
   return <ArkItem {...dropAddress(props)} />;
 }
 
-/** Пропсы `AccordionItemTrigger`. */
+/** Props of `AccordionItemTrigger`. */
 export type AccordionItemTriggerProps = ArkItemTriggerProps;
 
 /**
- * Кнопка раскрытия — ОДИН узел `<button>`.
+ * The expansion button — ONE `<button>` node.
  *
- * Состояние приезжает `data-state="open" | "closed"`, отключённость — нативным `disabled`
- * (Zag ставит его на кнопку, а не `data-disabled`), фокус — `data-focus`.
+ * State arrives as `data-state="open" | "closed"`, disabledness as the native `disabled`
+ * (Zag sets it on the button, not `data-disabled`), focus as `data-focus`.
  */
 export function AccordionItemTrigger(props: AccordionItemTriggerProps) {
   traceLife("ui.accordion-item-trigger");
@@ -114,24 +119,24 @@ export function AccordionItemTrigger(props: AccordionItemTriggerProps) {
   return <ArkItemTrigger {...dropAddress(props)} />;
 }
 
-/** Пропсы `AccordionItemContent`. */
+/** Props of `AccordionItemContent`. */
 export type AccordionItemContentProps = ArkItemContentProps;
 
-/** Содержимое раздела — ОДИН узел; закрытый прячется `hidden`, а не удаляется. */
+/** An item's content — ONE node; when collapsed it is hidden, not removed. */
 export function AccordionItemContent(props: AccordionItemContentProps) {
   traceLife("ui.accordion-item-content");
 
   return <ArkItemContent {...dropAddress(props)} />;
 }
 
-/** Пропсы `AccordionItemIndicator`. */
+/** Props of `AccordionItemIndicator`. */
 export type AccordionItemIndicatorProps = ArkItemIndicatorProps;
 
 /**
- * Указатель раскрытия — ОДИН узел, спрятанный от скринридера (`aria-hidden`).
+ * The expansion indicator — ONE node, hidden from screen readers (`aria-hidden`).
  *
- * Стрелку кладёт внутрь потребитель: своей графики кит не привозит. Поворот — дело скина, ему
- * для этого и объявлено состояние раскрытия на самом указателе.
+ * The consumer places an arrow inside it: the kit brings no graphic of its own. Rotation is the
+ * skin's job, which is exactly why the expansion state is declared on the indicator itself.
  */
 export function AccordionItemIndicator(props: AccordionItemIndicatorProps) {
   traceLife("ui.accordion-item-indicator");
