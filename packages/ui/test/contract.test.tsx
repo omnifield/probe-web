@@ -16,10 +16,18 @@ import { Accordion, AccordionItem, AccordionItemTrigger } from "../src/accordion
 import { Collapsible, CollapsibleTrigger } from "../src/collapsible.jsx";
 import { Flow, FlowItem } from "../src/flow/index.js";
 import { Grid, GridCell } from "../src/grid/index.js";
+import { Icon } from "../src/icon/index.js";
 import { Surface } from "../src/surface/index.js";
+import ChevronDown from "lucide-solid/icons/chevron-down";
 import { AlertDialog, AlertDialogTrigger } from "../src/alert-dialog.jsx";
 import { Button } from "../src/button/index.js";
-import { Checkbox, CheckboxControl, CheckboxInput, CheckboxLabel } from "../src/checkbox.jsx";
+import {
+  Checkbox,
+  CheckboxControl,
+  CheckboxHiddenInput,
+  CheckboxIndicator,
+  CheckboxLabel,
+} from "../src/checkbox/index.js";
 import { ColorArea, ColorAreaBackground, ColorAreaThumb } from "../src/color-area.jsx";
 import { ColorField, ColorFieldInput, ColorFieldLabel } from "../src/color-field.jsx";
 import { ColorSlider, ColorSliderThumb, ColorSliderTrack } from "../src/color-slider.jsx";
@@ -142,32 +150,52 @@ const PRIMITIVES = [
     ),
   },
   {
+    // Корень — `<label>` (Ark, `getRootProps()` нормализует `label`), не `<div>`, как было у
+    // kobalte: клик по подписи переключает отметку тем же узлом, что несёт адрес.
     name: "Checkbox",
-    tag: "div",
+    tag: "label",
     render: (props: Record<string, unknown>) => <Checkbox {...props} />,
   },
   {
-    name: "CheckboxInput",
+    name: "CheckboxHiddenInput",
     tag: "input",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
-        <CheckboxInput {...props} />
+        <CheckboxHiddenInput {...props} />
       </Checkbox>
     ),
   },
   {
-    // `as="p"` уводит часть от тега корня — иначе селектор `div` поймал бы сам корень.
+    // Тег корня — `label`, а не `div`: `querySelector("div")` не спутает control с ним.
+    // Внутренний `CheckboxIndicator` тоже `div`, но идёт ВТОРЫМ в порядке документа — первым
+    // найдётся control, снаружи.
     name: "CheckboxControl",
-    tag: "p",
+    tag: "div",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
-        <CheckboxControl as="p" {...props} />
+        <CheckboxControl {...props}>
+          <CheckboxIndicator>✓</CheckboxIndicator>
+        </CheckboxControl>
       </Checkbox>
     ),
   },
   {
+    // Без обёртки `CheckboxControl` — паспорт пускает индикатор и прямо в корень
+    // (`checkbox.anatomy.ts`), и тут это ровно то, что снимает столкновение тегов: единственный
+    // `div` в сцене — сам индикатор.
+    name: "CheckboxIndicator",
+    tag: "div",
+    render: (props: Record<string, unknown>) => (
+      <Checkbox>
+        <CheckboxIndicator {...props}>✓</CheckboxIndicator>
+      </Checkbox>
+    ),
+  },
+  {
+    // Подпись — `<span>` (Ark), не `<label>`, как было у kobalte: связь с вводом теперь держит
+    // корень, а не подпись.
     name: "CheckboxLabel",
-    tag: "label",
+    tag: "span",
     render: (props: Record<string, unknown>) => (
       <Checkbox>
         <CheckboxLabel {...props} />
@@ -379,6 +407,11 @@ const PRIMITIVES = [
     name: "Grid",
     tag: "div",
     render: (props: Record<string, unknown>) => <Grid {...props} />,
+  },
+  {
+    name: "Icon",
+    tag: "svg",
+    render: (props: Record<string, unknown>) => <Icon icon={ChevronDown} {...props} />,
   },
   {
     name: "GridCell",
@@ -732,6 +765,12 @@ describe("ref потребителя доезжает до DOM-узла", () => 
 
 describe("обработчик потребителя доходит до узла", () => {
   for (const primitive of PRIMITIVES) {
+    // `Element.click()` — метод `HTMLElement`, jsdom (как и спецификация) его на `SVGElement` не
+    // даёт: `Icon` рендерит `<svg>`, и вызов уронил бы пробу платформенной ошибкой раньше, чем
+    // дошёл бы до предмета проверки. Тот же обработчик на том же узле проверен диспетчеризацией
+    // события в `icon.test.tsx` — это не ослабление, а другой способ нажать.
+    if (primitive.name === "Icon") continue;
+
     it(primitive.name, () => {
       const onClick = vi.fn();
 
@@ -744,10 +783,11 @@ describe("обработчик потребителя доходит до узл
 });
 
 /**
- * Части, на которых `@kobalte/core` держит СВОЙ служебный стиль. Ни одна строка в нём не про
- * вид — это механика, и каждый случай разобран отдельным тестом в файле своего примитива:
+ * Части, на которых поставщик держит СВОЙ служебный стиль — `@kobalte/core` или (`CheckboxHiddenInput`,
+ * `PWEB-114`) `@zag-js/dom-query` у Ark. Ни одна строка в нём не про вид — это механика, и каждый
+ * случай разобран отдельным тестом в файле своего примитива:
  *
- *   • спрятанные вводы — `visuallyHiddenStyles`: настоящий `<input>` обязан остаться в
+ *   • спрятанные вводы — `visuallyHiddenStyle(s)`: настоящий `<input>` обязан остаться в
  *     документе ради фокуса, формы и скринридера, но не должен быть виден (`checkbox.test.tsx`);
  *   • числовой ввод — `touch-action: none`: иначе жест прокрутки по полю менял бы значение
  *     (`number-field.test.tsx`).
@@ -755,7 +795,7 @@ describe("обработчик потребителя доходит до узл
  * Список ЯВНЫЙ: проверка не ослаблена, у неё названы исключения.
  */
 const WITH_SERVICE_STYLE = new Set([
-  "CheckboxInput",
+  "CheckboxHiddenInput",
   "SwitchInput",
   "RadioGroupItemInput",
   "SegmentedControlItemInput",
@@ -775,6 +815,17 @@ const WITH_SERVICE_STYLE = new Set([
   "ColorSliderThumb",
 ]);
 
+/**
+ * Части, на которых СВОЙ служебный класс держит ЧУЖОЙ поставщик компонента — не мы и не
+ * `@kobalte/core`. Первый случай пришёл вместе со значком (`PWEB-107`): `lucide-solid` кладёт
+ * `class="lucide lucide-icon lucide-…"` на каждый свой `<svg>` изнутри своего же `Icon`, который
+ * кит не переписывает (гейт требует настоящий узел `lucide-solid` без обёрток). Ни одна из этих
+ * строк не про НАШ вид — они не отвечают ни одному правилу скина `probe-web`, и разобраны здесь
+ * же, а не в файле примитива, ровно потому что это тот же род отступления, что у
+ * `WITH_SERVICE_STYLE`, только по другому атрибуту.
+ */
+const WITH_SERVICE_CLASS = new Set(["Icon"]);
+
 describe("стилей по умолчанию нет", () => {
   for (const primitive of PRIMITIVES) {
     it(primitive.name, () => {
@@ -784,7 +835,9 @@ describe("стилей по умолчанию нет", () => {
       // Ни класса, ни инлайнового стиля: оформление приезжает от потребителя, а не от нас.
       // Атрибут отсутствует целиком — пустая строка тоже считается провалом, потому что она
       // означает, что кто-то в цепочке всё-таки взялся за `class`.
-      expect(node?.hasAttribute("class")).toBe(false);
+      if (!WITH_SERVICE_CLASS.has(primitive.name)) {
+        expect(node?.hasAttribute("class")).toBe(false);
+      }
 
       if (!WITH_SERVICE_STYLE.has(primitive.name)) {
         expect(node?.hasAttribute("style")).toBe(false);
@@ -797,9 +850,17 @@ describe("class потребителя доезжает без примеси", 
   for (const primitive of PRIMITIVES) {
     it(primitive.name, () => {
       const host = mount(() => primitive.render({ class: "мой-класс" }));
+      const class_ = host.querySelector(primitive.tag)?.getAttribute("class");
 
-      // Ровно то, что передали: обёртка ничего не подмешивает и ничего не переставляет.
-      expect(host.querySelector(primitive.tag)?.getAttribute("class")).toBe("мой-класс");
+      // У большинства — ровно то, что передали: обёртка ничего не подмешивает и не переставляет.
+      // Исключение — `WITH_SERVICE_CLASS`, где своё уже подмешал ЧУЖОЙ поставщик компонента, а не
+      // мы; там достаточно, что переданное НЕ ПОТЕРЯЛОСЬ. Точный состав слитого класса — предмет
+      // `icon.test.tsx`, а не этого общего перечня.
+      if (WITH_SERVICE_CLASS.has(primitive.name)) {
+        expect(class_?.split(" ")).toContain("мой-класс");
+      } else {
+        expect(class_).toBe("мой-класс");
+      }
     });
   }
 });

@@ -25,22 +25,31 @@
 // Кит здесь — `devDependency`; в поставку механики он не едет (проба на направление —
 // `surface.test.ts`).
 
-import { kitOf } from "@omnifield/probe-web-ui";
-import { admits, baseAssemblyOf, passportOf } from "@omnifield/probe-web-ui/passport";
+import { admits, baseAssemblyOf, editorInfoOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { coordinateOfType } from "../src/coordinate.js";
 import { checkTree } from "../src/integrity.js";
-import { createRegistry, resolveComponent, type ReadableComponent } from "../src/registry.js";
+import { createRegistry, resolveComponent } from "../src/registry.js";
 import { RenderTree } from "../src/render.jsx";
 import { isContent, type AssemblyTree } from "../src/tree.js";
 import { cleanup, mount } from "./dom.jsx";
+import { readableKitComponent } from "./kit-readable-component.js";
 
 afterEach(cleanup);
 
 /** Паспорт гармошки — первый компонент кита, объявивший базовую сборку. */
 const passport = passportOf("accordion");
 if (!passport) throw new Error("кит не отдаёт паспорта гармошки");
+
+/**
+ * Сборки поставщика держит срез РЕДАКТОРА (`PassportEditorInfo.assemblies`, `PWEB-115`), не
+ * рантайм-паспорт: `baseAssemblyOf` теперь принимает сборку параметром, а не снимает её с
+ * паспорта. Первая в перечне — «три раздела, первый раскрыт», её и проверяет эта проба.
+ */
+const editorInfo = editorInfoOf("accordion");
+const базовая = editorInfo?.assemblies[0];
+if (!базовая) throw new Error("срез редактора гармошки не объявил базовой сборки");
 
 /**
  * Сборка поставщика, приведённая к дереву механики.
@@ -53,16 +62,12 @@ if (!passport) throw new Error("кит не отдаёт паспорта гар
  * @param address адрес компонента в реестре — вход, а не константа: кит может лежать под чужим
  *   пространством имён
  */
-const сборка = (address?: string): AssemblyTree => {
-  const tree = baseAssemblyOf(passport, address);
-  if (!tree) throw new Error("паспорт гармошки не объявил базовой сборки");
-  return tree;
-};
+const сборка = (address?: string): AssemblyTree => baseAssemblyOf(passport, базовая, address);
 
 /** Реестр из пары поставщика; адрес задаёт вызывающий — им же адресуются части сборки. */
 const реестр = (address = "accordion") =>
   createRegistry({
-    components: { [address]: kitOf("accordion") as ReadableComponent },
+    components: { [address]: readableKitComponent("accordion") },
     admits,
   });
 

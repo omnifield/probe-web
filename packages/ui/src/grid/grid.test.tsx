@@ -7,11 +7,19 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  coordinateOf,
+  skinGaps,
+  type Outfit,
+  type PassportLookup,
+} from "@omnifield/probe-web-skin/model";
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { coordinateOf, partOf, type PassportLookup } from "../passport-view.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
 import { passport as flowPassport } from "../flow/flow.anatomy.js";
-import { anatomy, parts, passport } from "./grid.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./grid.anatomy.js";
 import { Grid, GridCell } from "./grid.jsx";
+import { form } from "./grid.recipe.js";
 
 afterEach(cleanup);
 
@@ -76,7 +84,7 @@ describe("паспорт сетки", () => {
       </Grid>
     ));
 
-    const объявлено = (partOf(passport, "root")?.accepts ?? []).some(
+    const объявлено = (editorInfo.parts.root?.accepts ?? []).some(
       (a) => a.kind === "part" && a.name === "cell",
     );
 
@@ -104,7 +112,22 @@ describe("паспорт сетки", () => {
   it("состояний нет ни у одной части, группа и род объявлены", () => {
     for (const part of passport.parts) expect(part.states).toEqual([]);
 
-    expect(passport.group).toBe("layout");
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.group).toBe("layout");
+    expect(editorInfo.genus).toBe("component");
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `grid.recipe.ts`): компонент доказывает себя сам — паспорт
+// сетки МОЖНО одеть настоящей механикой скина целиком.
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

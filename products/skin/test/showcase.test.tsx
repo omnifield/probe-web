@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 import { isContent, knownComponents, sketchOf } from "@omnifield/probe-web-assembly";
 import { KIT } from "@omnifield/probe-web-ui";
 import {
-  type ComponentPassport,
+  editorInfoOf,
   GROUPS,
   groupOf,
   passportOf,
@@ -405,11 +405,12 @@ describe("перечень по разделам", () => {
     const host = mount(() => <App />);
 
     pick(host, "button");
-    const passport = passportOf("button");
+    const editorInfo = editorInfoOf("button");
     const shown = host.textContent ?? "";
 
-    expect(passport?.group).toBeDefined();
-    expect(shown).toContain(GROUPS[groupOf(passport as ComponentPassport)]);
+    expect(editorInfo?.group).toBeDefined();
+    expect(editorInfo).toBeDefined();
+    expect(shown).toContain(GROUPS[groupOf(editorInfo!)]);
   });
 
   it("подписи разделов берутся у формы паспорта — своего словаря витрина не ведёт", () => {
@@ -518,4 +519,39 @@ describe("отрисовка", () => {
     expect(host.querySelector(".gaps")).toBeNull();
   });
 
+});
+
+describe("панель свойств", () => {
+  /** Поле настройки по человеческой подписи — панель своего словаря не ведёт, подпись из паспорта. */
+  function fieldOf(host: HTMLElement, title: string): HTMLElement | undefined {
+    return [...host.querySelectorAll<HTMLElement>(".props__field")].find(
+      (field) => field.querySelector(".props__label")?.textContent === title,
+    );
+  }
+
+  it("настройка гаснет по СВЯЗИ ИЗ ПАСПОРТА (SKINED-7), а не по имени, зашитому в витрине", () => {
+    const host = mount(() => <App />);
+
+    pick(host, "accordion");
+
+    const multiple = fieldOf(host, "Несколько сразу")?.querySelector<HTMLInputElement>(
+      ".props__flag",
+    );
+    const collapsible = fieldOf(host, "Можно закрыть всё")?.querySelector<HTMLInputElement>(
+      ".props__flag",
+    );
+
+    expect(multiple).toBeDefined();
+    expect(collapsible).toBeDefined();
+
+    // Обычно `collapsible` действует: Zag смотрит на неё, пока `multiple` выключена.
+    expect(collapsible?.disabled).toBe(false);
+
+    // `multiple: true` перебивает `collapsible` — Zag разрешает закрыть последний раздел уже по
+    // ней, и вторая ручка на то же решение становится бессмысленной, а не «ещё одним способом».
+    multiple!.checked = true;
+    multiple!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(collapsible?.disabled).toBe(true);
+  });
 });

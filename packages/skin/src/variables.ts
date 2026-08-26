@@ -42,7 +42,7 @@
 // ПАСПОРТА, и отвечает на него паспорт, который редактор и так читает. Перенеси мы это в отчёт
 // сборки — завелась бы вторая правда о чужом факте, расходящаяся на первой же правке паспорта.
 
-import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport } from "./passport-form.js";
 
 import type { PassportLookup } from "./address.js";
 

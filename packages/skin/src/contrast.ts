@@ -72,7 +72,7 @@ import {
   type Oklch,
   type ParsedColor,
 } from "@omnifield/probe-web-style";
-import type { ComponentPassport } from "@omnifield/probe-web-ui/passport";
+import type { ComponentPassport } from "./passport-form.js";
 
 import { passportLookup } from "./address.js";
 import { cssProperty } from "./property.js";

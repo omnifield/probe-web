@@ -21,12 +21,16 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { skinGaps, type Outfit } from "@omnifield/probe-web-skin/model";
+import { admits, GROUPS, groupOf } from "@omnifield/probe-web-skin/editor";
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { admits, GROUPS, groupOf } from "../passport-form.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
 import { Popover, PopoverTrigger } from "../popover.jsx";
 import { Toggle } from "../toggle.jsx";
-import { anatomy, parts, passport } from "./button.anatomy.js";
+import { anatomy, editorInfo, parts, passport } from "./button.anatomy.js";
 import { Button } from "./button.jsx";
+import { form } from "./button.recipe.js";
 
 afterEach(cleanup);
 
@@ -335,7 +339,7 @@ describe("паспорт: что допустимо внутри", () => {
   // Честный предел: отвергает РЕДАКТОР, а не DOM. Положить в `<button>` можно что угодно, и
   // проверить отказ на узле нельзя в принципе — правило вложенности это обещание тому, кто
   // собирает дерево. Поэтому здесь спрашивается `admits`, а не разметка.
-  const root = passport.parts.find((part) => part.name === passport.root);
+  const root = editorInfo.parts[passport.root];
 
   if (!root) throw new Error("у кнопки нет добавки на корневую часть");
 
@@ -347,7 +351,7 @@ describe("паспорт: что допустимо внутри", () => {
   it("отвергает компонент — раскладке внутри кнопки места нет", () => {
     // Род кандидата берётся из ЕГО паспорта. Здесь это паспорт самой кнопки: кнопка в кнопке —
     // ровно то вложение, которое обязано отвергаться, и второй компонент для проверки не нужен.
-    expect(admits(root, { kind: "content", genus: passport.genus })).toBe(false);
+    expect(admits(root, { kind: "content", genus: editorInfo.genus })).toBe(false);
   });
 
   it("объявленное доезжает до живого узла: подпись и значок видны внутри кнопки", () => {
@@ -364,7 +368,7 @@ describe("паспорт: что допустимо внутри", () => {
   });
 
   it("род компонента объявлен — иначе кандидата опознавали бы по имени пакета", () => {
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.genus).toBe("component");
   });
 });
 
@@ -386,7 +390,7 @@ describe("паспорт: форма", () => {
   });
 
   it("правило вложенности ссылается на существующие части", () => {
-    for (const part of passport.parts) {
+    for (const part of Object.values(editorInfo.parts)) {
       for (const allowed of part.accepts ?? []) {
         if (allowed.kind === "part") expect(declared).toContain(allowed.name);
       }
@@ -406,15 +410,33 @@ describe("паспорт: форма", () => {
   it("группа объявлена и взята из закрытого перечня", () => {
     // Место в перечне называет ПОСТАВЩИК (`PWEB-34`): не назови его кнопка — раздел придумал бы
     // каждый пульт сам, и витрина с редактором разошлись бы на первом же десятке компонентов.
-    expect(passport.group).toBe("actions");
-    expect(Object.keys(GROUPS)).toContain(passport.group);
-    expect(groupOf(passport)).toBe("actions");
+    expect(editorInfo.group).toBe("actions");
+    expect(Object.keys(GROUPS)).toContain(editorInfo.group);
+    expect(groupOf(editorInfo)).toBe("actions");
   });
 
   it("поставщик назван и совпадает с манифестом", () => {
     // Форма одна на всех поставщиков, поэтому читатель обязан узнать поставщика ДАННЫМИ, не
     // зная имён пакетов заранее. Строка написана в паспорте руками — сверяем с манифестом,
     // иначе она разъедется с ним молча.
-    expect(passport.package).toBe(manifest.name);
+    expect(editorInfo.package).toBe(manifest.name);
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `button.recipe.ts`): компонент доказывает себя сам — паспорт
+// кнопки МОЖНО одеть настоящей механикой скина целиком, а не только собрать типами. Раньше это
+// же доказывал отдельный пакет `packages/skin-reference` (снесён, `PWEB-110`).
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  // `assemble` бросает `OutfitRefused` на изъяне — не бросил, значит наряд собрался ЧЕСТНО, а не
+  // просто не упал мимо проверки.
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

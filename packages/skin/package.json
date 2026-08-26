@@ -17,6 +17,10 @@
     "./flat": {
       "types": "./dist/flat.d.ts",
       "default": "./dist/flat.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "default": "./dist/editor.js"
     }
   },
   "files": [
@@ -32,23 +36,22 @@
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@zag-js/anatomy": "^1.43.1"
+  },
   "peerDependencies": {
     "@omnifield/probe-web-style": "^0.1.0",
-    "@omnifield/probe-web-ui": "^0.1.0",
     "postcss": "^8.5.14",
     "postcss-nested": "^7.0.2"
   },
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-runtime": "workspace:*",
     "@omnifield/probe-web-style": "workspace:*",
-    "@omnifield/probe-web-ui": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
-    "@zag-js/anatomy": "^1.43.1",
     "esbuild": "^0.27.7",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",

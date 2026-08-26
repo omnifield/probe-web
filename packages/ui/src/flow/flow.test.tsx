@@ -6,10 +6,18 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  coordinateOf,
+  skinGaps,
+  type Outfit,
+  type PassportLookup,
+} from "@omnifield/probe-web-skin/model";
 import { cleanup, mount, one } from "../../test/dom.jsx";
-import { coordinateOf, partOf, type PassportLookup } from "../passport-view.js";
-import { anatomy, parts, passport } from "./flow.anatomy.js";
+import { palette } from "../../test/palette.js";
+import { assemble, generateSkinCss } from "../../test/skin.js";
+import { anatomy, editorInfo, parts, passport } from "./flow.anatomy.js";
 import { Flow, FlowItem } from "./flow.jsx";
+import { form } from "./flow.recipe.js";
 
 afterEach(cleanup);
 
@@ -90,7 +98,7 @@ describe("паспорт потока", () => {
       </Flow>
     ));
 
-    const объявлено = (partOf(passport, "root")?.accepts ?? []).some(
+    const объявлено = (editorInfo.parts.root?.accepts ?? []).some(
       (a) => a.kind === "part" && a.name === "item",
     );
 
@@ -129,7 +137,22 @@ describe("паспорт потока", () => {
   it("состояний нет ни у одной части, группа и род объявлены", () => {
     for (const part of passport.parts) expect(part.states).toEqual([]);
 
-    expect(passport.group).toBe("layout");
-    expect(passport.genus).toBe("component");
+    expect(editorInfo.group).toBe("layout");
+    expect(editorInfo.genus).toBe("component");
+  });
+});
+
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `flow.recipe.ts`): компонент доказывает себя сам — паспорт
+// потока МОЖНО одеть настоящей механикой скина целиком.
+describe("рецепт-доказательство: паспорт МОЖНО одеть целиком", () => {
+  const outfit: Outfit = { name: "проба", palette: palette.name, forms: [form.name] };
+  const { skin } = assemble(outfit, { palettes: [palette], forms: [form] });
+
+  it("покрытие полное — ни одной непокрытой координаты паспорта", () => {
+    expect(skinGaps(skin, [passport])).toEqual([]);
+  });
+
+  it("CSS действительно порождается, а не только собирается типами", () => {
+    expect(generateSkinCss(skin).length).toBeGreaterThan(0);
   });
 });

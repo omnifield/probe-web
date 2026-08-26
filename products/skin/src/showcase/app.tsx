@@ -24,7 +24,7 @@ import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
 import { SkinRefused } from "@omnifield/probe-web-skin";
 import { OutfitRefused } from "@omnifield/probe-web-skin/model";
-import { GROUPS, groupOf, passportOf } from "@omnifield/probe-web-ui/passport";
+import { editorInfoOf, GROUPS, groupOf } from "@omnifield/probe-web-ui/passport";
 import {
   createResource,
   createSignal,
@@ -32,6 +32,7 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
 } from "solid-js";
 
 import {
@@ -46,6 +47,9 @@ import {
 import {
   ANY,
   casesOf,
+  defaultSettings,
+  settingApplies,
+  settingsOf,
   statesOfComponent,
   type Axis,
   type ShowcaseCase,
@@ -66,9 +70,10 @@ const COMPONENTS = knownComponents(REGISTRY);
 /**
  * Компоненты по разделам.
  *
- * Раздел объявляет САМ компонент (`group` в паспорте), а перечень разделов и их подписи живут у
- * формы паспорта. Своего перечня витрина не заводит: назови она разделы сама — их стало бы два,
- * и у следующего пульта третий. Порядок разделов — порядок объявления в перечне, а не наш.
+ * Раздел объявляет САМ компонент (`group` в срезе редактора — `PWEB-115`/`PWEB-118`, паспорт
+ * рантайма его не несёт), а перечень разделов и их подписи живут у формы паспорта. Своего перечня
+ * витрина не заводит: назови она разделы сама — их стало бы два, и у следующего пульта третий.
+ * Порядок разделов — порядок объявления в перечне, а не наш.
  *
  * Пустые разделы не показываются: раздел без компонентов это обещание, которого никто не давал.
  */
@@ -77,8 +82,8 @@ const BY_GROUP = Object.entries(GROUPS)
     group,
     title,
     components: COMPONENTS.filter((component) => {
-      const passport = passportOf(component);
-      return passport !== undefined && groupOf(passport) === group;
+      const editorInfo = editorInfoOf(component);
+      return editorInfo !== undefined && groupOf(editorInfo) === group;
     }),
   }))
   .filter((section) => section.components.length > 0);
@@ -229,6 +234,125 @@ function Axes(props: {
 }
 
 /**
+ * ПАНЕЛЬ СВОЙСТВ — ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ (`PWEB-89`), отдельной колонкой справа.
+ *
+ * Не фильтр показа и не ось: вариация и состояние отбирают, какие случаи видно, а настройка
+ * меняет сам ЭКЗЕМПЛЯР — поведение и разметку, вертикальная гармошка и горизонтальная это разные
+ * клавиши и разные `aria`. Смешать её с осями значило бы поставить рядом два разных вопроса:
+ * «что показать» и «чем это является».
+ *
+ * Перечень объявляет ПОСТАВЩИК, витрина своего не ведёт — иначе гармошка навсегда осталась бы
+ * такой, какой её однажды показали: без закрытия последнего раздела и в одном положении.
+ *
+ * Компонент без объявленных настроек панель не рисует вовсе: пустая колонка сбоку — вопрос без
+ * ответа, а не честное «здесь настраивать нечего».
+ */
+function SettingsPanel(props: {
+  component: string;
+  settings: Readonly<Record<string, unknown>>;
+  onSetting: (name: string, value: unknown) => void;
+}) {
+  return (
+    <Show when={settingsOf(props.component).length > 0}>
+      <aside class="props">
+        <div class="props__head">
+          <b class="props__title">Свойства</b>
+          <span class="props__note">чем компонент может быть — задаёт поставщик</span>
+        </div>
+
+        <div class="props__list">
+          <For each={settingsOf(props.component)}>
+            {(setting) => {
+              // Применимость СПРАШИВАЕТСЯ у паспорта (`SKINED-7`), а не сравнивается именами
+              // руками: паспорт объявляет зависимость данными (`dependsOn`), и второй, наш
+              // список «какая настройка кого перебивает» разошёлся бы с ним на первом же новом
+              // поставщике. Настройка при этом не пропадает из панели — она гаснет: человек
+              // должен видеть, что компонент её несёт, а не гадать, куда она делась.
+              const applies = () => settingApplies(props.component, setting.name, props.settings);
+              const means = () =>
+                applies()
+                  ? setting.means
+                  : `${setting.means} — сейчас не действует: перебито другой настройкой`;
+
+              return (
+                <label class="props__field" title={means()}>
+                  <span class="props__label">{setting.title}</span>
+                  <Show
+                    when={setting.values.kind === "choice" ? setting.values : null}
+                    fallback={
+                      <input
+                        class="props__flag"
+                        type="checkbox"
+                        disabled={!applies()}
+                        checked={props.settings[setting.name] === true}
+                        onChange={(event) =>
+                          props.onSetting(setting.name, event.currentTarget.checked)
+                        }
+                      />
+                    }
+                  >
+                    {(выбор) => (
+                      <Show
+                        when={выбор().options.length === 2}
+                        // Список — когда выбор действительно СПИСОК: три и больше именованных
+                        // положений. Ровно на двух список превращается в вопрос «да или нет
+                        // применительно к другому», и отвечать на него открыванием и закрыванием
+                        // меню — лишнее движение там, где хватает одного клика.
+                        fallback={
+                          <select
+                            class="props__select"
+                            disabled={!applies()}
+                            value={String(props.settings[setting.name] ?? setting.byDefault)}
+                            onChange={(event) =>
+                              props.onSetting(setting.name, event.currentTarget.value)
+                            }
+                          >
+                            <For each={выбор().options}>
+                              {(option) => (
+                                <option value={option.value} title={option.means}>
+                                  {option.means}
+                                </option>
+                              )}
+                            </For>
+                          </select>
+                        }
+                      >
+                        <div class="props__switch" role="radiogroup" aria-label={setting.title}>
+                          <For each={выбор().options}>
+                            {(option) => {
+                              const текущее = () =>
+                                String(props.settings[setting.name] ?? setting.byDefault);
+
+                              return (
+                                <button
+                                  type="button"
+                                  class="props__switch-item"
+                                  role="radio"
+                                  disabled={!applies()}
+                                  aria-checked={текущее() === option.value}
+                                  title={option.means}
+                                  onClick={() => props.onSetting(setting.name, option.value)}
+                                >
+                                  {option.means}
+                                </button>
+                              );
+                            }}
+                          </For>
+                        </div>
+                      </Show>
+                    )}
+                  </Show>
+                </label>
+              );
+            }}
+          </For>
+        </div>
+      </aside>
+    </Show>
+  );
+}
+
+/**
  * СТРАНИЦА КОМПОНЕНТА — показ, и только он.
  *
  * Витрина существует, чтобы СМОТРЕТЬ: полистать компоненты, переключить скин, показать человеку,
@@ -248,6 +372,7 @@ function ComponentPage(props: {
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
+  settings: Readonly<Record<string, unknown>>;
 }) {
   // Часть не называется: на витрине её нет, и состояние ставится на ту часть, которая его
   // объявила, — это знает сборка случая, а не показ.
@@ -256,6 +381,7 @@ function ComponentPage(props: {
       variant: props.variant,
       state: props.state,
       variants: props.variants,
+      settings: props.settings,
     });
 
   return (
@@ -402,12 +528,28 @@ export function App() {
   const [variant, setVariant] = createSignal<Axis<string>>(ANY);
   const [state, setState] = createSignal<Axis<string | null>>(null);
 
+  // НАСТРОЙКИ ПОСТАВЩИКА — чем компонент может быть. Начальное положение берётся у паспорта, а не
+  // из пустоты: «не названо» и «названо умолчанием» обязаны быть одним положением, иначе список в
+  // шапке показывал бы одно, а показ работал бы по другому.
+  // Начальное положение снимается ОДИН раз и намеренно вне слежения: дальше настройки меняет
+  // человек, а на смену компонента их перезаводит `setCurrent`. Слежение здесь означало бы, что
+  // выбор человека затирается при любом чтении текущего компонента.
+  const [settings, setSettings] = createSignal<Record<string, unknown>>(
+    untrack(() => defaultSettings(current())),
+  );
+
   /** Смена компонента сбрасывает оси: чужое состояние на нём не значит ничего. */
   const setCurrent = (component: string) => {
     setCurrentSignal(component);
     setVariant(ANY);
     setState(null);
+    // Настройки тоже чужие: `collapsible` у гармошки ничего не значит для кнопки, а её умолчания
+    // объявляет её собственный паспорт.
+    setSettings(defaultSettings(component));
   };
+
+  const setSetting = (name: string, value: unknown) =>
+    setSettings((прежние) => ({ ...прежние, [name]: value }));
   // НАДЕТОЕ — это имя И половина вместе: половина принадлежит скину, а не документу, и второй
   // ручки под неё не существует. Нет скина — нет и половины.
   const [worn, setWorn] = createSignal<SkinWorn | null>(null);
@@ -554,18 +696,33 @@ export function App() {
           onMode={setMode}
         />
 
-        <main class="main">
-          <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+        {/* Показ и свойства — РЯДОМ, а не друг под другом: правка настройки должна быть видна на
+            том же экране, без прокрутки к панели и обратно. */}
+        <div class="content">
+          <main class="main">
+            <Show when={current()} fallback={<p class="empty">В реестре нет ни одного компонента.</p>}>
+              {(component) => (
+                <ComponentPage
+                  component={component()}
+                  variants={variants()}
+                  variant={variant()}
+                  state={state()}
+                  settings={settings()}
+                />
+              )}
+            </Show>
+          </main>
+
+          <Show when={current()}>
             {(component) => (
-              <ComponentPage
+              <SettingsPanel
                 component={component()}
-                variants={variants()}
-                variant={variant()}
-                state={state()}
+                settings={settings()}
+                onSetting={setSetting}
               />
             )}
           </Show>
-        </main>
+        </div>
       </div>
     </div>
   );

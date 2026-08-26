@@ -1,7 +1,7 @@
 import solid from "vite-plugin-solid";
 import { defineConfig } from "vitest/config";
 
-// Два проекта, потому что тесты живут в разных мирах и одним конфигом не покрываются:
+// Три проекта, потому что тесты живут в разных мирах и одним конфигом не покрываются:
 //
 //   • dom — предмет зоны: примитив рендерится в НАСТОЯЩИЙ документ и проверяется по узлу.
 //     Нужны JSDOM, JSX-трансформ и условия разрешения `development`/`browser` — без них
@@ -9,6 +9,13 @@ import { defineConfig } from "vitest/config";
 //     the server side» (норма доки, фонд `solid-testing-library`).
 //   • surface — сборочный: здесь запускается настоящий `pnpm pack` и читается тарбол.
 //     Браузерные условия тут только мешали бы.
+//   • live — живой Chromium (`PWEB-111`): `*.live.test.ts` собирает кит через `esbuild` в
+//     процессе (`test/kit-live.ts`, `собратьКит`), а у `esbuild` внутренний инвариант
+//     (`new TextEncoder().encode("") instanceof Uint8Array`), который `jsdom` ломает подменой
+//     глобальных классов из другого реалма. Разъехаться `dom` и `live` в одном файле НЕ МОГУТ —
+//     vitest назначает окружение на файл, не на describe-блок, — поэтому живые пробы раскрытия
+//     гармошки лежат в СОСЕДНЕМ файле рядом с компонентом (`src/accordion/accordion.live.test.ts`),
+//     а не в `accordion.test.tsx` (разбор — в шапке `accordion.live.test.ts`).
 //
 // Пресет `@omnifield/probe-web-build/vitest` сюда НЕ подключается намеренно: зона `ui` не
 // вправе зависеть от `build` (направление зависимостей одностороннее, `PROBEWEB-4`), а
@@ -39,6 +46,17 @@ export default defineConfig({
           environment: "node",
           include: ["test/*.test.ts"],
           // Внутри `surface` поднимается настоящий `pnpm pack` — дефолтных 5с мало.
+          testTimeout: 180_000,
+          hookTimeout: 180_000,
+        },
+      },
+      {
+        test: {
+          name: "live",
+          environment: "node",
+          include: ["src/*/*.live.test.ts"],
+          // Внутри поднимается настоящий Chromium и собирается кит через esbuild — дефолтных 5с
+          // мало, тем же доводом, что у `surface`.
           testTimeout: 180_000,
           hookTimeout: 180_000,
         },

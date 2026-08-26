@@ -38,8 +38,21 @@ export {
   type AccordionItemTriggerProps,
   type AccordionProps,
 } from "./accordion/index.js";
+export {
+  Checkbox,
+  CheckboxControl,
+  type CheckboxControlProps,
+  CheckboxHiddenInput,
+  type CheckboxHiddenInputProps,
+  CheckboxIndicator,
+  type CheckboxIndicatorProps,
+  CheckboxLabel,
+  type CheckboxLabelProps,
+  type CheckboxProps,
+} from "./checkbox/index.js";
 export { Flow, FlowItem, type FlowItemProps, type FlowProps } from "./flow/index.js";
 export { Grid, GridCell, type GridCellProps, type GridProps } from "./grid/index.js";
+export { Icon, type IconProps } from "./icon/index.js";
 export { Surface, type SurfaceProps } from "./surface/index.js";
 // Карта частей вместе с паспортами (`PWEB-84`). Вход порождён сборкой обходом папок; форма пары
 // и сверка ключей с анатомией — в `kit-form.ts`.
@@ -79,22 +92,6 @@ export {
 // назвал её собственный `index.ts`. Остальные примитивы переезжают в папки волной разноса
 // (`PWEB-7`) — здесь они пока файлами.
 export { Button, type ButtonProps } from "./button/index.js";
-export {
-  Checkbox,
-  CheckboxControl,
-  type CheckboxControlComponentProps,
-  CheckboxDescription,
-  type CheckboxDescriptionComponentProps,
-  CheckboxError,
-  type CheckboxErrorProps,
-  CheckboxIndicator,
-  type CheckboxIndicatorComponentProps,
-  CheckboxInput,
-  type CheckboxInputComponentProps,
-  CheckboxLabel,
-  type CheckboxLabelComponentProps,
-  type CheckboxProps,
-} from "./checkbox.jsx";
 export {
   ColorArea,
   ColorAreaBackground,

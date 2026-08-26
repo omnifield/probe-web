@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { skinGaps, type SkinGap } from "../src/coverage.js";
 import type { Skin } from "../src/model.js";
-import { accordionPassport, buttonPassport, fieldPassport } from "./passports.js";
+import { accordionEditorInfo, accordionPassport, buttonPassport, fieldPassport } from "./passports.js";
 import { buttonSkin, dressedSkin } from "./skins.js";
 
 /** Пробелы одним компактным перечнем — сравнивать удобнее их, а пояснение читает человек. */
@@ -42,6 +42,53 @@ describe("ответ — значение", () => {
     for (const gap of skinGaps(buttonSkin, [buttonPassport, fieldPassport])) {
       expect(gap.means.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// СРЕЗ РЕДАКТОРА — ВТОРОЙ ДОВОД, А НЕ ПОЛЕ ПАСПОРТА (`PWEB-115`).
+//
+// `means` состояния переехал в срез редактора, и `skinGaps` — читатель ОБЕИХ сторон: без
+// `editorInfo` пробел остаётся точным, но без человеческого имени состояния в скобке; с ним —
+// несёт то же самое, что нёс паспорт до разреза.
+describe("текст пробела: точный без editorInfo, обогащённый с ним", () => {
+  const skin: Skin = {
+    name: "гармошка-без-раскрытия",
+    recipes: {
+      accordion: {
+        base: {
+          item: { props: { display: "flex" } },
+          itemContent: { props: { display: "block" } },
+        },
+      },
+    },
+  };
+
+  it("без editorInfo пробел не называет состояние человеку — но остаётся точным", () => {
+    const [gap] = skinGaps(skin, [accordionPassport]).filter(
+      (candidate) => candidate.kind === "state" && candidate.part === "item" && candidate.state === "open",
+    );
+
+    expect(gap?.means).toBe(
+      "состояние «open» части «item» объявлено, но ни одно правило скина его не адресует",
+    );
+  });
+
+  it("с editorInfo пробел несёт то же, что раньше нёс паспорт, — вторым доводом", () => {
+    const [gap] = skinGaps(skin, [accordionPassport], [accordionEditorInfo]).filter(
+      (candidate) => candidate.kind === "state" && candidate.part === "item" && candidate.state === "open",
+    );
+
+    expect(gap?.means).toBe(
+      "состояние «open» части «item» (раздел раскрыт) объявлено, но ни одно правило скина его не адресует",
+    );
+  });
+
+  it("editorInfo, не знающий компонента, ничего не меняет — не подставляет чужое означивание", () => {
+    const [gap] = skinGaps(skin, [accordionPassport], []).filter(
+      (candidate) => candidate.kind === "state" && candidate.part === "item" && candidate.state === "open",
+    );
+
+    expect(gap?.means).not.toContain("(");
   });
 });
 

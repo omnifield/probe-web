@@ -14,7 +14,7 @@
 //
 // Кит здесь — `devDependency`; в поставку механики он не едет.
 
-import { kitOf, Popover, PopoverTrigger } from "@omnifield/probe-web-ui";
+import { Popover, PopoverTrigger } from "@omnifield/probe-web-ui";
 import { admits, coordinateOf, passportOf } from "@omnifield/probe-web-ui/passport";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -30,20 +30,19 @@ import {
 import { RenderTree } from "../src/render.jsx";
 import type { AssemblyTree } from "../src/tree.js";
 import { cleanup, mount } from "./dom.jsx";
+import { readableKitComponent } from "./kit-readable-component.js";
 
 afterEach(cleanup);
 
 /**
  * Пара поставщика по имени компонента — то, из чего складывается реестр (`PWEB-85`).
  *
- * Присваивание к `ReadableComponent` и есть проверка формы: не подойди пара кита механике как
- * есть — не собрались бы типы, и это покраснело бы здесь, а не у потребителя через выпуск.
+ * Рантайм-пара кита (`kitOf`) и род/`accepts` — РАЗНЫЕ входы после разреза паспорта (`PWEB-115`,
+ * `PWEB-118`): второе живёт в срезе редактора, не на рантайм-паспорте. `readableKitComponent`
+ * сливает оба тем же швом, каким их обязан слить любой строитель реестра (`kit-readable-component.ts`,
+ * `PWEB-119`) — присваивание результата к `ReadableComponent` и есть проверка формы шва.
  */
-const пара = (component: string): ReadableComponent => {
-  const kit = kitOf(component);
-  if (!kit) throw new Error(`кит не отдаёт компонента «${component}»`);
-  return kit;
-};
+const пара = (component: string): ReadableComponent => readableKitComponent(component);
 
 const registry = createRegistry({ components: { button: пара("button") }, admits });
 

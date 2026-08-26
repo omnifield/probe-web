@@ -53,9 +53,11 @@ describe("base.css", () => {
       .map((match) => match[1])
       .filter((property) => !property.startsWith("--"));
 
-    // Разрешённых свойств стало два: `color-scheme` ушёл (`PWEB-61`) — он оказался не
-    // объявлением способности, а решением о виде, отданным браузеру.
-    expect([...new Set(declared)].sort()).toEqual(["box-sizing", "margin"]);
+    // Разрешённых свойств стало три: `color-scheme` ушёл (`PWEB-61`) — он оказался не
+    // объявлением способности, а решением о виде, отданным браузеру; `appearance` пришёл
+    // (`PWEB-122`) — тем же основанием, только в другую сторону: снимает решение браузера,
+    // а не вносит своё.
+    expect([...new Set(declared)].sort()).toEqual(["appearance", "box-sizing", "margin"]);
   });
 
   it("режима базовый слой не называет ВООБЩЕ — ни конкретного, ни способности", () => {
@@ -79,6 +81,17 @@ describe("base.css", () => {
     // не приносит ни одного нашего значения.
     expect(strip(built)).toContain("box-sizing: border-box;");
     expect(strip(built)).toMatch(/body\s*{\s*margin:\s*0;\s*}/);
+  });
+
+  it("нативный вид кнопки снят (`PWEB-122`): appearance: none на всей кнопочной семье", () => {
+    // Живой Chromium показал `appearance: auto` на каждой кнопке гармошки независимо от
+    // `data-variant` — браузер поверх `background: transparent`, который ставит скин, рисует
+    // свой сплошной фон. Семья селекторов — `<button>` и три кнопочных `input[type]`, одно и
+    // то же решение браузера под четырьмя именами тега/атрибута.
+    const code = strip(built);
+    expect(code).toMatch(
+      /button,\s*\[type="button"\],\s*\[type="reset"\],\s*\[type="submit"\]\s*{\s*appearance:\s*none;\s*}/,
+    );
   });
 
   it("в листе НЕТ НИ ОДНОГО кастом-свойства", () => {

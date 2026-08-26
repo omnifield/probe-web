@@ -11,12 +11,12 @@
 
 import { admits } from "@omnifield/probe-web-ui/passport";
 
-import type { Admission, ReadablePart, ReadablePassport } from "../src/passport-read.js";
+import type { Admission, Genus, ReadablePart, ReadablePassport } from "../src/passport-read.js";
 
 /** Собирает паспорт: анатомия отдаёт перечень частей, добавка — правило вложенности. */
 function passport(
   component: string,
-  genus: string,
+  genus: Genus,
   root: string,
   parts: readonly ReadablePart[],
 ): ReadablePassport {
@@ -29,7 +29,7 @@ function passport(
   };
 }
 
-const content = (genus: string): Admission => ({ kind: "content", genus });
+const content = (genus: Genus): Admission => ({ kind: "content", genus });
 const part = (name: string): Admission => ({ kind: "part", name });
 
 /** Раскладка: принимает внутрь любой компонент — это и есть «страница». */

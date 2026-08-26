@@ -45,3 +45,4 @@ allowBuilds:
 # проверяется пресет. Переехало из `packages/lint`.
 minimumReleaseAgeExclude:
   - eslint@10.8.1
+  - lucide-solid@1.34.0

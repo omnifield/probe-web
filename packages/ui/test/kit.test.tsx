@@ -1,7 +1,7 @@
 // ГЕЙТ КАРТЫ: каждая часть каждого паспорта нарисована (`PWEB-84`).
 //
 // Предмет пробы — не «есть карта у гармошки». Предмет в том, что расхождение карты с паспортом
-// ловится У НАС и по ВСЕМ паспортам сразу: пять сегодня, пятьдесят один после волны разноса.
+// ловится У НАС и по ВСЕМ паспортам сразу: шесть сегодня, пятьдесят один после волны разноса.
 // Добавит кит шестую часть без компонента — краснеет здесь, а не остаётся неодетой у двадцати
 // потребителей.
 //
@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { defineKitComponent, KIT, kitOf } from "../src/index.js";
 import { PASSPORTS } from "../src/passport.js";
-import type { ComponentPassport } from "../src/passport-form.js";
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 
 const паспорта = Object.values(PASSPORTS);
 

@@ -8,9 +8,8 @@
 // объявление даёт обе стороны обещания: `attrs`, которые кит ставит на узел, и `selector`,
 // которым цепляется скин.
 
-import { createAnatomy } from "@zag-js/anatomy";
-
-import { defineSettings, definePassport } from "../passport-form.js";
+import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { ButtonProps } from "./button.jsx";
@@ -51,6 +50,40 @@ export const parts = anatomy.build();
  */
 export const passport = definePassport({
   anatomy,
+  root: "root",
+  parts: [
+    {
+      name: "root",
+      states: [
+        { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
+        { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
+        { name: "active", mark: { kind: "pseudo", name: ":active" } },
+        { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } },
+        { name: "busy", mark: { kind: "attribute", name: "aria-busy", value: "true" } },
+        {
+          // Имя состояния — это АДРЕС, по которому его найдёт скин, и оно переживёт смену
+          // кита: атрибут сегодня кобальтовый (`data-expanded`), в словаре Zag то же самое
+          // выражено `data-state="open"`. Меняется разметка — имя остаётся.
+          name: "expanded",
+          mark: { kind: "attribute", name: "data-expanded" },
+        },
+        { name: "pressed", mark: { kind: "attribute", name: "data-pressed" } },
+      ],
+    },
+  ],
+  variantAxis: {
+    // Имён здесь нет и не будет: их создаёт человек вместе со скином. Паспорт объявляет только
+    // то, что ось ЕСТЬ — одно имя, одним атрибутом.
+    mark: { kind: "attribute", name: "data-variant" },
+  },
+  // НАСТРОЕК У КНОПКИ НЕТ (`PWEB-89`), и запись это утверждает, а не умалчивает: пустая
+  // `defineSettings<ButtonProps>` — проверяемое заявление, что ни одной настройки из закрытого
+  // перечня кнопка не принимает. Появится — тип потребует её объявить.
+  settings: defineSettings<ButtonProps>({}),
+});
+
+/** Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка. */
+export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // Поставщик назван данными: форма одна на всех, и читатель паспорта не знает имён пакетов
   // заранее. Совпадение с манифестом стережёт проба — иначе строка разъехалась бы молча.
   package: "@omnifield/probe-web-ui",
@@ -62,51 +95,21 @@ export const passport = definePassport({
   // вводят значение. Раздел назван поставщиком, потому что иначе его назовёт каждый пульт, и
   // назовёт по-своему.
   group: "actions",
-  root: "root",
-  parts: [
-    {
-      name: "root",
+  variantAxis: {
+    means: "имя вариации, которое даёт кнопке человек в редакторе; кит пропускает его насквозь",
+  },
+  parts: {
+    root: {
       means: "кнопка целиком — один узел, по умолчанию нативный `<button type=\"button\">`",
-      states: [
-        {
-          name: "hover",
-          means: "указатель над кнопкой",
-          mark: { kind: "pseudo", name: ":hover" },
-        },
-        {
-          name: "focus-visible",
-          means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний",
-          mark: { kind: "pseudo", name: ":focus-visible" },
-        },
-        {
-          name: "active",
-          means: "кнопку держат нажатой",
-          mark: { kind: "pseudo", name: ":active" },
-        },
-        {
-          name: "disabled",
-          means: "нажать нельзя; кнопка не зовёт обработчик",
-          mark: { kind: "attribute", name: "data-disabled" },
-        },
-        {
-          name: "busy",
-          means: "работа идёт — атрибут ставит потребитель вместе с `disabled`",
-          mark: { kind: "attribute", name: "aria-busy", value: "true" },
-        },
-        {
-          // Имя состояния — это АДРЕС, по которому его найдёт скин, и оно переживёт смену
-          // кита: атрибут сегодня кобальтовый (`data-expanded`), в словаре Zag то же самое
-          // выражено `data-state="open"`. Меняется разметка — имя остаётся.
-          name: "expanded",
-          means: "кнопка раскрыла то, чем управляет, — атрибут приходит от внешнего компонента",
-          mark: { kind: "attribute", name: "data-expanded" },
-        },
-        {
-          name: "pressed",
-          means: "кнопка-переключатель нажата — нажатость принадлежит внешнему, вид кнопке",
-          mark: { kind: "attribute", name: "data-pressed" },
-        },
-      ],
+      states: {
+        hover: { means: "указатель над кнопкой" },
+        "focus-visible": { means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний" },
+        active: { means: "кнопку держат нажатой" },
+        disabled: { means: "нажать нельзя; кнопка не зовёт обработчик" },
+        busy: { means: "работа идёт — атрибут ставит потребитель вместе с `disabled`" },
+        expanded: { means: "кнопка раскрыла то, чем управляет, — атрибут приходит от внешнего компонента" },
+        pressed: { means: "кнопка-переключатель нажата — нажатость принадлежит внешнему, вид кнопке" },
+      },
       // Внутрь кнопки — подпись и значок, и больше ничего (`PWEB-24`).
       //
       // Своих частей в перечне нет: у кнопки одна часть, вкладывать в себя саму её нечего.
@@ -121,21 +124,38 @@ export const passport = definePassport({
         { kind: "content", genus: "icon" },
       ],
     },
+  },
+  // НЕСКОЛЬКО СБОРОК-ТЕМПЛЕЙТОВ (`PWEB-116`). У кнопки предмет проще, чем у гармошки — один узел,
+  // без вложенности, без состояний-в-сборке, — и раздувать список ради счёта незачем: честное
+  // число здесь три, и это ровно то, чем кнопка снаружи может быть по составу содержимого
+  // (`root.accepts`: текст, значок, и то и другое) — не больше и не меньше.
+  //
+  // Пропов, без которых кнопка не работает, нет ни у одной сборки — то же знание поставщика,
+  // что и раньше, просто пустое, и здесь оно не меняется от сборки к сборке.
+  assemblies: [
+    {
+      means: "кнопка с подписью",
+      tree: { part: "root", children: [{ genus: "text", value: "Кнопка" }] },
+    },
+    {
+      means: "кнопка со значком и подписью",
+      // Значок ВЕДЁТ подпись — порядок содержимого решает автор вида (см. паспорт гармошки, тот
+      // же довод). Значок здесь плейсхолдер (`★`), не настоящий компонент `lucide-solid`: база
+      // сборки — данные, не код (`icon.anatomy.ts`).
+      tree: {
+        part: "root",
+        children: [
+          { genus: "icon", value: "★" },
+          { genus: "text", value: "Кнопка со значком" },
+        ],
+      },
+    },
+    {
+      means: "кнопка с одним значком, без подписи",
+      // Третий честный случай, а не повтор второго без текста: кнопка-значок — отдельный
+      // реальный вид (панель инструментов, компактное действие), и `root.accepts` пускает значок
+      // один, без обязательной подписи рядом.
+      tree: { part: "root", children: [{ genus: "icon", value: "★" }] },
+    },
   ],
-  variantAxis: {
-    means: "имя вариации, которое даёт кнопке человек в редакторе; кит пропускает его насквозь",
-    // Имён здесь нет и не будет: их создаёт человек вместе со скином. Паспорт объявляет только
-    // то, что ось ЕСТЬ — одно имя, одним атрибутом.
-    mark: { kind: "attribute", name: "data-variant" },
-  },
-  // НАСТРОЕК У КНОПКИ НЕТ (`PWEB-89`), и запись это утверждает, а не умалчивает: пустая
-  // `defineSettings<ButtonProps>` — проверяемое заявление, что ни одной настройки из закрытого
-  // перечня кнопка не принимает. Появится — тип потребует её объявить.
-  settings: defineSettings<ButtonProps>({}),
-  // РАБОЧИЙ ЭКЗЕМПЛЯР: у кнопки это один узел с подписью. Пропов, без которых она не работает,
-  // у неё нет — и это тоже знание поставщика, просто пустое.
-  assembly: {
-    means: "кнопка с подписью",
-    tree: { part: "root", children: [{ genus: "text", value: "Кнопка" }] },
-  },
 });

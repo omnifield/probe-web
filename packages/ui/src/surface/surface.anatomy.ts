@@ -18,9 +18,8 @@
 // Заводить `surface.inner` значило бы объявить, что вложенная плоскость чем-то отличается от
 // обычной, — а она не отличается.
 
-import { createAnatomy } from "@zag-js/anatomy";
-
-import { defineSettings, definePassport } from "../passport-form.js";
+import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
 import type { SurfaceProps } from "./surface.jsx";
@@ -32,7 +31,7 @@ export const anatomy = createAnatomy("surface").parts("root");
 export const parts = anatomy.build();
 
 /**
- * Паспорт поверхности.
+ * Паспорт поверхности — срез РАНТАЙМА (`PWEB-115`).
  *
  * Словарь состояний ПУСТ, и это утверждение, а не заглушка: поверхность не хранит ничего, чем
  * её вид мог бы отличаться. Наведение и фокус принадлежат тому, что лежит ВНУТРИ неё, — кнопке,
@@ -40,34 +39,46 @@ export const parts = anatomy.build();
  */
 export const passport = definePassport({
   anatomy,
+  root: "root",
+  parts: [{ name: "root", states: [] }],
+  variantAxis: {
+    mark: { kind: "attribute", name: "data-variant" },
+  },
+  // Настроек из закрытого перечня поверхность не принимает.
+  settings: defineSettings<SurfaceProps>({}),
+});
+
+/**
+ * Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность,
+ * рабочий экземпляр. `/*@__PURE__*\/` перед вызовом позволяет бандлеру выбросить его целиком у
+ * потребителя, который на `editorInfo` не сослался ни разу, — тем же способом, которым выбрасывается
+ * неиспользуемый экспорт (разбор — в шапке `@omnifield/probe-web-skin/passport-editor.ts`).
+ */
+export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
   genus: "component",
   // Место в перечне: то, что делит и держит место.
   group: "layout",
-  root: "root",
-  parts: [
-    {
-      name: "root",
+  variantAxis: {
+    // Ось здесь несёт ВЕСЬ вид компонента: «карточка», «панель», «утопленная» — это имена,
+    // которые человек даёт в редакторе, а кит пропускает насквозь. Своих имён у кита нет и
+    // быть не может — иначе он объявил бы вид, которого не умеет проверить.
+    means: "имя вариации поверхности; его даёт человек в редакторе, кит пропускает насквозь",
+  },
+  parts: {
+    root: {
       means: "плоскость — фон, рамка, тень и скругление отделяют содержимое от того, что под ним",
-      states: [],
       // Внутрь кладут что угодно: плоскость на то и плоскость, что не знает, что на ней лежит.
       accepts: [
         { kind: "content", genus: "text" },
         { kind: "content", genus: "component" },
       ],
     },
+  },
+  assemblies: [
+    {
+      means: "поверхность с содержимым",
+      tree: { part: "root", children: [{ genus: "text", value: "Поверхность" }] },
+    },
   ],
-  variantAxis: {
-    // Ось здесь несёт ВЕСЬ вид компонента: «карточка», «панель», «утопленная» — это имена,
-    // которые человек даёт в редакторе, а кит пропускает насквозь. Своих имён у кита нет и
-    // быть не может — иначе он объявил бы вид, которого не умеет проверить.
-    means: "имя вариации поверхности; его даёт человек в редакторе, кит пропускает насквозь",
-    mark: { kind: "attribute", name: "data-variant" },
-  },
-  // Настроек из закрытого перечня поверхность не принимает.
-  settings: defineSettings<SurfaceProps>({}),
-  assembly: {
-    means: "поверхность с содержимым",
-    tree: { part: "root", children: [{ genus: "text", value: "Поверхность" }] },
-  },
 });

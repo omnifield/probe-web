@@ -48,14 +48,18 @@ function identifierOf(folder, suffix) {
 /** Собирает исходник подпути `./passport` — вход, который читают скин и редактор. */
 function renderPassportEntry(folders) {
   const name = (folder) => identifierOf(folder, "Passport");
+  const editorName = (folder) => identifierOf(folder, "EditorInfo");
   const imports = folders
     .map(
       (folder) =>
-        `import { passport as ${name(folder)} } from "./${folder}/${folder}.anatomy.js";`,
+        `import { passport as ${name(folder)}, editorInfo as ${editorName(folder)} } from "./${folder}/${folder}.anatomy.js";`,
     )
     .join("\n");
   const entries = folders
     .map((folder) => `  [${name(folder)}.component]: ${name(folder)},`)
+    .join("\n");
+  const editorEntries = folders
+    .map((folder) => `  [${editorName(folder)}.component]: ${editorName(folder)},`)
     .join("\n");
 
   return `// ПОРОЖДЁН СБОРКОЙ (\`scripts/generate.mjs\`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
@@ -63,13 +67,90 @@ function renderPassportEntry(folders) {
 // Перечень паспортов собирается обходом папок \`src/*/<имя>.anatomy.ts\`: компонент объявляет
 // себя в своей папке, и попадает в поставку самим фактом объявления. Руками этот файл не
 // ведётся — иначе он стал бы тем самым общим файлом, который правят все.
-
-import type { ComponentPassport } from "./passport-form.js";
+//
+// ФОРМА ПАСПОРТА (\`PWEB-110\`, \`PWEB-111\`) переехала в \`@omnifield/probe-web-skin\` — она общая
+// для любого поставщика компонентов, а не привилегия этого кита. Реэкспорт ниже ПОИМЁННЫЙ, а не
+// \`export *\`: подпути несут и чужое (рецепты, палитру, словарь скина), а
+// \`@omnifield/probe-web-ui/passport\` обязан остаться тем же набором имён, что был до переезда
+// (жёсткое условие \`PWEB-110\`/\`PWEB-111\` — \`packages/assembly\` ходит сюда и не вправе
+// почувствовать перенос).
+//
+// ДВА ИСТОЧНИКА, не один (\`PWEB-115\`, \`PWEB-118\`): форма паспорта сама разрезана на срез
+// РАНТАЙМА (\`/model\` — то, что читают \`generateSkinCss\`/\`checkOutfit\`/\`assemble\`) и срез
+// РЕДАКТОРА (\`/editor\` — \`means\`, род, группа, пакет, правило вложенности, сборки). Этот
+// подпуть остаётся ОДНИМ плоским входом, как и был, — держатель реестра (кит) не обязан знать
+// про чужую границу тайм-шейкинга у форм; кто у НАС не сошлётся на редакторские имена, тот их и
+// не утащит в свой бандл — тем же \`sideEffects: false\`, которым разрезана сама форма.
+//
+// \`PASSPORTS\`/\`passportOf\` остаются здесь — это факт про ЭТОТ кит (какие компоненты у него
+// есть), а не про форму, и переезду не подлежат (\`PWEB-26\`, \`PWEB-110\`).
+export type {
+  ComponentPassport,
+  PassportAnatomy,
+  PassportLookup,
+  PassportMark,
+  PassportPart,
+  PassportSetting,
+  PassportSettingDependency,
+  PassportSettingName,
+  PassportSettingOption,
+  PassportSettings,
+  PassportSettingValues,
+  PassportSpec,
+  PassportState,
+  PassportVariable,
+  PassportVariantAxis,
+  SkinAncestor,
+  SkinCoordinate,
+} from "@omnifield/probe-web-skin/model";
+export {
+  addressesView,
+  coordinateOf,
+  createAnatomy,
+  defineSettings,
+  definePassport,
+  partOf,
+  SETTINGS,
+  settingApplies,
+} from "@omnifield/probe-web-skin/model";
+// Срез РЕДАКТОРА — \`means\`, род, группа, правило вложенности, сборки. Не рантайм кита, но
+// \`@omnifield/probe-web-ui/passport\` держал их всегда одним входом, и держит дальше (см. шапку).
+export type {
+  BaseAssemblyContent,
+  BaseAssemblyElement,
+  BaseAssemblyNode,
+  BaseAssemblyTree,
+  ComponentGroup,
+  PassportAdmission,
+  PassportAssembly,
+  PassportAssemblyContent,
+  PassportAssemblyNode,
+  PassportAssemblyPart,
+  PassportComponentGenus,
+  PassportEditorInfo,
+  PassportEditorSpec,
+  PassportGenus,
+  PassportPartEditorInfo,
+  PassportSettingEditorInfo,
+  PassportSettingOptionEditorInfo,
+  PassportStateEditorInfo,
+  PassportVariableEditorInfo,
+} from "@omnifield/probe-web-skin/editor";
+export {
+  admits,
+  baseAssemblyOf,
+  defineEditorInfo,
+  GROUPS,
+  groupOf,
+  isAssemblyContent,
+  isContentNode,
+} from "@omnifield/probe-web-skin/editor";
+// Реэкспорт (\`export ... from\`) не заводит локальное имя — \`ComponentPassport\`/\`PassportEditorInfo\`
+// ниже нужны САМ файлу, для \`PASSPORTS\`/\`passportOf\`/\`EDITOR_INFOS\`/\`editorInfoOf\`, и берутся
+// отдельным \`import type\`.
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
 ${imports}
-
-export * from "./passport-assembly.js";
-export * from "./passport-form.js";
-export * from "./passport-view.js";
 
 /**
  * Паспорта пакета по имени компонента.
@@ -89,6 +170,23 @@ ${entries}
  */
 export function passportOf(component: string): ComponentPassport | undefined {
   return PASSPORTS[component];
+}
+
+/**
+ * Срезы РЕДАКТОРА пакета по имени компонента (\`PWEB-115\`, \`PWEB-118\`) — тем же ключом, что
+ * \`PASSPORTS\`, и тем же доводом: перечень, не число, обходом папок, а не рукой.
+ */
+export const EDITOR_INFOS: Readonly<Record<string, PassportEditorInfo>> = {
+${editorEntries}
+};
+
+/**
+ * Срез редактора по имени компонента, либо \`undefined\` — если компонент его ещё не объявил.
+ *
+ * @param component имя компонента, оно же \`data-scope\` на каждом его узле
+ */
+export function editorInfoOf(component: string): PassportEditorInfo | undefined {
+  return EDITOR_INFOS[component];
 }
 `;
 }

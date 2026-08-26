@@ -24,19 +24,29 @@ import { Dynamic } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { KIT } from "../src/index.js";
+import { EDITOR_INFOS, PASSPORTS } from "../src/passport.js";
 import {
   baseAssemblyOf,
   isContentNode,
   type BaseAssemblyElement,
   type BaseAssemblyTree,
-} from "../src/passport-assembly.js";
-import { PASSPORTS } from "../src/passport.js";
+} from "@omnifield/probe-web-skin/editor";
 import { cleanup, mount } from "./dom.jsx";
 
 afterEach(cleanup);
 
-/** Паспорта, объявившие базовую сборку. */
-const собираемые = Object.values(PASSPORTS).filter((passport) => passport.assembly);
+/**
+ * Паспорта, чей срез редактора объявил хотя бы одну базовую сборку, — вместе с КАЖДОЙ из них.
+ *
+ * Каждая, а не первая (`PWEB-116`): держатель сборки объявляет их сколько угодно, и сборка,
+ * поднятая только на первой записи, доказывала бы механику ровно для неё, — вторая и следующие
+ * оставались бы записью, которую никто не поднимал в документ.
+ */
+const собираемые = Object.values(PASSPORTS).flatMap((passport) =>
+  (EDITOR_INFOS[passport.component]?.assemblies ?? []).map(
+    (assembly) => [passport, assembly] as const,
+  ),
+);
 
 /**
  * Поднимает узел плоского дерева в разметку.
@@ -92,18 +102,37 @@ describe("базовая сборка поднимается в документ
     expect(собираемые.length).toBeGreaterThan(0);
   });
 
-  describe.each(собираемые.map((passport) => [passport.component, passport] as const))(
+  it("`means` каждой сборки отличает её от соседних — у одного компонента дублей нет", () => {
+    // `PWEB-116`: сборка, у которой `means` совпал с соседним, для читателя неотличима от
+    // соседней — списком строк, а не деревом. Проверяется РОВНО дубль имени, не годность
+    // формулировки: судить, назвал ли автор случай общими словами, тесту не по силам.
+    for (const passport of Object.values(PASSPORTS)) {
+      const означенные = (EDITOR_INFOS[passport.component]?.assemblies ?? []).map((a) => a.means);
+
+      expect(
+        new Set(означенные).size,
+        `у «${passport.component}» есть сборки с одинаковым «means»: ${означенные.join(" / ")}`,
+      ).toBe(означенные.length);
+    }
+  });
+
+  describe.each(
+    собираемые.map(
+      ([passport, assembly]) =>
+        [`${passport.component}: ${assembly.means}`, passport.component, passport, assembly] as const,
+    ),
+  )(
     "%s",
-    (component, passport) => {
+    (_, component, passport, assembly) => {
       it("собирается в плоское дерево с корнем на корневой части", () => {
-        const tree = baseAssemblyOf(passport)!;
+        const tree = baseAssemblyOf(passport, assembly);
 
         expect(tree.components.root).toBe(component);
         expect(Object.keys(tree.components.nodes).length).toBeGreaterThan(0);
       });
 
       it("поднимается и даёт узел КАЖДОЙ части, которую называет", () => {
-        const tree = baseAssemblyOf(passport)!;
+        const tree = baseAssemblyOf(passport, assembly);
         const host = mount(() => поднять(tree, component, tree.components.root));
 
         // Части, названные сборкой, — и ровно они обязаны появиться в документе. Часть,
@@ -127,7 +156,7 @@ describe("базовая сборка поднимается в документ
       });
 
       it("содержимое сборки доезжает до разметки", () => {
-        const tree = baseAssemblyOf(passport)!;
+        const tree = baseAssemblyOf(passport, assembly);
         const host = mount(() => поднять(tree, component, tree.components.root));
 
         for (const node of Object.values(tree.components.nodes)) {
@@ -141,9 +170,14 @@ describe("базовая сборка поднимается в документ
 });
 
 describe("переменные, которые кит кладёт на узел", () => {
-  describe.each(собираемые.map((passport) => [passport.component, passport] as const))(
+  describe.each(
+    собираемые.map(
+      ([passport, assembly]) =>
+        [`${passport.component}: ${assembly.means}`, passport.component, passport, assembly] as const,
+    ),
+  )(
     "%s",
-    (component, passport) => {
+    (_, component, passport, assembly) => {
       const сПеременными = passport.parts.filter((part) => (part.variables ?? []).length > 0);
 
       it("объявленная переменная ЕСТЬ на узле своей части", () => {
@@ -154,7 +188,7 @@ describe("переменные, которые кит кладёт на узел
           return;
         }
 
-        const tree = baseAssemblyOf(passport)!;
+        const tree = baseAssemblyOf(passport, assembly);
         const host = mount(() => поднять(tree, component, tree.components.root));
 
         for (const part of сПеременными) {

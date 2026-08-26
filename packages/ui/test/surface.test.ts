@@ -172,20 +172,31 @@ describe("манифест", () => {
       "solid-js": expect.any(String),
     });
 
-    // `@zag-js/anatomy` — единственная обычная зависимость поставки, и она названа задачей
-    // `PWEB-2`: паспорт объявляется ВЗЯТОЙ функцией, той же, которой объявлены 69 компонентов
-    // Ark. Пакет самостоятельный (три десятка строк, своих зависимостей нет) и приезжает тем
-    // же деревом, что Ark, — второй копии в дереве потребителя не появляется. Равенство, а не
-    // вхождение: каждая новая зависимость поставки становится зависимостью КАЖДОГО
-    // потребителя, и появиться она обязана решением architect, а не побочно.
-    // Обычных зависимостей поставки две, и обе — ДАННЫЕ паспорта, а не рантайм: `@zag-js/anatomy`
-    // (форма объявления, `PWEB-2`) и `@zag-js/accordion` — тот подпуть, где физически лежит
-    // анатомия гармошки (`PWEB-37`). Ark берёт её оттуда же; брать через него значило бы тянуть
-    // в подпуть данных ветку `solid` с JSX. Равенство, а не вхождение: каждая новая зависимость
-    // поставки становится зависимостью КАЖДОГО потребителя.
+    // Равенство, а не вхождение: каждая новая зависимость поставки становится зависимостью
+    // КАЖДОГО потребителя, и появиться она обязана решением architect, а не побочно.
+    //
+    // Четыре обычные зависимости, и у каждой своя причина:
+    //   • `@omnifield/probe-web-skin` (`PWEB-110`, `PWEB-111`) — форма паспорта (`definePassport`,
+    //     `admits`, …) переехала туда физически: она общая для любого поставщика компонентов, а
+    //     не привилегия этого кита, и каждый `*.anatomy.ts` зовёт её на исполнении, не только
+    //     типом. `createAnatomy` (`@zag-js/anatomy`) едет ТЕМ ЖЕ путём — реэкспортом из skin, а
+    //     не вторым npm-именем на один поток (`PWEB-112`): пакет ушёл из ЭТИХ зависимостей в
+    //     `devDependencies` ровно потому, что теперь ни один файл `src/` не зовёт его напрямую;
+    //   • `@zag-js/accordion` — тот подпуть, где физически лежит анатомия гармошки (`PWEB-37`);
+    //     Ark берёт её оттуда же, брать через него значило бы тянуть в подпуть данных ветку
+    //     `solid` с JSX;
+    //   • `@zag-js/checkbox` (`PWEB-114`) — тот же приём, тот же довод: подпуть без Solid и без
+    //     машины состояний, анатомия чекбокса физически лежит там же, откуда её берёт Ark;
+    //   • `lucide-solid` (`PWEB-107`) — РАНТАЙМ, но в бандл поставки не попадает ни строкой: кит
+    //     ввозит из него только тип (`import type { LucideProps }`), а конкретный значок
+    //     приходит пропом от потребителя, который импортирует его сам, точечно. Зависимость
+    //     нужна ради типа, свежего вместе с пакетом, — сверено на реальном бандле выше
+    //     («не тянет `lucide-solid` в бандл поставки»).
     expect(manifest.dependencies).toEqual({
+      "@omnifield/probe-web-skin": expect.any(String),
       "@zag-js/accordion": expect.any(String),
-      "@zag-js/anatomy": expect.any(String),
+      "@zag-js/checkbox": expect.any(String),
+      "lucide-solid": expect.any(String),
     });
   });
 });
@@ -231,6 +242,23 @@ describe("ветка `solid` против ветки `default`", () => {
 
     expect(js).toContain("solid-js/web");
     expect(js).not.toContain("<KobalteButton");
+  });
+
+  // `Icon` (`PWEB-107`) ввозит `lucide-solid` ТОЛЬКО типом (`import type { LucideProps }`) —
+  // конкретный значок приходит пропом от потребителя, который импортирует его сам, точечно
+  // (`lucide-solid/icons/<имя>`). Тип стирается сборкой целиком, поэтому бандл поставки не несёт
+  // ни одного байта lucide, независимо от того, сколько значков подключит потребитель, — гейт
+  // «не тянет остальные 1499» здесь читается сильнее: не тянет НИ ОДНОГО.
+  it("`Icon` не тянет `lucide-solid` в бандл поставки — импорт был только типом", () => {
+    const jsx = readFileSync(join(install, "node_modules", PKG, "dist", "index.jsx"), "utf8");
+    const js = readFileSync(join(install, "node_modules", PKG, "dist", "index.js"), "utf8");
+
+    // Ищем ИМПОРТ, а не голую строку: доку компонента (эту же) законно упоминает `lucide-solid`
+    // прозой, и наивная подстрока ловила бы собственный комментарий, а не факт зависимости.
+    const importsLucide = /(?:from|require)\(?\s*["']lucide-solid/;
+
+    expect(jsx).not.toMatch(importsLucide);
+    expect(js).not.toMatch(importsLucide);
   });
 
   it("обе ветки объявляют ОДИН И ТОТ ЖЕ перечень наружу", () => {
@@ -351,7 +379,6 @@ export const части: string[] = кнопка?.anatomy.keys() ?? [];
 export const адреса: string[] = Object.values(кнопка?.anatomy.build() ?? {}).map(
   (часть) => часть.selector,
 );
-export const назначения: string[] = кнопка?.parts.map((часть) => часть.means) ?? [];
 export const состояния: string[] =
   кнопка?.parts.flatMap((часть) => часть.states.map((состояние) => состояние.name)) ?? [];
 export const ось: string | undefined = кнопка?.variantAxis.mark.name;
@@ -383,16 +410,17 @@ export const вид = passportOf("button")?.parts[0].color;
     writeConsumerTsconfig();
 
     const паспорт = (settings: string) =>
-      `import { createAnatomy } from "@zag-js/anatomy";
+      // `createAnatomy` — из `@omnifield/probe-web-skin`, не из `@zag-js/anatomy` напрямую
+      // (`PWEB-112`): чужой поставщик компонентов берёт форму ровно тем же реэкспортом, что и
+      // этот кит, — второго npm-имени на один поток у него быть не должно.
+      `import { createAnatomy } from "@omnifield/probe-web-skin/model";
 import { definePassport } from "${PKG}/passport";
 
 export const паспорт = definePassport({
   anatomy: createAnatomy("проба").parts("root"),
-  package: "@проба/пакет",
-  genus: "component",
   root: "root",
-  parts: [{ name: "root", means: "корень", states: [] }],
-  variantAxis: { means: "имя вариации", mark: { kind: "attribute", name: "data-variant" } },${settings}
+  parts: [{ name: "root", states: [] }],
+  variantAxis: { mark: { kind: "attribute", name: "data-variant" } },${settings}
 });
 `;
 
@@ -505,13 +533,14 @@ describe("паспорт из поставки", () => {
     // приезжают вызовом, а не полем: `@zag-js/anatomy` порождает атрибуты узла и селектор
     // стиля из одного объявления, и разъехаться им негде по построению.
     const passport = runInConsumer(
-      `import { GROUPS, groupOf, passportOf } from "${PKG}/passport";
+      `import { editorInfoOf, GROUPS, groupOf, passportOf } from "${PKG}/passport";
 
 const кнопка = passportOf("button");
+const editorInfo = editorInfoOf("button");
 
 console.log(JSON.stringify({
   component: кнопка.component,
-  package: кнопка.package,
+  package: editorInfo.package,
   root: кнопка.root,
   keys: кнопка.anatomy.keys(),
   attrs: кнопка.anatomy.build()[кнопка.root].attrs,
@@ -519,8 +548,8 @@ console.log(JSON.stringify({
   parts: кнопка.parts.map((часть) => часть.name),
   states: кнопка.parts.flatMap((часть) => часть.states.map((с) => с.name)),
   axis: кнопка.variantAxis.mark,
-  group: кнопка.group,
-  подписьГруппы: GROUPS[groupOf(кнопка)],
+  group: editorInfo.group,
+  подписьГруппы: GROUPS[groupOf(editorInfo)],
 }));`,
     ) as {
       component: string;
@@ -566,16 +595,17 @@ console.log(JSON.stringify({
     // каждый читатель написал бы своё правило поверх одних и тех же данных, и правила разошлись
     // бы молча: оба зелёные, дерево у каждого своё.
     const решение = runInConsumer(
-      `import { admits, passportOf } from "${PKG}/passport";
+      `import { admits, editorInfoOf, passportOf } from "${PKG}/passport";
 
 const кнопка = passportOf("button");
-const корень = кнопка.parts.find((часть) => часть.name === кнопка.root);
+const editorInfo = editorInfoOf("button");
+const корень = editorInfo.parts[кнопка.root];
 
 console.log(JSON.stringify({
-  genus: кнопка.genus,
+  genus: editorInfo.genus,
   подпись: admits(корень, { kind: "content", genus: "text" }),
   значок: admits(корень, { kind: "content", genus: "icon" }),
-  компонент: admits(корень, { kind: "content", genus: кнопка.genus }),
+  компонент: admits(корень, { kind: "content", genus: editorInfo.genus }),
 }));`,
     ) as { genus: string; подпись: boolean; значок: boolean; компонент: boolean };
 
@@ -629,12 +659,15 @@ console.log(JSON.stringify({
     // форму, которую читает механика сборки. Проверь мы здесь только запись, гейт был бы зелен и
     // на объявлении, которое ни во что не разворачивается.
     const снято = runInConsumer(
-      `import { baseAssemblyOf, passportOf, SETTINGS } from "${PKG}/passport";
+      `import { baseAssemblyOf, editorInfoOf, passportOf, SETTINGS } from "${PKG}/passport";
 
 const гармошка = passportOf("accordion");
+const editorInfo = editorInfoOf("accordion");
 const содержимое = гармошка.parts.find((часть) => часть.name === "itemContent");
-const дерево = baseAssemblyOf(гармошка);
-const подЧужимИменем = baseAssemblyOf(гармошка, "ui.accordion");
+const сборка = editorInfo.assemblies[0];
+const дерево = baseAssemblyOf(гармошка, сборка);
+const подЧужимИменем = baseAssemblyOf(гармошка, сборка, "ui.accordion");
+const значокБезСборки = editorInfoOf("icon").assemblies.length === 0 ? null : "есть";
 
 console.log(JSON.stringify({
   настройки: Object.keys(гармошка.settings).sort(),
@@ -650,7 +683,7 @@ console.log(JSON.stringify({
   подписи: Object.values(дерево.components.nodes).filter((узел) => узел.genus).map((узел) => узел.value),
   чужоеИмя: подЧужимИменем.components.root,
   чужиеАдреса: [...new Set(Object.values(подЧужимИменем.components.nodes).map((узел) => узел.type).filter(Boolean))].sort(),
-  безСборки: baseAssemblyOf({ ...гармошка, assembly: undefined }) === undefined ? null : "есть",
+  безСборки: значокБезСборки,
 }));`,
     ) as {
       настройки: string[];
@@ -700,9 +733,45 @@ console.log(JSON.stringify({
     expect(снято.чужоеИмя).toBe("ui.accordion");
     expect(снято.чужиеАдреса).toContain("ui.accordion.itemTrigger");
 
-    // Паспорт без сборки отдаёт `undefined` — честно, а не пустым деревом: пустое дерево
-    // выглядело бы как объявленный экземпляр, которого нет.
+    // Компонент, не объявивший сборку (значок), отдаёт ПУСТОЙ перечень — честно, а не пустым
+    // деревом: пустое дерево выглядело бы как объявленный экземпляр, которого нет.
     expect(снято.безСборки).toBeNull();
+  });
+
+  it("несколько сборок-темплейтов доезжают до потребителя, и каждая собирается без доработки", () => {
+    // Гейт `PWEB-116`: гармошка и кнопка объявляют СПИСОК сборок, а не одну, и предыдущая
+    // проверка выше нарочно смотрела только на первую запись — здесь проверяется, что список
+    // длиннее одной, что имена различимы (не общими словами дважды) и что КАЖДАЯ запись
+    // собирается механикой сборки без доработки потребителем, а не только первая.
+    const детально = ["accordion", "button"].map((имя) =>
+      runInConsumer(
+        `import { baseAssemblyOf, editorInfoOf, passportOf } from "${PKG}/passport";
+
+const паспорт = passportOf(${JSON.stringify(имя)});
+const сборки = editorInfoOf(${JSON.stringify(имя)}).assemblies;
+
+console.log(JSON.stringify({
+  число: сборки.length,
+  means: сборки.map((сборка) => сборка.means),
+  корни: сборки.map((сборка) => baseAssemblyOf(паспорт, сборка).components.root),
+}));`,
+      ),
+    ) as { число: number; means: string[]; корни: string[] }[];
+
+    for (const [индекс, имя] of ["accordion", "button"].entries()) {
+      const запись = детально[индекс]!;
+
+      // Больше одной — иначе список неотличим от прежней единственной `assembly`.
+      expect(запись.число, `у «${имя}» меньше двух сборок`).toBeGreaterThan(1);
+
+      // Различимость — не общими словами дважды: тот же гейт, что `test/base-assembly.test.tsx`
+      // считает по всему пакету, здесь проверен ИСПОЛНЕНИЕМ из чистой установки.
+      expect(new Set(запись.means).size, `у «${имя}» есть повтор «means»`).toBe(запись.число);
+
+      // Каждая запись СОБИРАЕТСЯ — `baseAssemblyOf` не бросил и отдал корень своего компонента,
+      // не только первая запись списка.
+      for (const корень of запись.корни) expect(корень).toBe(имя);
+    }
   });
 
   it("ненадёжный признак доезжает пометкой, а не комментарием — вместе с правилом о нём", () => {
@@ -788,12 +857,15 @@ console.log(JSON.stringify(passportOf("такого-компонента-нет"
   it("не тянет за собой ни Solid, ни `@kobalte/core`", () => {
     // Ради этого подпуть и отдельный. Утечка импорта означала бы, что чужой инструмент,
     // которому нужен перечень частей, обязан поставить себе весь рантайм примитивов.
-    // `@zag-js/anatomy` тут исключение и названо им: это и есть предмет чтения.
+    // `@omnifield/probe-web-skin` тут исключение и названо им: это и есть предмет чтения —
+    // форма паспорта, включая `createAnatomy`, приезжает РЕЭКСПОРТОМ оттуда (`PWEB-110`,
+    // `PWEB-112`), а не прямым импортом `@zag-js/anatomy` — второго npm-имени на один поток
+    // здесь больше нет.
     const bundle = readFileSync(join(install, "node_modules", PKG, "dist", "passport.js"), "utf8");
 
     expect(bundle).not.toContain("solid-js");
     expect(bundle).not.toContain("@kobalte/core");
-    expect(bundle).toContain("@zag-js/anatomy");
+    expect(bundle).toContain("@omnifield/probe-web-skin");
 
     // Анатомия компонента, приехавшего из Ark, берётся у ПЕРВОИСТОЧНИКА —
     // `@zag-js/accordion/anatomy`, — а не через `@ark-ui/solid/anatomy` (`PWEB-37`). Разница не

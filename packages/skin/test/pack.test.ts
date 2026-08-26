@@ -41,11 +41,15 @@ let entries: string[];
 beforeAll(() => {
   ({ work, install, entries } = installFromTarball("probe-web-skin-pack-"));
 
-  // Кит и набор значений — ОБЯЗАТЕЛЬНЫЕ одноранговые: без них не работает ни один вход, и
-  // «вложенная форма не платит» про них ничего не обещает. Разворачиватель НЕ кладём: он и есть
-  // предмет проверки.
-  link(install, "@omnifield/probe-web-ui");
+  // Набор значений — ОБЯЗАТЕЛЬНЫЙ одноранговый: без него не работает ни один вход, и «вложенная
+  // форма не платит» про это ничего не обещает. Кита среди пиров БОЛЬШЕ НЕТ (`PWEB-110`): форма
+  // паспорта переехала физически, и зависимость на кит порвана вместе с ней. Разворачиватель
+  // тоже не кладём: он и есть предмет проверки.
   link(install, "@omnifield/probe-web-style");
+  // НАСТОЯЩАЯ зависимость, не одноранговая (`PWEB-112`): `createAnatomy` реэкспортирован из
+  // `@zag-js/anatomy`, и `packages: "external"` у esbuild оставляет импорт внешним — установка
+  // обязана уметь его разрешить, как и всякий другой прод-пакет.
+  link(install, "@zag-js/anatomy");
 }, 120_000);
 
 afterAll(() => {
@@ -62,6 +66,8 @@ describe("что уезжает в тарбол", () => {
         "dist/model.d.ts",
         "dist/flat.js",
         "dist/flat.d.ts",
+        "dist/editor.js",
+        "dist/editor.d.ts",
         "package.json",
         "README.md",
       ]),
@@ -114,6 +120,19 @@ describe("разворачиватель необязателен: вложен�
     expect(printed).toBe("true");
   });
 
+  it("`createAnatomy` РАБОТАЕТ в установке — реэкспорт, а не только своя типизация (`PWEB-112`)", () => {
+    // Тот же довод, что у порождения выше: импорт мог бы пройти на ленивом графе, а объявление
+    // паспорта — нет, если бы реэкспорт был битым (не той версии, не той функции).
+    const printed = runInInstall(
+      install,
+      `import { createAnatomy } from ${JSON.stringify(PKG)};
+       const anatomy = createAnatomy("проба").parts("root");
+       console.log(anatomy.build().root.attrs["data-scope"]);`,
+    );
+
+    expect(printed).toBe("проба");
+  });
+
   it("а `./flat` в ТОЙ ЖЕ установке падает — положительный контроль", () => {
     // Без этой пробы зелёные три выше значили бы и «не нужен», и «до него не дошли».
     const refused = runInInstall(install, `await import(${JSON.stringify(`${PKG}/flat`)});`);
@@ -132,20 +151,86 @@ describe("разворачиватель необязателен: вложен�
       peerDependenciesMeta?: Record<string, { optional?: boolean }>;
     };
 
-    expect(manifest.dependencies).toBeUndefined();
+    // Разворачиватель — НЕ в `dependencies`, а в необязательном peer: обычная запись доставила
+    // бы его на диск даже тому, кто взял только вложенную форму. `@zag-js/anatomy` (`PWEB-112`) в
+    // `dependencies` законно стоит — это чужой предмет пробы, вес нулевой (пакет без своих
+    // зависимостей), и разворачивателя он не касается.
     for (const name of ["postcss", "postcss-nested"]) {
+      expect(manifest.dependencies?.[name]).toBeUndefined();
       expect(manifest.peerDependencies?.[name]).toBeDefined();
       expect(manifest.peerDependenciesMeta?.[name]?.optional).toBe(true);
     }
   });
 
-  it("кит и набор значений остались ОБЯЗАТЕЛЬНЫМИ: без них не работает ничего", () => {
+  it("набор значений остался ОБЯЗАТЕЛЬНЫМ: без него не работает ничего", () => {
     const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
       peerDependenciesMeta?: Record<string, { optional?: boolean }>;
     };
 
-    for (const name of ["@omnifield/probe-web-ui", "@omnifield/probe-web-style"]) {
-      expect(manifest.peerDependenciesMeta?.[name]).toBeUndefined();
+    expect(manifest.peerDependenciesMeta?.["@omnifield/probe-web-style"]).toBeUndefined();
+  });
+
+  it("кита среди зависимостей больше нет вовсе — цикл разорван физически (`PWEB-110`)", () => {
+    const manifest = JSON.parse(readFileSync(join(pkgRoot, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+
+    for (const bucket of [manifest.dependencies, manifest.devDependencies, manifest.peerDependencies]) {
+      expect(bucket?.["@omnifield/probe-web-ui"]).toBeUndefined();
+    }
+  });
+});
+
+describe("срез редактора отделён от рантайма ГРАНИЦЕЙ МОДУЛЕЙ, а не обещанием (`PWEB-115`)", () => {
+  it("`./editor` поднимается и работает целиком: определение, сверка с рантаймом, сборка", () => {
+    // Тот же довод, что у порождения и `createAnatomy` выше: импорт мог бы пройти на ленивом
+    // графе, а `defineEditorInfo` — нет, если бы сверка с рантаймом (части, состояния, сборки)
+    // была битой после переезда.
+    const printed = runInInstall(
+      install,
+      `import { createAnatomy, definePassport } from ${JSON.stringify(PKG)};
+       import { admits, baseAssemblyOf, defineEditorInfo, groupOf } from ${JSON.stringify(`${PKG}/editor`)};
+       const anatomy = createAnatomy("проба").parts("root");
+       const passport = definePassport({
+         anatomy,
+         root: "root",
+         parts: [{ name: "root", states: [] }],
+         variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
+         settings: {},
+       });
+       const editorInfo = defineEditorInfo(passport, {
+         package: "тест",
+         genus: "component",
+         variantAxis: { means: "вариация" },
+         parts: { root: { means: "корень" } },
+         assemblies: [{ means: "пусто", tree: { part: "root" } }],
+       });
+       console.log(
+         editorInfo.parts.root.means,
+         groupOf(editorInfo),
+         admits(editorInfo.parts.root, { kind: "part", name: "root" }),
+         !!baseAssemblyOf(passport, editorInfo.assemblies[0]),
+       );`,
+    );
+
+    expect(printed).toBe("корень other true true");
+  });
+
+  it("`dist/index.js` и `dist/model.js` не содержат НИ СТРОКИ редакторского кода", () => {
+    // Не потому, что кто-то пообещал не импортировать `./editor` из корня, а потому что граф
+    // импортов `index.ts`/`model.ts` физически не достигает `passport-editor.ts`/
+    // `passport-assembly.ts` — esbuild кладёт в бандл только достижимое из entry point. Тот же
+    // приём, что доказал нулевой байт lucide-solid (`PWEB-107`), — только на уровне ЭТОЙ поставки,
+    // а не приложения-потребителя (тот замер — за `apps/reference`, следующая задача `PWEB-115`).
+    const editorOnly = ["defineEditorInfo", "baseAssemblyOf", "admits", "GROUPS"];
+
+    for (const file of ["index.js", "model.js"]) {
+      const text = readFileSync(join(pkgRoot, "dist", file), "utf8");
+      for (const needle of editorOnly) {
+        expect(text).not.toContain(needle);
+      }
     }
   });
 });
