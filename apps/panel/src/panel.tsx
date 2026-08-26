@@ -1,24 +1,24 @@
 // Dev panel: the one place to walk through products (`PWEB-124`).
 //
-// SCOPE RIGHT NOW: shows the skin product, nothing else — user decision 2026-08-26. Tables and
-// other products join later as more tabs, each pointing at its own dev-server port the same way.
-//
 // EACH PRODUCT'S IFRAME POINTS STRAIGHT AT ITS OWN PORT, no proxy in between. A proxy through
 // this app's own dev server was tried and measured slower live: the same content loaded fast on
 // its own port and slow through the extra hop. There is also no "only one port reaches the
 // browser" constraint to route around here — every product's port is already reachable directly.
 //
-// NO LIVENESS POLLING, NO SWITCHING STATE (yet): with one product there is nothing to switch
-// between and nothing to poll for. That machinery is exactly the kind of thing to add when a
-// second product actually needs it, not ahead of time.
+// NO LIVENESS POLLING (yet): tab switching arrived with the second product (`ewc`); polling
+// whether a product's dev server is actually up is a separate, still-unneeded step.
 
-import { For } from "solid-js";
+import { createSignal, For } from "solid-js";
 
 const PRODUCTS = [
   { id: "skin", label: "Skin", url: "http://localhost:5174/" },
+  { id: "ewc", label: "EWC", url: "http://localhost:5175/" },
 ] as const;
 
 export function Panel() {
+  const [selected, setSelected] = createSignal<(typeof PRODUCTS)[number]["id"]>(PRODUCTS[0].id);
+  const current = () => PRODUCTS.find((product) => product.id === selected())!;
+
   return (
     <div class="panel">
       <div class="panel-bar">
@@ -26,7 +26,12 @@ export function Panel() {
         <div class="panel-tabs" role="tablist" aria-label="Products">
           <For each={PRODUCTS}>
             {(product) => (
-              <span class="panel-tab" role="tab" aria-selected="true">
+              <span
+                class="panel-tab"
+                role="tab"
+                aria-selected={selected() === product.id}
+                onClick={() => setSelected(product.id)}
+              >
                 {product.label}
               </span>
             )}
@@ -35,7 +40,7 @@ export function Panel() {
       </div>
 
       <div class="panel-stage">
-        <iframe src={PRODUCTS[0].url} title={PRODUCTS[0].label} />
+        <iframe src={current().url} title={current().label} />
       </div>
     </div>
   );

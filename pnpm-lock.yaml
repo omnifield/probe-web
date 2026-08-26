@@ -12,6 +12,28 @@ importers:
         specifier: 23.1.1
         version: 23.1.1
 
+  apps/ewc:
+    dependencies:
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+    devDependencies:
+      '@omnifield/probe-web-build':
+        specifier: workspace:*
+        version: link:../../packages/build
+      '@omnifield/probe-web-lint':
+        specifier: workspace:*
+        version: link:../../packages/lint
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.2.1
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0)
+
   apps/panel:
     dependencies:
       '@omnifield/probe-web-style':

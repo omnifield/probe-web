@@ -1,0 +1,8 @@
+{
+  "//": [
+    "No `compilerOptions` of its own, same reason as every other app in the workspace: it must",
+    "be typed by exactly what the `build` zone's preset says."
+  ],
+  "extends": "@omnifield/probe-web-build/tsconfig",
+  "include": ["src", "vite.config.ts"]
+}
