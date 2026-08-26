@@ -15,6 +15,6 @@ export {
   AccordionItemTrigger,
   type AccordionItemTriggerProps,
   type AccordionProps,
-} from "./accordion.jsx";
-export { anatomy, parts, passport } from "./accordion.anatomy.js";
-export { kit } from "./accordion.kit.js";
+} from "./components/index.jsx";
+export { kit } from "./components/kit.js";
+export { anatomy, anatomyParts, passport } from "./entity";

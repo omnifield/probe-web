@@ -252,16 +252,22 @@ function checkAssembly<Part extends string>(
 ): void {
   const declared = passport.anatomy.keys();
 
+  if (assembly.name.trim() === "") {
+    throw new Error(
+      `сборка «${component}» (${assembly.means}) без имени — по позиции в списке её не адресовать`,
+    );
+  }
+
   if (assembly.tree.part !== passport.root) {
     throw new Error(
-      `сборка «${component}» (${assembly.means}) начинается с части «${assembly.tree.part}», а ` +
+      `сборка «${component}.${assembly.name}» начинается с части «${assembly.tree.part}», а ` +
         `корень компонента — «${passport.root}»`,
     );
   }
 
   const walk = (node: PassportAssemblyPart<Part>): void => {
     if (!declared.includes(node.part)) {
-      throw new Error(`сборка «${component}» (${assembly.means}) называет часть «${node.part}» мимо анатомии`);
+      throw new Error(`сборка «${component}.${assembly.name}» называет часть «${node.part}» мимо анатомии`);
     }
 
     const owner = parts[node.part];
@@ -275,7 +281,7 @@ function checkAssembly<Part extends string>(
         const что = isAssemblyContent(child) ? `содержимое рода «${child.genus}»` : `часть «${child.part}»`;
 
         throw new Error(
-          `сборка «${component}» (${assembly.means}) кладёт ${что} внутрь части «${node.part}», ` +
+          `сборка «${component}.${assembly.name}» кладёт ${что} внутрь части «${node.part}», ` +
             `которая этого не допускает`,
         );
       }
@@ -382,7 +388,18 @@ export function defineEditorInfo<Part extends string>(
   }
 
   const assemblies = spec.assemblies ?? [];
-  for (const assembly of assemblies) checkAssembly(component, passport, spec.parts, assembly);
+  const assemblyNames = new Set<string>();
+
+  for (const assembly of assemblies) {
+    checkAssembly(component, passport, spec.parts, assembly);
+
+    // Имя — адрес, а адрес обязан быть однозначным: повтори его два раза, и «взять схему по
+    // имени» перестало бы значить что-то одно.
+    if (assemblyNames.has(assembly.name)) {
+      throw new Error(`сборка «${component}.${assembly.name}» названа дважды — имя не адрес`);
+    }
+    assemblyNames.add(assembly.name);
+  }
 
   return {
     component,

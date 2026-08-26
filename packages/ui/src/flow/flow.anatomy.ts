@@ -78,6 +78,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // Два элемента, а не один: предмет ряда — расстояние МЕЖДУ, а между одним его не бывает.
   assemblies: [
     {
+      name: "basic",
       means: "ряд из двух элементов",
       tree: {
         part: "root",

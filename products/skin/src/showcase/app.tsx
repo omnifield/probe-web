@@ -19,50 +19,26 @@
 // НАДЕВАНИЕ ЗОВЁТСЯ, А НЕ ПОВТОРЯЕТСЯ. Лист стилей, атрибут на корне и память выбора — механика
 // приложения (`runtime`). Своей вставки стилей в зоне нет: вторая реализация того же разошлась
 // бы с первой ровно тогда, когда одна из них научится чему-то новому.
+//
+// ## Этот файл держит ТОЛЬКО раскладку и состояние витрины целиком
+//
+// Каждая область — отдельный компонент в своём файле: `head.tsx` (шапка: скин, режим, оси),
+// `component-page.tsx` (показ случаев), `settings-panel.tsx` (чем компонент может быть),
+// `case.tsx` (одна карточка). Здесь — что их всех связывает: какой компонент выбран, что надето,
+// куда идёт правка.
 
-import { knownComponents, RenderTree } from "@omnifield/probe-web-assembly";
+import { knownComponents } from "@omnifield/probe-web-assembly";
 import { makeSkinSwitch, type SkinMode, type SkinWorn } from "@omnifield/probe-web-runtime";
-import { SkinRefused } from "@omnifield/probe-web-skin";
-import { OutfitRefused } from "@omnifield/probe-web-skin/model";
 import { editorInfoOf, GROUPS, groupOf } from "@omnifield/probe-web-ui/passport";
-import {
-  createResource,
-  createSignal,
-  For,
-  onCleanup,
-  onMount,
-  Show,
-  untrack,
-} from "solid-js";
+import { createResource, createSignal, For, onMount, Show, untrack } from "solid-js";
 
-import {
-  assembleOutfit,
-  EMPTY_HINT,
-  listOutfits,
-  SERVICE_HINT,
-  SKIN_SOURCE,
-  StoreDown,
-  type StoreRecord,
-} from "../skins/index.js";
-import {
-  ANY,
-  casesOf,
-  defaultSettings,
-  settingApplies,
-  settingsOf,
-  statesOfComponent,
-  type Axis,
-  type ShowcaseCase,
-} from "./cases.js";
+import { assembleOutfit, listOutfits, SKIN_SOURCE } from "../skins/index.js";
+import { ANY, defaultSettings, type Axis } from "./cases.js";
+import { ComponentPage } from "./component-page.jsx";
+import { Head } from "./head.jsx";
+import { reasonOf } from "./reason.js";
 import { REGISTRY } from "./registry.js";
-
-/**
- * Обычное состояние в списке выбора — ПУСТЫМ значением.
- *
- * Пустое взято нарочно: именем состояния оно быть не может ни у одного паспорта, а значит выбор
- * «обычное» не столкнётся с состоянием, которое кто-то так назовёт.
- */
-const PLAIN = "";
+import { SettingsPanel } from "./settings-panel.jsx";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
 const COMPONENTS = knownComponents(REGISTRY);
@@ -90,429 +66,6 @@ const BY_GROUP = Object.entries(GROUPS)
 
 /** Переключатель скинов. Владеет своим листом стилей и опознанием на корне. */
 const SKIN = makeSkinSwitch(SKIN_SOURCE);
-
-/**
- * ПРИЧИНА ОТКАЗА — человеку, а не в отладчик.
- *
- * Сообщение механики в строку шапки не годится: оно многострочное и с ярлыком пакета. Изъяны при
- * этом приезжают перечнем, и берётся ПЕРВЫЙ со счётом остальных: чинить начинают всё равно с
- * одного, а весь перечень человек видит в редакторе, где правит запись.
- *
- * Подсказка про службу тут добавляется РОВНО одному случаю — когда службы и нет. Отказ сборки её
- * не получает намеренно: служба жива, а чинится запись или паспорт в ките, и «подними службу»
- * увело бы человека не туда.
- */
-function reasonOf(cause: unknown): string {
-  if (cause instanceof OutfitRefused || cause instanceof SkinRefused) {
-    const [first] = cause.flaws;
-    const rest = cause.flaws.length - 1;
-
-    if (first === undefined) return cause.name;
-
-    return `${first.where}: ${first.means}${rest > 0 ? ` · и ещё изъянов: ${rest}` : ""}`;
-  }
-
-  if (cause instanceof StoreDown) return `${cause.message} · ${SERVICE_HINT}`;
-
-  return cause instanceof Error ? cause.message : String(cause);
-}
-
-/** Порог, за которым карточка перестаёт делить строку с соседями. */
-const WIDE_AT = 380;
-
-/**
- * КАРТОЧКА СЛУЧАЯ — компонент в условии, нарисованный МЕХАНИКОЙ.
- *
- * Отрисовка — тот же `RenderTree`, которым рисует потребитель. Второго способа превратить дерево
- * в вид не существует, и именно поэтому витрина отвечает за то, что увидит человек.
- *
- * ШИРИНУ КАРТОЧКА РЕШАЕТ САМА, измерением. Ни паспорт, ни наш список «крупных компонентов» этого
- * не решают: паспорт про вид не говорит, а список устарел бы на первом же новом компоненте.
- * Содержимое шире порога — карточка занимает всю строку, и кнопка с диалогом живут в одном
- * потоке, не подгоняя его друг под друга.
- */
-function Case(props: { item: ShowcaseCase }) {
-  const [wide, setWide] = createSignal(false);
-  let stage!: HTMLDivElement;
-
-  onMount(() => {
-    const measure = () => setWide(stage.scrollWidth > WIDE_AT);
-
-    measure();
-
-    // Среда без наблюдателя размеров (jsdom в пробах) меряет один раз и живёт дальше: ширина
-    // карточки — украшение показа, и ронять из-за неё весь показ нечестно.
-    if (typeof ResizeObserver !== "function") return;
-
-    // Пересчитываем на смену скина и шрифтов: одетый компонент шире голого, и «широкий» — это
-    // свойство того, что показано сейчас, а не того, что показали в первый кадр.
-    const watcher = new ResizeObserver(measure);
-    watcher.observe(stage);
-    onCleanup(() => watcher.disconnect());
-  });
-
-  // ОПИСАНИЕ СВЕРХУ, КОМПОНЕНТ НИЖЕ (решение user 2026-08-23): человек сперва читает, на что
-  // смотрит, и уже потом смотрит. Обратный порядок заставлял угадывать, что за карточка перед
-  // ним, и искать подпись под ней.
-  return (
-    <figure class="case" classList={{ "case--wide": wide() }}>
-      <figcaption class="case__caption">
-        <b class="case__title">{props.item.title}</b>
-
-        <Show when={props.item.at.state !== null}>
-          <span class="case__state">{props.item.at.state}</span>
-        </Show>
-
-      </figcaption>
-
-      <div class="case__stage" ref={stage}>
-        <RenderTree tree={props.item.tree} registry={REGISTRY} />
-      </div>
-    </figure>
-  );
-}
-
-/**
- * ОСИ — фильтр, а не раскладка.
- *
- * Ось в положении «все» разворачивается в поток случаев, названная — фиксируется. Так один и тот
- * же показ годится компоненту любого размера: что разворачивать, решает человек.
- *
- * У состояния положений ТРИ: обычное · все · названное. Обычное — не «фильтр не задан», а сам
- * вид компонента, когда с ним ничего не происходит; всё прочее показывает отклонения от него.
- *
- * ЧАСТИ ЗДЕСЬ НЕТ (решение user 2026-08-23). Смотрящий думает «наведение», а не «наведение
- * корневой части»: часть — адрес внутри записи, и на витрине она была лишним выбором, который
- * приходилось сделать, прежде чем добраться до нужного.
- *
- * Состояния собираются по ВСЕМ частям и склеиваются по имени: «раскрыт» у гармошки объявлен на
- * трёх частях сразу, но для смотрящего это одно состояние компонента.
- */
-function Axes(props: {
-  component: string;
-  variants: readonly string[];
-  variant: Axis<string>;
-  state: Axis<string | null>;
-  onVariant: (variant: Axis<string>) => void;
-  onState: (state: Axis<string | null>) => void;
-}) {
-  return (
-    <div class="axes">
-      <label class="axes__field">
-        <span class="axes__label">вариация</span>
-        <select
-          class="axes__select"
-          value={props.variant}
-          disabled={props.variants.length === 0}
-          onChange={(event) => props.onVariant(event.currentTarget.value)}
-        >
-          <option value={ANY}>все</option>
-          <For each={props.variants}>{(name) => <option value={name}>{name}</option>}</For>
-        </select>
-      </label>
-
-      <label class="axes__field">
-        <span class="axes__label">состояние</span>
-        <select
-          class="axes__select"
-          value={props.state ?? PLAIN}
-          onChange={(event) =>
-            props.onState(event.currentTarget.value === PLAIN ? null : event.currentTarget.value)
-          }
-        >
-          {/* ОБЫЧНОЕ первым и выбранным: с него начинают смотреть, остальное — отклонения от
-              него. «Все» стоит рядом и остаётся одним движением руки. */}
-          <option value={PLAIN}>обычное</option>
-          <option value={ANY}>все</option>
-          <For each={statesOfComponent(props.component)}>
-            {(state) => <option value={state.name}>{state.name}</option>}
-          </For>
-        </select>
-      </label>
-    </div>
-  );
-}
-
-/**
- * ПАНЕЛЬ СВОЙСТВ — ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ (`PWEB-89`), отдельной колонкой справа.
- *
- * Не фильтр показа и не ось: вариация и состояние отбирают, какие случаи видно, а настройка
- * меняет сам ЭКЗЕМПЛЯР — поведение и разметку, вертикальная гармошка и горизонтальная это разные
- * клавиши и разные `aria`. Смешать её с осями значило бы поставить рядом два разных вопроса:
- * «что показать» и «чем это является».
- *
- * Перечень объявляет ПОСТАВЩИК, витрина своего не ведёт — иначе гармошка навсегда осталась бы
- * такой, какой её однажды показали: без закрытия последнего раздела и в одном положении.
- *
- * Компонент без объявленных настроек панель не рисует вовсе: пустая колонка сбоку — вопрос без
- * ответа, а не честное «здесь настраивать нечего».
- */
-function SettingsPanel(props: {
-  component: string;
-  settings: Readonly<Record<string, unknown>>;
-  onSetting: (name: string, value: unknown) => void;
-}) {
-  return (
-    <Show when={settingsOf(props.component).length > 0}>
-      <aside class="props">
-        <div class="props__head">
-          <b class="props__title">Свойства</b>
-          <span class="props__note">чем компонент может быть — задаёт поставщик</span>
-        </div>
-
-        <div class="props__list">
-          <For each={settingsOf(props.component)}>
-            {(setting) => {
-              // Применимость СПРАШИВАЕТСЯ у паспорта (`SKINED-7`), а не сравнивается именами
-              // руками: паспорт объявляет зависимость данными (`dependsOn`), и второй, наш
-              // список «какая настройка кого перебивает» разошёлся бы с ним на первом же новом
-              // поставщике. Настройка при этом не пропадает из панели — она гаснет: человек
-              // должен видеть, что компонент её несёт, а не гадать, куда она делась.
-              const applies = () => settingApplies(props.component, setting.name, props.settings);
-              const means = () =>
-                applies()
-                  ? setting.means
-                  : `${setting.means} — сейчас не действует: перебито другой настройкой`;
-
-              return (
-                <label class="props__field" title={means()}>
-                  <span class="props__label">{setting.title}</span>
-                  <Show
-                    when={setting.values.kind === "choice" ? setting.values : null}
-                    fallback={
-                      <input
-                        class="props__flag"
-                        type="checkbox"
-                        disabled={!applies()}
-                        checked={props.settings[setting.name] === true}
-                        onChange={(event) =>
-                          props.onSetting(setting.name, event.currentTarget.checked)
-                        }
-                      />
-                    }
-                  >
-                    {(выбор) => (
-                      <Show
-                        when={выбор().options.length === 2}
-                        // Список — когда выбор действительно СПИСОК: три и больше именованных
-                        // положений. Ровно на двух список превращается в вопрос «да или нет
-                        // применительно к другому», и отвечать на него открыванием и закрыванием
-                        // меню — лишнее движение там, где хватает одного клика.
-                        fallback={
-                          <select
-                            class="props__select"
-                            disabled={!applies()}
-                            value={String(props.settings[setting.name] ?? setting.byDefault)}
-                            onChange={(event) =>
-                              props.onSetting(setting.name, event.currentTarget.value)
-                            }
-                          >
-                            <For each={выбор().options}>
-                              {(option) => (
-                                <option value={option.value} title={option.means}>
-                                  {option.means}
-                                </option>
-                              )}
-                            </For>
-                          </select>
-                        }
-                      >
-                        <div class="props__switch" role="radiogroup" aria-label={setting.title}>
-                          <For each={выбор().options}>
-                            {(option) => {
-                              const текущее = () =>
-                                String(props.settings[setting.name] ?? setting.byDefault);
-
-                              return (
-                                <button
-                                  type="button"
-                                  class="props__switch-item"
-                                  role="radio"
-                                  disabled={!applies()}
-                                  aria-checked={текущее() === option.value}
-                                  title={option.means}
-                                  onClick={() => props.onSetting(setting.name, option.value)}
-                                >
-                                  {option.means}
-                                </button>
-                              );
-                            }}
-                          </For>
-                        </div>
-                      </Show>
-                    )}
-                  </Show>
-                </label>
-              );
-            }}
-          </For>
-        </div>
-      </aside>
-    </Show>
-  );
-}
-
-/**
- * СТРАНИЦА КОМПОНЕНТА — показ, и только он.
- *
- * Витрина существует, чтобы СМОТРЕТЬ: полистать компоненты, переключить скин, показать человеку,
- * который оценивает вид, а не устройство. Поэтому здесь нет ни долга одевания, ни перечня частей
- * с состояниями, ни паспортных фактов — всё это техничка, и живёт она отдельно (решение user
- * 2026-08-21).
- *
- * Убрано не «потому что мешает», а потому что смешение двух предметов портит оба: заказчик,
- * которому показывают вид, спотыкается о долг и род компонента, а одевающий ищет техничку среди
- * картинок.
- *
- * Выбор ВИДА — витрина или форма — стоит в хедере, а не здесь: страница показывает то, что ей
- * велели, и не решает, показывать ли себя.
- */
-function ComponentPage(props: {
-  component: string;
-  variants: readonly string[];
-  variant: Axis<string>;
-  state: Axis<string | null>;
-  settings: Readonly<Record<string, unknown>>;
-}) {
-  // Часть не называется: на витрине её нет, и состояние ставится на ту часть, которая его
-  // объявила, — это знает сборка случая, а не показ.
-  const cases = () =>
-    casesOf(props.component, {
-      variant: props.variant,
-      state: props.state,
-      variants: props.variants,
-      settings: props.settings,
-    });
-
-  return (
-    <article class="page">
-      <Show when={props.variants.length === 0}>
-        <p class="page__empty">
-          Скин не надет — показан голый кит. Это рабочее состояние продукта, а не поломка витрины:
-          наденьте скин справа вверху.
-        </p>
-      </Show>
-
-      <div class="cases">
-        <For each={cases()}>{(item) => <Case item={item} />}</For>
-      </div>
-    </article>
-  );
-}
-
-/**
- * ХЕДЕР: что надето и в каком режиме.
- *
- * Оба выбора здесь, а не на странице компонента, по одной причине: **они общие на всю витрину**.
- * Скин один на всё, режим один на всё; стой они на странице кнопки, показалось бы, что одеваешь
- * кнопку, а одевается всё.
- *
- * СКИН — списком выбора, а не рядом кнопок: скинов станет много, и ряд кнопок расползётся по
- * ширине, отбирая место у самого показа. «Снят» — первый пункт списка и полноправный выбор:
- * голый кит это рабочее состояние продукта, а не отсутствие выбора.
- *
- * ТРИ СОСТОЯНИЯ ХРАНИЛИЩА говорятся врозь, потому что лечатся разным: перечень есть · служба
- * отвечает, но пуста · службы нет. Слепи их в одно «ничего нет» — человек пойдёт чинить не то, а
- * пустой список прочтёт как «скинов не существует».
- *
- * Элементы здесь НАТИВНЫЕ. Витрина — инструмент, и ждать, пока появится скин, чтобы её саму
- * можно было использовать, она не вправе: одевать кита ею же и означает работать без скина.
- */
-function Head(props: {
-  component: string;
-  variants: readonly string[];
-  variant: Axis<string>;
-  state: Axis<string | null>;
-  worn: string | null;
-  records: readonly StoreRecord[] | undefined;
-  failure: unknown;
-  refusal: string | null;
-  mode: SkinMode;
-  onVariant: (variant: Axis<string>) => void;
-  onState: (state: Axis<string | null>) => void;
-  onWear: (name: string) => void;
-  onTakeOff: () => void;
-  onMode: (mode: SkinMode) => void;
-}) {
-  const choose = (value: string) => {
-    if (value === "") props.onTakeOff();
-    else props.onWear(value);
-  };
-
-  const trouble = (): string | null => {
-    if (props.failure !== undefined) {
-      return `${String((props.failure as Error).message)} · ${SERVICE_HINT}`;
-    }
-
-    // ТРЕТЬЕ состояние, и порядок здесь не случаен: службы нет — надевать нечего вообще, и об
-    // этом говорят первым. Отказ надевания идёт следом: список пришёл, скин выбран, а вида нет —
-    // без этой строки человек видел бы голый кит и ни слова о том, почему.
-    if (props.refusal !== null) return props.refusal;
-
-    return (props.records?.length ?? 0) === 0 ? `Скинов в службе нет · ${EMPTY_HINT}` : null;
-  };
-
-  return (
-    <header class="head">
-      {/* Слева — про ОДИН компонент: как его зовут и что из него показать. */}
-      <div class="head__subject">
-        <b class="head__component">{props.component}</b>
-
-        <Axes
-          component={props.component}
-          variants={props.variants}
-          variant={props.variant}
-          state={props.state}
-          onVariant={props.onVariant}
-          onState={props.onState}
-        />
-      </div>
-
-      {/* Справа — про ВСЮ витрину: чем одето, в каком режиме, и куда перейти.
-          РЕЖИМ ПОКАЗЫВАЕТСЯ ТОЛЬКО ПРИ НАДЕТОМ СКИНЕ. Светлая и тёмная половины — это половины
-          СКИНА: цвет принадлежит одежде, а не тому, на что её надевают. Нет скина — переключать
-          нечего, и кнопки режима были бы обещанием вида там, где вида нет.
-          Что режим при этом всё равно меняет вид голого кита — вопрос основания, поднятый к
-          архитектору: набор значений держит собственную тёмную пару и одевает приложение без
-          скина. Мы этого не прячем и не обходим — мы просто не предлагаем человеку ручку,
-          которой у витрины нет предмета. */}
-      <div class="head__controls">
-        <Show when={trouble()}>{(said) => <p class="head__trouble">{said()}</p>}</Show>
-
-        <Show when={props.worn !== null}>
-        <div class="modes" role="group" aria-label="Режим">
-          <For each={["light", "dark"] as const}>
-            {(value) => (
-              <button
-                class="modes__item"
-                type="button"
-                aria-pressed={props.mode === value}
-                onClick={() => props.onMode(value)}
-              >
-                {value === "light" ? "светлый" : "тёмный"}
-              </button>
-            )}
-          </For>
-          </div>
-        </Show>
-
-        <select
-          class="head__select"
-          aria-label="Скин"
-          value={props.worn ?? ""}
-          disabled={props.failure !== undefined || (props.records?.length ?? 0) === 0}
-          onChange={(event) => choose(event.currentTarget.value)}
-        >
-          <option value="">без скина</option>
-          <For each={props.records ?? []}>
-            {(record) => <option value={record.name}>{record.label}</option>}
-          </For>
-        </select>
-
-      </div>
-    </header>
-  );
-}
 
 export function App() {
   const [current, setCurrentSignal] = createSignal(COMPONENTS[0] ?? "");
@@ -549,7 +102,7 @@ export function App() {
   };
 
   const setSetting = (name: string, value: unknown) =>
-    setSettings((прежние) => ({ ...прежние, [name]: value }));
+    setSettings((previous) => ({ ...previous, [name]: value }));
   // НАДЕТОЕ — это имя И половина вместе: половина принадлежит скину, а не документу, и второй
   // ручки под неё не существует. Нет скина — нет и половины.
   const [worn, setWorn] = createSignal<SkinWorn | null>(null);
@@ -653,24 +206,24 @@ export function App() {
         </div>
 
         <nav class="rail__list">
-            <For each={BY_GROUP}>
-              {(section) => (
-                <>
-                  <b class="rail__group">{section.title}</b>
-                  <For each={section.components}>
-                    {(component) => (
-                      <button
-                        class="rail__item"
-                        type="button"
-                        aria-current={component === current() ? "true" : undefined}
-                        onClick={() => setCurrent(component)}
-                      >
-                        {component}
-                      </button>
-                    )}
-                  </For>
-                </>
-              )}
+          <For each={BY_GROUP}>
+            {(section) => (
+              <>
+                <b class="rail__group">{section.title}</b>
+                <For each={section.components}>
+                  {(component) => (
+                    <button
+                      class="rail__item"
+                      type="button"
+                      aria-current={component === current() ? "true" : undefined}
+                      onClick={() => setCurrent(component)}
+                    >
+                      {component}
+                    </button>
+                  )}
+                </For>
+              </>
+            )}
           </For>
         </nav>
       </aside>
@@ -715,11 +268,7 @@ export function App() {
 
           <Show when={current()}>
             {(component) => (
-              <SettingsPanel
-                component={component()}
-                settings={settings()}
-                onSetting={setSetting}
-              />
+              <SettingsPanel component={component()} settings={settings()} onSetting={setSetting} />
             )}
           </Show>
         </div>

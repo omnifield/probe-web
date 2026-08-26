@@ -77,6 +77,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   },
   assemblies: [
     {
+      name: "basic",
       means: "поверхность с содержимым",
       tree: { part: "root", children: [{ genus: "text", value: "Поверхность" }] },
     },

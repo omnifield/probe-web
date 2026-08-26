@@ -258,6 +258,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   },
   assemblies: [
     {
+      name: "basic",
       means: "чекбокс с подписью, управляющей рамкой и указателем",
       tree: {
         part: "root",
