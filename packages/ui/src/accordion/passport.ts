@@ -1,28 +1,10 @@
-// RUNTIME contract of the accordion (`PWEB-37`, decomposed `PWEB-124`) — the kit's first
-// composite component.
+// RUNTIME passport of the accordion (`PWEB-37`, `PWEB-115`/`PWEB-118`, decomposed `PWEB-124`) —
+// anatomy (`accordion.anatomy.ts`) plus everything else the running app needs: per-part STATES,
+// the variant axis, and SETTINGS, tied together by `definePassport`.
 //
-// THIS FILE IS RUNTIME ONLY. Editor-facing metadata (`means`, group, genus, nesting rules,
-// assembly templates) lives in `accordion.editor.ts` — see its header for why that split exists.
-//
-// The anatomy is NOT declared here: it arrives ready-made with the component. A component taken
-// from Ark brings its own passport with it — rewriting it would create a second declaration of
-// the same thing and drift from the provider on its very next release.
-//
-// ## Where the anatomy actually comes from — and why not `@ark-ui/solid/anatomy`
-//
-// It physically lives in `@zag-js/accordion/anatomy` — a subpath with no Solid and no state
-// machine, only the part declarations. Ark's own `accordionAnatomy` comes from that SAME place,
-// i.e. it is the same object, not a second copy of it.
-//
-// Taking it through Ark would be shorter and WRONG, as a live neighbor found out: the
-// `@ark-ui/solid/anatomy` subpath has a `solid` branch with a `.jsx` file, and a passport reader
-// whose resolver understands that branch (`packages/assembly` does) gets JSX where it expected
-// data, and fails with "Unknown file extension .jsx". The `./passport` subpath is sold as DATA,
-// readable without Solid — so it must be taken from a place that has no Solid at all.
-//
-// Only what the anatomy does not know is added on top: each part's states together with what
-// expresses them, admissible content, meanings, genus, and group (the latter three now live in
-// `accordion.editor.ts`).
+// THIS FILE IS RUNTIME ONLY, same as the anatomy it builds on — it ships in the app bundle.
+// Editor-facing metadata (`means`, group, genus, nesting/`accepts` rules, assembly templates)
+// lives in `playground/index.ts` instead; that file depends on this one, never the other way.
 //
 // ## Why the accordion, and what it gives the mechanism
 //
@@ -77,19 +59,16 @@
 // working for MOTION reads them together with the circumstance. The passport's former silence
 // decided this for both readers at once and was indistinguishable from "the provider did not look".
 
-import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
-
-import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
+import {
+  defineSettings,
+  definePassport,
+  type PassportState,
+} from "@omnifield/probe-web-skin/model";
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are checked
 // against the component's real props, not an idea of them.
-import type { AccordionProps } from "./accordion.jsx";
-
-/** Parts and addresses — taken, not ours. */
-export const anatomy = accordionAnatomy;
-
-/** Part addresses: `attrs` for the node, `selector` for styling. Computed once — they are static. */
-export const parts = anatomy.build();
+import type { AccordionProps } from "./components/index.jsx";
+import { anatomy } from "./anatomy.js";
 
 /** Expansion — Zag's shared vocabulary attribute; it sits on the item, the content, and the indicator. */
 const open: PassportState = {
@@ -129,13 +108,7 @@ const focus: PassportState = {
   mark: { kind: "attribute", name: "data-focus" },
 };
 
-/**
- * Passport of the accordion — anatomy plus what anatomy alone does not say.
- *
- * Nesting is declared TWO levels deep: the item inside the root, the trigger and the content
- * inside the item. This is the first place where the nesting rule is checkable at all — the
- * button has no internal parts, and there was nothing to derive "who can be an ancestor" from.
- */
+/** Passport of the accordion — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
   anatomy,
   root: "root",
@@ -157,7 +130,10 @@ export const passport = definePassport({
         // onto that. Checked on a live node.
         { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } },
         { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
-        { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
+        {
+          name: "focus-visible",
+          mark: { kind: "pseudo", name: ":focus-visible" },
+        },
         { name: "active", mark: { kind: "pseudo", name: ":active" } },
       ],
     },

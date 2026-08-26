@@ -8,15 +8,15 @@
 // There is no separate list of parts here: keys are checked against the anatomy — by type while
 // writing, and by `defineKitComponent` at runtime.
 
-import { defineKitComponent } from "../kit-form.js";
-import { passport } from "./accordion.anatomy.js";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../passport.js";
 import {
   Accordion,
   AccordionItem,
   AccordionItemContent,
   AccordionItemIndicator,
   AccordionItemTrigger,
-} from "./accordion.jsx";
+} from "./index.jsx";
 
 /** The accordion's passport together with whatever draws each of its parts. */
 export const kit = defineKitComponent(passport, {
