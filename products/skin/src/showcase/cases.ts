@@ -12,31 +12,38 @@
 //
 // ## Дерево случая порождается, а не верстается
 //
-// Каждый случай начинается с ОБРАЗЦА (`sketchOf`) — дерева частей, выведенного из анатомии
-// компонента. Условие накладывается правкой через механику (`updateNode`), а не подстановкой
+// Каждый случай начинается с ЭКЗЕМПЛЯРА (`instanceOf`, `./instance.ts`) — дерева частей, поднятого
+// у поставщика. Условие накладывается правкой через механику (`updateNode`), а не подстановкой
 // полей руками.
-//
-// Причина ровно та, ради которой витрина вообще строится на механике: свёрстанный руками случай
-// проверяет вёрстку случая. Порождённый — проверяет механику, паспорт и скин разом.
 //
 // ## Состояние ставится на УЗЕЛ ЧАСТИ, а не только на корень
 //
 // У крупного компонента состояния живут на вложенных частях: наведение на строке таблицы, фокус
-// на ячейке. Образец даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
+// на ячейке. Экземпляр даёт все узлы, и признак ставится на тот, чья часть выбрана. Иначе показать
 // вид вложенной части было бы нечем, а её долг одевания — невидим.
+//
+// ## Файл держит ТОЛЬКО алгоритм осей
+//
+// Что и как читается о компоненте — в `./shape.ts` (части, состояния, адрес); чем компонент может
+// быть — в `./settings.ts`; как из объявленной сборки получается один экземпляр — в
+// `./instance.ts`. Здесь — ровно то, что не уместилось ни в одно из них: разворот осей в поток
+// случаев.
 
-import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
-import { FORCE_ATTRIBUTE, settingApplies as passportSettingApplies } from "@omnifield/probe-web-skin/model";
-import {
-  baseAssemblyOf,
-  editorInfoOf,
-  passportOf,
-  SETTINGS,
-  type PassportMark,
-  type PassportState,
-} from "@omnifield/probe-web-ui/passport";
+import type { AssemblyTree } from "@omnifield/probe-web-assembly";
+import { passportOf, type PassportState } from "@omnifield/probe-web-ui/passport";
 
-import { REGISTRY } from "./registry.js";
+import { instanceOf } from "./instance.js";
+import { addressOfPart, partsOf, statesOfPart } from "./shape.js";
+
+export { addressOfPart, partsOf, rootPartOf, statesOfComponent, statesOfPart } from "./shape.js";
+export {
+  defaultSettings,
+  settingApplies,
+  settingsOf,
+  type ShowcaseSetting,
+  type ShowcaseSettingOption,
+  type ShowcaseSettingValues,
+} from "./settings.js";
 
 /**
  * Ось «ВСЕ» — положение, при котором ось не фиксируется, а разворачивается в поток случаев.
@@ -106,238 +113,6 @@ export interface Slice {
 }
 
 /**
- * Как выставить состояние В РАЗМЕТКЕ — по тому, чем его объявил паспорт.
- *
- * Атрибутные состояния ставятся атрибутом, псевдоклассовые — признаком принуждения. Это показ
- * ВИДА, а не проверка поведения: что кит действительно ставит `data-disabled` от своего пропа,
- * проверяют его собственные пробы, и повторять их здесь нечем и незачем.
- *
- * Знание о том, каким пропом включается состояние, паспорту не принадлежит: он объявляет
- * наблюдаемую поверхность для вида, а не сигнатуру вызова. Поэтому витрина идёт от разметки —
- * ровно оттуда же, откуда идёт скин.
- */
-function stateProps(mark: PassportMark): Record<string, unknown> {
-  return mark.kind === "pseudo"
-    ? { [FORCE_ATTRIBUTE]: mark.name.replace(/^:/, "") }
-    : { [mark.name]: mark.value ?? "" };
-}
-
-/** Адрес узла части в дереве образца: корневая часть и компонент целиком — одно место. */
-export function addressOfPart(component: string, part: string): string {
-  return passportOf(component)?.root === part ? component : `${component}.${part}`;
-}
-
-/** Состояния части — из паспорта. Часть без добавки состояний не объявляла: перечень пуст. */
-export function statesOfPart(component: string, part: string): readonly PassportState[] {
-  return passportOf(component)?.parts.find((item) => item.name === part)?.states ?? [];
-}
-
-/**
- * СОСТОЯНИЯ КОМПОНЕНТА — по всем частям, склеенные по имени.
- *
- * Смотрящему принадлежит компонент, а не его части: «раскрыт» у гармошки объявлен на пункте, на
- * указателе и на кнопке раздела, но состояние это ОДНО. Показывать его трижды значило бы обещать
- * три разных вида там, где вид один.
- *
- * @param component адрес компонента в реестре
- */
-export function statesOfComponent(component: string): readonly PassportState[] {
-  const собранные = new Map<string, PassportState>();
-
-  for (const часть of partsOf(component)) {
-    for (const state of statesOfPart(component, часть)) {
-      if (!собранные.has(state.name)) собранные.set(state.name, state);
-    }
-  }
-
-  return [...собранные.values()];
-}
-
-/** Части компонента — из анатомии: она источник, добавка паспорта лишь приписка к ней. */
-export function partsOf(component: string): readonly string[] {
-  return passportOf(component)?.anatomy.keys() ?? [];
-}
-
-/** Корневая часть компонента — с неё начинается дерево, на неё смотрят по умолчанию. */
-export function rootPartOf(component: string): string {
-  return passportOf(component)?.root ?? "";
-}
-
-/** Значение выбора вместе с тем, что оно значит человеку — половина, которую держит редактор. */
-export interface ShowcaseSettingOption {
-  readonly value: string;
-  readonly means: string;
-}
-
-/** Какие значения настройка принимает — тот же признак/выбор, что и в рантайме, но с текстом. */
-export type ShowcaseSettingValues =
-  | { readonly kind: "flag" }
-  | { readonly kind: "choice"; readonly options: readonly ShowcaseSettingOption[] };
-
-/** Настройка компонента вместе с её именем и человеческой подписью — витрине для перечня. */
-export interface ShowcaseSetting {
-  /** Ключ настройки: им же она уезжает пропом на корень. */
-  readonly name: string;
-  /** Подпись человеку — из закрытого перечня поставщика, а не наша. */
-  readonly title: string;
-  /** Что настройка делает — из среза редактора (`PWEB-115`), паспорт рантайма этого не несёт. */
-  readonly means: string;
-  /** Какие значения принимает: признак или выбор, с текстом на каждом варианте. */
-  readonly values: ShowcaseSettingValues;
-  /** Что действует, когда настройка не названа. */
-  readonly byDefault: string | boolean;
-}
-
-/**
- * ЧЕМ КОМПОНЕНТ МОЖЕТ БЫТЬ — перечень настроек из паспорта (`PWEB-89`).
- *
- * Своего перечня витрина не ведёт и подписи не придумывает: и то и другое объявляет поставщик, а
- * два перечня разошлись бы на первом же его выпуске. Компонент, ничего не объявивший, отдаёт
- * пустой перечень — показывать нечего, и это законно.
- *
- * ДВА ИСТОЧНИКА (`PWEB-115`/`PWEB-118`): рантайм называет значения и умолчание, редактор — текст.
- * Читаются оба и складываются в одну запись — так же, как читает их сам редактор.
- */
-export function settingsOf(component: string): readonly ShowcaseSetting[] {
-  const settings = passportOf(component)?.settings ?? {};
-  const editorSettings = editorInfoOf(component)?.settings ?? {};
-
-  return Object.entries(settings).map(([name, setting]) => {
-    const editor = editorSettings[name];
-
-    const values: ShowcaseSettingValues =
-      setting.values.kind === "choice"
-        ? {
-            kind: "choice",
-            options: setting.values.options.map((option) => ({
-              value: option.value,
-              means: editor?.options?.[option.value]?.means ?? option.value,
-            })),
-          }
-        : setting.values;
-
-    return {
-      name,
-      title: SETTINGS[name as keyof typeof SETTINGS] ?? name,
-      means: editor?.means ?? name,
-      values,
-      byDefault: setting.byDefault,
-    };
-  });
-}
-
-/**
- * Умолчания настроек — то, чем компонент работает, пока человек ничего не трогал.
- *
- * Берутся у паспорта, а не подразумеваются пустотой: «не названо» и «названо умолчанием» должны
- * быть одним положением, иначе показ разошёлся бы с тем, что человек видит в списке.
- */
-export function defaultSettings(component: string): Record<string, unknown> {
-  return Object.fromEntries(settingsOf(component).map((s) => [s.name, s.byDefault]));
-}
-
-/**
- * Действует ли настройка ПРИ ТЕКУЩИХ значениях — паспорт объявляет зависимость данными
- * (`PassportSetting.dependsOn`, `SKINED-7`), и спрашивать её надо этим полем, а не сравнением
- * имён настроек руками: сравнение разошлось бы с паспортом на первом же новом поставщике.
- *
- * Пример — гармошка: `collapsible` перестаёт что-либо решать, когда `multiple` уже включена
- * (`redundantWhen: true`), потому что Zag разрешает закрыть последний раздел, если включено ХОТЯ
- * БЫ одно из двух.
- *
- * @param component адрес компонента в реестре
- * @param name имя настройки, чью применимость спрашивают
- * @param values текущие значения настроек компонента
- */
-export function settingApplies(
-  component: string,
-  name: string,
-  values: Readonly<Record<string, unknown>>,
-): boolean {
-  return passportSettingApplies(passportOf(component)?.settings ?? {}, name, values);
-}
-
-/**
- * ВСЕ узлы образца по адресу части — их бывает несколько: пунктов много, адрес один.
- *
- * Узлы СОДЕРЖИМОГО пропускаются: адреса у них нет вовсе — они опознаются родом, — и состояние на
- * подпись не ставится, потому что подпись не часть.
- */
-function nodesOfPart(tree: AssemblyTree, address: string): string[] {
-  return Object.values(tree.components.nodes)
-    .filter((node) => !isContent(node) && node.type === address)
-    .map((node) => node.id);
-}
-
-/** Первый узел части, либо `undefined` — если такой части в образце нет. */
-function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
-  return nodesOfPart(tree, address)[0];
-}
-
-/**
- * Собирает случай: экземпляр компонента плюс условие.
- *
- * ЭКЗЕМПЛЯР БЕРЁТСЯ У ПОСТАВЩИКА. Прежде витрина держала три своих перечня — сколько раз
- * повторить часть, какие пропы дать киту, чтобы тот заработал, и чем наполнить части, — и всё
- * это было знанием о компоненте, которого у показа быть не должно. Я сам решил, что разделов
- * три; следующий пульт решил бы иначе, и оба показывали бы «гармошку» по-разному.
- *
- * Теперь базовые сборки объявляет тот, кто компонент написал (`assemblies` в срезе редактора,
- * `PWEB-115`/`PWEB-116`), а витрина поднимает ПЕРВУЮ — своего выбора между несколькими у неё нет,
- * это работа редактора, не показа. Нет ни одной объявленной сборки — берётся образец из анатомии:
- * одна часть, ни повторов, ни наполнения. Кнопке этого хватает, составному компоненту нет, и его
- * поставщик обязан сборку объявить.
- *
- * Отказ механики — **исключение**, а не значение, и это единственное такое место в зоне: отказ
- * означает, что случай написан против паспорта, то есть дефект нашей записи, а не состояние
- * данных. Молча показать вместо него пустое место значило бы спрятать его от себя же.
- */
-function build(
-  component: string,
-  rootProps: Readonly<Record<string, unknown>>,
-  partAddress?: string,
-  stateMark?: PassportMark,
-): AssemblyTree {
-  const passport = passportOf(component);
-  const assembly = editorInfoOf(component)?.assemblies[0];
-  const основа = passport && assembly ? baseAssemblyOf(passport, assembly) : undefined;
-  const sketch = основа ?? sketchOf(REGISTRY, component);
-
-  if (!sketch) {
-    throw new Error(`витрина: компонента «${component}» нет в реестре — случай собрать не из чего`);
-  }
-
-  const root = sketch.components.root;
-  const было = (sketch as AssemblyTree).components.nodes[root];
-
-  // ПРОПЫ СЛИВАЮТСЯ, А НЕ ЗАМЕЩАЮТСЯ: в объявленной сборке на корне уже стоит то, без чего кит
-  // не работает (у гармошки — какой раздел раскрыт). Положи мы поверх одну вариацию, экземпляр
-  // поставщика развалился бы, а выглядело бы это как «скин сломал компонент».
-  const onRoot = updateNode(sketch as AssemblyTree, root, {
-    props: { ...(!было || isContent(было) ? {} : было.props), ...rootProps },
-  });
-
-  if (!onRoot.ok) throw new Error(`витрина: случай отвергнут механикой — ${onRoot.means}`);
-
-  const наполнено: AssemblyTree = onRoot.tree;
-
-  if (stateMark === undefined || partAddress === undefined) return наполнено;
-
-  const target = nodeOfPart(наполнено, partAddress);
-
-  // Части нет в образце — состояние не ставим и молчим: это законно, часть могла не попасть в
-  // образец. Отказывать здесь значило бы ронять показ из-за выбора оси.
-  if (target === undefined) return наполнено;
-
-  const props = target === root ? { ...rootProps, ...stateProps(stateMark) } : stateProps(stateMark);
-  const onPart = updateNode(наполнено, target, { props });
-
-  if (!onPart.ok) throw new Error(`витрина: состояние не легло на часть — ${onPart.means}`);
-
-  return onPart.tree;
-}
-
-/**
  * Случаи, порождённые ОСЯМИ: вариация × состояние выбранной части.
  *
  * Ось в положении «все» разворачивается, названная — фиксируется. Так один и тот же показ годится
@@ -355,7 +130,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
 
   if (!passport) return [];
 
-  const части = slice.part === undefined ? partsOf(component) : [slice.part];
+  const parts = slice.part === undefined ? partsOf(component) : [slice.part];
   const axis = passport.variantAxis.mark;
 
   // УМОЛЧАНИЯ ОТДЕЛЬНОЙ СТРОКОЙ НЕТ. Скин объявляет умолчание именем, и «атрибут не поставлен»
@@ -372,15 +147,15 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
   // тремя частями сразу, а не три разных случая.
   //
   // Часть при этом не теряется: она остаётся адресом, по которому признак ставится на узел.
-  const собранные = new Map<string, { state: PassportState; part: string }>();
+  const collected = new Map<string, { state: PassportState; part: string }>();
 
-  for (const часть of части) {
-    for (const state of statesOfPart(component, часть)) {
-      if (!собранные.has(state.name)) собранные.set(state.name, { state, part: часть });
+  for (const part of parts) {
+    for (const state of statesOfPart(component, part)) {
+      if (!collected.has(state.name)) collected.set(state.name, { state, part });
     }
   }
 
-  const states = [...собранные.values()];
+  const states = [...collected.values()];
 
   // ОБЫЧНОЕ — это `undefined` в перечне: признака не ставится ни одного. Оно идёт ПЕРВЫМ и в
   // положении «все», потому что состояния читаются как отклонения от обычного вида, а отклонение
@@ -403,9 +178,9 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
       ...(variant === null || axis.kind !== "attribute" ? {} : { [axis.name]: variant }),
     };
 
-    for (const место of shown) {
-      const state = место?.state;
-      const part = место?.part ?? slice.part ?? passport.root;
+    for (const spot of shown) {
+      const state = spot?.state;
+      const part = spot?.part ?? slice.part ?? passport.root;
       const address = addressOfPart(component, part);
 
       cases.push({
@@ -415,7 +190,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
         // карточкой с нажатой кнопкой не сообщает ничего, чего не видно.
         title: variant ?? "без вариации",
         at: { part, variant, state: state?.name ?? null },
-        tree: build(component, variantProps, address, state?.mark),
+        tree: instanceOf(component, variantProps, address, state?.mark),
       });
     }
   }
