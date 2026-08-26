@@ -1,0 +1,100 @@
+/* The panel's look. ALL ITS OWN, as literals — the "OWN LOOK" block below explains why. The
+   panel stands on native elements (user decision 2026-08-20): the previous look generation was
+   removed, a new skin has not been written yet.
+
+   Exactly ONE place scrolls — the tab row, when there are more tabs than fit. Neither the page
+   nor the header scroll: otherwise the work area would drift out of view, and that is the whole
+   point of it. */
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; overflow: hidden; }
+
+body {
+  background: var(--panel-bg);
+  color: var(--panel-text);
+  font-family: var(--panel-font);
+  font-size: var(--panel-size);
+}
+
+#root { height: 100%; }
+
+/* ── layout ───────────────────────────────────────────────────────────────────────────── */
+
+.panel { height: 100%; display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+
+.panel-bar {
+  display: flex; align-items: center; gap: var(--panel-space-3);
+  padding: var(--panel-space-2) var(--panel-space-3);
+  background: var(--panel-header); border-bottom: 1px solid var(--panel-border);
+  min-width: 0;
+}
+
+.panel-brand { font-weight: 600; white-space: nowrap; }
+
+/* Tabs take up all the free width and scroll sideways rather than wrap: wrapping grows the
+   header and eats into the work area. */
+.panel-tabs {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: var(--panel-space-1);
+  overflow-x: auto;
+  /* Vertical scroll is forbidden EXPLICITLY: with only `overflow-x: auto` the browser adds a
+     vertical bar too, and it hangs in the header across the tabs. */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.panel-stage { min-height: 0; }
+.panel-stage iframe {
+  width: 100%; height: 100%; border: 0; display: block; background: var(--panel-bg);
+}
+
+/* ── OWN LOOK ─────────────────────────────────────────────────────────────────────────────
+   The panel is a tool, has no skin and never will: the dressed-up value set is off the shelf,
+   and the framework no longer deals in half a skin. So it sets its own look — all of it.
+
+   As literals, and that is deliberate: roles would be a lie — roles reference steps that do not
+   exist without a skin, and the panel would end up colorless. */
+
+:root {
+  color-scheme: light dark;
+
+  --panel-space-1: 0.25rem;
+  --panel-space-2: 0.5rem;
+  --panel-space-3: 0.75rem;
+  --panel-radius: 4px;
+  --panel-size: 0.875rem;
+  --panel-font: ui-sans-serif, system-ui, sans-serif;
+
+  --panel-bg:        #ffffff;
+  --panel-text:      #1a1a1a;
+  --panel-header:    #f6f6f7;
+  --panel-border:    #e0e0e2;
+  --panel-quiet:     #6b6b70;
+  --panel-highlight: #eeeef0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --panel-bg:        #131316;
+    --panel-text:      #ededef;
+    --panel-header:    #1b1b1f;
+    --panel-border:    #2c2c31;
+    --panel-quiet:     #9a9aa2;
+    --panel-highlight: #26262b;
+  }
+}
+
+/* ── TEMPORARY TAB LOOK ────────────────────────────────────────────────────────────────────
+   Kept as one block, so it can be removed in one move on a return to the kit. None of it moves
+   into a skin: a skin addresses component parts, and these are bare elements. */
+
+.panel-tab {
+  font: inherit;
+  white-space: nowrap;
+  color: var(--panel-text);
+  background: var(--panel-highlight);
+  border-radius: var(--panel-radius);
+  padding: var(--panel-space-1) var(--panel-space-2);
+  font-weight: 600;
+}

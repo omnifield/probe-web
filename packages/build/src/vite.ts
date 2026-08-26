@@ -182,6 +182,21 @@ function generatedCssPlugin(state: DevState): Plugin {
 }
 
 /**
+ * Опции, которые редкому потребителю всё же нужно назвать самому.
+ *
+ * Не про вкус — про то, что вывести неоткуда: `base` меняет физический смысл собранных путей
+ * (приложение живёт не в корне origin), `proxy` называет чужой процесс, о котором пресет знать
+ * не может. Обычный потребитель не передаёт ничего — см. `defineConfig()` без аргументов у
+ * `apps/reference`, `products/skin` и остальных.
+ */
+export interface DefineConfigOptions {
+  readonly base?: string;
+  readonly proxy?: NonNullable<UserConfig["server"]>["proxy"];
+  /** Extra plugins, appended after the preset's own — a dev-only status/proxy route, say. */
+  readonly plugins?: readonly Plugin[];
+}
+
+/**
  * Готовый конфиг Vite для приложения на probe-web.
  *
  * Потребитель не знает ни про solid-плагин, ни про версию Vite: и то, и другое — внутреннее
@@ -189,7 +204,7 @@ function generatedCssPlugin(state: DevState): Plugin {
  *
  * @returns конфиг для `export default` в `vite.config.ts` потребителя
  */
-export function defineConfig(): UserConfig {
+export function defineConfig(options: DefineConfigOptions = {}): UserConfig {
   const done = trace("defineConfig");
 
   // Состояние живёт ровно один конфиг: две фабрики, вызванные для двух приложений, не делят
@@ -197,7 +212,8 @@ export function defineConfig(): UserConfig {
   const state: DevState = { generated: [] };
 
   const config: UserConfig = {
-    plugins: [solid(), workspaceSourcePlugin(state), generatedCssPlugin(state)],
+    ...(options.base ? { base: options.base } : {}),
+    plugins: [solid(), workspaceSourcePlugin(state), generatedCssPlugin(state), ...(options.plugins ?? [])],
     server: {
       // Слушать все интерфейсы, а не имя `localhost`: оно разрешается в `::1`, и до сервера,
       // поднятого в контейнере, не доходят ни браузер с хоста, ни пульт, который проверяет
@@ -205,6 +221,7 @@ export function defineConfig(): UserConfig {
       // `products/tables/vite.config.ts`), и лечилось это флагом в каждой команде запуска.
       // Место такой настройки — здесь: это свойство дев-сервера, а не аргумент команды.
       host: true,
+      ...(options.proxy ? { proxy: options.proxy } : {}),
     },
   };
 

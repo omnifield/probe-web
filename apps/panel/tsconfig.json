@@ -1,0 +1,10 @@
+{
+  "//": [
+    "Frozen surface point 3 — TYPES (PROBEWEB-4). No `compilerOptions` of its own ON PURPOSE:",
+    "the app must be typed by exactly what the consumer preset says. Any setting added here",
+    "would fix the gate instead of showing the break — and the gate exists precisely so a",
+    "`jsxImportSource` or `strict` drifting from the `build` zone fails HERE, not at a consumer."
+  ],
+  "extends": "@omnifield/probe-web-build/tsconfig",
+  "include": ["src", "vite.config.ts"]
+}

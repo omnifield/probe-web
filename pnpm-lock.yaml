@@ -12,6 +12,31 @@ importers:
         specifier: 23.1.1
         version: 23.1.1
 
+  apps/panel:
+    dependencies:
+      '@omnifield/probe-web-style':
+        specifier: workspace:*
+        version: link:../../packages/style
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+    devDependencies:
+      '@omnifield/probe-web-build':
+        specifier: workspace:*
+        version: link:../../packages/build
+      '@omnifield/probe-web-lint':
+        specifier: workspace:*
+        version: link:../../packages/lint
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.2.1
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0)
+
   apps/reference:
     dependencies:
       '@kobalte/core':
@@ -134,37 +159,6 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
 
-  packages/build/test/fixture:
-    dependencies:
-      '@omnifield/probe-web-build':
-        specifier: workspace:*
-        version: link:../..
-      probe-web-build-fixture-jsx-dep:
-        specifier: workspace:*
-        version: link:../fixture-dep
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-    devDependencies:
-      jsdom:
-        specifier: ^30.0.1
-        version: 30.0.1
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: ^8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0)
-      vitest:
-        specifier: ^4.1.10
-        version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
-
-  packages/build/test/fixture-dep:
-    dependencies:
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-
   packages/lint:
     dependencies:
       '@babel/core':
@@ -189,16 +183,6 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
-
-  packages/lint/test/consumer:
-    dependencies:
-      '@omnifield/probe-web-lint':
-        specifier: workspace:*
-        version: link:../..
-    devDependencies:
-      eslint:
-        specifier: ^10.8.1
-        version: 10.8.1(supports-color@7.2.0)
 
   packages/mcp:
     dependencies:
@@ -407,9 +391,6 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/live-check':
-        specifier: workspace:*
-        version: link:../../tools/live-check
       '@omnifield/probe-web-lint':
         specifier: workspace:*
         version: link:../lint
@@ -547,48 +528,6 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
-
-  tools/dev-nav/app:
-    dependencies:
-      '@kobalte/core':
-        specifier: ^0.13.12
-        version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-runtime':
-        specifier: workspace:*
-        version: link:../../../packages/runtime
-      '@omnifield/probe-web-skin':
-        specifier: workspace:*
-        version: link:../../../packages/skin
-      '@omnifield/probe-web-style':
-        specifier: workspace:*
-        version: link:../../../packages/style
-      '@omnifield/probe-web-ui':
-        specifier: workspace:*
-        version: link:../../../packages/ui
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-    devDependencies:
-      '@omnifield/probe-web-build':
-        specifier: workspace:*
-        version: link:../../../packages/build
-      '@omnifield/probe-web-lint':
-        specifier: workspace:*
-        version: link:../../../packages/lint
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.13.3
-      jsdom:
-        specifier: ^30.0.1
-        version: 30.0.1
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: ^8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0)
-
-  tools/live-check: {}
 
 packages:
 
