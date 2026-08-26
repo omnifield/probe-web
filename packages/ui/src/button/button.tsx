@@ -7,9 +7,9 @@ import { traceLife } from "../trace.js";
 import { parts } from "./button.anatomy.js";
 
 /**
- * Пропсы `Button`: всё, что принимает целевой элемент, плюс `as` и `disabled`.
+ * Props of `Button`: everything the target element accepts, plus `as` and `disabled`.
  *
- * @typeParam T — что рендерить. По умолчанию `button`.
+ * @typeParam T — what to render. Defaults to `button`.
  */
 export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
   T,
@@ -17,31 +17,33 @@ export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
 >;
 
 /**
- * Кнопка — ОДИН узел, по умолчанию нативный `<button type="button">`.
+ * A button — ONE node, a native `<button type="button">` by default.
  *
- * Работу делает `@kobalte/core/button` (паттерн WAI-ARIA Button), и делает её ровно там, где
- * нативного элемента не хватает: при `as="div"`/`as="a"` он сам ставит `role="button"`,
- * `tabindex`, `aria-disabled` и гасит активацию с клавиатуры у отключённой кнопки. Ради этого
- * примитив и стоит на ките, а не на голом `<button>`.
+ * `@kobalte/core/button` (the WAI-ARIA Button pattern) does the work, exactly where a native
+ * element falls short: with `as="div"`/`as="a"` it sets `role="button"`, `tabindex`, and
+ * `aria-disabled` itself, and suppresses keyboard activation on a disabled button. That is why
+ * this primitive sits on Kobalte rather than a bare `<button>`.
  *
- * `type="button"` по умолчанию — тоже kobalte: без него кнопка внутри формы отправляет её при
- * первом же нажатии, и это самый частый скрытый дефект кнопок.
+ * `type="button"` by default is Kobalte's doing too: without it a button inside a form submits it
+ * on the very first click — the most common hidden defect in buttons.
  *
- * **Ноль стилей.** Класса по умолчанию нет — стилизует потребитель. Адрес для скина кнопка
- * ставит АТРИБУТАМИ ИЗ АНАТОМИИ (`data-scope=button` + `data-part=root`, `button.anatomy.ts`):
- * скин цепляется селектором из того же объявления, и разъехаться им негде по построению.
- * Состояния отдаются атрибутами: `data-disabled`, `aria-disabled`.
+ * **Zero styles.** There is no default class — the consumer styles it. The button gives the skin
+ * an address through ANATOMY ATTRIBUTES (`data-scope=button` + `data-part=root`,
+ * `button.anatomy.ts`): the skin hooks in with a selector from that same declaration, so the two
+ * cannot drift apart by construction. States are surfaced as attributes: `data-disabled`,
+ * `aria-disabled`.
  *
- * **Загрузка** отдельным пропом НЕ заводится: `<Button disabled aria-busy="true"><Spinner /></Button>`
- * собирается из того, что уже есть, а проп-сахар заморозил бы в поверхности решение о том,
- * что кнопка при загрузке прячет содержимое (в оракуле именно так и было).
+ * **Loading** is deliberately not its own prop:
+ * `<Button disabled aria-busy="true"><Spinner /></Button>` is assembled from what already exists,
+ * and prop sugar would freeze into the surface a decision that a loading button hides its content
+ * (which is exactly what a `loading` prop did in the prior design).
  *
  * @example
  * ```tsx
- * <Button onClick={save}>Сохранить</Button>
- * <Button as="a" href="/docs">Документация</Button>
+ * <Button onClick={save}>Save</Button>
+ * <Button as="a" href="/docs">Documentation</Button>
  * <Button disabled aria-busy="true"><Spinner /></Button>
- * <Button variant="главная">Сохранить</Button>
+ * <Button variant="primary">Save</Button>
  * ```
  */
 export const Button = slotAware(function Button<T extends ValidComponent = "button">(props: ButtonProps<T>) {
@@ -50,20 +52,21 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   const [slot, rest] = useSlot(props, "button");
   const [address, clean] = useAddress(rest, parts.root.attrs);
 
-  // Порядок спреда — часть контракта, и половины у него РАЗНЫЕ.
+  // Spread order is part of the contract, and the two halves mean DIFFERENT things.
   //
-  // `data-slot` идёт ПЕРВЫМ: это дефолт, и явная зацепка потребителя обязана его перебить —
-  // имена-зацепки подсказка оформлению, а не обещание о том, чем узел является.
+  // `data-slot` goes FIRST: it is a default, and an explicit consumer hook is meant to override
+  // it — hook names are a styling hint, not a promise about what the node is.
   //
-  // Адрес идёт ПОСЛЕДНИМ и не перебивается ничем (`PWEB-46`): это личность узла. Пришедший
-  // снаружи адрес `useAddress` уже снял — от кого бы он ни пришёл, от потребителя или от чужого
-  // внешнего звена, которое спредит свои пропы на вставленную кнопку.
+  // The address goes LAST and is overridden by nothing (`PWEB-46`): it is the node's identity.
+  // `useAddress` has already stripped any incoming address — no matter whether it came from the
+  // consumer or from a foreign outer link spreading its own props onto an inserted button.
   //
-  // Своего адреса кнопка не ставит только когда узел рисует не она: `<Button as={ToggleGroupItem}>`
-  // отдаёт адрес внутреннему — тому, чем узел является визуально (`PWEB-25`).
+  // The button only skips setting its own address when it is not the one drawing the node:
+  // `<Button as={ToggleGroupItem}>` hands the address to the inner component — to whatever the
+  // node visually is (`PWEB-25`).
   //
-  // `data-slot` пока остаётся рядом с адресом анатомии: имена слотов — обязательство зоны
-  // (`PROBEWEB-12`, п.7), и снять его без мажора нельзя. Уедет он вместе с переездом
-  // оформления на адреса анатомии — это выпуск architect'а, а не побочная правка кита.
+  // `data-slot` still sits next to the anatomy address: slot names are a zone commitment
+  // (`PROBEWEB-12`, item 7) and cannot be dropped without a major version. It leaves once styling
+  // moves onto anatomy addresses — that is an architect's release, not a side effect of a kit fix.
   return <KobalteButton {...slot} {...(clean as ButtonRootProps)} {...address} />;
 });

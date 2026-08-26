@@ -1,8 +1,9 @@
-// Что уезжает из папки компонента наружу.
+// What leaves this folder outward.
 //
-// Две разные вещи и два разных читателя: РАЗМЕТКУ забирает вход примитивов (`src/index.ts`),
-// ПАСПОРТ — сборка подпути `./passport`, которая обходит папки и собирает перечень сама. Оба
-// берут отсюда, поэтому расположение файлов внутри папки остаётся делом папки.
+// Two different things, two different readers: MARKUP is picked up by the primitives entry
+// (`src/index.ts`), the PASSPORT by the `./passport` build, which walks folders and assembles the
+// list itself. Both read from here, so where files live inside the folder stays this folder's
+// own business.
 
 export { Button, type ButtonProps } from "./button.jsx";
 export { anatomy, parts, passport } from "./button.anatomy.js";

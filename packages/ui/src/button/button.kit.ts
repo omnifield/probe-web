@@ -1,13 +1,13 @@
-// КАРТА кнопки: часть паспорта → компонент, которым она рисуется (`PWEB-84`).
+// MAP of the button: passport part → the component that draws it (`PWEB-84`).
 //
-// Часть одна, и карта выглядит избыточной ровно до того момента, когда у кнопки появится вторая:
-// тогда она появится ЗДЕСЬ, а не у двадцати потребителей порознь.
+// One part, and the map looks redundant right up until the button gets a second one: it is
+// added HERE then, not by twenty consumers separately.
 
 import { defineKitComponent } from "../kit-form.js";
 import { passport } from "./button.anatomy.js";
 import { Button } from "./button.jsx";
 
-/** Паспорт кнопки вместе с тем, чем рисуется её единственная часть. */
+/** The button's passport together with whatever draws its single part. */
 export const kit = defineKitComponent(passport, {
   root: Button,
 });
