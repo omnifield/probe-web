@@ -1,89 +1,90 @@
-// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`) — не поставка, не вкус продукта. Кит держит «ноль стилей по
-// умолчанию» (README, «Четыре принципа»), и этот файл её не нарушает: он живёт рядом с
-// компонентом, но НИКУДА не экспортируется из `index.ts`/`passport.ts`/`kit.ts` — его читает
-// только `accordion.test.tsx`, доказывая, что паспорт гармошки МОЖНО одеть целиком настоящей
-// механикой скина (`skinGaps` пусто, CSS порождается, живой браузер раскрывает и закрывает
-// разделы кадрами). Раньше то же самое доказывал отдельный пакет `packages/skin-reference`
-// (снесён, `PWEB-110`) — теперь компонент доказывает себя сам, в своей же папке.
+// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. The kit holds "zero
+// styles by default" (README, "Four principles"), and this file does not break that: it lives
+// next to the component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only
+// `accordion.test.tsx` reads it, to prove the accordion's passport CAN be dressed whole by the
+// real skin mechanism (`skinGaps` empty, CSS is generated, a live browser expands and collapses
+// items frame by frame). This used to be proven by a separate package, `packages/skin-reference`
+// (removed, `PWEB-110`) — now the component proves itself, in its own folder.
 //
-// Перенесено построчно из `packages/skin-reference/src/recipes.ts` (git-история цела на
-// `git show 5d560ae:packages/skin-reference/src/recipes.ts`); вид не менялся при переезде —
-// нашедшееся стоит отдельной темой, а не смешивается с переносом.
+// Ported line-for-line from `packages/skin-reference/src/recipes.ts` (git history is intact at
+// `git show 5d560ae:packages/skin-reference/src/recipes.ts`); the look did not change in the
+// move — what was found along the way is its own topic, not mixed in with the port.
 //
-// ## Цвет адресуется СТУПЕНЬЮ, а не значением
+// ## Color is addressed by STEP, not by value
 //
-// Ни одного цветового литерала: правило называет ступень (`var(--accent-9)`), и от этого скин
-// пересеваем. Ступени назначены зоной значений — 9 сплошной акцент, 10 он же при наведении,
-// 8 сильная граница и кольцо фокуса, 11 текст низкого контраста, 12 высокого.
+// Not one color literal: a rule names a step (`var(--accent-9)`), and the skin re-seeds because
+// of it. Steps are assigned by the values zone — 9 the solid accent, 10 the same on hover,
+// 8 a strong border and the focus ring, 11 low-contrast text, 12 high-contrast.
 //
-// Заливка и текст объявляются В ОДНОМ правиле везде, где есть текст: счёт читаемости считает
-// ПАРУ, и текст без названного рядом фона уезжает у него в «посчитать нечем».
+// Fill and text are declared IN ONE rule everywhere text exists: the readability count considers
+// a PAIR, and text with no fill named next to it drifts into "nothing to count".
 
 import type { Form, Keyframes, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
-/** Переход вида — тот же приём, что у кнопки: разные длительности у соседних узлов — брак. */
-const переход = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
+/** Look transition — same device as the button: different durations on neighboring nodes is a defect. */
+const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 
 /**
- * РАСКРЫТИЕ И ЗАКРЫТИЕ — именованные движения гармошки (`PWEB-98`).
+ * EXPAND AND COLLAPSE — the accordion's named motions (`PWEB-98`).
  *
- * Мера у обоих одна и чужая: `--height` кладёт кит, измерив узел, и кладёт её на то самое
- * содержимое, где движение и применено. Ступень движения разрешается на АНИМИРУЕМОМ элементе
- * (`PWEB-101`), поэтому имя здесь законно — и другого способа взять высоту нет: `auto` не
- * анимируется, а придумать число за чужое содержимое нельзя.
+ * Both share one measure that belongs to someone else: the kit places `--height` after measuring
+ * the node, on the very content the motion applies to. A motion step resolves on an ANIMATED
+ * element (`PWEB-101`), which is why the name is legal here — and there is no other way to get
+ * the height: `auto` does not animate, and a number cannot be invented for someone else's content.
  *
- * ОТСТУП ЕДЕТ ВМЕСТЕ С ВЫСОТОЙ, и это не украшение. Содержимое считает коробку внешней мерой
- * (`box-sizing: border-box` в базе), а при внешней мере нулевая высота отступы НЕ убирает —
- * коробка упёрлась бы в них и осталась бы на два отступа выше нуля. Схлопнутый раздел стал бы
- * полоской.
+ * PADDING RIDES ALONG WITH HEIGHT, and that is not decoration. The content treats its box as an
+ * outer measure (`box-sizing: border-box` in the base), and with an outer measure a height of
+ * zero does NOT remove padding — the box would hit it and stay two paddings above zero. A
+ * collapsed item would become a stripe.
  *
- * Двумя движениями, а не одним с обратным проигрыванием: обратное направление задаётся правилом
- * (`animation-direction`), то есть тем же адресом, а адреса у раскрытия и закрытия РАЗНЫЕ —
- * первый приезжает не всегда, второй всегда.
+ * Two motions, not one played in reverse: the reverse direction is set by a rule
+ * (`animation-direction`), i.e. by the same address, and expand and collapse have DIFFERENT
+ * addresses — the first does not always arrive, the second always does.
  *
- * СВЕРЕНО С РЫНКОМ 2026-08-24. Поставщик документирует ровно эту запись — `--height` в кадрах и
- * `[data-part="item-content"][data-state="open"|"closed"]` в правилах (`ark-ui.com`, страницы
- * «Accordion» и «Collapsible»). Штатный ответ CSS на «анимировать до `auto`»
- * (`interpolate-size: allow-keywords` вместе с `calc-size()`) НЕ берём: он остаётся только в
- * Chromium — ни Firefox, ни Safari его не знают.
+ * CHECKED AGAINST THE MARKET 2026-08-24. The provider documents exactly this record — `--height`
+ * in keyframes and `[data-part="item-content"][data-state="open"|"closed"]` in rules
+ * (`ark-ui.com`, the "Accordion" and "Collapsible" pages). CSS's standard answer to "animate to
+ * `auto`" (`interpolate-size: allow-keywords` together with `calc-size()`) is NOT taken: it
+ * remains Chromium-only — neither Firefox nor Safari support it.
  */
 export const keyframes: Keyframes = {
-  раскрытие: {
+  expand: {
     from: { height: "0", paddingBlock: "0" },
     to: { height: "var(--height)", paddingBlock: "var(--space-3)" },
   },
-  закрытие: {
+  collapse: {
     from: { height: "var(--height)", paddingBlock: "var(--space-3)" },
     to: { height: "0", paddingBlock: "0" },
   },
   /**
-   * РАСКРЫТИЕ ВБОК — тем же приёмом, по другой оси (`PWEB-105`).
+   * EXPAND SIDEWAYS — same device, a different axis (`PWEB-105`).
    *
-   * `--width` паспорт объявляет РЯДОМ с `--height`, тем же словом «нужна горизонтальной
-   * гармошке». Ось вариаций тут ни при чём: горизонталь — это `settings.orientation`, чем
-   * компонент ОКАЗАЛСЯ, а не что выбрал автор скина, и адрес для неё — тот же путь, что у
-   * вариации.
+   * The passport declares `--width` RIGHT NEXT TO `--height`, under the same words: "a
+   * horizontal accordion needs it". The variant axis has nothing to do with this — horizontal is
+   * `settings.orientation`, what the component TURNED OUT TO BE, not what the skin's author
+   * chose, and its address is the same path a variant's is.
    *
-   * Ось складывается ИНЛАЙНОВЫМ отступом, а не блочным: `paddingInline` лежит на той же стороне
-   * коробки, что и `width`, — симметрия с вертикалью, где `paddingBlock` лежит на стороне
-   * `height`.
+   * The axis is expressed with INLINE padding, not block padding: `paddingInline` sits on the
+   * same side of the box as `width` — symmetric with the vertical case, where `paddingBlock` sits
+   * on `height`'s side.
    */
-  "раскрытие-вбок": {
+  "expand-sideways": {
     from: { width: "0", paddingInline: "0" },
     to: { width: "var(--width)", paddingInline: "var(--space-4)" },
   },
-  "закрытие-вбок": {
+  "collapse-sideways": {
     from: { width: "var(--width)", paddingInline: "var(--space-4)" },
     to: { width: "0", paddingInline: "0" },
   },
 };
 
 /**
- * ГАРМОШКА. Пять частей и пятнадцать состояний.
+ * ACCORDION. Five parts, fifteen states.
  *
- * Раскрытый вид содержимого адресуется через предка: свой признак раскрытия у содержимого
- * приезжает не всегда, и паспорт объявляет это прямо. Без адреса по предку такое правило
- * выразить нельзя вовсе — ради этого поле в модели и заведено.
+ * The content's expanded look is addressed through its ancestor: the content's own expansion
+ * mark does not always arrive, and the passport declares that outright. There is no way to
+ * express such a rule without an ancestor address — that is exactly why the field exists in the
+ * model.
  */
 export const recipe: SlotRecipe = {
   base: {
@@ -130,7 +131,7 @@ export const recipe: SlotRecipe = {
         lineHeight: "var(--leading-none)",
         textAlign: "start",
         cursor: "pointer",
-        transition: переход,
+        transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
@@ -155,26 +156,26 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-11)",
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
-        // РАСКРЫТИЕ ПИШЕТ СКИН (`PWEB-93`), ИМЕНОВАННЫМ ДВИЖЕНИЕМ (`PWEB-98`). Мера у кита
-        // ВНЕШНЯЯ (`getBoundingClientRect`), значит и коробка здесь внешняя — иначе
-        // `height: var(--height)` прибавил бы к чужой мере ещё два своих отступа.
+        // THE SKIN WRITES THE EXPANSION (`PWEB-93`), AS A NAMED MOTION (`PWEB-98`). The kit's
+        // measure is OUTER (`getBoundingClientRect`), so the box here is outer too — otherwise
+        // `height: var(--height)` would add its own two paddings on top of someone else's measure.
         overflow: "hidden",
         boxSizing: "border-box",
-        transition: переход,
+        transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        // РАСКРЫТИЕ — по СВОЕМУ признаку, тому самому, что приезжает не всегда (`PWEB-97`).
+        // EXPAND — by its OWN mark, the very one that does not always arrive (`PWEB-97`).
         open: {
           props: {
-            animation: "раскрытие var(--motion-normal) var(--ease-out)",
+            animation: "expand var(--motion-normal) var(--ease-out)",
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
-        // ЗАКРЫТИЕ — по признаку закрытости; он у содержимого приезжает всегда.
+        // COLLAPSE — by the collapsed mark; it always arrives on the content.
         closed: {
           props: {
-            animation: "закрытие var(--motion-normal) var(--ease-out)",
+            animation: "collapse var(--motion-normal) var(--ease-out)",
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
@@ -183,12 +184,13 @@ export const recipe: SlotRecipe = {
       },
       ancestors: [
         {
-          // Раскрытое содержимое — по состоянию ВЛАДЕЛЬЦА: свой признак у содержимого приезжает
-          // не всегда, и паспорт говорит об этом прямо.
+          // Expanded content — by the OWNER's state: the content's own mark does not always
+          // arrive, and the passport says so outright.
           //
-          // КОРОБКИ ЗДЕСЬ БОЛЬШЕ НЕТ, и это не вкус. Кит меряет узел ДВАЖДЫ — раскрывая и
-          // закрывая, — а закрывая, меряет содержимое, чей пункт УЖЕ не раскрыт. Правило по
-          // предку, меняющее коробку, во вторую меру не попадает.
+          // THE BOX IS GONE HERE, and that is not taste. The kit measures the node TWICE — while
+          // expanding and while collapsing — and while collapsing, it measures content whose item
+          // is ALREADY not expanded. An ancestor rule that changes the box would land in the
+          // second measurement.
           component: "accordion",
           part: "item",
           states: ["open"],
@@ -214,9 +216,10 @@ export const recipe: SlotRecipe = {
     },
   },
   /**
-   * ГОРИЗОНТАЛЬНАЯ РАСКЛАДКА (`PWEB-105`) — то, чем компонент ОКАЗАЛСЯ, а не что выбрал автор
-   * скина. Кит и вертикаль здесь не тронуты: база гармошки осталась прежней, а условие живёт
-   * РЯДОМ, тем же путём, что и вариация, — своей ветки резолва для него не заведено.
+   * HORIZONTAL LAYOUT (`PWEB-105`) — what the component TURNED OUT TO BE, not what the skin's
+   * author chose. The kit and the vertical case are untouched here: the accordion's base stays
+   * the same, and the condition lives RIGHT NEXT to a variant, the same resolution path — no
+   * branch of its own was set up for it.
    */
   settings: {
     orientation: {
@@ -227,13 +230,13 @@ export const recipe: SlotRecipe = {
           states: {
             open: {
               props: {
-                animation: "раскрытие-вбок var(--motion-normal) var(--ease-out)",
+                animation: "expand-sideways var(--motion-normal) var(--ease-out)",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               },
             },
             closed: {
               props: {
-                animation: "закрытие-вбок var(--motion-normal) var(--ease-out)",
+                animation: "collapse-sideways var(--motion-normal) var(--ease-out)",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               },
             },
@@ -244,5 +247,5 @@ export const recipe: SlotRecipe = {
   },
 };
 
-/** Форма — запись «имя формы + компонент + рецепт», та же, что примет `assemble`. */
-export const form: Form = { name: "гармошка-проба", component: "accordion", recipe, keyframes };
+/** Form — the "name + component + recipe" record `assemble` accepts. */
+export const form: Form = { name: "accordion-sample", component: "accordion", recipe, keyframes };

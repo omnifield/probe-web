@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Dark by class right here, so the dark half is set before the script even parses — otherwise
+     a light flash precedes dark (kb:SKIN-7, invariant 3). The mechanism confirms it afterward.
+
+     NO PALETTE HERE ON PURPOSE. The entry point names it by calling restoreSkin() — a name from
+     the style layer, not a string: a literal in markup would survive a palette rename and quietly
+     leave the panel colorless (kb:PROBEWEB-18).
+
+     The panel is this mechanism's first live consumer: whatever dresses it dresses the zone in
+     the frame the same way. -->
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dev panel — probe-web</title>
+  </head>
+  <body>
+    <!-- #root is part of the frozen surface (kb:PROBEWEB-4): mount() finds the spot itself. -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

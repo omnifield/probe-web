@@ -9,8 +9,7 @@
     "typecheck": "FORCE_COLOR=0 nx run-many -t typecheck -p '@omnifield/*'",
     "dev": "nx run-many -t dev -p '@omnifield/*' --parallel=10",
     "graph": "nx graph",
-    "nx": "nx",
-    "nav": "nx run-many -t build -p '@omnifield/*' && node tools/dev-nav/server.mjs"
+    "nx": "nx"
   },
   "devDependencies": {
     "nx": "23.1.1"

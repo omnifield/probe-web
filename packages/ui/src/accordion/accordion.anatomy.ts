@@ -1,136 +1,140 @@
-// ПАСПОРТ гармошки (`PWEB-37`) — первый составной компонент кита.
+// RUNTIME contract of the accordion (`PWEB-37`, decomposed `PWEB-124`) — the kit's first
+// composite component.
 //
-// Анатомия здесь НЕ объявляется: она приезжает готовой вместе с компонентом. Компонент, взятый у
-// Ark, приносит свой паспорт с собой — переписывать его значило бы завести второе объявление
-// того же и разъехаться с поставщиком на первом же его выпуске.
+// THIS FILE IS RUNTIME ONLY. Editor-facing metadata (`means`, group, genus, nesting rules,
+// assembly templates) lives in `accordion.editor.ts` — see its header for why that split exists.
 //
-// ## Откуда именно берётся анатомия — и почему не из `@ark-ui/solid/anatomy`
+// The anatomy is NOT declared here: it arrives ready-made with the component. A component taken
+// from Ark brings its own passport with it — rewriting it would create a second declaration of
+// the same thing and drift from the provider on its very next release.
 //
-// Физически она живёт в `@zag-js/accordion/anatomy` — подпуть, в котором нет ни Solid, ни машины
-// состояний, только объявление частей. Ark свою `accordionAnatomy` берёт ОТТУДА ЖЕ, то есть это
-// один и тот же объект, а не вторая его копия.
+// ## Where the anatomy actually comes from — and why not `@ark-ui/solid/anatomy`
 //
-// Взять её через Ark было бы короче и НЕВЕРНО, и это выяснилось на живом соседе: у подпути
-// `@ark-ui/solid/anatomy` есть ветка `solid` с файлом `.jsx`, и читатель паспорта, чей резолвер
-// эту ветку понимает (`packages/assembly` — понимает), получает JSX там, где ждал данные, и
-// падает на «Unknown file extension .jsx». Подпуть `./passport` продан как ДАННЫЕ, читаемые без
-// Solid, — значит и брать их надо там, где Solid нет вовсе.
+// It physically lives in `@zag-js/accordion/anatomy` — a subpath with no Solid and no state
+// machine, only the part declarations. Ark's own `accordionAnatomy` comes from that SAME place,
+// i.e. it is the same object, not a second copy of it.
 //
-// Сверху добавляется только то, чего в анатомии нет: состояния каждой части вместе с тем, чем
-// они выражены, допустимое содержимое, назначения, род и группа.
+// Taking it through Ark would be shorter and WRONG, as a live neighbor found out: the
+// `@ark-ui/solid/anatomy` subpath has a `solid` branch with a `.jsx` file, and a passport reader
+// whose resolver understands that branch (`packages/assembly` does) gets JSX where it expected
+// data, and fails with "Unknown file extension .jsx". The `./passport` subpath is sold as DATA,
+// readable without Solid — so it must be taken from a place that has no Solid at all.
 //
-// ## Почему гармошка, и что она даёт механике
+// Only what the anatomy does not know is added on top: each part's states together with what
+// expresses them, admissible content, meanings, genus, and group (the latter three now live in
+// `accordion.editor.ts`).
 //
-// На кнопке половина механики сборки лежала непроверенной: одна часть, ни вложенности, ни
-// предка, ни повторов. Здесь есть всё сразу — два уровня вложенности, несколько узлов одной
-// координаты (пунктов много, адрес один), предок в состоянии (содержимое выглядит иначе, когда
-// его пункт раскрыт) и место для композиции (заголовок пункта — кнопка).
+// ## Why the accordion, and what it gives the mechanism
 //
-// ## Состояния сняты с ЖИВОГО узла, а не из доки
+// On the button, half the assembly mechanism sat unproven: one part, no nesting, no ancestor, no
+// repeats. Here everything is present at once — two levels of nesting, several nodes sharing one
+// coordinate (many items, one address), an ancestor in a state (content looks different when its
+// item is expanded), and a spot for composition (an item's trigger is a button).
 //
-// Каждое объявленное ниже состояние наблюдалось в разметке (`accordion.test.tsx`). Две находки
-// стоят того, чтобы их назвать:
+// ## States were taken from a LIVE node, not from documentation
 //
-//   • отключённость КНОПКИ выражена нативным `disabled`, а не `data-disabled`: Zag ставит на
-//     триггер настоящий атрибут кнопки, а `data-disabled` кладёт на пункт, содержимое и
-//     указатель. Поэтому у триггера объявлен псевдокласс `:disabled` — соврать здесь `data-`
-//     атрибутом значило бы дать скину мёртвое правило;
-//   • у пункта и указателя раскрытость выражена ОДНИМ словарным атрибутом `data-state="open"`,
-//     как и просит конвенция Zag, а вот у СОДЕРЖИМОГО этого атрибута в раскрытом виде может не
-//     быть вовсе — см. ниже.
+// Every state declared below was observed in markup (`accordion.test.tsx`). Two findings are
+// worth naming:
 //
-// ## Находка пилота: у содержимого признак раскрытости приезжает НЕ ВСЕГДА
+//   • the TRIGGER's disabledness is expressed by the native `disabled`, not `data-disabled`: Zag
+//     puts a real button attribute on the trigger, and puts `data-disabled` on the item, the
+//     content, and the indicator instead. That is why the trigger declares the `:disabled`
+//     pseudo-class — lying here with a `data-` attribute would hand the skin a dead rule;
+//   • the item and the indicator express expansion with ONE vocabulary attribute,
+//     `data-state="open"`, exactly as Zag's convention asks, but the CONTENT may not carry that
+//     attribute at all when expanded — see below.
 //
-// Содержимое раздела Zag собирает раскрывашкой, и та снимает `data-state` целиком, пока
-// раскрытие прошло БЕЗ анимации: `skip = !initial && open` (`@zag-js/collapsible`, `connect`), а
-// флаг `initial` поднимается только настоящим анимированным раскрытием. То есть у раздела,
-// открытого с самого начала, на содержимом нет ни `data-state="open"`, ни любого другого
-// признака раскрытости.
+// ## The pilot's finding: the content's expansion mark does NOT always arrive
 //
-// «Не всегда» здесь — буквально: после настоящего нажатия признак приезжает то так, то иначе, и
-// это померено, а не предположено. Проба, ждавшая от него определённого значения после нажатия,
-// покраснела на повторном прогоне — то есть ненадёжность воспроизводится, но не воспроизводится
-// НАДЁЖНО, и утверждать в пробе её нельзя (`accordion.test.tsx`). Проверяется поэтому объявление,
-// а не попытка поймать признак в нужный момент.
+// Zag's collapsible assembles the item's content, and it drops `data-state` entirely whenever
+// expansion happened WITHOUT animation: `skip = !initial && open`
+// (`@zag-js/collapsible`, `connect`), and the `initial` flag is only raised by a genuinely
+// animated expansion. So an item expanded from the very start carries neither `data-state="open"`
+// nor any other expansion mark on its content.
 //
-// **Для ВИДА вывод прежний и не отменяется:** признак, которого может не быть, адресом быть не
-// может — правило скина по нему молча не применилось бы ровно на тех разделах, что открыты по
-// умолчанию. Раскрытый ВИД содержимого адресуется через предка: пункт `item` раскрытость держит
-// надёжно, и правило «содержимое внутри раскрытого пункта» выражается полем предка, которое в
-// адресе для того и есть.
+// This "not always" is literal: after a real click, the mark arrives one way or another, and that
+// was measured, not assumed. A test that expected a specific value from it after a click turned
+// red on a repeat run — the unreliability reproduces, but does not reproduce RELIABLY, and cannot
+// be asserted in a test (`accordion.test.tsx`). What is checked instead is the declaration, not an
+// attempt to catch the mark at the right moment.
 //
-// **Для ДВИЖЕНИЯ отсутствие признака — верный ответ, а не пробел** (`PWEB-97`). Переход
-// проигрывается ровно тогда, когда раскрытие анимированное, — и признак приезжает ровно тогда же;
-// нет признака — нечего и проигрывать. Умолчи паспорт о состоянии вовсе, движению нечем было бы
-// адресовать раскрытое содержимое, при том что кит кладёт сюда же измеренный размер (`--height`),
-// без которого анимации не существует. Получилось бы, что половина средства объявлена, а вторая
-// умолчана.
+// **For the LOOK the conclusion stands and is not overturned:** a mark that may be absent cannot
+// be an address — a skin rule keyed on it would silently fail to apply on exactly the items
+// expanded by default. The expanded LOOK of the content is addressed through the ancestor instead:
+// the `item` part holds expansion reliably, and the rule "content inside an expanded item" is
+// expressed by the ancestor field that exists in the address for exactly this.
 //
-// Поэтому состояние ОБЪЯВЛЕНО, а ненадёжность признака названа машиночитаемо — полем `absentWhen`
-// (форма — `@omnifield/probe-web-skin/model`, `PWEB-110`). Читатель под вид отбрасывает такие
-// состояния сам (`addressesView`, и через него `coordinateOf`), читатель под движение читает их
-// вместе с обстоятельством. Прежнее молчание паспорта решало это за обоих и было неотличимо от
-// «поставщик не посмотрел».
+// **For MOTION the absence of a mark is the right answer, not a gap** (`PWEB-97`). The
+// transition plays exactly when expansion is animated — and the mark arrives at exactly the same
+// time; no mark, nothing to play. Had the passport stayed silent about the state entirely, motion
+// would have had nothing to address the expanded content with, while the kit places the measured
+// size (`--height`) right there too, without which the animation cannot exist. That would leave
+// half the mechanism declared and the other half unsaid.
+//
+// So the state IS DECLARED, and the mark's unreliability is named machine-readably — the
+// `absentWhen` field (the form — `@omnifield/probe-web-skin/model`, `PWEB-110`). A reader working
+// for the LOOK drops such states itself (`addressesView`, and through it `coordinateOf`); a reader
+// working for MOTION reads them together with the circumstance. The passport's former silence
+// decided this for both readers at once and was indistinguishable from "the provider did not look".
 
 import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
 
 import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
-import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
-// ТИП пропов — только тип: `import type` стирается сборкой целиком, и подпуть `./passport`
-// остаётся тем, чем продан, — данными без Solid и без Ark. Нужен он ровно для того, чтобы ключи
-// настроек сверялись с настоящими пропами компонента, а не с представлением о них.
+// TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
+// what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are checked
+// against the component's real props, not an idea of them.
 import type { AccordionProps } from "./accordion.jsx";
 
-/** Части и адреса — взятые, не наши. */
+/** Parts and addresses — taken, not ours. */
 export const anatomy = accordionAnatomy;
 
-/** Адреса частей: `attrs` для узла, `selector` для стиля. Считаются один раз — они статичны. */
+/** Part addresses: `attrs` for the node, `selector` for styling. Computed once — they are static. */
 export const parts = anatomy.build();
 
-/** Раскрытость — общий словарный атрибут Zag; он же стоит на пункте, содержимом и указателе. */
+/** Expansion — Zag's shared vocabulary attribute; it sits on the item, the content, and the indicator. */
 const open: PassportState = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
 };
 
-/** Отключённость, выраженная данными: пункт целиком и всё, что в нём. */
+/** Disabledness, expressed as data: the whole item and everything inside it. */
 const disabled: PassportState = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
 };
 
 /**
- * Раскрытость СОДЕРЖИМОГО — то же состояние, но с названной ненадёжностью признака (`PWEB-97`).
+ * The CONTENT's expansion — the same state, with its mark's unreliability named (`PWEB-97`).
  *
- * Отдельным объявлением, а не общим `open`: у пункта и указателя признак приезжает всегда, и
- * приписать оговорку им значило бы соврать в обратную сторону — вид перестал бы адресовать
- * раскрытый пункт, который адресуется надёжно.
+ * A separate declaration, not the shared `open`: the item and the indicator carry the mark
+ * always, and attaching the caveat to them would lie the other way — the look would stop
+ * addressing an expanded item that IS addressed reliably.
  */
 const openContent: PassportState = {
   ...open,
   absentWhen:
-    "раздел раскрылся БЕЗ анимации: раскрывашка Zag снимает `data-state` целиком " +
-    "(`skip = !initial && open`), и у раздела, открытого с самого начала, признака нет вовсе",
+    "the item expanded WITHOUT animation: Zag's collapsible drops `data-state` entirely " +
+    "(`skip = !initial && open`), and an item expanded from the very start has no mark at all",
 };
 
-/** Закрытость — тот же словарный атрибут другим значением. Он у содержимого приезжает всегда. */
+/** Collapsedness — the same vocabulary attribute with a different value. It always arrives on the content. */
 const closed: PassportState = {
   name: "closed",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
 };
 
-/** Фокус внутри раздела: его знает машина состояний, а не браузер, — поэтому атрибутом. */
+/** Focus within an item: known by the state machine, not the browser — hence an attribute. */
 const focus: PassportState = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
 };
 
 /**
- * Паспорт гармошки — анатомия плюс то, чего анатомия не знает.
+ * Passport of the accordion — anatomy plus what anatomy alone does not say.
  *
- * Вложенность объявлена в ДВА уровня: пункт внутри корня, кнопка и содержимое внутри пункта.
- * Это первое место, где правило вложенности вообще проверяемо: у кнопки внутренних частей нет,
- * и обратное чтение («кто может быть предком») выводить было не из чего.
+ * Nesting is declared TWO levels deep: the item inside the root, the trigger and the content
+ * inside the item. This is the first place where the nesting rule is checkable at all — the
+ * button has no internal parts, and there was nothing to derive "who can be an ancestor" from.
  */
 export const passport = definePassport({
   anatomy,
@@ -138,8 +142,9 @@ export const passport = definePassport({
   parts: [
     {
       name: "root",
-      // Своих состояний у корня нет: раскрытость принадлежит ПУНКТУ, а не набору, и объявить
-      // её здесь значило бы объявить ненаблюдаемое — на корне такого атрибута не появляется.
+      // The root has no states of its own: expansion belongs to the ITEM, not the set, and
+      // declaring it here would declare something unobservable — no such attribute appears on
+      // the root.
       states: [],
     },
     { name: "item", states: [open, disabled, focus] },
@@ -148,8 +153,8 @@ export const passport = definePassport({
       states: [
         open,
         focus,
-        // Не `data-disabled`: Zag ставит на кнопку НАСТОЯЩИЙ `disabled`, и цепляться скину
-        // надо за него. Проверено на живом узле.
+        // Not `data-disabled`: Zag puts a REAL `disabled` on the button, and the skin must hook
+        // onto that. Checked on a live node.
         { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } },
         { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
         { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
@@ -158,15 +163,17 @@ export const passport = definePassport({
     },
     {
       name: "itemContent",
-      // Раскрытость объявлена ВМЕСТЕ с оговоркой: её признак приезжает не всегда (разбор в шапке
-      // файла). Виду она адресом не служит — читатель под вид отбрасывает её сам, и раскрытый вид
-      // содержимого по-прежнему адресуется через предка `item`. Движению она нужна: без неё нечем
-      // адресовать то самое раскрытие, размер которого кит меряет и кладёт сюда же.
+      // Expansion is declared WITH its caveat: its mark does not always arrive (see the file
+      // header). It does not serve the look as an address — a reader working for the look drops
+      // it itself, and the expanded look of the content is still addressed through the `item`
+      // ancestor. Motion needs it: without it there is nothing to address that exact expansion
+      // with, whose size the kit measures and places right here.
       states: [openContent, closed, disabled, focus],
-      // Измеренный размер раскрытия (`PWEB-89`). Zag меряет узел и кладёт оба свойства СЮДА —
-      // проверено на живом узле (`accordion.test.tsx`): в разметке стоит `--height: …; --width: …`.
-      // Без них анимации раскрытия не существует: `auto` не анимируется, а придумать число за
-      // чужое содержимое нельзя. Переход по ним пишет СКИН — кит своей анимации не привозит.
+      // The measured size of the expansion (`PWEB-89`). Zag measures the node and places both
+      // properties RIGHT HERE — checked on a live node (`accordion.test.tsx`): markup carries
+      // `--height: …; --width: …`. Without them the expansion animation does not exist: `auto`
+      // does not animate, and a number cannot be invented for someone else's content. The
+      // transition over them is written by the SKIN — the kit brings no animation of its own.
       variables: [
         { name: "--height", setBy: "kit" },
         { name: "--width", setBy: "kit" },
@@ -177,11 +184,12 @@ export const passport = definePassport({
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },
   },
-  // ЧЕМ ГАРМОШКА МОЖЕТ БЫТЬ (`PWEB-89`). Все три пропа проходят насквозь и работают — до сих пор
-  // об этом не знали ни редактор, ни витрина, и показывали один пресный вид.
+  // WHAT THE ACCORDION CAN BE (`PWEB-89`). All three props pass through and work — until now
+  // neither the editor nor the showcase knew this, and showed one flat look.
   //
-  // Ключи сверяются с НАСТОЯЩИМИ пропами компонента: `defineSettings<AccordionProps>` не даст
-  // объявить настройку, которой у гармошки нет, и не даст забыть ту, что есть.
+  // Keys are checked against the component's REAL props: `defineSettings<AccordionProps>` will
+  // not allow declaring a setting the accordion does not have, and will not allow forgetting one
+  // it does.
   settings: defineSettings<AccordionProps>({
     orientation: {
       values: {
@@ -189,9 +197,9 @@ export const passport = definePassport({
         options: [{ value: "vertical" }, { value: "horizontal" }],
       },
       byDefault: "vertical",
-      // Проверено на живом узле (`PWEB-104`): признак приезжает атрибутом на КАЖДОЙ части.
-      // `multiple` и `collapsible` своего признака не имеют вовсе — `data-multiple` и
-      // `data-collapsible` в разметке не появляются, поэтому у них поле не объявлено.
+      // Checked on a live node (`PWEB-104`): the mark arrives as an attribute on EVERY part.
+      // `multiple` and `collapsible` have no mark of their own at all — `data-multiple` and
+      // `data-collapsible` never appear in markup, which is why they declare no field.
       mark: { kind: "attribute", name: "data-orientation" },
     },
     multiple: {
@@ -201,399 +209,11 @@ export const passport = definePassport({
     collapsible: {
       values: { kind: "flag" },
       byDefault: false,
-      // Зависимость от `multiple` (`SKINED-7`). У Zag закрыть последний раскрытый раздел можно,
-      // если включено ХОТЯ БЫ ОДНО из двух — `canToggle = collapsible || multiple`
-      // (`@zag-js/accordion`, `accordion.machine.mjs`). При `multiple: true` закрытие уже
-      // разрешено самой `multiple`, и значение `collapsible` на поведение больше не влияет.
+      // Dependency on `multiple` (`SKINED-7`). Zag lets the last expanded item be closed if AT
+      // LEAST ONE of the two is on — `canToggle = collapsible || multiple`
+      // (`@zag-js/accordion`, `accordion.machine.mjs`). With `multiple: true`, closing is already
+      // allowed by `multiple` itself, and `collapsible`'s value stops affecting behavior.
       dependsOn: { on: "multiple", redundantWhen: true },
     },
   }),
-});
-
-/**
- * Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка.
- *
- * Вложенность объявлена в ДВА уровня: пункт внутри корня, кнопка и содержимое внутри пункта.
- * Это первое место, где правило вложенности вообще проверяемо: у кнопки внутренних частей нет,
- * и обратное чтение («кто может быть предком») выводить было не из чего.
- */
-export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
-  // Поставщик — МЫ, а не Ark: наружу компонент уезжает нашей поставкой, и читатель паспорта
-  // ставит именно её. Совпадение с манифестом стережёт проба.
-  package: "@omnifield/probe-web-ui",
-  genus: "component",
-  // Место в перечне (`PWEB-34`): то, что разворачивают и сворачивают.
-  group: "disclosure",
-  variantAxis: {
-    means: "имя вариации, которое даёт гармошке человек в редакторе; кит пропускает его насквозь",
-  },
-  parts: {
-    root: {
-      means: "набор разделов целиком — один узел вокруг всех пунктов",
-      accepts: [{ kind: "part", name: "item" }],
-    },
-    item: {
-      means: "один раздел — кнопка вместе со своим содержимым",
-      states: {
-        open: { means: "раздел раскрыт — содержимое видно" },
-        disabled: { means: "раздел отключён — раскрыть его нельзя" },
-        focus: { means: "фокус стоит на кнопке этого раздела" },
-      },
-      accepts: [
-        { kind: "part", name: "itemTrigger" },
-        { kind: "part", name: "itemContent" },
-      ],
-    },
-    itemTrigger: {
-      means: "кнопка раздела — по ней раскрывают и закрывают",
-      states: {
-        open: { means: "раздел раскрыт — содержимое видно" },
-        focus: { means: "фокус стоит на кнопке этого раздела" },
-        disabled: { means: "кнопка отключена — нажатие не раскрывает раздел" },
-        hover: { means: "указатель над кнопкой" },
-        "focus-visible": { means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний" },
-        active: { means: "кнопку держат нажатой" },
-      },
-      accepts: [
-        { kind: "part", name: "itemIndicator" },
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "icon" },
-      ],
-    },
-    itemContent: {
-      means: "содержимое раздела — область, которую раскрывают",
-      states: {
-        open: { means: "раздел раскрыт — содержимое видно" },
-        closed: { means: "раздел закрыт — содержимое спрятано, но узел на месте" },
-        disabled: { means: "раздел отключён — раскрыть его нельзя" },
-        focus: { means: "фокус стоит на кнопке этого раздела" },
-      },
-      variables: {
-        "--height": { means: "измеренная высота раскрытого содержимого" },
-        "--width": { means: "измеренная ширина раскрытого содержимого — нужна горизонтальной гармошке" },
-      },
-      // Внутрь раздела кладут что угодно — это место потребителя, а не наше: текст, значок,
-      // любой компонент. Пустой перечень здесь означал бы, что раскрывать нечего.
-      accepts: [
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "component" },
-      ],
-    },
-    itemIndicator: {
-      means: "указатель раскрытия — стрелка, которую кладёт потребитель",
-      states: {
-        open: { means: "раздел раскрыт — содержимое видно" },
-        disabled: { means: "раздел отключён — раскрыть его нельзя" },
-        focus: { means: "фокус стоит на кнопке этого раздела" },
-      },
-      accepts: [
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "icon" },
-      ],
-    },
-  },
-  settings: {
-    orientation: {
-      means: "как разложены разделы: сверху вниз или слева направо — от этого зависят клавиши и aria",
-      options: {
-        vertical: { means: "сверху вниз" },
-        horizontal: { means: "слева направо" },
-      },
-    },
-    multiple: { means: "можно ли держать раскрытыми несколько разделов сразу" },
-    collapsible: { means: "можно ли закрыть последний раскрытый раздел, оставив гармошку целиком закрытой" },
-  },
-  // НЕСКОЛЬКО СБОРОК-ТЕМПЛЕЙТОВ (`PWEB-116`) — не одна витрина, а конструктор с инструкцией на
-  // несколько разных случаев. Агент, которому нужна гармошка с определённым устройством, берёт
-  // готовый рабочий экземпляр вместо того, чтобы придумывать его с нуля на каждый запрос.
-  //
-  // Каждая сборка — НАСТОЯЩАЯ, тем же доводом, что и раньше (`PWEB-89`): собирается механикой
-  // сборки без доработки потребителем, проверено пробой на КАЖДОЙ записи (`test/
-  // base-assembly.test.tsx`), не только на первой.
-  //
-  // Оси, по которым сборки различаются, — и почему именно они, а не что-то ещё:
-  //   • число разделов — гармошка на 3 и гармошка на 6 показывают себя по-разному: у большой
-  //     список пунктов сам становится содержимым, у маленькой — нет;
-  //   • какой раздел раскрыт изначально — первый, последний или ни один: это то самое знание
-  //     поставщика (`value` в `defaultValue`), которое потребитель не выдумывает сам;
-  //   • `multiple` — раскрытых сразу несколько, а не один; без прохода `defaultValue` двумя
-  //     значениями ЭТОГО не увидеть, `multiple: true` в пропах корня — необходимый проп ИМЕННО
-  //     для этой сборки, а не вид (`PWEB-89`);
-  //   • композиция в `itemTrigger` — значок ПЕРЕД подписью, рядом с указателем раскрытия, а не
-  //     только раскрывашка сама по себе. Значок здесь плейсхолдер (`★`), тем же приёмом, что и
-  //     указатель (`⌄`): базовая сборка — данные, не код, и настоящий компонент `lucide-solid` в
-  //     ней не завести (`icon.anatomy.ts`, «база сборки нет»).
-  //
-  // Композицию с состояниями (наведённый, отключённый) сюда не кладём: у сборки нет оси
-  // состояний, состояние ставит тот, кто её показывает (см. выше про раскрытость).
-  assemblies: [
-    {
-      means: "три раздела, первый раскрыт",
-      tree: {
-        part: "root",
-        props: { defaultValue: ["раздел-1"] },
-        children: [
-          {
-            part: "item",
-            props: { value: "раздел-1" },
-            children: [
-              {
-                part: "itemTrigger",
-                // Подпись ПЕРВОЙ, указатель следом: порядок содержимого относительно частей —
-                // решение автора вида, и выразим он только общим списком детей.
-                children: [
-                  { genus: "text", value: "Раздел 1" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-2" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 2" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Второй раздел закрыт." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-3" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 3" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Третий раздел закрыт." }],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      means: "три раздела, последний раскрыт",
-      tree: {
-        part: "root",
-        // Тот же счёт разделов, что у первой сборки, — разница только в том, КАКОЙ раскрыт.
-        // Совпади остальное, различие потерялось бы в шуме числа пунктов.
-        props: { defaultValue: ["раздел-3"] },
-        children: [
-          {
-            part: "item",
-            props: { value: "раздел-1" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 1" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Первый раздел закрыт." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-2" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 2" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Второй раздел закрыт." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-3" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 3" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      means: "два раздела раскрыты одновременно",
-      tree: {
-        part: "root",
-        // `multiple: true` — необходимый проп ЭТОЙ сборки: без него Zag игнорирует второе
-        // значение `defaultValue`, и «два раскрытых сразу» не соберётся, а тихо схлопнется
-        // до одного. Это не вид (там ему не место, `PWEB-89`) — это то, без чего сборка не
-        // работает, тот же смысл, что и у `value` раздела.
-        props: { multiple: true, defaultValue: ["раздел-1", "раздел-2"] },
-        children: [
-          {
-            part: "item",
-            props: { value: "раздел-1" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 1" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Первый раздел раскрыт." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-2" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 2" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Второй раздел тоже раскрыт." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-3" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: "Раздел 3" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Третий раздел закрыт." }],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      means: "шесть разделов, ничего не раскрыто изначально",
-      tree: {
-        part: "root",
-        // Пустой перечень — то же честное умолчание, что и у настроек без значения: раскрытых
-        // нет, а не «забыли назвать». Шесть разделов — не про запас, а сама суть сборки: список
-        // длиннее, чем на глаз отличим от «ещё одного экземпляра трёх», сам становится
-        // содержимым, а не просто счётом.
-        props: { defaultValue: [] },
-        children: Array.from({ length: 6 }, (_, index) => {
-          const номер = index + 1;
-          const value = `раздел-${номер}`;
-
-          return {
-            part: "item",
-            props: { value },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "text", value: `Раздел ${номер}` },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: `Содержимое раздела ${номер}.` }],
-              },
-            ],
-          };
-        }),
-      },
-    },
-    {
-      means: "раздел со значком перед подписью",
-      tree: {
-        part: "root",
-        props: { defaultValue: ["раздел-1"] },
-        children: [
-          {
-            part: "item",
-            props: { value: "раздел-1" },
-            children: [
-              {
-                part: "itemTrigger",
-                // Значок ВЕДЁТ подпись, указатель раскрытия — следом за ней: композиция трёх
-                // содержимых сразу, а не только текст и указатель, как у остальных сборок.
-                children: [
-                  { genus: "icon", value: "★" },
-                  { genus: "text", value: "Раздел со значком" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Здесь лежит то, что раскрывают." }],
-              },
-            ],
-          },
-          {
-            part: "item",
-            props: { value: "раздел-2" },
-            children: [
-              {
-                part: "itemTrigger",
-                children: [
-                  { genus: "icon", value: "★" },
-                  { genus: "text", value: "Второй раздел со значком" },
-                  { part: "itemIndicator", children: [{ genus: "text", value: "⌄" }] },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [{ genus: "text", value: "Второй раздел закрыт." }],
-              },
-            ],
-          },
-        ],
-      },
-    },
-  ],
 });

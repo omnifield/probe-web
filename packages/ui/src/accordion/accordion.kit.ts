@@ -1,12 +1,12 @@
-// КАРТА гармошки: часть паспорта → компонент, которым она рисуется (`PWEB-84`).
+// MAP of the accordion: passport part → the component that draws it (`PWEB-84`).
 //
-// Здесь видно, ради чего карта вообще заводилась: у гармошки пять частей, и с плоскими именами
-// кита не совпадает ни одно, кроме корня. Собери такую карту потребитель — он собрал бы её по
-// догадке о том, как `itemTrigger` превращается в `AccordionItemTrigger`; догадка верна ровно
-// до первой части, названной иначе.
+// Here it is clear why the map exists at all: the accordion has five parts, and flat kit names
+// match none of them except the root. Had a consumer assembled such a map themselves, they would
+// have guessed how `itemTrigger` turns into `AccordionItemTrigger` — a guess right up until the
+// first part named differently.
 //
-// Перечня частей здесь нет: ключи сверяются с анатомией — типом при написании и
-// `defineKitComponent` на исполнении.
+// There is no separate list of parts here: keys are checked against the anatomy — by type while
+// writing, and by `defineKitComponent` at runtime.
 
 import { defineKitComponent } from "../kit-form.js";
 import { passport } from "./accordion.anatomy.js";
@@ -18,7 +18,7 @@ import {
   AccordionItemTrigger,
 } from "./accordion.jsx";
 
-/** Паспорт гармошки вместе с тем, чем рисуется каждая её часть. */
+/** The accordion's passport together with whatever draws each of its parts. */
 export const kit = defineKitComponent(passport, {
   root: Accordion,
   item: AccordionItem,

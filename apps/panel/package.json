@@ -1,0 +1,26 @@
+{
+  "name": "@omnifield/probe-web-panel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev panel: one place to walk through products. Ships to production too, while the repo stays one piece — this is not a dev-only tool.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 4100 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck"
+  },
+  "dependencies": {
+    "@omnifield/probe-web-style": "workspace:*",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@types/node": "^24.10.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
+  }
+}
