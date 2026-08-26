@@ -42,11 +42,11 @@ const РЯДЫ = {
 export const PALETTE: Palette = {
   name: "проба-палитра",
   scales: {
-    акцент: "#3457d5",
-    нейтраль: "#6b7280",
-    опасность: "#d13438",
-    успех: "#197a3d",
-    предупреждение: "#a35a06",
+    accent: "#3457d5",
+    neutral: "#6b7280",
+    danger: "#d13438",
+    success: "#197a3d",
+    warning: "#a35a06",
   },
   dimensions: {
     radius: "12px",
@@ -69,21 +69,21 @@ export const FORM: Form = {
     base: {
       root: {
         props: {
-          background: "var(--нейтраль-1)",
-          color: "var(--нейтраль-12)",
+          background: "var(--neutral-1)",
+          color: "var(--neutral-12)",
           borderRadius: "var(--radius-md)",
         },
         states: {
-          hover: { props: { background: "var(--нейтраль-3)" } },
+          hover: { props: { background: "var(--neutral-3)" } },
           disabled: { props: { opacity: 0.5 } },
         },
       },
     },
     variants: {
       главная: {
-        root: { props: { background: "var(--акцент-9)", color: "var(--акцент-contrast)" } },
+        root: { props: { background: "var(--accent-9)", color: "var(--accent-contrast)" } },
       },
-      тихая: { root: { props: { background: "var(--нейтраль-2)" } } },
+      тихая: { root: { props: { background: "var(--neutral-2)" } } },
     },
     defaultVariant: "главная",
   },

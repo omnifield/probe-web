@@ -39,29 +39,29 @@ export const recipe: SlotRecipe = {
         borderRadius: "var(--radius-sm)",
         borderWidth: "var(--border-width-1)",
         borderStyle: "solid",
-        borderColor: "var(--нейтраль-7)",
-        background: "var(--нейтраль-1)",
+        borderColor: "var(--neutral-7)",
+        background: "var(--neutral-1)",
         transition: переход,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        checked: { props: { borderColor: "var(--акцент-9)", background: "var(--акцент-9)" } },
-        indeterminate: { props: { borderColor: "var(--акцент-9)", background: "var(--акцент-9)" } },
-        hover: { props: { borderColor: "var(--акцент-8)" } },
+        checked: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
+        indeterminate: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
+        hover: { props: { borderColor: "var(--accent-8)" } },
         "focus-visible": {
           props: {
-            outline: "var(--border-width-2) solid var(--акцент-8)",
+            outline: "var(--border-width-2) solid var(--accent-8)",
             outlineOffset: "var(--space-1)",
           },
         },
-        invalid: { props: { borderColor: "var(--опасность-9)" } },
-        disabled: { props: { borderColor: "var(--нейтраль-6)", background: "var(--нейтраль-3)" } },
+        invalid: { props: { borderColor: "var(--danger-9)" } },
+        disabled: { props: { borderColor: "var(--neutral-6)", background: "var(--neutral-3)" } },
       },
     },
     indicator: {
       props: {
         display: "inline-flex",
-        color: "var(--акцент-contrast)",
+        color: "var(--accent-contrast)",
         fontSize: "var(--font-size-sm)",
         lineHeight: "1",
       },
@@ -69,10 +69,10 @@ export const recipe: SlotRecipe = {
     label: {
       props: {
         fontSize: "var(--font-size-md)",
-        color: "var(--нейтраль-12)",
+        color: "var(--neutral-12)",
       },
       states: {
-        disabled: { props: { color: "var(--нейтраль-11)" } },
+        disabled: { props: { color: "var(--neutral-11)" } },
       },
     },
   },

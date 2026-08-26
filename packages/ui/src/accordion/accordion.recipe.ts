@@ -12,7 +12,7 @@
 //
 // ## Цвет адресуется СТУПЕНЬЮ, а не значением
 //
-// Ни одного цветового литерала: правило называет ступень (`var(--акцент-9)`), и от этого скин
+// Ни одного цветового литерала: правило называет ступень (`var(--accent-9)`), и от этого скин
 // пересеваем. Ступени назначены зоной значений — 9 сплошной акцент, 10 он же при наведении,
 // 8 сильная граница и кольцо фокуса, 11 текст низкого контраста, 12 высокого.
 //
@@ -93,25 +93,25 @@ export const recipe: SlotRecipe = {
         flexDirection: "column",
         gap: "var(--space-1)",
         borderRadius: "var(--radius-lg)",
-        background: "var(--нейтраль-1)",
-        color: "var(--нейтраль-12)",
+        background: "var(--neutral-1)",
+        color: "var(--neutral-12)",
       },
     },
     item: {
       props: {
         display: "flex",
         flexDirection: "column",
-        background: "var(--нейтраль-1)",
+        background: "var(--neutral-1)",
         borderRadius: "var(--radius-md)",
         borderWidth: "var(--border-width-1)",
         borderStyle: "solid",
-        borderColor: "var(--нейтраль-6)",
+        borderColor: "var(--neutral-6)",
         overflow: "hidden",
       },
       states: {
-        open: { props: { borderColor: "var(--нейтраль-7)" } },
+        open: { props: { borderColor: "var(--neutral-7)" } },
         disabled: { props: { opacity: "0.5" } },
-        focus: { props: { borderColor: "var(--акцент-8)" } },
+        focus: { props: { borderColor: "var(--accent-8)" } },
       },
     },
     itemTrigger: {
@@ -123,8 +123,8 @@ export const recipe: SlotRecipe = {
         minHeight: "var(--control-height-md)",
         paddingInline: "var(--space-4)",
         borderWidth: "0",
-        background: "var(--нейтраль-3)",
-        color: "var(--нейтраль-12)",
+        background: "var(--neutral-3)",
+        color: "var(--neutral-12)",
         fontSize: "var(--font-size-md)",
         fontWeight: "var(--weight-medium)",
         lineHeight: "var(--leading-none)",
@@ -134,16 +134,16 @@ export const recipe: SlotRecipe = {
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        open: { props: { background: "var(--нейтраль-4)", color: "var(--нейтраль-12)" } },
-        hover: { props: { background: "var(--нейтраль-4)", color: "var(--нейтраль-12)" } },
-        active: { props: { background: "var(--нейтраль-5)", color: "var(--нейтраль-12)" } },
+        open: { props: { background: "var(--neutral-4)", color: "var(--neutral-12)" } },
+        hover: { props: { background: "var(--neutral-4)", color: "var(--neutral-12)" } },
+        active: { props: { background: "var(--neutral-5)", color: "var(--neutral-12)" } },
         "focus-visible": {
           props: {
-            outline: "var(--border-width-2) solid var(--акцент-8)",
+            outline: "var(--border-width-2) solid var(--accent-8)",
             outlineOffset: "calc(var(--border-width-2) * -1)",
           },
         },
-        focus: { props: { color: "var(--нейтраль-12)", background: "var(--нейтраль-4)" } },
+        focus: { props: { color: "var(--neutral-12)", background: "var(--neutral-4)" } },
         disabled: { props: { cursor: "not-allowed", opacity: "0.6" } },
       },
     },
@@ -151,8 +151,8 @@ export const recipe: SlotRecipe = {
       props: {
         paddingInline: "var(--space-4)",
         paddingBlock: "var(--space-3)",
-        background: "var(--нейтраль-1)",
-        color: "var(--нейтраль-11)",
+        background: "var(--neutral-1)",
+        color: "var(--neutral-11)",
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
         // РАСКРЫТИЕ ПИШЕТ СКИН (`PWEB-93`), ИМЕНОВАННЫМ ДВИЖЕНИЕМ (`PWEB-98`). Мера у кита
@@ -178,8 +178,8 @@ export const recipe: SlotRecipe = {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
-        disabled: { props: { color: "var(--нейтраль-11)", background: "var(--нейтраль-2)" } },
-        focus: { props: { color: "var(--нейтраль-12)", background: "var(--нейтраль-1)" } },
+        disabled: { props: { color: "var(--neutral-11)", background: "var(--neutral-2)" } },
+        focus: { props: { color: "var(--neutral-12)", background: "var(--neutral-1)" } },
       },
       ancestors: [
         {
@@ -192,7 +192,7 @@ export const recipe: SlotRecipe = {
           component: "accordion",
           part: "item",
           states: ["open"],
-          style: { props: { color: "var(--нейтраль-12)" } },
+          style: { props: { color: "var(--neutral-12)" } },
         },
       ],
     },
@@ -201,15 +201,15 @@ export const recipe: SlotRecipe = {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "var(--нейтраль-11)",
-        background: "var(--нейтраль-3)",
+        color: "var(--neutral-11)",
+        background: "var(--neutral-3)",
         transition: "transform var(--motion-fast) var(--ease-out)",
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         open: { props: { transform: "rotate(180deg)" } },
         disabled: { props: { opacity: "0.6" } },
-        focus: { props: { color: "var(--нейтраль-12)", background: "var(--нейтраль-3)" } },
+        focus: { props: { color: "var(--neutral-12)", background: "var(--neutral-3)" } },
       },
     },
   },

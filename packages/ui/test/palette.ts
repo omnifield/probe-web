@@ -1,18 +1,18 @@
-// ПАЛИТРА-ПРОБА (`PWEB-111`) — не поставка, общая фикстура для рецептов-доказательств
-// (`src/*/*.recipe.ts`). Живёт в `test/`, а не в `src/`, — она не о компоненте, она о том, чем
-// его красят, когда доказывают, что паспорт МОЖНО одеть.
+// SAMPLE PALETTE (`PWEB-111`) — not a shipped product, a shared fixture for proof recipes
+// (`src/*/*.recipe.ts`). Lives in `test/`, not `src/` — it is not about a component, it is about
+// what dresses one when proving a passport CAN be dressed.
 //
-// Перенесена построчно из `packages/skin-reference/src/variables.ts` (git-история цела на
-// `git show 5d560ae:packages/skin-reference/src/variables.ts`), с тем же доводом, что и рецепты:
-// значения общие/механические (семена шкал, ступени), не продуктовый вкус, и пересеваемость —
-// то же свойство механики скина, которое доказывают рецепты.
+// Ported line-for-line from `packages/skin-reference/src/variables.ts` (git history is intact at
+// `git show 5d560ae:packages/skin-reference/src/variables.ts`), for the same reason as the
+// recipes: the values are shared/mechanical (scale seeds, steps), not product taste, and
+// re-seedability is the same property of the skin mechanism the recipes prove.
 //
-// Семенами, а не лестницами: обе половины (светлая/тёмная) строит механика значений — ступени
-// назначены, контраст обещан построением, а не подобран.
+// Seeds, not ladders: both halves (light/dark) are built by the values mechanism — steps are
+// assigned and contrast is promised by construction, not picked by eye.
 
 import type { Palette } from "@omnifield/probe-web-skin/model";
 
-const ДВИЖЕНИЕ: Readonly<Record<string, string>> = {
+const MOTION: Readonly<Record<string, string>> = {
   "motion-instant": "75ms",
   "motion-fast": "200ms",
   "motion-normal": "320ms",
@@ -24,7 +24,7 @@ const ДВИЖЕНИЕ: Readonly<Record<string, string>> = {
   "ease-in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
 };
 
-const ТИПОГРАФИКА: Readonly<Record<string, string>> = {
+const TYPOGRAPHY: Readonly<Record<string, string>> = {
   "leading-none": "1",
   "leading-tight": "1.25",
   "leading-snug": "1.375",
@@ -37,15 +37,15 @@ const ТИПОГРАФИКА: Readonly<Record<string, string>> = {
   "weight-bold": "700",
 };
 
-/** Палитра-проба — пять цветных шкал по назначению, а не по цвету, и восемь размерных семян. */
+/** Sample palette — five color scales named by purpose, not by hue, and eight dimension seeds. */
 export const palette: Palette = {
-  name: "проба",
+  name: "sample",
   scales: {
-    акцент: "oklch(0.55 0.18 255)",
-    нейтраль: "oklch(0.55 0.02 255)",
-    опасность: "oklch(0.55 0.2 25)",
-    успех: "oklch(0.55 0.15 145)",
-    предупреждение: "oklch(0.7 0.15 75)",
+    accent: "oklch(0.55 0.18 255)",
+    neutral: "oklch(0.55 0.02 255)",
+    danger: "oklch(0.55 0.2 25)",
+    success: "oklch(0.55 0.15 145)",
+    warning: "oklch(0.7 0.15 75)",
   },
 
   dimensions: {
@@ -59,5 +59,5 @@ export const palette: Palette = {
     tracking: "0em",
   },
 
-  light: { ...ДВИЖЕНИЕ, ...ТИПОГРАФИКА },
+  light: { ...MOTION, ...TYPOGRAPHY },
 };

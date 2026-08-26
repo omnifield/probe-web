@@ -110,7 +110,7 @@ describe("ручки цвета и меры", () => {
     const { host } = open();
     const [первая] = [...host.querySelectorAll<HTMLInputElement>(".knob__color")];
 
-    expect(первая?.value).toBe(PALETTE.scales?.["акцент"]);
+    expect(первая?.value).toBe(PALETTE.scales?.["accent"]);
   });
 
   it("правка цвета меняет СЕМЯ, а не готовый оттенок", () => {
@@ -122,7 +122,7 @@ describe("ручки цвета и меры", () => {
 
     // Из семени механика строит двенадцать ступеней и обе половины; правь мы ступень, вторая
     // половина осталась бы от прежнего цвета.
-    expect((draft().palette as Palette).scales?.["акцент"]).toBe("#ff0000");
+    expect((draft().palette as Palette).scales?.["accent"]).toBe("#ff0000");
   });
 
   it("мера ниже нормы не крутится: пол выведен, а не выбран", () => {
@@ -204,11 +204,11 @@ describe("тонкая правка", () => {
     unfold(host, "Тонко");
 
     const поле = rowOf(host, "background")?.querySelector<HTMLInputElement>(".prop__value");
-    поле!.value = "var(--акцент-9)";
+    поле!.value = "var(--accent-9)";
     поле!.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect((draft().form as Form).recipe.base?.["root"]?.props?.["background"]).toBe(
-      "var(--акцент-9)",
+      "var(--accent-9)",
     );
   });
 });
