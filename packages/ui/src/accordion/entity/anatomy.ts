@@ -5,7 +5,7 @@
 // "anatomy" in Zag/Ark's own vocabulary: their `anatomy.ts` never carries states, settings, or a
 // passport, only the part declarations a component is built from. The fuller runtime contract —
 // per-part STATES, the variant axis, SETTINGS, the `definePassport` call that ties them together
-// — lives one level up, in `accordion.passport.ts`, which imports `anatomy` from here. Naming a
+// — lives one level up, in `passport.ts`, which imports `anatomy` from here. Naming a
 // passport call an "anatomy" export was the mix-up this split corrects. Editor-facing metadata
 // (`means`, group, genus, nesting/`accepts` rules, assembly templates) is a further step removed,
 // in `playground/index.ts`.
@@ -32,4 +32,4 @@ import { anatomy as accordionAnatomy } from "@zag-js/accordion/anatomy";
 export const anatomy = accordionAnatomy;
 
 /** Part addresses: `attrs` for the node, `selector` for styling. Computed once — they are static. */
-export const parts = anatomy.build();
+export const anatomyParts = anatomy.build();

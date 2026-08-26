@@ -1,5 +1,5 @@
 // RUNTIME passport of the accordion (`PWEB-37`, `PWEB-115`/`PWEB-118`, decomposed `PWEB-124`) —
-// anatomy (`accordion.anatomy.ts`) plus everything else the running app needs: per-part STATES,
+// anatomy (`anatomy.ts`) plus everything else the running app needs: per-part STATES,
 // the variant axis, and SETTINGS, tied together by `definePassport`.
 //
 // THIS FILE IS RUNTIME ONLY, same as the anatomy it builds on — it ships in the app bundle.
@@ -67,7 +67,7 @@ import {
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are checked
 // against the component's real props, not an idea of them.
-import type { AccordionProps } from "./components/index.jsx";
+import type { AccordionProps } from "../components/index.jsx";
 import { anatomy } from "./anatomy.js";
 
 /** Expansion — Zag's shared vocabulary attribute; it sits on the item, the content, and the indicator. */

@@ -25,7 +25,7 @@ import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 // TYPE ONLY: no runtime import of the passport module here — `typeof passport` in a type
 // position needs the binding's TYPE, not the module's side effects.
-import type { passport } from "../passport.js";
+import type { passport } from "../entity/passport.js";
 
 // The literal part-name union (`"root" | "item" | …`), read off the passport itself rather than
 // spelled out by hand: `part` fields below type-check against ANATOMY, not a copy of its names
@@ -37,6 +37,7 @@ type AccordionPart =
 
 export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
   {
+    name: "basic",
     means:
       "a basic working accordion: two items, each with a trigger, an indicator, and content",
     tree: {

@@ -80,6 +80,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // Четыре ячейки: на одной не видно ни колонок, ни рядов, а сетка — про них.
   assemblies: [
     {
+      name: "basic",
       means: "сетка из четырёх ячеек",
       tree: {
         part: "root",

@@ -9,7 +9,7 @@
 // writing, and by `defineKitComponent` at runtime.
 
 import { defineKitComponent } from "../../kit-form.js";
-import { passport } from "../passport.js";
+import { passport } from "../entity/passport.js";
 import {
   Accordion,
   AccordionItem,

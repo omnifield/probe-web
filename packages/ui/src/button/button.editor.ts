@@ -69,10 +69,12 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // does not change from one assembly to the next.
   assemblies: [
     {
+      name: "label",
       means: "a button with a label",
       tree: { part: "root", children: [{ genus: "text", value: "Button" }] },
     },
     {
+      name: "icon-label",
       means: "a button with an icon and a label",
       // The icon LEADS the label — content order is the view author's call (see the accordion
       // passport for the same argument). The icon here is a placeholder (`★`), not a real
@@ -86,6 +88,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
       },
     },
     {
+      name: "icon-only",
       means: "a button with a single icon, no label",
       // A third honest case, not a repeat of the second minus text: an icon-only button is its
       // own real shape (a toolbar, a compact action), and `root.accepts` lets an icon stand alone,
