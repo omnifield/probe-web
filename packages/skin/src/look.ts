@@ -404,7 +404,7 @@ function closedByScales(palette: Palette): Set<string> {
 
   for (const scale of Object.keys(palette.scales ?? {})) {
     for (const роль of VOCABULARY) {
-      if (роль.kind === "цвет" && роль.name.startsWith(`${scale}-`)) закрыто.add(роль.name);
+      if (роль.kind === "color" && роль.name.startsWith(`${scale}-`)) закрыто.add(роль.name);
     }
   }
 
@@ -422,7 +422,7 @@ function closedByDimensions(palette: Palette): Set<string> {
   const посеяно = new Set(Object.keys(palette.dimensions ?? {}));
 
   for (const роль of VOCABULARY) {
-    if (роль.kind !== "размер") continue;
+    if (роль.kind !== "size") continue;
     if (посеяно.has(роль.name)) закрыто.add(роль.name);
     // Ступень закрыта, если посеяно её семя: `space` даёт `space-1`…`space-32`.
     for (const семя of посеяно) {

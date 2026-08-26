@@ -116,7 +116,7 @@ describe("СЛОВАРЬ работает контрактом", () => {
     // Перечень один, и всё остальное из него выводится: выпиши мы роли вторым списком — он
     // разъехался бы с первым на первой же новой роли, и правым оказался бы тот, кого спросили
     // последним. Проба спрашивает СЛОВАРЬ о том, что объявил перечень, а не наоборот.
-    expect(SCALE_ROLES).toEqual(["акцент", "нейтраль", "опасность", "успех", "предупреждение"]);
+    expect(SCALE_ROLES).toEqual(["accent", "neutral", "danger", "success", "warning"]);
 
     for (const роль of SCALE_ROLES) {
       expect(knownRole(`${роль}-9`), роль).toBe(true);
@@ -140,8 +140,8 @@ describe("СЛОВАРЬ работает контрактом", () => {
     // Недостача названа ПО СЕМЬЯМ: тринадцать ступеней непосеянной шкалы — одна недоделка, а не
     // тринадцать. Перечень имён подряд обрезался бы на первой же шкале, и человек починил бы одну,
     // не узнав о второй, — ровно это проба тут и поймала.
-    expect(flaw?.means).toContain("успех (");
-    expect(flaw?.means).toContain("предупреждение (");
+    expect(flaw?.means).toContain("success (");
+    expect(flaw?.means).toContain("warning (");
   });
 
   it("две формы на один компонент — изъян: чей вид победит, наряд не говорит", () => {
@@ -257,7 +257,7 @@ describe("паспорта нет вовсе — названа ПРИЧИНА, 
     const наряду = checkOutfit({ ...наряд, forms: ["нездешняя"], overrides: {} }, части);
     const порождению = checkSkin({
       name: "проба",
-      recipes: { нездешний: { base: { root: { props: { color: "var(--акцент-9)" } } } } },
+      recipes: { нездешний: { base: { root: { props: { color: "var(--accent-9)" } } } } },
     });
 
     expect(наряду.map((flaw) => flaw.name)).toEqual(порождению.map((flaw) => flaw.name));
@@ -372,7 +372,7 @@ describe("читаемость и покрытие считаются ПО СО�
   });
 
   it("считать их у части нечем: у формы значений нет вовсе", () => {
-    expect(кнопка.recipe.base?.root?.props?.background).toBe("var(--акцент-9)");
+    expect(кнопка.recipe.base?.root?.props?.background).toBe("var(--accent-9)");
     expect(JSON.stringify(кнопка)).not.toContain("oklch");
   });
 });
@@ -383,7 +383,7 @@ describe("обещания контраста считаются по НОВЫМ
   // означало бы «добавили роль без обещаний», а узнал бы об этом человек по нечитаемой плашке.
   const значения = skinValues(assemble(наряд, части).skin, "light");
 
-  for (const роль of ["успех", "предупреждение"]) {
+  for (const роль of ["success", "warning"]) {
     it(`«${роль}»: ступени построены семенем, а не выписаны`, () => {
       for (const ступень of ["1", "9", "11", "12", "contrast"]) {
         expect(значения.get(`${роль}-${ступень}`)?.from, `${роль}-${ступень}`).toBe("seed");
@@ -394,7 +394,7 @@ describe("обещания контраста считаются по НОВЫМ
   it("и тёмная половина у новых шкал тоже СТРОИТСЯ, а не инвертируется", () => {
     const тёмные = skinValues(assemble(наряд, части).skin, "dark");
 
-    for (const роль of ["успех", "предупреждение"]) {
+    for (const роль of ["success", "warning"]) {
       expect(тёмные.get(`${роль}-9`)?.value).not.toBe(значения.get(`${роль}-9`)?.value);
       expect(тёмные.get(`${роль}-9`)?.from).toBe("seed");
     }

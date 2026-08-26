@@ -44,18 +44,18 @@ const РАЗМЕРЫ: Readonly<Record<string, string>> = {
 export const синяя: Palette = {
   name: "синяя",
   scales: {
-    акцент: "oklch(0.55 0.18 255)",
-    нейтраль: "oklch(0.55 0.02 255)",
-    опасность: "oklch(0.55 0.2 25)",
-    успех: "oklch(0.55 0.15 145)",
-    предупреждение: "oklch(0.7 0.15 75)",
+    accent: "oklch(0.55 0.18 255)",
+    neutral: "oklch(0.55 0.02 255)",
+    danger: "oklch(0.55 0.2 25)",
+    success: "oklch(0.55 0.15 145)",
+    warning: "oklch(0.7 0.15 75)",
   },
   dimensions: РАЗМЕРЫ,
   light: РЯДЫ,
 };
 
 /** Та же палитра, ПЕРЕСЕЯННАЯ: другое семя акцента, остальное то же. */
-export const зелёная: Palette = { ...синяя, name: "зелёная", scales: { ...синяя.scales, акцент: "oklch(0.55 0.2 140)" } };
+export const зелёная: Palette = { ...синяя, name: "зелёная", scales: { ...синяя.scales, accent: "oklch(0.55 0.2 140)" } };
 
 /**
  * ПОЛНАЯ, но ПЛОХАЯ палитра: словарь закрыт, а контрастная ступень акцента задана литералом,
@@ -65,7 +65,7 @@ export const зелёная: Palette = { ...синяя, name: "зелёная", 
 export const слепая: Palette = {
   ...синяя,
   name: "слепая",
-  light: { ...РЯДЫ, "акцент-contrast": "oklch(0.55 0.18 255)" },
+  light: { ...РЯДЫ, "accent-contrast": "oklch(0.55 0.18 255)" },
 };
 
 /** Палитра, НЕ ЗАКРЫВШАЯ словарь: рядов нет вовсе. */
@@ -81,9 +81,9 @@ export const трёхшкальная: Palette = {
   ...синяя,
   name: "трёхшкальная",
   scales: {
-    акцент: "oklch(0.55 0.18 255)",
-    нейтраль: "oklch(0.55 0.02 255)",
-    опасность: "oklch(0.55 0.2 25)",
+    accent: "oklch(0.55 0.18 255)",
+    neutral: "oklch(0.55 0.02 255)",
+    danger: "oklch(0.55 0.2 25)",
   },
 };
 
@@ -95,8 +95,8 @@ export const кнопка: Form = {
     base: {
       root: {
         props: {
-          background: "var(--акцент-9)",
-          color: "var(--акцент-contrast)",
+          background: "var(--accent-9)",
+          color: "var(--accent-contrast)",
           borderRadius: "var(--radius-md)",
           paddingInline: "var(--space-4)",
           fontWeight: "var(--weight-medium)",
@@ -114,8 +114,8 @@ export const поверхность: Form = {
     base: {
       root: {
         props: {
-          background: "var(--нейтраль-1)",
-          color: "var(--нейтраль-12)",
+          background: "var(--neutral-1)",
+          color: "var(--neutral-12)",
           borderRadius: "var(--radius-md)",
         },
       },
@@ -139,7 +139,7 @@ export const кнопкаСвоя: Form = {
   component: "button",
   recipe: {
     base: {
-      root: { props: { background: "var(--акцент-9)", borderRadius: "0px" } },
+      root: { props: { background: "var(--accent-9)", borderRadius: "0px" } },
     },
   },
 };

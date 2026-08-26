@@ -45,15 +45,28 @@ function identifierOf(folder, suffix) {
   return `${folder.replace(/-(.)/g, (_, letter) => letter.toUpperCase())}${suffix}`;
 }
 
+/**
+ * Откуда компонент отдаёт `editorInfo`: из своего `<имя>.editor.ts`, если он завёл декомпозицию
+ * (эталон — `button`, `PWEB-124`), иначе — по-старому, из `<имя>.anatomy.ts`. Условие временное:
+ * когда декомпозицию заведут все компоненты, ветка со старым путём и этот комментарий снимаются.
+ */
+function editorInfoModuleOf(folder) {
+  return existsSync(join(srcDir, folder, `${folder}.editor.ts`))
+    ? `${folder}.editor.js`
+    : `${folder}.anatomy.js`;
+}
+
 /** Собирает исходник подпути `./passport` — вход, который читают скин и редактор. */
 function renderPassportEntry(folders) {
   const name = (folder) => identifierOf(folder, "Passport");
   const editorName = (folder) => identifierOf(folder, "EditorInfo");
   const imports = folders
-    .map(
-      (folder) =>
-        `import { passport as ${name(folder)}, editorInfo as ${editorName(folder)} } from "./${folder}/${folder}.anatomy.js";`,
-    )
+    .map((folder) => {
+      const editorModule = editorInfoModuleOf(folder);
+      return editorModule === `${folder}.anatomy.js`
+        ? `import { passport as ${name(folder)}, editorInfo as ${editorName(folder)} } from "./${folder}/${folder}.anatomy.js";`
+        : `import { passport as ${name(folder)} } from "./${folder}/${folder}.anatomy.js";\nimport { editorInfo as ${editorName(folder)} } from "./${folder}/${editorModule}";`;
+    })
     .join("\n");
   const entries = folders
     .map((folder) => `  [${name(folder)}.component]: ${name(folder)},`)

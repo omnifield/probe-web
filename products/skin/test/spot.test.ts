@@ -18,12 +18,12 @@ import { inherited, styleAt, withProp, type Spot } from "../src/editor/spot.js";
 const RECIPE: SlotRecipe = {
   base: {
     root: {
-      props: { background: "var(--нейтраль-1)", color: "var(--нейтраль-12)" },
-      states: { hover: { props: { background: "var(--нейтраль-3)" } } },
+      props: { background: "var(--neutral-1)", color: "var(--neutral-12)" },
+      states: { hover: { props: { background: "var(--neutral-3)" } } },
     },
   },
   variants: {
-    главная: { root: { props: { background: "var(--акцент-9)" } } },
+    главная: { root: { props: { background: "var(--accent-9)" } } },
   },
   defaultVariant: "главная",
 };
@@ -33,14 +33,14 @@ const базовое: Spot = { part: "root", variant: null, state: null };
 describe("чтение по координате", () => {
   it("база — это координата без вариации и без состояния", () => {
     expect(styleAt(RECIPE, базовое)).toEqual({
-      background: "var(--нейтраль-1)",
-      color: "var(--нейтраль-12)",
+      background: "var(--neutral-1)",
+      color: "var(--neutral-12)",
     });
   });
 
   it("состояние читается отдельно от обычного вида", () => {
     expect(styleAt(RECIPE, { part: "root", variant: null, state: "hover" })).toEqual({
-      background: "var(--нейтраль-3)",
+      background: "var(--neutral-3)",
     });
   });
 
@@ -48,7 +48,7 @@ describe("чтение по координате", () => {
     // Сумма — то, что увидит браузер; содержимое поля — то, что написано здесь. Покажи мы
     // сумму, человек правил бы значение, которого в этой координате нет.
     expect(styleAt(RECIPE, { part: "root", variant: "главная", state: null })).toEqual({
-      background: "var(--акцент-9)",
+      background: "var(--accent-9)",
     });
   });
 
@@ -63,7 +63,7 @@ describe("унаследованное отличимо от пустого", ()
     const spot: Spot = { part: "root", variant: "главная", state: null };
 
     expect(styleAt(RECIPE, spot)).not.toHaveProperty("color");
-    expect(inherited(RECIPE, spot)).toEqual({ color: "var(--нейтраль-12)" });
+    expect(inherited(RECIPE, spot)).toEqual({ color: "var(--neutral-12)" });
   });
 
   it("объявленное на координате в наследство не попадает — иначе оно значилось бы дважды", () => {
@@ -76,9 +76,9 @@ describe("унаследованное отличимо от пустого", ()
     const spot: Spot = { part: "root", variant: "главная", state: "hover" };
     const от = inherited(RECIPE, spot);
 
-    expect(от["color"]).toBe("var(--нейтраль-12)");
+    expect(от["color"]).toBe("var(--neutral-12)");
     // Порядок складывания тот же, что в CSS: вариация перебивает состояние базы.
-    expect(от["background"]).toBe("var(--акцент-9)");
+    expect(от["background"]).toBe("var(--accent-9)");
   });
 });
 
@@ -92,9 +92,9 @@ describe("запись по координате", () => {
 
   it("заводит координату, которой в записи не было", () => {
     const spot: Spot = { part: "root", variant: "главная", state: "hover" };
-    const стало = withProp(RECIPE, spot, "background", "var(--акцент-10)");
+    const стало = withProp(RECIPE, spot, "background", "var(--accent-10)");
 
-    expect(styleAt(стало, spot)).toEqual({ background: "var(--акцент-10)" });
+    expect(styleAt(стало, spot)).toEqual({ background: "var(--accent-10)" });
   });
 
   it("снятое свойство уходит вместе с пустой веткой", () => {
@@ -104,7 +104,7 @@ describe("запись по координате", () => {
     // Ветка `states.hover` с пустыми свойствами осталась бы обещанием правила, которого нет:
     // отчёт о долге прочёл бы его как «наведение одето».
     expect(стало.base?.["root"]?.states).toBeUndefined();
-    expect(styleAt(стало, базовое)["background"]).toBe("var(--нейтраль-1)");
+    expect(styleAt(стало, базовое)["background"]).toBe("var(--neutral-1)");
   });
 
   it("вариация без свойств остаётся — имя принадлежит человеку, а не содержимому", () => {

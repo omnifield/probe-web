@@ -1,48 +1,55 @@
-// СЛОВАРЬ — машинный контракт между палитрой, формой и нарядом.
+// VOCABULARY — the machine contract between a palette, a form, and an outfit.
 //
-// ## Зачем он вообще понадобился
+// ## Why this exists at all
 //
-// Компоненты приходят от РАЗНЫХ поставщиков: кнопка и раскладка от фреймворка, таблицы от одного
-// продукта, фильтры от другого. Поставщик компонентов вида не пишет — он объявляет паспорт, и на
-// этом его участие кончается.
+// Components arrive from DIFFERENT providers: the button and layout from the framework, tables
+// from one product, filters from another. A component provider does not write the look — it
+// declares a passport, and its involvement ends there.
 //
-// Двадцать поставщиков и десять редакторов не сойдутся ни на чём, кроме ПРОВЕРЯЕМОГО контракта.
-// Словарь и есть этот контракт, и он даёт ровно три вещи:
+// Twenty providers and ten editors will not agree on anything except a CHECKABLE contract. The
+// vocabulary IS that contract, and it gives exactly three things:
 //
-//   • форма не может попросить роль, которой в словаре нет;
-//   • палитра не может задать роль, которой в словаре нет;
-//   • палитра, не закрывшая словарь, — НЕПОЛНА, и это названо ДО надевания.
+//   • a form cannot ask for a role that is not in the vocabulary;
+//   • a palette cannot declare a role that is not in the vocabulary;
+//   • a palette that has not closed the vocabulary is INCOMPLETE, and that is named BEFORE
+//     dressing.
 //
-// Без третьего пункта форма, написанная под одну палитру, легла бы на другую и потеряла бы часть
-// значений молча: правило осталось бы, `var()` не разрешился бы, и чинить пошли бы вид.
+// Without the third point, a form written for one palette would land on another and silently
+// lose part of its values: the rule would still exist, `var()` would not resolve, and the fix
+// would go chasing the look.
 //
-// ## Роли названы ПО НАЗНАЧЕНИЮ, а не по вкусу
+// ## Roles are named BY PURPOSE, not by taste
 //
-// `акцент`, `успех`, `опасность` — это ЧТО цвет делает, а не какой он. Вкус живёт в семени,
-// которое даёт палитра: пересеяли — поменялся вид, роли остались теми же. Ровно так же зона
-// значений объявляет назначения ступеней (`STEP_PURPOSE`), не объявляя самих цветов.
+// `accent`, `success`, `danger` are WHAT a color does, not what it looks like. Taste lives in the
+// seed a palette provides — re-seed it, the look changes, the roles stay the same. This is the
+// exact same move the values zone makes when it declares step PURPOSE (`STEP_PURPOSE`) without
+// declaring the colors themselves.
 //
-// **Перечень ролей-шкал — ломающая часть контракта.** Добавили роль — все существующие палитры
-// стали неполны; убрали — все формы, её адресующие, стали невалидны. Так и вышло: успех и
-// предупреждение пришли отдельным решением (`PWEB-79`), и палитры под три шкалы стали
-// отвергаться до надевания. Это работает как задумано — неполнота НАЗЫВАЕТСЯ, а не проглатывается.
+// **The list of scale roles is the contract's BREAKING part.** Add a role — every existing
+// palette becomes incomplete; remove one — every form addressing it becomes invalid. That is
+// exactly what happened: success and warning arrived as a separate decision (`PWEB-79`), and
+// palettes built for three scales started being rejected before dressing. That is working as
+// intended — incompleteness is NAMED, not swallowed.
 //
-// Поэтому здесь их ровно столько, сколько нужно, чтобы одеть UI, и ни одной «на будущее».
+// So there are exactly as many roles here as it takes to dress the UI, and not one "for later".
 //
-// ## Чего в словаре нет и почему
+// ## What is NOT in the vocabulary, and why
 //
-// **`--control-target-min`.** Порог нормы (WCAG 2.2, 2.5.8), а не вкус: будь он ролью, палитра
-// могла бы его «поправить», то есть подвинуть норму записью вида. Высоту контрола берут ступенью.
+// **`--control-target-min`.** A normative threshold (WCAG 2.2, 2.5.8), not taste: were it a role,
+// a palette could "adjust" it, i.e. move the norm with a look record. Control height is taken as
+// a step instead.
 //
-// **Шкала слоёв (`--z-*`).** Контракт сосуществования компонентов: скин, поменявший порядок,
-// ломает работу, а не внешность. Двух законных ответов там нет, значит и роли нет.
+// **The layer scale (`--z-*`).** A contract of components coexisting: a skin that reorders it
+// breaks function, not appearance. There is no second legitimate answer there, so there is no
+// role either.
 //
-// ## Имена рядов движения объявлены ЗДЕСЬ, и это не второй источник правды
+// ## Motion row names are declared HERE, and this is not a second source of truth
 //
-// Зона значений держит длительности и кривые литералами внутри своего листа и данными наружу не
-// отдаёт (заявка поднята). Скопировать оттуда ЗНАЧЕНИЯ было бы вторым источником правды — и
-// именно поэтому их здесь нет. Здесь только ИМЕНА, а имя роли и есть предмет контракта: сколько
-// длится быстрый переход, решает палитра, а как эта роль называется — решает словарь.
+// The values zone keeps durations and curves as literals inside its own sheet and does not hand
+// them out as data (a request for that is open). Copying the VALUES from there would make this a
+// second source of truth — which is exactly why they are not here. Only the NAMES live here, and
+// a role's name is the actual subject of the contract: how long a fast transition lasts is the
+// palette's call; what that role is called is the vocabulary's.
 
 import {
   DENSITY_TOKEN,
@@ -52,61 +59,63 @@ import {
   SCALE_STEPS,
 } from "@omnifield/probe-web-style";
 
-/** Род роли: откуда у неё берётся значение и чем она проверяется. */
-export type RoleKind = "цвет" | "размер" | "ряд";
+/** Kind of role: where its value comes from and what checks it. */
+export type RoleKind = "color" | "size" | "row";
 
-/** Роль словаря: имя без `--` и её род. */
+/** A vocabulary role: its name without `--`, and its kind. */
 export interface Role {
   readonly name: string;
   readonly kind: RoleKind;
 }
 
 /**
- * РОЛИ-ШКАЛЫ ЦВЕТА — по назначению, а не по вкусу.
+ * COLOR SCALE ROLES — by purpose, not by taste.
  *
- * Пять, и каждая названа тем, что делает:
+ * Five, and each is named by what it does:
  *
- *   • `акцент`         — то, чем приложение показывает главное действие и себя;
- *   • `нейтраль`       — поверхности, текст, границы: на ней стоит всё остальное;
- *   • `опасность`      — разрушающее действие, у которого свой контраст и своё назначение;
- *   • `успех`          — состоявшееся: сохранено, отправлено, проверка прошла;
- *   • `предупреждение` — то, что требует внимания, но ничего не разрушает.
+ *   • `accent`  — what the app uses to show its primary action and itself;
+ *   • `neutral` — surfaces, text, borders: everything else sits on it;
+ *   • `danger`  — a destructive action, with its own contrast and its own purpose;
+ *   • `success` — something completed: saved, sent, a check passed;
+ *   • `warning` — something that needs attention but destroys nothing.
  *
- * Разделять их обязательно: сведи два намерения в одну шкалу — и «удалить» стало бы оттенком
- * главного действия, а обещания контраста считались бы по одной лестнице на два разных смысла.
+ * Keeping them separate is mandatory: fold two intents into one scale, and "delete" becomes a
+ * shade of the primary action, with contrast promises counted on one ladder for two different
+ * meanings.
  *
- * ## Почему пятеро, а не трое (`PWEB-79`)
+ * ## Why five, not three (`PWEB-79`)
  *
- * Тот же довод, что развёл акцент и опасность, работает и дальше: «сохранено» и «удалить» —
- * РАЗНЫЕ намерения, а не разные виды одного, и обещания контраста у них свои.
+ * The same argument that split accent from danger keeps going: "saved" and "delete" are
+ * DIFFERENT intents, not different flavors of one, and their contrast promises are their own.
  *
- * Ограничение тут не косметическое. Словарь ЗАКРЫТ, и роли, которой в нём нет, палитра задать не
- * может — значит автор, которому нужен зелёный «сохранено», пишет его ЛИТЕРАЛОМ, то есть мимо
- * контракта. Три роли отменяли ровно то, ради чего словарь заведён.
+ * The constraint here is not cosmetic. The vocabulary is CLOSED, and a palette cannot declare a
+ * role that is not in it — so an author who needs a green "saved" writes it as a LITERAL, i.e.
+ * around the contract. Three roles would undo exactly what the vocabulary exists for.
  *
- * ## Информации в перечне НЕТ, и это тоже решение
+ * ## There is no sixth role "for later", and that is a decision too
  *
- * Синее намерение почти всегда совпадает с акцентом, и шестая шкала окупится только если акцент
- * перестанет быть синим. Тогда она придёт ФАКТОМ, а не заранее: роль, заведённая «на будущее»,
- * обязывает каждую палитру закрывать то, чем никто не пользуется.
+ * A blue intent almost always coincides with the accent, and a sixth scale only pays for itself
+ * once the accent stops being blue. It would then arrive as a FACT, not ahead of time: a role
+ * declared "for later" obligates every palette to close something nobody uses.
  */
 export const SCALE_ROLES: readonly string[] = [
-  "акцент",
-  "нейтраль",
-  "опасность",
-  "успех",
-  "предупреждение",
+  "accent",
+  "neutral",
+  "danger",
+  "success",
+  "warning",
 ];
 
 /**
- * Ступени цветной шкалы: двенадцать сплошных плюс контрастная к сплошной.
+ * Steps of a color scale: twelve solid ones plus the one contrasting against the solid.
  *
- * Перечень берётся у зоны значений (`SCALE_STEPS`), а не пишется здесь: второй список разъехался
- * бы с первым на первой же правке лестницы, и правым оказался бы тот, кого спросили последним.
+ * The list is taken from the values zone (`SCALE_STEPS`), not written here: a second list would
+ * drift from the first on the very next ladder edit, and whichever was consulted last would end
+ * up "right".
  */
 const STEPS: readonly string[] = [...SCALE_STEPS.map(String), "contrast"];
 
-/** Ряды без семени: отношения, веса и движение. Значения даёт палитра, имена — словарь. */
+/** Rows without a seed: ratios, weights, and motion. A palette gives the values, the vocabulary the names. */
 const ROWS: readonly string[] = [
   ...FIXED_TOKENS.map((token) => token.name).filter((name) => name !== "control-target-min"),
   "motion-instant",
@@ -120,26 +129,27 @@ const ROWS: readonly string[] = [
 ];
 
 /**
- * СЛОВАРЬ — все роли, которые палитра обязана закрыть, а форма вправе адресовать.
+ * THE VOCABULARY — every role a palette must close and a form is allowed to address.
  *
- * Собран из данных, а не выписан: цветные — роли-шкалы на ступени зоны значений, размерные —
- * её же семена и производные ступени, ряды — её же нормированный перечень плюс имена движения.
- * Выпиши мы его руками, он разъехался бы с источниками молча.
+ * Assembled from data, not written out by hand: color roles are the scale roles crossed with the
+ * values zone's own steps; size roles are its own seeds and derived steps; rows are its own
+ * normalized list plus motion names. Writing it out by hand would let it drift from its sources
+ * silently.
  */
 export const VOCABULARY: readonly Role[] = [
   ...SCALE_ROLES.flatMap((scale) =>
-    STEPS.map((step): Role => ({ name: `${scale}-${step}`, kind: "цвет" })),
+    STEPS.map((step): Role => ({ name: `${scale}-${step}`, kind: "color" })),
   ),
-  ...DERIVED_SCALES.map((scale): Role => ({ name: scale.seed, kind: "размер" })),
-  { name: DENSITY_TOKEN, kind: "размер" },
-  ...DERIVED_TOKENS.map((name): Role => ({ name, kind: "размер" })),
-  ...ROWS.map((name): Role => ({ name, kind: "ряд" })),
+  ...DERIVED_SCALES.map((scale): Role => ({ name: scale.seed, kind: "size" })),
+  { name: DENSITY_TOKEN, kind: "size" },
+  ...DERIVED_TOKENS.map((name): Role => ({ name, kind: "size" })),
+  ...ROWS.map((name): Role => ({ name, kind: "row" })),
 ];
 
-/** Имена словаря — тем же перечнем, но для быстрой проверки принадлежности. */
+/** Vocabulary names as the same list, but for a fast membership check. */
 export const ROLE_NAMES: ReadonlySet<string> = new Set(VOCABULARY.map((role) => role.name));
 
-/** Есть ли такая роль в словаре. Имя принимается в обоих начертаниях — `акцент-9` и `--акцент-9`. */
+/** Is this role in the vocabulary. The name is accepted in either spelling — `accent-9` and `--accent-9`. */
 export function knownRole(name: string): boolean {
   return ROLE_NAMES.has(name.startsWith("--") ? name.slice(2) : name);
 }

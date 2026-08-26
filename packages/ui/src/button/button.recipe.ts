@@ -1,25 +1,27 @@
-// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`) — не поставка, не вкус продукта. Живёт рядом с компонентом,
-// но НИКУДА не экспортируется из `index.ts`/`passport.ts`/`kit.ts` — его читает только
-// `button.test.tsx`, доказывая, что паспорт кнопки МОЖНО одеть целиком настоящей механикой скина.
-// Раньше то же доказывал отдельный пакет `packages/skin-reference` (снесён, `PWEB-110`).
+// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
+// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only
+// `button.test.tsx` reads it, to prove the button's passport CAN be dressed whole by the real
+// skin mechanism. This used to be proven by a separate package, `packages/skin-reference`
+// (removed, `PWEB-110`).
 //
-// Перенесено построчно из `packages/skin-reference/src/recipes.ts` (git-история цела на
-// `git show 5d560ae:packages/skin-reference/src/recipes.ts`); вид не менялся при переезде.
+// Ported line-for-line from `packages/skin-reference/src/recipes.ts` (git history is intact at
+// `git show 5d560ae:packages/skin-reference/src/recipes.ts`); the look did not change in the move.
 //
-// Три вариации (`главная`, `тихая`, `опасная`) плюс умолчание — кнопка несёт ось целиком: на ней
-// и умолчание, и пересечения вариации с состоянием. Меньше трёх не хватило бы — с двумя
-// «пересечение по нескольким вариациям сразу» выродилось бы в «по одной».
+// Three variants (`primary`, `quiet`, `danger`) plus a default — the button carries the whole
+// axis: the default and the variant×state intersections both live on it. Fewer than three would
+// not be enough — with two, "an intersection across several variants at once" would degenerate
+// into "for just the one".
 
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
-/** Переход вида — тот же приём, что у гармошки: разные длительности у соседних узлов — брак. */
-const переход = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
+/** Look transition — same approach as the accordion: different durations on neighboring nodes is a defect. */
+const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 
 /**
- * КНОПКА. Одна часть, семь состояний, три вариации.
+ * BUTTON. One part, seven states, three variants.
  *
- * Высота берётся ступенью `--control-height-md`, а не порогом нормы: при плотности 1 ступень
- * выше минимального размера цели с запасом.
+ * Height is taken from the `--control-height-md` step, not from a minimum-tap-size threshold: at
+ * density 1 that step sits a comfortable margin above the minimum target size.
  */
 export const recipe: SlotRecipe = {
   base: {
@@ -39,14 +41,14 @@ export const recipe: SlotRecipe = {
         lineHeight: "var(--leading-none)",
         letterSpacing: "var(--tracking-normal)",
         cursor: "pointer",
-        transition: переход,
+        transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        // Кольцо фокуса — восьмая ступень: она и есть «сильная граница и кольцо фокуса».
+        // The focus ring is step eight: it is exactly "a strong border and a focus ring".
         "focus-visible": {
           props: {
-            outline: "var(--border-width-2) solid var(--акцент-8)",
+            outline: "var(--border-width-2) solid var(--accent-8)",
             outlineOffset: "var(--space-1)",
           },
         },
@@ -57,64 +59,64 @@ export const recipe: SlotRecipe = {
           states: { hover: { props: { transform: "none" } } },
         },
         busy: { props: { cursor: "progress" } },
-        expanded: { props: { borderColor: "var(--акцент-8)" } },
-        pressed: { props: { borderColor: "var(--акцент-8)", fontWeight: "var(--weight-semibold)" } },
+        expanded: { props: { borderColor: "var(--accent-8)" } },
+        pressed: { props: { borderColor: "var(--accent-8)", fontWeight: "var(--weight-semibold)" } },
       },
     },
   },
   variants: {
-    главная: {
+    primary: {
       root: {
         props: {
-          background: "var(--акцент-9)",
-          color: "var(--акцент-contrast)",
-          // Рамка есть и невидима НАМЕРЕННО: она держит коробку сплошной кнопки того же
-          // размера, что у обведённой. Счёт читаемости назовёт её «посчитать нечем» — верный
-          // ответ: что лежит под полностью прозрачным, значение не говорит.
+          background: "var(--accent-9)",
+          color: "var(--accent-contrast)",
+          // The border exists and is invisible ON PURPOSE: it keeps the box the same solid size
+          // as the outlined variant. A contrast checker would call it "nothing to measure" — the
+          // right answer: a fully transparent border says nothing about what lies beneath it.
           borderColor: "transparent",
         },
         states: {
-          hover: { props: { background: "var(--акцент-10)", color: "var(--акцент-contrast)" } },
+          hover: { props: { background: "var(--accent-10)", color: "var(--accent-contrast)" } },
         },
       },
     },
-    тихая: {
+    quiet: {
       root: {
         props: {
-          background: "var(--нейтраль-3)",
-          color: "var(--нейтраль-12)",
-          borderColor: "var(--нейтраль-7)",
+          background: "var(--neutral-3)",
+          color: "var(--neutral-12)",
+          borderColor: "var(--neutral-7)",
         },
         states: {
-          hover: { props: { background: "var(--нейтраль-4)", color: "var(--нейтраль-12)" } },
-          active: { props: { background: "var(--нейтраль-5)", color: "var(--нейтраль-12)" } },
+          hover: { props: { background: "var(--neutral-4)", color: "var(--neutral-12)" } },
+          active: { props: { background: "var(--neutral-5)", color: "var(--neutral-12)" } },
         },
       },
     },
-    опасная: {
+    danger: {
       root: {
         props: {
-          background: "var(--опасность-9)",
-          color: "var(--опасность-contrast)",
+          background: "var(--danger-9)",
+          color: "var(--danger-contrast)",
           borderColor: "transparent",
         },
         states: {
-          hover: { props: { background: "var(--опасность-10)", color: "var(--опасность-contrast)" } },
+          hover: { props: { background: "var(--danger-10)", color: "var(--danger-contrast)" } },
         },
       },
     },
   },
-  defaultVariant: "главная",
+  defaultVariant: "primary",
   compoundVariants: [
     {
-      // Общее для ДВУХ сплошных вариаций сразу — ровно тот случай, ради которого пересечение и
-      // существует: вложением его пришлось бы написать дважды.
-      variants: ["главная", "опасная"],
+      // Shared by TWO solid variants at once — exactly the case an intersection exists for:
+      // nesting would have required writing it twice.
+      variants: ["primary", "danger"],
       states: ["active"],
       style: { root: { props: { filter: "brightness(0.94)" } } },
     },
   ],
 };
 
-/** Форма — запись «имя формы + компонент + рецепт», та же, что примет `assemble`. */
-export const form: Form = { name: "кнопка-проба", component: "button", recipe };
+/** Form — the "name + component + recipe" record `assemble` accepts. */
+export const form: Form = { name: "button-sample", component: "button", recipe };

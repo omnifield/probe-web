@@ -1,52 +1,61 @@
-// ПАСПОРТ кнопки (`PWEB-2`).
+// RUNTIME contract of the button (`PWEB-2`, decomposed `PWEB-124`).
 //
-// Кнопка — первый СВОЙ компонент кита: у Ark UI её нет, потому что безголовая кнопка это
-// нативный элемент и оборачивать нечего. Поэтому она же и обкатка всей механики: если форма
-// подошла компоненту, которого в чужом ките не существует, она подойдёт любому.
+// The button is the kit's first OWN component: Ark UI ships none, because a headless button is
+// just a native element — there is nothing to wrap. That makes it the natural place to prove the
+// whole mechanism: if the contract fits a component that does not exist in a borrowed kit, it
+// fits anything.
 //
-// Объявляемся ТОЙ ЖЕ функцией, что и 51 готовая анатомия Ark, — `createAnatomy`. Одно
-// объявление даёт обе стороны обещания: `attrs`, которые кит ставит на узел, и `selector`,
-// которым цепляется скин.
+// THIS FILE IS RUNTIME ONLY. It ships in the app bundle, so it carries exactly what the DOM
+// needs to be styled and nothing a human or an editor needs to be told: no `means`, no group, no
+// nesting rules, no assembly templates. That belongs to `button.editor.ts` — see its header for
+// why editor-facing metadata is kept out of here (short version: it is the same reason Storybook
+// keeps `argTypes`/docs in `*.stories.tsx`, not in the component itself).
+//
+// Declared with the SAME function used by all 51 ready-made Ark anatomies — `createAnatomy`. One
+// declaration gives both sides of the contract: the `attrs` the kit puts on the node, and the
+// `selector` the skin hooks into.
 
 import { createAnatomy, defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
-import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
-// ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
-// остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
+// TYPE ONLY: `import type` is erased at build time, so the `./button` subpath stays Solid-free.
+// Needed so the setting keys are checked against the component's real props.
 import type { ButtonProps } from "./button.jsx";
 
 /**
- * Части кнопки.
+ * Parts of the button.
  *
- * Часть ОДНА, и это честно: кнопка рендерит один узел, а подпись, значок и индикатор кладёт в
- * него потребитель — это его узлы, и обещать за них нечего. Появится своя внутренняя часть —
- * она добавится сюда, и адрес у неё возникнет тем же объявлением.
+ * There is exactly ONE part, and that is accurate: the button renders a single node — the
+ * label, icon, and any indicator are the consumer's own nodes, and this component makes no
+ * promise about them. Should the button ever need an internal part of its own, it is declared
+ * here and gets an address the same way.
  */
 export const anatomy = createAnatomy("button").parts("root");
 
-/** Адреса частей: `attrs` для узла, `selector` для стиля. Считаются один раз — они статичны. */
+/** Part addresses: `attrs` for the node, `selector` for styling. Computed once — they are static. */
 export const parts = anatomy.build();
 
 /**
- * Паспорт кнопки — анатомия плюс то, чего анатомия не знает.
+ * Passport of the button — anatomy plus what anatomy alone does not say.
  *
- * Состояний семь, и три из них — псевдоклассы. Так и есть на самом деле: кнопка не хранит ни
- * наведения, ни фокуса, ни нажатия — их знает браузер, и объявить их атрибутом значило бы
- * соврать данными. Сама кнопка показывает атрибутом ровно одно — отключённость: у отключённой
- * кнопки нет ни `:hover`, ни `:active`, и без `data-disabled` состояние снаружи было бы
- * невидимо вовсе.
+ * Seven states, three of them pseudo-classes. That is accurate: the button does not store
+ * hover, focus, or press — the browser does, and declaring them as an attribute would be a lie
+ * in the data. The button attribute-marks exactly one thing itself — disabledness: a disabled
+ * button has neither `:hover` nor `:active`, and without `data-disabled` that state would be
+ * invisible from the outside.
  *
- * Остальные три атрибута ставит НЕ кнопка, и это не пробел, а следствие двух решений:
+ * The remaining three attributes are NOT set by the button, and that is not a gap — it follows
+ * from two decisions:
  *
- *  • занятость (`aria-busy`) ставит потребитель: проп-сахара `loading` в ките нет намеренно,
- *    занятая кнопка собирается из готового;
- *  • раскрытие (`data-expanded`) и нажатость (`data-pressed`) приходят от ВНЕШНЕГО компонента
- *    при композиции (`PWEB-25`): кнопка, ставшая триггером окна или переключателем, несёт адрес
- *    кнопки — потому что визуально она кнопка, — а состояние отдаёт тот, чьё это поведение.
+ *  • busyness (`aria-busy`) is set by the CONSUMER: the kit deliberately has no `loading` prop
+ *    sugar — a busy button is assembled from what already exists;
+ *  • expansion (`data-expanded`) and pressedness (`data-pressed`) arrive from an OUTER component
+ *    at composition time (`PWEB-25`): a button that becomes a popover trigger or a toggle carries
+ *    the button's own address — because visually it is a button — while the state itself belongs
+ *    to whoever owns that behavior.
  *
- * Не объяви мы их — скин не смог бы одеть ни занятую кнопку, ни раскрытый триггер, ни нажатый
- * переключатель ВООБЩЕ: правило, адресующее необъявленное состояние, невалидно. Правило
- * «паспорт не объявляет ненаблюдаемого» этим не нарушено — состояние наблюдаемо, его просто
- * ставит не сам компонент, и каждое проверено на живой композиции.
+ * Leaving them undeclared would make it impossible for a skin to dress a busy button, an
+ * expanded trigger, or a pressed toggle AT ALL: a rule addressing an undeclared state is invalid.
+ * This does not break "the passport declares nothing unobservable" — the state IS observable,
+ * the component simply is not the one setting it, and each one is proven on a live composition.
  */
 export const passport = definePassport({
   anatomy,
@@ -61,9 +70,9 @@ export const passport = definePassport({
         { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } },
         { name: "busy", mark: { kind: "attribute", name: "aria-busy", value: "true" } },
         {
-          // Имя состояния — это АДРЕС, по которому его найдёт скин, и оно переживёт смену
-          // кита: атрибут сегодня кобальтовый (`data-expanded`), в словаре Zag то же самое
-          // выражено `data-state="open"`. Меняется разметка — имя остаётся.
+          // The state name is the ADDRESS the skin looks it up by, and it outlives a kit swap:
+          // the attribute is Kobalte's `data-expanded` today, the same thing is `data-state="open"`
+          // in Zag's vocabulary. Markup changes; the name stays.
           name: "expanded",
           mark: { kind: "attribute", name: "data-expanded" },
         },
@@ -72,90 +81,12 @@ export const passport = definePassport({
     },
   ],
   variantAxis: {
-    // Имён здесь нет и не будет: их создаёт человек вместе со скином. Паспорт объявляет только
-    // то, что ось ЕСТЬ — одно имя, одним атрибутом.
+    // No names live here and none ever will: a human creates them together with a skin. The
+    // passport only declares that the axis EXISTS — one name, one attribute.
     mark: { kind: "attribute", name: "data-variant" },
   },
-  // НАСТРОЕК У КНОПКИ НЕТ (`PWEB-89`), и запись это утверждает, а не умалчивает: пустая
-  // `defineSettings<ButtonProps>` — проверяемое заявление, что ни одной настройки из закрытого
-  // перечня кнопка не принимает. Появится — тип потребует её объявить.
+  // THE BUTTON HAS NO SETTINGS (`PWEB-89`), and this declares that as a fact, not an omission: an
+  // empty `defineSettings<ButtonProps>` is a checkable claim that the button accepts none of the
+  // closed settings vocabulary. Should one appear, the type forces it to be declared here.
   settings: defineSettings<ButtonProps>({}),
-});
-
-/** Срез РЕДАКТОРА (`PWEB-115`, `PWEB-118`) — назначения человеку, род, группа, вложенность, сборка. */
-export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
-  // Поставщик назван данными: форма одна на всех, и читатель паспорта не знает имён пакетов
-  // заранее. Совпадение с манифестом стережёт проба — иначе строка разъехалась бы молча.
-  package: "@omnifield/probe-web-ui",
-  // Кнопка — обычный компонент, а не значок: внутрь неё кладут, а не её саму кладут внутрь
-  // одного символа. Род объявляется здесь, потому что опознать кандидата иначе можно было бы
-  // только по имени пакета (`PWEB-24`).
-  genus: "component",
-  // Место в перечне, и ничего больше (`PWEB-34`): кнопка — то, что нажимают, а не то, чем
-  // вводят значение. Раздел назван поставщиком, потому что иначе его назовёт каждый пульт, и
-  // назовёт по-своему.
-  group: "actions",
-  variantAxis: {
-    means: "имя вариации, которое даёт кнопке человек в редакторе; кит пропускает его насквозь",
-  },
-  parts: {
-    root: {
-      means: "кнопка целиком — один узел, по умолчанию нативный `<button type=\"button\">`",
-      states: {
-        hover: { means: "указатель над кнопкой" },
-        "focus-visible": { means: "фокус пришёл с клавиатуры — обвод нужен, при нажатии мышью он лишний" },
-        active: { means: "кнопку держат нажатой" },
-        disabled: { means: "нажать нельзя; кнопка не зовёт обработчик" },
-        busy: { means: "работа идёт — атрибут ставит потребитель вместе с `disabled`" },
-        expanded: { means: "кнопка раскрыла то, чем управляет, — атрибут приходит от внешнего компонента" },
-        pressed: { means: "кнопка-переключатель нажата — нажатость принадлежит внешнему, вид кнопке" },
-      },
-      // Внутрь кнопки — подпись и значок, и больше ничего (`PWEB-24`).
-      //
-      // Своих частей в перечне нет: у кнопки одна часть, вкладывать в себя саму её нечего.
-      // Содержимое названо РОДОМ, а не именами компонентов: значок приезжает из чужого пакета,
-      // и перечень имён здесь отстал бы на первом же новом значке.
-      //
-      // Раскладку внутрь кнопки не кладут намеренно: кнопка — конечная точка нажатия, а не
-      // место для дерева. Разрешив «любой компонент», паспорт перестал бы отвергать хоть
-      // что-нибудь, и правило вложенности осталось бы тем же «пускает или нет», что и было.
-      accepts: [
-        { kind: "content", genus: "text" },
-        { kind: "content", genus: "icon" },
-      ],
-    },
-  },
-  // НЕСКОЛЬКО СБОРОК-ТЕМПЛЕЙТОВ (`PWEB-116`). У кнопки предмет проще, чем у гармошки — один узел,
-  // без вложенности, без состояний-в-сборке, — и раздувать список ради счёта незачем: честное
-  // число здесь три, и это ровно то, чем кнопка снаружи может быть по составу содержимого
-  // (`root.accepts`: текст, значок, и то и другое) — не больше и не меньше.
-  //
-  // Пропов, без которых кнопка не работает, нет ни у одной сборки — то же знание поставщика,
-  // что и раньше, просто пустое, и здесь оно не меняется от сборки к сборке.
-  assemblies: [
-    {
-      means: "кнопка с подписью",
-      tree: { part: "root", children: [{ genus: "text", value: "Кнопка" }] },
-    },
-    {
-      means: "кнопка со значком и подписью",
-      // Значок ВЕДЁТ подпись — порядок содержимого решает автор вида (см. паспорт гармошки, тот
-      // же довод). Значок здесь плейсхолдер (`★`), не настоящий компонент `lucide-solid`: база
-      // сборки — данные, не код (`icon.anatomy.ts`).
-      tree: {
-        part: "root",
-        children: [
-          { genus: "icon", value: "★" },
-          { genus: "text", value: "Кнопка со значком" },
-        ],
-      },
-    },
-    {
-      means: "кнопка с одним значком, без подписи",
-      // Третий честный случай, а не повтор второго без текста: кнопка-значок — отдельный
-      // реальный вид (панель инструментов, компактное действие), и `root.accepts` пускает значок
-      // один, без обязательной подписи рядом.
-      tree: { part: "root", children: [{ genus: "icon", value: "★" }] },
-    },
-  ],
 });
