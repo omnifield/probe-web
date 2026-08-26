@@ -1,4 +1,4 @@
-// EDITOR-ONLY metadata for the button (`PWEB-115`, `PWEB-118`, decomposed `PWEB-124`).
+// EDITOR-ONLY metadata for the button (`PWEB-115`, `PWEB-118`, decomposed `PWEB-124`, `PWEB-127`).
 //
 // Human-facing text, taxonomy, and templates for the visual editor and for agents that read the
 // catalog — never for the running app. This is the same split every mature UI kit and design-
@@ -9,13 +9,22 @@
 //  • Zag.js/Ark UI keep `anatomy.ts` (parts only) separate from framework connectors; neither
 //    carries prose meant for a human reading a docs site.
 //
-// `defineEditorInfo` depends on `passport` (the runtime contract in `button.anatomy.ts`) so the
-// two stay addressed by the same part/state names — but nothing here flows the other way: the
-// runtime file has no import from this one, so a production bundle that never reaches into
-// `/editor` never pays for a single word written below.
+// `defineEditorInfo` depends on `passport` (the runtime contract in `../entity/passport.ts`, built
+// on the bare parts in `../entity/anatomy.ts`) so the two stay addressed by the same part/state
+// names — but nothing here flows the other way: the runtime files have no import from this one,
+// so a production bundle that never reaches into `/editor` never pays for a single word written
+// below.
+//
+// ONE part, no nesting, no settings — kept as ONE file, inline in the `defineEditorInfo` call
+// below, unlike the accordion's `playground/parts.ts`/`assemblies.ts`/`settings.ts`. Those were
+// split out of necessity: five parts, nesting, and a passport referenced from a SEPARATE module
+// (contextual typing does not reach across files, so the accordion needed an explicit
+// `typeof passport` import in each one). The button has none of that — a single object literal
+// passed directly to `defineEditorInfo` gets its typing for free from the call itself, and a
+// three-way file split here would separate one paragraph from itself for no reader's benefit.
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
-import { passport } from "./button.anatomy.js";
+import { passport } from "../entity/passport.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // The provider is named as data: the form is shared across every provider, and a passport

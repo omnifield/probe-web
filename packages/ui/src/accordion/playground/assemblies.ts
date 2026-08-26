@@ -29,7 +29,7 @@ import type { passport } from "../entity/passport.js";
 
 // The literal part-name union (`"root" | "item" | …`), read off the passport itself rather than
 // spelled out by hand: `part` fields below type-check against ANATOMY, not a copy of its names
-// that could drift from it. Contextual typing (the way `button.editor.ts` gets this for free by
+// that could drift from it. Contextual typing (the way `button/playground/index.ts` gets this for free by
 // writing its assemblies inline in the `defineEditorInfo` call) does not reach into a separate
 // module — this is what stands in for it here.
 type AccordionPart =

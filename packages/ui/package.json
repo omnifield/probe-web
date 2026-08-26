@@ -24,7 +24,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "vite build && tsc -p tsconfig.build.json",
     "generate": "node scripts/generate.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
@@ -78,11 +78,10 @@
   "devDependencies": {
     "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
+    "@omnifield/probe-web-build": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@types/node": "^24.10.1",
     "@zag-js/anatomy": "^1.43.1",
-    "esbuild": "^0.27.7",
-    "esbuild-plugin-solid": "^0.6.0",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

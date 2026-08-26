@@ -2,9 +2,9 @@ import { Root as KobalteButton, type ButtonRootProps } from "@kobalte/core/butto
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useAddress, useSlot, slotAware } from "../slot-chain.js";
-import { traceLife } from "../trace.js";
-import { parts } from "./button.anatomy.js";
+import { useAddress, useSlot, slotAware } from "../../slot-chain.js";
+import { traceLife } from "../../trace.js";
+import { anatomyParts } from "../entity/anatomy.js";
 
 /**
  * Props of `Button`: everything the target element accepts, plus `as` and `disabled`.
@@ -29,7 +29,7 @@ export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
  *
  * **Zero styles.** There is no default class — the consumer styles it. The button gives the skin
  * an address through ANATOMY ATTRIBUTES (`data-scope=button` + `data-part=root`,
- * `button.anatomy.ts`): the skin hooks in with a selector from that same declaration, so the two
+ * `entity/anatomy.ts`): the skin hooks in with a selector from that same declaration, so the two
  * cannot drift apart by construction. States are surfaced as attributes: `data-disabled`,
  * `aria-disabled`.
  *
@@ -50,7 +50,7 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   traceLife("ui.button");
 
   const [slot, rest] = useSlot(props, "button");
-  const [address, clean] = useAddress(rest, parts.root.attrs);
+  const [address, clean] = useAddress(rest, anatomyParts.root.attrs);
 
   // Spread order is part of the contract, and the two halves mean DIFFERENT things.
   //

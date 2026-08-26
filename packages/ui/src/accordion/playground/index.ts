@@ -1,7 +1,7 @@
 // EDITOR-ONLY metadata for the accordion (`PWEB-115`, `PWEB-118`, decomposed `PWEB-124`).
 //
 // Human-facing text, taxonomy, and nesting rules for the visual editor and for agents reading the
-// catalog — never for the running app. See `button.editor.ts` for the full argument (Storybook
+// catalog — never for the running app. See `button/playground/index.ts` for the full argument (Storybook
 // `argTypes`/docs vs. component code, Zag/Ark's own `anatomy.ts`); the short version:
 // `defineEditorInfo` depends one-way on `passport` (the runtime contract in `../passport.ts`,
 // built on the bare parts in `../anatomy.ts`), and nothing flows back, so a production bundle
