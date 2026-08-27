@@ -9,6 +9,7 @@
 // Разбор устройства, довод и рецепт объявления — в шапке `passport-editor.ts`.
 
 export type {
+  ComponentFootprint,
   ComponentGroup,
   PassportComponentGenus,
   PassportEditorInfo,
@@ -21,7 +22,7 @@ export type {
   PassportStateEditorInfo,
   PassportVariableEditorInfo,
 } from "./passport-editor.js";
-export { admits, defineEditorInfo, GROUPS, groupOf } from "./passport-editor.js";
+export { admits, defineEditorInfo, footprintOf, GROUPS, groupOf } from "./passport-editor.js";
 
 // БАЗОВАЯ СБОРКА (`PWEB-89`) — держатель переехал в `PassportEditorInfo.assemblies` и стал
 // списком (`PWEB-115`); объявление дерева и его разворот в плоскую форму остались здесь же, где
@@ -31,9 +32,23 @@ export type {
   BaseAssemblyElement,
   BaseAssemblyNode,
   BaseAssemblyTree,
+  DataBinding,
+  DataPreset,
+  DispatchAction,
+  DynamicValue,
   PassportAssembly,
   PassportAssemblyContent,
+  PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyPart,
+  PassportAssemblyRepeat,
 } from "./passport-assembly.js";
-export { baseAssemblyOf, isAssemblyContent, isContentNode } from "./passport-assembly.js";
+export {
+  baseAssemblyOf,
+  isAssemblyContent,
+  isAssemblyExtra,
+  isAssemblyRepeat,
+  isContentNode,
+  isDataBinding,
+  resolveDataBinding,
+} from "./passport-assembly.js";
