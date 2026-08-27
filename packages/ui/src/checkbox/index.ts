@@ -14,6 +14,6 @@ export {
   CheckboxLabel,
   type CheckboxLabelProps,
   type CheckboxProps,
-} from "./checkbox.jsx";
-export { anatomy, parts, passport } from "./checkbox.anatomy.js";
-export { kit } from "./checkbox.kit.js";
+} from "./components/index.jsx";
+export { kit } from "./components/kit.js";
+export { anatomy, anatomyParts, passport } from "./entity";

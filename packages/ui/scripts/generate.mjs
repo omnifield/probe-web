@@ -17,17 +17,14 @@
 // овнеров; именно из таких файлов вырастает круг «один правит — ломается у второго». Забыл
 // вписать — паспорт молча не уехал бы в поставку, и узнал бы об этом скин, а не мы.
 //
-// ## Компонент считается объявившим себя двумя способами — обе раскладки живы одновременно
+// ## Компонент объявляет себя по фиксированной раскладке
 //
-// До разноса по подпапкам (`PWEB-124`) паспорт компонента лежал в `<имя>/<имя>.anatomy.ts`, а
-// срез редактора — либо там же, либо рядом в `<имя>/<имя>.editor.ts`, если компонент завёл
-// декомпозицию (эталон — `button`). После разноса (эталон — `accordion`) паспорт переезжает в
-// `<имя>/entity/passport.ts`, срез редактора — в `<имя>/playground/index.ts`, карта частей — в
-// `<имя>/components/kit.ts`. На момент правки разнесён один компонент из семи — обе формы
-// проверяются по факту наличия файла, а не по списку имён, и это НЕ временный костыль ради
-// одного компонента: то же самое устройство уже стояло здесь для развилки anatomy/editor до
-// разноса, разнос лишь добавил вторую пару путей той же природы. Условие снимается, когда
-// разнесены все семь.
+// Паспорт лежит в `<имя>/entity/passport.ts`, срез редактора — в `<имя>/playground/index.ts`,
+// карта частей — в `<имя>/components/kit.ts` (эталон разноса — `accordion`, `PWEB-124`/`PWEB-126`;
+// все семь компонентов кита переведены на неё, `PWEB-127`). Старая плоская раскладка
+// (`<имя>/<имя>.anatomy.ts` и т.д.) сюда не читается — компонент без новой раскладки просто не
+// попадёт в перечень, тем же способом, что и раньше отсутствие файла отсеивало необъявленный
+// компонент.
 //
 // Обход ОДИН на оба перечня. Два обхода со своими фильтрами разъехались бы на первой же папке,
 // попавшей под один и не попавшей под второй, — и разъехались бы молча.
@@ -39,48 +36,27 @@ import { fileURLToPath } from "node:url";
 const pkgRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(pkgRoot, "src");
 
-/** Модуль, из которого компонент отдаёт `passport`: разнесённая раскладка либо старая, плоская. */
+/** Модуль, из которого компонент отдаёт `passport`. */
 function passportModuleOf(folder) {
-  return existsSync(join(srcDir, folder, "entity", "passport.ts"))
-    ? `${folder}/entity/passport.js`
-    : `${folder}/${folder}.anatomy.js`;
+  return `${folder}/entity/passport.js`;
 }
 
-/**
- * Модуль, из которого компонент отдаёт `kit` — карту часть → компонент: разнесённая раскладка
- * (`components/kit.ts`) либо старая, плоская (`<имя>.kit.ts`).
- */
+/** Модуль, из которого компонент отдаёт `kit` — карту часть → компонент. */
 function kitModuleOf(folder) {
-  return existsSync(join(srcDir, folder, "components", "kit.ts"))
-    ? `${folder}/components/kit.js`
-    : `${folder}/${folder}.kit.js`;
+  return `${folder}/components/kit.js`;
 }
 
-/**
- * Модуль, из которого компонент отдаёт `editorInfo`: разнесённая раскладка (`playground/index.ts`),
- * промежуточная (`<имя>.editor.ts`, эталон — `button`, ДО разноса на подпапки) либо самая старая,
- * где паспорт и срез редактора лежат в одном файле.
- */
+/** Модуль, из которого компонент отдаёт `editorInfo`. */
 function editorInfoModuleOf(folder) {
-  if (existsSync(join(srcDir, folder, "playground", "index.ts"))) {
-    return `${folder}/playground/index.js`;
-  }
-  if (existsSync(join(srcDir, folder, `${folder}.editor.ts`))) {
-    return `${folder}/${folder}.editor.js`;
-  }
-  return `${folder}/${folder}.anatomy.js`;
+  return `${folder}/playground/index.js`;
 }
 
-/** Папки компонентов, объявивших анатомию — любой из двух раскладок. */
+/** Папки компонентов, объявивших анатомию. */
 function componentFolders() {
   return readdirSync(srcDir, { withFileTypes: true })
     .filter((item) => item.isDirectory())
     .map((item) => item.name)
-    .filter(
-      (name) =>
-        existsSync(join(srcDir, name, "entity", "passport.ts")) ||
-        existsSync(join(srcDir, name, `${name}.anatomy.ts`)),
-    )
+    .filter((name) => existsSync(join(srcDir, name, "entity", "passport.ts")))
     .sort();
 }
 
@@ -94,13 +70,11 @@ function renderPassportEntry(folders) {
   const name = (folder) => identifierOf(folder, "Passport");
   const editorName = (folder) => identifierOf(folder, "EditorInfo");
   const imports = folders
-    .map((folder) => {
-      const passportModule = passportModuleOf(folder);
-      const editorModule = editorInfoModuleOf(folder);
-      return passportModule === editorModule
-        ? `import { passport as ${name(folder)}, editorInfo as ${editorName(folder)} } from "./${passportModule}";`
-        : `import { passport as ${name(folder)} } from "./${passportModule}";\nimport { editorInfo as ${editorName(folder)} } from "./${editorModule}";`;
-    })
+    .map(
+      (folder) =>
+        `import { passport as ${name(folder)} } from "./${passportModuleOf(folder)}";\n` +
+        `import { editorInfo as ${editorName(folder)} } from "./${editorInfoModuleOf(folder)}";`,
+    )
     .join("\n");
   const entries = folders.map((folder) => `  [${name(folder)}.component]: ${name(folder)},`).join("\n");
   const editorEntries = folders
@@ -110,7 +84,7 @@ function renderPassportEntry(folders) {
   return `// ПОРОЖДЁН СБОРКОЙ (\`scripts/generate.mjs\`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Перечень паспортов собирается обходом папок \`src/*\`: компонент объявляет себя в своей папке
-// (\`entity/passport.ts\` либо \`<имя>.anatomy.ts\`) и попадает в поставку самим фактом объявления.
+// (\`entity/passport.ts\`) и попадает в поставку самим фактом объявления.
 //
 // ФОРМА ПАСПОРТА (\`PWEB-110\`, \`PWEB-111\`) переехала в \`@omnifield/probe-web-skin\` — она общая
 // для любого поставщика компонентов, а не привилегия этого кита. Реэкспорт ниже ПОИМЁННЫЙ, а не
@@ -165,11 +139,16 @@ export type {
   BaseAssemblyNode,
   BaseAssemblyTree,
   ComponentGroup,
+  DataBinding,
+  DataPreset,
+  DynamicValue,
   PassportAdmission,
   PassportAssembly,
   PassportAssemblyContent,
+  PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyPart,
+  PassportAssemblyRepeat,
   PassportComponentGenus,
   PassportEditorInfo,
   PassportEditorSpec,
@@ -187,7 +166,11 @@ export {
   GROUPS,
   groupOf,
   isAssemblyContent,
+  isAssemblyExtra,
+  isAssemblyRepeat,
   isContentNode,
+  isDataBinding,
+  resolveDataBinding,
 } from "@omnifield/probe-web-skin/editor";
 // Реэкспорт (\`export ... from\`) не заводит локальное имя — \`ComponentPassport\`/\`PassportEditorInfo\`
 // ниже нужны САМ файлу, для \`PASSPORTS\`/\`passportOf\`/\`EDITOR_INFOS\`/\`editorInfoOf\`, и берутся
@@ -290,9 +273,7 @@ if (folders.length === 0) {
 // компонент без карты уехал бы в поставку паспортом, который нечем отрисовать, и узнал бы об этом
 // потребитель — на неодетом узле, а не на нашем прогоне.
 const withoutMap = folders.filter(
-  (folder) =>
-    !existsSync(join(srcDir, folder, "components", "kit.ts")) &&
-    !existsSync(join(srcDir, folder, `${folder}.kit.ts`)),
+  (folder) => !existsSync(join(srcDir, folder, "components", "kit.ts")),
 );
 
 if (withoutMap.length > 0) {

@@ -29,9 +29,10 @@ import type { passport } from "../entity/passport.js";
 
 // The literal part-name union (`"root" | "item" | …`), read off the passport itself rather than
 // spelled out by hand: `part` fields below type-check against ANATOMY, not a copy of its names
-// that could drift from it. Contextual typing (the way `button/playground/index.ts` gets this for free by
-// writing its assemblies inline in the `defineEditorInfo` call) does not reach into a separate
-// module — this is what stands in for it here.
+// that could drift from it. Contextual typing does not reach across a module boundary — a plain
+// object literal passed straight to `defineEditorInfo` gets its typing for free from the call
+// itself, but `assemblies` lives in ITS OWN module here, and this explicit derivation is what
+// stands in for that contextual typing.
 type AccordionPart =
   typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
@@ -82,6 +83,47 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
               children: [{ genus: "text", value: "Free within 30 days" }],
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    name: "filled",
+    means:
+      "тот же аккордеон, но разделы приходят из данных: сколько элементов в /sections, столько " +
+      "item'ов и вырастет — число нигде не названо отдельно (PWEB-156)",
+    // Число разделов НЕ выбор этой сборки — оно решается тем, кто принесёт данные в `RenderTree`
+    // (`data`, PWEB-156). Сборка объявляет ОДИН узел-шаблон под `repeat`; без данных шаблон
+    // разворачивается в ноль узлов — законное состояние, не отказ, тем же приёмом, что и у любого
+    // содержимого без данных.
+    tree: {
+      part: "root",
+      children: [
+        {
+          repeat: { path: "/sections" },
+          template: {
+            part: "item",
+            // "id" — относительный путь: читается от ТЕКУЩЕГО элемента массива (`/sections/N/id`),
+            // не от корня данных. `value` нужен Ark для отслеживания, какой раздел раскрыт —
+            // синтетический индекс здесь не годится: он не переживает пересортировку/фильтр
+            // данных, а значение из САМИХ данных переживает.
+            bind: { value: "id" },
+            children: [
+              {
+                part: "itemTrigger",
+                // Клик по этому узлу — настоящий переключатель раздела, и наружу об этом стоит
+                // сказать: "id" резолвится относительно ТЕКУЩЕГО элемента (`PWEB-157`), тем же
+                // приёмом, что и `bind` выше, — вызывающий получает готовый JSON, не сырое
+                // DOM-событие.
+                on: { click: { event: { name: "toggle", context: { section: { path: "id" } } } } },
+                children: [
+                  { genus: "text", value: { path: "title" } },
+                  { part: "itemIndicator", children: [{ genus: "icon", value: "▾" }] },
+                ],
+              },
+              { part: "itemContent", children: [{ genus: "text", value: { path: "body" } }] },
+            ],
+          },
         },
       ],
     },
