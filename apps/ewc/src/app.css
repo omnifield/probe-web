@@ -5,10 +5,10 @@ html, body { height: 100%; margin: 0; }
 body {
   display: grid;
   place-items: center;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  /* Colors come from the skin (`skin.ts`) — no literal here, so switching mode actually shows. */
-  background: var(--ewc-bg);
-  color: var(--ewc-fg);
+  /* Real vocabulary roles (`products/skin/src/showcase/showcase.css`), not invented names: no
+     skin worn yet — no role printed — browser default, same as everywhere else in the base. */
+  background: var(--ui-surface);
+  color: var(--ui-ink);
 }
 
 .ewc-placeholder {
@@ -19,6 +19,17 @@ body {
 }
 .ewc-placeholder h1 { margin: 0; font-size: 1.5rem; }
 .ewc-placeholder p { margin: 0; opacity: 0.7; }
+
+.ewc-trouble { margin: 0; color: var(--ui-danger, #c33); font-size: 0.875rem; }
+
+.ewc-select {
+  font: inherit;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--ui-line, currentColor);
+  border-radius: var(--ui-radius-sm, 4px);
+  background: var(--ui-surface, transparent);
+  color: inherit;
+}
 
 .ewc-modes { display: flex; gap: 0.5rem; }
 .ewc-mode-btn {

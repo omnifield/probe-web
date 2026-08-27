@@ -13,6 +13,7 @@ import { createSignal, For } from "solid-js";
 const PRODUCTS = [
   { id: "skin", label: "Skin", url: "http://localhost:5174/" },
   { id: "ewc", label: "EWC", url: "http://localhost:5175/" },
+  { id: "diagrams", label: "Diagrams", url: "http://localhost:5176/" },
 ] as const;
 
 export function Panel() {
