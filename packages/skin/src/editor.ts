@@ -41,12 +41,14 @@ export type {
   PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyPart,
+  PassportAssemblyRef,
   PassportAssemblyRepeat,
 } from "./passport-assembly.js";
 export {
   baseAssemblyOf,
   isAssemblyContent,
   isAssemblyExtra,
+  isAssemblyRef,
   isAssemblyRepeat,
   isContentNode,
   isDataBinding,

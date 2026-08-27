@@ -60,6 +60,7 @@ import {
   admits,
   isAssemblyContent,
   isAssemblyExtra,
+  isAssemblyRef,
   isAssemblyRepeat,
   type DataPreset,
   type PassportAdmission,
@@ -323,13 +324,27 @@ function checkAssembly<Part extends string>(
     );
   }
 
-  // Повтор (`PassportAssemblyRepeat`, `PWEB-156`) ПРОЗРАЧЕН для допуска: место в дереве занимает
-  // не он сам, а то, чем он размножается, — уходит сквозь вложенные повторы до части/содержимого/
-  // extra, ровно как `outerTypeOf` уходит сквозь композицию в `packages/assembly/src/tree.ts`.
+  // Повтор (`PassportAssemblyRepeat`, `PWEB-156`) и ссылка (`PassportAssemblyRef`, `PWEB-160`)
+  // ПРОЗРАЧНЫ для допуска: место в дереве занимает не он сам, а то, чем он размножается/на что
+  // ссылается, — уходит сквозь оба до части/содержимого/extra, ровно как `outerTypeOf` уходит
+  // сквозь композицию в `packages/assembly/src/tree.ts`.
   const templateOf = (
     node: PassportAssemblyNode<Part>,
-  ): PassportAssemblyPart<Part> | PassportAssemblyContent | PassportAssemblyExtra<Part> =>
-    isAssemblyRepeat(node) ? templateOf(node.template) : node;
+  ): PassportAssemblyPart<Part> | PassportAssemblyContent | PassportAssemblyExtra<Part> => {
+    if (isAssemblyRepeat(node)) return templateOf(node.template);
+
+    if (isAssemblyRef(node)) {
+      const target = assembly.refs?.[node.ref];
+      if (!target) {
+        throw new Error(
+          `сборка «${component}.${assembly.name}» ссылается на «${node.ref}», которого нет в её refs`,
+        );
+      }
+      return templateOf(target);
+    }
+
+    return node;
+  };
 
   // Узел-родитель при обходе — часть анатомии либо вспомогательный компонент кита (extra, без
   // адреса анатомии — `PassportAssemblyExtra`, `PWEB-152`). Содержимое обходу не подлежит: у него

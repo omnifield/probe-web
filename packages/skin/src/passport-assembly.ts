@@ -341,12 +341,50 @@ export function isAssemblyRepeat<Part extends string = string>(
   return "repeat" in node;
 }
 
-/** Один узел объявления: часть, содержимое, вспомогательный компонент кита, либо повтор по данным. */
+/**
+ * Узел объявления: ССЫЛКА на именованный кусок дерева, объявленный один раз (`PassportAssembly.refs`,
+ * `PWEB-160`).
+ *
+ * Найдено ресёрчем рынка (2026-08-27, постановка user — «сборки дублируются, таскать целиком
+ * дорого»): у A2UI компоненты лежат плоской картой по id, а «ребёнок» — просто СВОЙСТВО,
+ * ссылающееся на чужой id, — ничто не мешает одному id быть ребёнком у двух родителей сразу. Тот
+ * же приём — GraphQL-нормализация (сущность хранится раз, остальные держат ссылку) и
+ * мастер-компонент/инстанс у Figma (переопределения поверх, не копия).
+ *
+ * У нас `RenderTree` обходит настоящее дерево (`parentId` — одно поле, не список), и это ПРАВИЛЬНО
+ * для отрисовки, — поэтому граф не заводим. Вместо этого ссылка на разворачивании (`baseAssemblyOf`)
+ * превращается в СВОИ настоящие узлы на КАЖДОЙ площадке, где стоит `{ ref }`, — тем же приёмом,
+ * что уже разворачивает `template` у повтора (`PassportAssemblyRepeat`), просто без массива. В
+ * объявлении и по сети — маленькая ссылка, не вся структура целиком.
+ */
+export interface PassportAssemblyRef {
+  /** Имя в `assembly.refs` — не найдено, сборка отвергается: дефект объявления, не данных. */
+  readonly ref: string;
+  /**
+   * Пропы поверх найденного шаблона — сайт ссылки побеждает при совпадении имени с тем, что
+   * шаблон объявил сам (тот же приём, что переопределение инстанса поверх мастер-компонента).
+   */
+  readonly props?: Readonly<Record<string, unknown>>;
+  /** Пропы из данных поверх шаблона — та же роль и то же побеждающее слияние, что у `props`. */
+  readonly bind?: Readonly<Record<string, string>>;
+  /** Событие наружу поверх шаблона — та же роль и то же побеждающее слияние. */
+  readonly on?: Readonly<Record<string, DispatchAction>>;
+}
+
+/** Ссылка ли это — по наличию `ref`, тем же приёмом, что различает extra/повтор. */
+export function isAssemblyRef<Part extends string = string>(
+  node: PassportAssemblyNode<Part>,
+): node is PassportAssemblyRef {
+  return "ref" in node;
+}
+
+/** Один узел объявления: часть, содержимое, вспомогательный компонент кита, повтор по данным, либо ссылка на именованный кусок. */
 export type PassportAssemblyNode<Part extends string = string> =
   | PassportAssemblyPart<Part>
   | PassportAssemblyContent
   | PassportAssemblyExtra<Part>
-  | PassportAssemblyRepeat<Part>;
+  | PassportAssemblyRepeat<Part>
+  | PassportAssemblyRef;
 
 /**
  * Одна сборка компонента — рабочий экземпляр, он же СХЕМА, по которой компонент собирается.
@@ -387,6 +425,15 @@ export interface PassportAssembly<Part extends string = string> {
    * компонентов с разными пропами. Отсутствует у компонентов, чей корень — настоящий DOM-узел.
    */
   readonly providerProps?: Readonly<Record<string, unknown>>;
+  /**
+   * Именованные куски дерева, объявленные ОДИН раз и используемые СКОЛЬКО угодно раз через
+   * `{ ref: "имя" }` где угодно внутри `tree` (`PWEB-160`) — большая или повторяющаяся сборка не
+   * обязана дублировать одну и ту же структуру в объявлении на каждой площадке, где она нужна.
+   *
+   * Область — ЭТА сборка, не глобальный реестр: перекрёстные ссылки между разными сборками или
+   * разными компонентами не заведены — понадобятся, будут решением, а не тихим расширением.
+   */
+  readonly refs?: Readonly<Record<string, PassportAssemblyNode<Part>>>;
 }
 
 /**
@@ -570,7 +617,9 @@ export function baseAssemblyOf(
           ]),
         )
       : undefined;
-    const boundChildren = node.children?.map((child) => scopeTemplate(child, base));
+    // Ссылка (`PassportAssemblyRef`) детей не несёт — своё содержимое у неё берётся из найденного
+    // по имени шаблона, ПОСЛЕ разрешения, а не здесь.
+    const boundChildren = "children" in node ? node.children?.map((child) => scopeTemplate(child, base)) : undefined;
 
     return {
       ...node,
@@ -644,6 +693,30 @@ export function baseAssemblyOf(
    * массив — ноль узлов, тем же приёмом, что и у остального содержимого без данных: показ
    * молчит, а не падает.
    */
+  /**
+   * Сайт ссылки поверх найденного по имени шаблона (`PWEB-160`) — сайт ПОБЕЖДАЕТ при совпадении
+   * имени, тем же приёмом, что переопределение инстанса поверх мастер-компонента у Figma.
+   * Содержимое и повтор своих `props`/`bind`/`on` не несут — слияние им ничего не добавляет, и
+   * ветка на них не заходит, поэтому объединять там нечего.
+   */
+  const mergeRef = (
+    template: PassportAssemblyNode,
+    ref: PassportAssemblyRef,
+  ): PassportAssemblyNode => {
+    if (isAssemblyContent(template) || isAssemblyRepeat(template)) return template;
+
+    const props = ref.props || template.props ? { ...template.props, ...ref.props } : undefined;
+    const bind = ref.bind || template.bind ? { ...template.bind, ...ref.bind } : undefined;
+    const on = ref.on || template.on ? { ...template.on, ...ref.on } : undefined;
+
+    return {
+      ...template,
+      ...(props ? { props } : {}),
+      ...(bind ? { bind } : {}),
+      ...(on ? { on } : {}),
+    };
+  };
+
   const growAll = (node: PassportAssemblyNode, parentId: string | null): string[] => {
     if (isAssemblyRepeat(node)) {
       const items = resolveDataBinding(data, node.repeat.path);
@@ -654,6 +727,19 @@ export function baseAssemblyOf(
       return items.flatMap((_, index) =>
         growAll(scopeTemplate(node.template, `${node.repeat.path}/${index}`), parentId),
       );
+    }
+
+    if (isAssemblyRef(node)) {
+      const template = assembly.refs?.[node.ref];
+      if (!template) {
+        throw new Error(
+          `сборка «${assembly.name}» ссылается на «${node.ref}», которого нет в её refs — дефект объявления`,
+        );
+      }
+
+      // Рекурсия, не `grow` напрямую: найденный шаблон вправе сам оказаться повтором либо
+      // вложенной ссылкой, второй логики под это заводить не нужно.
+      return growAll(mergeRef(template, node), parentId);
     }
 
     return [grow(node, parentId)];
