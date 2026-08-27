@@ -1,0 +1,245 @@
+import DOMPurify from 'dompurify';
+import { isSafeMarkdownURL, markdownURLSchemes } from './markdown-url-policy.ts';
+
+/**
+ * Sanitize HTML with an allowlist of safe formatting tags.
+ * Use for rendering user content that may contain HTML (e.g. markdown output, rich text).
+ */
+export function sanitizeHtml(dirty: string): string {
+  if (!dirty) return '';
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS: [
+      'strong',
+      'b',
+      'em',
+      'i',
+      'u',
+      's',
+      'del',
+      'a',
+      'p',
+      'br',
+      'hr',
+      'ul',
+      'ol',
+      'li',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'code',
+      'pre',
+      'blockquote',
+      'img',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'th',
+      'td',
+      'div',
+      'span',
+      'svg',
+      'path',
+      'circle',
+      'rect',
+      'line',
+      'polyline',
+      'polygon',
+    ],
+    ALLOWED_ATTR: [
+      'href',
+      'target',
+      'rel',
+      'title',
+      'alt',
+      'src',
+      'class',
+      'colspan',
+      'rowspan',
+      // SVG attributes
+      'viewBox',
+      'width',
+      'height',
+      'fill',
+      'stroke',
+      'stroke-width',
+      'stroke-linecap',
+      'stroke-linejoin',
+      'd',
+      'cx',
+      'cy',
+      'r',
+      'x',
+      'y',
+      'x1',
+      'y1',
+      'x2',
+      'y2',
+      'points',
+      'xmlns',
+    ],
+    ALLOW_DATA_ATTR: false,
+  });
+}
+
+const markdownTags = [
+  'p',
+  'br',
+  'hr',
+  'blockquote',
+  'pre',
+  'code',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'em',
+  'strong',
+  'del',
+  'a',
+  'img',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'input',
+];
+
+const markdownAttributes = [
+  'href',
+  'title',
+  'src',
+  'alt',
+  'class',
+  'align',
+  'type',
+  'checked',
+  'disabled',
+  'rel',
+];
+
+const domPurifyMarkdownURI = new RegExp(
+  `^(?:(?:${markdownURLSchemes.join('|')}):|[#/]|[^/:?#\\\\]+(?:[/?#]|$))`,
+  'i'
+);
+
+/** Sanitize server-rendered Markdown at the final browser boundary. */
+export function sanitizeMarkdownHtml(dirty: string): string {
+  if (!dirty) return '';
+
+  const validateMarkdownURL = (
+    _node: Element,
+    data: { attrName: string; attrValue: string; keepAttr: boolean }
+  ) => {
+    const name = data.attrName.toLowerCase();
+    if (name === 'href' && !isSafeMarkdownURL(data.attrValue)) data.keepAttr = false;
+    if (name === 'src' && !isSafeMarkdownURL(data.attrValue, { image: true })) {
+      data.keepAttr = false;
+    }
+  };
+
+  DOMPurify.addHook('uponSanitizeAttribute', validateMarkdownURL);
+  try {
+    return DOMPurify.sanitize(dirty, {
+      ALLOWED_TAGS: markdownTags,
+      ALLOWED_ATTR: markdownAttributes,
+      ALLOWED_URI_REGEXP: domPurifyMarkdownURI,
+      ALLOW_DATA_ATTR: false,
+      FORBID_TAGS: ['svg', 'math', 'style', 'template'],
+    });
+  } finally {
+    DOMPurify.removeHook('uponSanitizeAttribute');
+  }
+}
+
+/**
+ * Strip all HTML tags, returning plain text.
+ * Use when only text content is needed and no HTML should remain.
+ */
+export function stripHtml(dirty: string): string {
+  if (!dirty) return '';
+  return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+}
+
+/**
+ * Escape HTML entities for safe interpolation in template literal HTML.
+ * Use when building HTML strings with user data (e.g. DataTable render functions).
+ */
+export function escapeHtml(text: string | number | null | undefined): string {
+  if (text == null) return '';
+  const str = String(text);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Returns a safe `href` value for an `<a>` tag, blocking `javascript:`, `data:`,
+ * `vbscript:`, and other non-navigation schemes. Allows http(s), mailto, tel,
+ * and same-origin paths/fragments. Use anywhere user- or admin-controlled URLs
+ * are rendered as link targets (e.g. portal footer links).
+ */
+export function safeHref(url: string | null | undefined): string {
+  if (!url) return '#';
+  const trimmed = String(url).trim();
+  if (!trimmed) return '#';
+  // Reject protocol-relative URLs (`//evil.com`): browsers resolve them as
+  // external links using the current page's scheme.
+  if (trimmed.startsWith('//')) return '#';
+  // Allow same-origin paths and fragments without further checks.
+  if (trimmed.startsWith('/') || trimmed.startsWith('#')) return trimmed;
+  if (/^(https?:|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  return '#';
+}
+
+/**
+ * Returns a same-origin relative path safe for post-auth redirects, or an empty
+ * string if the candidate should be dropped. Mirrors the backend
+ * `isValidRedirectURI` rules: must start with `/`, must not be protocol- or
+ * backslash-relative, and must not contain backslashes, tab/newline controls, or
+ * `@` userinfo-style confusion.
+ */
+export function safeRelativeRedirectPath(uri: string | null | undefined): string {
+  if (!uri) return '';
+  const trimmed = String(uri).trim();
+  if (
+    !trimmed.startsWith('/') ||
+    trimmed.startsWith('//') ||
+    trimmed.startsWith('/\\') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('@') ||
+    /[\t\n\r]/.test(trimmed)
+  ) {
+    return '';
+  }
+  return trimmed;
+}
+
+/**
+ * Returns a value safe to interpolate into a CSS `url(...)` literal in an
+ * inline `style` attribute, or `null` if the input is not a plain http(s) /
+ * same-origin URL. Rejects characters that could break out of the `url()`
+ * literal (quotes, parens, whitespace, control chars).
+ */
+export function safeCssUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = String(url).trim();
+  if (!trimmed) return null;
+  // Disallow anything that could close url() or inject another declaration.
+  if (/["'()\s;{}<>\\]/.test(trimmed)) return null;
+  if (trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed)) return trimmed;
+  return null;
+}

@@ -1,0 +1,105 @@
+<script>
+  import { api } from '../api.js';
+  import InlineTextEditor from './InlineTextEditor.svelte';
+  import InlineSelectEditor from './InlineSelectEditor.svelte';
+  import InlineDateEditor from './InlineDateEditor.svelte';
+
+  let {
+    item, field, fieldType = 'text', options = [], placeholder = '',
+    required = false, disabled = false, className = '',
+    enableSingleClick = false, enableDoubleClick = false,
+    onitemUpdated = null, onupdateError = null, onclick: onclickProp = null
+  } = $props();
+
+  let editorComponent = $state(null);
+  let saving = false;
+
+  // Get current field value
+  const fieldValue = $derived(getFieldValue(item, field));
+
+  function getFieldValue(item, field) {
+    if (!item) return null;
+    if (field === 'title') return item.title || '';
+    if (field === 'description') return item.description || '';
+    if (field.startsWith('custom_field_')) {
+      const fieldId = field.replace('custom_field_', '');
+      return item.custom_field_values?.[fieldId] || null;
+    }
+    return item[field] ?? null;
+  }
+
+  // Keep simple field/custom-value updates here; field-specific orchestration
+  // belongs to itemDetailStore and ListCellRenderer.
+  async function handleSave(detail) {
+    const { value } = detail;
+    if (saving) return;
+
+    try {
+      saving = true;
+      let updateData;
+      if (field.startsWith('custom_field_')) {
+        const fieldId = field.replace('custom_field_', '');
+        updateData = {
+          custom_field_values: { ...(item.custom_field_values || {}), [fieldId]: value }
+        };
+      } else {
+        updateData = { [field]: value };
+      }
+      const updatedItem = await api.items.update(item.id, updateData);
+      const merged = { ...item, ...updatedItem };
+      editorComponent?.confirmSave?.(value);
+      onitemUpdated?.({ item: merged, field, value });
+    } catch (error) {
+      const errorMessage = error?.message || 'Failed to save changes';
+      editorComponent?.rejectSave?.(errorMessage);
+      onupdateError?.({ error: errorMessage, field, value });
+    } finally {
+      saving = false;
+    }
+  }
+
+  function handleClick() {
+    if (enableSingleClick) {
+      onclickProp?.();
+    }
+  }
+</script>
+
+{#if fieldType === 'select'}
+  <InlineSelectEditor
+    bind:this={editorComponent}
+    value={fieldValue}
+    {options}
+    {placeholder}
+    {required}
+    {disabled}
+    {className}
+    onsave={handleSave}
+  />
+{:else if fieldType === 'date'}
+  <InlineDateEditor
+    bind:this={editorComponent}
+    value={fieldValue}
+    {placeholder}
+    {required}
+    {disabled}
+    {className}
+    {enableSingleClick}
+    {enableDoubleClick}
+    onsave={handleSave}
+    onclick={handleClick}
+  />
+{:else}
+  <InlineTextEditor
+    bind:this={editorComponent}
+    value={fieldValue}
+    {placeholder}
+    {required}
+    {disabled}
+    {className}
+    {enableSingleClick}
+    {enableDoubleClick}
+    onsave={handleSave}
+    onclick={handleClick}
+  />
+{/if}

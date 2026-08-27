@@ -1,0 +1,340 @@
+<script>
+  import { Link2, Plus, Paperclip, PenTool, Zap, ChevronDown } from '@lucide/svelte';
+  import { tick } from 'svelte';
+  import Button from '../../components/Button.svelte';
+  import FileInput from '../../components/FileInput.svelte';
+  import SafeMarkdown from '../../components/SafeMarkdown.svelte';
+  import MilkdownEditor from '../../editors/LazyMilkdownEditor.svelte';
+  import AttachmentDiagramList from '../assets/AttachmentDiagramList.svelte';
+  import AIActionsDropdown from './AIActionsDropdown.svelte';
+  import { getShortcut, matchesShortcut, getDisplayString } from '../../utils/keyboardShortcuts.js';
+  import { t } from '../../stores/i18n.svelte.js';
+  import { attachmentStatus, aiStore } from '../../stores';
+  import { onClickOutside } from 'runed';
+
+  // Get shortcut configurations
+  const saveShortcut = getShortcut('description', 'save');
+  const cancelShortcut = getShortcut('description', 'cancel');
+
+  let {
+    item,
+    editingDescription = $bindable(false),
+    editDescription = $bindable(''),
+    saving = false,
+    availableSubIssueTypes = [],
+    attachments = [],
+    diagrams = [],
+    showLinkButton = true,
+    showDiagramButton = true,
+    showAIActions = true,
+    manualActions = [],
+    canCreate = false,
+    onsavefield = undefined,
+    oncanceledit = undefined,
+    onstartEditingDescription = undefined,
+    onshowAddLink = undefined,
+    oncreateSubIssue = undefined,
+    onimageuploaded = undefined,
+    onattachmentUpload = undefined,
+    onattachmentUploadFiles = undefined,
+    onattachmentDelete = undefined,
+    onnewDiagram = undefined,
+    oneditDiagram = undefined,
+    ondeleteDiagram = undefined,
+    onexecuteAction = undefined,
+    onaiaction = undefined,
+  } = $props();
+
+  let milkdownEditor = $state(null);
+  let showActionsMenu = $state(false);
+  let actionsMenuRef = $state(null);
+
+  // Local state for editor content (initialized from prop when editing starts)
+  let editorContent = $state('');
+
+  // Handle image insertions from attachments or uploads
+  export function insertImage(imageData) {
+    // If not currently editing, start editing first
+    if (!editingDescription) {
+      startEditingDescription();
+      // Wait for editor to be ready, then insert
+      setTimeout(() => {
+        if (milkdownEditor) {
+          milkdownEditor.insertImage(imageData.src, imageData.alt || 'image', imageData.title);
+        }
+      }, 150);
+    } else {
+      // Editor is already active, insert at cursor position
+      if (milkdownEditor) {
+        milkdownEditor.insertImage(imageData.src, imageData.alt || 'image', imageData.title);
+      }
+    }
+  }
+
+  // Handle image uploaded via editor
+  function handleImageInsert(attachment) {
+    // Dispatch to parent to refresh attachment list
+    onimageuploaded?.({ attachment });
+  }
+
+  function startEditingDescription() {
+    onstartEditingDescription?.();
+  }
+
+  // Initialize editor content when editing starts
+  $effect(() => {
+    if (editingDescription) {
+      editorContent = editDescription;
+    }
+  });
+
+  // Focus editor when it becomes available during editing
+  // Both dependencies must be at the top level to be tracked properly
+  $effect(() => {
+    const isEditing = editingDescription;
+    const editor = milkdownEditor;
+    if (isEditing && editor) {
+      tick().then(() => editor.focusEnd());
+    }
+  });
+
+  function saveDescription() {
+    onsavefield?.({ field: 'description', value: editorContent });
+  }
+
+  function cancelEdit() {
+    oncanceledit?.({ field: 'description' });
+  }
+
+  function handleKeydown(event) {
+    // Check for save shortcut (Ctrl/Cmd+Enter)
+    if (matchesShortcut(event, saveShortcut)) {
+      event.preventDefault();
+      saveDescription();
+    } else if (matchesShortcut(event, cancelShortcut)) {
+      event.preventDefault();
+      event.stopPropagation(); // Stop propagation to prevent the modal from closing
+      cancelEdit();
+    }
+  }
+
+  function handleDeleteAttachment(attachment) {
+    onattachmentDelete?.(attachment);
+  }
+
+  function handleNewDiagram() {
+    onnewDiagram?.();
+  }
+
+  function handleEditDiagram(diagram) {
+    oneditDiagram?.(diagram);
+  }
+
+  function handleDeleteDiagram(diagram) {
+    ondeleteDiagram?.(diagram);
+  }
+
+  // Handle click outside using runed
+  onClickOutside(
+    () => actionsMenuRef,
+    () => { showActionsMenu = false; }
+  );
+
+  function handleExecuteAction(action) {
+    onexecuteAction?.(action);
+    showActionsMenu = false;
+  }
+</script>
+
+<div class="pt-2">
+  {#if editingDescription}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="space-y-3" onkeydown={handleKeydown} data-testid="item-description-editor">
+      <MilkdownEditor
+        bind:this={milkdownEditor}
+        bind:content={editorContent}
+        placeholder={t('items.enterDescription')}
+        showToolbar={true}
+        itemId={item.id}
+        workspaceId={item.workspace_id}
+        onImageInsert={handleImageInsert}
+      />
+      <div class="flex items-center gap-2">
+        <Button variant="primary" onclick={saveDescription} disabled={saving} keyboardHint={getDisplayString(saveShortcut)} dataTestid="item-description-save">
+          {t('common.save')}
+        </Button>
+        <Button variant="default" onclick={cancelEdit}>
+          {t('common.cancel')}
+        </Button>
+      </div>
+    </div>
+  {:else if item.description}
+    <div
+      onclick={startEditingDescription}
+      onkeydown={(e) => e.key === 'Enter' && startEditingDescription()}
+      role="button"
+      tabindex="0"
+      class="description-hover text-left rounded cursor-pointer transition-colors duration-150"
+      style="color: var(--ds-text);"
+      title={t('items.clickToEditDescription')}
+      data-testid="item-description-display"
+    >
+      <SafeMarkdown html={item.description_html} source={item.description} />
+    </div>
+  {:else}
+    <button
+      data-testid="item-description-empty"
+      onclick={startEditingDescription}
+      class="text-left w-full py-2 text-sm transition-colors cursor-pointer"
+      style="color: var(--ds-text-subtle);"
+      onmouseenter={(e) => e.currentTarget.style.color = 'var(--ds-text)'}
+      onmouseleave={(e) => e.currentTarget.style.color = 'var(--ds-text-subtle)'}
+      title={t('items.clickToAddDescription')}
+    >
+      {t('items.noDescriptionProvided')}
+    </button>
+  {/if}
+  
+  <!-- Action buttons - icon only, label slides in on hover -->
+  <div class="mt-5 flex gap-1">
+    {#if showLinkButton}
+      <button
+        data-testid="add-link-button"
+        class="action-btn inline-flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-all"
+        style="color: var(--ds-text-subtle);"
+        onclick={() => onshowAddLink?.()}
+        title={t('items.addLink')}
+      >
+        <Link2 class="w-4 h-4 flex-shrink-0" />
+        <span class="action-label">{t('common.link')}</span>
+      </button>
+    {/if}
+    {#if availableSubIssueTypes.length > 0}
+      <button
+        class="action-btn inline-flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-all"
+        style="color: var(--ds-text-subtle);"
+        onclick={() => oncreateSubIssue?.()}
+        title={t('items.createChild')}
+      >
+        <Plus class="w-4 h-4 flex-shrink-0" />
+        <span class="action-label">{t('items.child')}</span>
+      </button>
+    {/if}
+    {#if attachmentStatus.enabled}
+      <label
+        class="action-btn inline-flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-all cursor-pointer"
+        style="color: var(--ds-text-subtle);"
+        title={t('items.attachFile')}
+      >
+        <Paperclip class="w-4 h-4 flex-shrink-0" />
+        <span class="action-label">{t('items.attach')}</span>
+        <FileInput
+          class="hidden"
+          multiple
+          onchange={(e) => {
+            const files = e.currentTarget.files;
+            if (files?.length) {
+              onattachmentUploadFiles?.({ files: Array.from(files) });
+            }
+            e.currentTarget.value = '';
+          }}
+        />
+      </label>
+      {#if showDiagramButton}
+        <button
+          class="action-btn inline-flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-all"
+          style="color: var(--ds-text-subtle);"
+          onclick={handleNewDiagram}
+          title={t('items.newDiagram')}
+        >
+          <PenTool class="w-4 h-4 flex-shrink-0" />
+          <span class="action-label">{t('items.diagram')}</span>
+        </button>
+      {/if}
+    {/if}
+    {#if manualActions.length > 0}
+      <div class="relative" bind:this={actionsMenuRef}>
+        <button
+          class="action-btn inline-flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-all"
+          style="color: var(--ds-text-subtle);"
+          onclick={(e) => { e.stopPropagation(); showActionsMenu = !showActionsMenu; }}
+          title={t('actions.title')}
+        >
+          <Zap class="w-4 h-4 flex-shrink-0" />
+          <span class="action-label">{t('actions.title')}</span>
+          <ChevronDown class="w-3 h-3 ml-0.5" />
+        </button>
+
+        {#if showActionsMenu}
+          <div class="absolute left-0 top-full mt-1 z-50 min-w-[200px] rounded-md shadow-lg py-1" style="background-color: var(--ds-surface-raised); border: 1px solid var(--ds-border);">
+            {#each manualActions as action}
+              <button
+                class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+                style="color: var(--ds-text);"
+                onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--ds-background-neutral-hovered)'}
+                onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onclick={() => handleExecuteAction(action)}
+              >
+                <Zap class="w-4 h-4 text-amber-500 flex-shrink-0" />
+                {action.name}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
+    {#if showAIActions && aiStore.available}
+      <AIActionsDropdown
+        {item}
+        {availableSubIssueTypes}
+        {canCreate}
+        onaiaction={(data) => onaiaction?.(data)}
+      />
+    {/if}
+  </div>
+
+  <!-- Attachments & Diagrams list -->
+  <div class="mt-4">
+    <AttachmentDiagramList
+      {attachments}
+      {diagrams}
+      ondelete={handleDeleteAttachment}
+      oneditdiagram={handleEditDiagram}
+      ondeletediagram={handleDeleteDiagram}
+    />
+  </div>
+</div>
+
+<style>
+  .description-hover {
+    /* constant padding with compensating negative margin: hover must only
+       repaint — a padding change on hover resizes the box and re-wraps the
+       description text, which reads as a wiggle */
+    width: calc(100% + 1rem);
+    padding: 0.5rem;
+    margin: -0.5rem;
+  }
+  .description-hover:hover {
+    background-color: var(--ds-background-input-hovered);
+  }
+  .action-btn {
+    overflow: hidden;
+    color: var(--ds-text-subtle);
+  }
+  .action-btn:hover {
+    color: var(--ds-text-subtle);
+  }
+  .action-label {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateX(-0.25rem);
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .action-btn:hover .action-label {
+    max-width: 80px;
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>

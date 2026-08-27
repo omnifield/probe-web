@@ -1,0 +1,329 @@
+<script>
+  import { onMount } from 'svelte';
+  import { api } from '../api.js';
+  import { Plus, Edit, Trash2, AlertCircle } from '@lucide/svelte';
+  import { priorityIconMap, priorityIconOptions } from '../utils/icons.js';
+  import Button from '../components/Button.svelte';
+  import DataTable from '../components/DataTable.svelte';
+  import PageHeader from '../layout/PageHeader.svelte';
+  import Modal from '../dialogs/Modal.svelte';
+  import ModalHeader from '../dialogs/ModalHeader.svelte';
+  import DialogFooter from '../dialogs/DialogFooter.svelte';
+  import Textarea from '../components/Textarea.svelte';
+  import Lozenge from '../components/Lozenge.svelte';
+  import Input from '../components/Input.svelte';
+  import IconSelector from '../pickers/IconSelector.svelte';
+  import Toggle from '../components/Toggle.svelte';
+  import { toHotkeyString } from '../utils/keyboardShortcuts.js';
+  import { t } from '../stores/i18n.svelte.js';
+  import { confirm } from '../composables/useConfirm.js';
+  import './settings-form.css';
+
+  let priorities = $state([]);
+  let isLoading = $state(true);
+  let error = $state(null);
+  let editingId = $state(null);
+  let showCreateForm = $state(false);
+
+  // Form data
+  let formData = $state({
+    name: '',
+    description: '',
+    icon: 'AlertCircle',
+    color: '#7c3aed',
+    sort_order: 1,
+    is_default: false
+  });
+
+  onMount(async () => {
+    await loadPriorities();
+  });
+
+  async function loadPriorities() {
+    try {
+      isLoading = true;
+      error = null;
+      priorities = await api.priorities.getAll();
+      // Sort by sort_order
+      priorities = priorities.sort((a, b) => a.sort_order - b.sort_order);
+    } catch (err) {
+      error = 'Failed to load priorities: ' + err.message;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  function startCreate() {
+    formData = {
+      name: '',
+      description: '',
+      icon: 'AlertCircle',
+      color: '#7c3aed',
+      sort_order: getNextSortOrder(),
+      is_default: false
+    };
+    editingId = null;
+    showCreateForm = true;
+  }
+
+  function startEdit(priority) {
+    formData = {
+      name: priority.name,
+      description: priority.description,
+      icon: priority.icon,
+      color: priority.color,
+      sort_order: priority.sort_order,
+      is_default: priority.is_default || false
+    };
+    editingId = priority.id;
+    showCreateForm = true;
+  }
+
+  function cancelEdit() {
+    showCreateForm = false;
+    editingId = null;
+    formData = {
+      name: '',
+      description: '',
+      icon: 'AlertCircle',
+      color: '#7c3aed',
+      sort_order: 1,
+      is_default: false
+    };
+  }
+
+  function getNextSortOrder() {
+    return priorities.length > 0 ? Math.max(...priorities.map(p => p.sort_order)) + 1 : 1;
+  }
+
+  async function savePriority() {
+    try {
+      if (!formData.name.trim()) {
+        error = 'Priority name is required';
+        return;
+      }
+
+      if (editingId) {
+        await api.priorities.update(editingId, formData);
+      } else {
+        await api.priorities.create(formData);
+      }
+
+      await loadPriorities();
+      cancelEdit();
+      error = null;
+      window.dispatchEvent(new CustomEvent('refresh-workspace-data'));
+    } catch (err) {
+      error = err.message;
+    }
+  }
+
+  async function deletePriority(id, name) {
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.priorities.delete(id);
+      await loadPriorities();
+      error = null;
+      window.dispatchEvent(new CustomEvent('refresh-workspace-data'));
+    } catch (err) {
+      error = err.message;
+    }
+  }
+
+  // Column definitions for DataTable
+  const priorityColumns = $derived([
+    {
+      key: 'icon',
+      label: '',
+      width: '40px',
+      slot: 'icon'
+    },
+    {
+      key: 'name',
+      label: t('common.name')
+    },
+    {
+      key: 'is_default',
+      label: t('common.default'),
+      width: '80px',
+      slot: 'is_default'
+    },
+    {
+      key: 'sort_order',
+      label: t('common.order')
+    },
+    {
+      key: 'configuration_set_names',
+      label: t('configuration.title'),
+      slot: 'configuration_set_names'
+    },
+    {
+      key: 'actions',
+      label: t('common.actions')
+    }
+  ]);
+
+  function buildPriorityDropdownItems(priority) {
+    return [
+      {
+        id: 'edit',
+        type: 'regular',
+        icon: Edit,
+        title: t('common.edit'),
+        hoverClass: 'hover-bg',
+        onClick: () => startEdit(priority)
+      },
+      {
+        id: 'delete',
+        type: 'regular',
+        icon: Trash2,
+        title: t('common.delete'),
+        color: 'var(--ds-text-danger)',
+        hoverClass: 'hover-danger',
+        onClick: () => deletePriority(priority.id, priority.name)
+      }
+    ];
+  }
+</script>
+
+<PageHeader
+  icon={AlertCircle}
+  title={t('priorities.title')}
+  subtitle={t('priorities.subtitle')}
+>
+  {#snippet actions()}
+    <Button
+      variant="primary"
+      icon={Plus}
+      onclick={startCreate}
+      disabled={isLoading}
+      keyboardHint="A"
+      hotkeyConfig={{ key: toHotkeyString('priorities', 'add'), guard: () => !showCreateForm }}
+    >
+      {t('priorities.createPriority')}
+    </Button>
+  {/snippet}
+</PageHeader>
+
+  {#if error}
+    <div class="error">
+      {error}
+    </div>
+  {/if}
+
+  <DataTable
+    columns={priorityColumns}
+    data={priorities}
+    keyField="id"
+    emptyMessage={t('priorities.noPriorities')}
+    emptyIcon={AlertCircle}
+    actionItems={buildPriorityDropdownItems}
+  >
+    {#snippet icon(priority)}
+      {@const PriorityIcon = priorityIconMap[priority.icon] || AlertCircle}
+      <div class="flex items-center justify-center">
+        <div class="w-6 h-6 rounded flex items-center justify-center" style="background-color: {priority.color}">
+          <PriorityIcon size={12} color="white" />
+        </div>
+      </div>
+    {/snippet}
+
+    {#snippet is_default(priority)}
+      <div class="flex items-center">
+        {#if priority.is_default}
+          <Lozenge color="green" text={t('common.default')} />
+        {/if}
+      </div>
+    {/snippet}
+
+    {#snippet configuration_set_names(priority)}
+      <div class="flex flex-wrap gap-1">
+        {#if priority.configuration_set_names && priority.configuration_set_names.length > 0}
+          {#each priority.configuration_set_names as configSetName}
+            <Lozenge color="gray" text={configSetName} />
+          {/each}
+        {:else}
+          <span class="text-xs text-gray-500">{t('common.noData')}</span>
+        {/if}
+      </div>
+    {/snippet}
+  </DataTable>
+
+  <Modal isOpen={showCreateForm} onclose={cancelEdit} maxWidth="max-w-2xl" onSubmit={savePriority}>
+    {#snippet children(submitHint)}
+    <!-- Modal header -->
+    <ModalHeader title={editingId ? t('priorities.editPriority') : t('priorities.createPriority')} showCloseButton={false} />
+
+    <!-- Modal content -->
+    <div class="px-6 py-4">
+      <form onsubmit={(e) => { e.preventDefault(); savePriority(); }}>
+        <div class="form-group">
+          <label for="name">{t('common.name')}</label>
+          <Input
+            type="text"
+            id="name"
+            placeholder="e.g. Critical, High, Medium, Low"
+            bind:value={formData.name}
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="description">{t('common.description')}</label>
+          <Textarea
+            id="description"
+            placeholder={t('placeholders.optionalDescription')}
+            bind:value={formData.description}
+            rows={2}
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="sort_order">{t('common.order')}</label>
+          <Input
+            type="number"
+            id="sort_order"
+            min={1}
+            bind:value={formData.sort_order}
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <IconSelector
+            bind:selectedIcon={formData.icon}
+            bind:selectedColor={formData.color}
+            iconMap={priorityIconMap}
+            iconOptions={priorityIconOptions}
+            compact
+          />
+        </div>
+
+        <div class="form-group">
+          <Toggle
+            bind:checked={formData.is_default}
+            label={t('common.default')}
+            size="small"
+          />
+        </div>
+
+      </form>
+    </div>
+
+    <DialogFooter
+      onCancel={cancelEdit}
+      onConfirm={savePriority}
+      confirmLabel={editingId ? t('common.update') : t('common.create')}
+      showKeyboardHint={true}
+      confirmKeyboardHint={submitHint}
+    />
+    {/snippet}
+  </Modal>

@@ -1,0 +1,376 @@
+package cql
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+	"unicode"
+)
+
+// Tokenizer converts QL query strings into tokens
+type Tokenizer struct {
+	input    string
+	position int
+	current  rune
+}
+
+// NewTokenizer creates a new QL tokenizer
+func NewTokenizer(input string) *Tokenizer {
+	t := &Tokenizer{
+		input:    input,
+		position: 0,
+	}
+	if input != "" {
+		t.current = rune(input[0])
+	}
+	return t
+}
+
+// Error creates a tokenizer error with position information
+func (t *Tokenizer) Error(message string) error {
+	return fmt.Errorf("QL syntax error at position %d: %s", t.position, message)
+}
+
+// advance moves to the next character
+func (t *Tokenizer) advance() {
+	t.position++
+	if t.position >= len(t.input) {
+		t.current = 0 // EOF
+	} else {
+		t.current = rune(t.input[t.position])
+	}
+}
+
+// skipWhitespace skips whitespace characters
+func (t *Tokenizer) skipWhitespace() {
+	for t.current != 0 && unicode.IsSpace(t.current) {
+		t.advance()
+	}
+}
+
+// readString reads a quoted string
+func (t *Tokenizer) readString() (string, error) {
+	quote := t.current
+	var value strings.Builder
+	t.advance()
+
+	for t.current != 0 && t.current != quote {
+		if t.current == '\\' {
+			t.advance()
+			if t.current != 0 {
+				value.WriteRune(t.current)
+				t.advance()
+			}
+		} else {
+			value.WriteRune(t.current)
+			t.advance()
+		}
+	}
+
+	if t.current == 0 {
+		return "", t.Error("unterminated string literal")
+	}
+
+	t.advance() // Skip closing quote
+	return value.String(), nil
+}
+
+// readNumber reads a numeric value
+func (t *Tokenizer) readNumber() string {
+	var value strings.Builder
+	for t.current != 0 && (unicode.IsDigit(t.current) || t.current == '.') {
+		value.WriteRune(t.current)
+		t.advance()
+	}
+	return value.String()
+}
+
+// tryReadRelativeLiteral reads the restricted relative-time grammar. It
+// leaves the tokenizer untouched when the current sequence is a regular
+// number, so existing numeric literals keep their behavior.
+func (t *Tokenizer) tryReadRelativeLiteral() (value string, found bool, err error) {
+	startPosition := t.position
+	startCurrent := t.current
+	if t.current == '-' {
+		t.advance()
+	}
+
+	digitStart := t.position
+	for t.current >= '0' && t.current <= '9' {
+		t.advance()
+	}
+	if t.position == digitStart || (t.current != 'd' && t.current != 'h' && t.current != 'm') {
+		t.position = startPosition
+		t.current = startCurrent
+		return "", false, nil
+	}
+
+	t.advance()
+	value = t.input[startPosition:t.position]
+	if _, err := parseRelativeLiteral(value); err != nil {
+		return "", false, t.Error(err.Error())
+	}
+	return value, true, nil
+}
+
+// readIdentifier reads an identifier or keyword. The `.` separator is allowed
+// inside identifiers so that documented syntax like `custom.epicLink` tokenizes
+// as a single identifier; downstream safety is enforced by validCustomFieldNameRegex
+// for the part after `cf_` / `custom.`.
+func (t *Tokenizer) readIdentifier() string {
+	var value strings.Builder
+	for t.current != 0 && (unicode.IsLetter(t.current) || unicode.IsDigit(t.current) || t.current == '_' || t.current == '-' || t.current == '.') {
+		value.WriteRune(t.current)
+		t.advance()
+	}
+	return value.String()
+}
+
+// peekAhead looks ahead in the input without advancing position
+func (t *Tokenizer) peekAhead(offset int) rune { //nolint:unparam // offset kept for flexibility
+	pos := t.position + offset
+	if pos >= len(t.input) {
+		return 0
+	}
+	return rune(t.input[pos])
+}
+
+// isIdentifierContinuation reports whether r could continue an identifier — used
+// when peeking past keywords like "IS NOT" to ensure we're not partial-matching.
+func isIdentifierContinuation(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' || r == '.'
+}
+
+// previousNonWhitespaceTokenType returns the last appended token's type, or EOF
+// if the slice is empty. Used to decide whether a leading `-` introduces a
+// negative numeric literal (only valid after operators, commas, or `(`).
+func previousNonWhitespaceTokenType(tokens []Token) TokenType {
+	if len(tokens) == 0 {
+		return EOF
+	}
+	return tokens[len(tokens)-1].Type
+}
+
+// canPrefixUnaryMinus reports whether a `-` following the given previous-token
+// type should be treated as a unary minus introducing a negative numeric literal.
+// QL has no binary minus operator, so the rule is: only after operators, IN/NotIn,
+// commas, or an opening paren.
+func canPrefixUnaryMinus(prev TokenType) bool {
+	switch prev {
+	case EOF, EQUALS, NotEquals, LessThan, LessEqual, GreaterThan, GreaterEqual, CONTAINS, IN, NotIn, COMMA, LPAREN, AND, OR, NOT:
+		return true
+	}
+	return false
+}
+
+// isDatePattern checks if the current position looks like a date (YYYY-MM-DD)
+func (t *Tokenizer) isDatePattern() bool {
+	// Check for YYYY-MM-DD pattern
+	if t.position+9 >= len(t.input) {
+		return false
+	}
+	pattern := t.input[t.position : t.position+10]
+	matched, err := regexp.MatchString(`\d{4}-\d{2}-\d{2}`, pattern)
+	if err != nil {
+		return false
+	}
+	return matched
+}
+
+// Tokenize converts the input string into tokens
+func (t *Tokenizer) Tokenize() ([]Token, error) {
+	var tokens []Token
+
+	for t.current != 0 {
+		t.skipWhitespace()
+
+		if t.current == 0 {
+			break
+		}
+
+		start := t.position
+
+		// String literals
+		if t.current == '"' || t.current == '\'' {
+			value, err := t.readString()
+			if err != nil {
+				return nil, err
+			}
+			tokens = append(tokens, Token{Type: STRING, Value: value, Pos: start})
+			continue
+		}
+
+		// Backtick-quoted identifiers (for field names with spaces)
+		if t.current == '`' {
+			value, err := t.readString()
+			if err != nil {
+				return nil, err
+			}
+			tokens = append(tokens, Token{Type: IDENTIFIER, Value: value, Pos: start})
+			continue
+		}
+
+		// Numbers and dates
+		if unicode.IsDigit(t.current) {
+			if value, ok, err := t.tryReadRelativeLiteral(); err != nil {
+				return nil, err
+			} else if ok {
+				tokens = append(tokens, Token{Type: RelativeDate, Value: value, Pos: start})
+				continue
+			}
+			if t.isDatePattern() {
+				// Read as date
+				date := t.input[t.position : t.position+10]
+				for i := 0; i < 10; i++ {
+					t.advance()
+				}
+				tokens = append(tokens, Token{Type: DATE, Value: date, Pos: start})
+			} else {
+				// Read as number
+				number := t.readNumber()
+				tokens = append(tokens, Token{Type: NUMBER, Value: number, Pos: start})
+			}
+			continue
+		}
+
+		// Unary-minus prefix for negative numeric literals. Only legal in literal
+		// position (after an operator, comma, opening paren, or at start of input)
+		// — QL has no binary minus.
+		if t.current == '-' && unicode.IsDigit(t.peekAhead(1)) && canPrefixUnaryMinus(previousNonWhitespaceTokenType(tokens)) {
+			if value, ok, err := t.tryReadRelativeLiteral(); err != nil {
+				return nil, err
+			} else if ok {
+				tokens = append(tokens, Token{Type: RelativeDate, Value: value, Pos: start})
+				continue
+			}
+			t.advance() // consume '-'
+			number := "-" + t.readNumber()
+			tokens = append(tokens, Token{Type: NUMBER, Value: number, Pos: start})
+			continue
+		}
+
+		// Identifiers and keywords
+		if unicode.IsLetter(t.current) || t.current == '_' {
+			identifier := t.readIdentifier()
+			upper := strings.ToUpper(identifier)
+
+			switch upper {
+			case "AND":
+				tokens = append(tokens, Token{Type: AND, Value: "AND", Pos: start})
+			case "OR":
+				tokens = append(tokens, Token{Type: OR, Value: "OR", Pos: start})
+			case "NOT":
+				// Look ahead for "NOT IN"
+				oldPos := t.position
+				t.skipWhitespace()
+				if t.position+1 < len(t.input) && strings.ToUpper(t.input[t.position:t.position+2]) == "IN" {
+					t.advance()
+					t.advance()
+					tokens = append(tokens, Token{Type: NotIn, Value: "NOT IN", Pos: start})
+				} else {
+					t.position = oldPos
+					t.current = rune(t.input[t.position])
+					tokens = append(tokens, Token{Type: NOT, Value: "NOT", Pos: start})
+				}
+			case "IN":
+				tokens = append(tokens, Token{Type: IN, Value: "IN", Pos: start})
+			case "TRUE", "FALSE":
+				tokens = append(tokens, Token{Type: BOOLEAN, Value: strings.ToLower(identifier), Pos: start})
+			case "NULL":
+				tokens = append(tokens, Token{Type: NULL, Value: "null", Pos: start})
+			case "EMPTY":
+				tokens = append(tokens, Token{Type: EMPTY, Value: "empty", Pos: start})
+			case "IS":
+				// Look ahead for "IS NOT"
+				oldPos := t.position
+				t.skipWhitespace()
+				if t.position+3 <= len(t.input) && strings.ToUpper(t.input[t.position:t.position+3]) == "NOT" {
+					afterPos := t.position + 3
+					if afterPos == len(t.input) || !isIdentifierContinuation(rune(t.input[afterPos])) {
+						for i := 0; i < 3; i++ {
+							t.advance()
+						}
+						tokens = append(tokens, Token{Type: IsNot, Value: "IS NOT", Pos: start})
+						continue
+					}
+				}
+				t.position = oldPos
+				if t.position < len(t.input) {
+					t.current = rune(t.input[t.position])
+				} else {
+					t.current = 0
+				}
+				tokens = append(tokens, Token{Type: IS, Value: "IS", Pos: start})
+			default:
+				// Check if it's a function (followed by parentheses)
+				oldPos := t.position
+				t.skipWhitespace()
+				if t.current == '(' {
+					tokens = append(tokens, Token{Type: FUNCTION, Value: identifier, Pos: start})
+				} else {
+					tokens = append(tokens, Token{Type: IDENTIFIER, Value: identifier, Pos: start})
+				}
+				t.position = oldPos
+				if t.position < len(t.input) {
+					t.current = rune(t.input[t.position])
+				} else {
+					t.current = 0
+				}
+			}
+			continue
+		}
+
+		// Two-character operators
+		if t.current == '!' && t.peekAhead(1) == '=' {
+			t.advance()
+			t.advance()
+			tokens = append(tokens, Token{Type: NotEquals, Value: "!=", Pos: start})
+			continue
+		}
+
+		if t.current == '<' && t.peekAhead(1) == '=' {
+			t.advance()
+			t.advance()
+			tokens = append(tokens, Token{Type: LessEqual, Value: "<=", Pos: start})
+			continue
+		}
+
+		if t.current == '>' && t.peekAhead(1) == '=' {
+			t.advance()
+			t.advance()
+			tokens = append(tokens, Token{Type: GreaterEqual, Value: ">=", Pos: start})
+			continue
+		}
+
+		if t.current == '<' && t.peekAhead(1) == '>' {
+			t.advance()
+			t.advance()
+			tokens = append(tokens, Token{Type: NotEquals, Value: "<>", Pos: start})
+			continue
+		}
+
+		// Single-character tokens
+		switch t.current {
+		case '=':
+			tokens = append(tokens, Token{Type: EQUALS, Value: "=", Pos: start})
+		case '<':
+			tokens = append(tokens, Token{Type: LessThan, Value: "<", Pos: start})
+		case '>':
+			tokens = append(tokens, Token{Type: GreaterThan, Value: ">", Pos: start})
+		case '~':
+			tokens = append(tokens, Token{Type: CONTAINS, Value: "~", Pos: start})
+		case '(':
+			tokens = append(tokens, Token{Type: LPAREN, Value: "(", Pos: start})
+		case ')':
+			tokens = append(tokens, Token{Type: RPAREN, Value: ")", Pos: start})
+		case ',':
+			tokens = append(tokens, Token{Type: COMMA, Value: ",", Pos: start})
+		default:
+			return nil, t.Error(fmt.Sprintf("unexpected character: %c", t.current))
+		}
+		t.advance()
+	}
+
+	tokens = append(tokens, Token{Type: EOF, Value: "", Pos: t.position})
+	return tokens, nil
+}

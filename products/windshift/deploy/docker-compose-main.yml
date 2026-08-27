@@ -1,0 +1,95 @@
+version: "3.8"
+
+## Docker Compose Example for main:tag with Autobuild (for Dokploy & other platforms)
+services:
+  windshift:
+    image: ghcr.io/windshiftapp/windshift:main
+    # The :main tag is mutable. Dokploy's Deploy/Reload runs `compose up -d`
+    # without a prior `compose pull`, so a freshly pushed :main digest is
+    # ignored and the cached image keeps running (Dokploy#3522, #2211, #945).
+    # pull_policy: always forces a re-pull of the tag on every deploy.
+    pull_policy: always
+    restart: unless-stopped
+    # Each live item-detail viewer holds an SSE connection (WI-484); the default
+    # 1024 fd limit is the failure point near ~1000 concurrent streams.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    tmpfs:
+      - /tmp:exec,size=64M
+    environment:
+      - BASE_URL=https://${DOMAIN}
+      - PORT=8080
+      - USE_PROXY=true
+      - SSO_SECRET=${SSO_SECRET}
+      - SESSION_IP_BINDING=${SESSION_IP_BINDING:-log}
+      - ATTACHMENT_PATH=/data/attachments
+      - DB_TYPE=postgres
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      # PostgreSQL connection budget per deployment:
+      #   replicas × (MAX_READ_CONNS + auxiliary pools) + headroom <= max_connections
+      # The optional SSH server adds a fixed five-connection auxiliary pool per
+      # replica. Windshift queries max_connections at startup and warns when the
+      # declared aggregate budget is unsafe. Keep POSTGRES_REPLICA_COUNT aligned
+      # with the actual number of Windshift containers sharing this database.
+      - MAX_READ_CONNS=${MAX_READ_CONNS:-30}
+      - POSTGRES_REPLICA_COUNT=${POSTGRES_REPLICA_COUNT:-1}
+      - POSTGRES_CONNECTION_HEADROOM=${POSTGRES_CONNECTION_HEADROOM:-10}
+      - ALLOW_LOCAL_CONNECTIONS=${ALLOW_LOCAL_CONNECTIONS:-true}
+      - CODING_AGENT_ENABLED=true
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+      # OPTIONAL: accept self-signed certificates for outbound TLS connections
+      # (SMTP, IMAP, LDAP, HTTPS integrations). This disables server identity
+      # verification for the whole process; prefer the SMTP channel setting
+      # when only one mail server needs this exception.
+      - TLS_SKIP_VERIFY=${TLS_SKIP_VERIFY:-false}
+      # Total process budget. Keep the container limit below in sync.
+      - WINDSHIFT_MEMORY_LIMIT_MB=${WINDSHIFT_MEMORY_LIMIT_MB:-2048}
+      # Web Push (VAPID). OPTIONAL — if unset, the server auto-generates a
+      # keypair on first boot and persists it in the database, so push works
+      # out of the box. Set these only to manage/rotate keys yourself (keep the
+      # pair stable; rotating invalidates every existing subscription):
+      #   npx web-push generate-vapid-keys
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      # Optional VAPID "sub" contact (mailto: or https:). Defaults to BASE_URL.
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
+    volumes:
+      - windshift-data:/data
+    mem_limit: ${WINDSHIFT_CONTAINER_MEMORY_LIMIT:-2g}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/windshift", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      # PostgreSQL defaults max_connections to 100. If you override it, keep
+      # the Windshift budget above and PostgreSQL memory sizing in agreement.
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  windshift-data: {}
+  postgres-data: {}

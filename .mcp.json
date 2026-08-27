@@ -7,6 +7,10 @@
       "headers": {
         "Authorization": "Bearer ${WINDSHIFT_TOKEN}"
       }
+    },
+    "ark-ui": {
+      "command": "npx",
+      "args": ["-y", "@ark-ui/mcp"]
     }
   }
 }

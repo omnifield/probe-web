@@ -1,0 +1,143 @@
+<script>
+  import { CheckSquare } from '@lucide/svelte';
+  import { authStore } from '../stores';
+  import { api } from '../api.js';
+  import DueMark from './dashboard/DueMark.svelte';
+  import WidgetState from './WidgetState.svelte';
+  import { t } from '../stores/i18n.svelte.js';
+
+  let { workspaceId = null, collectionFilter = null, maxItems = 8 } = $props();
+
+  let tasks = $state([]);
+  let loading = $state(false);
+  let error = $state(null);
+  let fetchVersion = $state(0);
+  let lastFetchKey = $state(null);
+
+  const currentUserId = $derived($authStore?.currentUser?.id ?? null);
+  const fetchKey = $derived(
+    currentUserId ? `${workspaceId ?? ''}-${currentUserId}-${collectionFilter ?? ''}` : null
+  );
+
+  $effect(() => {
+    if (fetchKey && fetchKey !== lastFetchKey) {
+      lastFetchKey = fetchKey;
+      loadAssignedTasks(currentUserId);
+    } else if (!fetchKey && lastFetchKey !== null) {
+      lastFetchKey = null;
+      tasks = [];
+      loading = false;
+      error = null;
+    }
+  });
+
+  async function loadAssignedTasks(userId) {
+    const currentVersion = ++fetchVersion;
+    loading = true;
+    error = null;
+
+    try {
+      const parts = [];
+      const trimmedFilter = (collectionFilter || '').trim();
+      if (trimmedFilter) {
+        parts.push(`(${trimmedFilter})`);
+      }
+      parts.push(`workspace_id = ${workspaceId}`);
+      parts.push(`assignee_id = ${userId}`);
+      parts.push('status_completed = false');
+      const ql = parts.join(' AND ');
+
+      const response = await api.items.getAll({
+        ql,
+        limit: maxItems * 3,
+        order_by: 'created_at'
+      });
+
+      if (currentVersion !== fetchVersion) return;
+
+      const rawItems = Array.isArray(response)
+        ? response
+        : (response?.items ?? []);
+
+      const normalized = rawItems
+        .filter(item => item && item.id)
+        .map(item => ({
+          ...item,
+          dueDate: item.due_date || null,
+          updatedDate: item.updated_at ? new Date(item.updated_at) : null
+        }));
+
+      normalized.sort((a, b) => {
+        if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate;
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+        if (a.updatedDate && b.updatedDate) return b.updatedDate - a.updatedDate;
+        return 0;
+      });
+
+      tasks = normalized.slice(0, maxItems);
+    } catch (err) {
+      if (currentVersion !== fetchVersion) return;
+      console.error('Failed to load My Tasks widget:', err);
+      error = t('widgets.myTasks.loadError');
+      tasks = [];
+    } finally {
+      if (currentVersion === fetchVersion) {
+        loading = false;
+      }
+    }
+  }
+</script>
+
+<WidgetState
+  {loading}
+  {error}
+  isEmpty={tasks.length === 0}
+  loadingText={t('widgets.myTasks.loadingText')}
+  emptyIcon={CheckSquare}
+  emptyTitle={t('widgets.myTasks.emptyTitle')}
+  emptySubtitle={t('widgets.myTasks.emptySubtitle')}
+  onRetry={() => fetchKey && loadAssignedTasks(currentUserId)}
+>
+  {#snippet children()}
+    <div class="flex flex-col gap-2">
+      {#each tasks as task}
+        <a
+          class="task-card flex items-center justify-between gap-4 rounded-xl border px-4 py-3"
+          href={`/workspaces/${task.workspace_id}/items/${task.id}`}
+        >
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm" style="color: var(--ds-text);">{task.title}</p>
+            <p class="mt-0.5 flex items-center gap-1 text-xs" style="color: var(--ds-text-subtle);">
+              <span>{task.workspace_key}-{task.workspace_item_number}</span>
+              {#if task.status_name}
+                <span aria-hidden="true">•</span>
+                <span>{task.status_name}</span>
+              {/if}
+            </p>
+          </div>
+          <div class="flex flex-col items-end gap-1 text-xs">
+            <DueMark dueDate={task.dueDate} />
+            {#if task.priority_name}
+              <span class="uppercase tracking-wide text-[0.65rem]" style="color: var(--ds-text-subtle);">
+                {task.priority_name}
+              </span>
+            {/if}
+          </div>
+        </a>
+      {/each}
+    </div>
+  {/snippet}
+</WidgetState>
+
+<style>
+  .task-card {
+    box-shadow: var(--ds-shadow-raised);
+    border-color: transparent;
+    transition: background-color 140ms ease-in-out, box-shadow 140ms ease-in-out;
+  }
+
+  .task-card:hover {
+    background-color: var(--ds-surface-raised-hovered) !important;
+  }
+</style>

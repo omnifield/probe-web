@@ -1,0 +1,200 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.zip
+*.wasm
+*.dylib
+windshift
+.dev-windshift
+cx
+/ws
+/logbook
+
+# Test binary, built with `go test -c`
+*.test
+/data/
+
+# Test sources live in the adjacent private core-tests repository and are
+# overlaid onto this checkout by its runners.
+*_test.go
+*_test.sh
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Public regression coverage for the locale runtime ships with the implementation.
+!frontend/src/lib/stores/i18n-utils.spec.js
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Database files (SQLite and WAL mode files)
+*.db
+test*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Log files
+*.log
+server.log
+
+# Environment variables
+.env
+scripts/*/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.jira-import-e2e.local.json
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.svelte-kit/
+frontend/build/
+
+# Frontend cache and temp files
+frontend/.vite/
+frontend/.svelte-kit/
+frontend/vite.config.js.timestamp-*
+
+# Biome cache
+.biome/
+
+# Per-worktree golangci-lint cache
+.golangci-lint-cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.local/
+
+# Build artifacts
+dist/
+build/
+
+# NPM debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# E2E Test Artifacts
+e2e/test-results/
+e2e/playwright-report/
+e2e/test-results.json
+e2e/test-results.xml
+e2e/*.png
+e2e/node_modules/
+.e2e-windshift
+.e2e-test.db*
+.e2e-server.log
+
+# Svelte
+.svelte-kit
+
+# PostCSS
+postcss.config.js
+
+# Deployment
+deployment/.env
+deployment/build/
+node_modules
+.gocache
+
+.ssh
+
+# Runtime plugins directory (plugins are loaded at runtime, not committed)
+/plugins/
+!plugins/.gitkeep
+bin
+WINDSHIFT.md
+AGENTS.md
+docs
+
+# Local dev docker-compose
+docker-compose.yml
+
+# Old build artifacts
+ws.toml
+ethereal
+windshift.dsl
+endpoints.txt
+RELEASE_NOTES.md
+.dev-windshift-pg
+releases/v0.3.2.md
+.crush
+.jscpd-frontend-report
+.jscpd-report
+scripts/*
+!scripts/pre-commit
+!scripts/run-golangci-lint.sh
+!scripts/check-layering.sh
+!scripts/check-handler-db-access.sh
+!scripts/report-handler-db-access.sh
+!scripts/check-schema-migration-pairing.sh
+!scripts/check-sql-boolean-literals.mjs
+!scripts/audit_coverage_inventory.py
+!scripts/.layering-baseline
+!scripts/.handler-db-access-allowlist
+!scripts/openapi-convert/
+!scripts/openapi-convert/**
+.golangci-report.json
+blog/
+.fallow/
+.windshift-local
+/docs
+!/docs/
+/docs/*
+!/docs/0.8.2-performance-regression-gates.md
+!/docs/0.8.4-release-bug-security-review.md
+!/docs/cross-surface-authorization-contracts.md
+!/docs/recurrence-scheduling-safeguards.md
+!/docs/jira-service-management-import.md
+!/docs/jira-import-fidelity-gap-analysis.md
+!/docs/item-put-change-feed-audit-2026-08-25.md
+!/docs/WI-531-public-forms-backend-api-audit.md
+!/docs/WI-523-public-forms-completion.md
+!/docs/xray-jira-test-case-import.md
+/.codehamr
+/.agents/skills/donate-trace
+/skills-lock.json
+/cmd/ws/ws
+/playground
+/docs
+!/docs/
+!/docs/metrics.md
+/CONTEXT.md

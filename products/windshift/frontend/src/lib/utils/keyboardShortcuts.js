@@ -1,0 +1,413 @@
+/**
+ * Centralized keyboard shortcuts configuration
+ * Allows for easy platform-specific customization and management
+ */
+
+// Detect the current platform
+function getPlatform() {
+  const platform = navigator.platform.toLowerCase();
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (platform.includes('mac') || userAgent.includes('mac')) {
+    return 'mac';
+  } else if (platform.includes('win') || userAgent.includes('win')) {
+    return 'windows';
+  } else if (platform.includes('linux') || userAgent.includes('linux')) {
+    return 'linux';
+  }
+  return 'other';
+}
+
+const currentPlatform = getPlatform();
+
+// Keyboard shortcuts configuration by context
+const shortcuts = {
+  global: {
+    commandPalette: { key: 'k', modifierKey: true },
+    create: { key: 'c' },
+    aiChat: { key: 'j', modifierKey: true },
+  },
+  modal: {
+    submit: { key: 'Enter', modifierKey: true },
+    cancel: { key: 'Escape' },
+  },
+  ql: {
+    execute: { key: 'Enter', modifierKey: true },
+  },
+  description: {
+    save: { key: 'Enter', modifierKey: true },
+    cancel: { key: 'Escape' },
+  },
+  workflow: {
+    save: { key: 'Enter', modifierKey: true },
+    new: { key: 'n' },
+    add: { key: 'a' },
+  },
+  workspaces: {
+    addWorkspace: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  testCases: {
+    addTestCase: { key: 'a' },
+    addFolder: { key: 'a', modifierKey: true },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  timeProjects: {
+    addProject: { key: 'a' },
+    addCategory: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  timeCustomers: {
+    addCustomer: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  timeProjectCategories: {
+    add: { key: 'a' },
+  },
+  statusCategories: {
+    addCategory: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  workspaceMembers: {
+    addMember: { key: 'a' },
+    addGroup: { key: 'g' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  sso: {
+    addProvider: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  scmProviders: {
+    addProvider: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  integrationProviders: {
+    addProvider: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  oauthClients: {
+    addClient: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  channels: {
+    addChannel: { key: 'a' },
+    submitForm: { key: 'Enter' },
+    cancelForm: { key: 'Escape' },
+  },
+  testSteps: {
+    addStep: { key: 'a' },
+  },
+  timeEntry: {
+    openLog: { key: 'a' },
+    toggleSelector: { key: 'l', modifierKey: true },
+  },
+  // Settings
+  statuses: {
+    add: { key: 'a' },
+  },
+  customFields: {
+    add: { key: 'a' },
+  },
+  templates: {
+    add: { key: 'a' },
+  },
+  themes: {
+    add: { key: 'a' },
+  },
+  itemTypes: {
+    add: { key: 'a' },
+  },
+  priorities: {
+    add: { key: 'a' },
+  },
+  permissionSets: {
+    add: { key: 'a' },
+  },
+  hierarchyLevels: {
+    add: { key: 'a' },
+  },
+  configurationSets: {
+    add: { key: 'a' },
+  },
+  conditionSets: {
+    add: { key: 'a' },
+  },
+  approvalSets: {
+    add: { key: 'a' },
+    save: { key: 'mod+s' },
+    addStatus: { key: 's' },
+    addStep: { key: 'shift+s' },
+  },
+  workspaceRoles: {
+    add: { key: 'a' },
+  },
+  // Features
+  milestones: {
+    add: { key: 'a' },
+  },
+  iterations: {
+    add: { key: 'a' },
+  },
+  assets: {
+    upload: { key: 'a' },
+  },
+  assetSets: {
+    add: { key: 'a' },
+  },
+  customers: {
+    add: { key: 'a' },
+  },
+  systemImport: {
+    add: { key: 'a' },
+  },
+  linkTypes: {
+    add: { key: 'a' },
+  },
+  collections: {
+    add: { key: 'a' },
+  },
+  quickAdd: {
+    create: { key: 'Enter' },
+    cancel: { key: 'Escape' },
+  },
+  groups: {
+    add: { key: 'a' },
+  },
+  teams: {
+    add: { key: 'a' },
+  },
+  teamsOnCall: {
+    addSchedule: { key: 'a' },
+  },
+  teamMembers: {
+    add: { key: 'a' },
+  },
+  teamGroups: {
+    add: { key: 'a' },
+  },
+  profileLeave: {
+    add: { key: 'a' },
+  },
+  users: {
+    add: { key: 'a' },
+  },
+  notifications: {
+    add: { key: 'a' },
+  },
+  // Pages
+  screens: {
+    add: { key: 'a' },
+  },
+  // Actions automation
+  actions: {
+    add: { key: 'a' },
+    save: { key: 'Enter', modifierKey: true },
+    cancel: { key: 'Escape' },
+  },
+  agents: {
+    add: { key: 'a' },
+    create: { key: 'Enter', modifierKey: true },
+  },
+  actionCredentials: {
+    add: { key: 'a' },
+  },
+  // Coding agents (workspace settings tab — bindings + skills are siblings,
+  // so their add shortcuts must not collide)
+  agentBindings: {
+    add: { key: 'a' },
+  },
+  agentSkills: {
+    add: { key: 'n' },
+    save: { key: 'Enter', modifierKey: true },
+  },
+  agentTemplates: {
+    add: { key: 'a' },
+  },
+  security: {
+    addCredential: { key: 'a' },
+    createToken: { key: 't' },
+  },
+  // Item detail
+  itemDetail: {
+    startTimer: { key: 'a', modifierKey: true },
+    logTime: { key: 'a' },
+    fullscreen: { key: 'f', shiftKey: true },
+    createChild: { key: 'w', shiftKey: true },
+    focusStatus: { key: 'f' },
+  },
+};
+
+/**
+ * Get keyboard shortcut configuration for a specific action
+ * @param {string} context - The context (e.g., 'workspaces', 'testCases')
+ * @param {string} action - The action (e.g., 'addWorkspace', 'addFolder')
+ * @returns {Object} Shortcut configuration for current platform
+ */
+export function getShortcut(context, action) {
+  const contextShortcuts = shortcuts[context];
+  if (!contextShortcuts) {
+    console.warn(`Unknown shortcut context: ${context}`);
+    return null;
+  }
+
+  const actionShortcuts = contextShortcuts[action];
+  if (!actionShortcuts) {
+    console.warn(`Unknown shortcut action: ${action} in context ${context}`);
+    return null;
+  }
+
+  if (actionShortcuts.key) {
+    return actionShortcuts;
+  }
+
+  return actionShortcuts[currentPlatform] || actionShortcuts.other;
+}
+
+/**
+ * Get the platform-specific modifier key symbol for display
+ * @returns {string} '⌘' for Mac, 'Ctrl' for others
+ */
+function getPlatformModifierSymbol() {
+  return currentPlatform === 'mac' ? '⌘' : 'Ctrl';
+}
+
+/**
+ * Check if a keyboard event matches a shortcut configuration
+ * @param {KeyboardEvent} event - The keyboard event
+ * @param {Object} shortcut - The shortcut configuration
+ * @returns {boolean} True if event matches shortcut
+ */
+export function matchesShortcut(event, shortcut) {
+  if (!shortcut) return false;
+
+  // Check the key
+  if (event.key.toLowerCase() !== shortcut.key.toLowerCase()) {
+    return false;
+  }
+
+  // Handle the modifierKey property (accepts both Ctrl and Cmd on all platforms)
+  if (shortcut.modifierKey) {
+    if (!event.ctrlKey && !event.metaKey) {
+      return false;
+    }
+  } else {
+    // Check specific modifiers if modifierKey is not used
+    if (!!event.ctrlKey !== !!shortcut.ctrlKey) return false;
+    if (!!event.metaKey !== !!shortcut.metaKey) return false;
+  }
+
+  if (!!event.altKey !== !!shortcut.altKey) return false;
+  if (!!event.shiftKey !== !!shortcut.shiftKey) return false;
+
+  return true;
+}
+
+/**
+ * Get a human-readable display string for a shortcut object
+ * @param {Object} shortcut - The shortcut configuration object
+ * @returns {string} Human-readable shortcut string
+ */
+export function getDisplayString(shortcut) {
+  if (!shortcut) return '';
+
+  const parts = [];
+
+  // Add modifiers first
+  if (shortcut.modifierKey) {
+    parts.push(getPlatformModifierSymbol());
+  } else {
+    if (shortcut.ctrlKey) {
+      parts.push('Ctrl');
+    }
+    if (shortcut.metaKey) {
+      parts.push(currentPlatform === 'mac' ? '⌘' : 'Meta');
+    }
+  }
+  if (shortcut.altKey) {
+    parts.push(currentPlatform === 'mac' ? '⌥' : 'Alt');
+  }
+  if (shortcut.shiftKey) {
+    parts.push(currentPlatform === 'mac' ? '⇧' : 'Shift');
+  }
+
+  // Add the key
+  let keyDisplay = shortcut.key;
+  if (keyDisplay === 'Enter') {
+    keyDisplay = '↵';
+  } else if (keyDisplay === 'Escape') {
+    keyDisplay = 'Esc';
+  }
+  parts.push(keyDisplay.toUpperCase());
+
+  // Use simple space as separator for clean, readable display
+  return parts.join(' ');
+}
+
+/**
+ * Get a human-readable display string for a shortcut by context and action
+ * @param {string} context - The context
+ * @param {string} action - The action
+ * @returns {string} Human-readable shortcut string
+ */
+export function getShortcutDisplay(context, action) {
+  const shortcut = getShortcut(context, action);
+  return getDisplayString(shortcut);
+}
+
+/**
+ * Check if a keyboard event originated from a text input field
+ * (INPUT, TEXTAREA, SELECT, or contenteditable element)
+ * @param {KeyboardEvent} event - The keyboard event
+ * @returns {boolean} True if user is typing in an input field
+ */
+export function isTypingInField(event) {
+  const target = /** @type {HTMLElement} */ (event.target);
+  const active = /** @type {HTMLElement} */ (document.activeElement);
+  return (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT' ||
+    target.isContentEditable ||
+    active?.tagName === 'INPUT' ||
+    active?.tagName === 'TEXTAREA' ||
+    active?.tagName === 'SELECT' ||
+    active?.isContentEditable
+  );
+}
+
+/**
+ * Convert a shortcut context+action into the string format expected by @github/hotkey.
+ * Examples: { key: 'a' } → 'a', { key: 'k', modifierKey: true } → 'Mod+k'
+ * @param {string} context - The context (e.g., 'statuses')
+ * @param {string} action - The action (e.g., 'add')
+ * @returns {string} Hotkey string for @github/hotkey install()
+ */
+export function toHotkeyString(context, action) {
+  const shortcut = getShortcut(context, action);
+  if (!shortcut) return '';
+
+  const parts = [];
+
+  if (shortcut.modifierKey) {
+    parts.push('Mod');
+  } else {
+    if (shortcut.ctrlKey) parts.push('Control');
+    if (shortcut.metaKey) parts.push('Meta');
+  }
+  if (shortcut.altKey) parts.push('Alt');
+  if (shortcut.shiftKey) parts.push('Shift');
+
+  parts.push(shortcut.key);
+
+  return parts.join('+');
+}

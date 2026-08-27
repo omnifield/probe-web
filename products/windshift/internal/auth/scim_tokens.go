@@ -1,0 +1,393 @@
+package auth
+
+import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"time"
+
+	"windshift/internal/cacheutil"
+	"windshift/internal/database"
+	"windshift/internal/models"
+
+	"github.com/allegro/bigcache/v3"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	SCIMTokenPrefix    = "scim_"
+	SCIMTokenBodyBytes = 32 // Random bytes for token body (becomes 64 hex chars)
+	// Final token: scim_ (5) + 64 hex chars = 69 bytes (under bcrypt's 72 byte limit)
+)
+
+type scimTokenCacheEntry struct {
+	Token models.SCIMToken `json:"token"`
+}
+
+// SCIMTokenManager handles SCIM token operations
+type SCIMTokenManager struct {
+	db    database.Database
+	cache *bigcache.BigCache
+}
+
+// NewSCIMTokenManager creates a new SCIM token manager
+// last review: ser
+func NewSCIMTokenManager(db database.Database, cacheSizeMB ...int) *SCIMTokenManager {
+	maxCacheMB := 4
+	if len(cacheSizeMB) > 0 && cacheSizeMB[0] > 0 {
+		maxCacheMB = cacheSizeMB[0]
+	}
+	cache, err := cacheutil.New("scim_tokens", cacheutil.BigCacheOptions{
+		TTL:               30 * time.Second,
+		MaxCacheMB:        maxCacheMB,
+		MaxEntrySize:      1024,
+		Shards:            8,
+		InitialCapacityMB: 1,
+		CleanWindow:       10 * time.Second,
+	})
+	if err != nil {
+		slog.Warn("failed to create SCIM token validation cache, continuing without cache", "error", err)
+	}
+
+	return &SCIMTokenManager{db: db, cache: cache}
+}
+
+// GenerateToken creates a cryptographically secure SCIM token
+// last review: ser, 210426, OPTIMIZE: Token generation duplicates in various places
+func (tm *SCIMTokenManager) GenerateToken() (string, error) {
+	// Generate random bytes for the token body
+	tokenBytes := make([]byte, SCIMTokenBodyBytes)
+	_, err := rand.Read(tokenBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random token: %w", err)
+	}
+
+	// Convert to hex and add prefix
+	tokenBody := hex.EncodeToString(tokenBytes)
+	fullToken := SCIMTokenPrefix + tokenBody
+
+	return fullToken, nil
+}
+
+// HashToken creates a bcrypt hash of the token for secure storage
+// last review: ser, 210426
+func (tm *SCIMTokenManager) HashToken(token string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash token: %w", err)
+	}
+	return string(hash), nil
+}
+
+// GetTokenPrefix returns the visible prefix of a token for identification
+func (tm *SCIMTokenManager) GetTokenPrefix(token string) string {
+	if len(token) > len(SCIMTokenPrefix)+8 { // Show first 13 chars: scim_12345678...
+		return token[:len(SCIMTokenPrefix)+8] + "..."
+	}
+	return token
+}
+
+// ValidateToken checks if a SCIM token is valid and returns the token record
+// last review: ser, 210426, TODO: Remove inline sql
+func (tm *SCIMTokenManager) ValidateToken(token string) (*models.SCIMToken, error) {
+	// Check token format
+	if err := checkTokenFormat(token, SCIMTokenPrefix, 20); err != nil {
+		return nil, err
+	}
+
+	cacheKey := tokenCacheKey(token)
+	if tm.cache != nil {
+		if data, err := tm.cache.Get(cacheKey); err == nil {
+			var entry scimTokenCacheEntry
+			if err := json.Unmarshal(data, &entry); err == nil {
+				switch {
+				case !entry.Token.IsActive:
+					tm.cache.Delete(cacheKey) //nolint:errcheck // best-effort cache eviction
+				case entry.Token.ExpiresAt != nil && entry.Token.ExpiresAt.Before(time.Now()):
+					tm.cache.Delete(cacheKey) //nolint:errcheck // best-effort cache eviction
+				default:
+					go tm.updateLastUsed(entry.Token.ID)
+					cached := entry.Token
+					return &cached, nil
+				}
+			}
+		}
+	}
+
+	// Extract token prefix for efficient database lookup
+	tokenPrefix := tm.GetTokenPrefix(token)
+
+	// Query tokens matching prefix
+	rows, err := tm.db.Query(`
+		SELECT t.id, t.name, t.token_hash, t.token_prefix, t.is_active,
+		       t.created_by, t.expires_at, t.last_used_at, t.created_at, t.updated_at,
+		       COALESCE(u.first_name || ' ' || u.last_name, '') as created_by_name
+		FROM scim_tokens t
+		LEFT JOIN users u ON t.created_by = u.id
+		WHERE t.token_prefix = ?
+		  AND t.is_active = true
+		  AND (t.expires_at IS NULL OR t.expires_at > CURRENT_TIMESTAMP)
+	`, tokenPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tokens: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		scimToken, tokenHash, err := scanSCIMTokenValidateRow(rows)
+		if err != nil {
+			// A scan failure here means a row in scim_tokens does not match
+			// the expected schema. Log it so an operator can distinguish a
+			// DB/schema issue from a bad credential — but continue the loop
+			// so a stale corrupted row does not lock out the rest of the
+			// matching-prefix candidates.
+			slog.Error("scim_tokens: scan failed during token validation", slog.Any("error", err))
+			continue
+		}
+
+		// Check if token hash matches
+		if verifyTokenHash(tokenHash, token) != nil {
+			continue // Hash doesn't match, try next token
+		}
+
+		if tm.cache != nil {
+			entry := scimTokenCacheEntry{Token: scimToken}
+			if data, err := json.Marshal(entry); err == nil {
+				tm.cache.Set(cacheKey, data)                                             //nolint:errcheck // best-effort cache population
+				tm.cache.Set(fmt.Sprintf("scim_tid:%d", scimToken.ID), []byte(cacheKey)) //nolint:errcheck // best-effort reverse-lookup cache
+			}
+		}
+
+		// Update last used timestamp asynchronously
+		go tm.updateLastUsed(scimToken.ID)
+
+		return &scimToken, nil
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate tokens: %w", err)
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
+
+// updateLastUsed updates the last_used_at timestamp for a token
+func (tm *SCIMTokenManager) updateLastUsed(tokenID int) {
+	_, _ = tm.db.ExecWrite(`UPDATE scim_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?`, tokenID)
+}
+
+// CreateToken creates a new SCIM token
+// last review: ser, 210426, TODO: Remove inline sql
+func (tm *SCIMTokenManager) CreateToken(createdByUserID int, request models.SCIMTokenCreate) (*models.SCIMTokenResponse, error) {
+	// Generate token
+	token, err := tm.GenerateToken()
+	if err != nil {
+		return nil, err
+	}
+
+	// Hash token
+	tokenHash, err := tm.HashToken(token)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get token prefix for identification
+	tokenPrefix := tm.GetTokenPrefix(token)
+
+	// Insert token into database
+	var tokenID int64
+	err = tm.db.QueryRow(`
+		INSERT INTO scim_tokens (name, token_hash, token_prefix, is_active, created_by, expires_at)
+		VALUES (?, ?, ?, true, ?, ?)
+		RETURNING id
+	`, request.Name, tokenHash, tokenPrefix, createdByUserID, request.ExpiresAt).Scan(&tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token: %w", err)
+	}
+
+	// Get the created token details
+	scimToken, err := tm.GetTokenByID(int(tokenID))
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.SCIMTokenResponse{
+		Token:     token, // Only returned on creation
+		SCIMToken: *scimToken,
+	}, nil
+}
+
+// GetTokenByID retrieves a token by ID (without the actual token value)
+func (tm *SCIMTokenManager) GetTokenByID(id int) (*models.SCIMToken, error) {
+	row := tm.db.QueryRow(`
+		SELECT t.id, t.name, t.token_prefix, t.is_active,
+		       t.created_by, t.expires_at, t.last_used_at, t.created_at, t.updated_at,
+		       COALESCE(u.first_name || ' ' || u.last_name, '') as created_by_name
+		FROM scim_tokens t
+		LEFT JOIN users u ON t.created_by = u.id
+		WHERE t.id = ?
+	`, id)
+
+	token, err := scanSCIMTokenRow(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("token not found")
+		}
+		return nil, fmt.Errorf("failed to get token: %w", err)
+	}
+
+	return &token, nil
+}
+
+// ListTokens returns all SCIM tokens (active and inactive)
+func (tm *SCIMTokenManager) ListTokens() ([]models.SCIMToken, error) {
+	rows, err := tm.db.Query(`
+		SELECT t.id, t.name, t.token_prefix, t.is_active,
+		       t.created_by, t.expires_at, t.last_used_at, t.created_at, t.updated_at,
+		       COALESCE(u.first_name || ' ' || u.last_name, '') as created_by_name
+		FROM scim_tokens t
+		LEFT JOIN users u ON t.created_by = u.id
+		ORDER BY t.created_at DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tokens: %w", err)
+	}
+	defer rows.Close()
+
+	var tokens []models.SCIMToken
+	for rows.Next() {
+		token, err := scanSCIMTokenRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan token row: %w", err)
+		}
+		tokens = append(tokens, token)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate tokens: %w", err)
+	}
+
+	return tokens, nil
+}
+
+// RevokeToken revokes a SCIM token by setting is_active to false
+func (tm *SCIMTokenManager) RevokeToken(tokenID int) error {
+	result, err := tm.db.ExecWrite(`
+		UPDATE scim_tokens SET is_active = false, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, tokenID)
+	if err != nil {
+		return fmt.Errorf("failed to revoke token: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("token not found")
+	}
+	if tm.cache != nil {
+		if cacheKeyBytes, err := tm.cache.Get(fmt.Sprintf("scim_tid:%d", tokenID)); err == nil {
+			tm.cache.Delete(string(cacheKeyBytes))               //nolint:errcheck // best-effort cache eviction
+			tm.cache.Delete(fmt.Sprintf("scim_tid:%d", tokenID)) //nolint:errcheck // best-effort reverse-lookup eviction
+		} else {
+			tm.cache.Reset() //nolint:errcheck // best-effort fallback invalidation
+		}
+	}
+
+	return nil
+}
+
+// GetActiveTokenCount returns the count of active, non-expired tokens
+func (tm *SCIMTokenManager) GetActiveTokenCount() (int, error) {
+	var count int
+	err := tm.db.QueryRow(`
+		SELECT COUNT(*) FROM scim_tokens
+		WHERE is_active = true
+		  AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+	`).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count active tokens: %w", err)
+	}
+	return count, nil
+}
+
+// DisconnectSummary describes what a SCIM disconnect affected (or would
+// affect for the preview path). All counts reflect rows that currently
+// carry a SCIM-managed flag; rows that were already local are ignored.
+type DisconnectSummary struct {
+	ActiveTokens     int `json:"active_tokens"`
+	Users            int `json:"users"`
+	Groups           int `json:"groups"`
+	GroupMemberships int `json:"group_memberships"`
+}
+
+// PreviewDisconnect returns the counts that a DisconnectSCIM call would
+// affect. Used by the UI to populate the confirmation dialog so the admin
+// sees exactly what's about to be released.
+func (tm *SCIMTokenManager) PreviewDisconnect() (DisconnectSummary, error) {
+	var summary DisconnectSummary
+	row := tm.db.QueryRow(`SELECT
+		(SELECT COUNT(*) FROM scim_tokens WHERE is_active = true
+		  AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)),
+		(SELECT COUNT(*) FROM users WHERE scim_managed = true),
+		(SELECT COUNT(*) FROM groups WHERE scim_managed = true),
+		(SELECT COUNT(*) FROM group_members WHERE scim_managed = true)`)
+	if err := row.Scan(&summary.ActiveTokens, &summary.Users, &summary.Groups, &summary.GroupMemberships); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to preview SCIM disconnect: %w", err)
+	}
+	return summary, nil
+}
+
+// DisconnectSCIM performs an atomic disconnect: every active SCIM token is
+// revoked, and every user / group / group-membership previously marked
+// scim_managed is released back to local management (flag cleared,
+// external ID nulled). Returns the counts so the caller can surface them
+// to the admin.
+//
+// After this call the admin API's normal Delete / Update / Deactivate
+// paths work again on those rows; the guards in users.go and scim.go both
+// key off scim_managed, which is now false.
+func (tm *SCIMTokenManager) DisconnectSCIM() (DisconnectSummary, error) {
+	preview, err := tm.PreviewDisconnect()
+	if err != nil {
+		return DisconnectSummary{}, err
+	}
+
+	tx, err := tm.db.Begin()
+	if err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to begin disconnect transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.Exec(`UPDATE scim_tokens SET is_active = false, updated_at = CURRENT_TIMESTAMP
+		WHERE is_active = true
+		  AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to revoke SCIM tokens: %w", err)
+	}
+
+	if _, err := tx.Exec(`UPDATE users SET scim_managed = false, scim_external_id = NULL,
+		updated_at = CURRENT_TIMESTAMP WHERE scim_managed = true`); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to release SCIM users: %w", err)
+	}
+
+	if _, err := tx.Exec(`UPDATE groups SET scim_managed = false, scim_external_id = NULL,
+		updated_at = CURRENT_TIMESTAMP WHERE scim_managed = true`); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to release SCIM groups: %w", err)
+	}
+
+	if _, err := tx.Exec(`UPDATE group_members SET scim_managed = false
+		WHERE scim_managed = true`); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to release SCIM group memberships: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return DisconnectSummary{}, fmt.Errorf("failed to commit SCIM disconnect: %w", err)
+	}
+	if tm.cache != nil {
+		tm.cache.Reset() //nolint:errcheck // best-effort bulk cache invalidation
+	}
+
+	return preview, nil
+}

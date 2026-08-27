@@ -1,0 +1,22 @@
+import { createActionFlowStore } from './createActionFlowStore.svelte.js';
+
+export const assetActionFlowStore = createActionFlowStore({
+  defaultTrigger: 'asset_created',
+  nodeConfigDefaults: {
+    create_item: {
+      workspace_id: 0,
+      item_type_id: 0,
+      title: '{{asset.title}}',
+      description: 'Asset: {{asset.tag}}',
+    },
+    set_field: { field_name: '', field_display_name: '', value: '' },
+    set_status: { status_id: 0 },
+    condition: { field_name: 'asset_title', operator: 'eq', value: '' },
+    notify_user: {
+      recipient_type: 'specific',
+      recipients: [],
+      message: 'Asset {{asset.title}} was updated',
+      include_link: true,
+    },
+  },
+});

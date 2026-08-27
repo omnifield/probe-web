@@ -1,0 +1,60 @@
+package routes
+
+import "net/http"
+
+// RegisterAuthRoutes registers authentication-related routes (auth, SSO, WebAuthn).
+func RegisterAuthRoutes(deps *Deps) {
+	api := deps.API
+	auth := deps.AuthMiddleware.RequireAuth
+	admin := deps.PermissionMiddleware.RequireSystemAdmin()
+
+	// Authentication endpoints with rate limiting
+	api.HandleH("POST /auth/login", deps.LoginRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.Login)))
+	api.HandleH("POST /auth/logout", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.Logout)))
+	api.HandleH("GET /auth/me", auth(http.HandlerFunc(deps.Auth.Auth.GetCurrentUser)))
+	api.HandleH("POST /auth/refresh", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.RefreshSession)))
+	api.HandleH("POST /auth/logout-all", auth(deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.LogoutAll))))
+	api.HandleH("POST /auth/change-password", auth(deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.ChangePassword))))
+
+	// Email verification endpoints
+	api.HandleH("GET /auth/verify-email", deps.EmailVerifyLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.VerifyEmail)))
+	api.HandleH("POST /auth/resend-verification", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.ResendVerification)))
+	api.HandleH("GET /auth/verification-status", deps.EmailVerifyLimiter.Limit(http.HandlerFunc(deps.Auth.Auth.GetVerificationStatus)))
+
+	// WebAuthn (FIDO) authentication endpoints. The handler is optional because
+	// local installations may use a hostname that cannot be a WebAuthn RP ID.
+	if deps.Auth.WebAuthn != nil {
+		api.HandleH("POST /auth/webauthn/login/start", deps.FIDORateLimiter.Limit(http.HandlerFunc(deps.Auth.WebAuthn.StartFIDOLoginNew)))
+		api.HandleH("POST /auth/webauthn/login/complete", deps.FIDORateLimiter.Limit(http.HandlerFunc(deps.Auth.WebAuthn.CompleteFIDOLoginNew)))
+	}
+
+	// SSO (Single Sign-On) endpoints - Public with rate limiting
+	// Rate limiting prevents brute force attacks and DoS on SSO endpoints
+	api.HandleH("GET /sso/status", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.GetStatus)))
+	api.HandleH("GET /sso/login/{slug}", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.StartLogin)))
+	api.HandleH("GET /sso/callback/{slug}", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.Callback)))
+	// Native (desktop/iOS) one-time-code redemption — public + rate-limited;
+	// the app has no credentials yet when it redeems (WI-446).
+	api.HandleH("POST /auth/native/exchange", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.NativeExchange)))
+
+	// SSO Admin endpoints for provider management
+	api.HandleH("GET /sso/providers", admin(http.HandlerFunc(deps.Auth.SSO.ListProviders)))
+	api.HandleH("POST /sso/providers", admin(http.HandlerFunc(deps.Auth.SSO.CreateProvider)))
+	api.HandleH("GET /sso/providers/{id}", admin(http.HandlerFunc(deps.Auth.SSO.GetProvider)))
+	api.HandleH("PUT /sso/providers/{id}", admin(http.HandlerFunc(deps.Auth.SSO.UpdateProvider)))
+	api.HandleH("DELETE /sso/providers/{id}", admin(http.HandlerFunc(deps.Auth.SSO.DeleteProvider)))
+	api.HandleH("POST /sso/providers/{id}/test", admin(http.HandlerFunc(deps.Auth.SSO.TestProvider)))
+
+	// SAML endpoints (public with rate limiting)
+	api.HandleH("GET /sso/{slug}/saml/metadata", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.SAMLMetadata)))
+	api.HandleH("GET /sso/{slug}/saml/login", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.SAMLLogin)))
+	api.HandleH("POST /sso/{slug}/saml/acs", deps.SSORateLimiter.Limit(http.HandlerFunc(deps.Auth.SSO.SAMLAssertionConsumerService)))
+
+	// User external account endpoints
+	api.HandleH("GET /sso/external-accounts", auth(http.HandlerFunc(deps.Auth.SSO.GetExternalAccounts)))
+	api.HandleH("DELETE /sso/external-accounts/{id}", auth(http.HandlerFunc(deps.Auth.SSO.UnlinkExternalAccount)))
+
+	// Invitation endpoints (public with rate limiting)
+	api.HandleH("GET /auth/invitations/verify", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Invitation.VerifyInvitation)))
+	api.HandleH("POST /auth/invitations/accept", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Auth.Invitation.AcceptInvitation)))
+}

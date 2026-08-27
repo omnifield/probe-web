@@ -1,0 +1,71 @@
+-- Jira Cloud Import tables (PostgreSQL version)
+-- Tables for managing Jira import connections, jobs, and ID mappings
+
+-- Stores encrypted Jira connection credentials
+CREATE TABLE IF NOT EXISTS jira_import_connections (
+    id TEXT PRIMARY KEY,
+    instance_url TEXT NOT NULL,
+    email TEXT NOT NULL,
+    encrypted_credentials TEXT NOT NULL,
+    instance_name TEXT,
+    deployment_type TEXT DEFAULT 'cloud',
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_connections_created_by ON jira_import_connections(created_by);
+
+-- Import job tracking
+CREATE TABLE IF NOT EXISTS jira_import_jobs (
+    id TEXT PRIMARY KEY,
+    connection_id TEXT NOT NULL REFERENCES jira_import_connections(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'queued',
+    phase TEXT,
+    scope TEXT NOT NULL DEFAULT 'work_items',
+    config_json TEXT NOT NULL,
+    progress_json TEXT,
+    result_json TEXT,
+    error_message TEXT,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_jobs_connection_id ON jira_import_jobs(connection_id);
+CREATE INDEX IF NOT EXISTS idx_jira_jobs_status ON jira_import_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jira_jobs_created_by ON jira_import_jobs(created_by);
+
+-- ID mappings for imported entities (preserves references)
+CREATE TABLE IF NOT EXISTS jira_import_id_mappings (
+    id SERIAL PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES jira_import_jobs(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,
+    jira_id TEXT NOT NULL,
+    jira_key TEXT,
+    windshift_id INTEGER NOT NULL,
+    metadata_json TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(job_id, entity_type, jira_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_mappings_lookup ON jira_import_id_mappings(job_id, entity_type, jira_id);
+CREATE INDEX IF NOT EXISTS idx_jira_mappings_key ON jira_import_id_mappings(job_id, jira_key);
+CREATE INDEX IF NOT EXISTS idx_jira_mappings_windshift ON jira_import_id_mappings(entity_type, windshift_id);
+
+-- User mappings for imported Jira users
+CREATE TABLE IF NOT EXISTS jira_import_user_mappings (
+    id SERIAL PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES jira_import_jobs(id) ON DELETE CASCADE,
+    jira_account_id TEXT NOT NULL,
+    jira_email TEXT,
+    jira_display_name TEXT,
+    windshift_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    was_created BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(job_id, jira_account_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_user_mappings_job ON jira_import_user_mappings(job_id);
+CREATE INDEX IF NOT EXISTS idx_jira_user_mappings_windshift ON jira_import_user_mappings(windshift_user_id);

@@ -1,0 +1,107 @@
+<script>
+  import { Loader2, CheckCircle, XCircle } from '@lucide/svelte';
+  import { portalAuthStore } from '../stores/portalAuth.svelte.js';
+  import { t } from '../stores/i18n.svelte.js';
+
+  // Props
+  let { slug, token, onSuccess, onError } = $props();
+
+  let status = $state('verifying'); // verifying, success, error
+  let errorMessage = $state('');
+
+  let verificationRun = 0;
+
+  async function verify(currentSlug, currentToken, run) {
+    if (!currentToken) {
+      status = 'error';
+      errorMessage = t('portal.invalidLink') || 'Invalid or missing token';
+      onError?.(errorMessage, 'invalid', null);
+      return;
+    }
+
+    const result = await portalAuthStore.verifyMagicLink(currentSlug, currentToken);
+    if (run !== verificationRun) return;
+
+    if (result.success) {
+      status = 'success';
+      onSuccess?.(result.customer);
+    } else {
+      // For expired/used tokens, the parent runs a smooth recovery flow
+      // (stash next, open sign-in modal). Don't render the error state in
+      // those cases — the parent will dismiss this modal.
+      if (result.code === 'expired' || result.code === 'used') {
+        onError?.(result.message, result.code, result.email);
+        return;
+      }
+      status = 'error';
+      errorMessage = result.message || t('portal.verificationFailed') || 'Failed to verify link';
+      onError?.(errorMessage, result.code, result.email);
+    }
+  }
+
+  // A recovery link can be opened in the same tab while this component is
+  // still mounted. Verify each new token, and ignore a slower response from a
+  // prior token so it cannot overwrite the current attempt.
+  $effect(() => {
+    const currentSlug = slug;
+    const currentToken = token;
+    const run = ++verificationRun;
+    status = 'verifying';
+    errorMessage = '';
+    void verify(currentSlug, currentToken, run);
+
+    return () => {
+      if (verificationRun === run) verificationRun += 1;
+    };
+  });
+</script>
+
+<div
+  data-testid="portal-verify-link"
+  class="flex flex-col items-center justify-center min-h-[300px] p-8"
+>
+  {#if status === 'verifying'}
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style="background-color: var(--ds-background-neutral);">
+        <Loader2 class="w-8 h-8 animate-spin" style="color: var(--ds-icon-brand);" />
+      </div>
+      <h2 class="text-xl font-semibold mb-2" style="color: var(--ds-text);">
+        {t('portal.verifying') || 'Verifying your link...'}
+      </h2>
+      <p style="color: var(--ds-text-subtle);">
+        {t('portal.pleaseWait') || 'Please wait while we sign you in.'}
+      </p>
+    </div>
+  {:else if status === 'success'}
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style="background-color: var(--ds-background-success-subtle);">
+        <CheckCircle class="w-8 h-8" style="color: var(--ds-icon-success);" />
+      </div>
+      <h2 class="text-xl font-semibold mb-2" style="color: var(--ds-text);">
+        {t('portal.signInSuccess') || 'Successfully signed in!'}
+      </h2>
+      <p style="color: var(--ds-text-subtle);">
+        {t('portal.redirecting') || 'Redirecting you to the portal...'}
+      </p>
+    </div>
+  {:else if status === 'error'}
+    <div data-testid="portal-verify-error" class="text-center">
+      <div class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style="background-color: var(--ds-background-danger-subtle);">
+        <XCircle class="w-8 h-8" style="color: var(--ds-icon-danger);" />
+      </div>
+      <h2 class="text-xl font-semibold mb-2" style="color: var(--ds-text);">
+        {t('portal.verificationFailed') || 'Sign in failed'}
+      </h2>
+      <p class="mb-6" style="color: var(--ds-text-subtle);">
+        {errorMessage}
+      </p>
+      <a
+        href="/portal/{slug}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+        style="background-color: var(--ds-background-brand-bold); color: var(--ds-text-inverse);"
+      >
+        {t('portal.backToPortal') || 'Back to Portal'}
+      </a>
+    </div>
+  {/if}
+</div>

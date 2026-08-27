@@ -1,0 +1,7 @@
+node_modules/
+dist/
+
+# Порождается сборкой (`scripts/generate.mjs`), тем же приёмом, что у `packages/ui/.gitignore`:
+# перечень паспортов/компонентов из папок — не файл, который правят руками.
+src/passport.ts
+src/kit.ts

@@ -1,0 +1,355 @@
+package handlers
+
+import (
+	"database/sql"
+	"errors"
+	"net/http"
+	"sort"
+
+	"windshift/internal/models"
+	"windshift/internal/repository"
+)
+
+// respondIntraSetItemTypeConflictIfNeeded protects workspaces already using a
+// configuration set when its explicit item-type allow-list is narrowed. Items
+// using a removed type must be remapped before the new list can be applied.
+// Targets are limited to the same hierarchy level so the migration cannot
+// silently invalidate parent/child relationships.
+func (h *ConfigurationSetHandler) respondIntraSetItemTypeConflictIfNeeded(
+	w http.ResponseWriter, r *http.Request,
+	configSetID int, workspaceIDs []int, proposedConfigs []models.ItemTypeConfig,
+) bool {
+	migrations, availableTargets, totalAffected, err := h.analyzeItemTypesAgainstConfigs(workspaceIDs, proposedConfigs)
+	if err != nil {
+		respondInternalError(w, r, err)
+		return true
+	}
+	if len(migrations) == 0 {
+		return false
+	}
+
+	var configSetName string
+	if err := h.db.QueryRow(`SELECT name FROM configuration_sets WHERE id = ?`, configSetID).Scan(&configSetName); err != nil {
+		respondInternalError(w, r, err)
+		return true
+	}
+
+	analysis := models.ComprehensiveMigrationAnalysis{
+		OldConfigSetID:            configSetID,
+		OldConfigSetName:          configSetName,
+		NewConfigSetID:            configSetID,
+		NewConfigSetName:          configSetName,
+		AffectedWorkspaces:        append([]int{}, workspaceIDs...),
+		TotalAffectedItems:        totalAffected,
+		ItemTypeMigrations:        migrations,
+		AvailableItemTypes:        availableTargets,
+		RequiresMigration:         true,
+		RequiresItemTypeMigration: true,
+	}
+
+	respondJSON(w, http.StatusConflict, map[string]any{
+		"error":    "migration_required",
+		"message":  "Migration is required before item types can be removed from this configuration set",
+		"analysis": analysis,
+	})
+	return true
+}
+
+// analyzeItemTypesAgainstConfigs returns one migration row for every item type
+// used by workspaceIDs that the proposed explicit allow-list would exclude.
+// An empty proposed list retains the existing "accept all item types" meaning.
+func (h *ConfigurationSetHandler) analyzeItemTypesAgainstConfigs(
+	workspaceIDs []int, proposedConfigs []models.ItemTypeConfig,
+) ([]models.ItemTypeMigrationInfo, []models.ItemTypeTarget, int, error) {
+	if len(workspaceIDs) == 0 || len(proposedConfigs) == 0 {
+		return nil, nil, 0, nil
+	}
+
+	allTypes := make(map[int]models.ItemTypeTarget)
+	rows, err := h.db.Query(`
+		SELECT id, name, icon, color, hierarchy_level
+		FROM item_types
+		ORDER BY CASE WHEN hierarchy_level = -1 THEN 1 ELSE 0 END, hierarchy_level, sort_order, id
+	`)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var target models.ItemTypeTarget
+		if err := rows.Scan(&target.ID, &target.Name, &target.Icon, &target.Color, &target.HierarchyLevel); err != nil {
+			return nil, nil, 0, err
+		}
+		allTypes[target.ID] = target
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, 0, err
+	}
+
+	allowed := make(map[int]struct{}, len(proposedConfigs))
+	targetsByLevel := make(map[int][]models.ItemTypeTarget)
+	availableTargets := make([]models.ItemTypeTarget, 0, len(proposedConfigs))
+	for _, config := range proposedConfigs {
+		target, ok := allTypes[config.ItemTypeID]
+		if !ok {
+			continue
+		}
+		if _, duplicate := allowed[target.ID]; duplicate {
+			continue
+		}
+		allowed[target.ID] = struct{}{}
+		targetsByLevel[target.HierarchyLevel] = append(targetsByLevel[target.HierarchyLevel], target)
+		availableTargets = append(availableTargets, target)
+	}
+
+	type aggregate struct {
+		name  string
+		count int
+	}
+	affected := make(map[int]aggregate)
+	itemRepo := repository.NewItemRepository(h.db)
+	for _, workspaceID := range workspaceIDs {
+		counts, err := itemRepo.ListItemTypeCountsForWorkspace(workspaceID)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		for _, count := range counts {
+			if _, remainsAllowed := allowed[count.TypeID]; remainsAllowed {
+				continue
+			}
+			current := affected[count.TypeID]
+			current.name = count.TypeName
+			current.count += count.ItemCount
+			affected[count.TypeID] = current
+		}
+	}
+
+	sourceIDs := make([]int, 0, len(affected))
+	for sourceID := range affected {
+		sourceIDs = append(sourceIDs, sourceID)
+	}
+	sort.Ints(sourceIDs)
+
+	migrations := make([]models.ItemTypeMigrationInfo, 0, len(sourceIDs))
+	totalAffected := 0
+	for _, sourceID := range sourceIDs {
+		count := affected[sourceID]
+		migration := models.ItemTypeMigrationInfo{
+			CurrentItemTypeName: count.name,
+			ItemCount:           count.count,
+			RequiresMigration:   true,
+		}
+		if sourceID == 0 {
+			// Untyped legacy items have no hierarchy contract, so any proposed
+			// type is a valid target.
+			migration.AvailableTargets = availableTargets
+		} else {
+			id := sourceID
+			migration.CurrentItemTypeID = &id
+			if source, ok := allTypes[sourceID]; ok {
+				migration.AvailableTargets = append([]models.ItemTypeTarget{}, targetsByLevel[source.HierarchyLevel]...)
+			}
+		}
+		if len(migration.AvailableTargets) > 0 {
+			suggested := migration.AvailableTargets[0]
+			migration.SuggestedItemTypeID = &suggested.ID
+			migration.SuggestedItemTypeName = suggested.Name
+		}
+		migrations = append(migrations, migration)
+		totalAffected += count.count
+	}
+
+	return migrations, availableTargets, totalAffected, nil
+}
+
+// respondIntraSetWorkflowConflictIfNeeded aggregates retained workspaces so a
+// workflow swap cannot orphan unmigrated items.
+func (h *ConfigurationSetHandler) respondIntraSetWorkflowConflictIfNeeded(
+	w http.ResponseWriter, r *http.Request, //nolint:unparam // r kept for symmetry with respondMigrationConflictIfNeeded
+	configSetID int, retainedWorkspaceIDs []int, newWorkflowID *int,
+) bool {
+	if newWorkflowID == nil || len(retainedWorkspaceIDs) == 0 {
+		return false
+	}
+
+	// Merge per-workspace status migrations by status and item type.
+	type key struct {
+		statusID   int  // 0 means NULL
+		itemTypeID *int // nil means "no per-item-type filter"
+	}
+	merged := make(map[key]models.StatusMigrationInfo)
+	requires := false
+	for _, wsID := range retainedWorkspaceIDs {
+		mig, req := h.analyzeStatusMigrationAgainstWorkflow(wsID, *newWorkflowID)
+		if req {
+			requires = true
+		}
+		for _, m := range mig {
+			sid := 0
+			if m.CurrentStatusID != nil {
+				sid = *m.CurrentStatusID
+			}
+			k := key{statusID: sid, itemTypeID: m.ItemTypeID}
+			if existing, ok := merged[k]; ok {
+				existing.ItemCount += m.ItemCount
+				merged[k] = existing
+			} else {
+				merged[k] = m
+			}
+		}
+	}
+	if !requires {
+		return false
+	}
+
+	statusMigrations := make([]models.StatusMigrationInfo, 0, len(merged))
+	for _, v := range merged {
+		statusMigrations = append(statusMigrations, v)
+	}
+
+	var configSetName string
+	if err := h.db.QueryRow(`SELECT name FROM configuration_sets WHERE id = ?`, configSetID).Scan(&configSetName); err != nil {
+		respondInternalError(w, r, err)
+		return true
+	}
+
+	itemRepo := repository.NewItemRepository(h.db)
+	totalItems := 0
+	for _, wsID := range retainedWorkspaceIDs {
+		n, _ := itemRepo.CountByField("workspace_id", wsID)
+		totalItems += n
+	}
+
+	analysis := models.ComprehensiveMigrationAnalysis{
+		OldConfigSetID:          configSetID,
+		OldConfigSetName:        configSetName,
+		NewConfigSetID:          configSetID,
+		NewConfigSetName:        configSetName,
+		AffectedWorkspaces:      append([]int{}, retainedWorkspaceIDs...),
+		TotalAffectedItems:      totalItems,
+		StatusMigrations:        statusMigrations,
+		RequiresMigration:       true,
+		RequiresStatusMigration: true,
+		NewWorkflowID:           newWorkflowID,
+	}
+
+	respondJSON(w, http.StatusConflict, map[string]any{
+		"error":    "migration_required",
+		"message":  "Migration is required before the workflow change can be applied",
+		"analysis": analysis,
+	})
+	return true
+}
+
+// resolveEffectiveWorkflowID prefers an explicit workflow, then the default.
+func (h *ConfigurationSetHandler) resolveEffectiveWorkflowID(explicit *int) (*int, error) {
+	if explicit != nil {
+		return explicit, nil
+	}
+	var fallback sql.NullInt64
+	err := h.db.QueryRow(`SELECT id FROM workflows WHERE is_default = true LIMIT 1`).Scan(&fallback)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	v := int(fallback.Int64)
+	return &v, nil
+}
+
+// respondMigrationConflictIfNeeded returns migration analysis for one workspace.
+// An override workflow supports pending intra-config-set workflow swaps.
+func (h *ConfigurationSetHandler) respondMigrationConflictIfNeeded(
+	w http.ResponseWriter, r *http.Request, //nolint:unparam // r kept for symmetry with HTTP-handler-style helpers
+	workspaceID, sourceConfigSetID, targetConfigSetID int,
+	overrideTargetWorkflowID *int,
+) bool {
+	itemTypeMigrations, _, requiresItemTypeMigration := h.analyzeItemTypeMigration(workspaceID, sourceConfigSetID, targetConfigSetID)
+	customFieldMigrations, requiresFieldMigration := h.analyzeCustomFieldMigration(workspaceID, sourceConfigSetID, targetConfigSetID)
+	priorityMigrations, _, requiresPriorityMigration := h.analyzePriorityMigration(workspaceID, sourceConfigSetID, targetConfigSetID)
+
+	var statusMigrations []models.StatusMigrationInfo
+	var requiresStatusMigration bool
+	if overrideTargetWorkflowID != nil {
+		statusMigrations, requiresStatusMigration = h.analyzeStatusMigrationAgainstWorkflow(workspaceID, *overrideTargetWorkflowID)
+	} else {
+		statusMigrations, requiresStatusMigration = h.analyzeStatusMigration(workspaceID, targetConfigSetID)
+	}
+
+	requiresMigration := requiresItemTypeMigration || requiresFieldMigration ||
+		requiresPriorityMigration || requiresStatusMigration
+	if !requiresMigration {
+		return false
+	}
+
+	var sourceConfigSetName, targetConfigSetName string
+	if err := h.db.QueryRow(`SELECT name FROM configuration_sets WHERE id = ?`, sourceConfigSetID).Scan(&sourceConfigSetName); err != nil {
+		respondInternalError(w, r, err)
+		return true
+	}
+	if err := h.db.QueryRow(`SELECT name FROM configuration_sets WHERE id = ?`, targetConfigSetID).Scan(&targetConfigSetName); err != nil {
+		respondInternalError(w, r, err)
+		return true
+	}
+
+	totalItems, _ := repository.NewItemRepository(h.db).CountByField("workspace_id", workspaceID)
+
+	analysis := models.ComprehensiveMigrationAnalysis{
+		OldConfigSetID:            sourceConfigSetID,
+		OldConfigSetName:          sourceConfigSetName,
+		NewConfigSetID:            targetConfigSetID,
+		NewConfigSetName:          targetConfigSetName,
+		AffectedWorkspaces:        []int{workspaceID},
+		TotalAffectedItems:        totalItems,
+		ItemTypeMigrations:        itemTypeMigrations,
+		CustomFieldMigrations:     customFieldMigrations,
+		PriorityMigrations:        priorityMigrations,
+		StatusMigrations:          statusMigrations,
+		RequiresMigration:         true,
+		RequiresItemTypeMigration: requiresItemTypeMigration,
+		RequiresFieldMigration:    requiresFieldMigration,
+		RequiresPriorityMigration: requiresPriorityMigration,
+		RequiresStatusMigration:   requiresStatusMigration,
+	}
+	if overrideTargetWorkflowID != nil {
+		analysis.NewWorkflowID = overrideTargetWorkflowID
+	}
+
+	respondJSON(w, http.StatusConflict, map[string]any{
+		"error":    "migration_required",
+		"message":  "Migration is required before this configuration set update can be applied",
+		"analysis": analysis,
+	})
+	return true
+}
+
+func nullableInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func intersectInts(a, b []int) []int {
+	if len(a) == 0 || len(b) == 0 {
+		return nil
+	}
+	set := make(map[int]struct{}, len(a))
+	for _, v := range a {
+		set[v] = struct{}{}
+	}
+	out := make([]int, 0)
+	seen := make(map[int]struct{}, len(b))
+	for _, v := range b {
+		if _, ok := set[v]; !ok {
+			continue
+		}
+		if _, dup := seen[v]; dup {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}

@@ -1,0 +1,94 @@
+version: 2
+updates:
+  # Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps(go)"
+    labels:
+      - "dependencies"
+      - "go"
+    # Supply-chain cooldown: wait out the window where freshly published
+    # versions are most likely to be malicious or reverted. Security updates
+    # (CVE-driven) bypass cooldown automatically.
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 3
+      include:
+        - "*"
+
+  # npm (frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps(npm)"
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Group minor/patch updates to reduce PR noise
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@biomejs/*"
+          - "@playwright/*"
+          - "@testing-library/*"
+          - "@vitest/*"
+          - "vitest"
+          - "typescript"
+          - "vite"
+        update-types:
+          - "minor"
+          - "patch"
+    # Strict cooldown for npm — the ecosystem with the highest rate of
+    # known supply-chain attacks (chalk/debug, etc.). Pairs with
+    # min-release-age=14 in frontend/.npmrc for local installs.
+    cooldown:
+      semver-major-days: 30
+      semver-minor-days: 14
+      semver-patch-days: 7
+      include:
+        - "*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(actions)"
+    labels:
+      - "dependencies"
+      - "ci"
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+      include:
+        - "*"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directories:
+      - "/"
+      - "/deploy/coding-agent"
+      - "/deploy/windshift-runner"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"

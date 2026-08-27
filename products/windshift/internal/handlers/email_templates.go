@@ -1,0 +1,166 @@
+package handlers
+
+import (
+	"errors"
+	"net/http"
+
+	"windshift/internal/emailutil"
+	"windshift/internal/logger"
+	"windshift/internal/models"
+	"windshift/internal/repository"
+	"windshift/internal/sanitize"
+	"windshift/internal/utils"
+)
+
+// EmailTemplateHandler exposes admin CRUD for built-in transactional email
+// templates (magic_link, email_verification, invitation, notification_batch).
+// Only update + read + preview are exposed — the rows are seeded by the
+// system and admins are not allowed to add or remove them.
+type EmailTemplateHandler struct {
+	repo    *repository.EmailTemplateRepository
+	auditor *logger.Auditor
+}
+
+// NewEmailTemplateHandler creates a new email template handler.
+func NewEmailTemplateHandler(repo *repository.EmailTemplateRepository, auditor *logger.Auditor) *EmailTemplateHandler {
+	return &EmailTemplateHandler{
+		repo:    repo,
+		auditor: auditor,
+	}
+}
+
+// List handles GET /email-templates.
+func (h *EmailTemplateHandler) List(w http.ResponseWriter, r *http.Request) {
+	templates, err := h.repo.List()
+	if err != nil {
+		respondInternalError(w, r, err)
+		return
+	}
+	if templates == nil {
+		templates = []models.EmailTemplate{}
+	}
+	respondJSONOK(w, templates)
+}
+
+// Get handles GET /email-templates/{id}.
+func (h *EmailTemplateHandler) Get(w http.ResponseWriter, r *http.Request) {
+	id, ok := requireIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	template, err := h.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			respondNotFound(w, r, "email template")
+			return
+		}
+		respondInternalError(w, r, err)
+		return
+	}
+	respondJSONOK(w, template)
+}
+
+// emailTemplateUpdateRequest is the editable subset of an email template.
+type emailTemplateUpdateRequest struct {
+	Subject     string `json:"subject"`
+	HTMLBody    string `json:"html_body"`
+	TextBody    string `json:"text_body"`
+	Description string `json:"description"`
+	IsActive    bool   `json:"is_active"`
+}
+
+// Update handles PUT /email-templates/{id}.
+func (h *EmailTemplateHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, ok := requireIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	req, ok := decodeJSON[emailTemplateUpdateRequest](w, r)
+	if !ok {
+		return
+	}
+	// Sanitize rendered subject/description, but preserve template bodies: this
+	// admin-only trusted surface intentionally authors outbound HTML/text.
+	warnings := sanitize.ApplyAllWithWarnings(
+		sanitize.Pair{Target: &req.Subject, Policy: sanitize.PlainTextField, Label: "Subject"},
+		sanitize.Pair{Target: &req.Description, Policy: sanitize.RichText, Label: "Description"},
+	)
+
+	if req.Subject == "" || req.HTMLBody == "" {
+		respondValidationError(w, r, "subject and html_body are required")
+		return
+	}
+
+	updated, err := h.repo.Update(id, req.Subject, req.HTMLBody, req.TextBody, req.Description, req.IsActive)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			respondNotFound(w, r, "email template")
+			return
+		}
+		respondInternalError(w, r, err)
+		return
+	}
+
+	if user := utils.GetCurrentUser(r); user != nil {
+		idCopy := updated.ID
+		h.auditor.Log(r, user, logger.ActionEmailTemplateUpdate, logger.ResourceEmailTemplate, &idCopy, updated.Name)
+	}
+
+	respondJSONOK(w, struct {
+		*models.EmailTemplate
+		Warnings []string `json:"warnings,omitempty"`
+	}{updated, warnings})
+}
+
+// previewRequest carries the template sources to render plus the name of a
+// sample-data preset to pull canned values from.
+type previewRequest struct {
+	Subject  string `json:"subject"`
+	HTMLBody string `json:"html_body"`
+	TextBody string `json:"text_body"`
+	Name     string `json:"name"`
+}
+
+// previewResponse mirrors what the preview UI renders into the iframe.
+type previewResponse struct {
+	Subject  string `json:"subject"`
+	HTMLBody string `json:"html_body"`
+	TextBody string `json:"text_body"`
+}
+
+// Preview handles POST /email-templates/preview. It renders the supplied
+// template sources against canned sample data so admins can see the result
+// before saving.
+func (h *EmailTemplateHandler) Preview(w http.ResponseWriter, r *http.Request) {
+	req, ok := decodeJSON[previewRequest](w, r)
+	if !ok {
+		return
+	}
+	// Same rationale as Update: Subject + Name are user-facing labels and
+	// run through sanitize; HTMLBody + TextBody are template sources the
+	// admin is composing and are passed through unchanged so the preview
+	// reflects what would actually be sent.
+	sanitize.ApplyAll(
+		sanitize.Pair{Target: &req.Subject, Policy: sanitize.PlainTextField},
+		sanitize.Pair{Target: &req.Name, Policy: sanitize.PlainTextField},
+	)
+
+	data := emailutil.SampleData(req.Name)
+
+	subjectOut, _, err := emailutil.RenderTemplates(req.Subject, req.Subject, data)
+	if err != nil {
+		respondValidationError(w, r, "subject render error: "+err.Error())
+		return
+	}
+	enriched := emailutil.EnrichWithSubject(data, subjectOut)
+	htmlOut, textOut, err := emailutil.RenderTemplates(req.HTMLBody, req.TextBody, enriched)
+	if err != nil {
+		respondValidationError(w, r, "template render error: "+err.Error())
+		return
+	}
+
+	resp := previewResponse{Subject: subjectOut, HTMLBody: htmlOut, TextBody: textOut}
+	respondJSONOK(w, resp)
+}

@@ -1,0 +1,452 @@
+<script>
+  import { onDestroy, onMount } from 'svelte';
+  import { useEventListener } from 'runed';
+  import { api } from '../../api.js';
+  import { GitMerge, GitBranch, GitCommit, ExternalLink, Plus, RefreshCw, Trash2, ChevronDown, ChevronRight, Loader2, GitBranchPlus, Link2 } from '@lucide/svelte';
+  import Button from '../../components/Button.svelte';
+  import Text from '../../components/Text.svelte';
+  import { t } from '../../stores/i18n.svelte.js';
+  import { confirm } from '../../composables/useConfirm.js';
+  import { safeHref } from '../../utils/sanitize';
+
+  let { itemId, onaddlink, oncreatebranch, oncreatepr } = $props();
+
+  let loading = $state(true);
+  let links = $state([]);
+  let expanded = $state(true);
+  let refreshing = $state(false);
+  let error = $state(null);
+
+  // SCM connection status
+  let connectionStatus = $state(null);
+  let checkingConnection = $state(true);
+  const loadController = new AbortController();
+  let delayedRefresh = null;
+
+  // Segmented buckets for the dev panel
+  const pullRequests = $derived(links.filter(l => l.link_type === 'pull_request'));
+  const branchLinks = $derived(links.filter(l => l.link_type === 'branch'));
+  const commitLinks = $derived(links.filter(l => l.link_type === 'commit'));
+  // PR rollup follows Jira semantics: OPEN > MERGED > DECLINED
+  const prRollupState = $derived(
+    pullRequests.some(l => l.state === 'open') ? 'open'
+    : pullRequests.some(l => l.state === 'merged') ? 'merged'
+    : pullRequests.some(l => l.state === 'closed') ? 'closed'
+    : null
+  );
+
+  onMount(async () => {
+    await checkConnectionStatus(loadController.signal);
+    if (!loadController.signal.aborted && connectionStatus?.connected) {
+      await loadLinks(loadController.signal);
+    } else {
+      loading = false;
+    }
+  });
+
+  onDestroy(() => {
+    loadController.abort();
+    if (delayedRefresh) clearTimeout(delayedRefresh);
+  });
+
+  // Live updates (WI-484): the item-detail view that owns the SSE stream
+  // dispatches this when a `link` event arrives, so the SCM-links section
+  // refreshes (manual link, branch/PR creation, or webhook-detected PR state
+  // change) without waiting for a reload. Self-filtered on itemId.
+  useEventListener(() => window, 'item-scm-links-changed', (/** @type {CustomEvent<{itemId?: number|string}>} */ event) => {
+    const id = event?.detail?.itemId;
+    if (id == null || String(id) !== String(itemId)) return;
+    if (connectionStatus?.connected) loadLinks(loadController.signal);
+  });
+
+  async function checkConnectionStatus(signal) {
+    if (!itemId) {
+      checkingConnection = false;
+      return;
+    }
+
+    try {
+      connectionStatus = await api.itemSCMLinks.getConnectionStatus(itemId, { signal });
+    } catch (err) {
+      if (signal?.aborted || err?.name === 'AbortError' || err?.status === 404) return;
+      console.error('Failed to check SCM connection status:', err);
+      // If we can't check connection status, assume no repos configured
+      connectionStatus = { has_repositories: false };
+    } finally {
+      checkingConnection = false;
+    }
+  }
+
+  function startOAuthConnect() {
+    if (!connectionStatus?.provider_slug) return;
+
+    // Store return URL so we come back to this item
+    const returnUrl = window.location.href;
+    sessionStorage.setItem('scm_oauth_return', returnUrl);
+
+    // Start OAuth flow
+    api.scmProviders.startOAuth(connectionStatus.provider_slug).then(result => {
+      if (result?.auth_url) {
+        window.location.href = result.auth_url;
+      }
+    }).catch(err => {
+      console.error('Failed to start OAuth:', err);
+      error = t('scm.failedToStartConnection');
+    });
+  }
+
+  export async function loadLinks(signal) {
+    if (!itemId) return;
+    loading = true;
+    error = null;
+
+    try {
+      links = await api.itemSCMLinks.get(itemId, signal ? { signal } : undefined) || [];
+      // Re-fetch after short delay to pick up background OAuth refresh
+      if (links.some(l => l.link_type === 'pull_request' && l.state !== 'merged')) {
+        delayedRefresh = setTimeout(async () => {
+          try {
+            const updated = await api.itemSCMLinks.get(itemId, { signal: loadController.signal }) || [];
+            if (JSON.stringify(updated) !== JSON.stringify(links)) {
+              links = updated;
+            }
+          } catch (_) { /* silent */ }
+        }, 3000);
+      }
+    } catch (err) {
+      if (signal?.aborted || err?.name === 'AbortError' || err?.status === 404) return;
+      console.error('Failed to load SCM links:', err);
+      error = t('scm.failedToLoadLinks');
+      links = [];
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function refreshLink(linkId) {
+    refreshing = true;
+    try {
+      const updatedLink = await api.itemSCMLinks.refresh(linkId);
+      // Update the link in our list
+      links = links.map(l => l.id === linkId ? updatedLink : l);
+    } catch (err) {
+      console.error('Failed to refresh link:', err);
+    } finally {
+      refreshing = false;
+    }
+  }
+
+  async function deleteLink(linkId) {
+    const confirmed = await confirm({
+      title: t('common.remove'),
+      message: t('scm.confirmRemoveLink'),
+      confirmText: t('common.remove'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.itemSCMLinks.delete(linkId);
+      links = links.filter(l => l.id !== linkId);
+    } catch (err) {
+      console.error('Failed to delete link:', err);
+    }
+  }
+
+  function openAddLinkModal() {
+    onaddlink?.();
+  }
+
+  function openCreateBranchModal() {
+    oncreatebranch?.();
+  }
+
+  function getLinkIcon(linkType) {
+    switch (linkType) {
+      case 'pull_request': return GitMerge;
+      case 'branch': return GitBranch;
+      case 'commit': return GitCommit;
+      default: return GitBranch;
+    }
+  }
+
+  function getLinkTypeLabel(linkType) {
+    switch (linkType) {
+      case 'pull_request': return 'PR';
+      case 'branch': return 'Branch';
+      case 'commit': return 'Commit';
+      default: return linkType;
+    }
+  }
+
+  function getStateColor(state) {
+    switch (state) {
+      case 'open': return { bg: 'var(--ds-background-success)', text: 'var(--ds-text-success)' };
+      case 'merged': return { bg: 'var(--ds-background-accent-purple)', text: 'var(--ds-accent-purple)' };
+      case 'closed': return { bg: 'var(--ds-background-danger)', text: 'var(--ds-text-danger)' };
+      default: return { bg: 'var(--ds-background-neutral)', text: 'var(--ds-text-subtle)' };
+    }
+  }
+
+  function getDisplayText(link) {
+    if (link.link_type === 'pull_request') {
+      return link.title || `#${link.external_id}`;
+    }
+    if (link.link_type === 'commit') {
+      return link.title || link.external_id.substring(0, 7);
+    }
+    return link.title || link.external_id;
+  }
+
+  function getRepoName(link) {
+    // Extract short repo name (last part of org/repo)
+    const parts = (link.repository_name || '').split('/');
+    return parts[parts.length - 1] || link.repository_name;
+  }
+
+  function canDeleteLink(link) {
+    return !link.detection_source || link.detection_source === 'manual';
+  }
+
+  function openCreatePRModal(link) {
+    oncreatepr?.({ link });
+  }
+</script>
+
+{#if connectionStatus?.has_repositories !== false || checkingConnection}
+<!-- Development Section -->
+<div class="mb-4">
+  <!-- Divider -->
+  <div class="border-t my-4" style="border-color: var(--ds-border);"></div>
+
+  <!-- Section Header -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="w-full flex items-center justify-between mb-3 group cursor-pointer"
+    onclick={() => expanded = !expanded}
+  >
+    <div class="flex items-center gap-2">
+      <Text variant="subtle" size="xs" weight="semibold" class="uppercase tracking-wider">{t('scm.development')}</Text>
+      {#if links.length > 0}
+        <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--ds-background-neutral); color: var(--ds-text-subtle);">
+          {links.length}
+        </span>
+      {/if}
+    </div>
+    <div class="flex items-center gap-1">
+      {#if connectionStatus?.connected}
+        <button
+          class="p-1 rounded transition-colors opacity-0 group-hover:opacity-100"
+          class:invisible={!expanded}
+          onclick={e => { e.stopPropagation(); openCreateBranchModal(); }}
+          title={t('scm.createBranch')}
+        >
+          <GitBranchPlus class="w-4 h-4" style="color: var(--ds-text-subtle);" />
+        </button>
+        <button
+          class="p-1 rounded transition-colors opacity-0 group-hover:opacity-100"
+          class:invisible={!expanded}
+          onclick={e => { e.stopPropagation(); openAddLinkModal(); }}
+          title={t('scm.linkExisting')}
+        >
+          <Plus class="w-4 h-4" style="color: var(--ds-text-subtle);" />
+        </button>
+      {/if}
+      {#if expanded}
+        <ChevronDown class="w-4 h-4" style="color: var(--ds-text-subtle);" />
+      {:else}
+        <ChevronRight class="w-4 h-4" style="color: var(--ds-text-subtle);" />
+      {/if}
+    </div>
+  </div>
+
+  {#if expanded}
+    <div class="space-y-2 mt-1">
+      {#if checkingConnection || loading}
+        <div class="flex items-center justify-center py-3">
+          <Loader2 class="w-4 h-4 animate-spin" style="color: var(--ds-text-subtle);" />
+        </div>
+      {:else if !connectionStatus?.has_repositories}
+        <!-- No SCM repositories configured for this workspace -->
+        <p class="text-xs py-2" style="color: var(--ds-text-subtle);">{t('scm.noRepositoriesLinked')}</p>
+      {:else if !connectionStatus?.connected}
+        <!-- User hasn't connected their SCM account -->
+        <div class="py-3 px-3 rounded-md" style="background-color: var(--ds-background-neutral);">
+          <div class="flex items-center gap-2 mb-2">
+            <Link2 class="w-4 h-4" style="color: var(--ds-text-subtle);" />
+            <Text size="sm" weight="medium">{t('scm.connectYourAccount', { provider: connectionStatus?.provider_name || 'Git' })}</Text>
+          </div>
+          <p class="text-xs mb-3" style="color: var(--ds-text-subtle);">
+            {t('scm.connectToCreate')}
+          </p>
+          <Button size="sm" variant="primary" onclick={startOAuthConnect}>
+            {t('scm.connect', { provider: connectionStatus?.provider_name || t('common.account') })}
+          </Button>
+        </div>
+      {:else if error}
+        <p class="text-xs py-2" style="color: var(--ds-text-danger);">{error}</p>
+      {:else if links.length === 0}
+        <p class="text-xs py-2" style="color: var(--ds-text-subtle);">{t('scm.noLinksYet')}</p>
+      {:else}
+        {#if pullRequests.length > 0}
+          <section class="space-y-1.5">
+            <div class="flex items-center gap-2 px-1">
+              <Text variant="subtle" size="xs" weight="medium">{t('scm.pullRequests')}</Text>
+              <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--ds-background-neutral); color: var(--ds-text-subtle);">
+                {pullRequests.length}
+              </span>
+              {#if prRollupState}
+                {@const colors = getStateColor(prRollupState)}
+                <span
+                  class="text-xs px-1.5 py-0.5 rounded capitalize"
+                  style="background-color: {colors.bg}; color: {colors.text};"
+                >
+                  {prRollupState}
+                </span>
+              {/if}
+            </div>
+            {#each pullRequests as link (link.id)}
+              {@render linkRow(link)}
+            {/each}
+          </section>
+        {/if}
+        {#if branchLinks.length > 0}
+          <section class="space-y-1.5 mt-3">
+            <div class="flex items-center gap-2 px-1">
+              <Text variant="subtle" size="xs" weight="medium">{t('scm.branches')}</Text>
+              <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--ds-background-neutral); color: var(--ds-text-subtle);">
+                {branchLinks.length}
+              </span>
+            </div>
+            {#each branchLinks as link (link.id)}
+              {@render linkRow(link)}
+            {/each}
+          </section>
+        {/if}
+        {#if commitLinks.length > 0}
+          <section class="space-y-1.5 mt-3">
+            <div class="flex items-center gap-2 px-1">
+              <Text variant="subtle" size="xs" weight="medium">{t('scm.commits')}</Text>
+              <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--ds-background-neutral); color: var(--ds-text-subtle);">
+                {commitLinks.length}
+              </span>
+            </div>
+            {#each commitLinks as link (link.id)}
+              {@render linkRow(link)}
+            {/each}
+          </section>
+        {/if}
+      {/if}
+    </div>
+  {/if}
+</div>
+{/if}
+
+{#snippet linkRow(link)}
+  {@const LinkIcon = getLinkIcon(link.link_type)}
+  <div
+    class="flex items-start gap-2 px-2 py-2 rounded-md group transition-colors"
+    style="background-color: var(--ds-surface);"
+  >
+    <!-- Icon -->
+    <LinkIcon
+      class="w-4 h-4 flex-shrink-0 mt-0.5"
+      style="color: var(--ds-text-subtle);"
+    />
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Title/Number -->
+        <a
+          href={safeHref(link.external_url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm font-medium hover:underline truncate"
+          style="color: var(--ds-text);"
+          title={link.title || link.external_id}
+        >
+          {#if link.link_type === 'pull_request'}
+            #{link.external_id}
+          {:else if link.link_type === 'commit'}
+            {link.external_id.substring(0, 7)}
+          {:else}
+            {link.external_id}
+          {/if}
+        </a>
+
+        <!-- State badge for PRs -->
+        {#if link.link_type === 'pull_request' && link.state}
+          {@const colors = getStateColor(link.state)}
+          <span
+            class="text-xs px-1.5 py-0.5 rounded capitalize"
+            style="background-color: {colors.bg}; color: {colors.text};"
+          >
+            {link.state}
+          </span>
+        {/if}
+      </div>
+
+      <!-- Title (if different from external_id) -->
+      {#if link.title && link.link_type !== 'branch'}
+        <p class="text-xs truncate mt-0.5" style="color: var(--ds-text-subtle);" title={link.title}>
+          {link.title}
+        </p>
+      {/if}
+
+      <!-- Repository info -->
+      <div class="flex items-center gap-2 mt-1 text-xs" style="color: var(--ds-text-subtlest);">
+        <span>{getRepoName(link)}</span>
+        {#if link.author_name}
+          <span>·</span>
+          <span>{link.author_name}</span>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {#if link.link_type === 'branch'}
+        <button
+          class="p-1 rounded hover:bg-opacity-50"
+          style="color: var(--ds-text-subtle);"
+          onclick={() => openCreatePRModal(link)}
+          title={t('scm.createPullRequest')}
+        >
+          <GitMerge class="w-3 h-3" />
+        </button>
+      {/if}
+      <button
+        class="p-1 rounded hover:bg-opacity-50"
+        style="color: var(--ds-text-subtle);"
+        onclick={() => refreshLink(link.id)}
+        title={t('common.refresh')}
+        disabled={refreshing}
+      >
+        <RefreshCw class="w-3 h-3 {refreshing ? 'animate-spin' : ''}" />
+      </button>
+      <a
+        href={safeHref(link.external_url)}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="p-1 rounded hover:bg-opacity-50"
+        style="color: var(--ds-text-subtle);"
+        title={t('common.openInNewTab')}
+      >
+        <ExternalLink class="w-3 h-3" />
+      </a>
+      {#if canDeleteLink(link)}
+        <button
+          class="p-1 rounded hover:bg-opacity-50"
+          style="color: var(--ds-text-danger);"
+          onclick={() => deleteLink(link.id)}
+          title={t('items.removeLink')}
+        >
+          <Trash2 class="w-3 h-3" />
+        </button>
+      {/if}
+    </div>
+  </div>
+{/snippet}

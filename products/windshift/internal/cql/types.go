@@ -1,0 +1,109 @@
+// Package cql implements Windshift Query Language, a JQL-like query language.
+// It supports item, asset, and custom-field filters; comparisons, logical and
+// membership operators; and context, hierarchy, and link functions.
+//
+//nolint:misspell // CQL function name uses British spelling
+package cql
+
+// EntityType represents the type of entity being queried
+type EntityType string
+
+const (
+	// EntityTypeItem is for work item queries (default)
+	EntityTypeItem EntityType = "item"
+	// EntityTypeAsset is for asset queries
+	EntityTypeAsset EntityType = "asset"
+)
+
+// Token represents a QL token
+type Token struct {
+	Type  TokenType
+	Value string
+	Pos   int
+}
+
+// TokenType represents the type of a QL token
+type TokenType int
+
+const (
+	// Literals
+	IDENTIFIER TokenType = iota
+	STRING
+	NUMBER
+	DATE
+	RelativeDate
+	BOOLEAN
+	NULL
+
+	// Operators
+	EQUALS       // =
+	NotEquals    // !=, <>
+	LessThan     // <
+	LessEqual    // <=
+	GreaterThan  // >
+	GreaterEqual // >=
+	CONTAINS     // ~
+	IN           // IN
+	NotIn        // NOT IN
+	IS           // IS (used with NULL)
+	IsNot        // IS NOT (used with NULL)
+	EMPTY        // EMPTY (used with IS)
+
+	// Logical operators
+	AND
+	OR
+	NOT
+
+	// Punctuation
+	LPAREN // (
+	RPAREN // )
+	COMMA  // ,
+
+	// Special
+	EOF
+	FUNCTION
+)
+
+// String returns a string representation of the token type
+func (t TokenType) String() string {
+	names := []string{
+		"IDENTIFIER", "STRING", "NUMBER", "DATE", "RELATIVE_DATE", "BOOLEAN", "NULL",
+		"EQUALS", "NotEquals", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual", "CONTAINS", "IN", "NotIn", "IS", "IsNot", "EMPTY",
+		"AND", "OR", "NOT",
+		"LPAREN", "RPAREN", "COMMA",
+		"EOF", "FUNCTION",
+	}
+	if int(t) < len(names) {
+		return names[t]
+	}
+	return "UNKNOWN"
+}
+
+// NodeType represents the type of an AST node.
+type NodeType int
+
+const (
+	NodeBinaryOp NodeType = iota
+	NodeComparison
+	NodeInExpression
+	NodeIdentifier
+	NodeLiteral
+	NodeFunction
+	NodeList
+	// NodeNullCheck represents `<field> IS NULL` / `<field> IS NOT NULL`.
+	// Left holds the field; Operator is "IS NULL" or "IS NOT NULL".
+	NodeNullCheck
+)
+
+// ASTNode represents a node in the Abstract Syntax Tree
+type ASTNode struct {
+	Type      NodeType
+	Value     string
+	DataType  TokenType // For literals
+	Operator  string
+	Left      *ASTNode
+	Right     *ASTNode
+	Field     *ASTNode   // For IN expressions
+	Values    *ASTNode   // For IN expressions
+	Arguments []*ASTNode // For function calls
+}

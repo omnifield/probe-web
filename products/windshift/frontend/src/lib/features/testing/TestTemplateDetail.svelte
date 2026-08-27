@@ -1,0 +1,430 @@
+<script>
+  import { onMount } from 'svelte';
+  import { currentRoute, navigate } from '../../router.js';
+  import { api } from '../../api.js';
+  import { IconArrowLeft, IconPlayerPlay, IconEdit, IconTrash } from '@tabler/icons-svelte-runes';
+  import Button from '../../components/Button.svelte';
+  import { confirm } from '../../composables/useConfirm.js';
+  import EmptyState from '../../components/EmptyState.svelte';
+  import Input from '../../components/Input.svelte';
+  import Spinner from '../../components/Spinner.svelte';
+  import Textarea from '../../components/Textarea.svelte';
+  import SectionHeader from '../../layout/SectionHeader.svelte';
+  import { t } from '../../stores/i18n.svelte.js';
+  import { formatAuthenticatedDateTime } from '../../utils/authenticatedDateFormatter.js';
+
+  let template = $state(null);
+  let executions = $state([]);
+  let testSet = $state(null);
+  let loading = $state(true);
+  let editMode = $state(false);
+  let editName = $state('');
+  let editDescription = $state('');
+
+  let workspaceId = $derived($currentRoute.params.id);
+  let templateId = $derived($currentRoute.params.templateId);
+
+  function testPath(suffix = '') {
+    const base = workspaceId ? `/workspaces/${workspaceId}/tests` : '/workspaces';
+    return `${base}${suffix}`;
+  }
+
+  onMount(async () => {
+    if (templateId) {
+      await loadTemplate(templateId);
+    }
+  });
+
+  async function loadTemplate(templateId) {
+    try {
+      loading = true;
+      template = await api.tests.testRunTemplates.get(workspaceId, templateId);
+      executions = await api.tests.testRunTemplates.getExecutions(workspaceId, templateId);
+
+      if (template.set_id) {
+        testSet = await api.tests.testSets.get(workspaceId, template.set_id);
+      }
+    } catch (error) {
+      console.error('Failed to load template:', error);
+    } finally {
+      loading = false;
+    }
+  }
+
+  function goBack() {
+    navigate(testPath('/templates'));
+  }
+
+  function toggleEditMode() {
+    if (!editMode) {
+      editName = template.name;
+      editDescription = template.description || '';
+      editMode = true;
+    } else {
+      editMode = false;
+    }
+  }
+
+  async function saveEdit() {
+    if (!editName.trim()) {
+      await confirm({
+        title: t('validation.required'),
+        message: t('testing.templateNameRequired'),
+        confirmText: t('common.ok'),
+        cancelText: '',
+        variant: 'info',
+      });
+      return;
+    }
+
+    try {
+      await api.tests.testRunTemplates.update(workspaceId, templateId, {
+        set_id: template.set_id,
+        name: editName,
+        description: editDescription
+      });
+
+      template.name = editName;
+      template.description = editDescription;
+      editMode = false;
+    } catch (error) {
+      console.error('Failed to update template:', error);
+      await confirm({
+        title: t('common.error'),
+        message: t('testing.failedToUpdateTemplate'),
+        confirmText: t('common.ok'),
+        cancelText: '',
+        variant: 'danger',
+      });
+    }
+  }
+
+  async function deleteTemplate() {
+    const ok = await confirm({
+      title: t('testing.deleteTemplate'),
+      message: t('testing.deleteTemplateConfirm', { name: template.name }),
+      confirmText: 'Confirm',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await api.tests.testRunTemplates.delete(workspaceId, templateId);
+      navigate(testPath('/templates'));
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      await confirm({
+        title: t('common.error'),
+        message: t('testing.failedToDeleteTemplate'),
+        confirmText: t('common.ok'),
+        cancelText: '',
+        variant: 'danger',
+      });
+    }
+  }
+
+  async function executeTemplate() {
+    try {
+      const newRun = await api.tests.testRunTemplates.execute(workspaceId, templateId);
+      navigate(testPath(`/runs/${newRun.id}/execute`));
+    } catch (error) {
+      console.error('Failed to execute template:', error);
+      await confirm({
+        title: t('common.error'),
+        message: t('testing.failedToStartExecution'),
+        confirmText: t('common.ok'),
+        cancelText: '',
+        variant: 'danger',
+      });
+    }
+  }
+
+  function viewRunDetails(run) {
+    navigate(testPath(`/runs/${run.id}`));
+  }
+
+  function continueExecution(execution) {
+    navigate(testPath(`/runs/${execution.id}/execute`));
+  }
+
+  function getRunStatus(run) {
+    if (run.ended_at) {
+      return { text: t('testing.completed'), style: 'background: var(--ds-status-success-bg); color: var(--ds-status-success-text);' };
+    }
+    return { text: t('testing.inProgress'), style: 'background: var(--ds-status-info-bg); color: var(--ds-status-info-text);' };
+  }
+
+  // Keyboard shortcuts
+  function handleEditKeydown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      saveEdit();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      toggleEditMode();
+    }
+  }
+</script>
+
+<div class="min-h-screen flex flex-col p-6" style="background-color: var(--ds-surface-raised);">
+  <div class="flex-1 -mx-6 -mb-6 px-10 py-6">
+    {#if loading}
+      <div class="flex items-center justify-center py-12">
+        <Spinner />
+      </div>
+    {:else if template}
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <button
+            onclick={goBack}
+            class="p-2 rounded cursor-pointer"
+            onmouseenter={(e) => e.currentTarget.style.background = 'var(--ds-background-neutral-hovered)'}
+            onmouseleave={(e) => e.currentTarget.style.background = ''}
+          >
+            <IconArrowLeft class="w-5 h-5" />
+          </button>
+          <div class="flex-1">
+            {#if editMode}
+              <!-- svelte-ignore a11y_autofocus -->
+              <Input
+                type="text"
+                bind:value={editName}
+                onkeydown={handleEditKeydown}
+                class="text-2xl font-semibold px-2 py-1"
+                autofocus
+              />
+            {:else}
+              <h1 class="text-2xl font-semibold" style="color: var(--ds-text);">
+                {template.name}
+              </h1>
+            {/if}
+            <div class="text-sm mt-1" style="color: var(--ds-text-subtle);">
+              Created: {formatAuthenticatedDateTime(template.created_at)}
+              {#if template.updated_at && template.updated_at !== template.created_at}
+                • Updated: {formatAuthenticatedDateTime(template.updated_at)}
+              {/if}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          {#if editMode}
+            <Button
+              variant="primary"
+              onclick={saveEdit}
+            >
+              {t('common.save')}
+            </Button>
+            <Button
+              variant="default"
+              onclick={toggleEditMode}
+            >
+              {t('common.cancel')}
+            </Button>
+          {:else}
+            <Button
+              variant="default"
+              onclick={toggleEditMode}
+              icon={IconEdit}
+            >
+              {t('common.edit')}
+            </Button>
+            <Button
+              variant="danger"
+              onclick={deleteTemplate}
+              icon={IconTrash}
+            >
+              {t('common.delete')}
+            </Button>
+            <Button
+              variant="primary"
+              onclick={executeTemplate}
+              icon={IconPlayerPlay}
+              size="medium"
+            >
+              {t('testing.executeTemplate')}
+            </Button>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Template Details -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Template Information -->
+          <div class="p-6" style="background-color: var(--ds-surface-raised);">
+            <h2 class="text-lg font-semibold mb-4" style="color: var(--ds-text);">{t('testing.templateInformation')}</h2>
+
+            <div class="space-y-4">
+              <div>
+                <div class="text-sm font-medium mb-1" style="color: var(--ds-text-subtle);">{t('testing.testPlan')}</div>
+                {#if testSet}
+                  <a href={`/workspaces/${workspaceId}/tests/sets/${testSet.id}`} class="hover:underline" style="color: var(--ds-text-link);">
+                    {testSet.name}
+                  </a>
+                {:else}
+                  <div style="color: var(--ds-text);">{t('common.loading')}</div>
+                {/if}
+              </div>
+
+              <div>
+                <div class="text-sm font-medium mb-1" style="color: var(--ds-text-subtle);">{t('common.description')}</div>
+                {#if editMode}
+                  <Textarea
+                    bind:value={editDescription}
+                    onkeydown={handleEditKeydown}
+                    rows={4}
+                    placeholder={t('testing.templateDescriptionPlaceholder')}
+                  />
+                {:else}
+                  <div class="text-sm" style="color: var(--ds-text);">
+                    {template.description || t('testing.noDescription')}
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <!-- Executions List -->
+          <div class="p-6" style="background-color: var(--ds-surface-raised);">
+            <SectionHeader title={t('testing.executionsCount', { count: executions.length })}>
+              {#snippet actions()}
+                <Button
+                  variant="primary"
+                  onclick={executeTemplate}
+                  icon={IconPlayerPlay}
+                  size="small"
+                >
+                  {t('testing.newExecution')}
+                </Button>
+              {/snippet}
+            </SectionHeader>
+
+            {#if executions.length > 0}
+              <div class="space-y-3">
+                {#each executions as execution}
+                  {@const status = getRunStatus(execution)}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div class="border rounded p-4 transition" style="border-color: var(--ds-border);" onmouseenter={(e) => e.currentTarget.style.background = 'var(--ds-background-neutral-hovered)'} onmouseleave={(e) => e.currentTarget.style.background = ''}>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="font-medium mb-1" style="color: var(--ds-text);">
+                          {execution.name}
+                        </div>
+                        <div class="text-sm" style="color: var(--ds-text-subtle);">
+                          {t('testing.started')}: {formatAuthenticatedDateTime(execution.started_at)}
+                          {#if execution.ended_at}
+                            • {t('testing.ended')}: {formatAuthenticatedDateTime(execution.ended_at)}
+                          {/if}
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full" style={status.style}>
+                          {status.text}
+                        </span>
+                        <div class="flex gap-2">
+                          {#if !execution.ended_at}
+                            <button
+                              onclick={() => continueExecution(execution)}
+                              class="cursor-pointer text-sm font-medium"
+                              style="color: var(--ds-text-success);"
+                            >
+                              {t('common.continue')}
+                            </button>
+                          {/if}
+                          <button
+                            onclick={() => viewRunDetails(execution)}
+                            class="cursor-pointer text-sm"
+                            style="color: var(--ds-text-link);"
+                          >
+                            {execution.ended_at ? t('testing.results') : t('testing.progress')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <div class="text-center py-8">
+                <div class="text-6xl mb-4">🚀</div>
+                <div class="text-lg font-medium mb-2" style="color: var(--ds-text);">{t('testing.noExecutionsYet')}</div>
+                <div class="text-sm mb-4" style="color: var(--ds-text-subtle);">
+                  {t('testing.clickExecuteTemplate')}
+                </div>
+                <Button
+                  variant="primary"
+                  onclick={executeTemplate}
+                  icon={IconPlayerPlay}
+                  size="medium"
+                >
+                  {t('testing.executeTemplate')}
+                </Button>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Quick Stats -->
+          <div class="p-6" style="background-color: var(--ds-surface-raised);">
+            <h3 class="font-semibold mb-4" style="color: var(--ds-text);">{t('testing.quickStats')}</h3>
+
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-sm" style="color: var(--ds-text-subtle);">{t('testing.totalExecutions')}</span>
+                <span class="text-sm font-medium" style="color: var(--ds-text);">{executions.length}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm" style="color: var(--ds-text-subtle);">{t('testing.completed')}</span>
+                <span class="text-sm font-medium" style="color: var(--ds-text-success);">
+                  {executions.filter(e => e.ended_at).length}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm" style="color: var(--ds-text-subtle);">{t('testing.inProgress')}</span>
+                <span class="text-sm font-medium" style="color: var(--ds-text-info);">
+                  {executions.filter(e => !e.ended_at).length}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Set Info -->
+          {#if testSet}
+            <div class="p-6" style="background-color: var(--ds-surface-raised);">
+              <h3 class="font-semibold mb-4" style="color: var(--ds-text);">{t('testing.testPlanDetails')}</h3>
+
+              <div class="space-y-3">
+                <div>
+                  <div class="text-sm font-medium" style="color: var(--ds-text-subtle);">{t('common.name')}</div>
+                  <a href={`/workspaces/${workspaceId}/tests/sets/${testSet.id}`} class="text-sm hover:underline" style="color: var(--ds-text-link);">
+                    {testSet.name}
+                  </a>
+                </div>
+                {#if testSet.description}
+                  <div>
+                    <div class="text-sm font-medium" style="color: var(--ds-text-subtle);">{t('common.description')}</div>
+                    <div class="text-sm" style="color: var(--ds-text);">
+                      {testSet.description}
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {:else}
+      <EmptyState title={t('testing.templateNotFound')}>
+        {#snippet action()}
+          <Button variant="primary" onclick={goBack}>
+            {t('testing.backToTemplates')}
+          </Button>
+        {/snippet}
+      </EmptyState>
+    {/if}
+  </div>
+</div>

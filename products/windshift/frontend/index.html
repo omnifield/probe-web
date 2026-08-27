@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/windshift-3.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- PWA: installable mobile surface (start_url = /m). Relative href so the
+         link resolves against the injected <base href> on context-path deploys. -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1d2125" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Windshift" />
+    <title>Windshift - Work Management</title>
+    <style>
+      /* Static recovery UI for failures that happen before Svelte can mount.
+         It stays in normal document flow and never overlays application UI. */
+      body {
+        margin: 0;
+      }
+      #windshift-boot {
+        display: grid;
+        min-height: 100dvh;
+        box-sizing: border-box;
+        place-items: center;
+        padding: 1.5rem;
+        background: #fff;
+        color: #172b4d;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      #windshift-boot .boot-logo {
+        display: block;
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        animation: windshift-boot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      #windshift-boot p {
+        margin: 0;
+        color: #44546f;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+      }
+      #windshift-boot .boot-detail {
+        margin-top: 0.35rem;
+        font-size: 0.875rem;
+      }
+      #windshift-boot button {
+        min-height: 2.75rem;
+        margin-top: 1rem;
+        padding: 0.65rem 1.25rem;
+        border: 0;
+        border-radius: 0.5rem;
+        background: #0c66e4;
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #windshift-boot [hidden] {
+        display: none;
+      }
+      @keyframes windshift-boot-pulse {
+        50% {
+          opacity: 0.5;
+        }
+      }
+      /* Keyed off the mode the inline script below resolves (stored
+         preference first, OS only as the fallback) — not the raw OS
+         setting, which renders a dark box for a light-mode user. */
+      html[data-color-mode="dark"] #windshift-boot {
+        background: #1d2125;
+        color: #f7f8f9;
+      }
+      html[data-color-mode="dark"] #windshift-boot p {
+        color: #b6c2cf;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #windshift-boot .boot-logo {
+          animation: none;
+        }
+      }
+    </style>
+    <script>
+      // Flash prevention: apply theme before CSS loads
+                        (() => {
+                          let stored = null;
+                          try {
+                            stored = localStorage.getItem('windshift-color-mode');
+                          } catch {
+                            // Storage can be unavailable in hardened/private browser contexts.
+                          }
+                          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                          const mode = stored === 'dark' || (stored === 'system' && prefersDark) || (!stored && prefersDark) ? 'dark' : 'light';
+                          document.documentElement.dataset.colorMode = mode;
+
+                          window.addEventListener('DOMContentLoaded', () => {
+                            const boot = document.getElementById('windshift-boot');
+                            const retry = document.getElementById('windshift-boot-retry');
+                            const detail = document.getElementById('windshift-boot-detail');
+                            if (!boot || !retry || !detail) return;
+                            retry.addEventListener('click', () => location.reload());
+                            window.setTimeout(() => {
+                              // main.js removes the placeholder before mounting App.
+                              if (!document.getElementById('windshift-boot')) return;
+                              detail.hidden = false;
+                              retry.hidden = false;
+                            }, 10_000);
+                          });
+                        })();
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="windshift-boot" role="status" aria-live="polite">
+        <div>
+          <img class="boot-logo" src="windshift-3.svg" alt="Windshift" />
+          <p>Starting Windshift…</p>
+          <p id="windshift-boot-detail" class="boot-detail" hidden>
+            This is taking longer than expected. Check your connection or server.
+          </p>
+          <button id="windshift-boot-retry" type="button" hidden>Retry</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
