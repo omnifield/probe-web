@@ -23,27 +23,34 @@
 сессией; если тянет написать `<A><B><C>` для чего-то крупнее одного компонента кита — сначала
 сюда, потом за код.
 
-Что механика уже умеет **сейчас** (`PWEB-152`, `PWEB-153`, обе прожиты и подтверждены живым
-`RenderTree`, не заглушкой):
+Что механика умеет **сейчас** — всё нижеперечисленное СДЕЛАНО и подтверждено живым `RenderTree`
+(не заглушкой), полный сквозной путь проверен на настоящем `<App/>` продукта `products/skin`:
 
-| Умеет | Как | Где посмотреть |
-|---|---|---|
-| Настоящий, живой компонент в дереве БЕЗ адреса анатомии (скрытый `<input>`, бизнес-модуль продукта вроде «рельсов» витрины) | третий вид узла `{ extra: "имя", props?, children? }`; поставляется картой `extras` — у кита (`KitComponent.extras`) или у продукта (registry, собранный сверх кита) | `PWEB-152`; `packages/skin/src/passport-assembly.ts` (`PassportAssemblyExtra`), `packages/assembly/src/registry.ts` (`ReadableComponent.extras`, тильда-адрес), `packages/ui/src/kit-form.ts` |
-| Невидимый провайдер вокруг компонента, чей корень не рисует DOM-узла (поповер, меню) | `PassportAssembly.providerProps` + `KitComponent.provider`; `RenderTree` сам оборачивает корень | `PWEB-153`; `packages/assembly/src/render.tsx` (`RenderTree`, не `RenderNode`) |
+| Умеет | Как | Тип/функция | Тикет |
+|---|---|---|---|
+| Настоящий, живой компонент в дереве БЕЗ адреса анатомии (скрытый `<input>`, бизнес-модуль продукта вроде «рельсов» витрины) | третий вид узла `{ extra: "имя", props?, bind?, on?, children? }`; поставляется картой `extras` — у кита (`KitComponent.extras`) или у продукта (реестр, собранный сверх кита) | `PassportAssemblyExtra` (`packages/skin/src/passport-assembly.ts`), `ReadableComponent.extras` + тильда-адрес (`packages/assembly/src/registry.ts`) | `PWEB-152` |
+| Невидимый провайдер вокруг компонента, чей корень не рисует DOM-узла (поповер, меню) | `PassportAssembly.providerProps` + `KitComponent.provider`; `RenderTree` сам оборачивает корень — единственное место, где отрисовка вообще смотрит на `provider` | `providerProps`/`provider` (`passport-assembly.ts`, `kit-form.ts`); обёртка — `RenderTree` в `render.tsx`, НЕ `RenderNode` | `PWEB-153` |
+| Данные внутрь узла — содержимое (`value`) читает путь вместо литерала | `DynamicValue = string \| {path: string}` (JSON Pointer, RFC 6901) — форма A2UI (`DynamicString`), урезана до литерала и пути; `call` (вызов функции) НЕ завезён — нет потребителя | `DataBinding`/`DynamicValue`/`isDataBinding`/`resolveDataBinding` (`passport-assembly.ts`, узкая копия — `packages/assembly/src/tree.ts`); резолвит `RenderNode`'s `valueOf()` против проп `data` на `RenderTree` | `PWEB-156` |
+| Данные внутрь ПРОПА части/extra | ОТДЕЛЬНОЕ поле `bind?: Record<имяПропа, путь>`, не смешано со значением `props` — угадывать по форме значения не приходится, `props` остаётся всегда литералом | `PassportAssemblyPart.bind`/`PassportAssemblyExtra.bind`/`BaseAssemblyElement.bind`; резолвит `RenderNode`'s `ownProps()`, побеждает при совпадении имени с `props` | `PWEB-156` |
+| Повтор узла по длине массива данных (N разделов аккордеона из реальных данных, не фиксированное число в дереве) | 4-й вид узла объявления `{ repeat: {path}, template: <узел> }` (форма A2UI `ChildList`-шаблон); число копий НЕ называется отдельным полем — только длина массива. Пути БЕЗ ведущего `/` внутри шаблона читаются относительно ТЕКУЩЕГО элемента | `PassportAssemblyRepeat`/`isAssemblyRepeat` (`passport-assembly.ts`); разворачивает `baseAssemblyOf`'s 4-й параметр `data` через `growAll`/`scopeTemplate` — повтор разворачивается в обычные узлы ДО того, как дерево дойдёт до `RenderTree` | `PWEB-156` |
+| Событие узла наружу — клик/чейндж/инпут/сабмит одной точкой входа, не колбэком в пропах | `on?: Record<нативноеСобытие, DispatchAction>`, `DispatchAction = {event: {name, context?}}` (форма A2UI `Action`); `context` — карта из `DynamicValue`, РЕЗОЛВИТСЯ ДО отправки — наружу уходит готовый JSON, не сырой DOM `Event` | `DispatchAction`/`DispatchedEvent` (`passport-assembly.ts` и узкая копия в `tree.ts`); `RenderTree`'s проп `dispatch`, синтез обработчиков — `RenderNode`'s `dispatchHandlers()` в `render.tsx` | `PWEB-157` |
 
-Что механика умеет **скоро, форма уже выбрана — не изобретать заново** (`PWEB-151`, ресёрч
-проведён 2026-08-27, решение — не своя форма, а словарь A2UI):
+Живой доказательный путь для всего перечисленного — аккордеон и кнопка
+(`packages/ui/src/accordion/playground/{assemblies,data}.ts`, `.../button/playground/{assemblies,data}.ts`)
+плюс `products/skin`'s `app/shell.ts`/`pages/showcase/model/{browse,console}.ts` — полный клик по
+живой витрине от рельсов до консоли событий.
+
+**НЕ сделано, форма уже выбрана из того же словаря A2UI — не изобретать заново, когда понадобится:**
 
 | Будет | Форма (не менять без веской причины) | Ориентир |
 |---|---|---|
-| Событие узла наружу — клик/сабмит/чейндж одной точкой входа, не колбэком в пропах | `Action = { event: { name, context? } }`, наружу — `{name, surfaceId, sourceComponentId, timestamp, context}`, `context` уже резолвлен из биндингов | [A2UI, `renderers/web_core/src/v0_9/schema/common-types.ts` и `client-to-server.ts`](https://github.com/google/A2UI) |
-| Данные внутрь узла — вместо литерального `value` | `DynamicValue = литерал \| {path: "/a/b"} \| {call, args}` (JSON Pointer) | тот же `common-types.ts`, `DynamicString`/`DynamicValue` |
-| Повтор узла по массиву данных (N разделов аккордеона из реальных данных, не фиксированное число в дереве) | `ChildList` = статический список ЛИБО `{componentId: "шаблон", path: "/items"}` | тот же файл, `ChildListSchema` |
-| Двусторонний биндинг инпутов (пишет сам, без события на каждую букву) | `ResolvedBinding<T>{value}` / `WritableBinding<T>{value,set}` — литерал/функция только чтение, путь в данных даёт `set` | `nodes/resolved-binding.ts` в том же репозитории |
+| Двусторонний биндинг инпутов (пишет сам, без события на каждую букву) | `ResolvedBinding<T>{value}` / `WritableBinding<T>{value,set}` — литерал/функция только чтение, путь в данных даёт `set`. Ложится на Solid-сигналы почти один в один | [A2UI, `renderers/web_core/src/v0_9/nodes/resolved-binding.ts`](https://github.com/google/A2UI) |
+| Вызов клиентской функции по имени вместо `event` | `Action = {functionCall: {call, args}}` — второй вариант того же union, сейчас не реализован | тот же `common-types.ts`, `ActionSchema` |
+| Загрузка своих данных (файл, ручка API) вместо заготовленных JSON | НЕ форма A2UI — предмет отдельного решения, когда до этого дойдёт очередь (`PWEB-158`) | — |
 
 Не восстанавливать старый `interactions` (снят при переносе, см. «Что снято» ниже) — он был
-привязан к контроллерам чужой архитектуры. Новый слой строится под ЭТУ кодовую базу, поверх
-`extras`/`provider`, формой A2UI — подробности и решение целиком в PWEB-151.
+привязан к контроллерам чужой архитектуры. Новый слой построен под ЭТУ кодовую базу, поверх
+`extras`/`provider`, формой A2UI — подробности и решение целиком в PWEB-151/156/157.
 
 ## Две половины поставки
 
@@ -62,8 +69,11 @@
 берёт узел по ключу, а не обходит дерево.
 
 ```ts
-{ components: { root: "page", nodes: { page: { id, type, composedInto?, parentId, children, props?, meta? } } } }
+{ components: { root: "page", nodes: { page: { id, type, composedInto?, parentId, children, props?, bind?, on?, meta? } } } }
 ```
+
+`bind`/`on` — узел ссылается на внешние данные и сообщает о своих событиях, оба поля необязательны
+и оба разобраны в разделе «ПРОЧТИ ПЕРЕД ТЕМ КАК...» выше (`PWEB-156`/`157`).
 
 `parentId` — обратный ход по дереву; `meta` — то, что нужно редактору и не нужно отрисовке.
 Вида у узла нет: он приходит правилами по адресам, а не пропом (см. «Вид не приписывается узлу»).
@@ -445,8 +455,10 @@ possibleOwnersOf(registry, "icon")   // компонент опознают ро
 ## Совместимость с A2UI
 
 A2UI (Google) — стандарт формата, не библиотека: рендерера на Solid у него нет, поэтому как
-поставкой воспользоваться нечем, а как ориентиром — обязательно. Обе формы это плоская карта с
-корнем, расхождение не структурное:
+поставкой воспользоваться нечем, а как ориентиром — обязательно, и не только для формы дерева
+(было так с переноса), но и для формы данных/событий (`PWEB-151`/`156`/`157`, решение 2026-08-27
+— ресёрч рынка перед тем, как проектировать своё, нашёл готовое и более продуманное). Обе формы —
+плоская карта с корнем, расхождение не структурное:
 
 | A2UI | здесь | |
 |---|---|---|
@@ -456,6 +468,11 @@ A2UI (Google) — стандарт формата, не библиотека: р
 | — | `parentId` | выводится обходом; у нас хранится ради обратного хода |
 | — | `meta` | необязательная добавка |
 | — | узел содержимого (`genus` + `value`) | наш второй род узла: у элемента новых обязательных полей не появилось, поэтому элемент читается по-прежнему один в один |
+| `DynamicString`/`DynamicValue` (`{path}`, JSON Pointer) | `DynamicValue` (`{path}`) — `PassportAssemblyContent.value` | форма один в один, урезана до литерала и пути (без `call`) |
+| — (у A2UI это тоже `DynamicValue`, просто на прочих пропах) | `bind?: Record<имя, путь>` — ОТДЕЛЬНОЕ поле, не смешано со значением `props` | расхождение НАМЕРЕННОЕ: у A2UI каждый проп каждого компонента типизирован заранее (закрытый каталог), у нас `props` — открытый мешок, и различать «это литерал» от «это путь» по форме значения было бы неоднозначно на открытом наборе пропов |
+| `ChildList` (`{componentId, path}`-шаблон) | `PassportAssemblyRepeat` (`{repeat, template}`) | форма один в один — «размножь этот один узел по длине массива» |
+| `Action` (`{event: {name, context}}`) | `DispatchAction` (то же самое) | форма один в один; `functionCall`-вариант союза НЕ завезён |
+| `A2uiClientActionSchema` (`{name, surfaceId, sourceComponentId, timestamp, context}`) | `DispatchedEvent` (`{name, nodeId, address, timestamp, context}`) | `surfaceId` не заведён — `RenderTree` и есть поверхность, вызывающий уже знает, какой вызов слушает; `sourceComponentId`→`nodeId`+`address` — у нас узел и адрес разные вещи, там одна |
 
 Узел содержимого опознаётся **наличием** рода, а не признаком у каждого узла, — ровно ради этой
 строки: заведи мы у элемента обязательное поле «я не содержимое», прямое чтение чужой формы
