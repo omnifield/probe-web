@@ -1,0 +1,329 @@
+import { derived, writable } from 'svelte/store';
+import { api } from '../api.js';
+import { desktopStartSso } from '../desktop/bridge.svelte.js';
+import { toExternal } from '../runtime/contextPath.js';
+import { isTauri } from '../utils/isTauri.js';
+
+/** SSO store for public status, provider administration, and user accounts. */
+function createSSOStore() {
+  // Public unauthenticated SSO status.
+  const status = writable({
+    enabled: false,
+    providerName: null,
+    providerSlug: null,
+    providerType: null,
+    providers: [],
+  });
+  const statusLoading = writable(true);
+  const statusError = writable(null);
+
+  // Admin provider list.
+  const providers = writable([]);
+  const providersLoading = writable(false);
+  const providersError = writable(null);
+
+  // User external accounts.
+  const externalAccounts = writable([]);
+  const externalAccountsLoading = writable(false);
+
+  // Cached email-verification status.
+  let verificationStatusCache = null;
+
+  // Combined subscription store.
+  const combined = derived(
+    [
+      status,
+      statusLoading,
+      statusError,
+      providers,
+      providersLoading,
+      providersError,
+      externalAccounts,
+      externalAccountsLoading,
+    ],
+    ([
+      $status,
+      $statusLoading,
+      $statusError,
+      $providers,
+      $providersLoading,
+      $providersError,
+      $externalAccounts,
+      $externalAccountsLoading,
+    ]) => ({
+      // Public status
+      enabled: $status.enabled,
+      providerName: $status.providerName,
+      providerSlug: $status.providerSlug,
+      providerType: $status.providerType,
+      providers: $status.providers,
+      statusLoading: $statusLoading,
+      statusError: $statusError,
+      // Admin providers
+      adminProviders: $providers,
+      providersLoading: $providersLoading,
+      providersError: $providersError,
+      // User external accounts
+      externalAccounts: $externalAccounts,
+      externalAccountsLoading: $externalAccountsLoading,
+    })
+  );
+
+  return {
+    subscribe: combined.subscribe,
+
+    // Initialize SSO status (called on app load, no auth required)
+    async initStatus() {
+      statusLoading.set(true);
+      statusError.set(null);
+
+      try {
+        const data = await api.sso.getStatus();
+        const providers = data.providers || [];
+        const defaultProvider = providers[0] || null;
+        status.set({
+          enabled: data.enabled,
+          providerName: defaultProvider?.name || data.provider_name || null,
+          providerSlug: defaultProvider?.slug || data.provider_slug || null,
+          providerType: defaultProvider?.provider_type || null,
+          providers,
+        });
+        statusLoading.set(false);
+      } catch (err) {
+        console.warn('Failed to get SSO status:', err);
+        status.set({
+          enabled: false,
+          providerName: null,
+          providerSlug: null,
+          providerType: null,
+          providers: [],
+        });
+        statusLoading.set(false);
+        statusError.set(err.message);
+      }
+    },
+
+    // Start SSO login (redirects to IdP)
+    // Can be called with specific provider slug/type, or defaults to the first/default provider
+    startLogin(slugOrRememberMe, providerType, rememberMe) {
+      /** @type {any} */
+      let currentStatus;
+      status.subscribe((s) => (currentStatus = s))();
+
+      // Support legacy call signature: startLogin(rememberMe)
+      let slug = slugOrRememberMe;
+      let type = providerType;
+      let remember = rememberMe;
+      if (typeof slugOrRememberMe === 'boolean') {
+        slug = currentStatus?.providerSlug;
+        type = currentStatus?.providerType || 'oidc';
+        remember = slugOrRememberMe;
+      }
+
+      if (!currentStatus?.enabled || !slug) {
+        console.error('SSO not enabled or provider not configured');
+        return;
+      }
+
+      // Capture the current route so the IdP round-trip can return the user
+      // to where they were (e.g. the CLI consent page at /cli/authorize)
+      // instead of dropping them at the dashboard root (WI-519).
+      const redirectURI = `${window.location.pathname || ''}${window.location.search || ''}`;
+
+      const url = api.sso.startLogin(slug, type || 'oidc', remember || false, redirectURI);
+
+      // Inside the desktop app, the IdP login (esp. passkey/WebAuthn) can't run
+      // in the embedded webview — hand it to the system browser and return via
+      // the windshift:// deep link instead of navigating in place (WI-446).
+      if (isTauri()) {
+        desktopStartSso(url).catch((err) => {
+          console.error('Failed to start desktop SSO login:', err);
+        });
+        return;
+      }
+
+      window.location.href = toExternal(url);
+    },
+
+    // Admin: Load providers list
+    async loadProviders() {
+      providersLoading.set(true);
+      providersError.set(null);
+
+      try {
+        const data = await api.sso.listProviders();
+        providers.set(data || []);
+        providersLoading.set(false);
+      } catch (err) {
+        console.error('Failed to load SSO providers:', err);
+        providersError.set(err.message);
+        providersLoading.set(false);
+      }
+    },
+
+    // Admin: Get a single provider
+    async getProvider(id) {
+      try {
+        return await api.sso.getProvider(id);
+      } catch (err) {
+        console.error('Failed to get SSO provider:', err);
+        throw err;
+      }
+    },
+
+    // Admin: Create a new provider
+    async createProvider(data) {
+      try {
+        const provider = await api.sso.createProvider(data);
+        // Refresh providers list
+        await this.loadProviders();
+        // Refresh status
+        await this.initStatus();
+        return provider;
+      } catch (err) {
+        console.error('Failed to create SSO provider:', err);
+        throw err;
+      }
+    },
+
+    // Admin: Update a provider
+    async updateProvider(id, data) {
+      try {
+        const provider = await api.sso.updateProvider(id, data);
+        // Refresh providers list
+        await this.loadProviders();
+        // Refresh status
+        await this.initStatus();
+        return provider;
+      } catch (err) {
+        console.error('Failed to update SSO provider:', err);
+        throw err;
+      }
+    },
+
+    // Admin: Delete a provider
+    async deleteProvider(id) {
+      try {
+        await api.sso.deleteProvider(id);
+        // Refresh providers list
+        await this.loadProviders();
+        // Refresh status
+        await this.initStatus();
+      } catch (err) {
+        console.error('Failed to delete SSO provider:', err);
+        throw err;
+      }
+    },
+
+    // Admin: Test provider connection
+    async testProvider(id) {
+      try {
+        return await api.sso.testProvider(id);
+      } catch (err) {
+        console.error('Failed to test SSO provider:', err);
+        throw err;
+      }
+    },
+
+    // User: Load external accounts
+    async loadExternalAccounts() {
+      externalAccountsLoading.set(true);
+
+      try {
+        const data = await api.sso.getExternalAccounts();
+        externalAccounts.set(data || []);
+        externalAccountsLoading.set(false);
+      } catch (err) {
+        console.error('Failed to load external accounts:', err);
+        externalAccountsLoading.set(false);
+      }
+    },
+
+    // User: Unlink an external account
+    async unlinkExternalAccount(id) {
+      try {
+        await api.sso.unlinkExternalAccount(id);
+        // Refresh external accounts
+        await this.loadExternalAccounts();
+      } catch (err) {
+        console.error('Failed to unlink external account:', err);
+        throw err;
+      }
+    },
+
+    // Check for SSO error in URL (after callback redirect)
+    checkForError() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const ssoError = urlParams.get('sso_error');
+      if (ssoError) {
+        // Clear the error from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('sso_error');
+        window.history.replaceState({}, '', url.toString());
+        return ssoError;
+      }
+      return null;
+    },
+
+    // Check for email verification pending state in URL (after SSO callback)
+    checkForEmailVerificationPending() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const verifyEmail = urlParams.get('verify_email');
+      if (verifyEmail === 'pending') {
+        // Clear the param from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('verify_email');
+        window.history.replaceState({}, '', url.toString());
+        return true;
+      }
+      return false;
+    },
+
+    // Get email verification status for current user (with caching)
+    async getVerificationStatus() {
+      // Return cached result if available
+      if (verificationStatusCache !== null) {
+        return verificationStatusCache;
+      }
+
+      // Check if SSO is enabled first - no need to check verification if SSO isn't configured
+      /** @type {any} */
+      let currentStatus;
+      status.subscribe((s) => (currentStatus = s))();
+
+      if (!currentStatus?.enabled) {
+        // No SSO configured - skip the API call entirely
+        verificationStatusCache = { email_verified: true, configured: false };
+        return verificationStatusCache;
+      }
+
+      try {
+        const result = await api.auth.getVerificationStatus();
+        verificationStatusCache = result;
+        return result;
+      } catch (err) {
+        console.error('Failed to get verification status:', err);
+        // Return verified=true on error for backwards compatibility
+        verificationStatusCache = { email_verified: true, configured: false };
+        return verificationStatusCache;
+      }
+    },
+
+    // Clear verification status cache (call when user verifies email)
+    clearVerificationCache() {
+      verificationStatusCache = null;
+    },
+
+    // Resend verification email
+    async resendVerificationEmail() {
+      try {
+        return await api.auth.resendVerification();
+      } catch (err) {
+        console.error('Failed to resend verification email:', err);
+        throw err;
+      }
+    },
+  };
+}
+
+export const ssoStore = createSSOStore();

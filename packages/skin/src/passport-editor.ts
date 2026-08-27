@@ -59,8 +59,14 @@
 import {
   admits,
   isAssemblyContent,
+  isAssemblyExtra,
+  isAssemblyRepeat,
+  type DataPreset,
   type PassportAdmission,
   type PassportAssembly,
+  type PassportAssemblyContent,
+  type PassportAssemblyExtra,
+  type PassportAssemblyNode,
   type PassportAssemblyPart,
   type PassportComponentGenus,
 } from "./passport-assembly.js";
@@ -128,6 +134,48 @@ const DEFAULT_GROUP: ComponentGroup = "other";
  */
 export function groupOf(info: { readonly group?: ComponentGroup }): ComponentGroup {
   return info.group ?? DEFAULT_GROUP;
+}
+
+/**
+ * ОБЪЁМ компонента — сколько ему нужно места в галерее случаев (витрина, редактор).
+ *
+ * Раньше это решала не декларация, а ИЗМЕРЕНИЕ: показ мерил `scrollWidth` уже отрисованного узла
+ * (`products/skin/src/showcase/case.tsx`, порог `WIDE_AT`) и разворачивал карточку на всю строку,
+ * если она не поместилась. Приём случайный: он ловит фактическую ширину ОДНОГО показанного
+ * образца при ОДНОМ надетом наряде, а не то, каким компонент является по своей природе — кнопка
+ * с длинной подписью и гармошка с `inlineSize: 100%` (чтобы не прыгать при раскрытии) обе
+ * измеряются неверно, каждая на свой лад.
+ *
+ * Компонент знает о себе то, чего показ узнать не может: кнопка — маленький атом действия,
+ * гармошка — крупнее, но не претендует на всю строку, таблица — претендует всегда. Это тот же
+ * довод, что у `genus`/`group`: свойство самого компонента, а не наблюдение того, кто его
+ * показывает, — значит и объявляет его поставщик, рядом с остальным, что он о себе знает.
+ *
+ * Три значения, не шкала: `compact` (мелкий атом — кнопка, чекбокс, переключатель, иконка,
+ * попап-триггер), `regular` (умолчание — большинству есть что показать, но во всю строку это не
+ * нужно), `wide` (нуждается в строке целиком по природе — таблица, карусель).
+ */
+export type ComponentFootprint = "compact" | "regular" | "wide";
+
+/**
+ * Объём, который действует, когда компонент своего не назвал.
+ *
+ * `regular` — то же самое положение, в котором сейчас показывается любой компонент без вариации
+ * или состояния: середина, а не крайность. Компонент, ещё не сказавший, сколько ему нужно места,
+ * не должен молча стать ни самым мелким, ни самым широким.
+ */
+const DEFAULT_FOOTPRINT: ComponentFootprint = "regular";
+
+/**
+ * Объём компонента — объявленный либо действующий по умолчанию.
+ *
+ * Тем же приёмом, что и `groupOf`: принимает срез РЕДАКТОРА, потому что показу нечего смотреть в
+ * рантайм-паспорт ради того, что там никогда не жило.
+ *
+ * @param info срез редактора компонента (или его часть — объём как таковой)
+ */
+export function footprintOf(info: { readonly footprint?: ComponentFootprint }): ComponentFootprint {
+  return info.footprint ?? DEFAULT_FOOTPRINT;
 }
 
 /** Что состояние значит человеку — половина `PassportState`, которую редактор держит отдельно. */
@@ -207,6 +255,8 @@ export interface PassportEditorInfo<Part extends string = string> {
    * человеку. Не объявлена — компонент не пропадает, а попадает в «прочее» (`groupOf`).
    */
   readonly group?: ComponentGroup;
+  /** Сколько компоненту нужно места в галерее случаев. Не объявлен — действует `footprintOf`. */
+  readonly footprint?: ComponentFootprint;
   /** Что ось вариаций значит человеку — половина `PassportVariantAxis`. */
   readonly variantAxis: { readonly means: string };
   /** Добавка к каждой части — ключами анатомии, тем же перечнем, что в рантайме. */
@@ -220,6 +270,12 @@ export interface PassportEditorInfo<Part extends string = string> {
    * выглядела бы как объявленный экземпляр, которого нет.
    */
   readonly assemblies: readonly PassportAssembly<Part>[];
+  /**
+   * Заготовленные варианты заполнения (`PWEB-156`) — под сборку с именем `filled`, если она
+   * объявлена. Пустой перечень — компонент без такой сборки либо без заготовленных данных под
+   * неё: честно, не заглушкой, тем же приёмом, что и у пустого перечня сборок.
+   */
+  readonly dataPresets: readonly DataPreset[];
 }
 
 /** То, что объявляет `defineEditorInfo` — `PassportEditorInfo` без снятого имени компонента. */
@@ -227,10 +283,12 @@ export interface PassportEditorSpec<Part extends string> {
   readonly package: string;
   readonly genus: PassportComponentGenus;
   readonly group?: ComponentGroup;
+  readonly footprint?: ComponentFootprint;
   readonly variantAxis: { readonly means: string };
   readonly parts: Readonly<Record<Part, PassportPartEditorInfo<Part>>>;
   readonly settings?: Readonly<Record<string, PassportSettingEditorInfo>>;
   readonly assemblies?: readonly PassportAssembly<Part>[];
+  readonly dataPresets?: readonly DataPreset[];
 }
 
 /**
@@ -265,23 +323,45 @@ function checkAssembly<Part extends string>(
     );
   }
 
-  const walk = (node: PassportAssemblyPart<Part>): void => {
-    if (!declared.includes(node.part)) {
+  // Повтор (`PassportAssemblyRepeat`, `PWEB-156`) ПРОЗРАЧЕН для допуска: место в дереве занимает
+  // не он сам, а то, чем он размножается, — уходит сквозь вложенные повторы до части/содержимого/
+  // extra, ровно как `outerTypeOf` уходит сквозь композицию в `packages/assembly/src/tree.ts`.
+  const templateOf = (
+    node: PassportAssemblyNode<Part>,
+  ): PassportAssemblyPart<Part> | PassportAssemblyContent | PassportAssemblyExtra<Part> =>
+    isAssemblyRepeat(node) ? templateOf(node.template) : node;
+
+  // Узел-родитель при обходе — часть анатомии либо вспомогательный компонент кита (extra, без
+  // адреса анатомии — `PassportAssemblyExtra`, `PWEB-152`). Содержимое обходу не подлежит: у него
+  // нет детей по построению типа.
+  const walk = (node: PassportAssemblyPart<Part> | PassportAssemblyExtra<Part>): void => {
+    if (!isAssemblyExtra(node) && !declared.includes(node.part)) {
       throw new Error(`сборка «${component}.${assembly.name}» называет часть «${node.part}» мимо анатомии`);
     }
 
-    const owner = parts[node.part];
+    // Extra не заводит собственного правила вложенности в срезе редактора (тот держит записи ТОЛЬКО
+    // по частям анатомии) — вложенность внутрь extra поэтому не проверяется здесь; несовпадение
+    // extra-имени с картой поставщика (`KitComponent.extras`) ловит `checkRegistry`, не этот обход.
+    const owner = isAssemblyExtra(node) ? undefined : parts[node.part];
 
-    for (const child of node.children ?? []) {
+    for (const declaredChild of node.children ?? []) {
+      const child = templateOf(declaredChild);
       const candidate: PassportAdmission<Part> = isAssemblyContent(child)
         ? { kind: "content", genus: child.genus }
-        : { kind: "part", name: child.part };
+        : isAssemblyExtra(child)
+          ? { kind: "extra", name: child.extra }
+          : { kind: "part", name: child.part };
 
       if (owner && !admits(owner, candidate)) {
-        const что = isAssemblyContent(child) ? `содержимое рода «${child.genus}»` : `часть «${child.part}»`;
+        const что = isAssemblyContent(child)
+          ? `содержимое рода «${child.genus}»`
+          : isAssemblyExtra(child)
+            ? `вспомогательный компонент «${child.extra}»`
+            : `часть «${child.part}»`;
+        const куда = isAssemblyExtra(node) ? `вспомогательный узел «${node.extra}»` : `часть «${node.part}»`;
 
         throw new Error(
-          `сборка «${component}.${assembly.name}» кладёт ${что} внутрь части «${node.part}», ` +
+          `сборка «${component}.${assembly.name}» кладёт ${что} внутрь ${куда}, ` +
             `которая этого не допускает`,
         );
       }
@@ -401,14 +481,28 @@ export function defineEditorInfo<Part extends string>(
     assemblyNames.add(assembly.name);
   }
 
+  const dataPresets = spec.dataPresets ?? [];
+  const presetNames = new Set<string>();
+
+  for (const preset of dataPresets) {
+    // Тем же доводом, что у сборок: имя — адрес, повтори его дважды — и «взять пресет по имени»
+    // перестало бы значить что-то одно.
+    if (presetNames.has(preset.name)) {
+      throw new Error(`вариант заполнения «${component}.${preset.name}» назван дважды — имя не адрес`);
+    }
+    presetNames.add(preset.name);
+  }
+
   return {
     component,
     package: spec.package,
     genus: spec.genus,
     group: spec.group,
+    footprint: spec.footprint,
     variantAxis: spec.variantAxis,
     parts: spec.parts,
     settings: spec.settings,
     assemblies,
+    dataPresets,
   };
 }

@@ -54,6 +54,18 @@ export { Flow, FlowItem, type FlowItemProps, type FlowProps } from "./flow/index
 export { Grid, GridCell, type GridCellProps, type GridProps } from "./grid/index.js";
 export { Icon, type IconProps } from "./icon/index.js";
 export { Surface, type SurfaceProps } from "./surface/index.js";
+export {
+  Workspace,
+  WorkspaceHeader,
+  type WorkspaceHeaderProps,
+  WorkspaceMain,
+  type WorkspaceMainProps,
+  type WorkspaceProps,
+  WorkspaceRightbar,
+  type WorkspaceRightbarProps,
+  WorkspaceSidebar,
+  type WorkspaceSidebarProps,
+} from "./workspace/index.js";
 // Карта частей вместе с паспортами (`PWEB-84`). Вход порождён сборкой обходом папок; форма пары
 // и сверка ключей с анатомией — в `kit-form.ts`.
 export {

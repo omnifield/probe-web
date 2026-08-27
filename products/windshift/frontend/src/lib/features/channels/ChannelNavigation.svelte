@@ -1,0 +1,134 @@
+<script>
+  import { onMount } from 'svelte';
+  import { IconTag } from '@tabler/icons-svelte-runes';
+  import { navigate, currentRoute } from '../../router.js';
+  import { channelCategoriesStore } from '../../stores/channelCategories.js';
+  import Button from '../../components/Button.svelte';
+  import { getHexFromColorName } from '../../utils/colors.js';
+  import { t } from '../../stores/i18n.svelte.js';
+  import SidebarHeader from '../../layout/SidebarHeader.svelte';
+  import { channelTypes as channelTypeDefs, allTypesEntry } from './channelTypes.js';
+  import { isSystemAdmin } from '../../stores/permissions.svelte.js';
+
+  // Get active filters from URL params
+  let activeCategoryId = $derived($currentRoute.params?.categoryId || null);
+  let activeTypeFilter = $derived($currentRoute.params?.type || null);
+  let isAllCategoriesActive = $derived(activeCategoryId === null && activeTypeFilter === null);
+
+  // Channel type definitions (use $derived for reactive translations)
+  let channelTypes = $derived([
+    { ...allTypesEntry, label: t('channels.allTypes') },
+    ...channelTypeDefs.filter(ct => ct.id !== 'smtp').map(ct => ({
+      ...ct, label: t(`channels.${ct.id}`)
+    }))
+  ]);
+
+  onMount(async () => {
+    // Load categories when component mounts
+    await channelCategoriesStore.init();
+  });
+
+  function handleTypeClick(typeId) {
+    if (typeId === null) {
+      navigate('/admin/channels');
+    } else {
+      navigate(`/admin/channels/type/${typeId}`);
+    }
+  }
+
+  function handleCategoryClick(categoryId) {
+    if (categoryId === null) {
+      navigate('/admin/channels');
+    } else {
+      navigate(`/admin/channels/category/${categoryId}`);
+    }
+  }
+
+  function handleManageCategories() {
+    // Emit event to parent to show category management modal
+    const event = new CustomEvent('manage-channel-categories');
+    document.dispatchEvent(event);
+  }
+</script>
+
+<!-- Channel Navigation Sidebar -->
+<div class="w-64 border-r flex flex-col p-6" style="border-color: var(--ds-border); background-color: var(--ds-surface-raised);">
+  <!-- Header -->
+  <SidebarHeader title={t('channels.title')} description={t('channels.subtitle')} noBorder />
+
+  <!-- Navigation -->
+  <nav class="flex-1 space-y-4">
+    <!-- Channel Types Section -->
+    <div class="space-y-1">
+      <div class="px-3 mb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--ds-text-subtle);">{t('channels.types')}</span>
+      </div>
+      {#each channelTypes as type (type.id)}
+        {@const isTypeActive = activeTypeFilter === type.id}
+        <button
+          onclick={() => handleTypeClick(type.id)}
+          class="w-full text-left cursor-pointer px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-3"
+          style={isTypeActive ? 'background: var(--ds-surface-selected); color: var(--ds-text);' : 'color: var(--ds-text-subtle);'}
+          onmouseenter={(e) => { if (!isTypeActive) e.currentTarget.style.cssText = 'background: var(--ds-background-neutral-hovered); color: var(--ds-text);'; }}
+          onmouseleave={(e) => { if (!isTypeActive) e.currentTarget.style.cssText = 'color: var(--ds-text-subtle);'; }}
+        >
+          <div class="w-4 h-4 rounded bg-gradient-to-br {type.navColor} flex-shrink-0 flex items-center justify-center">
+            <type.icon class="w-2.5 h-2.5 text-white" />
+          </div>
+          <span>{type.label}</span>
+        </button>
+      {/each}
+    </div>
+
+    <!-- Categories Section -->
+    <div class="space-y-1">
+      <div class="px-3 mb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--ds-text-subtle);">{t('channels.categories')}</span>
+      </div>
+      <!-- All Channels -->
+      <button
+        onclick={() => handleCategoryClick(null)}
+        class="w-full text-left cursor-pointer px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-3"
+        style={isAllCategoriesActive ? 'background: var(--ds-surface-selected); color: var(--ds-text);' : 'color: var(--ds-text-subtle);'}
+        onmouseenter={(e) => { if (!isAllCategoriesActive) e.currentTarget.style.cssText = 'background: var(--ds-background-neutral-hovered); color: var(--ds-text);'; }}
+        onmouseleave={(e) => { if (!isAllCategoriesActive) e.currentTarget.style.cssText = 'color: var(--ds-text-subtle);'; }}
+      >
+        <div class="w-4 h-4 rounded bg-gradient-to-br from-blue-400 to-blue-600 flex-shrink-0"></div>
+        <span>{t('channels.allChannels')}</span>
+      </button>
+
+      <!-- Category List -->
+      {#each $channelCategoriesStore as category (category.id)}
+        {@const isCatActive = activeCategoryId === category.id.toString()}
+        <button
+          onclick={() => handleCategoryClick(category.id)}
+          class="w-full text-left cursor-pointer px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-3"
+          style={isCatActive ? 'background: var(--ds-surface-selected); color: var(--ds-text);' : 'color: var(--ds-text-subtle);'}
+          onmouseenter={(e) => { if (!isCatActive) e.currentTarget.style.cssText = 'background: var(--ds-background-neutral-hovered); color: var(--ds-text);'; }}
+          onmouseleave={(e) => { if (!isCatActive) e.currentTarget.style.cssText = 'color: var(--ds-text-subtle);'; }}
+          title={category.description || category.name}
+        >
+          <div
+            class="w-4 h-4 rounded flex-shrink-0"
+            style="background-color: {category.color?.startsWith('#') ? category.color : getHexFromColorName(category.color || 'blue')};"
+          ></div>
+          <span class="truncate">{category.name}</span>
+        </button>
+      {/each}
+    </div>
+  </nav>
+
+  <!-- Footer - Manage Categories -->
+  {#if $isSystemAdmin}
+    <div class="pt-4 border-t" style="border-color: var(--ds-border);">
+      <Button
+        variant="default"
+        icon={IconTag}
+        onclick={handleManageCategories}
+        class="w-full justify-center"
+      >
+        {t('channels.manageCategories')}
+      </Button>
+    </div>
+  {/if}
+</div>

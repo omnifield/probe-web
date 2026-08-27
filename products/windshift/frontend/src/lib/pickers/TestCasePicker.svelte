@@ -1,0 +1,93 @@
+<script>
+  import { BasePicker } from '.';
+  import { untrack } from 'svelte';
+  import { api } from '../api.js';
+  import { FileText } from '@lucide/svelte';
+  import { t } from '../stores/i18n.svelte.js';
+
+  let {
+    workspaceId,
+    value = $bindable(null),
+    excludeIds = [],
+    placeholder = '',
+    label = '',
+    disabled = false,
+    autoOpen = false,
+    class: className = '',
+    onSelect = () => {},
+    onCancel = () => {}
+  } = $props();
+
+  const resolvedPlaceholder = $derived(placeholder || t('pickers.searchTestCases'));
+
+  let testCases = $state([]);
+  let loading = $state(false);
+  let error = $state(null);
+
+  // Load test cases when workspaceId is available
+  $effect(() => {
+    if (workspaceId) {
+      untrack(() => loadTestCases());
+    }
+  });
+
+  async function loadTestCases() {
+    if (loading || !workspaceId) return;
+
+    try {
+      loading = true;
+      error = null;
+      testCases = await api.tests.testCases.getAll(workspaceId, { all: true }) || [];
+    } catch (err) {
+      console.error('Failed to load test cases:', err);
+      error = err.message || 'Failed to load test cases';
+      testCases = [];
+    } finally {
+      loading = false;
+    }
+  }
+
+  // Filter out excluded IDs from the items
+  const filteredTestCases = $derived.by(() => {
+    const excludeSet = new Set(excludeIds);
+    return testCases.filter(tc => !excludeSet.has(tc.id));
+  });
+
+  function handleSelect(item) {
+    onSelect(item);
+  }
+
+  function handleCancel() {
+    onCancel();
+  }
+</script>
+
+<BasePicker
+  bind:value
+  id="test-case-picker"
+  items={filteredTestCases}
+  {loading}
+  {error}
+  placeholder={resolvedPlaceholder}
+  {label}
+  {disabled}
+  class={className}
+  searchFields={['title', 'folder_name']}
+  getValue={(tc) => tc?.id}
+  getLabel={(tc) => tc?.title ?? ''}
+  onSelect={handleSelect}
+  onCancel={handleCancel}
+  optionTestid={(option) => `test-case-picker-option-${option.value}`}
+>
+  {#snippet itemSnippet({ item: testCase, isSelected })}
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <FileText size={16} style="color: var(--ds-text-subtle); flex-shrink: 0;" />
+      <div class="flex-1 min-w-0">
+        <div class="font-medium truncate">{testCase.title}</div>
+        <div class="text-xs truncate" style="color: var(--ds-text-subtle);">
+          {testCase.folder_name || t('common.root')}
+        </div>
+      </div>
+    </div>
+  {/snippet}
+</BasePicker>

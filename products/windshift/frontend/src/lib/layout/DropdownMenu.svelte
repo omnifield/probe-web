@@ -1,0 +1,441 @@
+<script>
+  import { createPopover, melt } from '@melt-ui/svelte';
+  import { ChevronDown, Check } from '@lucide/svelte';
+  import { getTextColorForBackground } from '../utils/statusColors.js';
+  import { t } from '../stores/i18n.svelte.js';
+  import { sanitizeHtml } from '../utils/sanitize.ts';
+  import { tick } from 'svelte';
+  import Checkbox from '../components/Checkbox.svelte';
+  import Input from '../components/Input.svelte';
+  import ItemTypeIcon from '../components/ItemTypeIcon.svelte';
+
+  let {
+    triggerText = '',
+    triggerIcon = null,
+    triggerAvatar = null,
+    triggerIconBgColor = null,
+    triggerBgColor = null,
+    triggerIconClass = 'w-4 h-4',
+    triggerGap = 'gap-2',
+    items = [],
+    maxWidth = 'max-w-3xl',
+    /** @type {'bottom' | 'bottom-start' | 'bottom-end' | 'top' | 'top-start' | 'top-end' | 'left' | 'left-start' | 'left-end' | 'right' | 'right-start' | 'right-end'} */
+    placement = 'bottom',
+    align = undefined,
+    triggerClass = '',
+    triggerStyle = '',
+    showChevron = true,
+    iconOnly = false,
+    onOpen = null,
+    triggerAlignment = 'center',
+    disabled = false,
+    triggerTestid = '',
+    triggerLabel = '',
+    children = undefined
+  } = $props();
+
+  const isDisabled = $derived(disabled || (items.length === 0 && !children));
+
+  // Create popover (replaces createDropdownMenu to avoid typeahead focus-stealing)
+  const {
+    elements: { trigger, content },
+    states: { open }
+  } = createPopover(/** @type {any} */ ({
+    forceVisible: true,
+    positioning: {
+      // svelte-ignore state_referenced_locally
+      placement: /** @type {import('@floating-ui/dom').Placement} */ (placement || 'bottom')
+    },
+    portal: 'body',
+    // svelte-ignore state_referenced_locally
+    disabled: isDisabled
+  }));
+
+  // Watch for open state changes
+  let previousOpen = $state(false);
+  let triggerElement = $state(null);
+  let searchInputElement = $state(null);
+
+  let hasSearchInput = $derived(items.some(i => i.type === 'search'));
+
+  let expandedAccordions = $state({});
+
+  function toggleAccordion(id) {
+    expandedAccordions = { ...expandedAccordions, [id]: !expandedAccordions[id] };
+  }
+
+  function isAccordionExpanded(item) {
+    return expandedAccordions[item.id] ?? !!item.defaultExpanded;
+  }
+
+  $effect(() => {
+    if ($open && !previousOpen) {
+      expandedAccordions = {};
+      if (onOpen) onOpen();
+      tick().then(() => {
+        if (searchInputElement) {
+          searchInputElement.focus({ preventScroll: true });
+        } else {
+          const container = document.querySelector('[data-menu-container]');
+          if (container) {
+            const firstItem = container.querySelector('[data-menu-item]');
+            if (firstItem) /** @type {HTMLElement} */ (firstItem).focus({ preventScroll: true });
+          }
+        }
+      });
+    } else if (previousOpen && !$open) {
+      // Don't blur trigger — sending focus to document.body causes @github/hotkey
+      // to fire global shortcuts (e.g. 'c' for create) when user types in a modal
+    }
+    previousOpen = $open;
+  });
+
+  let alignmentClass = $derived(triggerAlignment === 'between'
+    ? 'justify-between'
+    : triggerAlignment === 'start'
+      ? 'justify-start'
+      : 'justify-center');
+
+  function closeMenu() {
+    if ($open) {
+      open.set(false);
+    }
+  }
+
+  function handleMenuKeydown(e) {
+    const focusableItems = [...e.currentTarget.querySelectorAll('[data-menu-item]')];
+    const currentIndex = focusableItems.indexOf(document.activeElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = currentIndex + 1;
+      if (next < focusableItems.length) {
+        focusableItems[next].focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (currentIndex <= 0 && searchInputElement) {
+        searchInputElement.focus();
+      } else if (currentIndex > 0) {
+        focusableItems[currentIndex - 1].focus();
+      }
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      if (focusableItems.length > 0) {
+        focusableItems[0].focus();
+      }
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      if (focusableItems.length > 0) {
+        focusableItems[focusableItems.length - 1].focus();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      open.set(false);
+    }
+  }
+
+  function handleItemClick(itemData, event) {
+    // Action items must not reach modal overlays. Links keep bubbling so the
+    // app router can intercept plain clicks while modified clicks stay native.
+    if (event && !itemData.href) {
+      event.stopPropagation();
+    }
+
+    if (itemData.type === 'checkbox' && itemData.onChange) {
+      itemData.onChange(!itemData.checked);
+    } else if (itemData.onClick) {
+      itemData.onClick();
+    }
+
+    // Close menu after selection unless explicitly told not to
+    if (itemData.closeOnSelect !== false) {
+      closeMenu();
+    }
+  }
+</script>
+
+<!-- Trigger Button -->
+<div class="relative">
+  <button
+    type="button"
+    bind:this={triggerElement}
+    use:melt={$trigger}
+    disabled={isDisabled}
+    data-testid={triggerTestid || undefined}
+    aria-label={triggerLabel || triggerText || undefined}
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
+    class="{triggerAvatar ? 'p-0' : iconOnly ? '' : triggerClass ? '' : 'px-4 py-2'} rounded text-sm font-medium transition flex items-center {alignmentClass} {triggerGap} flex-shrink-0 {triggerBgColor ? getTextColorForBackground(triggerBgColor) : ''} {triggerClass} {isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
+    style="{triggerBgColor ? `background-color: ${triggerBgColor}; ${triggerStyle}` : triggerStyle}{$open && !triggerBgColor ? '; background-color: var(--ctx-surface-raised, var(--ds-background-neutral-hovered));' : ''}"
+  >
+    {#if children}
+      {@render children()}
+      {#if showChevron && !isDisabled}
+        <ChevronDown class="w-3 h-3" />
+      {/if}
+    {:else if triggerAvatar}
+      <img src={triggerAvatar} alt={t('common.profile')} class="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+      {#if triggerText}
+        <span class="text-sm whitespace-nowrap">{triggerText}</span>
+      {/if}
+      {#if showChevron && !isDisabled}
+        <ChevronDown class="w-3 h-3" />
+      {/if}
+    {:else}
+      {#if triggerIcon}
+        {#if triggerBgColor}
+          <!-- When full background is colored, show icon without circle -->
+          {@const TriggerIconComp = triggerIcon}
+          <TriggerIconComp class="{triggerIconClass} flex-shrink-0" />
+        {:else if triggerIconBgColor}
+          {@const TriggerIconComp = triggerIcon}
+          <div
+            class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+            style="background-color: {triggerIconBgColor};"
+          >
+            <TriggerIconComp class="w-3.5 h-3.5 text-white" />
+          </div>
+        {:else}
+          {@const TriggerIconComp = triggerIcon}
+          <TriggerIconComp class="{triggerIconClass} flex-shrink-0" />
+        {/if}
+      {/if}
+      {#if triggerText}
+        <span class="{triggerAlignment === 'between' ? 'flex-1 text-left' : ''}">{triggerText}</span>
+      {/if}
+      {#if showChevron && !isDisabled}
+        <ChevronDown class="w-3 h-3 flex-shrink-0" />
+      {/if}
+    {/if}
+  </button>
+</div>
+
+<!-- Dropdown Menu -->
+{#if $open}
+  <div
+    use:melt={$content}
+    data-menu-container
+    role="menu"
+    onkeydown={handleMenuKeydown}
+    class="{maxWidth} rounded shadow-xl border focus:outline-none z-[60]"
+    style="background-color: var(--ds-surface-raised); border-color: var(--ds-border); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15);"
+  >
+    <div>
+      {#each items as itemData, index (itemData.id || index)}
+        {#if itemData.type === 'divider'}
+          <div class="border-t mx-2" style="border-color: var(--ds-border);"></div>
+        {:else if itemData.type === 'text'}
+          <div class="px-4 py-3 text-sm text-center italic" style="color: var(--ds-text-subtle);">{itemData.text}</div>
+        {:else if itemData.type === 'search'}
+          <div class="px-3 py-2 border-b" style="border-color: var(--ds-border);">
+            <Input
+              bind:inputRef={searchInputElement}
+              type="text"
+              dataTestid={itemData.testid || undefined}
+              placeholder={itemData.placeholder || t('common.search')}
+              value={itemData.value || ''}
+              oninput={(e) => itemData.onInput && itemData.onInput(/** @type {HTMLInputElement} */ (e.target).value)}
+              onkeydown={(e) => {
+                // Allow arrow down and tab to navigate to menu items
+                if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+                  e.preventDefault();
+                  const container = /** @type {HTMLElement} */ (e.target).closest('[data-menu-container]');
+                  if (container) {
+                    const firstItem = container.querySelector('[data-menu-item]');
+                    if (firstItem) /** @type {HTMLElement} */ (firstItem).focus();
+                  }
+                  return;
+                }
+                // Stop propagation for other keys to prevent closing dropdown while typing
+                if (e.key !== 'Escape') {
+                  e.stopPropagation();
+                }
+              }}
+              class="w-full px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--ds-border-focused)] focus:border-transparent"
+              style="background-color: var(--ds-background-input); border: 1px solid var(--ds-border); color: var(--ds-text);"
+              onclick={(e) => e.stopPropagation()}
+            />
+          </div>
+        {:else if itemData.type === 'accordion'}
+          {@const accordionExpanded = isAccordionExpanded(itemData)}
+          <button
+            data-menu-item
+            data-testid={itemData.testid || undefined}
+            role="menuitem"
+            aria-expanded={accordionExpanded}
+            onclick={(e) => { e.stopPropagation(); toggleAccordion(itemData.id); }}
+            class="flex items-center w-full px-4 py-3 text-sm transition-all duration-200 cursor-pointer"
+            style="color: var(--ds-text);"
+            onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised-hovered)'}
+            onmouseleave={(e) => e.currentTarget.style.backgroundColor = ''}
+          >
+            {#if itemData.icon}
+              {#if itemData.iconColor}
+                {@const AccordionIcon = itemData.icon}
+                <div class="w-6 h-6 mr-3 rounded flex items-center justify-center" style="background-color: {itemData.iconColor};">
+                  <AccordionIcon class="w-4 h-4" style="color: white;" />
+                </div>
+              {:else}
+                {@const AccordionIcon = itemData.icon}
+                <div class="w-6 h-6 mr-3 rounded flex items-center justify-center">
+                  <AccordionIcon class="w-4 h-4 {itemData.iconClass || ''}" />
+                </div>
+              {/if}
+            {/if}
+            <div class="flex-1 text-left">
+              <div class="font-medium">{itemData.title}</div>
+              {#if itemData.subtitle}
+                <div class="text-xs line-clamp-1" style="color: var(--ds-text-subtle);">{itemData.subtitle}</div>
+              {/if}
+            </div>
+            <ChevronDown
+              class="w-4 h-4 flex-shrink-0 transition-transform duration-200 {accordionExpanded ? 'rotate-180' : ''}"
+              style="color: var(--ds-icon-subtle);"
+            />
+          </button>
+          {#if accordionExpanded}
+            {#each itemData.subItems as subItem (subItem.id)}
+              <button
+                data-menu-item
+                data-testid={subItem.testid || undefined}
+                role="menuitemradio"
+                aria-checked={!!subItem.selected}
+                onclick={(e) => handleItemClick(subItem, e)}
+                class="flex items-center w-full pl-14 pr-4 py-2 text-sm transition-all duration-200 cursor-pointer"
+                style="color: var(--ds-text); {subItem.selected ? 'background-color: var(--ds-background-selected);' : ''}"
+                onmouseenter={(e) => { if (!subItem.selected) e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised-hovered)'; }}
+                onmouseleave={(e) => e.currentTarget.style.backgroundColor = subItem.selected ? 'var(--ds-background-selected)' : ''}
+              >
+                {#if subItem.icon}
+                  {@const SubIcon = subItem.icon}
+                  <SubIcon class="w-4 h-4 mr-3 flex-shrink-0" style="color: var(--ds-icon-subtle);" />
+                {/if}
+                <span class="flex-1 text-left font-medium">{subItem.title}</span>
+                {#if subItem.selected}
+                  <Check class="w-4 h-4 flex-shrink-0" style="color: var(--ds-icon-brand);" />
+                {/if}
+              </button>
+            {/each}
+          {/if}
+        {:else if itemData.type === 'group'}
+          {#each itemData.items as groupItem (groupItem.id)}
+            <svelte:element
+              this={groupItem.href ? 'a' : 'button'}
+              href={groupItem.href || undefined}
+              type={groupItem.href ? undefined : 'button'}
+              data-menu-item
+              data-testid={groupItem.testid || undefined}
+              data-id={groupItem.id ?? undefined}
+              role="menuitem"
+              tabindex="0"
+              onclick={(e) => handleItemClick(groupItem, e)}
+              class="flex items-center w-full px-4 py-3 text-sm transition-all duration-200 cursor-pointer {groupItem.class || 'group'}"
+              style="color: {groupItem.color || 'var(--ds-text)'};"
+              onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised-hovered)'}
+              onmouseleave={(e) => e.currentTarget.style.backgroundColor = ''}
+            >
+              {#if groupItem.type === 'checkbox'}
+                <div class="mr-3 pointer-events-none">
+                  <Checkbox checked={groupItem.checked || false} size="small" />
+                </div>
+              {:else if groupItem.avatarUrl}
+                <img src={groupItem.avatarUrl} alt="Avatar" class="w-6 h-6 mr-3 rounded object-cover" />
+              {:else if groupItem.icon}
+                {#if groupItem.iconColor}
+                  {@const GroupItemIcon = groupItem.icon}
+                  <div class="w-6 h-6 mr-3 rounded flex items-center justify-center" style="background-color: {groupItem.iconColor};">
+                    <GroupItemIcon class="w-4 h-4" style="color: white;" />
+                  </div>
+                {:else}
+                  {@const GroupItemIcon = groupItem.icon}
+                  <div class="w-6 h-6 mr-3 rounded flex items-center justify-center">
+                    <GroupItemIcon class="w-4 h-4 {groupItem.iconClass || 'transition-colors'}" style="color: var(--ds-icon-subtle);" />
+                  </div>
+                {/if}
+              {/if}
+
+              {#if groupItem.content}
+                <!-- Custom content slot -->
+                <div class="flex-1 text-left">
+                  {@html sanitizeHtml(groupItem.content)}
+                </div>
+              {:else}
+                <!-- Simple text content -->
+                <div class="flex-1 text-left">
+                  <div class="font-medium">{groupItem.title}</div>
+                  {#if groupItem.subtitle}
+                    <div class="text-xs line-clamp-1" style="color: var(--ds-text-subtle);">{groupItem.subtitle}</div>
+                  {/if}
+                </div>
+              {/if}
+
+              {#if groupItem.badge}
+                <span class="text-xs px-2 py-1 rounded-full" style="color: var(--ds-text-subtlest); background-color: var(--ds-background-neutral);">{groupItem.badge}</span>
+              {/if}
+            </svelte:element>
+          {/each}
+        {:else}
+          <!-- Regular item -->
+          <svelte:element
+            this={itemData.href ? 'a' : 'button'}
+            href={itemData.href || undefined}
+            type={itemData.href ? undefined : 'button'}
+            data-menu-item
+            data-testid={itemData.testid || undefined}
+            data-id={itemData.id ?? undefined}
+            role="menuitem"
+            tabindex="0"
+            onclick={(e) => handleItemClick(itemData, e)}
+            class="flex items-center w-full px-4 py-3 text-sm transition-all duration-200 cursor-pointer {itemData.class || ''}"
+            style="color: {itemData.color || 'var(--ds-text)'}; {itemData.style || ''}"
+            onmouseenter={(e) => { if (!itemData.style) e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised-hovered)'; }}
+            onmouseleave={(e) => { if (!itemData.style) e.currentTarget.style.backgroundColor = ''; }}
+          >
+            {#if itemData.type === 'checkbox'}
+              <div class="mr-3 pointer-events-none">
+                <Checkbox checked={itemData.checked || false} size="small" />
+              </div>
+            {:else if itemData.iconDot}
+              <span
+                class="w-2 h-2 mr-3 rounded-full flex-shrink-0"
+                style="background-color: {itemData.iconColor || 'var(--ds-icon-subtle)'};"
+              ></span>
+            {:else if itemData.itemType}
+              <ItemTypeIcon itemType={itemData.itemType} class="mr-3" />
+            {:else if itemData.icon}
+              {#if itemData.iconColor}
+                {@const ItemIcon = itemData.icon}
+                <div class="w-6 h-6 mr-3 rounded flex items-center justify-center" style="background-color: {itemData.iconColor};">
+                  <ItemIcon class="w-4 h-4" style="color: white;" />
+                </div>
+              {:else}
+                {@const ItemIcon = itemData.icon}
+                <div class="w-6 h-6 mr-3 rounded flex items-center justify-center">
+                  <ItemIcon class="w-4 h-4 {itemData.iconClass || ''}" />
+                </div>
+              {/if}
+            {/if}
+
+            <div class="flex-1 text-left">
+              {#if itemData.content}
+                <!-- Custom content slot -->
+                {@html sanitizeHtml(itemData.content)}
+              {:else}
+                <!-- Simple text content -->
+                <div class="font-medium">{itemData.title}</div>
+                {#if itemData.subtitle}
+                  <div class="text-xs line-clamp-1" style="color: var(--ds-text-subtle);">{itemData.subtitle}</div>
+                {/if}
+              {/if}
+            </div>
+
+            {#if itemData.badge}
+              <span class="ml-auto text-xs {itemData.badgeClass || ''}" style="{itemData.badgeStyle || (itemData.badgeClass ? '' : 'color: var(--ds-text-subtlest);')}">{itemData.badge}</span>
+            {/if}
+          </svelte:element>
+        {/if}
+      {/each}
+    </div>
+  </div>
+{/if}

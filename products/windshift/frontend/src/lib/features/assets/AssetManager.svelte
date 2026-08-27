@@ -1,0 +1,1038 @@
+<script>
+  import { onMount } from 'svelte';
+  import { api } from '../../api.js';
+  import Button from '../../components/Button.svelte';
+  import PageHeader from '../../layout/PageHeader.svelte';
+  import Modal from '../../dialogs/Modal.svelte';
+  import ModalHeader from '../../dialogs/ModalHeader.svelte';
+  import DataTable from '../../components/DataTable.svelte';
+  import Card from '../../components/Card.svelte';
+  import Lozenge from '../../components/Lozenge.svelte';
+  import EmptyState from '../../components/EmptyState.svelte';
+  import ColorDot from '../../components/ColorDot.svelte';
+  import Select from '../../components/Select.svelte';
+  import ItemPicker from '../../pickers/ItemPicker.svelte';
+  import { IconPlus, IconPackage, IconEdit, IconTrash, IconSettings, IconListTree, IconUsers, IconUser, IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, IconDots, IconX, IconBolt } from '@tabler/icons-svelte-runes';
+  import AssetActionsSettings from './AssetActionsSettings.svelte';
+  import DropdownMenu from '../../layout/DropdownMenu.svelte';
+  import FieldLayoutEditor from '../../editors/FieldLayoutEditor.svelte';
+  import IconSelector from '../../pickers/IconSelector.svelte';
+  import Label from '../../components/Label.svelte';
+  import Input from '../../components/Input.svelte';
+  import DescriptionText from '../../components/DescriptionText.svelte';
+  import Textarea from '../../components/Textarea.svelte';
+  import Checkbox from '../../components/Checkbox.svelte';
+  import DialogFooter from '../../dialogs/DialogFooter.svelte';
+  import { t } from '../../stores/i18n.svelte.js';
+  import { errorToast } from '../../stores/toasts.svelte.js';
+  import { confirm } from '../../composables/useConfirm.js';
+  import { toHotkeyString } from '../../utils/keyboardShortcuts.js';
+  import { permissionStore, isSystemAdmin } from '../../stores';
+  import { fetchAssetCategories, flattenCategories } from './shared/assetSetUtils.js';
+
+  // State for asset sets
+  let assetSets = $state([]);
+  let selectedSetId = $state(null);
+  let selectedSet = $derived(assetSets.find(s => s.id === selectedSetId));
+  let isSetAdmin = $derived(selectedSet?.user_permission === 'Administrator');
+  let canEditSet = $derived(selectedSet?.user_permission === 'Editor' || selectedSet?.user_permission === 'Administrator');
+  let canManageGlobal = $derived($permissionStore.userPermissionKeys?.has('asset.manage') || $isSystemAdmin);
+
+  // State for tabs
+  let activeTab = $state('types'); // 'types', 'categories', 'permissions'
+
+  // Asset Types state
+  let assetTypes = $state([]);
+  let showTypeForm = $state(false);
+  let editingType = $state(null);
+  let typeFormData = $state({ name: '', description: '', icon: 'package', color: '#6b7280', display_order: 0, is_active: true });
+
+  // Asset Categories state
+  let assetCategories = $state([]);
+  let showCategoryForm = $state(false);
+  let editingCategory = $state(null);
+  let categoryFormData = $state({ name: '', description: '', parent_id: null });
+  let expandedCategories = $state(new Set());
+
+
+  // Set roles state
+  let roleAssignments = $state({ user_roles: [], group_roles: [], everyone_role: null });
+  let assetRoles = $state([]);
+  let availableGroups = $state([]);
+  let showRoleForm = $state(false);
+  let roleFormData = $state({ type: 'user', user_id: null, group_id: null, role_id: null });
+  let everyoneRoleId = $state(null);
+  let availableUsers = $state([]);
+
+  // Set form state
+  let showSetForm = $state(false);
+  let editingSet = $state(null);
+  let setFormData = $state({ name: '', description: '', is_default: false });
+
+  // Field assignment state
+  let showFieldsModal = $state(false);
+  let editingTypeForFields = $state(null);
+  let availableFields = $state([]);
+  let typeFields = $state([]);  // Full field objects with display_order, is_required
+
+  onMount(async () => {
+    await Promise.all([
+      loadAssetSets(),
+      loadUsers(),
+      loadAssetRoles(),
+      loadGroups(),
+    ]);
+  });
+
+  async function loadAssetSets() {
+    try {
+      const sets = await api.assetSets.getAll();
+      assetSets = sets || [];
+      if (assetSets.length > 0 && !selectedSetId) {
+        const defaultSet = assetSets.find(s => s.is_default) || assetSets[0];
+        selectedSetId = defaultSet.id;
+      }
+    } catch (error) {
+      console.error('Failed to load asset sets:', error);
+    }
+  }
+
+  async function loadUsers() {
+    try {
+      const users = await api.getUsers();
+      availableUsers = users || [];
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  }
+
+  // Load data when set changes
+  $effect(() => {
+    if (selectedSetId) {
+      loadAssetTypes();
+      loadAssetCategories();
+      loadSetRoles();
+    }
+  });
+
+  // Asset Set functions
+  function showAddSetForm() {
+    showSetForm = true;
+    editingSet = null;
+    setFormData = { name: '', description: '', is_default: false };
+  }
+
+  function showEditSetForm(set) {
+    showSetForm = true;
+    editingSet = set;
+    setFormData = { name: set.name, description: set.description || '', is_default: set.is_default };
+  }
+
+  async function handleSetSubmit() {
+    try {
+      if (editingSet) {
+        await api.assetSets.update(editingSet.id, setFormData);
+      } else {
+        await api.assetSets.create(setFormData);
+      }
+      await loadAssetSets();
+      showSetForm = false;
+    } catch (error) {
+      console.error('Failed to save asset set:', error);
+      errorToast(t('dialogs.alerts.failedToSave', { error: error.message }));
+    }
+  }
+
+  async function deleteSet(id) {
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: t('dialogs.confirmations.deleteAssetSet'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (confirmed) {
+      try {
+        await api.assetSets.delete(id);
+        if (selectedSetId === id) {
+          selectedSetId = null;
+        }
+        await loadAssetSets();
+      } catch (error) {
+        console.error('Failed to delete asset set:', error);
+        errorToast(t('dialogs.alerts.failedToDelete', { error: error.message }));
+      }
+    }
+  }
+
+  // Asset Type functions
+  async function loadAssetTypes() {
+    if (!selectedSetId) return;
+    try {
+      const types = await api.assetTypes.getAll(selectedSetId);
+      assetTypes = types || [];
+    } catch (error) {
+      console.error('Failed to load asset types:', error);
+    }
+  }
+
+  function showAddTypeForm() {
+    showTypeForm = true;
+    editingType = null;
+    typeFormData = { name: '', description: '', icon: 'package', color: '#6b7280', display_order: 0, is_active: true };
+  }
+
+  function showEditTypeForm(type) {
+    showTypeForm = true;
+    editingType = type;
+    typeFormData = {
+      name: type.name,
+      description: type.description || '',
+      icon: type.icon || 'package',
+      color: type.color || '#6b7280',
+      display_order: type.display_order,
+      is_active: type.is_active
+    };
+  }
+
+  async function handleTypeSubmit() {
+    try {
+      if (editingType) {
+        await api.assetTypes.update(editingType.id, typeFormData);
+      } else {
+        await api.assetTypes.create(selectedSetId, typeFormData);
+      }
+      await loadAssetTypes();
+      showTypeForm = false;
+    } catch (error) {
+      console.error('Failed to save asset type:', error);
+      errorToast(t('dialogs.alerts.failedToSave', { error: error.message }));
+    }
+  }
+
+  async function deleteType(id) {
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: t('dialogs.confirmations.deleteAssetType'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (confirmed) {
+      try {
+        await api.assetTypes.delete(id);
+        await loadAssetTypes();
+      } catch (error) {
+        console.error('Failed to delete asset type:', error);
+        errorToast(t('dialogs.alerts.failedToDelete', { error: error.message }));
+      }
+    }
+  }
+
+  // Field assignment functions
+  async function showFieldsForm(type) {
+    editingTypeForFields = type;
+
+    try {
+      // Load all available custom fields (excluding system default fields)
+      // Note: Work item system fields (Status, Priority, etc.) don't apply to assets
+      const result = await api.customFields.getAll();
+      const customFields = (result?.data || [])
+        .filter(f => !f.system_default)
+        .map(f => ({
+          identifier: f.id.toString(),
+          id: f.id,
+          name: f.name,
+          type: 'custom',
+          fieldType: f.field_type,
+          description: f.description,
+          category: 'Custom Fields'
+        }));
+
+      availableFields = customFields;
+
+      // Load currently assigned fields for this type
+      const assignedFields = await api.assetTypes.getFields(type.id);
+      typeFields = (assignedFields || []).map((f, index) => ({
+        field_identifier: f.custom_field_id.toString(),
+        field_type: 'custom',
+        field_name: f.field_name,
+        display_order: f.display_order ?? index,
+        is_required: f.is_required ?? false
+      }));
+
+      // Ensure Title field is always present (first, protected)
+      if (!typeFields.some(f => f.field_identifier === 'title')) {
+        typeFields = [
+          { field_identifier: 'title', field_type: 'system', field_name: 'Title', display_order: 0, is_required: true },
+          ...typeFields.map(f => ({ ...f, display_order: f.display_order + 1 }))
+        ];
+      }
+
+      // Ensure Description field is present (after title)
+      if (!typeFields.some(f => f.field_identifier === 'description')) {
+        const titleIndex = typeFields.findIndex(f => f.field_identifier === 'title');
+        const insertIndex = titleIndex >= 0 ? titleIndex + 1 : 0;
+        typeFields = [
+          ...typeFields.slice(0, insertIndex),
+          { field_identifier: 'description', field_type: 'system', field_name: 'Description', display_order: insertIndex, is_required: false },
+          ...typeFields.slice(insertIndex).map(f => ({ ...f, display_order: f.display_order + 1 }))
+        ];
+      }
+
+      showFieldsModal = true;
+    } catch (error) {
+      console.error('Failed to load fields:', error);
+      errorToast(t('dialogs.alerts.failedToLoadFields', { error: error.message }));
+    }
+  }
+
+  async function handleFieldsSubmit() {
+    try {
+      // Transform to API format with ordering and required flags
+      // Only save custom fields - system fields are implicit
+      const fieldsData = {
+        fields: typeFields
+          .filter(f => f.field_type === 'custom')
+          .map((f, index) => ({
+            custom_field_id: parseInt(f.field_identifier),
+            is_required: f.is_required ?? false,
+            display_order: index
+          }))
+      };
+      await api.assetTypes.updateFields(editingTypeForFields.id, fieldsData);
+      showFieldsModal = false;
+      editingTypeForFields = null;
+      typeFields = [];
+    } catch (error) {
+      console.error('Failed to save field assignments:', error);
+      errorToast(t('dialogs.alerts.failedToSaveFields', { error: error.message }));
+    }
+  }
+
+  function handleFieldsCancel() {
+    showFieldsModal = false;
+    editingTypeForFields = null;
+    typeFields = [];
+  }
+
+  // Asset Category functions
+  async function loadAssetCategories() {
+    assetCategories = await fetchAssetCategories(selectedSetId);
+  }
+
+  function showAddCategoryForm(parentId = null) {
+    showCategoryForm = true;
+    editingCategory = null;
+    categoryFormData = { name: '', description: '', parent_id: parentId };
+  }
+
+  function showEditCategoryForm(category) {
+    showCategoryForm = true;
+    editingCategory = category;
+    categoryFormData = {
+      name: category.name,
+      description: category.description || '',
+      parent_id: category.parent_id
+    };
+  }
+
+  async function handleCategorySubmit() {
+    try {
+      if (editingCategory) {
+        await api.assetCategories.update(editingCategory.id, categoryFormData);
+      } else {
+        await api.assetCategories.create(selectedSetId, categoryFormData);
+      }
+      await loadAssetCategories();
+      showCategoryForm = false;
+    } catch (error) {
+      console.error('Failed to save category:', error);
+      errorToast(t('dialogs.alerts.failedToSave', { error: error.message }));
+    }
+  }
+
+  async function deleteCategory(id) {
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: t('dialogs.confirmations.deleteCategory'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (confirmed) {
+      try {
+        await api.assetCategories.delete(id);
+        await loadAssetCategories();
+      } catch (error) {
+        console.error('Failed to delete category:', error);
+        errorToast(t('dialogs.alerts.failedToDelete', { error: error.message }));
+      }
+    }
+  }
+
+  function toggleCategory(categoryId) {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    expandedCategories = newExpanded;
+  }
+
+  // Role functions
+  async function loadAssetRoles() {
+    try {
+      const roles = await api.assetRoles.getAll();
+      assetRoles = roles || [];
+    } catch (error) {
+      console.error('Failed to load asset roles:', error);
+    }
+  }
+
+  async function loadGroups() {
+    try {
+      const groups = await api.groups.getAll();
+      availableGroups = groups || [];
+    } catch (error) {
+      console.error('Failed to load groups:', error);
+    }
+  }
+
+  async function loadSetRoles() {
+    if (!selectedSetId) return;
+    try {
+      const roles = await api.assetSets.getRoles(selectedSetId);
+      roleAssignments = roles || { user_roles: [], group_roles: [], everyone_role: null };
+      everyoneRoleId = roles?.everyone_role?.role_id || null;
+    } catch (error) {
+      console.error('Failed to load role assignments:', error);
+    }
+  }
+
+  function showAddRoleForm() {
+    showRoleForm = true;
+    roleFormData = { type: 'user', user_id: null, group_id: null, role_id: assetRoles[0]?.id || null };
+  }
+
+  async function handleRoleSubmit() {
+    try {
+      const data = {
+        role_id: roleFormData.role_id,
+      };
+      if (roleFormData.type === 'user') {
+        data.user_id = roleFormData.user_id;
+      } else {
+        data.group_id = roleFormData.group_id;
+      }
+      await api.assetSets.assignRole(selectedSetId, data);
+      await loadSetRoles();
+      showRoleForm = false;
+    } catch (error) {
+      console.error('Failed to assign role:', error);
+      errorToast(t('dialogs.alerts.failedToAssignRole', { error: error.message }));
+    }
+  }
+
+  async function revokeRole(assignmentId, type) {
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: t('dialogs.confirmations.revokeRole'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (confirmed) {
+      try {
+        await api.assetSets.revokeRole(selectedSetId, assignmentId, type);
+        await loadSetRoles();
+      } catch (error) {
+        console.error('Failed to revoke role:', error);
+        errorToast(t('dialogs.alerts.failedToRevokeRole', { error: error.message }));
+      }
+    }
+  }
+
+  async function handleEveryoneRoleChange() {
+    try {
+      await api.assetSets.setEveryoneRole(selectedSetId, {
+        role_id: everyoneRoleId || null
+      });
+      await loadSetRoles();
+    } catch (error) {
+      console.error('Failed to update everyone role:', error);
+      errorToast(t('dialogs.alerts.failedToUpdateRole', { error: error.message }));
+    }
+  }
+
+  // Combined role assignments for table display
+  let allRoleAssignments = $derived(() => {
+    const users = (roleAssignments.user_roles || []).map(r => ({
+      ...r,
+      type: 'user',
+      assignee_name: r.user_name || r.user_email || 'Unknown User'
+    }));
+    const groups = (roleAssignments.group_roles || []).map(r => ({
+      ...r,
+      type: 'group',
+      assignee_name: r.group_name || 'Unknown Group'
+    }));
+    return [...users, ...groups];
+  });
+
+  const flatCategories = $derived(flattenCategories(assetCategories));
+
+  // DataTable columns
+  const typeColumns = [
+    { key: 'name', label: 'Name', slot: 'name' },
+    { key: 'color', label: 'Color', slot: 'color' },
+    { key: 'asset_count', label: 'Assets' },
+    { key: 'is_active', label: 'Status', slot: 'status' },
+    { key: 'actions', label: '', slot: 'actions', width: '100px' }
+  ];
+
+  const roleColumns = [
+    { key: 'assignee_name', label: 'Assignee', slot: 'assignee' },
+    { key: 'role_name', label: 'Role', slot: 'role' },
+    { key: 'actions', label: '', slot: 'actions', width: '80px' }
+  ];
+</script>
+
+<div>
+  <PageHeader title={t('assets.title')} icon={IconPackage} subtitle={t('assets.subtitle')}>
+    {#snippet actions()}
+      <div class="flex items-center gap-2">
+        <ItemPicker
+          bind:value={selectedSetId}
+          items={assetSets}
+          config={{
+            primary: { text: (set) => set.name + (set.is_default ? ` (${t('assets.default')})` : '') },
+            getValue: (set) => set.id,
+            getLabel: (set) => set.name + (set.is_default ? ` (${t('assets.default')})` : '')
+          }}
+          placeholder={t('assets.selectAssetSet')}
+          showUnassigned={false}
+          allowClear={false}
+          class="w-48"
+        />
+        {#if canManageGlobal}
+          <Button variant="primary" size="sm" icon={IconPlus} onclick={showAddSetForm} keyboardHint="A" hotkeyConfig={{ key: toHotkeyString('assetSets', 'add'), guard: () => !showSetForm }} class="whitespace-nowrap">
+            {t('assets.newSet')}
+          </Button>
+        {/if}
+      </div>
+    {/snippet}
+  </PageHeader>
+
+  {#snippet createSetButton()}
+    {#if canManageGlobal}
+      <Button onclick={showAddSetForm}>
+        <IconPlus class="w-4 h-4 mr-1" />
+        {t('assets.createAssetSet')}
+      </Button>
+    {/if}
+  {/snippet}
+
+  <Card rounded="xl" shadow padding="spacious">
+  {#if assetSets.length === 0}
+    <EmptyState
+      icon={IconPackage}
+      title={t('assets.noAssetSets')}
+      description={t('assets.noAssetSetsDesc')}
+      action={createSetButton}
+    />
+  {:else if !selectedSetId}
+    <EmptyState
+      icon={IconPackage}
+      title={t('assets.selectAnAssetSet')}
+      description={t('assets.selectAnAssetSetDesc')}
+    />
+  {:else}
+    <!-- Set info header -->
+    <div class="mb-6 p-4 rounded-lg flex justify-between items-center" style="background: var(--ds-surface-raised);">
+      <div>
+        <h2 class="text-lg font-semibold" style="color: var(--ds-text);">{selectedSet?.name}</h2>
+        {#if selectedSet?.description}
+          <p class="text-sm" style="color: var(--ds-text-subtle);">{selectedSet.description}</p>
+        {/if}
+      </div>
+      {#if isSetAdmin}
+        <DropdownMenu
+          triggerIcon={IconDots}
+          iconOnly={true}
+          showChevron={false}
+          triggerClass="p-2 rounded hover-bg"
+          items={[
+            { id: 'edit', title: t('assets.editSet'), icon: IconEdit, onClick: () => showEditSetForm(selectedSet) },
+            { id: 'delete', title: t('assets.deleteSet'), icon: IconTrash, color: 'var(--ds-text-danger)', onClick: () => deleteSet(selectedSetId) }
+          ]}
+        />
+      {/if}
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-6" style="border-bottom: 1px solid var(--ds-border);">
+      <nav class="flex gap-4">
+        <button
+          class="pb-2 px-1 border-b-2 transition-colors {activeTab === 'types' ? 'asset-tab-active' : 'border-transparent asset-tab-inactive'}"
+          onclick={() => activeTab = 'types'}
+        >
+          <IconSettings class="w-4 h-4 inline mr-1" />
+          {t('assets.types')}
+        </button>
+        <button
+          class="pb-2 px-1 border-b-2 transition-colors {activeTab === 'categories' ? 'asset-tab-active' : 'border-transparent asset-tab-inactive'}"
+          onclick={() => activeTab = 'categories'}
+        >
+          <IconListTree class="w-4 h-4 inline mr-1" />
+          {t('assets.categories')}
+        </button>
+        {#if isSetAdmin}
+          <button
+            class="pb-2 px-1 border-b-2 transition-colors {activeTab === 'permissions' ? 'asset-tab-active' : 'border-transparent asset-tab-inactive'}"
+            onclick={() => activeTab = 'permissions'}
+          >
+            <IconUsers class="w-4 h-4 inline mr-1" />
+            {t('assets.permissions')}
+          </button>
+          <button
+            data-testid="asset-automations-tab"
+            class="pb-2 px-1 border-b-2 transition-colors {activeTab === 'automations' ? 'asset-tab-active' : 'border-transparent asset-tab-inactive'}"
+            onclick={() => activeTab = 'automations'}
+          >
+            <IconBolt class="w-4 h-4 inline mr-1" />
+            {t('assets.automations') || 'Automations'}
+          </button>
+        {/if}
+      </nav>
+    </div>
+
+    <!-- Types Tab -->
+    {#if activeTab === 'types'}
+      {#if isSetAdmin}
+        <div class="mb-4 flex justify-end">
+          <Button onclick={showAddTypeForm}>
+            <IconPlus class="w-4 h-4 mr-1" />
+            {t('assets.newType')}
+          </Button>
+        </div>
+      {/if}
+
+      {#snippet createTypeButton()}
+        <Button onclick={showAddTypeForm}>
+          <IconPlus class="w-4 h-4 mr-1" />
+          {t('assets.createType')}
+        </Button>
+      {/snippet}
+
+      {#if assetTypes.length === 0}
+        <EmptyState
+          icon={IconSettings}
+          title={t('assets.noAssetTypes')}
+          description={t('assets.noAssetTypesDesc')}
+          action={isSetAdmin ? createTypeButton : null}
+        />
+      {:else}
+        <DataTable data={assetTypes} columns={typeColumns}>
+          {#snippet name(row)}
+            <span class="font-medium">{row.name}</span>
+            {#if row.description}
+              <p class="text-xs" style="color: var(--ds-text-subtle);">{row.description}</p>
+            {/if}
+          {/snippet}
+          {#snippet color(row)}
+            <ColorDot color={row.color || '#6b7280'} size="lg" />
+          {/snippet}
+          {#snippet status(row)}
+            <Lozenge color={row.is_active ? 'green' : 'gray'}>
+              {row.is_active ? 'Active' : 'Inactive'}
+            </Lozenge>
+          {/snippet}
+          {#snippet actions(row)}
+            {#if isSetAdmin}
+              <div class="flex gap-1">
+                <Button variant="ghost" size="sm" onclick={() => showFieldsForm(row)} title="Configure Fields">
+                  <IconSettings class="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onclick={() => showEditTypeForm(row)}>
+                  <IconEdit class="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onclick={() => deleteType(row.id)}>
+                  <IconTrash class="w-4 h-4 text-red-500" />
+                </Button>
+              </div>
+            {/if}
+          {/snippet}
+        </DataTable>
+      {/if}
+    {/if}
+
+    <!-- Categories Tab -->
+    {#if activeTab === 'categories'}
+      {#if canEditSet}
+        <div class="mb-4 flex justify-end">
+          <Button onclick={() => showAddCategoryForm(null)}>
+            <IconPlus class="w-4 h-4 mr-1" />
+            {t('assets.newCategory')}
+          </Button>
+        </div>
+      {/if}
+
+      {#snippet createCategoryButton()}
+        <Button onclick={() => showAddCategoryForm(null)}>
+          <IconPlus class="w-4 h-4 mr-1" />
+          {t('assets.createCategory')}
+        </Button>
+      {/snippet}
+
+      {#if assetCategories.length === 0}
+        <EmptyState
+          icon={IconListTree}
+          title={t('assets.noCategories')}
+          description={t('assets.noCategoriesDesc')}
+          action={canEditSet ? createCategoryButton : null}
+        />
+      {:else}
+        <div class="rounded-lg" style="border: 1px solid var(--ds-border);">
+          {#snippet renderCategory(category, level = 0)}
+            <div
+              class="flex items-center justify-between p-3 category-row"
+              style="padding-left: {16 + level * 24}px; border-bottom: 1px solid var(--ds-border);"
+            >
+              <div class="flex items-center gap-2">
+                {#if category.has_children}
+                  <button
+                    onclick={() => toggleCategory(category.id)}
+                    class="p-1 rounded"
+                    style="background: transparent;"
+                    onmouseenter={(e) => e.currentTarget.style.background = 'var(--ds-background-neutral-hovered)'}
+                    onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {#if expandedCategories.has(category.id)}
+                      <IconChevronDown class="w-4 h-4" style="color: var(--ds-icon);" />
+                    {:else}
+                      <IconChevronRight class="w-4 h-4" style="color: var(--ds-icon);" />
+                    {/if}
+                  </button>
+                {:else}
+                  <span class="w-6"></span>
+                {/if}
+                {#if expandedCategories.has(category.id)}
+                  <IconFolderOpen class="w-4 h-4 text-yellow-500" />
+                {:else}
+                  <IconFolder class="w-4 h-4 text-yellow-500" />
+                {/if}
+                <span class="font-medium" style="color: var(--ds-text);">{category.name}</span>
+                {#if category.asset_count > 0}
+                  <span class="text-xs" style="color: var(--ds-text-subtlest);">({category.asset_count})</span>
+                {/if}
+              </div>
+              {#if canEditSet}
+                <div class="flex gap-1">
+                  <Button variant="ghost" size="sm" onclick={() => showAddCategoryForm(category.id)} title="Add subcategory">
+                    <IconPlus class="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onclick={() => showEditCategoryForm(category)}>
+                    <IconEdit class="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onclick={() => deleteCategory(category.id)}>
+                    <IconTrash class="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              {/if}
+            </div>
+            {#if category.has_children && expandedCategories.has(category.id) && category.children}
+              {#each category.children as child}
+                {@render renderCategory(child, level + 1)}
+              {/each}
+            {/if}
+          {/snippet}
+          {#each assetCategories as category}
+            {@render renderCategory(category)}
+          {/each}
+        </div>
+      {/if}
+    {/if}
+
+    <!-- Permissions Tab -->
+    {#if activeTab === 'permissions' && isSetAdmin}
+      <!-- Everyone Default Section -->
+      <div class="mb-6 p-4 rounded-lg" style="background: var(--ds-surface); border: 1px solid var(--ds-border);">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold" style="color: var(--ds-text);">{t('assets.everyoneRole')}</h3>
+            <DescriptionText>
+              {t('assets.everyoneRoleDesc')}
+            </DescriptionText>
+          </div>
+          <div class="w-48">
+            <Select bind:value={everyoneRoleId} onchange={handleEveryoneRoleChange} options={[{ value: null, label: t('common.none') }, ...assetRoles.map(role => ({ value: role.id, label: role.name }))]} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Role Assignments -->
+      <div class="mb-4 flex justify-between items-center">
+        <h3 class="text-sm font-semibold" style="color: var(--ds-text);">{t('assets.permissions')}</h3>
+        <Button onclick={showAddRoleForm}>
+          <IconPlus class="w-4 h-4 mr-1" />
+          {t('assets.assignRole')}
+        </Button>
+      </div>
+
+      {#snippet assignRoleButton()}
+        <Button onclick={showAddRoleForm}>
+          <IconPlus class="w-4 h-4 mr-1" />
+          {t('assets.assignRole')}
+        </Button>
+      {/snippet}
+
+      {#if allRoleAssignments().length === 0}
+        <EmptyState
+          icon={IconUsers}
+          title={t('assets.noRoleAssignments')}
+          description={t('assets.noRoleAssignmentsDesc')}
+          action={assignRoleButton}
+        />
+      {:else}
+        <DataTable data={allRoleAssignments()} columns={roleColumns}>
+          {#snippet assignee(row)}
+            <div class="flex items-center gap-2">
+              {#if row.type === 'user'}
+                <Lozenge color="blue">
+                  <IconUser class="w-3 h-3" />
+                  {row.assignee_name}
+                </Lozenge>
+              {:else}
+                <Lozenge color="purple">
+                  <IconUsers class="w-3 h-3" />
+                  {row.assignee_name}
+                </Lozenge>
+              {/if}
+            </div>
+          {/snippet}
+          {#snippet role(row)}
+            <Lozenge color={row.role_name === 'Administrator' ? 'purple' : row.role_name === 'Editor' ? 'blue' : 'green'}>
+              {row.role_name}
+            </Lozenge>
+          {/snippet}
+          {#snippet actions(row)}
+            <Button variant="ghost" size="sm" onclick={() => revokeRole(row.id, row.type)}>
+              <IconX class="w-4 h-4" style="color: var(--ds-text-danger);" />
+            </Button>
+          {/snippet}
+        </DataTable>
+      {/if}
+    {/if}
+  {/if}
+
+  <!-- Automations Tab -->
+  {#if activeTab === 'automations' && isSetAdmin}
+    <AssetActionsSettings assetSetId={selectedSetId} />
+  {/if}
+  </Card>
+</div>
+
+<!-- Asset Set Form Modal -->
+<Modal isOpen={showSetForm} onclose={() => showSetForm = false} onSubmit={handleSetSubmit} submitDisabled={!setFormData.name.trim()}>
+  {#snippet children({ submitHint })}
+    <ModalHeader title={editingSet ? t('assets.editSet') : t('assets.createAssetSet')} onClose={() => showSetForm = false} />
+    <div class="p-6 space-y-4">
+      <div>
+        <Label color="default" class="mb-1">{t('common.name')}</Label>
+        <Input
+          type="text"
+          bind:value={setFormData.name}
+          required
+          size="small"
+        />
+      </div>
+      <div>
+        <Label color="default" class="mb-1">{t('common.description')}</Label>
+        <Textarea
+          bind:value={setFormData.description}
+          rows={3}
+          size="small"
+        />
+      </div>
+      <Checkbox bind:checked={setFormData.is_default} label={t('assets.default')} />
+    </div>
+    <DialogFooter
+      onCancel={() => showSetForm = false}
+      onConfirm={handleSetSubmit}
+      confirmLabel={editingSet ? t('common.save') : t('common.create')}
+      disabled={!setFormData.name.trim()}
+      showKeyboardHint={true}
+      confirmKeyboardHint={submitHint}
+    />
+  {/snippet}
+</Modal>
+
+<!-- Asset Type Form Modal -->
+<Modal isOpen={showTypeForm} onclose={() => showTypeForm = false} onSubmit={handleTypeSubmit} submitDisabled={!typeFormData.name.trim()}>
+  {#snippet children({ submitHint })}
+    <ModalHeader title={editingType ? t('assets.editType') : t('assets.createType')} onClose={() => showTypeForm = false} />
+    <div class="p-6 space-y-4">
+      <div>
+        <Label color="default" class="mb-1">{t('common.name')}</Label>
+        <Input
+          type="text"
+          bind:value={typeFormData.name}
+          required
+          size="small"
+        />
+      </div>
+      <div>
+        <Label color="default" class="mb-1">{t('common.description')}</Label>
+        <Textarea
+          bind:value={typeFormData.description}
+          rows={2}
+          size="small"
+        />
+      </div>
+      <div>
+        <IconSelector bind:selectedColor={typeFormData.color} colorOnly compact />
+      </div>
+      <Checkbox bind:checked={typeFormData.is_active} label={t('common.active')} />
+    </div>
+    <DialogFooter
+      onCancel={() => showTypeForm = false}
+      onConfirm={handleTypeSubmit}
+      confirmLabel={editingType ? t('common.save') : t('common.create')}
+      disabled={!typeFormData.name.trim()}
+      showKeyboardHint={true}
+      confirmKeyboardHint={submitHint}
+    />
+  {/snippet}
+</Modal>
+
+<!-- Category Form Modal -->
+<Modal isOpen={showCategoryForm} onclose={() => showCategoryForm = false} onSubmit={handleCategorySubmit} submitDisabled={!categoryFormData.name.trim()}>
+  {#snippet children({ submitHint })}
+    <ModalHeader title={editingCategory ? t('assets.editCategory') : t('assets.createCategory')} onClose={() => showCategoryForm = false} />
+    <div class="p-6 space-y-4">
+      <div>
+        <Label color="default" class="mb-1">{t('common.name')}</Label>
+        <Input
+          type="text"
+          bind:value={categoryFormData.name}
+          required
+          size="small"
+        />
+      </div>
+      <div>
+        <Label color="default" class="mb-1">{t('common.description')}</Label>
+        <Textarea
+          bind:value={categoryFormData.description}
+          rows={2}
+          size="small"
+        />
+      </div>
+      <div>
+        <Label color="default" class="mb-1">{t('assets.parentCategory')}</Label>
+        <Select bind:value={categoryFormData.parent_id} options={[{ value: null, label: t('assets.noParent') }, ...flatCategories.filter(c => c.id !== editingCategory?.id).map(cat => ({ value: cat.id, label: '  '.repeat(cat.level) + cat.name }))]} />
+      </div>
+    </div>
+    <DialogFooter
+      onCancel={() => showCategoryForm = false}
+      onConfirm={handleCategorySubmit}
+      confirmLabel={editingCategory ? t('common.save') : t('common.create')}
+      disabled={!categoryFormData.name.trim()}
+      showKeyboardHint={true}
+      confirmKeyboardHint={submitHint}
+    />
+  {/snippet}
+</Modal>
+
+<!-- Role Assignment Form Modal -->
+<Modal isOpen={showRoleForm} onclose={() => showRoleForm = false} onSubmit={handleRoleSubmit} submitDisabled={roleFormData.type === 'user' ? !roleFormData.user_id : !roleFormData.group_id}>
+  {#snippet children({ submitHint })}
+    <ModalHeader title={t('assets.assignRole')} onClose={() => showRoleForm = false} />
+    <div class="p-6 space-y-4">
+      <!-- Assignee Type Toggle -->
+      <div>
+        <Label color="default" class="mb-2">{t('common.assignTo')}</Label>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors {roleFormData.type === 'user' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'role-toggle-inactive'}"
+            onclick={() => roleFormData.type = 'user'}
+          >
+            <IconUser class="w-4 h-4 inline mr-1" />
+            {t('common.user')}
+          </button>
+          <button
+            type="button"
+            class="flex-1 px-3 py-2 text-sm rounded-lg border transition-colors {roleFormData.type === 'group' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'role-toggle-inactive'}"
+            onclick={() => roleFormData.type = 'group'}
+          >
+            <IconUsers class="w-4 h-4 inline mr-1" />
+            {t('common.group')}
+          </button>
+        </div>
+      </div>
+
+      <!-- User/Group Select -->
+      {#if roleFormData.type === 'user'}
+        <div>
+          <Label color="default" class="mb-1">{t('common.user')}</Label>
+          <Select bind:value={roleFormData.user_id} required options={[{ value: null, label: t('pickers.selectUser') }, ...availableUsers.map(user => ({ value: user.id, label: `${user.display_name || user.username} (${user.email})` }))]} />
+        </div>
+      {:else}
+        <div>
+          <Label color="default" class="mb-1">{t('common.group')}</Label>
+          <Select bind:value={roleFormData.group_id} required options={[{ value: null, label: t('pickers.selectGroup') }, ...availableGroups.map(group => ({ value: group.id, label: group.name }))]} />
+        </div>
+      {/if}
+
+      <!-- Role Select -->
+      <div>
+        <Label color="default" class="mb-1">{t('assets.role')}</Label>
+        <Select bind:value={roleFormData.role_id} required options={assetRoles.map(role => ({ value: role.id, label: role.name + (role.description ? ` - ${role.description}` : '') }))} />
+      </div>
+    </div>
+    <DialogFooter
+      onCancel={() => showRoleForm = false}
+      onConfirm={handleRoleSubmit}
+      confirmLabel={t('common.assign')}
+      disabled={roleFormData.type === 'user' ? !roleFormData.user_id : !roleFormData.group_id}
+      showKeyboardHint={true}
+      confirmKeyboardHint={submitHint}
+    />
+  {/snippet}
+</Modal>
+
+<!-- Field Assignment Modal -->
+<FieldLayoutEditor
+  bind:isOpen={showFieldsModal}
+  title="Configure Fields"
+  subtitle={editingTypeForFields?.name || ''}
+  {availableFields}
+  bind:selectedFields={typeFields}
+  showRequiredToggle={true}
+  protectedFieldIds={['title']}
+  showTypeLabels={true}
+  onSave={handleFieldsSubmit}
+  onCancel={handleFieldsCancel}
+/>
+
+<style>
+  .asset-tab-active {
+    border-color: var(--ds-interactive);
+    color: var(--ds-interactive);
+  }
+  .asset-tab-inactive {
+    color: var(--ds-text-subtle);
+  }
+  .asset-tab-inactive:hover {
+    color: var(--ds-text);
+  }
+  .role-toggle-inactive {
+    border-color: var(--ds-border);
+    color: var(--ds-text-subtle);
+  }
+  .role-toggle-inactive:hover {
+    background-color: var(--ds-background-neutral-hovered);
+  }
+</style>

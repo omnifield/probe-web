@@ -1,0 +1,61 @@
+// STRUCTURAL assembly templates for the radio group — read by `./index.ts`'s `defineEditorInfo`
+// call (`PWEB-127`).
+//
+// ONE assembly, three choices — the shape in `ark-ui.com`'s own "Basic" example (`root` wrapping
+// `label` + one `item` per choice, each holding `itemControl` + `itemText`), plus the single
+// `indicator` as a direct sibling of the items — confirmed against Ark's own documented anatomy
+// (`ark-ui` MCP, 2026-08-26), not the per-item nesting the component's own doc-comment example
+// guessed at. Three choices is the minimum that shows the indicator PASSING OVER one it isn't
+// headed to, the same reasoning the tabs' own "basic" assembly used for its third tab.
+//
+// Each item ALSO holds the real hidden `<input type="radio">` (`{ extra: "hiddenInput" }`,
+// `PWEB-152`) — without it the preview looks right but a click never actually changes the chosen
+// value: the real `onChange` lives on that exact node, `item`'s own `<label>` has none.
+
+import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { passport } from "../entity/passport.js";
+
+type RadioGroupPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+
+export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
+  {
+    name: "basic",
+    means: "рабочая группа: три варианта, точка едет к выбранному",
+    tree: {
+      part: "root",
+      props: { defaultValue: "standard" },
+      children: [
+        { part: "label", children: [{ genus: "text", value: "Доставка" }] },
+        {
+          part: "item",
+          props: { value: "standard" },
+          children: [
+            { part: "itemControl" },
+            { part: "itemText", children: [{ genus: "text", value: "Стандартная" }] },
+            { extra: "hiddenInput" },
+          ],
+        },
+        {
+          part: "item",
+          props: { value: "express" },
+          children: [
+            { part: "itemControl" },
+            { part: "itemText", children: [{ genus: "text", value: "Экспресс" }] },
+            { extra: "hiddenInput" },
+          ],
+        },
+        {
+          part: "item",
+          props: { value: "pickup" },
+          children: [
+            { part: "itemControl" },
+            { part: "itemText", children: [{ genus: "text", value: "Самовывоз" }] },
+            { extra: "hiddenInput" },
+          ],
+        },
+        { part: "indicator" },
+      ],
+    },
+  },
+];

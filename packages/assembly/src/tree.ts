@@ -119,8 +119,103 @@ export interface AssemblyElement {
    * один, и разделение «эти пропы внешнему, эти внутреннему» пришлось бы держать руками.
    */
   readonly props?: Readonly<Record<string, unknown>>;
+  /**
+   * Пропы, чьё значение резолвится из данных при отрисовке (`PWEB-156`) — имя пропа → путь.
+   *
+   * Отдельное поле от `props`: тот остаётся ВСЕГДА литералом, угадывать по форме значения,
+   * ссылка это или обычный объектный проп (`style`), не приходится. Резолвится `RenderTree` и
+   * добавляется к `props` поверх — побеждает при совпадении имени.
+   */
+  readonly bind?: Readonly<Record<string, string>>;
+  /**
+   * Событие узла наружу (`PWEB-157`) — родное DOM-событие → что сказать вызывающему. Форма A2UI
+   * (`Action`), узкая копия того же в `packages/skin/src/passport-assembly.ts` — тем же приёмом,
+   * что и у `DataBinding`/`DynamicValue` в этом файле.
+   */
+  readonly on?: Readonly<Record<string, DispatchAction>>;
   /** Редакторское, в отрисовку не вмешивается. */
   readonly meta?: Readonly<Record<string, unknown>>;
+}
+
+/** Событие узла наружу — см. `AssemblyElement.on`. */
+export interface DispatchAction {
+  readonly event: {
+    readonly name: string;
+    readonly context?: Readonly<Record<string, DynamicValue>>;
+  };
+}
+
+/** Одно отправленное событие — то, что получает `RenderTree`'s `dispatch` (`PWEB-157`). */
+export interface DispatchedEvent {
+  /** Имя события — из `action.event.name`, не имя DOM-события. */
+  readonly name: string;
+  /** Узел, на котором событие произошло. */
+  readonly nodeId: NodeId;
+  /** Адрес узла в реестре — тот же, что и `AssemblyElement.type`. */
+  readonly address: string;
+  /** ISO 8601 — когда событие произошло. */
+  readonly timestamp: string;
+  /** Данные вместе с событием — уже РЕЗОЛВЛЕННЫЕ (`action.event.context`, пути раскрыты). */
+  readonly context: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Ссылка на значение во ВНЕШНИХ данных — JSON Pointer (RFC 6901), тем же приёмом, что у A2UI
+ * (`PWEB-156`, решение изучено и записано в README пакета — не изобретаем свою форму).
+ *
+ * Данные — не в дереве. Дерево остаётся тем же объявлением структуры, что и раньше; путь просто
+ * ОТКЛАДЫВАЕТ значение до момента, когда `RenderTree` получит проп `data` и сможет его разрешить.
+ * Без `data` (обычный показ кита, как сегодня) путь просто не резолвится ни во что — резолвится
+ * он тем, кто данные принёс, а не тем, кто дерево объявил.
+ */
+export interface DataBinding {
+  readonly path: string;
+}
+
+/**
+ * Значение содержимого: готовый литерал ЛИБО ссылка на данные, разрешаемая при отрисовке.
+ *
+ * Форма — из того же словаря A2UI (`DynamicString`), урезанная до одного случая (без `call`,
+ * вызова функции, — этот случай в кит не завозится, пока для него нет потребителя). Расширить до
+ * `call` можно будет позже добавлением третьего варианта в union — этот код его не запрещает и
+ * не предполагает.
+ */
+export type DynamicValue = string | DataBinding;
+
+/** Ссылка ли это на данные — по наличию `path`, тем же приёмом, что различает содержимое (`isContent`, по наличию `genus`). */
+export function isDataBinding(value: DynamicValue): value is DataBinding {
+  return typeof value === "object" && value !== null && "path" in value;
+}
+
+/**
+ * Значение по пути в данных — RFC 6901 JSON Pointer (`/a/b/0`, `~0`→`~`, `~1`→`/`).
+ *
+ * Не найдено (путь мимо, узел данных не дошёл, индекс вне массива) — `undefined`, а не бросок:
+ * решение, что показать вместо, принимает вызывающий (`render.tsx`), не эта функция.
+ *
+ * @param data объект данных, отданный вызывающим `RenderTree`
+ * @param path JSON Pointer; пустая строка указывает на сами данные целиком
+ */
+export function resolveDataBinding(data: unknown, path: string): unknown {
+  if (path === "") return data;
+  if (!path.startsWith("/")) return undefined;
+
+  let current: unknown = data;
+  for (const raw of path.slice(1).split("/")) {
+    const segment = raw.replace(/~1/g, "/").replace(/~0/g, "~");
+    if (current === null || current === undefined) return undefined;
+
+    if (Array.isArray(current)) {
+      const index = Number(segment);
+      current = Number.isInteger(index) ? current[index] : undefined;
+    } else if (typeof current === "object") {
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
 }
 
 /**
@@ -150,8 +245,11 @@ export interface AssemblyContent {
    * Названо значением, а не текстом, потому что род называет, ЧЕМ это значение является:
    * заведи паспорт второй не-компонентный род — поле `text` соврало бы о нём, а поле значения
    * останется верным (`value` рядом с `genus`, как `text` рядом с типом `text` у Slate).
+   *
+   * Литерал ИЛИ ссылка на данные (`DynamicValue`, `PWEB-156`) — второе разрешается `RenderTree`
+   * при отрисовке, не здесь: узел остаётся тем же объявлением, что и раньше.
    */
-  readonly value: string;
+  readonly value: DynamicValue;
   /** Кто владеет узлом. У содержимого владелец есть всегда: корнем дерева оно не бывает. */
   readonly parentId: NodeId | null;
   /**
@@ -215,6 +313,13 @@ export interface AssemblyTree {
   readonly components: {
     readonly root: NodeId;
     readonly nodes: Readonly<Record<NodeId, AssemblyNode>>;
+    /**
+     * Пропы невидимого провайдера, оборачивающего корень (`PWEB-153`) — у компонентов вроде
+     * поповера/меню корневая ЧАСТЬ не рисует настоящего DOM-узла сама по себе. Отсутствует у
+     * компонентов, чей корень — реальный узел; `RenderTree` читает это поле, чтобы решить, нужна
+     * ли обёртка.
+     */
+    readonly providerProps?: Readonly<Record<string, unknown>>;
   };
 }
 

@@ -1,0 +1,208 @@
+package handlers
+
+import (
+	"log/slog"
+	"net/http"
+
+	"windshift/internal/auth"
+	"windshift/internal/logger"
+	"windshift/internal/models"
+	"windshift/internal/sanitize"
+	"windshift/internal/utils"
+)
+
+// SCIMTokenHandler handles SCIM token management endpoints
+type SCIMTokenHandler struct {
+	tokenManager *auth.SCIMTokenManager
+	auditor      *logger.Auditor
+}
+
+// NewSCIMTokenHandler creates a new SCIM token handler
+func NewSCIMTokenHandler(tokenManager *auth.SCIMTokenManager, auditor *logger.Auditor) *SCIMTokenHandler {
+	return &SCIMTokenHandler{
+		tokenManager: tokenManager,
+		auditor:      auditor,
+	}
+}
+
+// ListTokens returns all SCIM tokens (GET /api/scim-tokens)
+func (h *SCIMTokenHandler) ListTokens(w http.ResponseWriter, r *http.Request) {
+	tokens, err := h.tokenManager.ListTokens()
+	if err != nil {
+		slog.Error("Failed to list SCIM tokens",
+			slog.String("component", "scim"),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+
+	respondJSONOK(w, tokens)
+}
+
+// CreateToken creates a new SCIM token (POST /api/scim-tokens)
+func (h *SCIMTokenHandler) CreateToken(w http.ResponseWriter, r *http.Request) {
+	currentUser, ok := RequireAuth(w, r)
+	if !ok {
+		return
+	}
+
+	request, ok := decodeJSON[models.SCIMTokenCreate](w, r)
+	if !ok {
+		return
+	}
+	sanitize.Apply(&request.Name, sanitize.PlainTextField)
+
+	if request.Name == "" {
+		respondValidationError(w, r, "Token name is required")
+		return
+	}
+
+	response, err := h.tokenManager.CreateToken(currentUser.ID, request)
+	if err != nil {
+		slog.Error("Failed to create SCIM token",
+			slog.String("component", "scim"),
+			slog.Int("created_by", currentUser.ID),
+			slog.String("token_name", request.Name),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+
+	slog.Info("SCIM token created",
+		slog.String("component", "scim"),
+		slog.Int("created_by", currentUser.ID),
+		slog.String("token_name", request.Name),
+		slog.String("token_prefix", response.SCIMToken.TokenPrefix))
+
+	tokenID := response.SCIMToken.ID
+	h.auditor.Log(r, currentUser, logger.ActionSCIMTokenCreate, logger.ResourceSCIMToken, &tokenID, request.Name)
+
+	respondJSONCreated(w, response)
+}
+
+// GetToken returns a single SCIM token by ID (GET /api/scim-tokens/{id})
+func (h *SCIMTokenHandler) GetToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := requireIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	token, err := h.tokenManager.GetTokenByID(id)
+	if err != nil {
+		respondNotFound(w, r, "token")
+		return
+	}
+
+	respondJSONOK(w, token)
+}
+
+// RevokeToken revokes a SCIM token (DELETE /api/scim-tokens/{id})
+func (h *SCIMTokenHandler) RevokeToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := requireIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	currentUser := utils.GetCurrentUser(r)
+	userID := 0
+	if currentUser != nil {
+		userID = currentUser.ID
+	}
+
+	err := h.tokenManager.RevokeToken(id)
+	if err != nil {
+		if err.Error() == "token not found" {
+			respondNotFound(w, r, "token")
+			return
+		}
+		slog.Error("Failed to revoke SCIM token",
+			slog.String("component", "scim"),
+			slog.Int("token_id", id),
+			slog.Int("revoked_by", userID),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+
+	slog.Info("SCIM token revoked",
+		slog.String("component", "scim"),
+		slog.Int("token_id", id),
+		slog.Int("revoked_by", userID))
+
+	if currentUser != nil {
+		h.auditor.Log(r, currentUser, logger.ActionSCIMTokenRevoke, logger.ResourceSCIMToken, &id, "")
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetActiveTokenCount returns the count of active SCIM tokens (GET /api/scim-tokens/count)
+func (h *SCIMTokenHandler) GetActiveTokenCount(w http.ResponseWriter, r *http.Request) {
+	count, err := h.tokenManager.GetActiveTokenCount()
+	if err != nil {
+		slog.Error("Failed to count SCIM tokens",
+			slog.String("component", "scim"),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+
+	respondJSONOK(w, map[string]int{"count": count})
+}
+
+// GetDisconnectPreview returns the counts that a SCIM disconnect would
+// affect so the UI can show a confirmation like "This will release N users
+// and M groups from SCIM management."
+func (h *SCIMTokenHandler) GetDisconnectPreview(w http.ResponseWriter, r *http.Request) {
+	summary, err := h.tokenManager.PreviewDisconnect()
+	if err != nil {
+		slog.Error("Failed to preview SCIM disconnect",
+			slog.String("component", "scim"),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+	respondJSONOK(w, summary)
+}
+
+// DisconnectSCIM revokes every active SCIM token and releases all
+// SCIM-managed users, groups, and memberships back to local management.
+// Returns the counts of what was affected so the UI can confirm.
+//
+// This is the only path that clears the scim_managed flag at scale; once
+// cleared, admins can edit / delete / deactivate those users through the
+// normal admin surfaces (users.go's SCIMManaged guards become inert).
+func (h *SCIMTokenHandler) DisconnectSCIM(w http.ResponseWriter, r *http.Request) {
+	currentUser := utils.GetCurrentUser(r)
+
+	summary, err := h.tokenManager.DisconnectSCIM()
+	if err != nil {
+		slog.Error("Failed to disconnect SCIM",
+			slog.String("component", "scim"),
+			slog.Any("error", err))
+		respondInternalError(w, r, err)
+		return
+	}
+
+	slog.Warn("SCIM disconnected",
+		slog.String("component", "scim"),
+		slog.Int("revoked_tokens", summary.ActiveTokens),
+		slog.Int("released_users", summary.Users),
+		slog.Int("released_groups", summary.Groups),
+		slog.Int("released_memberships", summary.GroupMemberships))
+
+	if currentUser != nil {
+		h.auditor.LogWithDetails(r, currentUser,
+			logger.ActionSCIMTokenRevoke, logger.ResourceSCIMToken,
+			nil, "scim-disconnect",
+			map[string]any{
+				"revoked_tokens":       summary.ActiveTokens,
+				"released_users":       summary.Users,
+				"released_groups":      summary.Groups,
+				"released_memberships": summary.GroupMemberships,
+			},
+		)
+	}
+
+	respondJSONOK(w, summary)
+}

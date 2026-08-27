@@ -92,9 +92,15 @@ body {
 .panel-tab {
   font: inherit;
   white-space: nowrap;
-  color: var(--panel-text);
-  background: var(--panel-highlight);
+  cursor: pointer;
+  color: var(--panel-quiet);
+  background: transparent;
   border-radius: var(--panel-radius);
   padding: var(--panel-space-1) var(--panel-space-2);
   font-weight: 600;
+}
+
+.panel-tab[aria-selected="true"] {
+  color: var(--panel-text);
+  background: var(--panel-highlight);
 }

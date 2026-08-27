@@ -37,7 +37,9 @@ import { readAddress, type Registry } from "./registry.js";
  *  • `foreign-part`        — часть ЧУЖОГО компонента: части живут внутри своего компонента, а
  *                            чужой вкладывается целиком, и тогда его пускают по роду;
  *  • `part-not-admitted`   — часть своего компонента, но владелец её среди допустимого не назвал;
- *  • `content-not-admitted`— содержимое такого рода часть внутрь не пускает.
+ *  • `content-not-admitted`— содержимое такого рода часть внутрь не пускает;
+ *  • `extra-not-admitted`  — вспомогательный компонент кита (`PWEB-152`) владелец не назвал среди
+ *                            допустимого.
  */
 export type NestingRefusal =
   | "parent-unknown"
@@ -45,7 +47,8 @@ export type NestingRefusal =
   | "part-undeclared"
   | "foreign-part"
   | "part-not-admitted"
-  | "content-not-admitted";
+  | "content-not-admitted"
+  | "extra-not-admitted";
 
 /** Ответ проверки: допустимо, либо отказ с именем и пояснением человеку. */
 export type NestingVerdict =
@@ -91,15 +94,24 @@ export function canAdmit(
 
   if (registry.admits(ownerPart, candidate)) return allow;
 
-  return candidate.kind === "part"
-    ? deny(
-        "part-not-admitted",
-        `часть «${owner.part}» не назвала «${candidate.name}» среди допустимого внутри`,
-      )
-    : deny(
-        "content-not-admitted",
-        `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь содержимое рода «${candidate.genus}»`,
-      );
+  if (candidate.kind === "part") {
+    return deny(
+      "part-not-admitted",
+      `часть «${owner.part}» не назвала «${candidate.name}» среди допустимого внутри`,
+    );
+  }
+
+  if (candidate.kind === "extra") {
+    return deny(
+      "extra-not-admitted",
+      `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь вспомогательный компонент «${candidate.name}»`,
+    );
+  }
+
+  return deny(
+    "content-not-admitted",
+    `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь содержимое рода «${candidate.genus}»`,
+  );
 }
 
 /**
@@ -160,6 +172,11 @@ export interface AllowedInside {
   readonly parts: readonly string[];
   /** Рода содержимого потребителя, названные допустимыми внутри. */
   readonly genera: readonly string[];
+  /**
+   * Адреса вспомогательных компонентов кита (`PWEB-152`), названных допустимыми внутри — та же
+   * тильда-форма (`<component>.~<extra>`), что и в дереве сборки (`baseAssemblyOf`).
+   */
+  readonly extras: readonly string[];
 }
 
 /**
@@ -177,21 +194,24 @@ export function allowedInside(registry: Registry, parent: string): AllowedInside
   if (!ownerPart) return undefined;
 
   const accepts = ownerPart.accepts;
-  if (!accepts) return { unrestricted: true, parts: [], genera: [] };
+  if (!accepts) return { unrestricted: true, parts: [], genera: [], extras: [] };
 
   const parts: string[] = [];
   const genera: string[] = [];
+  const extras: string[] = [];
   for (const item of accepts) {
     if (item.kind === "part") {
       parts.push(
         item.name === owner.passport.root ? owner.component : `${owner.component}.${item.name}`,
       );
+    } else if (item.kind === "extra") {
+      extras.push(`${owner.component}.~${item.name}`);
     } else if (!genera.includes(item.genus)) {
       genera.push(item.genus);
     }
   }
 
-  return { unrestricted: false, parts, genera };
+  return { unrestricted: false, parts, genera, extras };
 }
 
 /** Узел-владелец, найденный обратным чтением: его адрес и что это за часть. */
@@ -268,6 +288,12 @@ export function ownersAdmitting(
 export function possibleOwnersOf(registry: Registry, child: string): PossibleOwner[] | undefined {
   const guest = readAddress(registry, child);
   if (!guest) return undefined;
+
+  // Extra — тем же ходом, что и часть: вспомогательный компонент кита живёт внутри своего
+  // компонента (`PWEB-152`), в чужой не попадает даже вместе с ним.
+  if (guest.kind === "extra") {
+    return ownersAdmitting(registry, { kind: "extra", name: guest.part }, guest.component);
+  }
 
   return guest.part === guest.passport.root
     ? ownersAdmitting(registry, { kind: "content", genus: guest.passport.genus })

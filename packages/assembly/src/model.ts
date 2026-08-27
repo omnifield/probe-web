@@ -21,14 +21,20 @@ export type {
   AssemblyElement,
   AssemblyNode,
   AssemblyTree,
+  DataBinding,
+  DispatchAction,
+  DispatchedEvent,
+  DynamicValue,
   NodeId,
 } from "./tree.js";
 export {
   ancestorsOf,
   EMPTY_TREE,
   isContent,
+  isDataBinding,
   nodeOf,
   outerTypeOf,
+  resolveDataBinding,
   rootOf,
   subtreeOf,
 } from "./tree.js";

@@ -62,19 +62,23 @@ import {
   For,
   type JSX,
   mergeProps,
+  Show,
   Suspense,
 } from "solid-js";
 import { createComponent } from "solid-js/web";
 
 import { checkTree } from "./integrity.js";
 import { allowedInside } from "./nesting.js";
-import { resolveComponent, type Registry } from "./registry.js";
+import { readAddress, resolveComponent, type Registry } from "./registry.js";
 import { note, trace } from "./trace.js";
 import {
   EMPTY_TREE,
   isContent,
+  isDataBinding,
+  resolveDataBinding,
   type AssemblyElement,
   type AssemblyTree,
+  type DispatchedEvent,
   type NodeId,
 } from "./tree.js";
 
@@ -133,6 +137,26 @@ export interface RenderTreeProps {
    * лишнего узла в разметке.
    */
   editOverlay?: Component<EditOverlayProps>;
+  /**
+   * Данные, которыми разрешаются `DataBinding`-узлы содержимого (`{path}`, `PWEB-156`).
+   *
+   * Дерево остаётся тем же объявлением структуры, что и раньше — данные приходят ОТДЕЛЬНО, и это
+   * не приём этой отрисовки, а её же собственный урок: `styles` когда-то тоже сидели на узле
+   * пропом и были сняты по тому же доводу («Вид не приписывается узлу» в README пакета).
+   *
+   * Не задано — узлы без `{path}` рисуются как раньше (литерал), узлы с `{path}` резолвятся в
+   * `undefined` (пустая строка на экране, не падение): показ кита без данных — законное рабочее
+   * состояние, тем же приёмом, что голый кит без скина.
+   */
+  data?: unknown;
+  /**
+   * Одна точка входа для СОБЫТИЙ ЛЮБОГО узла (`on`, `PWEB-157`) — форма A2UI: узел объявляет
+   * данными «на клике сказать событие "open"», а не несёт колбэк. Не задан — узлы с `on`
+   * реагируют на своё родное DOM-событие как обычно (`onClick` естественно всплывает), просто
+   * никто об этом не узнаёт снаружи: отсутствие `dispatch` не ошибка, тем же приёмом, что и
+   * отсутствие `data`.
+   */
+  dispatch?: (event: DispatchedEvent) => void;
 }
 
 /**
@@ -189,6 +213,8 @@ interface RenderNodeProps {
   fallback: Component<FallbackProps>;
   errorFallback: Component<ErrorFallbackProps>;
   editOverlay?: Component<EditOverlayProps>;
+  data?: unknown;
+  dispatch?: (event: DispatchedEvent) => void;
 }
 
 /**
@@ -244,16 +270,30 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
             fallback={props.fallback}
             errorFallback={props.errorFallback}
             editOverlay={props.editOverlay}
+            data={props.data}
+            dispatch={props.dispatch}
           />
         )}
       </For>
     );
   };
 
-  /** Значение узла содержимого — читается через функцию, поэтому правка подписи доезжает живой. */
+  /**
+   * Значение узла содержимого — читается через функцию, поэтому правка подписи доезжает живой.
+   *
+   * Литерал — как раньше. `{path}` — резолвится против `props.data` (`PWEB-156`); мимо пути или
+   * без данных вовсе — пустая строка, тем же приёмом, что и у неразрешённого адреса: показ
+   * молчит, а не падает.
+   */
   const valueOf = () => {
     const current = node();
-    return current && isContent(current) ? current.value : "";
+    if (!current || !isContent(current)) return "";
+
+    const value = current.value;
+    if (!isDataBinding(value)) return value;
+
+    const resolved = resolveDataBinding(props.data, value.path);
+    return typeof resolved === "string" ? resolved : (resolved?.toString() ?? "");
   };
 
   /**
@@ -310,9 +350,82 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
    * Именованная функция, а не выражение по месту: так источник читается как то, чем он
    * является, — реактивным чтением узла, — и одинаков во всех трёх путях отрисовки.
    */
+  /**
+   * Пропы узла: литерал (`props`) плюс резолвленные из данных (`bind`, `PWEB-156`) поверх —
+   * побеждает `bind`, привозящий актуальное данными там, где `props` привёз бы умолчание.
+   * Путь мимо данных — прочерк не ставится, ключ просто не резолвится ни во что (`undefined`
+   * не перебивает предыдущий источник у `mergeProps`, литерал `props` в этом случае и остаётся
+   * действующим видом — тем же приёмом, что и у содержимого без данных).
+   */
+  /**
+   * Родное DOM-событие → имя пропа, которым Solid его слушает. Закрытый маленький перечень —
+   * ровно те события, для которых у события есть смысл «что-то сказать наружу» (`PWEB-157`):
+   * заводить его открытым значило бы решать за компонент, какие у него вообще бывают события.
+   */
+  const DOM_EVENT_PROP: Readonly<Record<string, string>> = {
+    click: "onClick",
+    change: "onChange",
+    input: "onInput",
+    submit: "onSubmit",
+  };
+
+  /**
+   * Обработчики, синтезированные из `on` (`PWEB-157`): узел объявил данными «на клике сказать
+   * событие "open"» — здесь это превращается в настоящий `onClick`, который резолвит `context` из
+   * `bind`-путей (тем же резолвером, что и у пропов) и зовёт `props.dispatch` уже готовым JSON,
+   * без утечки сырого DOM `Event` наружу — вызывающий получает то же самое, что получил бы от
+   * сервера в форме A2UI.
+   */
+  const dispatchHandlers = () => {
+    const current = node();
+    if (!current || isContent(current) || !current.on) return {};
+
+    return Object.fromEntries(
+      Object.entries(current.on).flatMap(([domEvent, action]) => {
+        const propName = DOM_EVENT_PROP[domEvent];
+        if (!propName) return [];
+
+        return [
+          [
+            propName,
+            () => {
+              const context = Object.fromEntries(
+                Object.entries(action.event.context ?? {})
+                  .map(([key, value]) => [
+                    key,
+                    isDataBinding(value) ? resolveDataBinding(props.data, value.path) : value,
+                  ] as const)
+                  .filter(([, value]) => value !== undefined),
+              );
+
+              props.dispatch?.({
+                name: action.event.name,
+                nodeId: current.id,
+                address: current.type,
+                timestamp: new Date().toISOString(),
+                context,
+              });
+            },
+          ],
+        ];
+      }),
+    );
+  };
+
   const ownProps = () => {
     const current = node();
-    return current && !isContent(current) ? (current.props ?? {}) : {};
+    if (!current || isContent(current)) return {};
+
+    const bind = current.bind;
+    const resolved = bind
+      ? Object.fromEntries(
+          Object.entries(bind)
+            .map(([name, path]) => [name, resolveDataBinding(props.data, path)] as const)
+            .filter(([, value]) => value !== undefined),
+        )
+      : undefined;
+
+    return { ...current.props, ...resolved, ...dispatchHandlers() };
   };
 
   /**
@@ -543,16 +656,46 @@ export const RenderTree: Component<RenderTreeProps> = (props) => {
     }
   });
 
+  /**
+   * Невидимый провайдер компонента-корня, если он назвал такой (`PWEB-153`).
+   *
+   * Единственное место, где отрисовка смотрит на `provider`: у компонентов вроде поповера/меню
+   * корневая ЧАСТЬ (`positioner`) не рисует собственного DOM-узла — состояние ей даёт контекст,
+   * который раздаёт этот провайдер, и без обёртки часть падает при попытке его прочитать.
+   * Ищется по КОМПОНЕНТУ корня, а не по узлу: обёртка одна на всё дерево, а не на каждый узел.
+   */
+  const provider = createMemo(() => {
+    const read = readAddress(props.registry, tree().components.root);
+    if (!read) return undefined;
+    const found = props.registry.components[read.component]?.provider;
+    return typeof found === "function" ? found : undefined;
+  });
+
+  const root = () => (
+    <RenderNode
+      nodeId={tree().components.root}
+      tree={tree()}
+      registry={props.registry}
+      fallback={fallback()}
+      errorFallback={errorFallback()}
+      editOverlay={props.editOverlay}
+      data={props.data}
+      dispatch={props.dispatch}
+    />
+  );
+
   return (
     <Suspense fallback={props.loadingFallback}>
-      <RenderNode
-        nodeId={tree().components.root}
-        tree={tree()}
-        registry={props.registry}
-        fallback={fallback()}
-        errorFallback={errorFallback()}
-        editOverlay={props.editOverlay}
-      />
+      <Show when={provider()} fallback={root()} keyed>
+        {(Provider) =>
+          createComponent(Provider as Component<Record<string, unknown>>, {
+            ...(tree().components.providerProps ?? {}),
+            get children() {
+              return root();
+            },
+          })
+        }
+      </Show>
     </Suspense>
   );
 };

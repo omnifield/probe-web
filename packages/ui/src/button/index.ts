@@ -5,6 +5,6 @@
 // list itself. Both read from here, so where files live inside the folder stays this folder's
 // own business.
 
-export { Button, type ButtonProps } from "./button.jsx";
-export { anatomy, parts, passport } from "./button.anatomy.js";
-export { kit } from "./button.kit.js";
+export { Button, type ButtonProps } from "./components/index.jsx";
+export { kit } from "./components/kit.js";
+export { anatomy, anatomyParts, passport } from "./entity";

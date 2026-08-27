@@ -1,0 +1,601 @@
+/**
+ * UI-related translations for English locale
+ * Contains: pickers, editors, dialogs, components, aria, layout, widgets, footer
+ */
+
+export default {
+  pickers: {
+    // General
+    select: 'Select',
+    search: 'Search',
+    options: 'Options',
+    clearSelection: 'Clear selection',
+    noResultsFor: 'No results for "{query}"',
+    createItem: 'Create "{value}"',
+    noItemsFound: 'No items found',
+    noItemsAvailable: 'No items available',
+    startTypingToSearch: 'Start typing to search…',
+    searchPages: 'Search pages…',
+
+    // Asset Picker
+    selectAsset: 'Select asset',
+    noTag: 'No tag',
+    showingOfTotal: 'Showing {shown} of {total} — type to search',
+
+    // User/Assignee Picker
+    selectUser: 'Select user',
+    searchUsers: 'Search users...',
+    users: 'Users',
+    noUsersFound: 'No users found',
+    noUsersAvailable: 'No users available',
+    assignTo: 'Assign to',
+    unassigned: 'Unassigned',
+    assignee: 'Assignee',
+    user: 'User',
+    group: 'Group',
+    searchUser: 'Search user...',
+    searchGroup: 'Search group...',
+
+    // Agent presence in assignment pickers (WI-272)
+    agentOnline: 'Agent online — a live runner will pick up assigned items',
+    agentOffline: 'Agent offline — its runner pool has no live runner; assigned items will queue',
+    agentLocal: 'Agent runs on this server',
+    agentUnbound: 'No agent binding in this workspace — assigning will not start a run',
+
+    // Group Picker
+    selectGroup: 'Select group',
+
+    // Category Picker
+    selectCategories: 'Select categories',
+    removeCategory: 'Remove category',
+    categoriesSelected: '{count} categories selected',
+    searchCategories: 'Search categories...',
+    noCategoriesFound: 'No categories found',
+
+    // Collection Picker
+    selectCollections: 'Select collections',
+
+    // Workspace Picker
+    selectWorkspaces: 'Select workspaces',
+    searchWorkspaces: 'Search workspaces...',
+    noWorkspacesFound: 'No workspaces found',
+
+    // Configuration Set Picker
+    selectConfigurationSet: 'Select configuration set',
+    searchConfigurationSets: 'Search configuration sets...',
+    configurationSets: 'Configuration sets',
+    defaultConfiguration: 'Default Configuration',
+    defaultConfigurationDescription: 'Uses the workspace default settings',
+    noConfigurationSetsFound: 'No configuration sets found',
+
+    // Configuration Set Entity Picker
+    entityAlreadyAssigned: '{label} is already assigned',
+    itemType: 'Item Type',
+    priorities: 'Priorities',
+    itemTypes: 'Item Types',
+    level: 'Level {level}',
+    assigned: 'Assigned',
+    noEntitiesAssigned: 'No {entities} assigned',
+    available: 'Available',
+    noEntitiesMatchSearch: 'No {entities} match your search',
+    allEntitiesAssigned: 'All {entities} are assigned',
+    inConfigSet: 'In config set',
+    searchEntities: 'Search {entities}...',
+
+    // Field Selector
+    selectField: 'Select field',
+    searchFields: 'Search fields...',
+    noFieldsFound: 'No fields found',
+    customFields: 'Custom Fields',
+    custom: 'Custom',
+    customFieldDesc: 'Custom field',
+    fieldTypes: {
+      text: 'Text',
+      number: 'Number',
+      date: 'Date',
+      select: 'Select',
+      multiselect: 'Multi-select',
+      checkbox: 'Checkbox',
+      url: 'URL',
+      email: 'Email',
+      phone: 'Phone',
+      textarea: 'Text Area',
+      textArea: 'Text Area',
+      user: 'User',
+      rating: 'Rating',
+      boolean: 'Boolean',
+      reference: 'Reference',
+      identifier: 'Identifier',
+    },
+    fieldCategories: {
+      basic: 'Basic Fields',
+      dates: 'Date Fields',
+      people: 'People',
+      workflow: 'Workflow',
+      custom: 'Custom Fields',
+    },
+    fields: {
+      title: { name: 'Title', description: 'Item title' },
+      description: { name: 'Description', description: 'Item description' },
+      status: { name: 'Status', description: 'Current status' },
+      priority: { name: 'Priority', description: 'Priority level' },
+      type: { name: 'Type', description: 'Item type' },
+      assignee: { name: 'Assignee', description: 'Assigned user' },
+      reporter: { name: 'Reporter', description: 'Who reported the item' },
+      createdAt: { name: 'Created At', description: 'When the item was created' },
+      updatedAt: { name: 'Updated At', description: 'When the item was last updated' },
+      dueDate: { name: 'Due Date', description: 'When the item is due' },
+      startDate: { name: 'Start Date', description: 'When work begins' },
+      estimate: { name: 'Estimate', description: 'Estimated effort' },
+      labels: { name: 'Labels', description: 'Item labels' },
+      sprint: { name: 'Sprint', description: 'Associated sprint' },
+      iteration: { name: 'Iteration', description: 'Associated iteration (sprint, release, etc.)' },
+      milestone: { name: 'Milestone', description: 'Target milestone' },
+      parent: { name: 'Parent', description: 'Parent item' },
+      children: { name: 'Children', description: 'Child items' },
+      links: { name: 'Links', description: 'Related items' },
+      attachments: { name: 'Attachments', description: 'File attachments' },
+      comments: { name: 'Comments', description: 'Discussion comments' },
+      watchers: { name: 'Watchers', description: 'Users watching this item' },
+    },
+
+    // Icon Selector
+    iconAndColor: 'Icon & Color',
+    searchIcons: 'Search icons...',
+    icons: 'Icons',
+    colors: 'Colors',
+    icon: 'Icon',
+    color: 'Color',
+
+    // Label Combobox
+    allLabels: 'All labels',
+    selectLabels: 'Select labels',
+    noLabelsFoundFor: 'No labels found for "{query}"',
+    labelCommaNotAllowed: 'Label names cannot contain a comma',
+
+    // Mention Picker
+    mentionUsers: 'Mention users',
+    searching: 'Searching...',
+    noNotificationPersonalTask: 'Personal tasks do not send notifications',
+
+    // Milestone Combobox
+    selectMilestone: 'Select milestone',
+    selectMilestones: 'Select milestones',
+    noMilestone: 'No milestone',
+    milestones: 'Milestones',
+    milestonesSelected: '{count} milestones selected',
+    milestonesSelected_one: '{count} milestone selected',
+    milestonesSelected_other: '{count} milestones selected',
+    noMilestonesFound: 'No milestones found',
+    showCompletedMilestones: 'Show completed',
+
+    // Iteration Combobox
+    selectIteration: 'Select iteration',
+    noIteration: 'No iteration',
+
+    // Priority Picker
+    selectPriority: 'Select priority',
+    noPriority: 'No priority',
+    loadingPriorities: 'Loading priorities...',
+    noPrioritiesConfigured: 'No priorities configured',
+
+    // Project Picker
+    selectProject: 'Select project',
+
+    // Repository Selector
+    linkRepositories: 'Link Repositories',
+    selectRepositoriesFrom: 'Select repositories from {provider}',
+    searchRepositories: 'Search repositories...',
+    loadingRepositories: 'Loading repositories...',
+    noRepositoriesMatchSearch: 'No repositories match your search',
+    noRepositoriesAvailable: 'No repositories available',
+    alreadyLinked: 'Already linked',
+    linkSelected: 'Link Selected',
+    linking: 'Linking...',
+    repositoriesSelected: '{count} selected',
+
+    // Role Picker
+    selectRole: 'Select role',
+
+    // Screen Picker
+    selectScreen: 'Select screen',
+
+    // Test Case Picker
+    searchTestCases: 'Search test cases...',
+
+    // Workflow Picker
+    selectWorkflow: 'Select workflow',
+
+    // Condition Set Picker
+    selectConditionSet: 'Select condition set',
+
+    // Approval Set Picker
+    selectApprovalSet: 'Select approval set',
+  },
+
+  editors: {
+    enterText: 'Enter text...',
+    selectDate: 'Select date...',
+    clickToChangeColor: 'Click to change color',
+    saveEnter: 'Save (Enter)',
+    cancelEscape: 'Cancel (Escape)',
+    availableFields: 'Available Fields',
+    selectedFields: 'Selected Fields',
+    dragFieldsToAdd: 'Drag fields to add them',
+    dragToReorderOrDrop: 'Drag to reorder or drop fields here',
+    dropFieldsHere: 'Drop fields here to configure',
+    noFieldsMatchSearch: 'No fields match your search',
+    noFieldsAvailable: 'No fields available',
+    allFieldsAdded: 'All available fields have been added',
+    bold: 'Bold (Ctrl+B)',
+    italic: 'Italic (Ctrl+I)',
+    strikethrough: 'Strikethrough',
+    inlineCode: 'Inline Code',
+    bulletList: 'Bullet List',
+    numberedList: 'Numbered List',
+    insertImage: 'Insert Image',
+    userNotFound: 'User not found',
+    insertDiagram: 'Insert diagram',
+    diagramEdit: 'Edit diagram',
+    diagramOpen: 'Open diagram',
+    diagramUntitled: 'Untitled diagram',
+    diagramNamePlaceholder: 'Diagram name',
+    diagramUnsaved: 'Unsaved changes',
+    diagramUnsavedConfirm: 'Discard the unsaved diagram changes?',
+    diagramDeleted: 'Diagram has been deleted',
+    diagramRenderError: 'Could not render diagram',
+    diagramLoadError: 'Could not load diagram',
+    diagramSaveError: 'Could not save diagram',
+    mermaidRendering: 'Rendering diagram',
+    mermaidParseError: 'Mermaid parse error',
+    mermaidEmpty: 'Empty mermaid block',
+  },
+
+  dialogs: {
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    save: 'Save',
+    close: 'Close',
+    delete: 'Delete',
+    update: 'Update',
+    // Confirmation messages for confirm() dialogs
+    confirmations: {
+      deleteItem: 'Are you sure you want to delete "{name}"? This cannot be undone.',
+      deleteSection: 'Are you sure you want to delete this section?',
+      discardChanges: 'You have unsaved changes. Are you sure you want to cancel?',
+      dismissAllNotifications:
+        'Are you sure you want to dismiss all notifications? This cannot be undone.',
+      removeAvatar: 'Are you sure you want to remove your profile picture?',
+      revokeCalendarFeed:
+        'Are you sure you want to revoke your calendar feed URL? Any calendars using this URL will stop syncing.',
+      deleteTheme: 'Are you sure you want to delete this theme? This cannot be undone.',
+      resetBoardConfig:
+        'Are you sure you want to reset to default board configuration? This will delete your custom configuration.',
+      deleteCustomField:
+        'Are you sure you want to delete the custom field "{name}"? This will remove it from all projects.',
+      deleteLinkType:
+        'Are you sure you want to delete this link type? This will also remove all links of this type.',
+      deleteAsset: 'Are you sure you want to delete this asset?',
+      deleteAssetSet:
+        'Are you sure you want to delete this asset set? This will delete all assets, types, and categories within it.',
+      deleteAssetType:
+        'Are you sure you want to delete this asset type? Assets using this type will no longer have a type assigned.',
+      deleteCategory:
+        'Are you sure you want to delete this category? Child categories will be moved to the parent.',
+      revokeRole: 'Are you sure you want to revoke this role?',
+      quitApplication: 'Are you sure you want to quit the application? The server will shut down.',
+      deleteConnection:
+        'Are you sure you want to delete this connection? This action cannot be undone.',
+      deleteWidget: 'Delete this section? All widgets in this section will be removed.',
+      deleteScreen:
+        'Are you sure you want to delete screen "{name}"? This will affect all workspaces using this screen.',
+    },
+    // Alert messages for alert() dialogs
+    alerts: {
+      nameRequired: 'Name is required',
+      pleaseSelectImage: 'Please select an image file',
+      timerAlreadyRunning: 'A timer is already running. Please stop it before starting a new one.',
+      noTimerRunning: 'No timer is currently running.',
+      timerSyncing: 'Timer is currently syncing. Please wait and try again.',
+      startTimerFromItem: 'Please start a timer from within a work item to provide context.',
+      cannotDeleteDefaultScreen:
+        'Cannot delete the default screen. This screen is required for workspaces without a configuration set.',
+      applicationShuttingDown: 'Application is shutting down...',
+      pdfExportComingSoon: 'PDF export coming soon for time-block view',
+      configUpdatedSuccess:
+        'Configuration set updated successfully. All work items are already using statuses from the new workflow.',
+      failedToSave: 'Failed to save: {error}',
+      failedToDelete: 'Failed to delete: {error}',
+      shutdownFailed: 'Failed to shut down the application',
+      failedToUpdate: 'Failed to update: {error}',
+      failedToLoad: 'Failed to load: {error}',
+      stopTimerFailed: 'Failed to stop the timer',
+      failedToCreate: 'Failed to create: {error}',
+      failedToUpload: 'Failed to upload: {error}',
+      failedToGeneratePdf: 'Failed to generate PDF. Please try again.',
+      failedToApplyConfig: 'Failed to apply configuration change: {error}',
+      failedToAddManager: 'Failed to add manager: {error}',
+      failedToRemoveManager: 'Failed to remove manager: {error}',
+      failedToSaveWorkspace: 'Failed to save project. Please check your input and try again.',
+      failedToResetConfig: 'Failed to reset configuration: {error}',
+      failedToToggleStatus: 'Failed to toggle link type status: {error}',
+      failedToAssignRole: 'Failed to assign role: {error}',
+      failedToRevokeRole: 'Failed to revoke role: {error}',
+      failedToUpdateRole: 'Failed to update everyone role: {error}',
+      failedToLoadFields: 'Failed to load fields: {error}',
+      failedToSaveFields: 'Failed to save field assignments: {error}',
+      errorAddingTestCase: 'Error adding test case: {error}',
+      failedToCreateLabel: 'Failed to create label: {error}',
+      failedToSaveLayout: 'Failed to save layout changes',
+      statusInUseByTransitions:
+        'Cannot delete "{name}" because it is used in {count} workflow transitions. To delete this status, go to Workflow Management, remove all transitions that use this status, then try deleting the status again.',
+      statusInUseByTransitions_one:
+        'Cannot delete "{name}" because it is used in {count} workflow transition. To delete this status, go to Workflow Management, remove all transitions that use this status, then try deleting the status again.',
+      statusInUseByTransitions_other:
+        'Cannot delete "{name}" because it is used in {count} workflow transitions. To delete this status, go to Workflow Management, remove all transitions that use this status, then try deleting the status again.',
+    },
+  },
+
+  components: {
+    // Avatar component
+    avatar: {
+      defaultAlt: 'Avatar',
+    },
+
+    // DataTable component
+    dataTable: {
+      showingRange: 'Showing {start}–{end} of {total}',
+    },
+
+    // Diagram components
+    diagram: {
+      loading: 'Loading diagrams...',
+      loadError: 'Failed to load diagrams',
+      deleteError: 'Failed to delete diagram',
+      confirmDelete: 'Are you sure you want to delete this diagram?',
+      edit: 'Edit diagram',
+      untitled: 'Untitled Diagram',
+      namePlaceholder: 'Diagram name',
+      nameRequired: 'Please enter a diagram name',
+      saveError: 'Failed to save diagram',
+      unsavedChanges: 'Unsaved changes',
+      unsavedChangesConfirm: 'You have unsaved changes. Are you sure you want to close?',
+    },
+
+    // ErrorState component
+    errorState: {
+      title: 'Something went wrong',
+    },
+
+    // Pagination component
+    pagination: {
+      showingRange: 'Showing {start}-{end} of {total}',
+      limitedTo: 'limited to {max} items',
+      itemsPerPage: 'Items per page:',
+      previousPage: 'Previous page',
+      nextPage: 'Next page',
+      goToPage: 'Go to page {page}',
+      pageOf: 'Page {current} of {total}',
+    },
+
+    // UserAvatar component
+    userAvatar: {
+      myWorkspace: 'My Workspace',
+      myWorkspaceSubtitle: 'Personal workspace for todos and notes',
+      profileSubtitle: 'Manage your profile and settings',
+      security: 'Security',
+      securitySubtitle: 'Manage passwords, 2FA, and API tokens',
+      themeTitle: 'Theme: {mode}',
+      themeLight: 'Light',
+      themeDark: 'Dark',
+      themeSystem: 'System',
+      desktopSite: 'Desktop site',
+      addToHomeScreen: 'Add to Home Screen',
+    },
+  },
+
+  aria: {
+    close: 'Close',
+    dragToReorder: 'Drag to reorder',
+    refresh: 'Refresh',
+    removeField: 'Remove field',
+    removeFromSection: 'Remove from section',
+    addNewStep: 'Add new step',
+    removeCurrentStep: 'Remove current step',
+    dismissNotification: 'Dismiss notification',
+    mainNavigation: 'Main navigation',
+    mentionUsers: 'Mention users',
+    notifications: 'Notifications',
+    adminSettings: 'Admin settings',
+    userMenu: 'User menu',
+    clearSearch: 'Clear search',
+  },
+
+  layout: {
+    addSection: 'Add Section',
+    moveUp: 'Move section up',
+    moveDown: 'Move section down',
+    deleteSection: 'Delete section',
+    editMode: 'Edit Mode',
+    editDisplaySettings: 'Edit display settings',
+    items: 'items',
+  },
+
+  widgets: {
+    removeWidget: 'Remove widget',
+    defaultWidth: 'Default: {width}/{columns} width',
+    widthQuarter: 'Quarter',
+    widthThird: 'Third',
+    widthHalf: 'Half',
+    widthTwoThirds: 'Two-thirds',
+    widthFull: 'Full',
+    resizeAriaLabel: 'Resize widget',
+    resizeColumnsValue: '{count} of 12 columns',
+    rowCount: 'Row count',
+    density: 'Density',
+    densityComfortable: 'Comfortable',
+    densityCompact: 'Compact',
+    rowCount5: '5 rows',
+    rowCount10: '10 rows',
+    rowCount15: '15 rows',
+    rowCountAll: 'All rows',
+    narrowWidth: 'Narrow (1/3 width)',
+    mediumWidth: 'Medium (2/3 width)',
+    fullWidth: 'Full width',
+    chart: {
+      items: 'items',
+      noDataAvailable: 'No data available',
+    },
+    completionChart: {
+      title: 'Completion Chart',
+      emptyMessage: 'No completion data available',
+    },
+    createdChart: {
+      title: 'Created Chart',
+      emptyMessage: 'No creation data available',
+    },
+    recentItems: {
+      loadingText: 'Loading recent items...',
+      emptyTitle: 'No recent items',
+      emptySubtitle: 'Recently viewed items will appear here',
+      loadError: 'Failed to load recent items',
+    },
+    savedSearch: {
+      loadingCollections: 'Loading saved collections...',
+      setupTitle: 'Choose a saved collection',
+      setupSubtitle: 'Select a collection to show its work items here.',
+      selectCollection: 'Select a collection',
+      noCollections: 'No saved collections available',
+      collectionUnavailable: 'Saved collection unavailable',
+      itemCount: '{count} items',
+      emptyTitle: 'No matching work items',
+      emptySubtitle: 'This saved collection has no matching items',
+      loadError: 'Failed to load saved collection',
+    },
+    milestoneProgress: {
+      emptyTitle: 'No milestones',
+      emptySubtitle: 'Create milestones to track progress',
+      due: 'Due',
+      done: 'done',
+      item: 'item',
+      items: 'items',
+      noItems: 'No items',
+      noStatus: 'No status',
+      activeMilestone: 'Active',
+      noCategorizedWork: 'No categorized work',
+    },
+    myTasks: {
+      loadingText: 'Loading your tasks...',
+      emptyTitle: 'No tasks assigned to you',
+      emptySubtitle: 'Tasks assigned to you will appear here',
+      loadError: 'Failed to load your tasks',
+    },
+    overdueItems: {
+      loadingStatus: 'Loading...',
+      itemCount: '{count} overdue items',
+      refreshAriaLabel: 'Refresh overdue items',
+      loadingText: 'Loading overdue items...',
+      emptyTitle: 'No overdue items',
+      emptySubtitle: 'All items are on track',
+      loadError: 'Failed to load overdue items',
+      daysOverdue: '{days}d overdue',
+    },
+    upcomingDeadlines: {
+      loadingStatus: 'Loading...',
+      itemCount: '{count} upcoming',
+      refreshAriaLabel: 'Refresh upcoming deadlines',
+      loadingText: 'Loading upcoming deadlines...',
+      emptyTitle: 'No upcoming deadlines',
+      emptySubtitle: 'Items with due dates will appear here',
+      loadError: 'Failed to load upcoming deadlines',
+    },
+    iterationTimeline: {
+      loadingStatus: 'Loading...',
+      iterationCount: '{count} iterations',
+      refreshAriaLabel: 'Refresh iterations',
+      loadingText: 'Loading iterations...',
+      emptyTitle: 'No active iterations',
+      emptySubtitle: 'Iteration timelines will appear here',
+      loadError: 'Failed to load iterations',
+    },
+  },
+
+  recurrence: {
+    title: 'Recurrence',
+    description: 'Manage recurring task rules',
+    frequency: 'Frequency',
+    interval: 'Repeat every',
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+    daysOfWeek: 'Days of week',
+    dayOfMonth: 'Day of month',
+    endCondition: 'Ends',
+    never: 'Never',
+    onDate: 'On date',
+    afterOccurrences: 'After occurrences',
+    occurrences: 'occurrences',
+    preview: 'Upcoming occurrences',
+    previewLoading: 'Loading preview...',
+    previewError: 'Failed to load preview',
+    copySettings: 'Copy from template',
+    copyAssignee: 'Copy assignee',
+    copyPriority: 'Copy priority',
+    copyCustomFields: 'Copy custom fields',
+    copyDescription: 'Copy description',
+    leadTime: 'Generate ahead (days)',
+    statusOnCreate: 'Status on create',
+    active: 'Active',
+    inactive: 'Inactive',
+    instances: 'Generated instances',
+    instanceCount: '{count} instances',
+    forceGenerate: 'Generate now',
+    generating: 'Generating...',
+    generated: '{count} instances generated',
+    addRecurrence: 'Add Recurrence',
+    noRule: 'No recurrence set',
+    setUp: 'Set up recurrence',
+    editRule: 'Edit recurrence',
+    deleteRule: 'Delete recurrence',
+    deleteConfirm: 'Are you sure you want to delete this recurrence rule? Generated instances will not be affected.',
+    startDate: 'Start date',
+    endDate: 'End date (optional)',
+    timezone: 'Timezone',
+    templateItem: 'Template item',
+    scheduledDate: 'Scheduled date',
+    sequenceNumber: 'Sequence',
+    noInstances: 'No instances generated yet',
+    settingsTab: 'Settings',
+    instancesTab: 'Instances',
+    searchPlaceholder: 'Search recurrence rules...',
+    noMatchingResults: 'No recurrence rules match your search',
+    empty: 'No recurrence rules',
+    emptyDesc: 'Recurrence rules will appear here when items have recurring schedules configured.',
+    createFromItem: 'To create a recurrence rule, open an item and set up recurrence from the detail sidebar.',
+    rule: 'Rule',
+    everyDay: 'day',
+    everyDays: 'days',
+    everyWeek: 'week',
+    everyWeeks: 'weeks',
+    everyMonth: 'month',
+    everyMonths: 'months',
+    everyYear: 'year',
+    everyYears: 'years',
+    mon: 'Mon',
+    tue: 'Tue',
+    wed: 'Wed',
+    thu: 'Thu',
+    fri: 'Fri',
+    sat: 'Sat',
+    sun: 'Sun',
+  },
+
+  footer: {
+    platformName: 'Windshift Work Management Platform',
+    aboutWindshift: 'About Windshift',
+    apiReference: 'API reference',
+    licenses: 'Licenses',
+    reportProblem: 'Report a problem',
+  },
+};

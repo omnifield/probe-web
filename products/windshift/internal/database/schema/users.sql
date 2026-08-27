@@ -1,0 +1,167 @@
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE NOT NULL,
+		username TEXT UNIQUE NOT NULL,
+		first_name TEXT NOT NULL,
+		last_name TEXT NOT NULL,
+		is_active BOOLEAN DEFAULT TRUE,
+		avatar_url TEXT,
+		password_hash TEXT, -- bcrypt hashed password
+		requires_password_reset BOOLEAN DEFAULT FALSE,
+		timezone TEXT,
+		language TEXT DEFAULT 'en',
+		email_verified BOOLEAN DEFAULT TRUE, -- Default true for backwards compatibility
+		email_verification_token TEXT, -- Token for email verification flow
+		email_verification_expires DATETIME, -- Expiry time for verification token
+		scim_external_id TEXT, -- SCIM externalId from identity provider
+		scim_managed BOOLEAN DEFAULT false, -- If true, user is managed via SCIM
+		is_agent BOOLEAN DEFAULT FALSE, -- If true, user is a non-human agent (API-only; cannot log in)
+		agent_owner_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- NULL = service user (admin-provisioned); non-NULL = owned agent (inherits owner permissions)
+		-- Distinguishes how an agent row got created. 'user' covers both the
+		-- profile-page agent UI and CLI onboarding (both are gated by
+		-- allow_user_managed_agents). 'oauth' is set ONLY by a successful
+		-- OAuth code-exchange against an enabled oauth_clients row — the
+		-- CHECK below prevents anyone from forging this label without a
+		-- backing client.
+		agent_provenance TEXT NOT NULL DEFAULT 'user',
+		oauth_client_id INTEGER REFERENCES oauth_clients(id) ON DELETE CASCADE,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		CHECK (agent_provenance != 'oauth' OR oauth_client_id IS NOT NULL),
+		CHECK (oauth_client_id IS NULL OR (is_agent = true AND agent_provenance = 'oauth'))
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+	CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_scim_external_id ON users(scim_external_id) WHERE scim_external_id IS NOT NULL;
+	CREATE INDEX IF NOT EXISTS idx_users_scim_managed ON users(scim_managed);
+	CREATE INDEX IF NOT EXISTS idx_users_is_agent ON users(is_agent);
+	CREATE INDEX IF NOT EXISTS idx_users_agent_owner ON users(agent_owner_user_id) WHERE agent_owner_user_id IS NOT NULL;
+	-- Audit query: "show me OAuth-spawned agents" / "agents per OAuth client"
+	CREATE INDEX IF NOT EXISTS idx_users_agent_provenance ON users(agent_provenance) WHERE is_agent = true;
+	CREATE INDEX IF NOT EXISTS idx_users_oauth_client_id ON users(oauth_client_id) WHERE oauth_client_id IS NOT NULL;
+
+	-- is_agent is immutable once set at creation: allowing toggles would let
+	-- an admin flip a human user into an agent and mint a token for them.
+	CREATE TRIGGER IF NOT EXISTS users_is_agent_immutable
+	BEFORE UPDATE OF is_agent ON users
+	FOR EACH ROW
+	WHEN IFNULL(NEW.is_agent, 0) IS NOT IFNULL(OLD.is_agent, 0)
+	BEGIN
+		SELECT RAISE(ABORT, 'is_agent is immutable');
+	END;
+
+	-- agent_owner_user_id is immutable for the same reason: flipping ownership
+	-- would silently transfer an agent's inherited permissions to a new user.
+	CREATE TRIGGER IF NOT EXISTS users_agent_owner_immutable
+	BEFORE UPDATE OF agent_owner_user_id ON users
+	FOR EACH ROW
+	WHEN NEW.agent_owner_user_id IS NOT OLD.agent_owner_user_id
+	BEGIN
+		SELECT RAISE(ABORT, 'agent_owner_user_id is immutable');
+	END;
+
+	-- An owner link only makes sense on an agent. Reject on insert or update
+	-- attempts that would create a non-agent user with an owner.
+	CREATE TRIGGER IF NOT EXISTS users_agent_owner_requires_agent_insert
+	BEFORE INSERT ON users
+	FOR EACH ROW
+	WHEN NEW.agent_owner_user_id IS NOT NULL AND IFNULL(NEW.is_agent, 0) = 0
+	BEGIN
+		SELECT RAISE(ABORT, 'agent_owner_user_id requires is_agent');
+	END;
+
+	-- agent_provenance is immutable for the same reason as is_agent: flipping
+	-- a 'user' agent into 'oauth' (or vice versa) would let a malicious admin
+	-- bypass the policy that gates each path.
+	CREATE TRIGGER IF NOT EXISTS users_agent_provenance_immutable
+	BEFORE UPDATE OF agent_provenance ON users
+	FOR EACH ROW
+	WHEN IFNULL(NEW.agent_provenance, '') IS NOT IFNULL(OLD.agent_provenance, '')
+	BEGIN
+		SELECT RAISE(ABORT, 'agent_provenance is immutable');
+	END;
+
+	-- oauth_client_id is immutable too: an oauth agent should be tied to
+	-- exactly one client for its lifetime; rebinding to a different client
+	-- would silently change which integration the agent belongs to.
+	CREATE TRIGGER IF NOT EXISTS users_oauth_client_id_immutable
+	BEFORE UPDATE OF oauth_client_id ON users
+	FOR EACH ROW
+	WHEN NEW.oauth_client_id IS NOT OLD.oauth_client_id
+	BEGIN
+		SELECT RAISE(ABORT, 'oauth_client_id is immutable');
+	END;
+
+	-- An oauth-provenance agent MUST carry an oauth_client_id. The companion
+	-- check below rejects oauth_client_id on rows that aren't oauth-agents.
+	-- Together they pin the (is_agent, agent_provenance, oauth_client_id)
+	-- tuple to the only valid combination for oauth-issued service users.
+	CREATE TRIGGER IF NOT EXISTS users_oauth_provenance_requires_client
+	BEFORE INSERT ON users
+	FOR EACH ROW
+	WHEN NEW.agent_provenance = 'oauth' AND NEW.oauth_client_id IS NULL
+	BEGIN
+		SELECT RAISE(ABORT, 'agent_provenance=oauth requires oauth_client_id');
+	END;
+
+	CREATE TRIGGER IF NOT EXISTS users_oauth_client_requires_oauth_agent
+	BEFORE INSERT ON users
+	FOR EACH ROW
+	WHEN NEW.oauth_client_id IS NOT NULL
+	  AND (IFNULL(NEW.is_agent, 0) = 0 OR NEW.agent_provenance != 'oauth')
+	BEGIN
+		SELECT RAISE(ABORT, 'oauth_client_id requires is_agent and agent_provenance=oauth');
+	END;
+
+	CREATE TABLE IF NOT EXISTS user_credentials (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		credential_type TEXT NOT NULL, -- 'fido', 'totp', 'ssh'
+		credential_name TEXT NOT NULL, -- User-friendly name for the credential
+		credential_data TEXT NOT NULL, -- JSON data specific to credential type
+		public_key_fingerprint TEXT, -- SHA256 fingerprint for SSH keys (indexed)
+		is_active BOOLEAN DEFAULT TRUE,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		last_used_at DATETIME,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_user_credentials_user_id ON user_credentials(user_id);
+	CREATE INDEX IF NOT EXISTS idx_user_credentials_type ON user_credentials(credential_type);
+	CREATE INDEX IF NOT EXISTS idx_user_credentials_fingerprint ON user_credentials(public_key_fingerprint);
+
+	CREATE TABLE IF NOT EXISTS user_sessions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		session_token TEXT UNIQUE NOT NULL,
+		expires_at DATETIME NOT NULL,
+		ip_address TEXT,
+		user_agent TEXT,
+		is_active BOOLEAN DEFAULT TRUE,
+		enrollment_required BOOLEAN DEFAULT FALSE,
+		auth_pending_type TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS user_invitations (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NOT NULL,
+	token TEXT UNIQUE NOT NULL,
+	expires_at DATETIME NOT NULL,
+	used_at DATETIME,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_invitations_token ON user_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_user_invitations_user_id ON user_invitations(user_id);
+
+
+-- migration: 0014_users_is_agent

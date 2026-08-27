@@ -1,0 +1,226 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"time"
+
+	"windshift/internal/logger"
+	"windshift/internal/models"
+	"windshift/internal/repository"
+	"windshift/internal/services"
+	"windshift/internal/webhook"
+)
+
+// WebhookHandler handles HTTP requests for webhook operations
+type WebhookHandler struct {
+	channelRepo       *repository.ChannelRepository
+	itemRepo          *repository.ItemRepository
+	webhookSender     *webhook.WebhookSender
+	permissionService *services.PermissionService
+	channelService    *services.ChannelService
+	auditor           *logger.Auditor
+}
+
+// NewWebhookHandler creates a new webhook handler
+func NewWebhookHandler(
+	channelRepo *repository.ChannelRepository,
+	itemRepo *repository.ItemRepository,
+	webhookSender *webhook.WebhookSender,
+	permissionService *services.PermissionService,
+	channelService *services.ChannelService,
+	auditor *logger.Auditor,
+) *WebhookHandler {
+	return &WebhookHandler{
+		channelRepo:       channelRepo,
+		itemRepo:          itemRepo,
+		webhookSender:     webhookSender,
+		permissionService: permissionService,
+		channelService:    channelService,
+		auditor:           auditor,
+	}
+}
+
+// TriggerWebhook manually triggers a webhook for a specific item
+// POST /api/webhooks/{webhookId}/trigger
+// Body: { "item_id": 123 }
+func (h *WebhookHandler) TriggerWebhook(w http.ResponseWriter, r *http.Request) {
+	// Get current user for permission check
+	user, ok := RequireAuth(w, r)
+	if !ok {
+		return
+	}
+
+	webhookID, ok := requireIDParam(w, r, "webhookId")
+	if !ok {
+		return
+	}
+
+	var request struct {
+		ItemID int `json:"item_id"`
+	}
+	if !decodeChannelRequest(w, r, &request, false) {
+		return
+	}
+
+	if request.ItemID == 0 {
+		respondValidationError(w, r, "item_id is required")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	// Verify webhook exists and is active
+	channel, err := h.channelRepo.FindByID(ctx, webhookID)
+	if errors.Is(err, repository.ErrNotFound) {
+		respondNotFound(w, r, "webhook")
+		return
+	}
+	if err != nil {
+		respondNotFound(w, r, "webhook")
+		return
+	}
+
+	if channel.Type != "webhook" {
+		respondBadRequest(w, r, "Channel is not a webhook")
+		return
+	}
+
+	// Get item workspace for permission check
+	itemWorkspaceID, err := h.itemRepo.GetWorkspaceIDCtx(ctx, request.ItemID)
+	if err != nil {
+		respondNotFound(w, r, "item")
+		return
+	}
+
+	// Check user has permission to the item's workspace
+	hasPermission, err := h.permissionService.HasWorkspacePermission(user.ID, itemWorkspaceID, models.PermissionItemView)
+	if err != nil || !hasPermission {
+		respondNotFound(w, r, "item")
+		return
+	}
+
+	// Triggering an outbound webhook ships an item payload to a configured
+	// third-party URL. Item-view alone is not a sufficient capability to
+	// initiate that — gate on channel management. See bughunt2.md Run 6
+	// finding #3.
+	canManage, err := h.channelService.UserCanManage(ctx, user.ID, webhookID)
+	if err != nil {
+		respondInternalError(w, r, err)
+		return
+	}
+	if !canManage {
+		respondNotFound(w, r, "webhook")
+		return
+	}
+
+	// Trigger the webhook
+	if err := h.webhookSender.TriggerManually(ctx, webhookID, request.ItemID); err != nil {
+		respondBadRequest(w, r, err.Error())
+		return
+	}
+
+	h.auditor.LogWithDetails(r, user, logger.ActionWebhookTrigger, logger.ResourceWebhook, &webhookID, "", map[string]any{"item_id": request.ItemID})
+
+	respondJSONOK(w, map[string]any{
+		"success": true,
+		"message": "Webhook triggered successfully",
+	})
+}
+
+// GetWebhooksForItem returns all webhooks that can be triggered for a specific item
+// GET /api/items/{id}/webhooks
+func (h *WebhookHandler) GetWebhooksForItem(w http.ResponseWriter, r *http.Request) {
+	// Get current user for permission check
+	user, ok := RequireAuth(w, r)
+	if !ok {
+		return
+	}
+
+	itemID, ok := requireIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	// Get item workspace for permission check
+	itemWorkspaceID, err := h.itemRepo.GetWorkspaceIDCtx(ctx, itemID)
+	if err != nil {
+		respondNotFound(w, r, "item")
+		return
+	}
+
+	// Check user has permission to the item's workspace
+	hasPermission, err := h.permissionService.HasWorkspacePermission(user.ID, itemWorkspaceID, models.PermissionItemView)
+	if err != nil || !hasPermission {
+		respondNotFound(w, r, "item")
+		return
+	}
+
+	// Get all enabled outbound webhook channels
+	channels, err := h.channelRepo.ListEnabledByTypeAndDirection(ctx, "webhook", "outbound")
+	if err != nil {
+		respondInternalError(w, r, err)
+		return
+	}
+
+	type WebhookInfo struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		ScopeType   string `json:"scope_type"`
+		AutoTrigger bool   `json:"auto_trigger"`
+		CanTrigger  bool   `json:"can_trigger"`
+	}
+
+	webhooks := make([]WebhookInfo, 0, len(channels))
+	for _, c := range channels {
+		canManage, manageErr := h.channelService.UserCanManage(ctx, user.ID, c.ID)
+		if manageErr != nil {
+			respondInternalError(w, r, manageErr)
+			return
+		}
+		if !canManage {
+			continue
+		}
+		var config models.ChannelConfig
+		if err := json.Unmarshal([]byte(c.Config), &config); err != nil {
+			continue
+		}
+
+		// Check if webhook can be triggered for this item (scope matching).
+		// Collection scope returns false here for the same reason
+		// WebhookSender.matchesScope returns false: the QL evaluator isn't
+		// wired yet, and "trust the UI to filter on the right items" was
+		// the prior heuristic — which let any item be claimed as
+		// triggerable.
+		canTrigger := false
+		switch config.WebhookScopeType {
+		case "all", "":
+			canTrigger = true
+		case "workspaces":
+			for _, wsID := range config.WebhookWorkspaceIDs {
+				if wsID == itemWorkspaceID {
+					canTrigger = true
+					break
+				}
+			}
+		case "collections":
+			canTrigger = false
+		}
+
+		webhooks = append(webhooks, WebhookInfo{
+			ID:          c.ID,
+			Name:        c.Name,
+			ScopeType:   config.WebhookScopeType,
+			AutoTrigger: config.WebhookAutoTrigger,
+			CanTrigger:  canTrigger,
+		})
+	}
+
+	respondJSONOK(w, webhooks)
+}

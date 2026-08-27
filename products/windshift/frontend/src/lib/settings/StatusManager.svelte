@@ -1,0 +1,354 @@
+<script>
+  import { onMount } from 'svelte';
+  import { api } from '../api.js';
+  import { Plus, Edit, Trash2, Circle, GitBranch } from '@lucide/svelte';
+  import Button from '../components/Button.svelte';
+  import ColorDot from '../components/ColorDot.svelte';
+  import DataTable from '../components/DataTable.svelte';
+  import Panel from '../components/Panel.svelte';
+  import PageHeader from '../layout/PageHeader.svelte';
+  import { getHexFromColorName } from '../utils/colors.js';
+  import Modal from '../dialogs/Modal.svelte';
+  import ModalHeader from '../dialogs/ModalHeader.svelte';
+  import Textarea from '../components/Textarea.svelte';
+  import Input from '../components/Input.svelte';
+  import Lozenge from '../components/Lozenge.svelte';
+  import Toggle from '../components/Toggle.svelte';
+  import BasePicker from '../pickers/BasePicker.svelte';
+  import DialogFooter from '../dialogs/DialogFooter.svelte';
+  import { toHotkeyString } from '../utils/keyboardShortcuts.js';
+  import { t } from '../stores/i18n.svelte.js';
+  import { errorToast } from '../stores/toasts.svelte.js';
+  import { confirm } from '../composables/useConfirm.js';
+  import { loadStatusManagerData } from './statusManagerData.js';
+  import './settings-form.css';
+
+  // System-protected status IDs (cannot be deleted)
+  const PROTECTED_STATUS_IDS = [1, 6]; // Open and Closed
+
+  let statuses = $state([]);
+  let statusCategories = $state([]);
+  let workflowTransitions = $state([]);
+  let loading = $state(true);
+  let loadingCategories = $state(true);
+  let showCreateForm = $state(false);
+  let editingId = $state(null);
+
+  // Form state
+  let formData = $state({
+    name: '',
+    description: '',
+    category_id: null,
+    is_default: false
+  });
+
+  onMount(async () => {
+    try {
+      loading = true;
+      loadingCategories = true;
+      const data = await loadStatusManagerData(api);
+      statusCategories = data.statusCategories;
+      workflowTransitions = data.workflowTransitions;
+      statuses = data.statuses;
+      // Set default category if none selected
+      if (statusCategories.length > 0 && !formData.category_id) {
+        formData.category_id = statusCategories[0].id;
+      }
+    } catch (error) {
+      console.error('Failed to load statuses:', error);
+      statusCategories = [];
+      workflowTransitions = [];
+      statuses = [];
+    } finally {
+      loading = false;
+      loadingCategories = false;
+    }
+  });
+
+  function startCreate() {
+    formData = {
+      name: '',
+      description: '',
+      category_id: statusCategories.length > 0 ? statusCategories[0].id : null,
+      is_default: false
+    };
+    editingId = null;
+    showCreateForm = true;
+  }
+
+  function startEdit(status) {
+    formData = {
+      name: status.name || '',
+      description: status.description || '',
+      category_id: status.category_id,
+      is_default: status.is_default || false
+    };
+    editingId = status.id;
+    showCreateForm = true;
+  }
+
+  function cancelForm() {
+    showCreateForm = false;
+    editingId = null;
+    formData = {
+      name: '',
+      description: '',
+      category_id: statusCategories.length > 0 ? statusCategories[0].id : null,
+      is_default: false
+    };
+  }
+
+  async function saveStatus() {
+    try {
+      if (!formData.name.trim()) {
+        errorToast(t('dialogs.alerts.nameRequired'));
+        return;
+      }
+
+      if (editingId) {
+        const updated = await api.put(`/statuses/${editingId}`, formData);
+        statuses = statuses.map(status => 
+          status.id === editingId ? { ...updated, transitionCount: status.transitionCount } : status
+        );
+      } else {
+        const created = await api.post('/statuses', formData);
+        statuses = [...statuses, { ...created, transitionCount: 0 }];
+      }
+      
+      cancelForm();
+      window.dispatchEvent(new CustomEvent('refresh-workspace-data'));
+    } catch (error) {
+      console.error('Failed to save status:', error);
+      errorToast(t('dialogs.alerts.failedToSave', { error: error.message || error }));
+    }
+  }
+
+  async function deleteStatus(status) {
+    // Protect system-critical statuses
+    if (PROTECTED_STATUS_IDS.includes(status.id)) {
+      return; // Silently ignore - button should already be disabled
+    }
+
+    if (status.transitionCount > 0) {
+      errorToast(t('dialogs.alerts.statusInUseByTransitions', {
+        name: status.name,
+        count: status.transitionCount
+      }));
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: t('common.delete'),
+      message: t('dialogs.confirmations.deleteItem', { name: status.name }),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/statuses/${status.id}`);
+      statuses = statuses.filter(s => s.id !== status.id);
+      window.dispatchEvent(new CustomEvent('refresh-workspace-data'));
+    } catch (error) {
+      console.error('Failed to delete status:', error);
+      errorToast(t('dialogs.alerts.failedToDelete', { error: error.message || error }));
+    }
+  }
+
+  function getCategoryColor(categoryId) {
+    const category = statusCategories.find(cat => cat.id === categoryId);
+    if (!category) return '#6b7280';
+
+    // If color is a hex code, return it directly; otherwise convert from color name
+    return category.color.startsWith('#') ? category.color : getHexFromColorName(category.color);
+  }
+
+  function getCategoryName(categoryId) {
+    const category = statusCategories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Unknown';
+  }
+
+  function buildStatusDropdownItems(status) {
+    const isProtected = PROTECTED_STATUS_IDS.includes(status.id);
+    const inUse = status.transitionCount > 0;
+
+    const items = [
+      {
+        id: 'edit',
+        type: 'regular',
+        icon: Edit,
+        title: t('common.edit'),
+        hoverClass: 'hover-bg',
+        onClick: () => startEdit(status)
+      }
+    ];
+
+    // Only show delete option for non-protected statuses
+    if (!isProtected) {
+      items.push({
+        id: 'delete',
+        type: 'regular',
+        icon: Trash2,
+        title: t('common.delete'),
+        color: 'var(--ds-text-danger)',
+        hoverClass: 'hover-danger',
+        onClick: () => deleteStatus(status),
+        disabled: inUse
+      });
+    }
+
+    return items;
+  }
+
+  // Table column definitions
+  const statusColumns = $derived([
+    {
+      key: 'status_info',
+      label: t('common.status'),
+      slot: 'status'
+    },
+    {
+      key: 'category_info',
+      label: t('common.category'),
+      slot: 'category'
+    },
+    {
+      key: 'description',
+      label: t('common.description'),
+      render: (status) => status.description || '—',
+      textColor: 'var(--ds-text-subtle)'
+    },
+    {
+      key: 'transitions',
+      label: t('workflows.transitions'),
+      render: (status) => `${status.transitionCount || 0} transition${status.transitionCount === 1 ? '' : 's'}`,
+      textColor: 'var(--ds-text-subtle)'
+    },
+    {
+      key: 'actions',
+      label: t('common.actions')
+    }
+  ]);
+</script>
+
+<div style="background-color: var(--ds-surface); min-height: 100vh;">
+  <PageHeader
+    icon={GitBranch}
+    title={t('statuses.title')}
+    subtitle={t('statuses.subtitle')}
+    count={t('statuses.statuses', { count: statuses.length })}
+  >
+    {#snippet actions()}
+      <Button
+        variant="primary"
+        icon={Plus}
+        onclick={startCreate}
+        disabled={statusCategories.length === 0}
+        keyboardHint="A"
+        hotkeyConfig={{ key: toHotkeyString('statuses', 'add'), guard: () => !showCreateForm }}
+      >
+        {t('statuses.createStatus')}
+      </Button>
+    {/snippet}
+  </PageHeader>
+
+  {#if statusCategories.length === 0 && !loadingCategories}
+    <Panel padding="spacious" class="text-center">
+      <Circle class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+      <h3 class="text-lg font-medium text-gray-900 mb-2">{t('categories.noCategories')}</h3>
+      <p class="text-gray-500 mb-6">{t('statuses.noStatuses')}</p>
+      <Button href="/admin/status-categories" variant="primary">
+        {t('categories.title')}
+      </Button>
+    </Panel>
+  {:else}
+    <DataTable
+      columns={statusColumns}
+      data={statuses}
+      keyField="id"
+      emptyMessage={t('statuses.noStatuses')}
+      emptyIcon={Circle}
+      actionItems={buildStatusDropdownItems}
+    >
+      {#snippet status(status)}
+        <div class="flex items-center gap-3">
+          <h3 class="font-medium" style="color: var(--ds-text);">{status.name}</h3>
+          {#if status.is_default}
+            <Lozenge color="green" text={t('common.default')} />
+          {/if}
+        </div>
+      {/snippet}
+
+      {#snippet category(status)}
+        <div class="flex items-center gap-2">
+          <ColorDot color={getCategoryColor(status.category_id)} class="w-4 h-4 border border-[var(--ds-border)]" />
+          <span class="font-medium" style="color: var(--ds-text);">{getCategoryName(status.category_id)}</span>
+        </div>
+      {/snippet}
+    </DataTable>
+  {/if}
+
+  <Modal isOpen={showCreateForm} onclose={cancelForm} maxWidth="max-w-lg" onSubmit={saveStatus}>
+    {#snippet children(submitHint)}
+    <!-- Modal header -->
+    <ModalHeader title={editingId ? t('statuses.editStatus') : t('statuses.createStatus')} showCloseButton={false} />
+
+    <!-- Modal content -->
+    <div class="px-6 py-4">
+      <form onsubmit={(e) => { e.preventDefault(); saveStatus(); }}>
+        <div class="form-group">
+          <label for="name">{t('common.name')} *</label>
+          <Input
+            type="text"
+            id="name"
+            placeholder="e.g. Open, In Progress, Resolved"
+            bind:value={formData.name}
+            required
+            size="small"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="category">{t('common.category')} *</label>
+          <BasePicker
+            bind:value={formData.category_id}
+            items={statusCategories}
+            placeholder={t('categories.selectCategory')}
+            getValue={(item) => item.id}
+            getLabel={(item) => item.name}
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="description">{t('common.description')}</label>
+          <Textarea
+            id="description"
+            placeholder={t('placeholders.optionalDescription')}
+            bind:value={formData.description}
+            rows={2}
+          />
+        </div>
+
+        <div class="mb-6">
+          <Toggle
+            bind:checked={formData.is_default}
+            label={t('common.default')}
+            size="small"
+          />
+        </div>
+
+        <!-- Modal footer -->
+        <DialogFooter
+          onCancel={cancelForm}
+          onConfirm={saveStatus}
+          confirmLabel={editingId ? t('common.update') : t('common.create')}
+          showKeyboardHint={true}
+          confirmKeyboardHint={submitHint}
+          class="mx-[-1.5rem] mb-[-1rem] mt-0"
+        />
+      </form>
+    </div>
+    {/snippet}
+  </Modal>
+</div>

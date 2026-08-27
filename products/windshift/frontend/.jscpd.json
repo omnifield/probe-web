@@ -1,0 +1,6 @@
+{
+  "threshold": 5,
+  "formatsExts": { "javascript": ["svelte", "js"] },
+  "ignore": ["**/locales/**", "**/*.test.js", "**/node_modules/**", "**/design-system/viewer/**"],
+  "reporters": ["json", "console"]
+}

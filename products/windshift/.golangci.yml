@@ -1,0 +1,131 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: false
+
+linters:
+  enable:
+    - errcheck       # Check for unchecked errors
+    - govet          # Report suspicious constructs
+    - ineffassign    # Detect ineffective assignments
+    - staticcheck    # Go static analysis (includes gosimple)
+    - unused         # Find unused code
+    - misspell       # Fix spelling errors
+    - gocritic       # Opinionated linter
+    - gosec          # Security checks
+    - prealloc       # Slice preallocation hints
+    - unconvert      # Remove unnecessary conversions
+    - unparam        # Find unused function parameters
+    - nilerr         # Check for nil error returns
+    - rowserrcheck   # Require rows.Err() after sql.Rows iteration
+    # contextcheck disabled until finding C (service-layer ctx propagation)
+    # is addressed — see docs/golang_architecture_review_2026-05-14.md. There
+    # are ~50 violations in service code that need ctx-aware signatures first.
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (net.Conn).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Tx).Rollback
+        - (*database/sql.Rows).Close
+        - (*database/sql.Result).LastInsertId
+        - (*database/sql.Result).RowsAffected
+        - (windshift/internal/database.Tx).Rollback
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment  # Too noisy for now
+        - shadow          # Idiomatic Go allows shadowing (22 instances)
+
+    staticcheck:
+      checks: ["all"]
+
+    gosec:
+      excludes:
+        - G104  # Audit errors not checked (handled by errcheck)
+        - G117  # Struct fields for passwords/tokens are data models, not hardcoded secrets
+        - G706  # Log injection — all slog calls use structured logging with validated/internal values
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - hugeParam  # Too strict for typical structs
+        - rangeValCopy  # Often not worth micro-optimizing
+
+    misspell:
+      locale: US
+
+  exclusions:
+    generated: lax
+    presets: []
+    paths:
+      - ^\.claude/
+      - frontend/node_modules
+    rules:
+      # AI tool executors intentionally return error details as JSON strings with nil error
+      - path: internal/handlers/ai_tools\.go
+        linters:
+          - nilerr
+
+      # DB table is named customer_organisations — cannot rename
+      - linters:
+          - misspell
+        text: "organisation"
+
+      # Ignore long lines in generated files
+      - path: _gen\.go
+        linters:
+          - lll
+
+      # Allow unused parameters in main package
+      - path: main\.go
+        linters:
+          - unparam
+
+      # Ignore magic numbers in tests
+      - path: _test\.go
+        linters:
+          - mnd
+
+      # Allow dot imports in tests
+      - path: _test\.go
+        linters:
+          - revive
+        text: "dot-imports"
+
+      # Allow deprecated LDAP API (no alternative)
+      - path: internal/ldap/
+        linters:
+          - staticcheck
+        text: "SA1019"
+
+      # Suppress package comment lint for internal packages
+      - linters:
+          - staticcheck
+        text: "ST1000"
+
+formatters:
+  enable:
+    - gofmt          # Check formatting
+    - goimports      # Manage imports
+
+  settings:
+    goimports:
+      local-prefixes: [windshift]
+
+output:
+  formats:
+    text:
+      path: stdout
+  sort-order:
+    - file

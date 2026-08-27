@@ -24,7 +24,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "vite build && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
@@ -33,12 +33,11 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@omnifield/probe-web-skin": "workspace:*",
     "@omnifield/probe-web-ui": "workspace:*",
     "@types/node": "^24.10.1",
-    "esbuild": "^0.27.7",
-    "esbuild-plugin-solid": "^0.6.0",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

@@ -5,7 +5,7 @@
 // плагинов и настройки сборки — то есть ровно то, что обязано двигаться. Поэтому конфиг
 // целиком прячется сюда, а у потребителя остаются три строки: импорт, вызов, `export default`.
 
-import { resolve, sep } from "node:path";
+import { isAbsolute, resolve, sep } from "node:path";
 
 import {
   normalizePath,
@@ -227,4 +227,133 @@ export function defineConfig(options: DefineConfigOptions = {}): UserConfig {
 
   done();
   return config;
+}
+
+// ЕЩЁ ОДНА РАБОТА ТОГО ЖЕ ПОДПУТИ — сборка БИБЛИОТЕКИ (`ui`, `skin-mech`, `assembly`, …) вместо
+// приложения. Раньше каждая такая зона носила свой `scripts/build.mjs` поверх esbuild — почти
+// дословный повтор в трёх копиях, который никто не заметил бы разошедшимся, пока `rm shit` не
+// снёс все три разом. Держатель один, как и у `defineConfig()` выше: то же место, та же причина
+// (`placed-once` у потребителя, содержательная часть — здесь и меняется одним выпуском).
+//
+// Отдельного пакета под это не заводим: `@vite-config`-пакет одним набором функций под и
+// приложение, и библиотеку — рыночная форма (Turborepo, любой монорепо-стартер с общим
+// `vite-config`), не изобретение здесь. Прежнее чтение `PROBEWEB-4` («направление
+// зависимостей одностороннее, `ui` не вправе зависеть от `build`») было перестраховкой уже
+// на первом же примере: одна оснастка на разные цели потребления — это и есть тот самый
+// paved road, а не два держателя одного и того же знания.
+
+/** Один вход поставки библиотеки. */
+export interface LibraryEntry {
+  /** Имя выхода: `dist/<name>.js` (и `dist/<name>.jsx`, когда `solid: true`). */
+  readonly name: string;
+  /** Путь входа от корня пакета, например `"src/index.ts"`. */
+  readonly source: string;
+  /**
+   * Вход отдаёт JSX и обязан уехать ДВУМЯ ветками: `dist/<name>.jsx` (условие `solid` —
+   * непреобразованный JSX, потребитель на Solid применит свою трансформацию сам) и
+   * `dist/<name>.js` (`default` — тот же вход, JSX уже разобран `vite-plugin-solid`, для
+   * тех, кто про условие `solid` не знает).
+   */
+  readonly solid?: boolean;
+}
+
+/** Опции сборки поставки библиотеки. */
+export interface DefineLibraryConfigOptions {
+  /** Входы поставки — по одному на каждую цель `exports`, несущую модуль. */
+  readonly entries: readonly LibraryEntry[];
+}
+
+/** Внешние зависимости бандла: ЛЮБОЙ спецификатор не относительным и не абсолютным путём. */
+function externalizeDependencies(id: string): boolean {
+  return !id.startsWith(".") && !isAbsolute(id);
+}
+
+/**
+ * Ветка `solid` для входов, отдающих JSX, — непреобразованный JSX (`dist/<name>.jsx`), рядом с
+ * тем, что уже положил Vite веткой `default`.
+ *
+ * ПОЧЕМУ ЭТО esbuild, А НЕ ЕЩЁ ОДИН `vite build`. Vite 8 транслирует TS/JSX через Oxc/Rolldown,
+ * и на день написания (2026-08) `oxc.jsx: "preserve"` в library mode не работает вовсе — падает
+ * уже на разборе, "JSX syntax is disabled" (проверено живьём минимальным повтором, до всякой
+ * обвязки). esbuild `jsx: "preserve"` — тот же приём, что был здесь годами (`tsup-preset-solid`
+ * стоит на нём же), и он единственный, кто сегодня реально это умеет. Это НЕ откат к прежним
+ * ручным скриптам: единственный узкий вызов на единственную задачу, которую сам Vite пока не
+ * тянет, — а не оркестратор всей поставки.
+ *
+ * ВЫЗЫВАЕТСЯ ПОСЛЕ Vite (`closeBundle`), а не вместо него: `dist/<name>.js` (ветка `default`)
+ * кладёт Vite, эта функция дописывает только `dist/<name>.jsx` рядом.
+ *
+ * @param root корень пакета (соответствует `process.cwd()` вызывающего `vite build`)
+ * @param entries входы, отмеченные `solid: true`
+ */
+async function buildRawJsxBranch(root: string, entries: readonly LibraryEntry[]): Promise<void> {
+  const { build } = await import("esbuild");
+  for (const entry of entries) {
+    await build({
+      entryPoints: [resolve(root, entry.source)],
+      bundle: true,
+      format: "esm",
+      platform: "browser",
+      target: "es2023",
+      jsx: "preserve",
+      // Всё, что не относительный путь, — наружу: та же граница, что и у ветки `default`.
+      packages: "external",
+      sourcemap: true,
+      // Исходники в тарбол не едут (`files` манифеста) — карта обязана нести их в себе.
+      sourcesContent: true,
+      outfile: resolve(root, "dist", `${entry.name}.jsx`),
+    });
+  }
+}
+
+/**
+ * Готовый конфиг Vite для сборки БИБЛИОТЕКИ probe-web (`library mode` — штатный режим Vite, не
+ * самодельный):
+ *
+ * ```jsonc
+ * // package.json потребителя
+ * "build": "vite build && tsc -p tsconfig.build.json"
+ * ```
+ *
+ * Один проход `vite build` собирает ВСЕ входы веткой `default` (плагин `vite-plugin-solid`
+ * включён — JSX разбирается), и в конце сборки (`closeBundle`) довешивает ветку `solid` —
+ * непреобразованный JSX — для входов, отмеченных `solid: true` (см. `buildRawJsxBranch`).
+ *
+ * Внешние зависимости — ЛЮБОЙ спецификатор не относительным путём: чужого в бандл не попадает
+ * ни байта, копию `solid-js`/`@ark-ui/solid`/т.п. приносит потребитель. Декларации (`.d.ts`) в
+ * этот конфиг не входят — отдельным `tsc`, тем же компилятором, что проверяет код при
+ * typecheck: второго источника правды о типах в пакете нет.
+ *
+ * @param options входы поставки
+ * @returns конфиг для `export default` в `vite.config.ts` потребителя
+ */
+export function defineLibraryConfig(options: DefineLibraryConfigOptions): UserConfig {
+  const solidEntries = options.entries.filter((entry) => entry.solid);
+
+  return {
+    plugins: [
+      solid(),
+      solidEntries.length > 0
+        ? {
+            name: "probe-web-build:library-raw-jsx",
+            apply: "build",
+            async closeBundle() {
+              await buildRawJsxBranch(process.cwd(), solidEntries);
+            },
+          }
+        : undefined,
+    ],
+    build: {
+      target: "es2023",
+      sourcemap: true,
+      lib: {
+        entry: Object.fromEntries(
+          options.entries.map((entry) => [entry.name, resolve(process.cwd(), entry.source)]),
+        ),
+        formats: ["es"],
+        fileName: (_format, entryName) => `${entryName}.js`,
+      },
+      rollupOptions: { external: externalizeDependencies },
+    },
+  };
 }

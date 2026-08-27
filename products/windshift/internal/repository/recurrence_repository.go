@@ -1,0 +1,514 @@
+package repository
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+
+	"windshift/internal/database"
+	"windshift/internal/models"
+)
+
+var (
+	// ErrRecurrenceRuleExists reports that an item already owns a rule.
+	ErrRecurrenceRuleExists = errors.New("recurrence rule already exists")
+	// ErrRecurrenceRuleLimitReached reports that a workspace is at its hard cap.
+	ErrRecurrenceRuleLimitReached = errors.New("recurrence rule limit reached")
+)
+
+// RecurrenceWorkspaceVolume is one workspace's persisted recurrence-rule
+// cardinality for system diagnostics.
+type RecurrenceWorkspaceVolume struct {
+	WorkspaceID int    `json:"workspace_id"`
+	Name        string `json:"name"`
+	Key         string `json:"key"`
+	RuleCount   int    `json:"rule_count"`
+	ActiveCount int    `json:"active_count"`
+}
+
+// RecurrenceRepository provides data access methods for recurrence rules and instances
+type RecurrenceRepository struct {
+	db database.Database
+}
+
+// NewRecurrenceRepository creates a new recurrence repository
+func NewRecurrenceRepository(db database.Database) *RecurrenceRepository {
+	return &RecurrenceRepository{db: db}
+}
+
+// assignRecurrenceNullableFields sets nullable time and int fields on a recurrence rule.
+func assignRecurrenceNullableFields(rule *models.RecurrenceRule, dtend, lastGenUntil, nextGenCheck sql.NullTime, statusOnCreate, createdBy sql.NullInt64) {
+	if dtend.Valid {
+		rule.DtEnd = &dtend.Time
+	}
+	if lastGenUntil.Valid {
+		rule.LastGeneratedUntil = &lastGenUntil.Time
+	}
+	if nextGenCheck.Valid {
+		rule.NextGenerationCheck = &nextGenCheck.Time
+	}
+	if statusOnCreate.Valid {
+		val := int(statusOnCreate.Int64)
+		rule.StatusOnCreate = &val
+	}
+	if createdBy.Valid {
+		val := int(createdBy.Int64)
+		rule.CreatedBy = &val
+	}
+}
+
+// GetByID retrieves a recurrence rule by ID
+func (r *RecurrenceRepository) GetByID(id int) (*models.RecurrenceRule, error) {
+	var rule models.RecurrenceRule
+	var dtend, lastGenUntil, nextGenCheck sql.NullTime
+	var statusOnCreate, createdBy sql.NullInt64
+
+	err := r.db.QueryRow(`
+		SELECT rr.id, rr.template_item_id, rr.workspace_id, rr.rrule, rr.dtstart, rr.dtend,
+		       rr.timezone, rr.lead_time_days, rr.last_generated_until, rr.next_generation_check,
+		       rr.copy_assignee, rr.copy_priority, rr.copy_custom_fields, rr.copy_description,
+		       rr.status_on_create, rr.is_active, rr.created_by, rr.created_at, rr.updated_at,
+		       i.title, w.name, w.key, u.username
+		FROM recurrence_rules rr
+		LEFT JOIN items i ON rr.template_item_id = i.id
+		LEFT JOIN workspaces w ON rr.workspace_id = w.id
+		LEFT JOIN users u ON rr.created_by = u.id
+		WHERE rr.id = ?
+	`, id).Scan(
+		&rule.ID, &rule.TemplateItemID, &rule.WorkspaceID, &rule.RRule, &rule.DtStart, &dtend,
+		&rule.Timezone, &rule.LeadTimeDays, &lastGenUntil, &nextGenCheck,
+		&rule.CopyAssignee, &rule.CopyPriority, &rule.CopyCustomFields, &rule.CopyDescription,
+		&statusOnCreate, &rule.IsActive, &createdBy, &rule.CreatedAt, &rule.UpdatedAt,
+		&rule.TemplateTitle, &rule.WorkspaceName, &rule.WorkspaceKey, &rule.CreatorName,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to find recurrence rule: %w", err)
+	}
+
+	assignRecurrenceNullableFields(&rule, dtend, lastGenUntil, nextGenCheck, statusOnCreate, createdBy)
+
+	return &rule, nil
+}
+
+// GetByTemplateItemID retrieves a recurrence rule by its template item ID
+func (r *RecurrenceRepository) GetByTemplateItemID(templateItemID int) (*models.RecurrenceRule, error) {
+	var ruleID int
+	err := r.db.QueryRow(`SELECT id FROM recurrence_rules WHERE template_item_id = ?`, templateItemID).Scan(&ruleID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to find recurrence rule by template: %w", err)
+	}
+	return r.GetByID(ruleID)
+}
+
+// GetRulesNeedingGeneration returns active rules where next_generation_check <= now
+func (r *RecurrenceRepository) GetRulesNeedingGeneration(limit int) ([]*models.RecurrenceRule, error) {
+	rows, err := r.db.Query(`
+		SELECT rr.id, rr.template_item_id, rr.workspace_id, rr.rrule, rr.dtstart, rr.dtend,
+		       rr.timezone, rr.lead_time_days, rr.last_generated_until, rr.next_generation_check,
+		       rr.copy_assignee, rr.copy_priority, rr.copy_custom_fields, rr.copy_description,
+		       rr.status_on_create, rr.is_active, rr.created_by, rr.created_at, rr.updated_at
+		FROM recurrence_rules rr
+		WHERE rr.is_active = true
+		  AND (rr.next_generation_check IS NULL OR rr.next_generation_check <= ?)
+		-- NULL ordering differs across engines (SQLite: NULLs first by default, Postgres:
+		-- NULLs last). Force NULLs first so freshly-created rules whose
+		-- next_generation_check hasn't been written yet are processed promptly under
+		-- both backends instead of starving behind a backlog of due rules at LIMIT.
+		ORDER BY (rr.next_generation_check IS NULL) DESC, rr.next_generation_check ASC
+		LIMIT ?
+	`, time.Now(), limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query recurrence rules: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var rules []*models.RecurrenceRule
+	for rows.Next() {
+		rule := &models.RecurrenceRule{}
+		var dtend, lastGenUntil, nextGenCheck sql.NullTime
+		var statusOnCreate, createdBy sql.NullInt64
+
+		err := rows.Scan(
+			&rule.ID, &rule.TemplateItemID, &rule.WorkspaceID, &rule.RRule, &rule.DtStart, &dtend,
+			&rule.Timezone, &rule.LeadTimeDays, &lastGenUntil, &nextGenCheck,
+			&rule.CopyAssignee, &rule.CopyPriority, &rule.CopyCustomFields, &rule.CopyDescription,
+			&statusOnCreate, &rule.IsActive, &createdBy, &rule.CreatedAt, &rule.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan recurrence rule: %w", err)
+		}
+
+		assignRecurrenceNullableFields(rule, dtend, lastGenUntil, nextGenCheck, statusOnCreate, createdBy)
+
+		rules = append(rules, rule)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate recurrence rules: %w", err)
+	}
+
+	return rules, nil
+}
+
+// Create creates a new recurrence rule
+func (r *RecurrenceRepository) Create(rule *models.RecurrenceRule) (int, error) {
+	return createRecurrenceRule(r.db, rule)
+}
+
+type recurrenceRuleCreator interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+func createRecurrenceRule(db recurrenceRuleCreator, rule *models.RecurrenceRule) (int, error) {
+	var id int64
+	err := db.QueryRow(`
+		INSERT INTO recurrence_rules (
+			template_item_id, workspace_id, rrule, dtstart, dtend, timezone,
+			lead_time_days, copy_assignee, copy_priority, copy_custom_fields,
+			copy_description, status_on_create, is_active, created_by, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+	`,
+		rule.TemplateItemID, rule.WorkspaceID, rule.RRule, rule.DtStart, rule.DtEnd, rule.Timezone,
+		rule.LeadTimeDays, rule.CopyAssignee, rule.CopyPriority, rule.CopyCustomFields,
+		rule.CopyDescription, rule.StatusOnCreate, rule.IsActive, rule.CreatedBy,
+		time.Now(), time.Now(),
+	).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create recurrence rule: %w", err)
+	}
+
+	return int(id), nil
+}
+
+// CreateWithinWorkspaceLimit atomically checks item uniqueness and the
+// workspace rule cap before inserting. The no-op workspace update acquires a
+// per-workspace write/row lock on both SQLite and PostgreSQL so concurrent
+// creates cannot both observe the same pre-limit count.
+func (r *RecurrenceRepository) CreateWithinWorkspaceLimit(rule *models.RecurrenceRule, limit int) (int, error) {
+	return database.WithTxResult(r.db, func(tx database.Tx) (int, error) {
+		if _, err := tx.Exec(`UPDATE workspaces SET id = id WHERE id = ?`, rule.WorkspaceID); err != nil {
+			return 0, fmt.Errorf("lock recurrence workspace: %w", err)
+		}
+
+		var itemRuleCount int
+		if err := tx.QueryRow(
+			`SELECT COUNT(*) FROM recurrence_rules WHERE template_item_id = ?`,
+			rule.TemplateItemID,
+		).Scan(&itemRuleCount); err != nil {
+			return 0, fmt.Errorf("count recurrence rules for item: %w", err)
+		}
+		if itemRuleCount > 0 {
+			return 0, ErrRecurrenceRuleExists
+		}
+
+		var workspaceRuleCount int
+		if err := tx.QueryRow(
+			`SELECT COUNT(*) FROM recurrence_rules WHERE workspace_id = ?`,
+			rule.WorkspaceID,
+		).Scan(&workspaceRuleCount); err != nil {
+			return 0, fmt.Errorf("count recurrence rules for workspace: %w", err)
+		}
+		if workspaceRuleCount >= limit {
+			return 0, ErrRecurrenceRuleLimitReached
+		}
+
+		return createRecurrenceRule(tx, rule)
+	})
+}
+
+// CountByWorkspace returns the number of recurrence rules in one workspace.
+func (r *RecurrenceRepository) CountByWorkspace(workspaceID int) (int, error) {
+	var count int
+	if err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM recurrence_rules WHERE workspace_id = ?`,
+		workspaceID,
+	).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count recurrence rules for workspace: %w", err)
+	}
+	return count, nil
+}
+
+// ListWorkspaceVolumes returns workspaces with recurrence rules, ordered by
+// descending volume for the administrator diagnostics surface.
+func (r *RecurrenceRepository) ListWorkspaceVolumes() ([]RecurrenceWorkspaceVolume, error) {
+	rows, err := r.db.Query(`
+		SELECT w.id, w.name, w.key, COUNT(rr.id),
+		       SUM(CASE WHEN rr.is_active = true THEN 1 ELSE 0 END)
+		FROM workspaces w
+		JOIN recurrence_rules rr ON rr.workspace_id = w.id
+		GROUP BY w.id, w.name, w.key
+		ORDER BY COUNT(rr.id) DESC, w.id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list recurrence workspace volumes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	volumes := make([]RecurrenceWorkspaceVolume, 0)
+	for rows.Next() {
+		var volume RecurrenceWorkspaceVolume
+		if err := rows.Scan(
+			&volume.WorkspaceID,
+			&volume.Name,
+			&volume.Key,
+			&volume.RuleCount,
+			&volume.ActiveCount,
+		); err != nil {
+			return nil, fmt.Errorf("scan recurrence workspace volume: %w", err)
+		}
+		volumes = append(volumes, volume)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate recurrence workspace volumes: %w", err)
+	}
+	return volumes, nil
+}
+
+// CountRulesDueForGeneration returns active rules currently eligible for a
+// scheduler pass.
+func (r *RecurrenceRepository) CountRulesDueForGeneration() (int, error) {
+	var count int
+	if err := r.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM recurrence_rules
+		WHERE is_active = true
+		  AND (next_generation_check IS NULL OR next_generation_check <= ?)
+	`, time.Now()).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count recurrence rules due for generation: %w", err)
+	}
+	return count, nil
+}
+
+// Update updates a recurrence rule
+func (r *RecurrenceRepository) Update(rule *models.RecurrenceRule) error {
+	_, err := r.db.ExecWrite(`
+		UPDATE recurrence_rules SET
+			rrule = ?, dtstart = ?, dtend = ?, timezone = ?, lead_time_days = ?,
+			copy_assignee = ?, copy_priority = ?, copy_custom_fields = ?,
+			copy_description = ?, status_on_create = ?, is_active = ?, updated_at = ?
+		WHERE id = ?
+	`,
+		rule.RRule, rule.DtStart, rule.DtEnd, rule.Timezone, rule.LeadTimeDays,
+		rule.CopyAssignee, rule.CopyPriority, rule.CopyCustomFields,
+		rule.CopyDescription, rule.StatusOnCreate, rule.IsActive, time.Now(),
+		rule.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update recurrence rule: %w", err)
+	}
+	return nil
+}
+
+// Delete deletes a recurrence rule
+func (r *RecurrenceRepository) Delete(id int) error {
+	result, err := r.db.ExecWrite(`DELETE FROM recurrence_rules WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete recurrence rule: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateGenerationProgress updates the last_generated_until and next_generation_check fields
+func (r *RecurrenceRepository) UpdateGenerationProgress(id int, lastGenUntil, nextCheck time.Time) error {
+	_, err := r.db.ExecWrite(`
+		UPDATE recurrence_rules SET
+			last_generated_until = ?, next_generation_check = ?, updated_at = ?
+		WHERE id = ?
+	`, lastGenUntil, nextCheck, time.Now(), id)
+	if err != nil {
+		return fmt.Errorf("failed to update generation progress: %w", err)
+	}
+	return nil
+}
+
+// UpdateNextCheck updates only the next_generation_check field
+func (r *RecurrenceRepository) UpdateNextCheck(id int, nextCheck time.Time) error {
+	_, err := r.db.ExecWrite(`
+		UPDATE recurrence_rules SET next_generation_check = ?, updated_at = ?
+		WHERE id = ?
+	`, nextCheck, time.Now(), id)
+	if err != nil {
+		return fmt.Errorf("failed to update next check: %w", err)
+	}
+	return nil
+}
+
+// GetExistingInstanceDates returns a map of dates that already have instances for a rule
+func (r *RecurrenceRepository) GetExistingInstanceDates(ruleID int) (map[string]bool, error) {
+	rows, err := r.db.Query(`
+		SELECT scheduled_date FROM recurrence_instances WHERE recurrence_rule_id = ?
+	`, ruleID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query existing instance dates: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	dates := make(map[string]bool)
+	for rows.Next() {
+		var date time.Time
+		if err := rows.Scan(&date); err != nil {
+			return nil, fmt.Errorf("failed to scan date: %w", err)
+		}
+		dates[date.Format("2006-01-02")] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate existing instance dates: %w", err)
+	}
+
+	return dates, nil
+}
+
+// GetNextSequenceNumber returns the next sequence number for a rule
+func (r *RecurrenceRepository) GetNextSequenceNumber(tx database.Tx, ruleID int) (int, error) {
+	var maxSeq sql.NullInt64
+	err := tx.QueryRow(`
+		SELECT MAX(sequence_number) FROM recurrence_instances WHERE recurrence_rule_id = ?
+	`, ruleID).Scan(&maxSeq)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get max sequence number: %w", err)
+	}
+
+	if maxSeq.Valid {
+		return int(maxSeq.Int64) + 1, nil
+	}
+	return 1, nil
+}
+
+// CreateInstance creates a new recurrence instance record
+func (r *RecurrenceRepository) CreateInstance(tx database.Tx, instance *models.RecurrenceInstance) error {
+	_, err := tx.Exec(`
+		INSERT INTO recurrence_instances (
+			recurrence_rule_id, instance_item_id, scheduled_date, sequence_number, created_at
+		) VALUES (?, ?, ?, ?, ?)
+	`,
+		instance.RecurrenceRuleID, instance.InstanceItemID, instance.ScheduledDate,
+		instance.SequenceNumber, time.Now(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create recurrence instance: %w", err)
+	}
+	return nil
+}
+
+// GetInstancesByRuleID retrieves all instances for a rule
+func (r *RecurrenceRepository) GetInstancesByRuleID(ruleID, limit, offset int) ([]*models.RecurrenceInstance, error) {
+	rows, err := r.db.Query(`
+		SELECT ri.id, ri.recurrence_rule_id, ri.instance_item_id, ri.scheduled_date,
+		       ri.sequence_number, ri.created_at, i.title, s.name
+		FROM recurrence_instances ri
+		LEFT JOIN items i ON ri.instance_item_id = i.id
+		LEFT JOIN statuses s ON i.status_id = s.id
+		WHERE ri.recurrence_rule_id = ?
+		ORDER BY ri.scheduled_date DESC
+		LIMIT ? OFFSET ?
+	`, ruleID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query instances: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var instances []*models.RecurrenceInstance
+	for rows.Next() {
+		instance := &models.RecurrenceInstance{}
+		var itemTitle, itemStatus sql.NullString
+
+		err := rows.Scan(
+			&instance.ID, &instance.RecurrenceRuleID, &instance.InstanceItemID,
+			&instance.ScheduledDate, &instance.SequenceNumber, &instance.CreatedAt,
+			&itemTitle, &itemStatus,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan instance: %w", err)
+		}
+
+		if itemTitle.Valid {
+			instance.ItemTitle = itemTitle.String
+		}
+		if itemStatus.Valid {
+			instance.ItemStatus = itemStatus.String
+		}
+
+		instances = append(instances, instance)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate instances: %w", err)
+	}
+
+	return instances, nil
+}
+
+// CountInstancesByRuleID returns the count of instances for a rule
+func (r *RecurrenceRepository) CountInstancesByRuleID(ruleID int) (int, error) {
+	var count int
+	err := r.db.QueryRow(`
+		SELECT COUNT(*) FROM recurrence_instances WHERE recurrence_rule_id = ?
+	`, ruleID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count instances: %w", err)
+	}
+	return count, nil
+}
+
+// ListByWorkspace lists all recurrence rules for a workspace
+func (r *RecurrenceRepository) ListByWorkspace(workspaceID int) ([]*models.RecurrenceRule, error) {
+	rows, err := r.db.Query(`
+		SELECT rr.id, rr.template_item_id, rr.workspace_id, rr.rrule, rr.dtstart, rr.dtend,
+		       rr.timezone, rr.lead_time_days, rr.last_generated_until, rr.next_generation_check,
+		       rr.copy_assignee, rr.copy_priority, rr.copy_custom_fields, rr.copy_description,
+		       rr.status_on_create, rr.is_active, rr.created_by, rr.created_at, rr.updated_at,
+		       i.title, w.name, w.key,
+		       (SELECT COUNT(*) FROM recurrence_instances ri WHERE ri.recurrence_rule_id = rr.id)
+		FROM recurrence_rules rr
+		LEFT JOIN items i ON rr.template_item_id = i.id
+		LEFT JOIN workspaces w ON rr.workspace_id = w.id
+		WHERE rr.workspace_id = ?
+		ORDER BY rr.created_at DESC
+	`, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query recurrence rules: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var rules []*models.RecurrenceRule
+	for rows.Next() {
+		rule := &models.RecurrenceRule{}
+		var dtend, lastGenUntil, nextGenCheck sql.NullTime
+		var statusOnCreate, createdBy sql.NullInt64
+
+		err := rows.Scan(
+			&rule.ID, &rule.TemplateItemID, &rule.WorkspaceID, &rule.RRule, &rule.DtStart, &dtend,
+			&rule.Timezone, &rule.LeadTimeDays, &lastGenUntil, &nextGenCheck,
+			&rule.CopyAssignee, &rule.CopyPriority, &rule.CopyCustomFields, &rule.CopyDescription,
+			&statusOnCreate, &rule.IsActive, &createdBy, &rule.CreatedAt, &rule.UpdatedAt,
+			&rule.TemplateTitle, &rule.WorkspaceName, &rule.WorkspaceKey, &rule.InstanceCount,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan recurrence rule: %w", err)
+		}
+
+		assignRecurrenceNullableFields(rule, dtend, lastGenUntil, nextGenCheck, statusOnCreate, createdBy)
+
+		rules = append(rules, rule)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate recurrence rules: %w", err)
+	}
+
+	return rules, nil
+}

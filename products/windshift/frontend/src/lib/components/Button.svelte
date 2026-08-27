@@ -1,0 +1,175 @@
+<script>
+    import { install, uninstall } from '@github/hotkey';
+    import { useEventListener } from 'runed';
+    import Tooltip from "./Tooltip.svelte";
+    import { cn } from '../utils/cn.js';
+
+  let {
+    variant = 'default',
+    size = 'medium',
+    disabled = false,
+    icon = null,
+    iconPosition = 'left',
+    /** @type {"button" | "submit" | "reset"} */
+    type = 'button',
+    href = null,
+    target = null,
+    loading = false,
+    fullWidth = false,
+    keyboardHint = null,
+    id = undefined,
+    title = null,
+    onclick = null,
+    hotkeyConfig = null,
+    dataTestid = undefined,
+    dataPageId = undefined,
+    style = '',
+    class: className = '',
+    children = undefined
+  } = $props();
+  export { className as class };
+
+  const buttonType = $derived(/** @type {"button"|"submit"|"reset"} */ (type));
+
+  let buttonEl = $state(null);
+
+  // Install/uninstall @github/hotkey on the button element
+  $effect(() => {
+    if (!buttonEl || !hotkeyConfig?.key) return;
+    install(buttonEl, hotkeyConfig.key);
+    return () => uninstall(buttonEl);
+  });
+
+  // Guard: cancel hotkey-fire when guard returns false or a modal is open above this button
+  useEventListener(() => buttonEl, 'hotkey-fire', (e) => {
+    const openModal = document.querySelector('[role="dialog"][aria-modal="true"]');
+    if (openModal && !openModal.contains(buttonEl)) {
+      e.preventDefault();
+      return;
+    }
+    if (hotkeyConfig?.guard && !hotkeyConfig.guard()) e.preventDefault();
+  });
+
+  // Base styles
+  const baseClasses = $derived(cn(
+    'inline-flex items-center justify-center font-medium transition-colors duration-200 cursor-pointer',
+    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+    fullWidth && 'w-full',
+    className
+  ));
+
+  // Normalize size aliases
+  const normalizedSize = $derived(size === 'sm' ? 'small' : size);
+
+  // Size variants
+  const sizeClasses = $derived({
+    small: 'px-3.5 py-1.5 text-sm rounded gap-2',
+    medium: 'px-4 py-1.5 text-sm rounded gap-2',
+    large: 'px-6 py-2.5 text-base rounded gap-2'
+  }[normalizedSize]);
+
+  // Color variants using Tailwind arbitrary values with CSS variables
+  // Using design system tokens for dark mode support
+  const variantClasses = $derived({
+    primary: 'bg-[var(--ds-interactive)] hover:bg-[var(--ds-interactive-hovered)] focus:ring-[var(--ds-border-focused)] text-white border border-transparent',
+    default: 'bg-[var(--ds-surface-raised,white)] hover:bg-[var(--ds-background-neutral-hovered,#f9fafb)] focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 border border-[var(--ds-border,#d1d5db)] text-[var(--ds-text,#111827)]',
+    secondary: 'bg-[var(--ds-background-neutral,#f3f4f6)] hover:bg-[var(--ds-background-neutral-hovered,#e5e7eb)] focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 text-[var(--ds-text,#374151)] border border-[var(--ds-border,#e5e7eb)]',
+    danger: 'bg-[var(--ds-background-danger-bold)] hover:bg-[var(--ds-background-danger-bold-hovered)] focus:ring-[var(--ds-danger)] text-white border border-transparent',
+    'danger-ghost': 'bg-transparent text-[var(--ds-text-danger)] hover:bg-[var(--ds-background-danger-bold)] hover:text-white focus:ring-[var(--ds-danger)] border border-transparent',
+    selected: 'bg-[var(--ds-interactive-pressed)] hover:bg-[var(--ds-interactive-hovered)] focus:ring-[var(--ds-border-focused)] text-white border border-transparent',
+    ghost: 'bg-transparent hover:bg-[var(--ctx-active-bg,var(--ds-background-neutral-hovered,#f3f4f6))] focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-[var(--ctx-text,var(--ds-text,#374151))]',
+    link: 'bg-transparent hover:underline focus:ring-0 text-[var(--ds-text-link)] hover:text-[var(--ds-text-link-hovered)] border-none p-0'
+  }[variant]);
+
+  // Combine all classes
+  const allClasses = $derived(cn(baseClasses, sizeClasses, variantClasses));
+
+  // Icon size based on button size
+  const iconSize = $derived({
+    small: 'w-4 h-4',
+    medium: 'w-4 h-4',
+    large: 'w-5 h-5'
+  }[normalizedSize]);
+
+  // Keyboard hint styling based on variant using CSS variables
+  const kbdClasses = $derived({
+    primary: 'bg-[var(--ds-interactive-hovered)] bg-opacity-50 border-[var(--ds-border-focused)] text-white',
+    default: 'bg-[var(--ds-background-neutral)] border-[var(--ds-border)] text-[var(--ds-text)]',
+    secondary: 'bg-[var(--ds-background-neutral)] border-[var(--ds-border)] text-[var(--ds-text)]',
+    danger: 'bg-[var(--ds-background-danger-bold-hovered)] bg-opacity-50 border-[var(--ds-danger)] text-white',
+    'danger-ghost': 'bg-[var(--ds-background-danger-bold-hovered)] bg-opacity-50 border-[var(--ds-danger)] text-white',
+    selected: 'bg-[var(--ds-interactive-subtle)] border-[var(--ds-border)] text-[var(--ds-interactive-pressed)]',
+    ghost: 'bg-[var(--ds-background-neutral)] border-[var(--ds-border)] text-[var(--ds-text-subtle)]',
+    link: 'bg-[var(--ds-background-neutral)] border-[var(--ds-border)] text-[var(--ds-text-subtle)]'
+  }[variant]);
+</script>
+
+<!-- Snippet for button inner content -->
+{#snippet buttonContent()}
+  {#if loading}
+    <svg class="animate-spin -ml-1 mr-2 {iconSize} text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  {:else if icon && iconPosition === 'left'}
+    {@const Icon = icon}
+    <Icon class={iconSize} />
+  {/if}
+
+  {#if children}{@render children()}{/if}
+
+  {#if keyboardHint}
+    <kbd class="ml-auto px-1.5 text-xs rounded border {kbdClasses}">
+      {keyboardHint}
+    </kbd>
+  {/if}
+
+  {#if !loading && icon && iconPosition === 'right'}
+    {@const Icon = icon}
+    <Icon class={iconSize} />
+  {/if}
+{/snippet}
+
+<!-- Snippet for link inner content (no loading state) -->
+{#snippet linkContent()}
+  {#if icon && iconPosition === 'left'}
+    {@const Icon = icon}
+    <Icon class={iconSize} />
+  {/if}
+
+  {#if children}{@render children()}{/if}
+
+  {#if keyboardHint}
+    <kbd class="ml-auto px-1.5 text-xs rounded border {kbdClasses}">
+      {keyboardHint}
+    </kbd>
+  {/if}
+
+  {#if icon && iconPosition === 'right'}
+    {@const Icon = icon}
+    <Icon class={iconSize} />
+  {/if}
+{/snippet}
+
+<!-- Snippet for the button/link element -->
+{#snippet buttonElement()}
+  {#if href}
+    <a bind:this={buttonEl} {id} {href} {target} {style} data-testid={dataTestid} data-page-id={dataPageId} class={allClasses} onclick={(e) => onclick?.(e)}>
+      {@render linkContent()}
+    </a>
+  {:else}
+    <button bind:this={buttonEl} {id} type={buttonType} {disabled} {style} data-testid={dataTestid} data-page-id={dataPageId} class={allClasses} onclick={(e) => onclick?.(e)}>
+      {@render buttonContent()}
+    </button>
+  {/if}
+{/snippet}
+
+<!-- Main render: wrap with tooltip if title is provided -->
+{#if title}
+  <Tooltip content={title}>
+    {@render buttonElement()}
+  </Tooltip>
+{:else}
+  {@render buttonElement()}
+{/if}

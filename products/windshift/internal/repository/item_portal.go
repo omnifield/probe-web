@@ -1,0 +1,452 @@
+package repository
+
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	"windshift/internal/models"
+)
+
+// --- Personal-workspace item helpers ----------------------------------------
+
+// ListRelatedPersonalItems returns items in personalWorkspaceID that are linked
+// via related_work_item_id to the given work item, hydrated with workspace,
+// item_type, status, priority, and assignee names used by the personal-tasks
+// widget. Results are ordered newest-first.
+func (r *ItemRepository) ListRelatedPersonalItems(relatedWorkItemID, personalWorkspaceID int) ([]models.Item, error) {
+	query := `
+		SELECT
+			i.id, i.workspace_id, i.workspace_item_number, i.item_type_id, i.title, i.description,
+			i.status_id, i.priority_id, i.is_task,
+			i.project_id, i.inherit_project, i.time_project_id, i.assignee_id, i.creator_id,
+			i.calendar_data, i.parent_id,
+			i.frac_index, i.related_work_item_id,
+			i.created_at, i.updated_at,
+			w.name AS workspace_name, w.key AS workspace_key,
+			it.name AS item_type_name,
+			st.name AS status_name,
+			pri.name AS priority_name, pri.icon AS priority_icon, pri.color AS priority_color,
+			assignee.first_name || ' ' || assignee.last_name AS assignee_name,
+			assignee.email AS assignee_email,
+			assignee.avatar_url AS assignee_avatar
+		FROM items i
+		LEFT JOIN workspaces w ON i.workspace_id = w.id
+		LEFT JOIN item_types it ON i.item_type_id = it.id
+		LEFT JOIN statuses st ON i.status_id = st.id
+		LEFT JOIN priorities pri ON i.priority_id = pri.id
+		LEFT JOIN users assignee ON i.assignee_id = assignee.id
+		WHERE i.related_work_item_id = ? AND i.workspace_id = ?
+		ORDER BY i.created_at DESC`
+
+	rows, err := r.db.Query(query, relatedWorkItemID, personalWorkspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list related personal items: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var items []models.Item
+	for rows.Next() {
+		var item models.Item
+		var calendarDataJSON sql.NullString
+		var itemTypeName, statusName, priorityName, priorityIcon, priorityColor sql.NullString
+		var assigneeName, assigneeEmail, assigneeAvatar sql.NullString
+
+		err := rows.Scan(
+			&item.ID, &item.WorkspaceID, &item.WorkspaceItemNumber, &item.ItemTypeID, &item.Title, &item.Description,
+			&item.StatusID, &item.PriorityID, &item.IsTask,
+			&item.ProjectID, &item.InheritProject, &item.TimeProjectID, &item.AssigneeID, &item.CreatorID,
+			&calendarDataJSON, &item.ParentID,
+			&item.FracIndex, &item.RelatedWorkItemID,
+			&item.CreatedAt, &item.UpdatedAt,
+			&item.WorkspaceName, &item.WorkspaceKey,
+			&itemTypeName,
+			&statusName,
+			&priorityName, &priorityIcon, &priorityColor,
+			&assigneeName, &assigneeEmail, &assigneeAvatar,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan related personal item: %w", err)
+		}
+
+		assignNullableString(&item.ItemTypeName, itemTypeName)
+		assignNullableString(&item.StatusName, statusName)
+		assignNullableString(&item.PriorityName, priorityName)
+		assignNullableString(&item.PriorityIcon, priorityIcon)
+		assignNullableString(&item.PriorityColor, priorityColor)
+		assignNullableString(&item.AssigneeName, assigneeName)
+		assignNullableString(&item.AssigneeEmail, assigneeEmail)
+		assignNullableString(&item.AssigneeAvatar, assigneeAvatar)
+
+		item.CalendarData = []models.CalendarScheduleEntry{}
+		if calendarDataJSON.Valid && calendarDataJSON.String != "" {
+			if err := json.Unmarshal([]byte(calendarDataJSON.String), &item.CalendarData); err != nil {
+				item.CalendarData = []models.CalendarScheduleEntry{}
+			}
+		}
+
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate related personal items: %w", err)
+	}
+	return items, nil
+}
+
+// PersonalWorkspaceTask is the minimal projection of a personal-workspace task
+// the Todoist sync engine reconciles against. Completed is derived from the
+// status's category (is_completed), the same signal the UI uses to render a
+// task as done.
+type PersonalWorkspaceTask struct {
+	ItemID      int
+	Title       string
+	Description string
+	DueDate     *time.Time
+	ParentID    *int
+	Completed   bool
+	UpdatedAt   time.Time
+}
+
+// ListPersonalWorkspaceTasks returns every task item in a personal workspace,
+// projected for Todoist sync. is_task filters out any non-task rows so the sync
+// mirrors the personal to-do list rather than arbitrary items.
+func (r *ItemRepository) ListPersonalWorkspaceTasks(workspaceID int) ([]PersonalWorkspaceTask, error) {
+	rows, err := r.db.Query(`
+		SELECT i.id, i.title, i.description, i.due_date, i.parent_id, i.updated_at,
+		       COALESCE(sc.is_completed, false) AS completed
+		FROM items i
+		LEFT JOIN statuses s ON i.status_id = s.id
+		LEFT JOIN status_categories sc ON s.category_id = sc.id
+		WHERE i.workspace_id = ? AND i.is_task = true
+	`, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("list personal workspace tasks: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var tasks []PersonalWorkspaceTask
+	for rows.Next() {
+		var t PersonalWorkspaceTask
+		var dueDate sql.NullTime
+		var parentID sql.NullInt64
+		if err := rows.Scan(&t.ItemID, &t.Title, &t.Description, &dueDate, &parentID, &t.UpdatedAt, &t.Completed); err != nil {
+			return nil, fmt.Errorf("scan personal workspace task: %w", err)
+		}
+		if dueDate.Valid {
+			t.DueDate = &dueDate.Time
+		}
+		assignNullableInt(&t.ParentID, parentID)
+		tasks = append(tasks, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate personal workspace tasks: %w", err)
+	}
+	return tasks, nil
+}
+
+// ItemWorkspaceOwnership describes the workspace an item belongs to, whether
+// that workspace is personal, and who owns it. Returned by
+// GetItemWorkspaceOwnership; callers use this to enforce personal-workspace
+// access rules.
+type ItemWorkspaceOwnership struct {
+	WorkspaceID int
+	IsPersonal  bool
+	OwnerID     *int
+}
+
+// GetItemWorkspaceOwnership returns the workspace ID for an item along with
+// is_personal and owner_id of that workspace. Returns ErrNotFound if the item
+// does not exist.
+func (r *ItemRepository) GetItemWorkspaceOwnership(itemID int) (*ItemWorkspaceOwnership, error) {
+	var out ItemWorkspaceOwnership
+	var ownerID sql.NullInt64
+	err := r.db.QueryRow(`
+		SELECT i.workspace_id, w.is_personal, w.owner_id
+		FROM items i
+		JOIN workspaces w ON i.workspace_id = w.id
+		WHERE i.id = ?
+	`, itemID).Scan(&out.WorkspaceID, &out.IsPersonal, &ownerID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get item workspace ownership: %w", err)
+	}
+	assignNullableInt(&out.OwnerID, ownerID)
+	return &out, nil
+}
+
+// --- Portal channel request lookups ------------------------------------------
+
+// PortalRequestRow is one row returned by the portal channel request queries —
+// an item submitted through a portal channel, hydrated with workspace,
+// request-type, status, and comment-count metadata.
+type PortalRequestRow struct {
+	ID                      int
+	WorkspaceID             int
+	WorkspaceItemNumber     int
+	Title                   string
+	Description             string
+	StatusName              string
+	PriorityName            string
+	CreatedAt               string
+	UpdatedAt               string
+	ChannelID               *int
+	RequestTypeID           *int
+	CreatorID               *int
+	CreatorPortalCustomerID *int
+	WorkspaceName           string
+	WorkspaceKey            string
+	RequestTypeName         *string
+	RequestTypeIcon         *string
+	RequestTypeColor        *string
+	CommentCount            int
+	StatusCategoryColor     *string
+	StatusIsCompleted       bool
+}
+
+const portalRequestSelect = `
+	SELECT
+		i.id, i.workspace_id, i.workspace_item_number, i.title, i.description,
+		COALESCE(s.name, 'Unknown') AS status, COALESCE(p.name, '') AS priority,
+		i.created_at, i.updated_at,
+		i.channel_id, i.request_type_id, i.creator_id, i.creator_portal_customer_id,
+		w.name AS workspace_name,
+		w.key AS workspace_key,
+		rt.name AS request_type_name,
+		rt.icon AS request_type_icon,
+		rt.color AS request_type_color,
+		(SELECT COUNT(*) FROM comments WHERE item_id = i.id AND (is_private = false OR is_private IS NULL)) AS comment_count,
+		sc.color AS status_category_color,
+		COALESCE(sc.is_completed, false) AS status_is_completed
+	FROM items i
+	JOIN workspaces w ON i.workspace_id = w.id
+	LEFT JOIN request_types rt ON i.request_type_id = rt.id
+	LEFT JOIN statuses s ON i.status_id = s.id
+	LEFT JOIN status_categories sc ON s.category_id = sc.id
+	LEFT JOIN priorities p ON i.priority_id = p.id
+`
+
+func scanPortalRequestRow(scanner interface {
+	Scan(dest ...any) error
+}) (PortalRequestRow, error) {
+	var row PortalRequestRow
+	var channelID, requestTypeID, creatorID, creatorPortalCustomerID sql.NullInt64
+	var requestTypeName, requestTypeIcon, requestTypeColor, statusCategoryColor sql.NullString
+	err := scanner.Scan(
+		&row.ID, &row.WorkspaceID, &row.WorkspaceItemNumber, &row.Title, &row.Description,
+		&row.StatusName, &row.PriorityName, &row.CreatedAt, &row.UpdatedAt,
+		&channelID, &requestTypeID, &creatorID, &creatorPortalCustomerID,
+		&row.WorkspaceName, &row.WorkspaceKey,
+		&requestTypeName, &requestTypeIcon, &requestTypeColor,
+		&row.CommentCount,
+		&statusCategoryColor, &row.StatusIsCompleted,
+	)
+	if err != nil {
+		return row, err
+	}
+	assignNullableInt(&row.ChannelID, channelID)
+	assignNullableInt(&row.RequestTypeID, requestTypeID)
+	assignNullableInt(&row.CreatorID, creatorID)
+	assignNullableInt(&row.CreatorPortalCustomerID, creatorPortalCustomerID)
+	assignNullableStringPtr(&row.RequestTypeName, requestTypeName)
+	assignNullableStringPtr(&row.RequestTypeIcon, requestTypeIcon)
+	assignNullableStringPtr(&row.RequestTypeColor, requestTypeColor)
+	assignNullableStringPtr(&row.StatusCategoryColor, statusCategoryColor)
+	return row, nil
+}
+
+// ListChannelRequestsByCreator returns the newest 500 requests an internal
+// user submitted through the given portal channel.
+func (r *ItemRepository) ListChannelRequestsByCreator(creatorID, channelID int) ([]PortalRequestRow, error) {
+	return r.listChannelRequests("i.creator_id = ?", creatorID, channelID)
+}
+
+// ListChannelRequestsByPortalCustomer returns the newest 500 requests a portal
+// customer submitted through the given portal channel.
+func (r *ItemRepository) ListChannelRequestsByPortalCustomer(customerID, channelID int) ([]PortalRequestRow, error) {
+	return r.listChannelRequests("i.creator_portal_customer_id = ?", customerID, channelID)
+}
+
+func (r *ItemRepository) listChannelRequests(ownerClause string, ownerID, channelID int) ([]PortalRequestRow, error) {
+	rows, err := r.db.Query(portalRequestSelect+`
+		WHERE `+ownerClause+` AND i.channel_id = ?
+		ORDER BY i.created_at DESC
+		LIMIT 500
+	`, ownerID, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("list channel requests: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := []PortalRequestRow{}
+	for rows.Next() {
+		row, err := scanPortalRequestRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan channel request: %w", err)
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// GetPortalRequest returns a single item with portal request metadata.
+// Returns ErrNotFound if the item does not exist.
+func (r *ItemRepository) GetPortalRequest(itemID int) (*PortalRequestRow, error) {
+	row, err := scanPortalRequestRow(r.db.QueryRow(portalRequestSelect+" WHERE i.id = ?", itemID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get portal request %d: %w", itemID, err)
+	}
+	return &row, nil
+}
+
+// GetPortalCreatorEmail returns the email of the portal customer who created
+// the item through the given channel. Returns ErrNotFound when the item does
+// not exist, was not created by a portal customer, or belongs to a different
+// channel.
+func (r *ItemRepository) GetPortalCreatorEmail(itemID, channelID int) (string, error) {
+	var email sql.NullString
+	err := r.db.QueryRow(`
+		SELECT pc.email
+		FROM items i
+		JOIN portal_customers pc ON pc.id = i.creator_portal_customer_id
+		WHERE i.id = ? AND i.channel_id = ?
+	`, itemID, channelID).Scan(&email)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && !email.Valid) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("get portal creator email: %w", err)
+	}
+	return email.String, nil
+}
+
+// --- Portal customer ticket lookups -----------------------------------------
+
+// PortalCustomerSubmission is one row returned by
+// ListPortalCustomerSubmissions — a ticket a portal customer created, with
+// workspace + status metadata for display in the customer profile.
+type PortalCustomerSubmission struct {
+	ID                  int
+	WorkspaceID         int
+	WorkspaceItemNumber int
+	WorkspaceName       string
+	WorkspaceKey        string
+	Title               string
+	Description         string
+	StatusName          string
+	StatusColor         string
+	CreatedAt           string
+}
+
+// ListPortalCustomerSubmissions returns all items created by the given portal
+// customer, newest-first, hydrated with workspace name/key and status
+// name/color (falling back to empty string / neutral color for NULLs).
+func (r *ItemRepository) ListPortalCustomerSubmissions(customerID int) ([]PortalCustomerSubmission, error) {
+	rows, err := r.db.Query(`
+		SELECT
+			i.id, i.workspace_id, i.workspace_item_number, i.title, i.description,
+			COALESCE(s.name, ''), COALESCE(sc.color, '#6b7280'),
+			i.created_at,
+			w.name AS workspace_name,
+			w.key AS workspace_key
+		FROM items i
+		JOIN workspaces w ON i.workspace_id = w.id
+		LEFT JOIN statuses s ON i.status_id = s.id
+		LEFT JOIN status_categories sc ON s.category_id = sc.id
+		WHERE i.creator_portal_customer_id = ?
+		ORDER BY i.created_at DESC
+	`, customerID)
+	if err != nil {
+		return nil, fmt.Errorf("list portal customer submissions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []PortalCustomerSubmission
+	for rows.Next() {
+		var s PortalCustomerSubmission
+		if err := rows.Scan(
+			&s.ID, &s.WorkspaceID, &s.WorkspaceItemNumber, &s.Title, &s.Description,
+			&s.StatusName, &s.StatusColor, &s.CreatedAt,
+			&s.WorkspaceName, &s.WorkspaceKey,
+		); err != nil {
+			return nil, fmt.Errorf("scan portal customer submission: %w", err)
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// OrganisationTicket is one row returned by ListOrganisationTickets — a
+// ticket raised by any contact of a customer organisation, with workspace,
+// status, and creator-contact metadata.
+type OrganisationTicket struct {
+	ID                  int
+	WorkspaceID         int
+	WorkspaceItemNumber int
+	Title               string
+	CreatedAt           string
+	WorkspaceName       string
+	WorkspaceKey        string
+	StatusName          string
+	StatusColor         string
+	CreatorContactName  string
+	CreatorContactEmail string
+}
+
+// ListOrganisationTickets returns all tickets raised by portal customers
+// belonging to the given customer_organisation_id. When workspaceIDs is nil
+// the result is not workspace-scoped — the caller has already established
+// that org-level ACLs authorize reading every ticket in the org. When
+// workspaceIDs is non-nil but empty, no tickets match.
+func (r *ItemRepository) ListOrganisationTickets(orgID int, workspaceIDs []int) ([]OrganisationTicket, error) {
+	args := []any{orgID}
+	workspaceClause := ""
+	if workspaceIDs != nil {
+		if len(workspaceIDs) == 0 {
+			return []OrganisationTicket{}, nil
+		}
+		placeholders, wsArgs := inPlaceholders(workspaceIDs)
+		workspaceClause = "  AND i.workspace_id IN (" + placeholders + ")\n"
+		args = append(args, wsArgs...)
+	}
+
+	query := `
+		SELECT i.id, i.workspace_id, i.workspace_item_number, i.title, i.created_at,
+		       w.name, w.key,
+		       COALESCE(s.name, ''), COALESCE(sc.color, '#6b7280'),
+		       pc.name, pc.email
+		FROM items i
+		JOIN portal_customers pc ON i.creator_portal_customer_id = pc.id
+		JOIN workspaces w ON i.workspace_id = w.id
+		LEFT JOIN statuses s ON i.status_id = s.id
+		LEFT JOIN status_categories sc ON s.category_id = sc.id
+		WHERE pc.customer_organisation_id = ?
+` + workspaceClause + `		ORDER BY i.created_at DESC`
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list organisation tickets: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []OrganisationTicket
+	for rows.Next() {
+		var t OrganisationTicket
+		if err := rows.Scan(
+			&t.ID, &t.WorkspaceID, &t.WorkspaceItemNumber, &t.Title, &t.CreatedAt,
+			&t.WorkspaceName, &t.WorkspaceKey,
+			&t.StatusName, &t.StatusColor,
+			&t.CreatorContactName, &t.CreatorContactEmail,
+		); err != nil {
+			return nil, fmt.Errorf("scan organisation ticket: %w", err)
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}

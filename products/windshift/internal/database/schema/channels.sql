@@ -1,0 +1,84 @@
+-- Channels system tables
+
+-- Channel Categories table for organizing channels
+CREATE TABLE IF NOT EXISTS channel_categories (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL UNIQUE,
+	color TEXT NOT NULL DEFAULT '#3b82f6',
+	description TEXT,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Channels system table for inbound/outbound integrations
+CREATE TABLE IF NOT EXISTS channels (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL,
+	type TEXT NOT NULL, -- smtp, webhook, portal, imap, etc.
+	direction TEXT NOT NULL, -- inbound, outbound
+	description TEXT NOT NULL DEFAULT '',
+	status TEXT NOT NULL DEFAULT 'disabled', -- enabled, disabled
+	is_default BOOLEAN NOT NULL DEFAULT false,
+	config TEXT NOT NULL DEFAULT '{}', -- JSON configuration data specific to channel type
+	public_slug TEXT, -- normalized portal/form slug used for race-safe uniqueness
+	plugin_name TEXT, -- NULL for user-created, plugin name for plugin-managed
+	plugin_webhook_id TEXT, -- Plugin's internal webhook identifier
+	category_id INTEGER REFERENCES channel_categories(id) ON DELETE SET NULL,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	last_activity DATETIME
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_type ON channels(type);
+CREATE INDEX IF NOT EXISTS idx_channels_direction ON channels(direction);
+CREATE INDEX IF NOT EXISTS idx_channels_status ON channels(status);
+CREATE INDEX IF NOT EXISTS idx_channels_is_default ON channels(is_default);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_channels_default_route ON channels(type, direction) WHERE is_default = true;
+CREATE INDEX IF NOT EXISTS idx_channels_plugin_name ON channels(plugin_name);
+CREATE INDEX IF NOT EXISTS idx_channels_category_id ON channels(category_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_channels_public_slug
+	ON channels(type, public_slug)
+	WHERE direction = 'inbound' AND public_slug IS NOT NULL;
+
+-- Channel managers table for access control
+CREATE TABLE IF NOT EXISTS channel_managers (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	channel_id INTEGER NOT NULL,
+	manager_type TEXT NOT NULL CHECK (manager_type IN ('user', 'group')),
+	manager_id INTEGER NOT NULL,
+	added_by INTEGER,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE,
+	FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL,
+	UNIQUE(channel_id, manager_type, manager_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_channel_managers_channel ON channel_managers(channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_managers_manager ON channel_managers(manager_type, manager_id);
+
+-- Outbound webhook delivery audit log: one row per send attempt (success or failure),
+-- including plugin-dispatched webhooks. Surfaced on the admin Diagnostics page.
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	channel_id INTEGER NOT NULL,
+	item_id INTEGER,
+	event_type TEXT NOT NULL,            -- "item.created", "comment.updated", "manual", ...
+	attempt_type TEXT NOT NULL,          -- "automatic", "manual"
+	transport TEXT NOT NULL DEFAULT 'http', -- "http" or "plugin"
+	request_url TEXT,                    -- destination URL (NULL for plugin transport)
+	requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	response_status_code INTEGER,        -- NULL on connection error or plugin transport
+	response_time_ms INTEGER,            -- NULL on hard failure
+	success BOOLEAN NOT NULL DEFAULT FALSE,  -- denormalized for fast filtering
+	error_message TEXT,
+	response_preview TEXT,               -- up to 4 KiB of non-2xx response body for diagnostics
+	FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE,
+	FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_channel_id ON webhook_deliveries(channel_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_requested_at ON webhook_deliveries(requested_at);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_success ON webhook_deliveries(success);
+
+-- migration: 0000_baseline
