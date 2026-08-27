@@ -12,10 +12,13 @@
 // Выбор ВИДА — витрина или форма — стоит в хедере, а не здесь: страница показывает то, что ей
 // велели, и не решает, показывать ли себя.
 
+import type { DispatchedEvent } from "@omnifield/probe-web-assembly";
+import { Flow } from "@omnifield/probe-web-ui";
+import type { DataPreset } from "@omnifield/probe-web-ui/passport";
 import { For, Show } from "solid-js";
 
+import { casesOf, type Axis } from "../../../entities/catalog/model/cases.js";
 import { Case } from "./case.jsx";
-import { casesOf, type Axis } from "./cases.js";
 
 export function ComponentPage(props: {
   component: string;
@@ -23,6 +26,18 @@ export function ComponentPage(props: {
   variant: Axis<string>;
   state: Axis<string | null>;
   settings: Readonly<Record<string, unknown>>;
+  assembly: string;
+  /**
+   * Выбранное заполнение (`PWEB-156`) — `null`, пока человек не выбрал ни одного. НЕ отдельная,
+   * вынесенная в сторону карточка: данные — ось всей галереи, действует на КАЖДЫЙ случай сразу
+   * (`casesOf`'s `Slice.data`) — вариацию, состояние, что угодно ещё показывает сборка
+   * (постановка user, 2026-08-27 — «должно идти на все вариации, а не маленько тут маленько
+   * тут»). Какую сборку показывать (`basic`/`filled`) решает ось «сборка» в шапке (`Head`/
+   * `Axes`) — `browse.ts` переключает её на `filled` сама, когда выбрано заполнение.
+   */
+  dataPreset: DataPreset | null;
+  /** Одна точка входа для событий узла (`PWEB-157`) — прокинута каждому показанному дереву. */
+  dispatch?: (event: DispatchedEvent) => void;
 }) {
   // Часть не называется: на витрине её нет, и состояние ставится на ту часть, которая его
   // объявила, — это знает сборка случая, а не показ.
@@ -32,6 +47,10 @@ export function ComponentPage(props: {
       state: props.state,
       variants: props.variants,
       settings: props.settings,
+      // Пустая строка — «не выбирали», а не имя сборки: тем же приёмом, что и у обычного
+      // состояния в `Axes` (`PLAIN`). Пустого имени сборки не бывает.
+      assembly: props.assembly === "" ? undefined : props.assembly,
+      data: props.dataPreset?.data,
     });
 
   return (
@@ -43,9 +62,11 @@ export function ComponentPage(props: {
         </p>
       </Show>
 
-      <div class="cases">
-        <For each={cases()}>{(item) => <Case item={item} />}</For>
-      </div>
+      <Flow class="cases">
+        <For each={cases()}>
+          {(item) => <Case component={props.component} item={item} data={props.dataPreset?.data} dispatch={props.dispatch} />}
+        </For>
+      </Flow>
     </article>
   );
 }

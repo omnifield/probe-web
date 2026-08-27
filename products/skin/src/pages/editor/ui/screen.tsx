@@ -20,13 +20,12 @@ import { RenderTree } from "@omnifield/probe-web-assembly";
 import type { SkinGap } from "@omnifield/probe-web-skin/model";
 import { For, Show, createSignal } from "solid-js";
 
-import type { Draft } from "../skins/index.js";
-import { axisCases, partsOf, statesOfPart } from "../showcase/cases.js";
-import { REGISTRY } from "../showcase/registry.js";
-
+import { axisCases, partsOf, statesOfPart } from "../../../entities/catalog/model/cases.js";
+import { REGISTRY } from "../../../entities/catalog/model/registry.js";
+import type { Draft } from "../../../entities/outfit/model/index.js";
+import type { Spot } from "../model/spot.js";
 import { Fine } from "./fine.jsx";
 import { Panel } from "./panel.jsx";
-import type { Spot } from "./spot.js";
 
 /** Выбор «база» и «обычное» — пустым значением: ни вариации, ни состояния с пустым именем нет. */
 const NONE = "";

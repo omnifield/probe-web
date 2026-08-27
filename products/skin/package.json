@@ -18,6 +18,7 @@
     "@omnifield/probe-web-skin": "workspace:*",
     "@omnifield/probe-web-style": "workspace:*",
     "@omnifield/probe-web-ui": "workspace:*",
+    "@probe-web/diagrams": "workspace:*",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {

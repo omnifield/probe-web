@@ -22,10 +22,10 @@
 
 import { withPassports } from "@omnifield/probe-web-skin";
 import type { SkinSource } from "@omnifield/probe-web-runtime";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
 
+import { passportOf } from "../../catalog/model/providers.js";
 import { draftLook, DRAFT_NAME } from "./draft.js";
-import { listOutfits, readOutfit, readParts, StoreRefused } from "./store.js";
+import { listOutfits, readOutfit, readParts, StoreRefused } from "../api/store.js";
 
 export { type Draft, DRAFT_NAME, draftLook, held, hold } from "./draft.js";
 export {
@@ -42,7 +42,7 @@ export {
   StoreDown,
   StoreRefused,
   type StoreRecord,
-} from "./store.js";
+} from "../api/store.js";
 
 // ИСТОЧНИК ПАСПОРТОВ НАЗВАН ЗДЕСЬ ОДИН РАЗ, и дальше едет связкой (`PWEB-94`). У связанных
 // вызовов довода для второго источника нет, поэтому проверка наряда и порождение не могут

@@ -10,6 +10,13 @@
 // Заведи витрина свой перечень — «флоу один для всех» кончилось бы в тот же день: чужой пакет
 // попадал бы в пульт только после правки НАШЕГО кода, то есть с нашего разрешения.
 //
+// ## `KIT`/`editorInfoOf` — не из кита напрямую, а из `./providers.js`
+//
+// ВТОРОЙ ПОСТАВЩИК (`@probe-web/diagrams`, `providers.ts`'s own header) появился 2026-08-27:
+// `KIT` здесь — уже СЛИЯНИЕ обоих, а не кита в одиночку. Механике сборки ниже всё равно, откуда
+// пришла пара «паспорт+части» — она проверяет форму, не источник, — поэтому слияние делает ОДИН
+// файл (`providers.ts`), а не читатели порознь.
+//
 // ## Карту частей собирает ПОСТАВЩИК, а не мы
 //
 // Прежде составной компонент собирался здесь руками: `Accordion` рядом с `AccordionItem`, и
@@ -36,12 +43,13 @@ import {
   type ReadablePart,
   type Registry,
 } from "@omnifield/probe-web-assembly";
-import { KIT } from "@omnifield/probe-web-ui";
-import { admits, editorInfoOf } from "@omnifield/probe-web-ui/passport";
+import { admits } from "@omnifield/probe-web-ui/passport";
+
+import { editorInfoOf, KIT } from "./providers.js";
 
 /** Пара кита плюс срез редактора, сложенные в форму, которую просит механика сборки. */
 function readable(component: string): ReadableComponent {
-  const { passport, parts } = KIT[component];
+  const { passport, parts, extras, provider } = KIT[component];
   const editorInfo = editorInfoOf(component);
 
   if (!editorInfo) {
@@ -64,15 +72,19 @@ function readable(component: string): ReadableComponent {
       ),
     },
     parts,
+    // Вспомогательные узлы кита без адреса анатомии (`PWEB-152`) и невидимый провайдер корня
+    // (`PWEB-153`) — прокидываются как есть: витрина не решает, у кого они есть, это дело кита.
+    ...(extras ? { extras } : {}),
+    ...(provider ? { provider } : {}),
   };
 }
 
 /**
  * Реестр витрины.
  *
- * Перечень берётся у кита ЦЕЛИКОМ: витрина показывает то, что поставщик отдаёт, а не то, что мы
- * успели вписать. Компонент, приехавший с новым выпуском кита, появляется в пульте сам — вместе
- * со своим долгом одевания, который сразу видно.
+ * Перечень берётся у поставщиков ЦЕЛИКОМ (обоих — `./providers.js`): витрина показывает то, что
+ * они отдают, а не то, что мы успели вписать. Компонент, приехавший с новым выпуском любого из
+ * них, появляется в пульте сам — вместе со своим долгом одевания, который сразу видно.
  */
 export const REGISTRY: Registry = createRegistry({
   components: Object.fromEntries(Object.keys(KIT).map((name) => [name, readable(name)])),

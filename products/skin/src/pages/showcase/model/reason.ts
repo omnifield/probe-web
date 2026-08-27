@@ -11,7 +11,7 @@
 import { SkinRefused } from "@omnifield/probe-web-skin";
 import { OutfitRefused } from "@omnifield/probe-web-skin/model";
 
-import { SERVICE_HINT, StoreDown } from "../skins/index.js";
+import { SERVICE_HINT, StoreDown } from "../../../entities/outfit/model/index.js";
 
 /** Причина отказа надевания — короткой строкой человеку. */
 export function reasonOf(cause: unknown): string {

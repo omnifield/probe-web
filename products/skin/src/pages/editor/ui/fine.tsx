@@ -18,8 +18,8 @@ import type { Form, SkinGap } from "@omnifield/probe-web-skin/model";
 import { VOCABULARY } from "@omnifield/probe-web-skin/model";
 import { For, Show, createMemo, createSignal } from "solid-js";
 
-import { partsOf } from "../showcase/cases.js";
-import { inherited, styleAt, withProp, type Spot } from "./spot.js";
+import { partsOf } from "../../../entities/catalog/model/cases.js";
+import { inherited, styleAt, withProp, type Spot } from "../model/spot.js";
 
 /**
  * Имена ролей для подсказки ввода.

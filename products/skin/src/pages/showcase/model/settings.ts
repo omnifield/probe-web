@@ -9,7 +9,9 @@
 // Читаются оба и складываются в одну запись — так же, как читает их сам редактор.
 
 import { settingApplies as passportSettingApplies } from "@omnifield/probe-web-skin/model";
-import { editorInfoOf, passportOf, SETTINGS } from "@omnifield/probe-web-ui/passport";
+import { SETTINGS } from "@omnifield/probe-web-ui/passport";
+
+import { editorInfoOf, passportOf } from "../../../entities/catalog/model/providers.js";
 
 /** Значение выбора вместе с тем, что оно значит человеку — половина, которую держит редактор. */
 export interface ShowcaseSettingOption {

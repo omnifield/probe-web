@@ -5,20 +5,20 @@
 // знанием о компоненте, которого у показа быть не должно.
 //
 // Теперь базовые сборки объявляет тот, кто компонент написал (`assemblies` в срезе редактора,
-// `PWEB-115`/`PWEB-116`), а показ поднимает ПЕРВУЮ — своего выбора между несколькими у него нет,
-// это работа редактора, не показа. Нет ни одной объявленной сборки — берётся образец из анатомии:
-// одна часть, ни повторов, ни наполнения. Кнопке этого хватает, составному компоненту нет, и его
+// `PWEB-115`/`PWEB-116`). Нет ни одной объявленной сборки — берётся образец из анатомии: одна
+// часть, ни повторов, ни наполнения. Кнопке этого хватает, составному компоненту нет, и его
 // поставщик обязан сборку объявить.
+//
+// СБОРОК СТАЛО МНОГО У ОДНОГО КОМПОНЕНТА (сетка: `basic`/`gallery`/`workspace` — разные
+// композиции, не разный вид одной), и молчаливый выбор ПЕРВОЙ прятал бы остальные от смотрящего
+// навсегда — записал бы их, а увидеть было бы неоткуда. Поэтому имя сборки — довод: не назвали —
+// первая, тем же приёмом, что и раньше; назвали — берётся она, если такая объявлена.
 
 import { isContent, sketchOf, updateNode, type AssemblyTree } from "@omnifield/probe-web-assembly";
 import { FORCE_ATTRIBUTE } from "@omnifield/probe-web-skin/model";
-import {
-  baseAssemblyOf,
-  editorInfoOf,
-  passportOf,
-  type PassportMark,
-} from "@omnifield/probe-web-ui/passport";
+import { baseAssemblyOf, type PassportMark } from "@omnifield/probe-web-ui/passport";
 
+import { editorInfoOf, passportOf } from "./providers.js";
 import { REGISTRY } from "./registry.js";
 
 /**
@@ -65,12 +65,23 @@ function nodeOfPart(tree: AssemblyTree, address: string): string | undefined {
 export function instanceOf(
   component: string,
   rootProps: Readonly<Record<string, unknown>>,
-  partAddress?: string,
+  partAddresses?: readonly string[],
   stateMark?: PassportMark,
+  assemblyName?: string,
+  /**
+   * Данные для узлов-биндингов и повтора (`PWEB-156`). Не своя, отдельная забота показа —
+   * ЛЮБАЯ сборка вправе на них ссылаться, и случай не обязан знать заранее, ссылается ли. Не
+   * задано — узлы с `{path}` резолвятся в пусто, повтор — в ноль узлов, тем же приёмом, что и
+   * при показе без данных где угодно ещё.
+   */
+  data?: unknown,
 ): AssemblyTree {
   const passport = passportOf(component);
-  const assembly = editorInfoOf(component)?.assemblies[0];
-  const base = passport && assembly ? baseAssemblyOf(passport, assembly) : undefined;
+  const assemblies = editorInfoOf(component)?.assemblies ?? [];
+  const assembly =
+    (assemblyName !== undefined ? assemblies.find((item) => item.name === assemblyName) : undefined) ??
+    assemblies[0];
+  const base = passport && assembly ? baseAssemblyOf(passport, assembly, undefined, data) : undefined;
   const sketch = base ?? sketchOf(REGISTRY, component);
 
   if (!sketch) {
@@ -91,18 +102,30 @@ export function instanceOf(
 
   const filled: AssemblyTree = onRoot.tree;
 
-  if (stateMark === undefined || partAddress === undefined) return filled;
+  if (stateMark === undefined || partAddresses === undefined || partAddresses.length === 0) {
+    return filled;
+  }
 
-  const target = nodeOfPart(filled, partAddress);
+  // СТАВИМ НА КАЖДЫЙ УЗЕЛ, КОТОРЫЙ КИТ РЕАЛЬНО ЗЕРКАЛИТ (`partsWithMark`, `shape.ts`): чекбокс
+  // кладёт один и тот же признак на `root`/`control`/`indicator`/`label` разом, и показ с одним
+  // отмеченным узлом соврал бы о разметке — рецепт, красящий любую из остальных частей, остался
+  // бы невидим не потому, что неверен, а потому что признака на её узле в этом кадре не было.
+  let tree = filled;
 
-  // Части нет в образце — состояние не ставим и молчим: это законно, часть могла не попасть в
-  // образец. Отказывать здесь значило бы ронять показ из-за выбора оси.
-  if (target === undefined) return filled;
+  for (const partAddress of partAddresses) {
+    const target = nodeOfPart(tree, partAddress);
 
-  const props = target === root ? { ...rootProps, ...stateProps(stateMark) } : stateProps(stateMark);
-  const onPart = updateNode(filled, target, { props });
+    // Части нет в образце — состояние не ставим и молчим: это законно, часть могла не попасть в
+    // образец. Отказывать здесь значило бы ронять показ из-за выбора оси.
+    if (target === undefined) continue;
 
-  if (!onPart.ok) throw new Error(`витрина: состояние не легло на часть — ${onPart.means}`);
+    const props = target === root ? { ...rootProps, ...stateProps(stateMark) } : stateProps(stateMark);
+    const onPart = updateNode(tree, target, { props });
 
-  return onPart.tree;
+    if (!onPart.ok) throw new Error(`витрина: состояние не легло на часть — ${onPart.means}`);
+
+    tree = onPart.tree;
+  }
+
+  return tree;
 }

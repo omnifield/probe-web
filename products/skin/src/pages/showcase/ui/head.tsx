@@ -16,17 +16,20 @@
 // можно было использовать, она не вправе: одевать кита ею же и означает работать без скина.
 
 import type { SkinMode } from "@omnifield/probe-web-runtime";
+import type { PassportAssembly } from "@omnifield/probe-web-ui/passport";
 import { For, Show } from "solid-js";
 
-import { EMPTY_HINT, SERVICE_HINT, type StoreRecord } from "../skins/index.js";
+import { EMPTY_HINT, SERVICE_HINT, type StoreRecord } from "../../../entities/outfit/model/index.js";
+import type { Axis } from "../../../entities/catalog/model/cases.js";
 import { Axes } from "./axes.jsx";
-import type { Axis } from "./cases.js";
 
 export function Head(props: {
   component: string;
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
+  assemblies: readonly PassportAssembly[];
+  assembly: string;
   worn: string | null;
   records: readonly StoreRecord[] | undefined;
   failure: unknown;
@@ -34,6 +37,7 @@ export function Head(props: {
   mode: SkinMode;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
+  onAssembly: (assembly: string) => void;
   onWear: (name: string) => void;
   onTakeOff: () => void;
   onMode: (mode: SkinMode) => void;
@@ -67,8 +71,11 @@ export function Head(props: {
           variants={props.variants}
           variant={props.variant}
           state={props.state}
+          assemblies={props.assemblies}
+          assembly={props.assembly}
           onVariant={props.onVariant}
           onState={props.onState}
+          onAssembly={props.onAssembly}
         />
       </div>
 

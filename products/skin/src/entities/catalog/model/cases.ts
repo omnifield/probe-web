@@ -30,20 +30,21 @@
 // случаев.
 
 import type { AssemblyTree } from "@omnifield/probe-web-assembly";
-import { passportOf, type PassportState } from "@omnifield/probe-web-ui/passport";
+import type { PassportState } from "@omnifield/probe-web-ui/passport";
 
 import { instanceOf } from "./instance.js";
-import { addressOfPart, partsOf, statesOfPart } from "./shape.js";
+import { passportOf } from "./providers.js";
+import { addressOfPart, partsOf, partsWithMark, statesOfPart } from "./shape.js";
 
-export { addressOfPart, partsOf, rootPartOf, statesOfComponent, statesOfPart } from "./shape.js";
 export {
-  defaultSettings,
-  settingApplies,
-  settingsOf,
-  type ShowcaseSetting,
-  type ShowcaseSettingOption,
-  type ShowcaseSettingValues,
-} from "./settings.js";
+  addressOfPart,
+  assembliesOf,
+  partsOf,
+  partsWithMark,
+  rootPartOf,
+  statesOfComponent,
+  statesOfPart,
+} from "./shape.js";
 
 /**
  * Ось «ВСЕ» — положение, при котором ось не фиксируется, а разворачивается в поток случаев.
@@ -110,6 +111,20 @@ export interface Slice {
    * Не названы — компонент показывается таким, каким его объявил поставщик своими умолчаниями.
    */
   readonly settings?: Readonly<Record<string, unknown>>;
+  /**
+   * Имя сборки — какой РАБОЧИЙ ЭКЗЕМПЛЯР показываем, когда их у компонента несколько (сетка:
+   * `basic`/`gallery`/`workspace` — разные композиции, не разный вид одной). Не названо — берётся
+   * первая объявленная, тем же приёмом, что и раньше единственного выбора (`instance.ts`).
+   */
+  readonly assembly?: string;
+  /**
+   * Данные для узлов-биндингов и повтора (`PWEB-156`) — ОДНА ось на всю галерею случаев, не
+   * своя у каждого. Выбранный вариант заполнения действует на КАЖДЫЙ случай сразу — вариацию,
+   * состояние, что угодно ещё, — а не на отдельную, вынесенную в сторону карточку: интерактивность
+   * и данные не выбор одного случая, они принадлежат компоненту целиком (постановка user,
+   * 2026-08-27 — «должно идти на все вариации, а не маленько тут маленько тут»).
+   */
+  readonly data?: unknown;
 }
 
 /**
@@ -181,7 +196,14 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
     for (const spot of shown) {
       const state = spot?.state;
       const part = spot?.part ?? slice.part ?? passport.root;
-      const address = addressOfPart(component, part);
+
+      // ОБЫЧНЫЙ ВИД — один узел (`part`), метки ставить нечего. СОСТОЯНИЕ — на КАЖДУЮ часть,
+      // которую кит реально зеркалит той же меткой (`partsWithMark`, `shape.ts`): чекбокс кладёт
+      // один признак сразу на четыре узла, и показ с одним отмеченным соврал бы о разметке.
+      const addresses =
+        state === undefined
+          ? [addressOfPart(component, part)]
+          : partsWithMark(component, state.mark).map((p) => addressOfPart(component, p));
 
       cases.push({
         id: `axis:${variant ?? "-"}:${part}:${state?.name ?? "-"}`,
@@ -190,7 +212,7 @@ export function axisCases(component: string, slice: Slice): ShowcaseCase[] {
         // карточкой с нажатой кнопкой не сообщает ничего, чего не видно.
         title: variant ?? "без вариации",
         at: { part, variant, state: state?.name ?? null },
-        tree: instanceOf(component, variantProps, address, state?.mark),
+        tree: instanceOf(component, variantProps, addresses, state?.mark, slice.assembly, slice.data),
       });
     }
   }

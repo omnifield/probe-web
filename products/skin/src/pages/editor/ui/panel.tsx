@@ -24,7 +24,7 @@
 import type { Form, Palette, SkinGap } from "@omnifield/probe-web-skin/model";
 import { For, Show, createSignal } from "solid-js";
 
-import { colorKnobs, sizeKnobs, withColor, withSize } from "./knobs.js";
+import { colorKnobs, sizeKnobs, withColor, withSize } from "../model/knobs.js";
 
 /**
  * Один раскрывающийся раздел панели. Открытость — местная, к записи отношения не имеет.

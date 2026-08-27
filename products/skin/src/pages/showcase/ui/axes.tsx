@@ -13,10 +13,12 @@
 // Состояния собираются по ВСЕМ частям и склеиваются по имени: «раскрыт» у гармошки объявлен на
 // трёх частях сразу, но для смотрящего это одно состояние компонента.
 
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 
-import { ANY, type Axis } from "./cases.js";
-import { statesOfComponent } from "./shape.js";
+import type { PassportAssembly } from "@omnifield/probe-web-ui/passport";
+
+import { ANY, type Axis } from "../../../entities/catalog/model/cases.js";
+import { statesOfComponent } from "../../../entities/catalog/model/shape.js";
 
 /** Обычное состояние в списке выбора — ПУСТЫМ значением: именем состояния оно быть не может. */
 const PLAIN = "";
@@ -26,11 +28,36 @@ export function Axes(props: {
   variants: readonly string[];
   variant: Axis<string>;
   state: Axis<string | null>;
+  /**
+   * СБОРКИ — не ось (`instance.ts`): не «вид меняется», а «показан другой рабочий экземпляр».
+   * У подавляющего большинства компонентов сборка одна, и тогда выбора нет вовсе — ручка, у
+   * которой один пункт, не ручка, а обещание выбора, которого нет.
+   */
+  assemblies: readonly PassportAssembly[];
+  assembly: string;
   onVariant: (variant: Axis<string>) => void;
   onState: (state: Axis<string | null>) => void;
+  onAssembly: (assembly: string) => void;
 }) {
   return (
     <div class="axes">
+      <Show when={props.assemblies.length > 1}>
+        <label class="axes__field">
+          <span class="axes__label">сборка</span>
+          <select
+            class="axes__select"
+            // Пустая строка — «не выбирали», а показывает при этом ПЕРВУЮ: тот же адрес, что и
+            // применяет `instance.ts`, когда имя сборки не назвали явно.
+            value={props.assembly === "" ? (props.assemblies[0]?.name ?? "") : props.assembly}
+            onChange={(event) => props.onAssembly(event.currentTarget.value)}
+          >
+            <For each={props.assemblies}>
+              {(item) => <option value={item.name}>{item.means}</option>}
+            </For>
+          </select>
+        </label>
+      </Show>
+
       <label class="axes__field">
         <span class="axes__label">вариация</span>
         <select
