@@ -409,10 +409,70 @@ importers:
       '@omnifield/probe-web-skin':
         specifier: workspace:*
         version: link:../skin
+      '@tanstack/solid-table':
+        specifier: ^9.1.2
+        version: 9.1.2(solid-js@1.9.14)
       '@zag-js/accordion':
         specifier: ^1.43.1
         version: 1.43.1
+      '@zag-js/avatar':
+        specifier: ^1.43.1
+        version: 1.43.1
       '@zag-js/checkbox':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/date-picker':
+        specifier: ^1.43.1
+        version: 1.43.1(@internationalized/date@3.12.3)
+      '@zag-js/dialog':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/drawer':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/file-upload':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/menu':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/popover':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/radio-group':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/scroll-area':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/select':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/slider':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/splitter':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/switch':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/tabs':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/timer':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/toast':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/toggle':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/toggle-group':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/tree-view':
         specifier: ^1.43.1
         version: 1.43.1
       lucide-solid:
@@ -459,6 +519,58 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
 
+  products/diagrams:
+    dependencies:
+      '@omnifield/probe-web-assembly':
+        specifier: workspace:*
+        version: link:../../packages/assembly
+      '@omnifield/probe-web-runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+      '@omnifield/probe-web-skin':
+        specifier: workspace:*
+        version: link:../../packages/skin
+      '@omnifield/probe-web-style':
+        specifier: workspace:*
+        version: link:../../packages/style
+      '@omnifield/probe-web-ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      d3-scale:
+        specifier: ^4.0.2
+        version: 4.0.2
+      solid-js:
+        specifier: ^1.9.14
+        version: 1.9.14
+    devDependencies:
+      '@omnifield/probe-web-build':
+        specifier: workspace:*
+        version: link:../../packages/build
+      '@omnifield/probe-web-lint':
+        specifier: workspace:*
+        version: link:../../packages/lint
+      '@types/d3-scale':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1(supports-color@7.2.0)
+      jsdom:
+        specifier: ^30.0.1
+        version: 30.0.1
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.2.1
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0)
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(yaml@2.9.0))
+
   products/presets:
     devDependencies:
       '@types/node':
@@ -485,6 +597,9 @@ importers:
       '@omnifield/probe-web-ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@probe-web/diagrams':
+        specifier: workspace:*
+        version: link:../diagrams
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
@@ -1307,6 +1422,12 @@ packages:
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
+  '@types/d3-scale@4.0.9':
+    resolution: {integrity: sha512-dLmtwB8zkAeO/juAMfnV+sItKjlsw2lKdZVVy6LRr0cBmegxSABiLEpGVmSJJ8O08i4+sGR6qQtb6WtuwJdvVw==}
+
+  '@types/d3-time@3.0.4':
+    resolution: {integrity: sha512-yuzZug1nkAAaBlBBikKZTgzCeA+k1uy4ZFwWANOfKw5z5LRhV0gNA7gNkKm7HoK+HRN0wX3EkxGk0fpbWhmB7g==}
+
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
@@ -2005,6 +2126,34 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
+  d3-array@3.2.4:
+    resolution: {integrity: sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==}
+    engines: {node: '>=12'}
+
+  d3-color@3.1.0:
+    resolution: {integrity: sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA==}
+    engines: {node: '>=12'}
+
+  d3-format@3.1.2:
+    resolution: {integrity: sha512-AJDdYOdnyRDV5b6ArilzCPPwc1ejkHcoyFarqlPqT7zRYjhavcT3uSrqcMvsgh2CgoPbK3RCwyHaVyxYcP2Arg==}
+    engines: {node: '>=12'}
+
+  d3-interpolate@3.0.1:
+    resolution: {integrity: sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==}
+    engines: {node: '>=12'}
+
+  d3-scale@4.0.2:
+    resolution: {integrity: sha512-GZW464g1SH7ag3Y7hXjf8RoUuAFIqklOAq3MRl4OaWabTFJY9PN/E1YklhXLh+OQ3fM9yS2nOkCoS+WLZ6kvxQ==}
+    engines: {node: '>=12'}
+
+  d3-time-format@4.1.0:
+    resolution: {integrity: sha512-dJxPBlzC7NugB2PDLwo9Q8JiTR3M3e4/XANkreKSUxF8vvXKqm1Yfq4Q5dl8budlunRVlUUaDUgFt7eA8D6NLg==}
+    engines: {node: '>=12'}
+
+  d3-time@3.1.0:
+    resolution: {integrity: sha512-VqKjzBLejbSMT4IgbmVgDjpkYrNWUYJnbCGo874u7MMKIWsILRX+OpX/gTk8MqjpT1A/c6HY2dCA77ZN0lkQ2Q==}
+    engines: {node: '>=12'}
+
   data-urls@7.0.0:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -2403,6 +2552,10 @@ packages:
 
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
+
+  internmap@2.0.3:
+    resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
+    engines: {node: '>=12'}
 
   ip-address@10.5.0:
     resolution: {integrity: sha512-R5SnVLJmgYYvf2F2ZgwSBnelz5G4q5AxIC277GDfUaNbrZKNANcBC7RHqYYePlszf4kBolVkJauG0ZjHHFh55g==}
@@ -4075,6 +4228,12 @@ snapshots:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
 
+  '@types/d3-scale@4.0.9':
+    dependencies:
+      '@types/d3-time': 3.0.4
+
+  '@types/d3-time@3.0.4': {}
+
   '@types/deep-eql@4.0.2': {}
 
   '@types/ejs@3.1.5': {}
@@ -5071,6 +5230,34 @@ snapshots:
 
   csstype@3.2.3: {}
 
+  d3-array@3.2.4:
+    dependencies:
+      internmap: 2.0.3
+
+  d3-color@3.1.0: {}
+
+  d3-format@3.1.2: {}
+
+  d3-interpolate@3.0.1:
+    dependencies:
+      d3-color: 3.1.0
+
+  d3-scale@4.0.2:
+    dependencies:
+      d3-array: 3.2.4
+      d3-format: 3.1.2
+      d3-interpolate: 3.0.1
+      d3-time: 3.1.0
+      d3-time-format: 4.1.0
+
+  d3-time-format@4.1.0:
+    dependencies:
+      d3-time: 3.1.0
+
+  d3-time@3.1.0:
+    dependencies:
+      d3-array: 3.2.4
+
   data-urls@7.0.0:
     dependencies:
       whatwg-mimetype: 5.0.0
@@ -5504,6 +5691,8 @@ snapshots:
   inherits@2.0.4: {}
 
   inline-style-parser@0.2.7: {}
+
+  internmap@2.0.3: {}
 
   ip-address@10.5.0: {}
 
