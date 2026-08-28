@@ -2,46 +2,42 @@
 //
 // Пустая колонка, пока не случилось ни одного события, — честно, не заглушкой: событий не было,
 // и говорить об этом нечего, тем же приёмом, что у панели настроек без объявленных настроек.
+//
+// НАСТОЯЩИЙ КИТ (решение user 2026-08-27, `PWEB-161`): `Surface`+`Button`, тот же наряд, что и у
+// остальной панели.
 
+import { Button, Surface } from "@omnifield/probe-web-ui";
 import { For, Show } from "solid-js";
 
 import type { ConsoleState } from "../model/console.js";
 
 export function EventConsole(props: { console: ConsoleState }) {
   return (
-    <aside class="events">
-      <div class="events__head">
-        <b class="events__title">События</b>
-        <button
-          type="button"
-          class="events__clear"
-          disabled={props.console.events().length === 0}
-          onClick={() => props.console.clear()}
-        >
+    <Surface as="aside" data-variant="raised" style={{ display: "flex", "flex-direction": "column", gap: "var(--space-2)" }}>
+      <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between" }}>
+        <b>События</b>
+        <Button data-variant="tertiary" disabled={props.console.events().length === 0} onClick={() => props.console.clear()}>
           очистить
-        </button>
+        </Button>
       </div>
 
-      <Show
-        when={props.console.events().length > 0}
-        fallback={<p class="events__empty">кликните по компоненту на витрине — событие появится здесь</p>}
-      >
-        <ul class="events__list">
+      <Show when={props.console.events().length > 0} fallback={<span>кликните по компоненту на витрине — событие появится здесь</span>}>
+        <ul style={{ display: "flex", "flex-direction": "column", gap: "var(--space-2)", "list-style": "none", margin: "0", padding: "0" }}>
           <For each={props.console.events()}>
             {(event) => (
-              <li class="events__item">
-                <div class="events__row">
-                  <b class="events__name">{event.name}</b>
-                  <span class="events__address">{event.address}</span>
+              <li>
+                <div style={{ display: "flex", "align-items": "baseline", gap: "var(--space-2)" }}>
+                  <b>{event.name}</b>
+                  <span>{event.address}</span>
                 </div>
                 <Show when={Object.keys(event.context).length > 0}>
-                  <pre class="events__context">{JSON.stringify(event.context)}</pre>
+                  <pre style={{ margin: "0" }}>{JSON.stringify(event.context)}</pre>
                 </Show>
               </li>
             )}
           </For>
         </ul>
       </Show>
-    </aside>
+    </Surface>
   );
 }

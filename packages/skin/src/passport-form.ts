@@ -235,6 +235,7 @@ export const SETTINGS = {
   orientation: "Положение",
   multiple: "Несколько сразу",
   collapsible: "Можно закрыть всё",
+  outlined: "Обводка",
 } as const satisfies Readonly<Record<string, string>>;
 
 /** Имя настройки — ключ закрытого перечня. */

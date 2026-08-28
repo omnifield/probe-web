@@ -1,43 +1,86 @@
-// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `PWEB-154`) — не поставка, не вкус продукта. Живёт рядом с
-// компонентом, но НИКУДА не экспортируется из `index.ts`/`passport.ts`/`kit.ts` — тот же приём,
-// что у сетки и поверхности (`grid/playground/recipe.ts`, `surface/playground/recipe.ts`),
-// доказывающий, что паспорт МОЖНО одеть целиком настоящей механикой скина. Настоящий рецепт
-// продукта живёт формой `omnifield-workspace` в службе пресетов, не здесь.
+// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `PWEB-154`, `PWEB-161`) — не поставка, не вкус продукта.
+// Живёт рядом с компонентом, но НИКУДА не экспортируется из `index.ts`/`passport.ts`/`kit.ts` —
+// тот же приём, что у сетки и поверхности (`grid/playground/recipe.ts`, `surface/playground/
+// recipe.ts`), доказывающий, что паспорт МОЖНО одеть целиком настоящей механикой скина. Настоящий
+// рецепт продукта живёт формой `omnifield-workspace` в службе пресетов, не здесь.
 
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 /**
- * РАБОЧАЯ ОБЛАСТЬ. Пять частей, состояний нет, вариаций нет — форма ОДНА (в отличие от сетки,
- * которой три разных вида нужны трём разным потребителям: здесь потребитель один, и это сам
- * каркас приложения).
+ * РАБОЧАЯ ОБЛАСТЬ. Шесть частей, состояний нет, одна ось вариаций — КАК связаны боковые колонки
+ * с шапкой и подвалом, не КАКИЕ слоты показаны (это решает сборка — `assemblies.ts`, восемь
+ * именованных раскладок реального рынка).
  *
- * ОДНА СЕТКА, ИМЕНОВАННЫЕ ОБЛАСТИ (`grid-template-areas`), А НЕ ДВЕ ВЛОЖЕННЫЕ: `sidebar` стоит
- * во ВТОРОЙ колонке ОБЕИХ строк сразу — во всю высоту, рядом и с шапкой, и с показом, — `header`
- * только в первой строке. Так же, как выражала это прежняя пара вложенных `Grid` в `products/
- * skin/src/app/app.tsx` (вариации `sidebar`+`stack`, `grid/playground/recipe.ts`), но одним
- * компонентом и без вложенности, которую раньше приходилось строить руками.
+ * ## Вариации — `sidebar-first` (умолчание) и `header-first`
  *
- * КОЛОНКА `rightbar` — `auto`: не положен узел `WorkspaceRightbar` в сборку — грид не резервирует
- * под именованную область ничего сверх того, что просит её содержимое, и колонка схлопывается
- * сама, без условия в разметке потребителя (`../components/index.tsx`, «`rightbar` необязателен
- * НАСТОЯЩИМ образом»).
+ * Обе — реальные, узнаваемые схемы, не наша выдумка:
+ *
+ *   • `sidebar-first` — рельсы и правая панель тянутся через ВСЮ высоту (в том числе мимо шапки
+ *     и подвала), шапка и подвал стоят между ними. Ровно то же самое различие делает `AppShell`
+ *     Mantine своим пропом `layout` (`"alt"` — «поставить `Navbar`/`Aside` НАД шапкой и подвалом»,
+ *     `mantine.dev/core/app-shell`).
+ *   • `header-first` — шапка и подвал во всю ширину СТРОКОЙ сверху и снизу, боковые колонки
+ *     только в средней строке между ними. Это классический «Holy Grail Layout» (шапка+подвал на
+ *     всю ширину, показ между двух колонок — `web.dev/patterns/layout/holy-grail`,
+ *     `mantine.dev/core/app-shell`'s `layout="default"`).
+ *
+ * Обе вариации используют ОДНУ и ту же сетку строк/колонок — различаются только тем, какой слот
+ * какую именованную область занимает (`gridTemplateAreas`), поэтому `gridTemplateRows`/
+ * `gridTemplateColumns` остаются в базе, а не дублируются в каждой вариации.
+ *
+ * ## Настройка `outlined` — обводка блоков, а не фон
+ *
+ * Не вариация: это НЕ вопрос вкуса скина (какой скин, такая и грань), а вопрос КОНКРЕТНОЙ
+ * страницы — иногда блоки различает своя подложка/контент (обводка не нужна и мешает), иногда
+ * блоки одного цвета и без неё сливаются. Продукт включает её сам под конкретную сборку — тем же
+ * приёмом, что у любой другой настройки, живущей в разметке, а не в имени скина. Имя — из общего
+ * словаря настроек (`packages/skin/src/passport-form.ts`, `SETTINGS`), метка в разметке —
+ * `data-outlined` (`../components/index.tsx`).
  */
 export const recipe: SlotRecipe = {
   base: {
     root: {
       props: {
         display: "grid",
-        gridTemplateAreas: '"sidebar header header" "sidebar main rightbar"',
-        gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr auto",
-        gridTemplateRows: "auto 1fr",
+        gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr minmax(0, var(--column-24))",
+        gridTemplateRows: "auto 1fr auto",
         blockSize: "100%",
         minBlockSize: "0",
       },
     },
     header: { props: { gridArea: "header", minInlineSize: "0" } },
-    sidebar: { props: { gridArea: "sidebar", minBlockSize: "0" } },
+    sidebar: { props: { gridArea: "sidebar", minBlockSize: "0", overflow: "auto" } },
     main: { props: { gridArea: "main", minInlineSize: "0", minBlockSize: "0", overflow: "auto" } },
-    rightbar: { props: { gridArea: "rightbar", minBlockSize: "0" } },
+    rightbar: { props: { gridArea: "rightbar", minInlineSize: "0", minBlockSize: "0", overflow: "auto" } },
+    footer: { props: { gridArea: "footer", minInlineSize: "0" } },
+  },
+  variants: {
+    "sidebar-first": {
+      root: {
+        props: {
+          gridTemplateAreas: '"sidebar header  rightbar" "sidebar main    rightbar" "sidebar footer  rightbar"',
+        },
+      },
+    },
+    "header-first": {
+      root: {
+        props: {
+          gridTemplateAreas: '"header   header  header" "sidebar  main    rightbar" "footer   footer  footer"',
+        },
+      },
+    },
+  },
+  defaultVariant: "sidebar-first",
+  settings: {
+    outlined: {
+      true: {
+        header: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--neutral-7)" } },
+        sidebar: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--neutral-7)" } },
+        main: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--neutral-7)" } },
+        rightbar: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--neutral-7)" } },
+        footer: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--neutral-7)" } },
+      },
+    },
   },
 };
 

@@ -12,16 +12,27 @@
 // отвечает, но пуста · службы нет. Слепи их в одно «ничего нет» — человек пойдёт чинить не то, а
 // пустой список прочтёт как «скинов не существует».
 //
-// Элементы здесь НАТИВНЫЕ. Витрина — инструмент, и ждать, пока появится скин, чтобы её саму
-// можно было использовать, она не вправе: одевать кита ею же и означает работать без скина.
+// ЭЛЕМЕНТЫ ЗДЕСЬ НАСТОЯЩИЕ, НЕ НАТИВНЫЕ (решение user 2026-08-27, отменяет прежнее «витрина —
+// инструмент, своего скина не носит»): пульт продукта одевается ТЕМ ЖЕ нарядом, что и показанные
+// продукты, — переключил скин, и одновременно меняется вид того, ЧЕМ ты его переключаешь. Прежний
+// довод («ждать скина, чтобы витриной можно было пользоваться») оказался мнимым: голый кит —
+// рабочее состояние по всему киту (`Surface`/`Button`/`Field` рисуют себя корректно и без наряда,
+// та же логика, что у `Rail`, который настоящими компонентами кита стоит уже давно), а не повод
+// держать один-единственный узел витрины на голой разметке.
 
 import type { SkinMode } from "@omnifield/probe-web-runtime";
+import { Button, Surface } from "@omnifield/probe-web-ui";
 import type { PassportAssembly } from "@omnifield/probe-web-ui/passport";
-import { For, Show } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 
 import { EMPTY_HINT, SERVICE_HINT, type StoreRecord } from "../../../entities/outfit/model/index.js";
 import type { Axis } from "../../../entities/catalog/model/cases.js";
 import { Axes } from "./axes.jsx";
+import { partOf } from "./kit-bridge.js";
+
+const Field = partOf<{ children?: JSX.Element }>("field", "root");
+const FieldLabel = partOf<{ children?: JSX.Element }>("field", "label");
+const FieldSelect = partOf<JSX.SelectHTMLAttributes<HTMLSelectElement>>("field", "select");
 
 export function Head(props: {
   component: string;
@@ -61,10 +72,10 @@ export function Head(props: {
   };
 
   return (
-    <header class="head">
+    <Surface as="header" data-variant="raised" style={{ display: "flex", "align-items": "center", "justify-content": "space-between", gap: "var(--space-4)" }}>
       {/* Слева — про ОДИН компонент: как его зовут и что из него показать. */}
-      <div class="head__subject">
-        <b class="head__component">{props.component}</b>
+      <div style={{ display: "flex", "align-items": "center", gap: "var(--space-3)" }}>
+        <b>{props.component}</b>
 
         <Axes
           component={props.component}
@@ -87,39 +98,38 @@ export function Head(props: {
           архитектору: набор значений держит собственную тёмную пару и одевает приложение без
           скина. Мы этого не прячем и не обходим — мы просто не предлагаем человеку ручку,
           которой у витрины нет предмета. */}
-      <div class="head__controls">
-        <Show when={trouble()}>{(said) => <p class="head__trouble">{said()}</p>}</Show>
+      <div style={{ display: "flex", "align-items": "center", gap: "var(--space-3)" }}>
+        <Show when={trouble()}>{(said) => <span>{said()}</span>}</Show>
 
         <Show when={props.worn !== null}>
-          <div class="modes" role="group" aria-label="Режим">
+          <div role="group" aria-label="Режим" style={{ display: "flex", gap: "var(--space-1)" }}>
             <For each={["light", "dark"] as const}>
               {(value) => (
-                <button
-                  class="modes__item"
-                  type="button"
+                <Button
+                  data-variant="tertiary"
+                  data-pressed={props.mode === value ? "" : undefined}
                   aria-pressed={props.mode === value}
                   onClick={() => props.onMode(value)}
                 >
                   {value === "light" ? "светлый" : "тёмный"}
-                </button>
+                </Button>
               )}
             </For>
           </div>
         </Show>
 
-        <select
-          class="head__select"
-          aria-label="Скин"
-          value={props.worn ?? ""}
-          disabled={props.failure !== undefined || (props.records?.length ?? 0) === 0}
-          onChange={(event) => choose(event.currentTarget.value)}
-        >
-          <option value="">без скина</option>
-          <For each={props.records ?? []}>
-            {(record) => <option value={record.name}>{record.label}</option>}
-          </For>
-        </select>
+        <Field>
+          <FieldLabel>Скин</FieldLabel>
+          <FieldSelect
+            value={props.worn ?? ""}
+            disabled={props.failure !== undefined || (props.records?.length ?? 0) === 0}
+            onChange={(event) => choose(event.currentTarget.value)}
+          >
+            <option value="">без скина</option>
+            <For each={props.records ?? []}>{(record) => <option value={record.name}>{record.label}</option>}</For>
+          </FieldSelect>
+        </Field>
       </div>
-    </header>
+    </Surface>
   );
 }

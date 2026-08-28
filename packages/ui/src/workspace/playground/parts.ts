@@ -19,6 +19,7 @@ export const parts: Readonly<Record<WorkspacePart, PassportPartEditorInfo<Worksp
       { kind: "part", name: "sidebar" },
       { kind: "part", name: "main" },
       { kind: "part", name: "rightbar" },
+      { kind: "part", name: "footer" },
     ],
   },
   header: {
@@ -44,6 +45,13 @@ export const parts: Readonly<Record<WorkspacePart, PassportPartEditorInfo<Worksp
   },
   rightbar: {
     means: "правая колонка — необязательна; не положена в сборку, колонка схлопывается сама",
+    accepts: [
+      { kind: "content", genus: "text" },
+      { kind: "content", genus: "component" },
+    ],
+  },
+  footer: {
+    means: "нижняя полоса — необязательна; не положена в сборку, строка схлопывается сама",
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "component" },
