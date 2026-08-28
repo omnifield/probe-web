@@ -13,7 +13,7 @@
 // и переставить местами. Это работа над АНАТОМИЕЙ ОДНОГО компонента — из чего собран `accordion`,
 // какие у него части.
 //
-// `Rail`/`Head`/`ComponentPage`/`SettingsPanel`/`EventConsole` — не части анатомии `Workspace`,
+// `ComponentList`/`Head`/`ComponentPage`/`SettingsPanel`/`EventConsole` — не части анатомии `Workspace`,
 // которые нужно варьировать. Это пять целых, готовых продуктовых экранов, и их ровно пять, раз
 // навсегда, руками автора. Прежняя версия этого файла (220 строк: `createRegistry`, `extras`,
 // пять обёрток-компонентов без единого прока, `baseAssemblyOf`) прогоняла раскладку ПЯТИ ГОТОВЫХ
@@ -40,8 +40,8 @@ import type { WearingState } from "../../showcase/model/wearing.js";
 import { ComponentPage } from "../../showcase/ui/component-page.jsx";
 import { EventConsole } from "../../showcase/ui/event-console.jsx";
 import { Head } from "../../showcase/ui/head.jsx";
-import { Rail } from "../../showcase/ui/rail.jsx";
 import { SettingsPanel } from "../../showcase/ui/settings-panel.jsx";
+import { ComponentList } from "../../../widgets/component-list/ui/component-list.jsx";
 
 /** Лайаут воркспейса целиком — пять слотов `Workspace`, каждый со своим готовым продуктовым экраном. */
 export function WorkspaceLayout(props: {
@@ -56,7 +56,7 @@ export function WorkspaceLayout(props: {
     // recipe.ts`) — рецепт `Workspace` своей высоты не задаёт вовсе.
     <Workspace style={{ "block-size": "100dvh" }}>
       <WorkspaceSidebar>
-        <Rail sections={BY_GROUP} current={props.browse.current()} onSelect={props.browse.setCurrent} />
+        <ComponentList sections={BY_GROUP} current={props.browse.current()} onSelect={props.browse.setCurrent} />
       </WorkspaceSidebar>
 
       <WorkspaceHeader>
