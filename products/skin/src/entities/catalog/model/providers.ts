@@ -24,27 +24,35 @@ import {
   type ComponentPassport,
   type PassportEditorInfo,
 } from "@omnifield/probe-web-ui/passport";
-import { KIT as DIAGRAMS_KIT } from "@probe-web/diagrams";
-import { editorInfoOf as diagramsEditorInfoOf, passportOf as diagramsPassportOf } from "@probe-web/diagrams/passport";
 
-const overlap = Object.keys(UI_KIT).filter((name) => Object.hasOwn(DIAGRAMS_KIT, name));
+// TEMPORARILY DISABLED (2026-08-28): `@probe-web/diagrams` still declares assemblies with the
+// old `part`/`component` fields (`PassportAssemblyPart`/`PassportAssemblyComponent`), removed by
+// the framework's `PWEB-172` (merged into one `node` field). Its `xy.basic` assembly's root ends
+// up `undefined`, and `defineEditorInfo` throws AT MODULE LOAD — importing `@probe-web/diagrams`
+// at all crashes the showcase before any per-component filtering could even run. Not our zone to
+// fix (`products/diagrams` has its own architect); re-enable once it's ported to `node`.
+//
+// import { KIT as DIAGRAMS_KIT } from "@probe-web/diagrams";
+// import { editorInfoOf as diagramsEditorInfoOf, passportOf as diagramsPassportOf } from "@probe-web/diagrams/passport";
+//
+// const overlap = Object.keys(UI_KIT).filter((name) => Object.hasOwn(DIAGRAMS_KIT, name));
+//
+// if (overlap.length > 0) {
+//   throw new Error(
+//     `реестр витрины: имя компонента совпало у двух поставщиков — ${overlap.join(", ")}. ` +
+//       "решить надо явным переименованием у одного из них, не молчаливым приоритетом.",
+//   );
+// }
 
-if (overlap.length > 0) {
-  throw new Error(
-    `реестр витрины: имя компонента совпало у двух поставщиков — ${overlap.join(", ")}. ` +
-      "решить надо явным переименованием у одного из них, не молчаливым приоритетом.",
-  );
-}
+/** Компоненты поставщиков вместе — `diagrams` временно отключён, см. комментарий выше. */
+export const KIT: Readonly<Record<string, KitComponent>> = { ...UI_KIT };
 
-/** Компоненты обоих поставщиков вместе — киту и `diagrams` предстоит расти дальше независимо. */
-export const KIT: Readonly<Record<string, KitComponent>> = { ...UI_KIT, ...DIAGRAMS_KIT };
-
-/** Паспорт по имени компонента — ищет у кита, затем у `diagrams`. */
+/** Паспорт по имени компонента — ищет у кита (`diagrams` временно отключён). */
 export function passportOf(component: string): ComponentPassport | undefined {
-  return uiPassportOf(component) ?? diagramsPassportOf(component);
+  return uiPassportOf(component);
 }
 
 /** Срез редактора по имени компонента — тем же порядком поиска, что `passportOf`. */
 export function editorInfoOf(component: string): PassportEditorInfo | undefined {
-  return uiEditorInfoOf(component) ?? diagramsEditorInfoOf(component);
+  return uiEditorInfoOf(component);
 }
