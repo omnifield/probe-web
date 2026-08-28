@@ -14,7 +14,7 @@
 import { createBrowseState } from "../pages/showcase/model/browse.js";
 import { createConsoleState } from "../pages/showcase/model/console.js";
 import { createWearingState } from "../pages/showcase/model/wearing.js";
-import { WorkspaceLayout } from "../pages/workspace/ui/layout.jsx";
+import { WorkspaceLayout } from "../pages/workspace/layout.jsx";
 
 export function App() {
   const browse = createBrowseState();

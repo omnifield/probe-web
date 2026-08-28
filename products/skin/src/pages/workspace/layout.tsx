@@ -29,19 +29,25 @@
 // раскладку плейсхолдерным текстом, тем же приёмом, что у любого другого компонента кита: вид
 // совпадает, потому что компонент и наряд те же, а не потому, что дерево одно и то же.
 
-import { Workspace, WorkspaceHeader, WorkspaceMain, WorkspaceRightbar, WorkspaceSidebar } from "@omnifield/probe-web-ui";
+import {
+  Workspace,
+  WorkspaceHeader,
+  WorkspaceMain,
+  WorkspaceRightbar,
+  WorkspaceSidebar,
+} from "@omnifield/probe-web-ui";
 
-import { assembliesOf } from "../../../entities/catalog/model/cases.js";
-import { editorInfoOf } from "../../../entities/catalog/model/providers.js";
-import type { BrowseState } from "../../showcase/model/browse.js";
-import { BY_GROUP } from "../../showcase/model/browse.js";
-import type { ConsoleState } from "../../showcase/model/console.js";
-import type { WearingState } from "../../showcase/model/wearing.js";
-import { ComponentPage } from "../../showcase/ui/component-page.jsx";
-import { EventConsole } from "../../showcase/ui/event-console.jsx";
-import { Head } from "../../showcase/ui/head.jsx";
-import { SettingsPanel } from "../../showcase/ui/settings-panel.jsx";
-import { ComponentList } from "../../../widgets/component-list/ui/component-list.jsx";
+import { assembliesOf } from "../../entities/catalog/model/cases.js";
+import { editorInfoOf } from "../../entities/catalog/model/providers.js";
+import type { BrowseState } from "../showcase/model/browse.js";
+import { BY_GROUP } from "../showcase/model/browse.js";
+import type { ConsoleState } from "../showcase/model/console.js";
+import type { WearingState } from "../showcase/model/wearing.js";
+import { ComponentPage } from "../showcase/ui/component-page.jsx";
+import { EventConsole } from "../showcase/ui/event-console.jsx";
+import { Head } from "../showcase/ui/head.jsx";
+import { SettingsPanel } from "../showcase/ui/settings-panel.jsx";
+import { ComponentList } from "../../widgets/component-list/component-list.jsx";
 
 /** Лайаут воркспейса целиком — пять слотов `Workspace`, каждый со своим готовым продуктовым экраном. */
 export function WorkspaceLayout(props: {
@@ -56,7 +62,12 @@ export function WorkspaceLayout(props: {
     // recipe.ts`) — рецепт `Workspace` своей высоты не задаёт вовсе.
     <Workspace style={{ "block-size": "100dvh" }}>
       <WorkspaceSidebar>
-        <ComponentList sections={BY_GROUP} current={props.browse.current()} onSelect={props.browse.setCurrent} />
+        <ComponentList
+          sections={BY_GROUP}
+          current={props.browse.current()}
+          onSelect={props.browse.setCurrent}
+          variant="контурная"
+        />
       </WorkspaceSidebar>
 
       <WorkspaceHeader>
