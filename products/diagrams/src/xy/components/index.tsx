@@ -19,6 +19,14 @@ import { anatomyParts } from "../entity/anatomy.js";
 // range(...)`) and hands it to every part that needs it. `Xy` (the root) does not compute or own
 // a scale itself — it is a plain sized `<svg>`, nothing more, the same "root is a wrapper, not a
 // state owner" shape visx's own `Group` follows.
+//
+// `stroke="currentColor"`/`fill="currentColor"` on every drawn line/text (found missing live,
+// 2026-08-27 — bare SVG shapes have NO default stroke at all per spec, unlike `<text>`'s own
+// default fill; the axis was real in the DOM but genuinely invisible). Same device
+// `products/tables/src/chart/chart.tsx`'s own file header already names for its own hand-rolled
+// SVG chart: "цвет и вид — за потребителем (`fill="currentColor"` — он и переопределяется)" — a
+// real, themeable value, not a hardcoded color, the minimum needed for a headless SVG shape to
+// show up at all without a skin.
 
 /** Props of `Xy` — the root. `width`/`height` are how a real caller uses it; see the file header. */
 export type XyProps = Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "width" | "height"> & {
@@ -114,21 +122,23 @@ export function XyAxis(props: XyAxisProps) {
                 y1={local.orientation === "x" ? offset() : rangeStart()}
                 x2={local.orientation === "x" ? rangeEnd() : offset()}
                 y2={local.orientation === "x" ? offset() : rangeEnd()}
+                fill="none"
+                stroke="currentColor"
               />
               <For each={values()}>
                 {(value) => {
                   const at = scale()(value);
                   return local.orientation === "x" ? (
                     <g transform={`translate(${at}, ${offset()})`}>
-                      <line y2={6} />
-                      <text y={9} dy="0.71em" text-anchor="middle">
+                      <line y2={6} fill="none" stroke="currentColor" />
+                      <text y={9} dy="0.71em" text-anchor="middle" fill="currentColor">
                         {format()(value)}
                       </text>
                     </g>
                   ) : (
                     <g transform={`translate(${offset()}, ${at})`}>
-                      <line x2={-6} />
-                      <text x={-9} dy="0.32em" text-anchor="end">
+                      <line x2={-6} fill="none" stroke="currentColor" />
+                      <text x={-9} dy="0.32em" text-anchor="end" fill="currentColor">
                         {format()(value)}
                       </text>
                     </g>

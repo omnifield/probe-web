@@ -1,0 +1,56 @@
+{
+  "name": "@omnifield/probe-web-router",
+  "version": "0.1.0",
+  "description": "Роутинг probe-web поверх @tanstack/solid-router: одна точка входа вместо вендора, готовый vite-плагин с верным порядком, вкус дефолтов (PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    },
+    "./devtools": {
+      "types": "./dist/devtools.d.ts",
+      "default": "./dist/devtools.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/router-plugin": "^1.168.35",
+    "@tanstack/solid-router-devtools": "^1.167.1"
+  },
+  "peerDependencies": {
+    "@tanstack/solid-router": "^1.170.30",
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@tanstack/solid-router": "^1.170.30",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
+  }
+}

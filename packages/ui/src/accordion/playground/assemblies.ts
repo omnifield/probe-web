@@ -16,90 +16,53 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
     means:
       "разделы, а в контенте каждого — настоящая Button из общего реестра, не своя копия",
     tree: {
-      part: "root",
+      part: "acardionRoot",
       children: [
         {
+          part: "acardionItem",
           repeat: { path: "/sections" },
-          template: {
-            part: "item",
-            bind: { value: "id" },
-            children: [
-              {
-                part: "itemTrigger",
-                on: {
-                  click: {
-                    event: {
-                      name: "toggle",
-                      context: { section: { path: "id" } },
-                    },
+          bind: { value: "id" },
+          children: [
+            {
+              part: "acardionItemTrigger",
+              children: [
+                {
+                  part: "button",
+                  props: {
+                    "data-variant": "tertiary",
+                    label: "/title",
+                    payload: "this",
                   },
                 },
-                children: [
-                  { genus: "text", value: { path: "title" } },
-                  {
-                    part: "itemIndicator",
-                    children: [{ genus: "icon", value: "▾" }],
-                  },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [
-                  {
-                    component: "button",
-                    props: { "data-variant": "tertiary" },
-                    children: [{ genus: "text", value: { path: "body" } }],
-                  },
-                ],
-              },
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {
-    name: "с-тогглами",
-    means:
-      "тот же темплейт разделов, а в контенте — настоящий Toggle из общего реестра",
-    tree: {
-      part: "root",
-      children: [
-        {
-          repeat: { path: "/sections" },
-          template: {
-            part: "item",
-            bind: { value: "id" },
-            children: [
-              {
-                part: "itemTrigger",
-                on: {
-                  click: {
-                    event: {
-                      name: "toggle",
-                      context: { section: { path: "id" } },
+                {
+                  part: "acardionItemIndicator",
+                  children: [
+                    {
+                      part: "icon",
+                      props: {
+                        "data-variant": "arrow-down",
+                      },
                     },
+                  ],
+                },
+              ],
+            },
+            {
+              part: "acardionItemContent",
+              children: [
+                {
+                  part: "button",
+                  repeat: { path: "/items" },
+                  bind: { value: "id" },
+                  props: {
+                    "data-variant": "tertiary",
+                    label: "/title",
+                    payload: "this",
                   },
                 },
-                children: [
-                  { genus: "text", value: { path: "title" } },
-                  {
-                    part: "itemIndicator",
-                    children: [{ genus: "icon", value: "▾" }],
-                  },
-                ],
-              },
-              {
-                part: "itemContent",
-                children: [
-                  {
-                    component: "toggle",
-                    children: [{ genus: "text", value: { path: "body" } }],
-                  },
-                ],
-              },
-            ],
-          },
+              ],
+            },
+          ],
         },
       ],
     },

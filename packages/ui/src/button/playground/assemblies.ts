@@ -20,7 +20,8 @@ import type { passport } from "../entity/passport.js";
 // The literal part-name union, read off the passport itself rather than spelled out by hand:
 // `part` fields below type-check against ANATOMY, not a copy of its names that could drift from
 // it.
-type ButtonPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+type ButtonPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
@@ -53,6 +54,27 @@ export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
     name: "filled",
     means: "подпись приходит из данных, не из объявления (PWEB-156)",
-    tree: { part: "root", children: [{ genus: "text", value: { path: "/label" } }] },
+    tree: {
+      part: "root",
+      children: [{ genus: "text", value: { path: "/label" } }],
+    },
+  },
+  {
+    name: "с-событием",
+    means:
+      "подпись из данных (не своя, как у `filled`), клик шлёт наружу пейлоад, взятый оттуда же " +
+      "(PWEB-157) — кнопка не решает, что в пейлоаде, только резолвит путь, который ей назвали",
+    tree: {
+      part: "root",
+      on: {
+        click: {
+          event: {
+            name: "select",
+            context: { payload: { path: "/payload" } },
+          },
+        },
+      },
+      children: [{ genus: "text", value: { path: "/label" } }],
+    },
   },
 ];
