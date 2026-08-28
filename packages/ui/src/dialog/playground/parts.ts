@@ -52,17 +52,17 @@ export const parts: Readonly<Record<DialogPart, PassportPartEditorInfo<DialogPar
   positioner: {
     means: "TODO",
     states: {},
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   content: {
     means: "TODO",
     states: openClosedMeans,
     accepts: [
-      { kind: "part", name: "title" },
-      { kind: "part", name: "description" },
-      { kind: "part", name: "closeTrigger" },
+      { kind: "component", name: "title" },
+      { kind: "component", name: "description" },
+      { kind: "component", name: "closeTrigger" },
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   title: {

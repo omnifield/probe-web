@@ -38,9 +38,9 @@ export const parts: Readonly<Record<RadioGroupPart, PassportPartEditorInfo<Radio
     means: "the whole set — the group of choices where exactly one can be picked",
     states: groupStateMeans,
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "item" },
-      { kind: "part", name: "indicator" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "indicator" },
     ],
   },
   label: {
@@ -52,11 +52,11 @@ export const parts: Readonly<Record<RadioGroupPart, PassportPartEditorInfo<Radio
     means: "one choice — a clickable row; click anywhere on it to select",
     states: itemStateMeans,
     accepts: [
-      { kind: "part", name: "itemControl" },
-      { kind: "part", name: "itemText" },
+      { kind: "component", name: "itemControl" },
+      { kind: "component", name: "itemText" },
       // The real hidden `<input type="radio">` (`PWEB-152`) — no address of its own, but the
       // node the real `onChange` lives on; without it a preview looks right and never selects.
-      { kind: "extra", name: "hiddenInput" },
+      { kind: "component", name: "hiddenInput" },
     ],
   },
   itemText: {

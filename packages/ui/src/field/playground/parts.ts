@@ -30,14 +30,14 @@ export const parts: Readonly<Record<FieldPart, PassportPartEditorInfo<FieldPart>
       readonly: { means: "the value is visible, changing it is not possible" },
     },
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "input" },
-      { kind: "part", name: "select" },
-      { kind: "part", name: "textarea" },
-      { kind: "part", name: "helperText" },
-      { kind: "part", name: "errorText" },
-      { kind: "part", name: "requiredIndicator" },
-      { kind: "content", genus: "component" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "input" },
+      { kind: "component", name: "select" },
+      { kind: "component", name: "textarea" },
+      { kind: "component", name: "helperText" },
+      { kind: "component", name: "errorText" },
+      { kind: "component", name: "requiredIndicator" },
+      { kind: "component" },
     ],
   },
   label: {
@@ -50,7 +50,7 @@ export const parts: Readonly<Record<FieldPart, PassportPartEditorInfo<FieldPart>
     },
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "part", name: "requiredIndicator" },
+      { kind: "component", name: "requiredIndicator" },
     ],
   },
   input: {

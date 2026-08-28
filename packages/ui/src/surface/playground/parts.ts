@@ -17,7 +17,7 @@ export const parts: Readonly<Record<SurfacePart, PassportPartEditorInfo<SurfaceP
     // Внутрь кладут что угодно: плоскость на то и плоскость, что не знает, что на ней лежит.
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
 };

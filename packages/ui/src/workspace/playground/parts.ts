@@ -15,46 +15,46 @@ export const parts: Readonly<Record<WorkspacePart, PassportPartEditorInfo<Worksp
   root: {
     means: "каркас приложения целиком — держит все именованные слоты в одной сетке",
     accepts: [
-      { kind: "part", name: "header" },
-      { kind: "part", name: "sidebar" },
-      { kind: "part", name: "main" },
-      { kind: "part", name: "rightbar" },
-      { kind: "part", name: "footer" },
+      { kind: "component", name: "header" },
+      { kind: "component", name: "sidebar" },
+      { kind: "component", name: "main" },
+      { kind: "component", name: "rightbar" },
+      { kind: "component", name: "footer" },
     ],
   },
   header: {
     means: "верхняя полоса — не на всю высоту, только над показом и правой панелью",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   sidebar: {
     means: "левая колонка — во всю высоту, рядом и с шапкой, и с показом",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   main: {
     means: "показ — единственный слот, который есть всегда",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   rightbar: {
     means: "правая колонка — необязательна; не положена в сборку, колонка схлопывается сама",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   footer: {
     means: "нижняя полоса — необязательна; не положена в сборку, строка схлопывается сама",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
 };

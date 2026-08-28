@@ -46,17 +46,29 @@
 // `AdmissionRule`) остаются СВОИМИ — они про то, какие ПОЛЯ механика читает, а не про закрытый
 // перечень значений одного из полей, и эта причина разреза их не касается.
 
-import type { PassportAdmission, PassportGenus } from "@omnifield/probe-web-skin/editor";
+import type {
+  PassportAdmission,
+  PassportComponentGenus,
+  PassportGenus,
+} from "@omnifield/probe-web-skin/editor";
 
 import type { SelfAssembly } from "./self-assembly.js";
 
 /**
- * Род — чем узел является, когда его кладут внутрь чужого узла.
+ * Род СОДЕРЖИМОГО-ЛИСТА (`text`/`icon`) — чем значение является, когда его кладут внутрь чужого
+ * узла как узел содержимого (`AssemblyContent`, `SelfAssemblyContent`).
  *
- * Взят у формы паспорта (`PassportGenus`), а не объявлен второй, открытой строкой — довод в
- * шапке файла (`PWEB-119`).
+ * Взят у формы паспорта, а не объявлен второй, открытой строкой — довод в шапке файла (`PWEB-119`).
  */
 export type Genus = PassportGenus;
+
+/**
+ * Род, которым КОМПОНЕНТ ЦЕЛИКОМ объявляет сам себя (`icon`/`component`, `ReadablePassport.genus`)
+ * — a DIFFERENT, wider vocabulary than `Genus` above (`PWEB-172`): a content LEAF can never claim
+ * to be `component` (`PassportGenus` doesn't have that value at all), but a whole component is
+ * free to declare itself an ordinary one, not just an icon.
+ */
+export type ComponentGenus = PassportComponentGenus;
 
 /**
  * Кандидат на вложение: своя часть компонента либо содержимое потребителя, названное родом.
@@ -97,7 +109,7 @@ export interface ReadablePassport {
   /** Имя компонента, оно же `data-scope` на каждом его узле. */
   readonly component: string;
   /** Чем компонент является, когда его кладут внутрь чужого узла. */
-  readonly genus: Genus;
+  readonly genus: ComponentGenus;
   /** Перечень частей, читаемый машиной. */
   readonly anatomy: { keys: () => string[] };
   /** Имя корневой части — с неё начинается компонент. */

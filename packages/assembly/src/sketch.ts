@@ -99,7 +99,13 @@ export function sketchOf(
 
     const inside = new Set(path).add(part);
     for (const admission of declared.accepts) {
-      if (admission.kind !== "part") continue;
+      // Own part vs. extra vs. a reference to another component of the shared registry share ONE
+      // admission kind now (`{kind:"component"}`, `PWEB-172` continuation) — the sketch only ever
+      // auto-expands OWN parts (it grows THIS component's own anatomy, never reaches into a
+      // referenced foreign component or an extra), so a named entry is only followed here when
+      // the name actually IS one of this component's own anatomy parts.
+      if (admission.kind !== "component" || admission.name === undefined) continue;
+      if (!read.passport.anatomy.keys().includes(admission.name)) continue;
       if (inside.has(admission.name)) continue;
 
       const childId = nameFor(admission.name);

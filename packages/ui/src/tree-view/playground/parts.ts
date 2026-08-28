@@ -35,8 +35,8 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     means: "дерево целиком — один узел, оборачивающий подпись и сам список",
     states: {},
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "tree" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "tree" },
     ],
   },
   label: {
@@ -48,8 +48,8 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     means: "список узлов верхнего уровня — `role=\"tree\"`; вложенные листья и ветки строятся рекурсивно",
     states: {},
     accepts: [
-      { kind: "part", name: "item" },
-      { kind: "part", name: "branch" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "branch" },
     ],
   },
   item: {
@@ -64,10 +64,10 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     },
     variables: { "--depth": { means: "глубина вложенности листа — от неё считается отступ строки" } },
     accepts: [
-      { kind: "part", name: "itemText" },
-      { kind: "part", name: "itemIndicator" },
-      { kind: "part", name: "nodeCheckbox" },
-      { kind: "part", name: "nodeRenameInput" },
+      { kind: "component", name: "itemText" },
+      { kind: "component", name: "itemIndicator" },
+      { kind: "component", name: "nodeCheckbox" },
+      { kind: "component", name: "nodeRenameInput" },
       { kind: "content", genus: "icon" },
     ],
   },
@@ -91,8 +91,8 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     },
     variables: { "--depth": { means: "глубина вложенности ветки — от неё считается отступ строки" } },
     accepts: [
-      { kind: "part", name: "branchControl" },
-      { kind: "part", name: "branchContent" },
+      { kind: "component", name: "branchControl" },
+      { kind: "component", name: "branchContent" },
     ],
   },
   branchControl: {
@@ -109,10 +109,10 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       ...hoverActiveMeans,
     },
     accepts: [
-      { kind: "part", name: "branchIndicator" },
-      { kind: "part", name: "branchText" },
-      { kind: "part", name: "nodeCheckbox" },
-      { kind: "part", name: "nodeRenameInput" },
+      { kind: "component", name: "branchIndicator" },
+      { kind: "component", name: "branchText" },
+      { kind: "component", name: "nodeCheckbox" },
+      { kind: "component", name: "nodeRenameInput" },
     ],
   },
   branchText: {
@@ -145,9 +145,9 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     means: "контейнер потомков ветки — виден только пока она раскрыта; при закрытии скрывается целиком атрибутом `hidden`, без измеренной высоты и без анимации (в отличие от аккордеона — у этой части нет `--height`)",
     states: openClosedMeans,
     accepts: [
-      { kind: "part", name: "branchIndentGuide" },
-      { kind: "part", name: "item" },
-      { kind: "part", name: "branch" },
+      { kind: "component", name: "branchIndentGuide" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "branch" },
     ],
   },
   branchIndentGuide: {

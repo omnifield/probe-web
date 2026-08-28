@@ -35,22 +35,19 @@ import { readAddress, type Registry } from "./registry.js";
  *  • `part-undeclared`     — часть есть в анатомии, но добавки к ней паспорт не дал: сказать о
  *                            её вложенности нечего. Пробел паспорта, а не отказ по правилу;
  *  • `foreign-part`        — часть ЧУЖОГО компонента: части живут внутри своего компонента, а
- *                            чужой вкладывается целиком, и тогда его пускают по роду;
- *  • `part-not-admitted`   — часть своего компонента, но владелец её среди допустимого не назвал;
+ *                            чужой вкладывается целиком, и тогда его пускают именованным узлом;
  *  • `content-not-admitted`— содержимое такого рода часть внутрь не пускает;
- *  • `extra-not-admitted`  — вспомогательный компонент кита (`PWEB-152`) владелец не назвал среди
- *                            допустимого;
- *  • `component-not-admitted` — ссылку на другой компонент общего реестра (`PWEB-166`,
- *                            `{kind:"component"}`) владелец не назвал среди допустимого.
+ *  • `component-not-admitted` — ОДИН отказ на именованный узел любого происхождения (own part,
+ *                            `extra`, ссылка на компонент общего реестра) — `PWEB-172`
+ *                            continuation: где он резолвится не забота допуска, admission не
+ *                            различает три раздельных отказа там, где сама проверка одна.
  */
 export type NestingRefusal =
   | "parent-unknown"
   | "child-unknown"
   | "part-undeclared"
   | "foreign-part"
-  | "part-not-admitted"
   | "content-not-admitted"
-  | "extra-not-admitted"
   | "component-not-admitted";
 
 /** Ответ проверки: допустимо, либо отказ с именем и пояснением человеку. */
@@ -97,24 +94,12 @@ export function canAdmit(
 
   if (registry.admits(ownerPart, candidate)) return allow;
 
-  if (candidate.kind === "part") {
-    return deny(
-      "part-not-admitted",
-      `часть «${owner.part}» не назвала «${candidate.name}» среди допустимого внутри`,
-    );
-  }
-
-  if (candidate.kind === "extra") {
-    return deny(
-      "extra-not-admitted",
-      `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь вспомогательный компонент «${candidate.name}»`,
-    );
-  }
-
   if (candidate.kind === "component") {
     return deny(
       "component-not-admitted",
-      `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь ссылку на компонент общего реестра`,
+      candidate.name
+        ? `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь «${candidate.name}»`
+        : `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь ссылку на компонент общего реестра`,
     );
   }
 
@@ -147,7 +132,9 @@ export function canContain(registry: Registry, parent: string, child: string): N
   }
 
   // Гость — ЧАСТЬ, если его адрес несёт часть, отличную от корневой. Корневая часть — это сам
-  // компонент, и он приходит сюда на общих правах содержимого: по роду, а не по имени.
+  // компонент, и он приходит сюда на общих правах именованного узла: по своему верхнему имени,
+  // не по имени части (`PWEB-172` continuation — own part and whole component share ONE
+  // admission kind now, `{kind:"component"}`, told apart only by which name actually matches).
   const guestIsPart = guest.part !== guest.passport.root;
 
   if (guestIsPart) {
@@ -157,10 +144,13 @@ export function canContain(registry: Registry, parent: string, child: string): N
         `часть «${guest.part}» принадлежит компоненту «${guest.passport.component}» — внутрь «${owner.passport.component}» она сама по себе не кладётся, кладётся компонент целиком`,
       );
     }
-    return canAdmit(registry, parent, { kind: "part", name: guest.part });
+    return canAdmit(registry, parent, { kind: "component", name: guest.part });
   }
 
-  return canAdmit(registry, parent, { kind: "content", genus: guest.passport.genus });
+  // Whole component — genus AND name both known here (unlike `checkAssembly`'s declaration-time
+  // check, which never has the full registry): a restriction like `{kind:"component", name:
+  // "button"}` ("only button, nothing else") is verifiable for real at this layer.
+  return canAdmit(registry, parent, { kind: "component", genus: guest.passport.genus, name: guest.component });
 }
 
 /**
@@ -189,8 +179,8 @@ export interface AllowedInside {
   readonly extras: readonly string[];
   /**
    * Часть пускает внутрь ссылку на ДРУГОЙ компонент общего реестра (`PWEB-166`,
-   * `{kind:"component"}`). Без имени — часть говорит лишь «сюда можно сослаться на компонент»,
-   * а на какой именно, решает не она.
+   * `{kind:"component"}` without a `name`, or restricted by `genus` alone). Без имени — часть
+   * говорит лишь «сюда можно сослаться на компонент», а на какой именно, решает не она.
    */
   readonly components: boolean;
 }
@@ -198,6 +188,12 @@ export interface AllowedInside {
 /**
  * Что допустимо внутри узла, либо `undefined` — если адрес реестру неизвестен или паспорт о
  * части ничего не сказал.
+ *
+ * Own part, extra, and a reference to another component of the shared registry are ONE admission
+ * kind now (`{kind:"component"}`, `PWEB-172` continuation) — an `accepts` entry no longer says
+ * which of the three a `name` is. This function reclassifies each `name` by checking it against
+ * the OWNER's own anatomy and its `extras` map (the same move `baseAssemblyOf`/`checkAssembly`
+ * already make on the declaring side) — a name matching neither is a foreign registry reference.
  *
  * @param registry реестр
  * @param parent адрес узла-владельца
@@ -212,21 +208,37 @@ export function allowedInside(registry: Registry, parent: string): AllowedInside
   const accepts = ownerPart.accepts;
   if (!accepts) return { unrestricted: true, parts: [], genera: [], extras: [], components: false };
 
+  const ownAnatomy = owner.passport.anatomy.keys();
+  const ownExtras = registry.components[owner.component]?.extras;
+
   const parts: string[] = [];
   const genera: string[] = [];
   const extras: string[] = [];
   let components = false;
   for (const item of accepts) {
-    if (item.kind === "part") {
+    if (item.kind === "content") {
+      if (!genera.includes(item.genus)) genera.push(item.genus);
+      continue;
+    }
+
+    // No name (bare, or genus-only restricted) — an open reference to the general registry,
+    // never an own part or an extra: both of those are always addressed by name.
+    if (item.name === undefined) {
+      components = true;
+      continue;
+    }
+
+    if (ownAnatomy.includes(item.name)) {
       parts.push(
         item.name === owner.passport.root ? owner.component : `${owner.component}.${item.name}`,
       );
-    } else if (item.kind === "extra") {
+    } else if (ownExtras && Object.hasOwn(ownExtras, item.name)) {
       extras.push(`${owner.component}.~${item.name}`);
-    } else if (item.kind === "component") {
+    } else {
+      // A named restriction on a FOREIGN component ("only button here") — still a component
+      // reference, just narrowed; there is no separate bucket for that yet, so it folds into
+      // `components` the same as an unrestricted one.
       components = true;
-    } else if (!genera.includes(item.genus)) {
-      genera.push(item.genus);
     }
   }
 
@@ -309,12 +321,14 @@ export function possibleOwnersOf(registry: Registry, child: string): PossibleOwn
   if (!guest) return undefined;
 
   // Extra — тем же ходом, что и часть: вспомогательный компонент кита живёт внутри своего
-  // компонента (`PWEB-152`), в чужой не попадает даже вместе с ним.
+  // компонента (`PWEB-152`), в чужой не попадает даже вместе с ним. Own part and extra share the
+  // same admission kind now (`{kind:"component"}`, `PWEB-172` continuation) — scoped to `guest.
+  // component` either way, so the two stay structurally identical here too.
   if (guest.kind === "extra") {
-    return ownersAdmitting(registry, { kind: "extra", name: guest.part }, guest.component);
+    return ownersAdmitting(registry, { kind: "component", name: guest.part }, guest.component);
   }
 
   return guest.part === guest.passport.root
-    ? ownersAdmitting(registry, { kind: "content", genus: guest.passport.genus })
-    : ownersAdmitting(registry, { kind: "part", name: guest.part }, guest.component);
+    ? ownersAdmitting(registry, { kind: "component", genus: guest.passport.genus, name: guest.component })
+    : ownersAdmitting(registry, { kind: "component", name: guest.part }, guest.component);
 }

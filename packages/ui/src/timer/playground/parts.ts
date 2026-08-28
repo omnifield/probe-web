@@ -42,22 +42,22 @@ export const parts: Readonly<Record<TimerPart, PassportPartEditorInfo<TimerPart>
     means: "TODO",
     states: {},
     accepts: [
-      { kind: "part", name: "area" },
-      { kind: "part", name: "control" },
+      { kind: "component", name: "area" },
+      { kind: "component", name: "control" },
     ],
   },
   area: {
     means: "TODO",
     states: {},
     accepts: [
-      { kind: "part", name: "item" },
-      { kind: "part", name: "separator" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "separator" },
     ],
   },
   control: {
     means: "TODO",
     states: {},
-    accepts: [{ kind: "part", name: "actionTrigger" }],
+    accepts: [{ kind: "component", name: "actionTrigger" }],
   },
   item: {
     means: "TODO",

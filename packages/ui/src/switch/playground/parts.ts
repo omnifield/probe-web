@@ -28,17 +28,17 @@ export const parts: Readonly<Record<SwitchPart, PassportPartEditorInfo<SwitchPar
     means: "the whole switch — a label wrapping the track and its own text",
     states: stateMeans,
     accepts: [
-      { kind: "part", name: "control" },
-      { kind: "part", name: "label" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "label" },
       // The real hidden `<input type="checkbox">` (`PWEB-152`) — the node the real `onChange`
       // lives on; without it a preview looks right but a click never toggles the switch.
-      { kind: "extra", name: "hiddenInput" },
+      { kind: "component", name: "hiddenInput" },
     ],
   },
   control: {
     means: "the track — the visible background the thumb slides across",
     states: stateMeans,
-    accepts: [{ kind: "part", name: "thumb" }],
+    accepts: [{ kind: "component", name: "thumb" }],
   },
   thumb: {
     means: "the moving indicator — slides to one end of the track or the other",

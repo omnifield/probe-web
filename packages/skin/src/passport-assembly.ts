@@ -60,7 +60,8 @@
 import type { ComponentPassport } from "./passport-form.js";
 
 /**
- * РОД содержимого — чем узел является, когда его кладут внутрь чужого узла.
+ * РОД содержимого-ЛИСТА — чем значение является, когда его кладут внутрь чужого узла как
+ * `PassportAssemblyContent` (`{genus, value}`, ни пропов, ни детей, ни адреса).
  *
  * Род, а не имя компонента. «Внутрь кнопки только текст или значок» — утверждение о роде
  * допустимого, и записать его иначе нечем: перечень имён отстанет на первом же новом значке.
@@ -71,63 +72,79 @@ import type { ComponentPassport } from "./passport-form.js";
  * кандидат называет себя сам, принимающий называет род.
  *
  *  • `text` — подпись: узел-текст, компонентом не являющийся;
- *  • `icon` — значок: компонент, предмет которого — один символ;
- *  • `component` — любой компонент. Значок подходит сюда; обратное неверно.
+ *  • `icon` — значок-плейсхолдер: печатается как есть, живым компонентом не бывает.
+ *
+ * `"component"` здесь БОЛЬШЕ НЕТ (был, снят при доводке `PWEB-172`): лист физически не может
+ * нести компонент — только строку/путь (`value: DynamicValue`). Ссылка на настоящий компонент —
+ * `PassportAssemblyElement`, отдельный узел, не содержимое, и её допуск — `PassportAdmission`'s
+ * `{kind:"component"}`, не жанр листа.
  *
  * Новый род заводится ТОЛЬКО решением — как и новое имя состояния. Перечень родов маленький
  * намеренно: он про то, ЧЕМ вещь является, а не про то, что она умеет.
  */
-export type PassportGenus = "text" | "icon" | "component";
-
-/** Род, которым компонент может БЫТЬ. Текстом — не может: текст это узел, а не компонент. */
-export type PassportComponentGenus = Exclude<PassportGenus, "text">;
+export type PassportGenus = "text" | "icon";
 
 /**
- * Что допустимо внутри части — ОДНИМ перечнем: свои части и содержимое потребителя вперемешку.
+ * Род, которым КОМПОНЕНТ ЦЕЛИКОМ объявляет сам себя (`defineEditorInfo`'s `genus`) — используется
+ * ссылкой на этот компонент (`PassportAdmission`'s `{kind:"component", genus}`), не содержимым-
+ * листом. Independent от `PassportGenus` (не `Exclude<..., "text">`) с тех пор, как `PassportGenus`
+ * лишился `"component"` — словари разошлись: лист не может БЫТЬ компонентом, а компонент вправе
+ * объявить себя обычным (не значком).
+ *
+ *  • `icon` — компонент, предмет которого один символ (сам `icon`);
+ *  • `component` — любой другой компонент кита.
+ */
+export type PassportComponentGenus = "icon" | "component";
+
+/**
+ * Что допустимо внутри части — ОДНИМ перечнем: named nodes and leaf content mixed together.
  *
  * Перечень один намеренно (`PWEB-24`). Часть компонента и есть вложенный компонент, увиденный с
  * другой стороны: у Ark вкладка гармошки — и часть `item`, и самостоятельный компонент. Разведи
  * это на два поля — и у одного дерева окажется два правила, которые редактор обязан складывать
  * сам; складывать он их будет по-своему, и каждый читатель паспорта по-своему же.
+ *
+ * ONE named-node kind, not three (`PWEB-172` continuation, 2026-08-28). Own anatomy part, private
+ * `extra`, and a reference to another component of the shared registry used to be three separate
+ * admission kinds (`part`/`extra`/`component`) — the SAME question ("is this named thing allowed
+ * here") asked three different ways depending on WHERE the name resolves to. That WHERE is a
+ * resolution detail (own anatomy vs. `KitComponent.extras` vs. the general registry,
+ * `packages/assembly/src/registry.ts`'s `readAddress`) — admission doesn't need to know it, the
+ * same way the declaration side stopped needing two fields (`node`, `PWEB-172`) for the same
+ * reason. Content stays its own kind: a leaf (`value`, no props/children/identity) is a genuinely
+ * different thing from a named node, not the same thing seen from another angle.
  */
 export type PassportAdmission<Part extends string = string> =
-  | {
-      /** Своя часть этого же компонента. */
-      readonly kind: "part";
-      /** Имя части — ключ анатомии, не новое объявление. */
-      readonly name: Part;
-    }
   | {
       /** Содержимое потребителя — названное родом. */
       readonly kind: "content";
       readonly genus: PassportGenus;
     }
   | {
-      /** Вспомогательный компонент кита — БЕЗ адреса анатомии (`PassportAssemblyExtra`). */
-      readonly kind: "extra";
-      /** Имя в карте `extras` поставщика — не часть анатомии, отдельное пространство имён. */
-      readonly name: string;
-    }
-  | {
-      /** Ссылка на ЛЮБОЙ компонент общего реестра (declared as a `PassportAssemblyElement` whose
-       *  `node` names something outside this component's own anatomy, `PWEB-166`/`PWEB-172`). Без
-       *  имени — часть не обязана знать, КАКОЙ именно компонент туда положат, только что это
-       *  законное место для настоящего чужого компонента. */
+      /**
+       * A named node: own anatomy part, private `extra`, or a reference to another component of
+       * the shared registry — which one it actually resolves to is not this kind's concern.
+       */
       readonly kind: "component";
+      /**
+       * Restrict to a component that declares ITSELF this genus (`PassportComponentGenus` —
+       * `icon`/`component`). Absent — no genus restriction. Never matches an own part or an
+       * `extra`: neither declares a genus, both are addressed by `name` instead. Multiple allowed
+       * genera are multiple `accepts` entries, not an array here — the same way multiple allowed
+       * part names were always multiple `{kind:"part", name}` entries, never a `name` array.
+       */
+      readonly genus?: PassportComponentGenus;
+      /**
+       * Restrict to this exact name — an anatomy part's name, an `extras` key, or a top-level
+       * registry name, whichever it turns out to be. Absent — any name (still subject to `genus`,
+       * if named). Multiple allowed names are multiple `accepts` entries, same reasoning as `genus`.
+       *
+       * Typed `Part | string`, same reason and same non-guarantee as `PassportAssemblyElement.node`
+       * (`PWEB-172`): editor autocomplete for this component's own real part names, no compile-time
+       * rejection of a typo either in an own part's name or in a foreign one.
+       */
+      readonly name?: Part | string;
     };
-
-/**
- * Род кандидата → рода, под которые он подходит.
- *
- * Значок — тоже компонент, и место, объявленное «под любой компонент», он занимать вправе.
- * Обратно не работает: место под значок компонентом вообще не занимается, иначе «только текст
- * или значок» не отвергало бы ничего.
- */
-const FITS: Record<PassportGenus, readonly PassportGenus[]> = {
-  text: ["text"],
-  icon: ["icon", "component"],
-  component: ["component"],
-};
 
 /** То немногое, что `admits` спрашивает у части: правило вложенности, если оно объявлено. */
 export interface PassportPartAdmission<Part extends string = string> {
@@ -145,8 +162,8 @@ export interface PassportPartAdmission<Part extends string = string> {
  * молча, оба будут зелёными.
  *
  * @param part часть, ВНУТРЬ которой кладут — точнее, её правило вложенности из среза редактора
- * @param candidate что кладут: своя часть по имени либо содержимое рода (род компонента берётся
- *   из его же среза редактора — `editorInfo.genus`, не из имени пакета)
+ * @param candidate что кладут: именованный узел (своя часть, extra, ссылка на реестр — одним
+ *   кандидатом, `PWEB-172`) либо содержимое, названное родом
  */
 export function admits<Part extends string>(
   part: PassportPartAdmission<Part>,
@@ -157,10 +174,20 @@ export function admits<Part extends string>(
   if (!accepts) return true;
 
   return accepts.some((allowed) => {
-    if (candidate.kind === "part") return allowed.kind === "part" && allowed.name === candidate.name;
-    if (candidate.kind === "extra") return allowed.kind === "extra" && allowed.name === candidate.name;
-    if (candidate.kind === "component") return allowed.kind === "component";
-    return allowed.kind === "content" && FITS[candidate.genus].includes(allowed.genus);
+    if (candidate.kind === "content") {
+      return allowed.kind === "content" && allowed.genus === candidate.genus;
+    }
+
+    // `genus` only rejects when BOTH sides state one. `checkAssembly` (declaration-time, no
+    // registry) can never know a foreign reference's own declared genus — it only ever confirms
+    // `name`, which is always visible on the tree itself — so its candidates never carry `genus`.
+    // Only a registry-aware caller (`nesting.ts`, checking a real guest component) supplies it,
+    // and only then does a `genus` restriction actually filter anything.
+    return (
+      allowed.kind === "component" &&
+      (allowed.genus === undefined || candidate.genus === undefined || allowed.genus === candidate.genus) &&
+      (allowed.name === undefined || allowed.name === candidate.name)
+    );
   });
 }
 

@@ -27,13 +27,13 @@ export const parts: Readonly<Record<FileUploadPart, PassportPartEditorInfo<FileU
     means: "the whole file upload — label, dropzone, and the picked-file list together",
     states: { ...disabledReadonlyMeans, dragging: { means: "a file is being dragged over the widget" } },
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "dropzone" },
-      { kind: "part", name: "itemGroup" },
-      { kind: "part", name: "clearTrigger" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "dropzone" },
+      { kind: "component", name: "itemGroup" },
+      { kind: "component", name: "clearTrigger" },
       // The real hidden `<input type="file">` (`PWEB-152`) — the native file picker and form
       // participation live on that exact node, no address of its own.
-      { kind: "extra", name: "hiddenInput" },
+      { kind: "component", name: "hiddenInput" },
     ],
   },
   dropzone: {
@@ -44,7 +44,7 @@ export const parts: Readonly<Record<FileUploadPart, PassportPartEditorInfo<FileU
       invalid: { means: "the file(s) just dropped or picked failed validation" },
     },
     accepts: [
-      { kind: "part", name: "trigger" },
+      { kind: "component", name: "trigger" },
       { kind: "content", genus: "text" },
     ],
   },
@@ -72,16 +72,16 @@ export const parts: Readonly<Record<FileUploadPart, PassportPartEditorInfo<FileU
   itemGroup: {
     means: "wraps a list of picked files — one group for accepted, a second optional one for rejected",
     states: { ...disabledMeans, ...itemTypeMeans },
-    accepts: [{ kind: "part", name: "item" }],
+    accepts: [{ kind: "component", name: "item" }],
   },
   item: {
     means: "one picked file's own row",
     states: { ...disabledMeans, ...itemTypeMeans },
     accepts: [
-      { kind: "part", name: "itemPreview" },
-      { kind: "part", name: "itemName" },
-      { kind: "part", name: "itemSizeText" },
-      { kind: "part", name: "itemDeleteTrigger" },
+      { kind: "component", name: "itemPreview" },
+      { kind: "component", name: "itemName" },
+      { kind: "component", name: "itemSizeText" },
+      { kind: "component", name: "itemDeleteTrigger" },
     ],
   },
   itemName: {
@@ -98,7 +98,7 @@ export const parts: Readonly<Record<FileUploadPart, PassportPartEditorInfo<FileU
     means: "wraps a file's preview — an image thumbnail, or a generic icon for non-image files",
     states: { ...disabledMeans, ...itemTypeMeans },
     accepts: [
-      { kind: "part", name: "itemPreviewImage" },
+      { kind: "component", name: "itemPreviewImage" },
       { kind: "content", genus: "icon" },
     ],
   },

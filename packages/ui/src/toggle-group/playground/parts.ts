@@ -14,7 +14,7 @@ export const parts: Readonly<Record<ToggleGroupPart, PassportPartEditorInfo<Togg
       disabled: { means: "the whole set is disabled — no item can be pressed" },
       focus: { means: "some item in this set is focused" },
     },
-    accepts: [{ kind: "part", name: "item" }],
+    accepts: [{ kind: "component", name: "item" }],
   },
   item: {
     means: "one button — press it to toggle on/off",

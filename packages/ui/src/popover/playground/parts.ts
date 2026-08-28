@@ -25,7 +25,7 @@ const pseudoMeans: Readonly<Record<"hover" | "focus-visible" | "active", Passpor
 export const parts: Readonly<Record<PopoverPart, PassportPartEditorInfo<PopoverPart>>> = {
   arrow: {
     means: "the outer clipping box for the pointing arrow",
-    accepts: [{ kind: "part", name: "arrowTip" }],
+    accepts: [{ kind: "component", name: "arrowTip" }],
   },
   arrowTip: {
     means: "the arrow's actual point — rotated into a diamond by the kit's own positioning",
@@ -34,7 +34,7 @@ export const parts: Readonly<Record<PopoverPart, PassportPartEditorInfo<PopoverP
   },
   anchor: {
     means: "an optional reference point the popover positions against, instead of the trigger",
-    accepts: [{ kind: "content", genus: "component" }],
+    accepts: [{ kind: "component" }],
   },
   trigger: {
     means: "opens and closes the popover",
@@ -62,19 +62,19 @@ export const parts: Readonly<Record<PopoverPart, PassportPartEditorInfo<PopoverP
     },
     // NOT `trigger`/`anchor` — see file header.
     accepts: [
-      { kind: "part", name: "content" },
-      { kind: "part", name: "arrow" },
+      { kind: "component", name: "content" },
+      { kind: "component", name: "arrow" },
     ],
   },
   content: {
     means: "the floating panel itself — hidden, not removed, while closed",
     states: openClosedMeans,
     accepts: [
-      { kind: "part", name: "title" },
-      { kind: "part", name: "description" },
-      { kind: "part", name: "closeTrigger" },
+      { kind: "component", name: "title" },
+      { kind: "component", name: "description" },
+      { kind: "component", name: "closeTrigger" },
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   title: {

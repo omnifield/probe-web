@@ -47,7 +47,7 @@ export const parts: Readonly<Record<ToastPart, PassportPartEditorInfo<ToastPart>
   group: {
     means: "TODO",
     states: positionMeans,
-    accepts: [{ kind: "part", name: "root" }],
+    accepts: [{ kind: "component", name: "root" }],
   },
   root: {
     means: "TODO",
@@ -68,10 +68,10 @@ export const parts: Readonly<Record<ToastPart, PassportPartEditorInfo<ToastPart>
       overlap: { means: "TODO" },
     },
     accepts: [
-      { kind: "part", name: "title" },
-      { kind: "part", name: "description" },
-      { kind: "part", name: "actionTrigger" },
-      { kind: "part", name: "closeTrigger" },
+      { kind: "component", name: "title" },
+      { kind: "component", name: "description" },
+      { kind: "component", name: "actionTrigger" },
+      { kind: "component", name: "closeTrigger" },
     ],
   },
   title: {

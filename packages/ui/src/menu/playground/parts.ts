@@ -35,7 +35,7 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
   arrow: {
     means: "wraps `arrowTip` — positioned by the kit, no graphic of its own",
     states: {},
-    accepts: [{ kind: "part", name: "arrowTip" }],
+    accepts: [{ kind: "component", name: "arrowTip" }],
   },
   arrowTip: {
     means: "the visible triangle inside `arrow` — a skin draws its shape, typically a rotated square",
@@ -51,16 +51,16 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
       "--available-width": { means: "space left before the panel would hit the viewport edge" },
       "--available-height": { means: "space left before the panel would hit the viewport edge" },
     },
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   content: {
     means: "the floating panel — holds real keyboard focus for every item at once",
     states: openClosedMeans,
     accepts: [
-      { kind: "part", name: "arrow" },
-      { kind: "part", name: "item" },
-      { kind: "part", name: "itemGroup" },
-      { kind: "part", name: "separator" },
+      { kind: "component", name: "arrow" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "itemGroup" },
+      { kind: "component", name: "separator" },
     ],
   },
   indicator: {
@@ -89,7 +89,7 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
     states: { ...openClosedMeans, current: { means: "this is the trigger that opened the menu (multi-trigger menus only)" } },
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   separator: {
@@ -101,8 +101,8 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
     means: "wraps a labeled cluster of items",
     states: {},
     accepts: [
-      { kind: "part", name: "itemGroupLabel" },
-      { kind: "part", name: "item" },
+      { kind: "component", name: "itemGroupLabel" },
+      { kind: "component", name: "item" },
     ],
   },
   itemGroupLabel: {
@@ -119,8 +119,8 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
       checkbox: { means: "this is a checkbox-shaped item — independently toggleable" },
     },
     accepts: [
-      { kind: "part", name: "itemIndicator" },
-      { kind: "part", name: "itemText" },
+      { kind: "component", name: "itemIndicator" },
+      { kind: "component", name: "itemText" },
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],

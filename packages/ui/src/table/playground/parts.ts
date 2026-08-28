@@ -20,9 +20,9 @@ export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>
     means: "the whole table",
     states: {},
     accepts: [
-      { kind: "part", name: "caption" },
-      { kind: "part", name: "head" },
-      { kind: "part", name: "body" },
+      { kind: "component", name: "caption" },
+      { kind: "component", name: "head" },
+      { kind: "component", name: "body" },
     ],
   },
   caption: {
@@ -33,18 +33,18 @@ export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>
   head: {
     means: "wraps the header row(s)",
     states: {},
-    accepts: [{ kind: "part", name: "headRow" }],
+    accepts: [{ kind: "component", name: "headRow" }],
   },
   headRow: {
     means: "one row of column headers",
     states: {},
-    accepts: [{ kind: "part", name: "headerCell" }],
+    accepts: [{ kind: "component", name: "headerCell" }],
   },
   headerCell: {
     means: "one column's header — carries the sorted look for that column, whether or not it holds a button",
     states: sortStateMeans,
     accepts: [
-      { kind: "part", name: "headerSortTrigger" },
+      { kind: "component", name: "headerSortTrigger" },
       { kind: "content", genus: "text" },
     ],
   },
@@ -65,12 +65,12 @@ export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>
   body: {
     means: "wraps the data rows",
     states: {},
-    accepts: [{ kind: "part", name: "row" }],
+    accepts: [{ kind: "component", name: "row" }],
   },
   row: {
     means: "one data row — v1 has no per-row look (no selection, no pinning)",
     states: {},
-    accepts: [{ kind: "part", name: "cell" }],
+    accepts: [{ kind: "component", name: "cell" }],
   },
   cell: {
     means: "one cell — content is the consumer's, same as every other kit part",
@@ -78,7 +78,7 @@ export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
 };

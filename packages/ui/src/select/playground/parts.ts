@@ -26,9 +26,9 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       readonly: { means: "a value is visible but cannot be changed" },
     },
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "control" },
-      { kind: "part", name: "positioner" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "positioner" },
     ],
   },
   label: {
@@ -51,9 +51,9 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       invalid: { means: "the select is invalid by the form's rules" },
     },
     accepts: [
-      { kind: "part", name: "trigger" },
-      { kind: "part", name: "clearTrigger" },
-      { kind: "part", name: "indicator" },
+      { kind: "component", name: "trigger" },
+      { kind: "component", name: "clearTrigger" },
+      { kind: "component", name: "indicator" },
     ],
   },
   trigger: {
@@ -72,7 +72,7 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
     // ValueText is the only thing that lives inside the trigger in Ark's own composition —
     // ClearTrigger and Indicator are the control's OTHER children, siblings of the trigger, not
     // inside it.
-    accepts: [{ kind: "part", name: "valueText" }],
+    accepts: [{ kind: "component", name: "valueText" }],
   },
   valueText: {
     means: "shows the selected value(s), or the placeholder when none is chosen",
@@ -121,7 +121,7 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       "--available-width": { means: "room left to the nearest viewport edge, widthwise" },
       "--available-height": { means: "room left to the nearest viewport edge, heightwise — caps a long dropdown" },
     },
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   content: {
     means: "the floating dropdown itself — items live here, grouped or not",
@@ -130,16 +130,16 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       closed: { means: "the dropdown is closed" },
     },
     accepts: [
-      { kind: "part", name: "list" },
-      { kind: "part", name: "itemGroup" },
-      { kind: "part", name: "item" },
+      { kind: "component", name: "list" },
+      { kind: "component", name: "itemGroup" },
+      { kind: "component", name: "item" },
     ],
   },
   list: {
     means: "an inner listbox region inside the content — an optional alternative to nesting items straight in it",
     accepts: [
-      { kind: "part", name: "itemGroup" },
-      { kind: "part", name: "item" },
+      { kind: "component", name: "itemGroup" },
+      { kind: "component", name: "item" },
     ],
   },
   itemGroup: {
@@ -148,8 +148,8 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       disabled: { means: "the select is disabled" },
     },
     accepts: [
-      { kind: "part", name: "itemGroupLabel" },
-      { kind: "part", name: "item" },
+      { kind: "component", name: "itemGroupLabel" },
+      { kind: "component", name: "item" },
     ],
   },
   itemGroupLabel: {
@@ -165,8 +165,8 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       disabled: { means: "the item cannot be selected" },
     },
     accepts: [
-      { kind: "part", name: "itemText" },
-      { kind: "part", name: "itemIndicator" },
+      { kind: "component", name: "itemText" },
+      { kind: "component", name: "itemIndicator" },
     ],
   },
   itemText: {

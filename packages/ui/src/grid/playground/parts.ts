@@ -15,16 +15,16 @@ export const parts: Readonly<Record<GridPart, PassportPartEditorInfo<GridPart>>>
   root: {
     means: "сетка — общие дорожки, по которым элементы выравниваются и поперёк строк",
     accepts: [
-      { kind: "part", name: "cell" },
+      { kind: "component", name: "cell" },
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   cell: {
     means: "место одного элемента в сетке — им адресуется «этот занимает две колонки»",
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
 };

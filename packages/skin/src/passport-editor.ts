@@ -369,13 +369,14 @@ function checkAssembly<Part extends string>(
 
     for (const declaredChild of node.children ?? []) {
       const child = templateOf(declaredChild);
+      // Own part, extra, or foreign reference — ONE admission kind (`PWEB-172` continuation):
+      // `name` is always known statically from the tree itself, whichever of the three `child`
+      // turns out to be. `genus` is deliberately never set here — verifying a FOREIGN reference's
+      // own declared genus needs the general registry, which `checkAssembly` doesn't have; `admits`
+      // treats a genus-restricted entry as satisfied when the candidate states no genus at all.
       const candidate: PassportAdmission<Part> = isAssemblyContent(child)
         ? { kind: "content", genus: child.genus }
-        : isAssemblyExtra(child)
-          ? { kind: "extra", name: child.extra }
-          : isOwnPart(child)
-            ? { kind: "part", name: child.node as Part }
-            : { kind: "component" };
+        : { kind: "component", name: isAssemblyExtra(child) ? child.extra : child.node };
 
       if (owner && !admits(owner, candidate)) {
         const что = isAssemblyContent(child)

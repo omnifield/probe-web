@@ -10,6 +10,7 @@
 export type {
   Admission,
   AdmissionRule,
+  ComponentGenus,
   Genus,
   ReadablePart,
   ReadablePassport,
