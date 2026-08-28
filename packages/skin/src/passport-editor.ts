@@ -58,6 +58,7 @@
 
 import {
   admits,
+  isAssemblyComponent,
   isAssemblyContent,
   isAssemblyExtra,
   isAssemblyRef,
@@ -65,6 +66,7 @@ import {
   type DataPreset,
   type PassportAdmission,
   type PassportAssembly,
+  type PassportAssemblyComponent,
   type PassportAssemblyContent,
   type PassportAssemblyExtra,
   type PassportAssemblyNode,
@@ -330,7 +332,7 @@ function checkAssembly<Part extends string>(
   // сквозь композицию в `packages/assembly/src/tree.ts`.
   const templateOf = (
     node: PassportAssemblyNode<Part>,
-  ): PassportAssemblyPart<Part> | PassportAssemblyContent | PassportAssemblyExtra<Part> => {
+  ): PassportAssemblyPart<Part> | PassportAssemblyContent | PassportAssemblyExtra<Part> | PassportAssemblyComponent<Part> => {
     if (isAssemblyRepeat(node)) return templateOf(node.template);
 
     if (isAssemblyRef(node)) {
@@ -346,18 +348,23 @@ function checkAssembly<Part extends string>(
     return node;
   };
 
-  // Узел-родитель при обходе — часть анатомии либо вспомогательный компонент кита (extra, без
-  // адреса анатомии — `PassportAssemblyExtra`, `PWEB-152`). Содержимое обходу не подлежит: у него
-  // нет детей по построению типа.
-  const walk = (node: PassportAssemblyPart<Part> | PassportAssemblyExtra<Part>): void => {
-    if (!isAssemblyExtra(node) && !declared.includes(node.part)) {
+  // Узел-родитель при обходе — часть анатомии, вспомогательный компонент кита (extra, без адреса
+  // анатомии — `PassportAssemblyExtra`, `PWEB-152`) либо ссылка на ЧУЖОЙ компонент реестра
+  // (`PassportAssemblyComponent`, `PWEB-166`). Содержимое обходу не подлежит: у него нет детей по
+  // построению типа.
+  const walk = (
+    node: PassportAssemblyPart<Part> | PassportAssemblyExtra<Part> | PassportAssemblyComponent<Part>,
+  ): void => {
+    if (!isAssemblyExtra(node) && !isAssemblyComponent(node) && !declared.includes(node.part)) {
       throw new Error(`сборка «${component}.${assembly.name}» называет часть «${node.part}» мимо анатомии`);
     }
 
     // Extra не заводит собственного правила вложенности в срезе редактора (тот держит записи ТОЛЬКО
     // по частям анатомии) — вложенность внутрь extra поэтому не проверяется здесь; несовпадение
     // extra-имени с картой поставщика (`KitComponent.extras`) ловит `checkRegistry`, не этот обход.
-    const owner = isAssemblyExtra(node) ? undefined : parts[node.part];
+    // Ссылка на компонент реестра — та же логика и по той же причине: что она пускает внутрь себя,
+    // решает ЕГО СОБСТВЕННЫЙ срез редактора, не этот, и мы туда не спускаемся вовсе (см. ниже).
+    const owner = isAssemblyExtra(node) || isAssemblyComponent(node) ? undefined : parts[node.part];
 
     for (const declaredChild of node.children ?? []) {
       const child = templateOf(declaredChild);
@@ -365,15 +372,23 @@ function checkAssembly<Part extends string>(
         ? { kind: "content", genus: child.genus }
         : isAssemblyExtra(child)
           ? { kind: "extra", name: child.extra }
-          : { kind: "part", name: child.part };
+          : isAssemblyComponent(child)
+            ? { kind: "component" }
+            : { kind: "part", name: child.part };
 
       if (owner && !admits(owner, candidate)) {
         const что = isAssemblyContent(child)
           ? `содержимое рода «${child.genus}»`
           : isAssemblyExtra(child)
             ? `вспомогательный компонент «${child.extra}»`
-            : `часть «${child.part}»`;
-        const куда = isAssemblyExtra(node) ? `вспомогательный узел «${node.extra}»` : `часть «${node.part}»`;
+            : isAssemblyComponent(child)
+              ? `ссылку на компонент реестра «${child.component}»`
+              : `часть «${child.part}»`;
+        const куда = isAssemblyExtra(node)
+          ? `вспомогательный узел «${node.extra}»`
+          : isAssemblyComponent(node)
+            ? `ссылку «${node.component}»`
+            : `часть «${node.part}»`;
 
         throw new Error(
           `сборка «${component}.${assembly.name}» кладёт ${что} внутрь ${куда}, ` +
@@ -381,7 +396,10 @@ function checkAssembly<Part extends string>(
         );
       }
 
-      if (!isAssemblyContent(child)) walk(child);
+      // Внутрь ссылки на ЧУЖОЙ компонент не спускаемся: что она сама пускает внутрь себя, решает
+      // ЕГО собственный срез редактора (свой `parts`), не этот обход — второй проверки того же
+      // компонента чужими правилами здесь не заводим.
+      if (!isAssemblyContent(child) && !isAssemblyComponent(child)) walk(child);
     }
   };
 

@@ -80,9 +80,15 @@ export const parts: Readonly<
     },
     // Anything goes inside an item's content — this is the consumer's spot, not ours: text, an
     // icon, any component. An empty list here would mean there is nothing to expand.
+    //
+    // `{ kind: "component" }` — a reference to ANY component of the shared registry
+    // (`PassportAssemblyComponent`, `PWEB-166`), no name required: this part does not need to
+    // know WHICH component ends up here, only that a real, independently-addressed component is
+    // a legal thing to put in it.
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   itemIndicator: {

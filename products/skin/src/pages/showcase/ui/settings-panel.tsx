@@ -49,8 +49,8 @@ export function SettingsPanel(props: {
   settings: Readonly<Record<string, unknown>>;
   onSetting: (name: string, value: unknown) => void;
   /**
-   * Заполнение данными (`PWEB-156`) — заготовленные JSON под сборку `filled`, если у компонента
-   * она есть. Пустой перечень — компонент без такой сборки, раздел не рисуется вовсе, тем же
+   * Заполнение данными (`PWEB-156`) — заготовленные JSON у поставщика компонента, если такие
+   * есть. Пустой перечень — компонент без готовых данных, раздел не рисуется вовсе, тем же
    * приёмом, что и у «Свойства» без объявленных настроек.
    */
   dataPresets: readonly DataPreset[];
@@ -74,10 +74,9 @@ export function SettingsPanel(props: {
                 value={props.dataPreset?.name ?? ""}
                 onChange={(event) => {
                   const name = event.currentTarget.value;
-                  props.onDataPreset(name === "" ? null : (props.dataPresets.find((preset) => preset.name === name) ?? null));
+                  props.onDataPreset(props.dataPresets.find((preset) => preset.name === name) ?? null);
                 }}
               >
-                <option value="">демо кита (по умолчанию)</option>
                 <For each={props.dataPresets}>{(preset) => <option value={preset.name}>{preset.means}</option>}</For>
               </FieldSelect>
             </Field>

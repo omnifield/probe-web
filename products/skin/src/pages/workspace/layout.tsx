@@ -40,7 +40,6 @@ import {
 import { assembliesOf } from "../../entities/catalog/model/cases.js";
 import { editorInfoOf } from "../../entities/catalog/model/providers.js";
 import type { BrowseState } from "../showcase/model/browse.js";
-import { BY_GROUP } from "../showcase/model/browse.js";
 import type { ConsoleState } from "../showcase/model/console.js";
 import type { WearingState } from "../showcase/model/wearing.js";
 import { ComponentPage } from "../showcase/ui/component-page.jsx";
@@ -62,12 +61,7 @@ export function WorkspaceLayout(props: {
     // recipe.ts`) — рецепт `Workspace` своей высоты не задаёт вовсе.
     <Workspace style={{ "block-size": "100dvh" }}>
       <WorkspaceSidebar>
-        <ComponentList
-          sections={BY_GROUP}
-          current={props.browse.current()}
-          onSelect={props.browse.setCurrent}
-          variant="контурная"
-        />
+        <ComponentList variant="контурная" />
       </WorkspaceSidebar>
 
       <WorkspaceHeader>

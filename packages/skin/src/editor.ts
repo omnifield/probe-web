@@ -37,6 +37,7 @@ export type {
   DispatchAction,
   DynamicValue,
   PassportAssembly,
+  PassportAssemblyComponent,
   PassportAssemblyContent,
   PassportAssemblyExtra,
   PassportAssemblyNode,
@@ -46,6 +47,7 @@ export type {
 } from "./passport-assembly.js";
 export {
   baseAssemblyOf,
+  isAssemblyComponent,
   isAssemblyContent,
   isAssemblyExtra,
   isAssemblyRef,

@@ -203,7 +203,12 @@ const DefaultErrorFallback: Component<ErrorFallbackProps> = (props) => {
 const takesContent = (registry: Registry, type: string): boolean => {
   const allowed = allowedInside(registry, type);
   if (!allowed) return false;
-  return allowed.unrestricted || allowed.parts.length > 0 || allowed.genera.length > 0;
+  return (
+    allowed.unrestricted ||
+    allowed.parts.length > 0 ||
+    allowed.genera.length > 0 ||
+    allowed.components
+  );
 };
 
 interface RenderNodeProps {

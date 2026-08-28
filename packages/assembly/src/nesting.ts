@@ -39,7 +39,9 @@ import { readAddress, type Registry } from "./registry.js";
  *  • `part-not-admitted`   — часть своего компонента, но владелец её среди допустимого не назвал;
  *  • `content-not-admitted`— содержимое такого рода часть внутрь не пускает;
  *  • `extra-not-admitted`  — вспомогательный компонент кита (`PWEB-152`) владелец не назвал среди
- *                            допустимого.
+ *                            допустимого;
+ *  • `component-not-admitted` — ссылку на другой компонент общего реестра (`PWEB-166`,
+ *                            `{kind:"component"}`) владелец не назвал среди допустимого.
  */
 export type NestingRefusal =
   | "parent-unknown"
@@ -48,7 +50,8 @@ export type NestingRefusal =
   | "foreign-part"
   | "part-not-admitted"
   | "content-not-admitted"
-  | "extra-not-admitted";
+  | "extra-not-admitted"
+  | "component-not-admitted";
 
 /** Ответ проверки: допустимо, либо отказ с именем и пояснением человеку. */
 export type NestingVerdict =
@@ -105,6 +108,13 @@ export function canAdmit(
     return deny(
       "extra-not-admitted",
       `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь вспомогательный компонент «${candidate.name}»`,
+    );
+  }
+
+  if (candidate.kind === "component") {
+    return deny(
+      "component-not-admitted",
+      `часть «${owner.part}» компонента «${owner.passport.component}» не пускает внутрь ссылку на компонент общего реестра`,
     );
   }
 
@@ -177,6 +187,12 @@ export interface AllowedInside {
    * тильда-форма (`<component>.~<extra>`), что и в дереве сборки (`baseAssemblyOf`).
    */
   readonly extras: readonly string[];
+  /**
+   * Часть пускает внутрь ссылку на ДРУГОЙ компонент общего реестра (`PWEB-166`,
+   * `{kind:"component"}`). Без имени — часть говорит лишь «сюда можно сослаться на компонент»,
+   * а на какой именно, решает не она.
+   */
+  readonly components: boolean;
 }
 
 /**
@@ -194,11 +210,12 @@ export function allowedInside(registry: Registry, parent: string): AllowedInside
   if (!ownerPart) return undefined;
 
   const accepts = ownerPart.accepts;
-  if (!accepts) return { unrestricted: true, parts: [], genera: [], extras: [] };
+  if (!accepts) return { unrestricted: true, parts: [], genera: [], extras: [], components: false };
 
   const parts: string[] = [];
   const genera: string[] = [];
   const extras: string[] = [];
+  let components = false;
   for (const item of accepts) {
     if (item.kind === "part") {
       parts.push(
@@ -206,12 +223,14 @@ export function allowedInside(registry: Registry, parent: string): AllowedInside
       );
     } else if (item.kind === "extra") {
       extras.push(`${owner.component}.~${item.name}`);
+    } else if (item.kind === "component") {
+      components = true;
     } else if (!genera.includes(item.genus)) {
       genera.push(item.genus);
     }
   }
 
-  return { unrestricted: false, parts, genera, extras };
+  return { unrestricted: false, parts, genera, extras, components };
 }
 
 /** Узел-владелец, найденный обратным чтением: его адрес и что это за часть. */

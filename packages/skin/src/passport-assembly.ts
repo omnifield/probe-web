@@ -107,6 +107,12 @@ export type PassportAdmission<Part extends string = string> =
       readonly kind: "extra";
       /** Имя в карте `extras` поставщика — не часть анатомии, отдельное пространство имён. */
       readonly name: string;
+    }
+  | {
+      /** Ссылка на ЛЮБОЙ компонент общего реестра (`PassportAssemblyComponent`, `PWEB-166`). Без
+       *  имени — часть не обязана знать, КАКОЙ именно компонент туда положат, только что это
+       *  законное место для настоящего чужого компонента. */
+      readonly kind: "component";
     };
 
 /**
@@ -152,6 +158,7 @@ export function admits<Part extends string>(
   return accepts.some((allowed) => {
     if (candidate.kind === "part") return allowed.kind === "part" && allowed.name === candidate.name;
     if (candidate.kind === "extra") return allowed.kind === "extra" && allowed.name === candidate.name;
+    if (candidate.kind === "component") return allowed.kind === "component";
     return allowed.kind === "content" && FITS[candidate.genus].includes(allowed.genus);
   });
 }
@@ -311,6 +318,36 @@ export interface PassportAssemblyExtra<Part extends string = string> {
 }
 
 /**
+ * Узел объявления: ССЫЛКА НА КОМПОНЕНТ ИЗ ОБЩЕГО РЕЕСТРА, по его же верхнему имени (`PWEB-166`).
+ *
+ * Не путать с `extra` — та резолвится в ПРИВАТНУЮ карту владельца (`registry.components[X].extras`),
+ * свой словарик именно этого компонента. Здесь — голое верхнее имя (`"button"`), тот же адрес,
+ * которым резолвится КОРЕНЬ любого компонента при обычном показе (`readAddress`,
+ * `packages/assembly/src/registry.ts`) — не требует правки резолвера: он уже общий.
+ *
+ * Найдено сверкой со старым источником (`egor6-66/capsuleTech`, `packages/web/runtime/contract/
+ * src/schema.ts`): там ЛЮБОЙ узел — что кита-примитив, что целая бизнес-страница — адресован
+ * ОДНИМ полем `type: string`, dot-path в один общий реестр. У нас `part` остался отдельным видом
+ * ради CSS-координаты (`data-scope`/`data-part`), которой в исходнике не было вовсе, — но для
+ * ссылки на ЧУЖОЙ, независимо существующий компонент лишнего деления больше нет.
+ */
+export interface PassportAssemblyComponent<Part extends string = string> {
+  /** Голое имя компонента в общем реестре — `registry.components["button"]`. */
+  readonly component: string;
+  readonly props?: Readonly<Record<string, unknown>>;
+  readonly bind?: Readonly<Record<string, string>>;
+  readonly on?: Readonly<Record<string, DispatchAction>>;
+  readonly children?: readonly PassportAssemblyNode<Part>[];
+}
+
+/** Ссылка на компонент реестра ли это — по наличию `component`. */
+export function isAssemblyComponent<Part extends string = string>(
+  node: PassportAssemblyNode<Part>,
+): node is PassportAssemblyComponent<Part> {
+  return "component" in node;
+}
+
+/**
  * Узел объявления: ПОВТОР — один шаблон, размноженный по длине массива в данных (`PWEB-156`,
  * форма — A2UI, `ChildList`-шаблон: «размножь этот один узел по числу элементов по пути»).
  *
@@ -378,11 +415,13 @@ export function isAssemblyRef<Part extends string = string>(
   return "ref" in node;
 }
 
-/** Один узел объявления: часть, содержимое, вспомогательный компонент кита, повтор по данным, либо ссылка на именованный кусок. */
+/** Один узел объявления: часть, содержимое, вспомогательный компонент кита, ссылка на компонент
+ *  реестра, повтор по данным, либо ссылка на именованный кусок. */
 export type PassportAssemblyNode<Part extends string = string> =
   | PassportAssemblyPart<Part>
   | PassportAssemblyContent
   | PassportAssemblyExtra<Part>
+  | PassportAssemblyComponent<Part>
   | PassportAssemblyRepeat<Part>
   | PassportAssemblyRef;
 
@@ -637,7 +676,7 @@ export function baseAssemblyOf(
    * @returns имя положенного узла
    */
   const grow = (
-    node: PassportAssemblyPart | PassportAssemblyContent | PassportAssemblyExtra,
+    node: PassportAssemblyPart | PassportAssemblyContent | PassportAssemblyExtra | PassportAssemblyComponent,
     parentId: string | null,
   ): string => {
     if (isAssemblyContent(node)) {
@@ -655,6 +694,28 @@ export function baseAssemblyOf(
       nodes[id] = {
         id,
         type: addressOfExtra(node.extra),
+        parentId,
+        children,
+        ...(node.props ? { props: node.props } : {}),
+        ...(node.bind ? { bind: node.bind } : {}),
+        ...(node.on ? { on: node.on } : {}),
+      };
+
+      for (const child of node.children ?? []) children.push(...growAll(child, id));
+
+      return id;
+    }
+
+    if (isAssemblyComponent(node)) {
+      // Голое имя, БЕЗ префикса адресом владельца (в отличие от extra/part) — тот же путь, каким
+      // резолвится корень ЛЮБОГО компонента при обычном показе (`readAddress` уже общий,
+      // `packages/assembly/src/registry.ts` править не пришлось).
+      const id = nameFor(node.component);
+      const children: string[] = [];
+
+      nodes[id] = {
+        id,
+        type: node.component,
         parentId,
         children,
         ...(node.props ? { props: node.props } : {}),
