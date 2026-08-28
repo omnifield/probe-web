@@ -76,6 +76,33 @@ export {
 export type { SkinAncestor, SkinCoordinate } from "./passport-view.js";
 export { coordinateOf, partOf } from "./passport-view.js";
 
+// Self-assembly (`PWEB-167`/`PWEB-168`) and the node vocabulary it's built from — RUNTIME slice,
+// unlike the showcase-facing `PassportAssembly`/`DataPreset` (those carry `means` and scenario
+// names, stay editor-only, `./editor`). A reference to a component from someone else's tree
+// unfolds THIS tree at render time, so the render mechanic needs these types reachable without
+// pulling in the editor slice.
+export type {
+  DataBinding,
+  DispatchAction,
+  DynamicValue,
+  PassportAssemblyContent,
+  PassportAssemblyElement,
+  PassportAssemblyExtra,
+  PassportAssemblyNode,
+  PassportAssemblyRef,
+  PassportAssemblyRepeat,
+  PassportGenus,
+  PassportSelfAssembly,
+} from "./passport-assembly.js";
+export {
+  isAssemblyContent,
+  isAssemblyExtra,
+  isAssemblyRef,
+  isAssemblyRepeat,
+  isDataBinding,
+  resolveDataBinding,
+} from "./passport-assembly.js";
+
 export type { PassportLookup } from "./address.js";
 // `passportLookup` едет наружу ТЕМ ЖЕ входом, что и тип (`PWEB-95`): место сборки карты одно, и
 // объявить это в комментарии, не отдав саму сборку, значило потребовать от каждого держателя

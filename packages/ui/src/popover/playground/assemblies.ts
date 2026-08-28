@@ -25,17 +25,17 @@ export const assemblies: readonly PassportAssembly<PopoverPart>[] = [
     means: "плавающая панель поповера сама по себе: заголовок, текст, крестик закрытия, стрелка",
     providerProps: { defaultOpen: true },
     tree: {
-      part: "positioner",
+      node: "positioner",
       children: [
         {
-          part: "content",
+          node: "content",
           children: [
-            { part: "title", children: [{ genus: "text", value: "Заголовок" }] },
-            { part: "description", children: [{ genus: "text", value: "Пояснение к тому, что показано." }] },
-            { part: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
+            { node: "title", children: [{ genus: "text", value: "Заголовок" }] },
+            { node: "description", children: [{ genus: "text", value: "Пояснение к тому, что показано." }] },
+            { node: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
           ],
         },
-        { part: "arrow", children: [{ part: "arrowTip" }] },
+        { node: "arrow", children: [{ node: "arrowTip" }] },
       ],
     },
   },

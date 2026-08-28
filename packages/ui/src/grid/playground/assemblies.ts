@@ -18,12 +18,12 @@ export const assemblies: readonly PassportAssembly<GridPart>[] = [
     name: "basic",
     means: "сетка из четырёх ровных ячеек",
     tree: {
-      part: "root",
+      node: "root",
       children: [
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 1" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 2" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 3" }] },
-        { part: "cell", children: [{ genus: "text", value: "Ячейка 4" }] },
+        { node: "cell", children: [{ genus: "text", value: "Ячейка 1" }] },
+        { node: "cell", children: [{ genus: "text", value: "Ячейка 2" }] },
+        { node: "cell", children: [{ genus: "text", value: "Ячейка 3" }] },
+        { node: "cell", children: [{ genus: "text", value: "Ячейка 4" }] },
       ],
     },
   },

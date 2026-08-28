@@ -33,62 +33,62 @@ export const assemblies: readonly PassportAssembly<DatePickerPart>[] = [
     name: "basic",
     means: "рабочий календарь: открыт, неделя дней, 25-е выбрано, 27-е — сегодня",
     tree: {
-      part: "root",
+      node: "root",
       props: { defaultOpen: true, defaultValue: [WEEK[1]] },
       children: [
-        { part: "label", children: [{ genus: "text", value: "Дата" }] },
+        { node: "label", children: [{ genus: "text", value: "Дата" }] },
         {
-          part: "control",
+          node: "control",
           children: [
-            { part: "input" },
-            { part: "trigger", children: [{ genus: "text", value: "📅" }] },
-            { part: "clearTrigger", children: [{ genus: "text", value: "✕" }] },
+            { node: "input" },
+            { node: "trigger", children: [{ genus: "text", value: "📅" }] },
+            { node: "clearTrigger", children: [{ genus: "text", value: "✕" }] },
           ],
         },
         {
-          part: "positioner",
+          node: "positioner",
           children: [
             {
-              part: "content",
+              node: "content",
               children: [
                 {
-                  part: "view",
+                  node: "view",
                   props: { view: "day" },
                   children: [
                     {
-                      part: "viewControl",
+                      node: "viewControl",
                       children: [
-                        { part: "prevTrigger", children: [{ genus: "text", value: "‹" }] },
-                        { part: "viewTrigger", children: [{ part: "rangeText" }] },
-                        { part: "nextTrigger", children: [{ genus: "text", value: "›" }] },
+                        { node: "prevTrigger", children: [{ genus: "text", value: "‹" }] },
+                        { node: "viewTrigger", children: [{ node: "rangeText" }] },
+                        { node: "nextTrigger", children: [{ genus: "text", value: "›" }] },
                       ],
                     },
                     {
-                      part: "table",
+                      node: "table",
                       children: [
                         {
-                          part: "tableHead",
+                          node: "tableHead",
                           children: [
                             {
-                              part: "tableRow",
+                              node: "tableRow",
                               children: WEEKDAYS.map((day) => ({
-                                part: "tableHeader" as const,
+                                node: "tableHeader" as const,
                                 children: [{ genus: "text" as const, value: day }],
                               })),
                             },
                           ],
                         },
                         {
-                          part: "tableBody",
+                          node: "tableBody",
                           children: [
                             {
-                              part: "tableRow",
+                              node: "tableRow",
                               children: WEEK.map((date, index) => ({
-                                part: "tableCell" as const,
+                                node: "tableCell" as const,
                                 props: { value: date },
                                 children: [
                                   {
-                                    part: "tableCellTrigger" as const,
+                                    node: "tableCellTrigger" as const,
                                     children: [{ genus: "text" as const, value: String(24 + index) }],
                                   },
                                 ],

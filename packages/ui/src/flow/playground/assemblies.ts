@@ -18,10 +18,10 @@ export const assemblies: readonly PassportAssembly<FlowPart>[] = [
     name: "basic",
     means: "ряд из двух элементов",
     tree: {
-      part: "root",
+      node: "root",
       children: [
-        { part: "item", children: [{ genus: "text", value: "Первый" }] },
-        { part: "item", children: [{ genus: "text", value: "Второй" }] },
+        { node: "item", children: [{ genus: "text", value: "Первый" }] },
+        { node: "item", children: [{ genus: "text", value: "Второй" }] },
       ],
     },
   },

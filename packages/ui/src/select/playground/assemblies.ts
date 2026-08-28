@@ -36,31 +36,31 @@ export const assemblies: readonly PassportAssembly<SelectPart>[] = [
     name: "basic",
     means: "рабочий селект: подпись, кнопка со значением, три пункта выбора",
     tree: {
-      part: "root",
+      node: "root",
       props: { collection },
       children: [
-        { part: "label", children: [{ genus: "text", value: "Фрукт" }] },
+        { node: "label", children: [{ genus: "text", value: "Фрукт" }] },
         {
-          part: "control",
+          node: "control",
           children: [
             {
-              part: "trigger",
-              children: [{ part: "valueText", props: { placeholder: "Выберите фрукт" } }],
+              node: "trigger",
+              children: [{ node: "valueText", props: { placeholder: "Выберите фрукт" } }],
             },
-            { part: "indicator", children: [{ genus: "icon", value: "▾" }] },
+            { node: "indicator", children: [{ genus: "icon", value: "▾" }] },
           ],
         },
         {
-          part: "positioner",
+          node: "positioner",
           children: [
             {
-              part: "content",
+              node: "content",
               children: fruits.map((fruit) => ({
-                part: "item",
+                node: "item",
                 props: { item: fruit },
                 children: [
-                  { part: "itemText", children: [{ genus: "text", value: fruit.label }] },
-                  { part: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
+                  { node: "itemText", children: [{ genus: "text", value: fruit.label }] },
+                  { node: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
                 ],
               })),
             },

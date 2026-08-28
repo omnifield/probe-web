@@ -72,4 +72,16 @@ export const passport = definePassport({
   // empty `defineSettings<ButtonProps>` is a checkable claim that the button accepts none of the
   // closed settings vocabulary. Should one appear, the type forces it to be declared here.
   settings: defineSettings<ButtonProps>({}),
+  // THE BUTTON'S OWN BEHAVIOR (`PWEB-167`): accept a label and a payload in ITS OWN data shape,
+  // print the label, and on click hand the payload back out untouched. A component referencing
+  // this button (an accordion item, a list row) supplies data in this shape — it does not repeat
+  // this `on`/`children` on its own reference node, which would mean overriding the button's
+  // behavior instead of feeding it (page 111 §5, page 112 §4).
+  selfAssembly: {
+    tree: {
+      node: "root",
+      on: { click: { event: { name: "select", context: { payload: { path: "/payload" } } } } },
+      children: [{ genus: "text", value: { path: "/label" } }],
+    },
+  },
 });

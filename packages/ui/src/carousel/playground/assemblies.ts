@@ -20,37 +20,37 @@ export const assemblies: readonly PassportAssembly<CarouselPart>[] = [
     name: "basic",
     means: "рабочая карусель: три слайда, стрелки листают, точки прыгают на слайд, кнопка запускает автопрокрутку, счётчик страниц",
     tree: {
-      part: "root",
+      node: "root",
       props: { slideCount: 3, defaultPage: 0 },
       children: [
         {
-          part: "control",
+          node: "control",
           children: [
-            { part: "prevTrigger", children: [{ genus: "text", value: "‹" }] },
+            { node: "prevTrigger", children: [{ genus: "text", value: "‹" }] },
             {
-              part: "autoplayTrigger",
-              children: [{ part: "autoplayIndicator", children: [{ genus: "text", value: "⏸" }] }],
+              node: "autoplayTrigger",
+              children: [{ node: "autoplayIndicator", children: [{ genus: "text", value: "⏸" }] }],
             },
-            { part: "nextTrigger", children: [{ genus: "text", value: "›" }] },
+            { node: "nextTrigger", children: [{ genus: "text", value: "›" }] },
           ],
         },
         {
-          part: "itemGroup",
+          node: "itemGroup",
           children: [
-            { part: "item", props: { index: 0 }, children: [{ genus: "text", value: "Слайд 1" }] },
-            { part: "item", props: { index: 1 }, children: [{ genus: "text", value: "Слайд 2" }] },
-            { part: "item", props: { index: 2 }, children: [{ genus: "text", value: "Слайд 3" }] },
+            { node: "item", props: { index: 0 }, children: [{ genus: "text", value: "Слайд 1" }] },
+            { node: "item", props: { index: 1 }, children: [{ genus: "text", value: "Слайд 2" }] },
+            { node: "item", props: { index: 2 }, children: [{ genus: "text", value: "Слайд 3" }] },
           ],
         },
         {
-          part: "indicatorGroup",
+          node: "indicatorGroup",
           children: [
-            { part: "indicator", props: { index: 0 } },
-            { part: "indicator", props: { index: 1 } },
-            { part: "indicator", props: { index: 2 } },
+            { node: "indicator", props: { index: 0 } },
+            { node: "indicator", props: { index: 1 } },
+            { node: "indicator", props: { index: 2 } },
           ],
         },
-        { part: "progressText" },
+        { node: "progressText" },
       ],
     },
   },

@@ -17,19 +17,19 @@ export const assemblies: readonly PassportAssembly<FieldPart>[] = [
     name: "basic",
     means: "рабочее поле: обязательное, с ошибкой — виден и «*», и текст ошибки",
     tree: {
-      part: "root",
+      node: "root",
       props: { required: true, invalid: true },
       children: [
         {
-          part: "label",
+          node: "label",
           children: [
             { genus: "text", value: "Имя" },
-            { part: "requiredIndicator" },
+            { node: "requiredIndicator" },
           ],
         },
-        { part: "input" },
-        { part: "helperText", children: [{ genus: "text", value: "Как в паспорте" }] },
-        { part: "errorText", children: [{ genus: "text", value: "Обязательное поле" }] },
+        { node: "input" },
+        { node: "helperText", children: [{ genus: "text", value: "Как в паспорте" }] },
+        { node: "errorText", children: [{ genus: "text", value: "Обязательное поле" }] },
       ],
     },
   },

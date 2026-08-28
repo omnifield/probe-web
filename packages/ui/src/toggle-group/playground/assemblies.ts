@@ -16,12 +16,12 @@ export const assemblies: readonly PassportAssembly<ToggleGroupPart>[] = [
     name: "basic",
     means: "рабочий переключатель: три кнопки, левая нажата",
     tree: {
-      part: "root",
+      node: "root",
       props: { defaultValue: ["left"] },
       children: [
-        { part: "item", props: { value: "left" }, children: [{ genus: "text", value: "Слева" }] },
-        { part: "item", props: { value: "center" }, children: [{ genus: "text", value: "По центру" }] },
-        { part: "item", props: { value: "right" }, children: [{ genus: "text", value: "Справа" }] },
+        { node: "item", props: { value: "left" }, children: [{ genus: "text", value: "Слева" }] },
+        { node: "item", props: { value: "center" }, children: [{ genus: "text", value: "По центру" }] },
+        { node: "item", props: { value: "right" }, children: [{ genus: "text", value: "Справа" }] },
       ],
     },
   },

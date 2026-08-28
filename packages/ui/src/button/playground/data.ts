@@ -12,7 +12,7 @@ export const dataPresets: readonly DataPreset[] = [
   },
   {
     name: "с пейлоадом",
-    means: "под сборку «с-событием» — подпись и то, что клик отдаст наружу как есть",
+    means: "под сборку «with-event» — подпись и то, что клик отдаст наружу как есть",
     data: { label: "Открыть", payload: "accordion" },
   },
 ];

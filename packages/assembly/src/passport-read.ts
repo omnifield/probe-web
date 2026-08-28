@@ -48,6 +48,8 @@
 
 import type { PassportAdmission, PassportGenus } from "@omnifield/probe-web-skin/editor";
 
+import type { SelfAssembly } from "./self-assembly.js";
+
 /**
  * Род — чем узел является, когда его кладут внутрь чужого узла.
  *
@@ -102,6 +104,13 @@ export interface ReadablePassport {
   readonly root: string;
   /** Добавка к каждой части анатомии. */
   readonly parts: readonly ReadablePart[];
+  /**
+   * The component's own behavior (`PWEB-167`/`PWEB-169`) — how a bare reference to this
+   * component from someone else's assembly unfolds, instead of being drawn with whatever
+   * `on`/`children` the reference node declares. Absent — a reference renders the bare root part
+   * as-is (`PWEB-166`), unchanged.
+   */
+  readonly selfAssembly?: SelfAssembly;
 }
 
 /**

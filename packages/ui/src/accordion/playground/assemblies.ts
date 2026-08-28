@@ -16,29 +16,30 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
     means:
       "разделы, а в контенте каждого — настоящая Button из общего реестра, не своя копия",
     tree: {
-      part: "acardionRoot",
+      node: "root",
       children: [
         {
-          part: "acardionItem",
+          node: "item",
           repeat: { path: "/sections" },
           bind: { value: "id" },
           children: [
             {
-              part: "acardionItemTrigger",
-              children: [
-                {
-                  part: "button",
-                  props: {
-                    "data-variant": "tertiary",
-                    label: "/title",
-                    payload: "this",
+              node: "itemTrigger",
+              bind: { children: "/title", "data-variant": "tertiary" },
+              on: {
+                click: {
+                  event: {
+                    name: "triggerClick",
+                    context: { payload: { path: "/" } },
                   },
                 },
+              },
+              children: [
                 {
-                  part: "acardionItemIndicator",
+                  node: "itemIndicator",
                   children: [
                     {
-                      part: "icon",
+                      node: "icon",
                       props: {
                         "data-variant": "arrow-down",
                       },
@@ -48,10 +49,10 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
               ],
             },
             {
-              part: "acardionItemContent",
+              node: "itemContent",
               children: [
                 {
-                  part: "button",
+                  node: "button",
                   repeat: { path: "/items" },
                   bind: { value: "id" },
                   props: {

@@ -14,6 +14,6 @@ export const assemblies: readonly PassportAssembly<SurfacePart>[] = [
   {
     name: "basic",
     means: "поверхность с содержимым",
-    tree: { part: "root", children: [{ genus: "text", value: "Поверхность" }] },
+    tree: { node: "root", children: [{ genus: "text", value: "Поверхность" }] },
   },
 ];

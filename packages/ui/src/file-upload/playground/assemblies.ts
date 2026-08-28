@@ -34,46 +34,46 @@ export const assemblies: readonly PassportAssembly<FileUploadPart>[] = [
     name: "basic",
     means: "рабочая загрузка: одно принятое, одно отклонённое, точки удаления кликабельны",
     tree: {
-      part: "root",
+      node: "root",
       children: [
-        { part: "label", children: [{ genus: "text", value: "Файлы" }] },
+        { node: "label", children: [{ genus: "text", value: "Файлы" }] },
         {
-          part: "dropzone",
-          children: [{ part: "trigger", children: [{ genus: "text", value: "Выбрать файлы" }] }],
+          node: "dropzone",
+          children: [{ node: "trigger", children: [{ genus: "text", value: "Выбрать файлы" }] }],
         },
         {
-          part: "itemGroup",
+          node: "itemGroup",
           props: { type: "accepted" },
           children: [
             {
-              part: "item",
+              node: "item",
               props: { file: acceptedFile },
               children: [
-                { part: "itemPreview", children: [{ genus: "icon", value: "📄" }] },
-                { part: "itemName", children: [{ genus: "text", value: acceptedFile.name }] },
-                { part: "itemSizeText", children: [{ genus: "text", value: "16 Б" }] },
-                { part: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
+                { node: "itemPreview", children: [{ genus: "icon", value: "📄" }] },
+                { node: "itemName", children: [{ genus: "text", value: acceptedFile.name }] },
+                { node: "itemSizeText", children: [{ genus: "text", value: "16 Б" }] },
+                { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
               ],
             },
           ],
         },
         {
-          part: "itemGroup",
+          node: "itemGroup",
           props: { type: "rejected" },
           children: [
             {
-              part: "item",
+              node: "item",
               props: { file: rejectedFile },
               children: [
-                { part: "itemPreview", children: [{ genus: "icon", value: "🎬" }] },
-                { part: "itemName", children: [{ genus: "text", value: rejectedFile.name }] },
-                { part: "itemSizeText", children: [{ genus: "text", value: "превышает лимит" }] },
-                { part: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
+                { node: "itemPreview", children: [{ genus: "icon", value: "🎬" }] },
+                { node: "itemName", children: [{ genus: "text", value: rejectedFile.name }] },
+                { node: "itemSizeText", children: [{ genus: "text", value: "превышает лимит" }] },
+                { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
               ],
             },
           ],
         },
-        { part: "clearTrigger", children: [{ genus: "text", value: "Очистить всё" }] },
+        { node: "clearTrigger", children: [{ genus: "text", value: "Очистить всё" }] },
         { extra: "hiddenInput" },
       ],
     },

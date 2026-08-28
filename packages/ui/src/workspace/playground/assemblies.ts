@@ -29,51 +29,51 @@ import type { passport } from "../entity/passport.js";
 
 type WorkspacePart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-const RAIL = { part: "sidebar", children: [{ genus: "text", value: "Рельсы" }] } as const;
-const TOPBAR = { part: "header", children: [{ genus: "text", value: "Шапка" }] } as const;
-const STAGE = { part: "main", children: [{ genus: "text", value: "Показ" }] } as const;
-const PANEL = { part: "rightbar", children: [{ genus: "text", value: "Панель" }] } as const;
-const BOTTOM = { part: "footer", children: [{ genus: "text", value: "Подвал" }] } as const;
+const RAIL = { node: "sidebar", children: [{ genus: "text", value: "Рельсы" }] } as const;
+const TOPBAR = { node: "header", children: [{ genus: "text", value: "Шапка" }] } as const;
+const STAGE = { node: "main", children: [{ genus: "text", value: "Показ" }] } as const;
+const PANEL = { node: "rightbar", children: [{ genus: "text", value: "Панель" }] } as const;
+const BOTTOM = { node: "footer", children: [{ genus: "text", value: "Подвал" }] } as const;
 
 export const assemblies: readonly PassportAssembly<WorkspacePart>[] = [
   {
     name: "stacked",
     means: "«stacked» (Tailwind UI) — шапка во всю ширину, показ под ней, без колонок вовсе",
-    tree: { part: "root", children: [TOPBAR, STAGE] },
+    tree: { node: "root", children: [TOPBAR, STAGE] },
   },
   {
     name: "sidebar",
     means: "«sidebar» (Tailwind UI) — только левая колонка и показ, без шапки",
-    tree: { part: "root", children: [RAIL, STAGE] },
+    tree: { node: "root", children: [RAIL, STAGE] },
   },
   {
     name: "sidebar-header",
     means: "рельсы плюс шапка над показом — тот же «sidebar», с верхней полосой",
-    tree: { part: "root", children: [RAIL, TOPBAR, STAGE] },
+    tree: { node: "root", children: [RAIL, TOPBAR, STAGE] },
   },
   {
     name: "right-rail",
     means: "правая колонка при показе, без шапки и рельсов — «right rail» блога или документации",
-    tree: { part: "root", children: [STAGE, PANEL] },
+    tree: { node: "root", children: [STAGE, PANEL] },
   },
   {
     name: "multi-column",
     means: "«multi-column» (Tailwind UI) — рельсы, показ и правая колонка, без шапки: почта, доска задач",
-    tree: { part: "root", children: [RAIL, STAGE, PANEL] },
+    tree: { node: "root", children: [RAIL, STAGE, PANEL] },
   },
   {
     name: "dashboard",
     means: "«dashboard» — шапка, рельсы, показ и правая панель разом, без подвала",
-    tree: { part: "root", children: [TOPBAR, RAIL, STAGE, PANEL] },
+    tree: { node: "root", children: [TOPBAR, RAIL, STAGE, PANEL] },
   },
   {
     name: "sidebar-footer",
     means: "рельсы и шапка над показом плюс подвал снизу, без правой панели",
-    tree: { part: "root", children: [TOPBAR, RAIL, STAGE, BOTTOM] },
+    tree: { node: "root", children: [TOPBAR, RAIL, STAGE, BOTTOM] },
   },
   {
     name: "holy-grail",
     means: "«Holy Grail Layout» целиком — шапка, подвал и три колонки, все шесть слотов сразу",
-    tree: { part: "root", children: [TOPBAR, RAIL, STAGE, PANEL, BOTTOM] },
+    tree: { node: "root", children: [TOPBAR, RAIL, STAGE, PANEL, BOTTOM] },
   },
 ];

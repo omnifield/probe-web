@@ -13,13 +13,11 @@
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY: no runtime import of the passport module here — `typeof passport` in a type
-// position needs the binding's TYPE, not the module's side effects.
-import type { passport } from "../entity/passport.js";
+import { passport } from "../entity/passport.js";
 
 // The literal part-name union, read off the passport itself rather than spelled out by hand:
-// `part` fields below type-check against ANATOMY, not a copy of its names that could drift from
-// it.
+// own-part `node` values below get autocomplete against ANATOMY (not enforced by `tsc` — a
+// `node` also accepts a foreign registry name, `PWEB-172`), not a copy of names that could drift.
 type ButtonPart =
   typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
@@ -27,7 +25,7 @@ export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
     name: "label",
     means: "a button with a label",
-    tree: { part: "root", children: [{ genus: "text", value: "Button" }] },
+    tree: { node: "root", children: [{ genus: "text", value: "Button" }] },
   },
   {
     name: "icon-label",
@@ -36,7 +34,7 @@ export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
     // passport for the same argument). The icon here is a placeholder (`★`), not a real
     // `lucide-solid` component: the assembly's base is data, not code (`icon.anatomy.ts`).
     tree: {
-      part: "root",
+      node: "root",
       children: [
         { genus: "icon", value: "★" },
         { genus: "text", value: "Button with icon" },
@@ -49,32 +47,21 @@ export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
     // A third honest case, not a repeat of the second minus text: an icon-only button is its
     // own real shape (a toolbar, a compact action), and `root.accepts` lets an icon stand alone,
     // without a mandatory label next to it.
-    tree: { part: "root", children: [{ genus: "icon", value: "★" }] },
+    tree: { node: "root", children: [{ genus: "icon", value: "★" }] },
   },
   {
     name: "filled",
     means: "подпись приходит из данных, не из объявления (PWEB-156)",
     tree: {
-      part: "root",
+      node: "root",
       children: [{ genus: "text", value: { path: "/label" } }],
     },
   },
   {
-    name: "с-событием",
+    name: "with-event",
     means:
-      "подпись из данных (не своя, как у `filled`), клик шлёт наружу пейлоад, взятый оттуда же " +
-      "(PWEB-157) — кнопка не решает, что в пейлоаде, только резолвит путь, который ей назвали",
-    tree: {
-      part: "root",
-      on: {
-        click: {
-          event: {
-            name: "select",
-            context: { payload: { path: "/payload" } },
-          },
-        },
-      },
-      children: [{ genus: "text", value: { path: "/label" } }],
-    },
+      "the button's own behavior (PWEB-167), shown here — not redeclared: the tree is " +
+      "`passport.selfAssembly`, the same one a referencing component's `node` unfolds (PWEB-172)",
+    tree: passport.selfAssembly!.tree,
   },
 ];

@@ -18,11 +18,11 @@ export const assemblies: readonly PassportAssembly<SwitchPart>[] = [
     name: "basic",
     means: "рабочий переключатель, включён",
     tree: {
-      part: "root",
+      node: "root",
       props: { defaultChecked: true },
       children: [
-        { part: "control", children: [{ part: "thumb" }] },
-        { part: "label", children: [{ genus: "text", value: "Уведомления" }] },
+        { node: "control", children: [{ node: "thumb" }] },
+        { node: "label", children: [{ genus: "text", value: "Уведомления" }] },
         { extra: "hiddenInput" },
       ],
     },
