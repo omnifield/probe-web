@@ -4,6 +4,8 @@
 
 import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
 import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
+import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -16,7 +18,10 @@ import { kit as buttonKit } from "../button/components/kit.js";
 import { passport as buttonPassport } from "../button/entity/passport.js";
 import { editorInfo as buttonEditorInfo } from "../button/playground/index.js";
 
-function readable(passport: typeof accordionPassport, editorInfo: typeof accordionEditorInfo): ReadableComponent["passport"] {
+function readable<Part extends string>(
+  passport: ComponentPassport<Part>,
+  editorInfo: PassportEditorInfo<Part>,
+): ReadableComponent["passport"] {
   return {
     component: passport.component,
     genus: editorInfo.genus,
@@ -34,7 +39,7 @@ function readable(passport: typeof accordionPassport, editorInfo: typeof accordi
 const REGISTRY: Registry = createRegistry({
   components: {
     accordion: { passport: readable(accordionPassport, accordionEditorInfo), parts: accordionKit.parts },
-    button: { passport: readable(buttonPassport as never, buttonEditorInfo), parts: buttonKit.parts },
+    button: { passport: readable(buttonPassport, buttonEditorInfo), parts: buttonKit.parts },
   },
   admits,
 });
