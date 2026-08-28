@@ -38,12 +38,12 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
                 {
                   node: "itemIndicator",
                   children: [
-                    {
-                      node: "icon",
-                      props: {
-                        "data-variant": "arrow-down",
-                      },
-                    },
+                    // {
+                    //   node: "icon",
+                    //   props: {
+                    //     "data-variant": "arrow-down",
+                    //   },
+                    // },
                   ],
                 },
               ],
