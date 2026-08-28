@@ -1,14 +1,15 @@
-// STRUCTURAL assembly templates for the accordion — read by `../playground/index.ts`'s
+// STRUCTURAL assembly template for the accordion — read by `../playground/index.ts`'s
 // `defineEditorInfo` call (`PWEB-116`, decomposed `PWEB-124`).
 //
-// ONE assembly, not several: item COUNT and which item starts open are not structural questions
-// (`packages/ui/README.md`, "Базовая сборка": an assembly carries no state axis of its own, that
-// is set on top by whoever displays a record) — five earlier entries here varied by exactly those
-// two things and were removed for it. Two items is the minimum that exercises the mechanism's own
-// reason for existing — several nodes sharing one coordinate — without turning into a count
-// variation. Reuses the same worked example already in `components/index.tsx`'s own doc comment
-// (`Shipping` / `Courier and pickup`), so a reader following the component from its JSX to its
-// assembly sees one instance, not two invented independently.
+// ONE assembly, and it carries NO content of its own (postscript 2026-08-28, replaces the earlier
+// two-entry/hardcoded-text version): count is not a structural question — how many sections exist
+// is answered by DATA (`repeat`, `PWEB-156`), not by the assembly declaring two literal items —
+// and WHAT sits in a section is not this assembly's business either, same reasoning the accordion
+// itself is held to (disclosure mechanics — show/hide — plus a slot for content; the shape of that
+// content belongs to whoever fills it, same as `Grid`'s cell or `Menu`'s item accept any
+// component). Filling is a SEPARATE concern (`playground/data.ts`'s presets, or the assembly's
+// consumer bringing real data of its own) — this file only says WHERE things go, never what they
+// are made of.
 //
 // Two gaps found while looking at this, NEITHER fixed here:
 //   • `root.accepts` only admits `{ kind: "part", name: "item" }` — a divider BETWEEN items
@@ -16,10 +17,10 @@
 //     extending `root.accepts` first, in `../playground/index.ts` — a passport-contract change.
 //   • a `{ kind: "content", genus: "component" }` node (legal inside `itemContent`) cannot
 //     actually carry a nested component's own tree — `PassportAssemblyContent` is a LEAF
-//     (`value: string`, no `children`), the same shape an icon placeholder uses below. "A nested
-//     accordion inside an item's content" is not buildable with today's assembly-tree type at
-//     all, not merely undemonstrated — the type would need a variant that nests a whole
-//     `PassportAssemblyPart` tree under a foreign component's own address.
+//     (`value: string`, no `children`). "A nested accordion inside an item's content" is not
+//     buildable with today's assembly-tree type at all, not merely undemonstrated — the type
+//     would need a variant that nests a whole `PassportAssemblyPart` tree under a foreign
+//     component's own address.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -40,58 +41,8 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
   {
     name: "basic",
     means:
-      "a basic working accordion: two items, each with a trigger, an indicator, and content",
-    tree: {
-      part: "root",
-      children: [
-        {
-          part: "item",
-          props: { value: "shipping" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Shipping" },
-                {
-                  part: "itemIndicator",
-                  children: [{ genus: "icon", value: "▾" }],
-                },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Courier and pickup" }],
-            },
-          ],
-        },
-        {
-          part: "item",
-          props: { value: "returns" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Returns" },
-                {
-                  part: "itemIndicator",
-                  children: [{ genus: "icon", value: "▾" }],
-                },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Free within 30 days" }],
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    name: "filled",
-    means:
-      "тот же аккордеон, но разделы приходят из данных: сколько элементов в /sections, столько " +
-      "item'ов и вырастет — число нигде не названо отдельно (PWEB-156)",
+      "рабочий аккордеон без своего контента — сколько разделов и что в каждом, решают данные " +
+      "(playground/data.ts либо свои), не эта сборка (PWEB-156)",
     // Число разделов НЕ выбор этой сборки — оно решается тем, кто принесёт данные в `RenderTree`
     // (`data`, PWEB-156). Сборка объявляет ОДИН узел-шаблон под `repeat`; без данных шаблон
     // разворачивается в ноль узлов — законное состояние, не отказ, тем же приёмом, что и у любого
