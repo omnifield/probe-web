@@ -25,16 +25,17 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
           children: [
             {
               node: "itemTrigger",
-              bind: { children: "/title", "data-variant": "tertiary" },
+              props: { "data-variant": "tertiary" },
               on: {
                 click: {
                   event: {
                     name: "triggerClick",
-                    context: { payload: { path: "/" } },
+                    context: { payload: { path: "" } },
                   },
                 },
               },
               children: [
+                { genus: "text", value: { path: "title" } },
                 {
                   node: "itemIndicator",
                   children: [
@@ -53,13 +54,9 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
               children: [
                 {
                   node: "button",
-                  repeat: { path: "/items" },
-                  bind: { value: "id" },
-                  props: {
-                    "data-variant": "tertiary",
-                    label: "/title",
-                    payload: "this",
-                  },
+                  repeat: { path: "items" },
+                  bind: { value: "id", label: "title", payload: "" },
+                  props: { "data-variant": "tertiary" },
                 },
               ],
             },
