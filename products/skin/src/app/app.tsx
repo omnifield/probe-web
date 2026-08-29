@@ -1,24 +1,20 @@
-// ВИТРИНА — вход, а не раскладка (`PWEB-151`).
+// ТОЧКА СБОРКИ ПРИЛОЖЕНИЯ — вход, а не раскладка (`PWEB-151`).
 //
-// РАСКЛАДКИ ЗДЕСЬ БОЛЬШЕ НЕТ. Каркас — тоже СБОРКА (`./shell.ts`), тем же движком, которым
-// рисуются случаи в галерее и одевается любой компонент кита: дерево объявлено данными,
-// `RenderTree` его читает. Ручной JSX-вёрстки `<Workspace><WorkspaceSidebar>…` здесь не будет —
-// это и есть та подмена, от которой ушли (решение user, PWEB-151): движок для того и чинился всю
-// сессию (`extras`/`PWEB-152`, провайдер/`PWEB-153`), чтобы дерево умело нести настоящие живые
-// компоненты, а не только паспортные части.
+// РАСКЛАДКИ ЗДЕСЬ НЕТ — она в `../pages/workspace/ui/layout.tsx`, прямым JSX поверх `Workspace`
+// (`PWEB-161`, решение user 2026-08-27: пять готовых экранов по пяти слотам — не анатомия,
+// которую надо варьировать через `RenderTree`, а обычная композиция, `layout.tsx` объясняет
+// разницу подробно). `app/` держит только верхние уровни — вход и состояние; страницы, лайауты,
+// рельсы живут в `pages/` (`PWEB-162`).
 //
 // СОСТОЯНИЕ — ДВЕ НЕЗАВИСИМЫЕ ОСИ, каждая в своём файле:
 //
 //   • ПРОСМОТР (`../pages/showcase/model/browse.ts`) — какой компонент открыт, что из него видно;
 //   • НАДЕТОЕ (`../pages/showcase/model/wearing.ts`) — какой скин выбран, в какой половине.
 
-import { RenderTree } from "@omnifield/probe-web-assembly";
-import { createMemo } from "solid-js";
-
 import { createBrowseState } from "../pages/showcase/model/browse.js";
 import { createConsoleState } from "../pages/showcase/model/console.js";
 import { createWearingState } from "../pages/showcase/model/wearing.js";
-import { SHELL_REGISTRY, shellTree } from "./shell.js";
+import { WorkspaceLayout } from "../pages/workspace/layout.jsx";
 
 export function App() {
   const browse = createBrowseState();
@@ -32,12 +28,12 @@ export function App() {
   const variants = (): readonly string[] =>
     Object.keys(wearing.wornSkin()?.recipes[browse.current()]?.variants ?? {});
 
-  // ЯВНО СЛЕЖЕНИЕ, А НЕ НАДЕЖДА НА ЯВНЫЙ ГЕТТЕР КОМПИЛЯТОРА: дерево строит функция с четырьмя
-  // разными сигналами внутри разом (`browse`+`wearing`), и заворачивать её в `createMemo` здесь
-  // надёжнее, чем полагаться на то, что JSX-компилятор Solid угадает реактивность вложенного
-  // вызова через проп `tree` сам, — живой пробой поймано, что без этого клик по рельсам не
-  // трогает показ: пропы застревали значением первого кадра.
-  const tree = createMemo(() => shellTree(browse, wearing, consoleState, variants));
-
-  return <RenderTree tree={tree()} registry={SHELL_REGISTRY} />;
+  return (
+    <WorkspaceLayout
+      browse={browse}
+      wearing={wearing}
+      consoleState={consoleState}
+      variants={variants}
+    />
+  );
 }

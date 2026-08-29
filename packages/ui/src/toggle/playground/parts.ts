@@ -33,7 +33,7 @@ export const parts: Readonly<Record<TogglePart, PassportPartEditorInfo<TogglePar
   root: {
     means: "TODO",
     states: sharedMeans,
-    accepts: [{ kind: "part", name: "indicator" }],
+    accepts: [{ kind: "component", name: "indicator" }],
   },
   indicator: {
     means: "TODO",

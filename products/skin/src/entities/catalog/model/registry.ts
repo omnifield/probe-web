@@ -42,6 +42,7 @@ import {
   type ReadableComponent,
   type ReadablePart,
   type Registry,
+  type SelfAssembly,
 } from "@omnifield/probe-web-assembly";
 import { admits } from "@omnifield/probe-web-ui/passport";
 
@@ -70,6 +71,12 @@ function readable(component: string): ReadableComponent {
           accepts: editorInfo.parts[part.name]?.accepts,
         }),
       ),
+      // Без этого поля ссылка на компонент (`PWEB-166`) не находит `selfAssembly` (`PWEB-168`) и
+      // рисуется старым плоским путём — узел-ссылка сам не несёт ни `children`, ни `on`, поэтому
+      // молчит текстом и не отвечает на клик. Тот же переход границы, что уже сделан живой пробой
+      // `packages/ui/src/button/button.test.tsx` — узкая форма механики `SelfAssembly` уже, чем
+      // полный словарь узла скина, но собственное дерево кнопки в неё укладывается.
+      selfAssembly: passport.selfAssembly as SelfAssembly | undefined,
     },
     parts,
     // Вспомогательные узлы кита без адреса анатомии (`PWEB-152`) и невидимый провайдер корня

@@ -30,27 +30,27 @@ export const assemblies: readonly PassportAssembly<MenuPart>[] = [
     means: "плавающее меню само по себе: группа с подписью, разделитель, пункт с отметкой",
     providerProps: { defaultOpen: true },
     tree: {
-      part: "positioner",
+      node: "positioner",
       children: [
         {
-          part: "content",
+          node: "content",
           children: [
-            { part: "arrow", children: [{ part: "arrowTip" }] },
+            { node: "arrow", children: [{ node: "arrowTip" }] },
             {
-              part: "itemGroup",
+              node: "itemGroup",
               children: [
-                { part: "itemGroupLabel", children: [{ genus: "text", value: "Файл" }] },
-                { part: "item", props: { value: "rename" }, children: [{ genus: "text", value: "Переименовать" }] },
-                { part: "item", props: { value: "delete" }, children: [{ genus: "text", value: "Удалить" }] },
+                { node: "itemGroupLabel", children: [{ genus: "text", value: "Файл" }] },
+                { node: "item", props: { value: "rename" }, children: [{ genus: "text", value: "Переименовать" }] },
+                { node: "item", props: { value: "delete" }, children: [{ genus: "text", value: "Удалить" }] },
               ],
             },
-            { part: "separator" },
+            { node: "separator" },
             {
-              part: "item",
+              node: "item",
               props: { value: "notify" },
               children: [
-                { part: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
-                { part: "itemText", children: [{ genus: "text", value: "Уведомления" }] },
+                { node: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
+                { node: "itemText", children: [{ genus: "text", value: "Уведомления" }] },
               ],
             },
           ],

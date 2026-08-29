@@ -70,6 +70,7 @@ import { createComponent } from "solid-js/web";
 import { checkTree } from "./integrity.js";
 import { allowedInside } from "./nesting.js";
 import { readAddress, resolveComponent, type Registry } from "./registry.js";
+import { growSelfAssembly } from "./self-assembly.js";
 import { note, trace } from "./trace.js";
 import {
   EMPTY_TREE,
@@ -203,7 +204,12 @@ const DefaultErrorFallback: Component<ErrorFallbackProps> = (props) => {
 const takesContent = (registry: Registry, type: string): boolean => {
   const allowed = allowedInside(registry, type);
   if (!allowed) return false;
-  return allowed.unrestricted || allowed.parts.length > 0 || allowed.genera.length > 0;
+  return (
+    allowed.unrestricted ||
+    allowed.parts.length > 0 ||
+    allowed.genera.length > 0 ||
+    allowed.components
+  );
 };
 
 interface RenderNodeProps {
@@ -244,6 +250,24 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     const current = node();
     if (!current || isContent(current)) return undefined;
     return resolveComponent(props.registry, current.type);
+  });
+
+  /**
+   * A bare reference to a component that declares its own behavior (`PWEB-167`/`PWEB-169`) —
+   * `undefined` for everything else, including that SAME component's own root when it is the
+   * tree currently being rendered directly (`parentId === null`): a self-assembly is what a
+   * reference from someone else's tree triggers, not what overrides an explicit choice of
+   * assembly at the top. `read.part === read.passport.root` is the same test `PWEB-166` already
+   * uses to tell a bare component address from one of its own named parts.
+   */
+  const selfAssemblyTree = createMemo((): AssemblyTree | undefined => {
+    const current = node();
+    if (!current || isContent(current) || current.parentId === null) return undefined;
+
+    const read = readAddress(props.registry, current.type);
+    if (!read || read.part !== read.passport.root || !read.passport.selfAssembly) return undefined;
+
+    return growSelfAssembly(read.passport.selfAssembly, read.address, read.passport.root);
   });
 
   /**
@@ -412,12 +436,10 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     );
   };
 
-  const ownProps = () => {
-    const current = node();
-    if (!current || isContent(current)) return {};
-
-    const bind = current.bind;
-    const resolved = bind
+  /** `bind` resolved against `props.data` — shared by a node's own props and (`PWEB-169`) by the
+   *  data a self-assembly reference feeds into what it triggers. */
+  const resolvedBind = (bind: Readonly<Record<string, string>> | undefined) =>
+    bind
       ? Object.fromEntries(
           Object.entries(bind)
             .map(([name, path]) => [name, resolveDataBinding(props.data, path)] as const)
@@ -425,7 +447,23 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
         )
       : undefined;
 
-    return { ...current.props, ...resolved, ...dispatchHandlers() };
+  const ownProps = () => {
+    const current = node();
+    if (!current || isContent(current)) return {};
+
+    return { ...current.props, ...resolvedBind(current.bind), ...dispatchHandlers() };
+  };
+
+  /**
+   * Data fed into a component reference's own behavior (`PWEB-169`): its literal `props` plus
+   * its `bind` resolved against the OUTER data — the same values `ownProps` would have handed
+   * the bare root part under `PWEB-166`, now handed to the referenced component's own tree as
+   * DATA instead, for it to resolve through its own `/label`-style paths.
+   */
+  const innerData = () => {
+    const current = node();
+    if (!current || isContent(current)) return undefined;
+    return { ...current.props, ...resolvedBind(current.bind) };
   };
 
   /**
@@ -511,6 +549,24 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
 
     const close = trace(`узел ${current.id} (${current.type})`);
     try {
+      // A bare reference to a component with its own behavior (`PWEB-169`) unfolds THAT tree,
+      // fed by this node's own data, instead of being drawn as the bare root part with this
+      // node's `on`/`children` (`PWEB-166`) — resolving a reference is a recursive call into the
+      // same mechanic, not a separate, poorer render path (page 112 §"Находка").
+      const selfTree = selfAssemblyTree();
+      if (selfTree) {
+        return (
+          <RenderTree
+            registry={props.registry}
+            tree={selfTree}
+            data={innerData()}
+            dispatch={props.dispatch}
+            fallback={props.fallback}
+            errorFallback={props.errorFallback}
+          />
+        );
+      }
+
       const built = assembled();
       const EditOverlay = props.editOverlay;
 

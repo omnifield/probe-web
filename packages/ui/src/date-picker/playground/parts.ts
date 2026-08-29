@@ -40,9 +40,9 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
       empty: { means: "no value is selected yet" },
     },
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "control" },
-      { kind: "part", name: "positioner" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "positioner" },
     ],
   },
   label: {
@@ -61,9 +61,9 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
       empty: { means: "no value is selected yet" },
     },
     accepts: [
-      { kind: "part", name: "input" },
-      { kind: "part", name: "trigger" },
-      { kind: "part", name: "clearTrigger" },
+      { kind: "component", name: "input" },
+      { kind: "component", name: "trigger" },
+      { kind: "component", name: "clearTrigger" },
     ],
   },
   input: {
@@ -97,7 +97,7 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
   content: {
     means: "the floating panel — holds every view",
     states: { ...openClosedMeans, inline: { means: "shown inline in the page flow, not floating over it" } },
-    accepts: [{ kind: "part", name: "view" }],
+    accepts: [{ kind: "component", name: "view" }],
   },
   positioner: {
     means: "positions the floating panel against the control — a pure wrapper, no look of its own",
@@ -108,30 +108,30 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
       "--available-width": { means: "space left before the panel would hit the viewport edge" },
       "--available-height": { means: "space left before the panel would hit the viewport edge" },
     },
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   view: {
     means: "one view's panel (day, month, or year) — hidden while a different one is active",
     states: viewMeans,
     accepts: [
-      { kind: "part", name: "viewControl" },
-      { kind: "part", name: "table" },
+      { kind: "component", name: "viewControl" },
+      { kind: "component", name: "table" },
     ],
   },
   viewControl: {
     means: "wraps a view's own prev/next/toggle row",
     states: viewMeans,
     accepts: [
-      { kind: "part", name: "prevTrigger" },
-      { kind: "part", name: "viewTrigger" },
-      { kind: "part", name: "nextTrigger" },
+      { kind: "component", name: "prevTrigger" },
+      { kind: "component", name: "viewTrigger" },
+      { kind: "component", name: "nextTrigger" },
     ],
   },
   viewTrigger: {
     means: "switches to the next-broader view (day → month → year)",
     states: { ...viewMeans, disabled: { means: "the whole picker is disabled" } },
     accepts: [
-      { kind: "part", name: "rangeText" },
+      { kind: "component", name: "rangeText" },
       { kind: "content", genus: "text" },
     ],
   },
@@ -170,14 +170,14 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     means: "the calendar grid — one per view",
     states: tableSectionMeans,
     accepts: [
-      { kind: "part", name: "tableHead" },
-      { kind: "part", name: "tableBody" },
+      { kind: "component", name: "tableHead" },
+      { kind: "component", name: "tableBody" },
     ],
   },
   tableHead: {
     means: "wraps the grid's header row",
     states: tableSectionMeans,
-    accepts: [{ kind: "part", name: "tableRow" }],
+    accepts: [{ kind: "component", name: "tableRow" }],
   },
   tableHeader: {
     means: "one column's own header cell (a weekday, in the day view)",
@@ -187,7 +187,7 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
   tableBody: {
     means: "wraps the grid's data rows",
     states: tableSectionMeans,
-    accepts: [{ kind: "part", name: "tableRow" }],
+    accepts: [{ kind: "component", name: "tableRow" }],
   },
   tableRow: {
     // `tableRow` is ONE anatomy part shared by both the header row (inside `tableHead`, holding
@@ -196,15 +196,15 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     means: "one row — either the weekday header row, or one week (day view) / one row of months/years (other views)",
     states: tableSectionMeans,
     accepts: [
-      { kind: "part", name: "tableHeader" },
-      { kind: "part", name: "tableCell" },
+      { kind: "component", name: "tableHeader" },
+      { kind: "component", name: "tableCell" },
     ],
   },
   tableCell: {
     means: "one grid cell — wraps the clickable trigger inside it",
     // `selected` real only in month/year views — see `../entity/passport.ts`'s own note.
     states: { ...viewMeans, selected: { means: "this cell's own value is the one currently selected (month/year views only)" } },
-    accepts: [{ kind: "part", name: "tableCellTrigger" }],
+    accepts: [{ kind: "component", name: "tableCellTrigger" }],
   },
   tableCellTrigger: {
     means: "the clickable surface inside a cell — picks that date/month/year",

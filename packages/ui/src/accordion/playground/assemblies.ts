@@ -1,129 +1,66 @@
-// STRUCTURAL assembly templates for the accordion — read by `../playground/index.ts`'s
-// `defineEditorInfo` call (`PWEB-116`, decomposed `PWEB-124`).
-//
-// ONE assembly, not several: item COUNT and which item starts open are not structural questions
-// (`packages/ui/README.md`, "Базовая сборка": an assembly carries no state axis of its own, that
-// is set on top by whoever displays a record) — five earlier entries here varied by exactly those
-// two things and were removed for it. Two items is the minimum that exercises the mechanism's own
-// reason for existing — several nodes sharing one coordinate — without turning into a count
-// variation. Reuses the same worked example already in `components/index.tsx`'s own doc comment
-// (`Shipping` / `Courier and pickup`), so a reader following the component from its JSX to its
-// assembly sees one instance, not two invented independently.
-//
-// Two gaps found while looking at this, NEITHER fixed here:
-//   • `root.accepts` only admits `{ kind: "part", name: "item" }` — a divider BETWEEN items
-//     cannot be assembled at all under the current nesting rule. Showing one would mean
-//     extending `root.accepts` first, in `../playground/index.ts` — a passport-contract change.
-//   • a `{ kind: "content", genus: "component" }` node (legal inside `itemContent`) cannot
-//     actually carry a nested component's own tree — `PassportAssemblyContent` is a LEAF
-//     (`value: string`, no `children`), the same shape an icon placeholder uses below. "A nested
-//     accordion inside an item's content" is not buildable with today's assembly-tree type at
-//     all, not merely undemonstrated — the type would need a variant that nests a whole
-//     `PassportAssemblyPart` tree under a foreign component's own address.
-
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY: no runtime import of the passport module here — `typeof passport` in a type
-// position needs the binding's TYPE, not the module's side effects.
-import type { passport } from "../entity/passport.js";
 
-// The literal part-name union (`"root" | "item" | …`), read off the passport itself rather than
-// spelled out by hand: `part` fields below type-check against ANATOMY, not a copy of its names
-// that could drift from it. Contextual typing does not reach across a module boundary — a plain
-// object literal passed straight to `defineEditorInfo` gets its typing for free from the call
-// itself, but `assemblies` lives in ITS OWN module here, and this explicit derivation is what
-// stands in for that contextual typing.
+import { passport } from "../entity/passport.js";
+
 type AccordionPart =
   typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
+// ДВЕ ГОТОВЫЕ, УЖЕ СОБРАННЫЕ СХЕМЫ (постановка user, 2026-08-28) — не скелет с дырами, дыры
+// заполнены здесь прямо в объявлении, ради обкатки одного куска потока: `{ component: "…" }`
+// ссылается на ДРУГОЙ компонент общего реестра (`PWEB-166`) и реально рисуется. Скелет/дыры/
+// наряд — отдельный, следующий шаг.
 export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
   {
-    name: "basic",
+    name: "с-кнопками",
     means:
-      "a basic working accordion: two items, each with a trigger, an indicator, and content",
+      "разделы, а в контенте каждого — настоящая Button из общего реестра, не своя копия",
     tree: {
-      part: "root",
+      node: "root",
       children: [
         {
-          part: "item",
-          props: { value: "shipping" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Shipping" },
-                {
-                  part: "itemIndicator",
-                  children: [{ genus: "icon", value: "▾" }],
-                },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Courier and pickup" }],
-            },
-          ],
-        },
-        {
-          part: "item",
-          props: { value: "returns" },
-          children: [
-            {
-              part: "itemTrigger",
-              children: [
-                { genus: "text", value: "Returns" },
-                {
-                  part: "itemIndicator",
-                  children: [{ genus: "icon", value: "▾" }],
-                },
-              ],
-            },
-            {
-              part: "itemContent",
-              children: [{ genus: "text", value: "Free within 30 days" }],
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    name: "filled",
-    means:
-      "тот же аккордеон, но разделы приходят из данных: сколько элементов в /sections, столько " +
-      "item'ов и вырастет — число нигде не названо отдельно (PWEB-156)",
-    // Число разделов НЕ выбор этой сборки — оно решается тем, кто принесёт данные в `RenderTree`
-    // (`data`, PWEB-156). Сборка объявляет ОДИН узел-шаблон под `repeat`; без данных шаблон
-    // разворачивается в ноль узлов — законное состояние, не отказ, тем же приёмом, что и у любого
-    // содержимого без данных.
-    tree: {
-      part: "root",
-      children: [
-        {
+          node: "item",
           repeat: { path: "/sections" },
-          template: {
-            part: "item",
-            // "id" — относительный путь: читается от ТЕКУЩЕГО элемента массива (`/sections/N/id`),
-            // не от корня данных. `value` нужен Ark для отслеживания, какой раздел раскрыт —
-            // синтетический индекс здесь не годится: он не переживает пересортировку/фильтр
-            // данных, а значение из САМИХ данных переживает.
-            bind: { value: "id" },
-            children: [
-              {
-                part: "itemTrigger",
-                // Клик по этому узлу — настоящий переключатель раздела, и наружу об этом стоит
-                // сказать: "id" резолвится относительно ТЕКУЩЕГО элемента (`PWEB-157`), тем же
-                // приёмом, что и `bind` выше, — вызывающий получает готовый JSON, не сырое
-                // DOM-событие.
-                on: { click: { event: { name: "toggle", context: { section: { path: "id" } } } } },
-                children: [
-                  { genus: "text", value: { path: "title" } },
-                  { part: "itemIndicator", children: [{ genus: "icon", value: "▾" }] },
-                ],
+          bind: { value: "id" },
+          children: [
+            {
+              node: "itemTrigger",
+              props: { "data-variant": "secondary" },
+              on: {
+                click: {
+                  event: {
+                    name: "triggerClick",
+                    context: { payload: { path: "" } },
+                  },
+                },
               },
-              { part: "itemContent", children: [{ genus: "text", value: { path: "body" } }] },
-            ],
-          },
+              children: [
+                { genus: "text", value: { path: "title" } },
+                {
+                  node: "itemIndicator",
+                  children: [
+                    // {
+                    //   node: "icon",
+                    //   props: {
+                    //     "data-variant": "arrow-down",
+                    //   },
+                    // },
+                  ],
+                },
+              ],
+            },
+            {
+              node: "itemContent",
+              children: [
+                {
+                  node: "button",
+                  repeat: { path: "items" },
+                  bind: { value: "id", label: "title", payload: "" },
+                  props: { "data-variant": "primary" },
+                },
+              ],
+            },
+          ],
         },
       ],
     },

@@ -47,7 +47,7 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
   positioner: {
     means: "TODO",
     states: { ...openClosedMeans, ...swipeDirectionMeans },
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   content: {
     means: "TODO",
@@ -74,12 +74,12 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
       "--drawer-frontmost-height": { means: "TODO" },
     },
     accepts: [
-      { kind: "part", name: "grabber" },
-      { kind: "part", name: "title" },
-      { kind: "part", name: "description" },
-      { kind: "part", name: "closeTrigger" },
+      { kind: "component", name: "grabber" },
+      { kind: "component", name: "title" },
+      { kind: "component", name: "description" },
+      { kind: "component", name: "closeTrigger" },
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   title: {
@@ -112,7 +112,7 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
   grabber: {
     means: "TODO",
     states: { hover: { means: "TODO" }, active: { means: "TODO" } },
-    accepts: [{ kind: "part", name: "grabberIndicator" }],
+    accepts: [{ kind: "component", name: "grabberIndicator" }],
   },
   grabberIndicator: {
     means: "TODO",

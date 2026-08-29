@@ -10,7 +10,7 @@
 // file named: the context a node-scoped part reads is not a plain value — `TreeViewBranch` calls
 // `treeView().getBranchProps(nodeProps)`, which asks the Zag MACHINE to look `nodeProps.indexPath`
 // up in the collection actually passed to `TreeView.Root`'s own `collection` prop. An assembly
-// tree has no such collection at all (`PassportAssemblyPart` addresses PARTS and CONTENT, the
+// tree has no such collection at all (`PassportAssemblyElement` addresses PARTS and CONTENT, the
 // same "root's real machinery" gap the table's own assemblies file names for its own root) — so
 // there is no node for `indexPath` to resolve to, synthetic or otherwise, without ALSO
 // synthesizing a matching `createTreeCollection(...)` at the root and wiring every node-scoped

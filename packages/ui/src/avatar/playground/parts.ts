@@ -32,8 +32,8 @@ export const parts: Readonly<Record<AvatarPart, PassportPartEditorInfo<AvatarPar
     means: "TODO",
     states: {},
     accepts: [
-      { kind: "part", name: "image" },
-      { kind: "part", name: "fallback" },
+      { kind: "component", name: "image" },
+      { kind: "component", name: "fallback" },
     ],
   },
   image: {

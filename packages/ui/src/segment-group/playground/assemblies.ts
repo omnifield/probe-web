@@ -20,38 +20,38 @@ export const assemblies: readonly PassportAssembly<SegmentGroupPart>[] = [
     name: "basic",
     means: "рабочий переключатель: три варианта, пилюля едет к выбранному",
     tree: {
-      part: "root",
+      node: "root",
       props: { defaultValue: "list" },
       children: [
         // `indicator` BEFORE the items, matching `../components/index.tsx`'s own doc example —
         // later siblings paint over earlier ones, so items sit visually on top of the sliding
         // pill by DOM order alone, no `z-index` required.
-        { part: "label", children: [{ genus: "text", value: "Вид" }] },
-        { part: "indicator" },
+        { node: "label", children: [{ genus: "text", value: "Вид" }] },
+        { node: "indicator" },
         {
-          part: "item",
+          node: "item",
           props: { value: "list" },
           children: [
-            { part: "itemControl" },
-            { part: "itemText", children: [{ genus: "text", value: "Список" }] },
+            { node: "itemControl" },
+            { node: "itemText", children: [{ genus: "text", value: "Список" }] },
             { extra: "hiddenInput" },
           ],
         },
         {
-          part: "item",
+          node: "item",
           props: { value: "grid" },
           children: [
-            { part: "itemControl" },
-            { part: "itemText", children: [{ genus: "text", value: "Плитка" }] },
+            { node: "itemControl" },
+            { node: "itemText", children: [{ genus: "text", value: "Плитка" }] },
             { extra: "hiddenInput" },
           ],
         },
         {
-          part: "item",
+          node: "item",
           props: { value: "board" },
           children: [
-            { part: "itemControl" },
-            { part: "itemText", children: [{ genus: "text", value: "Доска" }] },
+            { node: "itemControl" },
+            { node: "itemText", children: [{ genus: "text", value: "Доска" }] },
             { extra: "hiddenInput" },
           ],
         },

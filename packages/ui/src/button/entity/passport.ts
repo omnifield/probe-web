@@ -32,7 +32,10 @@
 // This does not break "the passport declares nothing unobservable" — the state IS observable,
 // the component simply is not the one setting it, and each one is proven on a live composition.
 
-import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import {
+  defineSettings,
+  definePassport,
+} from "@omnifield/probe-web-skin/model";
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
@@ -48,10 +51,19 @@ export const passport = definePassport({
       name: "root",
       states: [
         { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
-        { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
+        {
+          name: "focus-visible",
+          mark: { kind: "pseudo", name: ":focus-visible" },
+        },
         { name: "active", mark: { kind: "pseudo", name: ":active" } },
-        { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } },
-        { name: "busy", mark: { kind: "attribute", name: "aria-busy", value: "true" } },
+        {
+          name: "disabled",
+          mark: { kind: "attribute", name: "data-disabled" },
+        },
+        {
+          name: "busy",
+          mark: { kind: "attribute", name: "aria-busy", value: "true" },
+        },
         {
           // The state name is the ADDRESS the skin looks it up by, and it outlives a kit swap:
           // the attribute is Kobalte's `data-expanded` today, the same thing is `data-state="open"`
@@ -72,4 +84,28 @@ export const passport = definePassport({
   // empty `defineSettings<ButtonProps>` is a checkable claim that the button accepts none of the
   // closed settings vocabulary. Should one appear, the type forces it to be declared here.
   settings: defineSettings<ButtonProps>({}),
+  // THE BUTTON'S OWN BEHAVIOR (`PWEB-167`): accept a label and a payload in ITS OWN data shape,
+  // print the label, and on click hand the payload back out untouched. A component referencing
+  // this button (an accordion item, a list row) supplies data in this shape — it does not repeat
+  // this `on`/`children` on its own reference node, which would mean overriding the button's
+  // behavior instead of feeding it (page 111 §5, page 112 §4).
+  //
+  // `bind` on `data-variant`, no literal `props` default: a reference feeds its own literal
+  // `props`/`bind` in as DATA for this tree to read (`PWEB-169`), not as DOM props applied
+  // directly — so a pass-through like the variant has to be named HERE to be visible at all. No
+  // literal fallback is declared alongside it because the kit itself owns no variant name (see
+  // `variantAxis` above: names are a human's call, made together with a skin) — the honest
+  // default for an unfed variant is no attribute at all, the same as an ordinary unbound node.
+  selfAssembly: {
+    tree: {
+      node: "root",
+      bind: { "data-variant": "/data-variant" },
+      on: {
+        click: {
+          event: { name: "select", context: { payload: { path: "/payload" } } },
+        },
+      },
+      children: [{ genus: "text", value: { path: "/label" } }],
+    },
+  },
 });

@@ -10,11 +10,15 @@
 export type {
   Admission,
   AdmissionRule,
+  ComponentGenus,
   Genus,
   ReadablePart,
   ReadablePassport,
 } from "./passport-read.js";
 export { partOf } from "./passport-read.js";
+
+export type { SelfAssembly, SelfAssemblyContent, SelfAssemblyElement, SelfAssemblyNode } from "./self-assembly.js";
+export { growSelfAssembly } from "./self-assembly.js";
 
 export type {
   AssemblyContent,

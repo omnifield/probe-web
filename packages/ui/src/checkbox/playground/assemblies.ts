@@ -20,13 +20,13 @@ export const assemblies: readonly PassportAssembly<CheckboxPart>[] = [
     name: "basic",
     means: "чекбокс с подписью, управляющей рамкой и указателем",
     tree: {
-      part: "root",
+      node: "root",
       children: [
         {
-          part: "control",
-          children: [{ part: "indicator", children: [{ genus: "text", value: "✓" }] }],
+          node: "control",
+          children: [{ node: "indicator", children: [{ genus: "text", value: "✓" }] }],
         },
-        { part: "label", children: [{ genus: "text", value: "Согласен с условиями" }] },
+        { node: "label", children: [{ genus: "text", value: "Согласен с условиями" }] },
         { extra: "hiddenInput" },
       ],
     },

@@ -35,9 +35,9 @@ export const parts: Readonly<Record<ScrollAreaPart, PassportPartEditorInfo<Scrol
       "--thumb-height": { means: "measured height of the horizontal thumb" },
     },
     accepts: [
-      { kind: "part", name: "viewport" },
-      { kind: "part", name: "scrollbar" },
-      { kind: "part", name: "corner" },
+      { kind: "component", name: "viewport" },
+      { kind: "component", name: "scrollbar" },
+      { kind: "component", name: "corner" },
     ],
   },
   viewport: {
@@ -49,20 +49,20 @@ export const parts: Readonly<Record<ScrollAreaPart, PassportPartEditorInfo<Scrol
       "at-left": { means: "scrolled all the way to the left" },
       "at-right": { means: "scrolled all the way to the right" },
     },
-    accepts: [{ kind: "part", name: "content" }],
+    accepts: [{ kind: "component", name: "content" }],
   },
   content: {
     means: "the scrollable content itself — sized to fit whatever the consumer puts inside it",
     states: overflowMeans,
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   scrollbar: {
     means: "one axis's own track",
     states: { ...orientationMeans, ...overflowMeans, ...hoverDraggingMeans, scrolling: { means: "a scroll is actively happening on this axis right now" } },
-    accepts: [{ kind: "part", name: "thumb" }],
+    accepts: [{ kind: "component", name: "thumb" }],
   },
   thumb: {
     means: "one axis's own drag handle",

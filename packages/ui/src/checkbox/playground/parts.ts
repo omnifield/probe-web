@@ -34,14 +34,14 @@ export const parts: Readonly<Record<CheckboxPart, PassportPartEditorInfo<Checkbo
     // паспорт называет вложенность как ДОСТУПНУЮ, а не как единственно верную структуру,
     // тем же приёмом, что у гармошки) и label.
     accepts: [
-      { kind: "part", name: "control" },
-      { kind: "part", name: "indicator" },
-      { kind: "part", name: "label" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "indicator" },
+      { kind: "component", name: "label" },
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
       // Настоящий скрытый `<input type="checkbox">` (`PWEB-152`) — узел, на котором реально
       // висит `onChange`; без него превью выглядит верно, но клик ничего не переключает.
-      { kind: "extra", name: "hiddenInput" },
+      { kind: "component", name: "hiddenInput" },
     ],
   },
   control: {
@@ -60,9 +60,9 @@ export const parts: Readonly<Record<CheckboxPart, PassportPartEditorInfo<Checkbo
       "focus-visible": { means: "фокус пришёл с клавиатуры — кольцу фокуса тут самое место" },
     },
     accepts: [
-      { kind: "part", name: "indicator" },
+      { kind: "component", name: "indicator" },
       { kind: "content", genus: "icon" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   indicator: {

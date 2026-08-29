@@ -21,11 +21,23 @@ export const passport = definePassport({
     { name: "sidebar", states: [] },
     { name: "main", states: [] },
     { name: "rightbar", states: [] },
+    { name: "footer", states: [] },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },
   },
-  // Настроек из закрытого перечня рабочая область не принимает — тем же доводом, что у сетки:
-  // сколько места и что схлопывается — раскладочное свойство, то есть ВИД, и приезжает скином.
-  settings: defineSettings<WorkspaceProps>({}),
+  // ЕДИНСТВЕННАЯ настройка — `outlined` (общий словарь, `packages/skin/src/passport-form.ts`,
+  // `SETTINGS`), и она не поведенческая (тем же доводом, что и раньше про раскладку: сколько
+  // весит колонка — вид, а не проп). Но КАКИМ ИМЕННО видом разделять блоки — обводкой или
+  // собственным фоном/контентом каждого — решает продукт на конкретной странице, а не скин один
+  // раз на все страницы: один и тот же скин ставит панель управления с рамками и витрину без
+  // них. Метка — `data-outlined`: `Workspace` её не переводит, атрибут долетает до DOM как есть
+  // (`Polymorphic` спредит любой `data-*` без разбора), тем же приёмом, что у `data-variant`.
+  settings: defineSettings<WorkspaceProps>({
+    outlined: {
+      values: { kind: "flag" },
+      byDefault: false,
+      mark: { kind: "attribute", name: "data-outlined" },
+    },
+  }),
 });

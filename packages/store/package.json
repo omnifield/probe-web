@@ -1,0 +1,78 @@
+{
+  "name": "@omnifield/probe-web-store",
+  "version": "0.1.0",
+  "description": "Стейт probe-web поверх семьи XState: @xstate/store как zustand-подобное глобальное хранилище, xstate как опциональный слой полноценных стейт-машин (PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./machine": {
+      "types": "./dist/machine.d.ts",
+      "default": "./dist/machine.js"
+    },
+    "./persist": {
+      "types": "./dist/persist.d.ts",
+      "default": "./dist/persist.js"
+    },
+    "./undo": {
+      "types": "./dist/undo.d.ts",
+      "default": "./dist/undo.js"
+    },
+    "./reset": {
+      "types": "./dist/reset.d.ts",
+      "default": "./dist/reset.js"
+    },
+    "./validate": {
+      "types": "./dist/validate.d.ts",
+      "default": "./dist/validate.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@xstate/store": "^4.2.3",
+    "@xstate/store-solid": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@xstate/solid": "^2.0.0",
+    "solid-js": "^1.9.14",
+    "xstate": "^5.32.6"
+  },
+  "peerDependenciesMeta": {
+    "@xstate/solid": {
+      "optional": true
+    },
+    "xstate": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@types/node": "^24.10.1",
+    "@xstate/solid": "^2.0.0",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10",
+    "xstate": "^5.32.6"
+  }
+}

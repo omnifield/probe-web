@@ -18,7 +18,7 @@ export const assemblies: readonly PassportAssembly<TablePart>[] = [
     name: "basic",
     means: "рабочая таблица: три строки, сортировка по имени работает кликом",
     tree: {
-      part: "root",
+      node: "root",
       props: {
         columns: [
           { accessorKey: "name", header: "Имя" },

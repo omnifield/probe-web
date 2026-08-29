@@ -1,5 +1,5 @@
 import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
-import type { ValidComponent } from "solid-js";
+import { splitProps, type ValidComponent } from "solid-js";
 
 import { useAddress, slotAware } from "../../slot-chain.js";
 import { traceLife } from "../../trace.js";
@@ -7,13 +7,13 @@ import { anatomyParts } from "../entity/anatomy.js";
 
 // Рабочая область — каркас приложения именованными слотами (`PWEB-154`).
 //
-// ## Пять узлов, ни одного вложенного вручную
+// ## Шесть узлов, ни одного вложенного вручную
 //
 // Раньше каркас приходилось собирать из двух вложенных `Grid` и помнить, каким по счёту ребёнком
 // класть шапку, а каким — показ. Здесь каждый слот назван — `WorkspaceHeader`/`WorkspaceSidebar`/
-// `WorkspaceMain`/`WorkspaceRightbar` — и потребитель кладёт их в любом порядке внутрь `Workspace`;
-// раскладку по местам решает скин через `grid-template-areas` (`playground/recipe.ts`), а не
-// порядок разметки.
+// `WorkspaceMain`/`WorkspaceRightbar`/`WorkspaceFooter` — и потребитель кладёт их в любом порядке
+// внутрь `Workspace`; раскладку по местам решает скин через `grid-template-areas`
+// (`playground/recipe.ts`), а не порядок разметки.
 //
 // ## Ни зазора, ни ширины колонок в разметке
 //
@@ -28,8 +28,18 @@ import { anatomyParts } from "../entity/anatomy.js";
 // довод, что у `indicator`/`itemPreviewImage` в остальном ките: часть, которую можно не класть,
 // не должна требовать от потребителя знать, ЧТО будет, если её не положить.
 
-/** Пропсы `Workspace`: всё, что принимает целевой элемент, плюс `as`. */
-export type WorkspaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+/** Пропсы `Workspace`: всё, что принимает целевой элемент, плюс `as`, плюс настройка `outlined`. */
+export type WorkspaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T> & {
+  /**
+   * Обводка занятых слотов (настройка `outlined`, `entity/passport.ts`) — НЕ вариация: какой
+   * скин, такой и вид, а вопрос «отделять блоки рамкой или их собственным фоном/контентом» решает
+   * конкретная страница, не скин один раз на все страницы (`playground/recipe.ts` объясняет
+   * подробно). Значение переводится в `data-outlined="true"` — литеральную строку, а не пустой
+   * атрибут: рецепт адресует ЗНАЧЕНИЕ настройки, а не факт присутствия атрибута
+   * (`packages/skin/src/rules.ts`'s `markSelector`).
+   */
+  outlined?: boolean;
+};
 
 /**
  * Рабочая область — корень раскладки, ОДИН узел с адресом.
@@ -49,9 +59,10 @@ export const Workspace = slotAware(function Workspace<T extends ValidComponent =
 ) {
   traceLife("ui.workspace");
 
-  const [address, rest] = useAddress(props, anatomyParts.root.attrs);
+  const [local, others] = splitProps(props, ["outlined"]);
+  const [address, rest] = useAddress(others, anatomyParts.root.attrs);
 
-  return <Polymorphic as="div" {...rest} {...address} />;
+  return <Polymorphic as="div" {...rest} {...address} data-outlined={local.outlined ? "true" : undefined} />;
 });
 
 /** Пропсы `WorkspaceHeader`. */
@@ -106,6 +117,20 @@ export const WorkspaceRightbar = slotAware(function WorkspaceRightbar<T extends 
   traceLife("ui.workspace-rightbar");
 
   const [address, rest] = useAddress(props, anatomyParts.rightbar.attrs);
+
+  return <Polymorphic as="div" {...rest} {...address} />;
+});
+
+/** Пропсы `WorkspaceFooter`. */
+export type WorkspaceFooterProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+
+/** Нижняя полоса — необязательна; не положена в разметку, строка схлопывается сама. */
+export const WorkspaceFooter = slotAware(function WorkspaceFooter<T extends ValidComponent = "div">(
+  props: WorkspaceFooterProps<T>,
+) {
+  traceLife("ui.workspace-footer");
+
+  const [address, rest] = useAddress(props, anatomyParts.footer.attrs);
 
   return <Polymorphic as="div" {...rest} {...address} />;
 });

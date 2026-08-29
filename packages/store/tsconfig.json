@@ -1,0 +1,31 @@
+{
+  "//": [
+    "Конфиг САМОГО пакета: собирает исходники стейта и типизирует его тесты.",
+    "Базы для потребителя здесь нет и не будет — её отдаёт зона `build` подпутём",
+    "`@omnifield/probe-web-build/tsconfig` (PROBEWEB-4)."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    // JSX нужен ТЕСТАМ: смоук-проба поднимает настоящий компонент с `useSelector`/`useMachine`.
+    // В `src` его нет — трансформ в сборку не попадает.
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}

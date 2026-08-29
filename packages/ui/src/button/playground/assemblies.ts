@@ -13,46 +13,18 @@
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY: no runtime import of the passport module here — `typeof passport` in a type
-// position needs the binding's TYPE, not the module's side effects.
-import type { passport } from "../entity/passport.js";
+import { passport } from "../entity/passport.js";
 
 // The literal part-name union, read off the passport itself rather than spelled out by hand:
-// `part` fields below type-check against ANATOMY, not a copy of its names that could drift from
-// it.
-type ButtonPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+// own-part `node` values below get autocomplete against ANATOMY (not enforced by `tsc` — a
+// `node` also accepts a foreign registry name, `PWEB-172`), not a copy of names that could drift.
+type ButtonPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
-    name: "label",
+    name: "base",
     means: "a button with a label",
-    tree: { part: "root", children: [{ genus: "text", value: "Button" }] },
-  },
-  {
-    name: "icon-label",
-    means: "a button with an icon and a label",
-    // The icon LEADS the label — content order is the view author's call (see the accordion
-    // passport for the same argument). The icon here is a placeholder (`★`), not a real
-    // `lucide-solid` component: the assembly's base is data, not code (`icon.anatomy.ts`).
-    tree: {
-      part: "root",
-      children: [
-        { genus: "icon", value: "★" },
-        { genus: "text", value: "Button with icon" },
-      ],
-    },
-  },
-  {
-    name: "icon-only",
-    means: "a button with a single icon, no label",
-    // A third honest case, not a repeat of the second minus text: an icon-only button is its
-    // own real shape (a toolbar, a compact action), and `root.accepts` lets an icon stand alone,
-    // without a mandatory label next to it.
-    tree: { part: "root", children: [{ genus: "icon", value: "★" }] },
-  },
-  {
-    name: "filled",
-    means: "подпись приходит из данных, не из объявления (PWEB-156)",
-    tree: { part: "root", children: [{ genus: "text", value: { path: "/label" } }] },
+    tree: { node: "root", children: [] },
   },
 ];

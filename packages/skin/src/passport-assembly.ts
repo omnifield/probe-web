@@ -60,7 +60,8 @@
 import type { ComponentPassport } from "./passport-form.js";
 
 /**
- * РОД содержимого — чем узел является, когда его кладут внутрь чужого узла.
+ * РОД содержимого-ЛИСТА — чем значение является, когда его кладут внутрь чужого узла как
+ * `PassportAssemblyContent` (`{genus, value}`, ни пропов, ни детей, ни адреса).
  *
  * Род, а не имя компонента. «Внутрь кнопки только текст или значок» — утверждение о роде
  * допустимого, и записать его иначе нечем: перечень имён отстанет на первом же новом значке.
@@ -71,56 +72,79 @@ import type { ComponentPassport } from "./passport-form.js";
  * кандидат называет себя сам, принимающий называет род.
  *
  *  • `text` — подпись: узел-текст, компонентом не являющийся;
- *  • `icon` — значок: компонент, предмет которого — один символ;
- *  • `component` — любой компонент. Значок подходит сюда; обратное неверно.
+ *  • `icon` — значок-плейсхолдер: печатается как есть, живым компонентом не бывает.
+ *
+ * `"component"` здесь БОЛЬШЕ НЕТ (был, снят при доводке `PWEB-172`): лист физически не может
+ * нести компонент — только строку/путь (`value: DynamicValue`). Ссылка на настоящий компонент —
+ * `PassportAssemblyElement`, отдельный узел, не содержимое, и её допуск — `PassportAdmission`'s
+ * `{kind:"component"}`, не жанр листа.
  *
  * Новый род заводится ТОЛЬКО решением — как и новое имя состояния. Перечень родов маленький
  * намеренно: он про то, ЧЕМ вещь является, а не про то, что она умеет.
  */
-export type PassportGenus = "text" | "icon" | "component";
-
-/** Род, которым компонент может БЫТЬ. Текстом — не может: текст это узел, а не компонент. */
-export type PassportComponentGenus = Exclude<PassportGenus, "text">;
+export type PassportGenus = "text" | "icon";
 
 /**
- * Что допустимо внутри части — ОДНИМ перечнем: свои части и содержимое потребителя вперемешку.
+ * Род, которым КОМПОНЕНТ ЦЕЛИКОМ объявляет сам себя (`defineEditorInfo`'s `genus`) — используется
+ * ссылкой на этот компонент (`PassportAdmission`'s `{kind:"component", genus}`), не содержимым-
+ * листом. Independent от `PassportGenus` (не `Exclude<..., "text">`) с тех пор, как `PassportGenus`
+ * лишился `"component"` — словари разошлись: лист не может БЫТЬ компонентом, а компонент вправе
+ * объявить себя обычным (не значком).
+ *
+ *  • `icon` — компонент, предмет которого один символ (сам `icon`);
+ *  • `component` — любой другой компонент кита.
+ */
+export type PassportComponentGenus = "icon" | "component";
+
+/**
+ * Что допустимо внутри части — ОДНИМ перечнем: named nodes and leaf content mixed together.
  *
  * Перечень один намеренно (`PWEB-24`). Часть компонента и есть вложенный компонент, увиденный с
  * другой стороны: у Ark вкладка гармошки — и часть `item`, и самостоятельный компонент. Разведи
  * это на два поля — и у одного дерева окажется два правила, которые редактор обязан складывать
  * сам; складывать он их будет по-своему, и каждый читатель паспорта по-своему же.
+ *
+ * ONE named-node kind, not three (`PWEB-172` continuation, 2026-08-28). Own anatomy part, private
+ * `extra`, and a reference to another component of the shared registry used to be three separate
+ * admission kinds (`part`/`extra`/`component`) — the SAME question ("is this named thing allowed
+ * here") asked three different ways depending on WHERE the name resolves to. That WHERE is a
+ * resolution detail (own anatomy vs. `KitComponent.extras` vs. the general registry,
+ * `packages/assembly/src/registry.ts`'s `readAddress`) — admission doesn't need to know it, the
+ * same way the declaration side stopped needing two fields (`node`, `PWEB-172`) for the same
+ * reason. Content stays its own kind: a leaf (`value`, no props/children/identity) is a genuinely
+ * different thing from a named node, not the same thing seen from another angle.
  */
 export type PassportAdmission<Part extends string = string> =
-  | {
-      /** Своя часть этого же компонента. */
-      readonly kind: "part";
-      /** Имя части — ключ анатомии, не новое объявление. */
-      readonly name: Part;
-    }
   | {
       /** Содержимое потребителя — названное родом. */
       readonly kind: "content";
       readonly genus: PassportGenus;
     }
   | {
-      /** Вспомогательный компонент кита — БЕЗ адреса анатомии (`PassportAssemblyExtra`). */
-      readonly kind: "extra";
-      /** Имя в карте `extras` поставщика — не часть анатомии, отдельное пространство имён. */
-      readonly name: string;
+      /**
+       * A named node: own anatomy part, private `extra`, or a reference to another component of
+       * the shared registry — which one it actually resolves to is not this kind's concern.
+       */
+      readonly kind: "component";
+      /**
+       * Restrict to a component that declares ITSELF this genus (`PassportComponentGenus` —
+       * `icon`/`component`). Absent — no genus restriction. Never matches an own part or an
+       * `extra`: neither declares a genus, both are addressed by `name` instead. Multiple allowed
+       * genera are multiple `accepts` entries, not an array here — the same way multiple allowed
+       * part names were always multiple `{kind:"part", name}` entries, never a `name` array.
+       */
+      readonly genus?: PassportComponentGenus;
+      /**
+       * Restrict to this exact name — an anatomy part's name, an `extras` key, or a top-level
+       * registry name, whichever it turns out to be. Absent — any name (still subject to `genus`,
+       * if named). Multiple allowed names are multiple `accepts` entries, same reasoning as `genus`.
+       *
+       * Typed `Part | string`, same reason and same non-guarantee as `PassportAssemblyElement.node`
+       * (`PWEB-172`): editor autocomplete for this component's own real part names, no compile-time
+       * rejection of a typo either in an own part's name or in a foreign one.
+       */
+      readonly name?: Part | string;
     };
-
-/**
- * Род кандидата → рода, под которые он подходит.
- *
- * Значок — тоже компонент, и место, объявленное «под любой компонент», он занимать вправе.
- * Обратно не работает: место под значок компонентом вообще не занимается, иначе «только текст
- * или значок» не отвергало бы ничего.
- */
-const FITS: Record<PassportGenus, readonly PassportGenus[]> = {
-  text: ["text"],
-  icon: ["icon", "component"],
-  component: ["component"],
-};
 
 /** То немногое, что `admits` спрашивает у части: правило вложенности, если оно объявлено. */
 export interface PassportPartAdmission<Part extends string = string> {
@@ -138,8 +162,8 @@ export interface PassportPartAdmission<Part extends string = string> {
  * молча, оба будут зелёными.
  *
  * @param part часть, ВНУТРЬ которой кладут — точнее, её правило вложенности из среза редактора
- * @param candidate что кладут: своя часть по имени либо содержимое рода (род компонента берётся
- *   из его же среза редактора — `editorInfo.genus`, не из имени пакета)
+ * @param candidate что кладут: именованный узел (своя часть, extra, ссылка на реестр — одним
+ *   кандидатом, `PWEB-172`) либо содержимое, названное родом
  */
 export function admits<Part extends string>(
   part: PassportPartAdmission<Part>,
@@ -150,22 +174,60 @@ export function admits<Part extends string>(
   if (!accepts) return true;
 
   return accepts.some((allowed) => {
-    if (candidate.kind === "part") return allowed.kind === "part" && allowed.name === candidate.name;
-    if (candidate.kind === "extra") return allowed.kind === "extra" && allowed.name === candidate.name;
-    return allowed.kind === "content" && FITS[candidate.genus].includes(allowed.genus);
+    if (candidate.kind === "content") {
+      return allowed.kind === "content" && allowed.genus === candidate.genus;
+    }
+
+    // `genus` only rejects when BOTH sides state one. `checkAssembly` (declaration-time, no
+    // registry) can never know a foreign reference's own declared genus — it only ever confirms
+    // `name`, which is always visible on the tree itself — so its candidates never carry `genus`.
+    // Only a registry-aware caller (`nesting.ts`, checking a real guest component) supplies it,
+    // and only then does a `genus` restriction actually filter anything.
+    return (
+      allowed.kind === "component" &&
+      (allowed.genus === undefined || candidate.genus === undefined || allowed.genus === candidate.genus) &&
+      (allowed.name === undefined || allowed.name === candidate.name)
+    );
   });
 }
 
 /**
- * Узел объявления: ЧАСТЬ компонента со своими пропами и детьми.
+ * Declaration node: a piece of the tree, own part OR a reference to another component of the
+ * shared registry — ONE field for both (`PWEB-172`, page 112 §1). `PassportAssemblyPart` and
+ * `PassportAssemblyComponent` used to be two separate types (`PWEB-166`) for the same relationship
+ * seen from two sides: "put a component here" is the same instruction whether that component is
+ * one of this component's own anatomy parts or a completely independent one from the registry.
+ * Splitting them was a real cost even at the time (two admission kinds, two node shapes to check
+ * everywhere a tree is walked) paid for exactly one thing: a typo in a foreign name (`component`)
+ * was already only caught live, so a typo in an OWN part name being caught by `tsc` (`part: Part`)
+ * was the one asymmetry worth keeping two fields for — found not worth it once the reference
+ * mechanism (`PWEB-167`–`171`) actually got exercised: same source, `egor6-66/capsuleTech`, one
+ * field (`type: string`) for a kit primitive and a whole business page alike.
+ *
+ * `node`'s value is looked up against the OWNING component's own anatomy (`baseAssemblyOf`,
+ * `checkAssembly`) to tell the two apart: matches a real part name → it is one; anything else is
+ * assumed a reference to that name in the general registry. A typo in an own part name is
+ * therefore no longer caught AT ALL before render (not by `tsc`, since the field is no longer a
+ * literal union of just this component's parts; not by `checkAssembly` either, since it has no
+ * way to tell "meant to be my part, typo'd" from "a real foreign component named that" — it never
+ * could, for the `component` side, and now the same is true for what used to be `part`). This is
+ * the accepted price of one field (`PWEB-172`'s own ticket named it going in), not an oversight.
  *
  * Имени у узла нет: имена ставит `baseAssemblyOf`, и ставит так же, как их ставит образец
  * механики — именем части, а при повторе с числом. Совпадение здесь не украшение: человек,
  * увидевший `item-2` в одном месте и `item-2` в другом, вправе считать, что это одно и то же.
  */
-export interface PassportAssemblyPart<Part extends string = string> {
-  /** Часть анатомии. Часть, которой в анатомии нет, не наберётся типом и отвергается сборкой. */
-  readonly part: Part;
+export interface PassportAssemblyElement<Part extends string = string> {
+  /**
+   * Own anatomy part name OR a bare top-level name in the shared registry — same field, resolved
+   * by comparing against the owner's own anatomy, not by which one the author meant to write.
+   *
+   * Typed `Part | string`, not bare `string`: written this way (not collapsed by hand to
+   * `string`, even though `Part` is a subtype and the compiler will accept ANY string here
+   * either way) purely for editor autocomplete — this component's real part names still show up
+   * as suggestions, foreign names are simply not rejected. No compile-time protection either way.
+   */
+  readonly node: Part | string;
   /**
    * Пропы, без которых кит не заработает.
    *
@@ -193,6 +255,14 @@ export interface PassportAssemblyPart<Part extends string = string> {
   readonly on?: Readonly<Record<string, DispatchAction>>;
   /** Части и содержимое внутри — ОДНИМ списком, в том порядке, в каком их видно. */
   readonly children?: readonly PassportAssemblyNode<Part>[];
+  /**
+   * Repeat THIS node itself by the length of the array at `repeat.path` (`PWEB-171`) — a field
+   * next to `node`/`bind`/`props`, not a separate wrapper node (`PassportAssemblyRepeat`, kept
+   * for now as the older, still-working form — see its own doc comment). The node's own
+   * `bind`/`props`/`on`/`children` are the per-instance template; nothing about the node's shape
+   * changes when `repeat` is set, only that it grows once per array element instead of once.
+   */
+  readonly repeat?: DataBinding;
 }
 
 /**
@@ -300,19 +370,42 @@ export interface PassportAssemblyContent {
 export interface PassportAssemblyExtra<Part extends string = string> {
   /** Имя в карте `extras` поставщика. */
   readonly extra: string;
-  /** Пропы, без которых узел не заработает — та же роль, что и у `PassportAssemblyPart.props`. */
+  /** Пропы, без которых узел не заработает — та же роль, что и у `PassportAssemblyElement.props`. */
   readonly props?: Readonly<Record<string, unknown>>;
-  /** Пропы из данных — та же роль, что и у `PassportAssemblyPart.bind` (`PWEB-156`). */
+  /** Пропы из данных — та же роль, что и у `PassportAssemblyElement.bind` (`PWEB-156`). */
   readonly bind?: Readonly<Record<string, string>>;
-  /** Событие наружу — та же роль, что и у `PassportAssemblyPart.on` (`PWEB-157`). */
+  /** Событие наружу — та же роль, что и у `PassportAssemblyElement.on` (`PWEB-157`). */
   readonly on?: Readonly<Record<string, DispatchAction>>;
   /** Части и содержимое внутри — та же однородная форма, что и у части. */
   readonly children?: readonly PassportAssemblyNode<Part>[];
 }
 
 /**
- * Узел объявления: ПОВТОР — один шаблон, размноженный по длине массива в данных (`PWEB-156`,
- * форма — A2UI, `ChildList`-шаблон: «размножь этот один узел по числу элементов по пути»).
+ * Component's OWN behavior — runtime slice (`PWEB-167`, page 112 §4, "Accepted — Option B,
+ * refined").
+ *
+ * NOT a showcase scenario: no `name`, no `means` — a scenario is one of several, this is the one
+ * and only real behavior. A reference to this component from someone else's assembly (a `node`
+ * pointing at it, `PWEB-172`) feeds THIS tree data (`props`/`bind` on the reference node), it
+ * does not override its `on`/`children` — the component stays the author of its own behavior
+ * (page 111 §5, user verbatim: "the button doesn't know who passes what in the payload").
+ *
+ * Lives in the RUNTIME slice (this file is re-exported through `./model`, not only `./editor`) —
+ * unlike `PassportAssembly` (carries `means` and showcase scenarios, stays editor-only): the
+ * reference unfolds on the real product render, not in the editor.
+ */
+export interface PassportSelfAssembly<Part extends string = string> {
+  /** Tree from the root part — same shape as `PassportAssembly.tree`. */
+  readonly tree: PassportAssemblyElement<Part>;
+}
+
+/**
+ * Узел объявления: ПОВТОР (older, wrapper form — `PWEB-156`). Superseded by `repeat` as a field
+ * on the node itself (`PassportAssemblyElement.repeat`, `PWEB-171`): user's sketch put `repeat`
+ * next to `node`/`bind` on ONE node, not wrapped around it. Kept working, not removed, until
+ * every consumer has moved off it (grepped for at the time of `PWEB-171` — accordion's live
+ * assemblies still use this wrapper) — a form nothing depends on gets deleted, not deprecated in
+ * place.
  *
  * Число копий НЕ называется в дереве никем — ни автором сборки, ни тем, кто данные приносит.
  * Оно равно длине массива по `repeat.path`, и только ей: явное поле «сколько» рядом с путём было
@@ -334,19 +427,63 @@ export interface PassportAssemblyRepeat<Part extends string = string> {
   readonly template: PassportAssemblyNode<Part>;
 }
 
-/** Повтор ли это — по наличию `repeat`, тем же приёмом, что различает extra (по наличию `extra`). */
+/**
+ * Wrapper-form repeat, specifically — by the presence of `template` (`PWEB-171`), not `repeat`:
+ * `repeat` alone no longer picks out one node shape, now that `PassportAssemblyElement` can carry
+ * it too as a field. `template` stays unique to the wrapper.
+ */
 export function isAssemblyRepeat<Part extends string = string>(
   node: PassportAssemblyNode<Part>,
 ): node is PassportAssemblyRepeat<Part> {
-  return "repeat" in node;
+  return "template" in node;
 }
 
-/** Один узел объявления: часть, содержимое, вспомогательный компонент кита, либо повтор по данным. */
+/**
+ * Узел объявления: ССЫЛКА на именованный кусок дерева, объявленный один раз (`PassportAssembly.refs`,
+ * `PWEB-160`).
+ *
+ * Найдено ресёрчем рынка (2026-08-27, постановка user — «сборки дублируются, таскать целиком
+ * дорого»): у A2UI компоненты лежат плоской картой по id, а «ребёнок» — просто СВОЙСТВО,
+ * ссылающееся на чужой id, — ничто не мешает одному id быть ребёнком у двух родителей сразу. Тот
+ * же приём — GraphQL-нормализация (сущность хранится раз, остальные держат ссылку) и
+ * мастер-компонент/инстанс у Figma (переопределения поверх, не копия).
+ *
+ * У нас `RenderTree` обходит настоящее дерево (`parentId` — одно поле, не список), и это ПРАВИЛЬНО
+ * для отрисовки, — поэтому граф не заводим. Вместо этого ссылка на разворачивании (`baseAssemblyOf`)
+ * превращается в СВОИ настоящие узлы на КАЖДОЙ площадке, где стоит `{ ref }`, — тем же приёмом,
+ * что уже разворачивает `template` у повтора (`PassportAssemblyRepeat`), просто без массива. В
+ * объявлении и по сети — маленькая ссылка, не вся структура целиком.
+ */
+export interface PassportAssemblyRef {
+  /** Имя в `assembly.refs` — не найдено, сборка отвергается: дефект объявления, не данных. */
+  readonly ref: string;
+  /**
+   * Пропы поверх найденного шаблона — сайт ссылки побеждает при совпадении имени с тем, что
+   * шаблон объявил сам (тот же приём, что переопределение инстанса поверх мастер-компонента).
+   */
+  readonly props?: Readonly<Record<string, unknown>>;
+  /** Пропы из данных поверх шаблона — та же роль и то же побеждающее слияние, что у `props`. */
+  readonly bind?: Readonly<Record<string, string>>;
+  /** Событие наружу поверх шаблона — та же роль и то же побеждающее слияние. */
+  readonly on?: Readonly<Record<string, DispatchAction>>;
+}
+
+/** Ссылка ли это — по наличию `ref`, тем же приёмом, что различает extra/повтор. */
+export function isAssemblyRef<Part extends string = string>(
+  node: PassportAssemblyNode<Part>,
+): node is PassportAssemblyRef {
+  return "ref" in node;
+}
+
+/** Один узел объявления: часть/ссылка на компонент реестра (`PassportAssemblyElement`, `PWEB-172`),
+ *  содержимое, вспомогательный компонент кита, повтор по данным (обёрткой), либо ссылка на
+ *  именованный кусок. */
 export type PassportAssemblyNode<Part extends string = string> =
-  | PassportAssemblyPart<Part>
+  | PassportAssemblyElement<Part>
   | PassportAssemblyContent
   | PassportAssemblyExtra<Part>
-  | PassportAssemblyRepeat<Part>;
+  | PassportAssemblyRepeat<Part>
+  | PassportAssemblyRef;
 
 /**
  * Одна сборка компонента — рабочий экземпляр, он же СХЕМА, по которой компонент собирается.
@@ -376,7 +513,7 @@ export interface PassportAssembly<Part extends string = string> {
   /** Что это за экземпляр — человеку: «два раздела, оба свёрнуты». */
   readonly means: string;
   /** Дерево от корневой части. Корнем сборки бывает только корневая часть компонента. */
-  readonly tree: PassportAssemblyPart<Part>;
+  readonly tree: PassportAssemblyElement<Part>;
   /**
    * Пропы невидимого провайдера, оборачивающего корень (`PWEB-153`) — у поповера/меню/диалога
    * настоящего DOM-узла на самом верху нет вообще: `<Popover>`/`<Menu>` ничего не рисуют, только
@@ -387,6 +524,15 @@ export interface PassportAssembly<Part extends string = string> {
    * компонентов с разными пропами. Отсутствует у компонентов, чей корень — настоящий DOM-узел.
    */
   readonly providerProps?: Readonly<Record<string, unknown>>;
+  /**
+   * Именованные куски дерева, объявленные ОДИН раз и используемые СКОЛЬКО угодно раз через
+   * `{ ref: "имя" }` где угодно внутри `tree` (`PWEB-160`) — большая или повторяющаяся сборка не
+   * обязана дублировать одну и ту же структуру в объявлении на каждой площадке, где она нужна.
+   *
+   * Область — ЭТА сборка, не глобальный реестр: перекрёстные ссылки между разными сборками или
+   * разными компонентами не заведены — понадобятся, будут решением, а не тихим расширением.
+   */
+  readonly refs?: Readonly<Record<string, PassportAssemblyNode<Part>>>;
 }
 
 /**
@@ -505,6 +651,10 @@ export function baseAssemblyOf(
   const nodes: Record<string, BaseAssemblyNode> = {};
   const taken = new Set<string>();
 
+  // Own anatomy part names — the ONLY thing that tells an own `node` from a bare reference to
+  // another component of the shared registry, now that both write the same field (`PWEB-172`).
+  const declared = passport.anatomy.keys();
+
   /** Имя, которого в дереве ещё нет: имя части, а при повторе — с числом. */
   const nameFor = (base: string): string => {
     for (let ordinal = 1; ; ordinal += 1) {
@@ -528,7 +678,16 @@ export function baseAssemblyOf(
 
   // Абсолютный путь для пути БЕЗ ведущего "/" внутри шаблона повтора — тем же приёмом, что у
   // A2UI: относительный путь читается от ТЕКУЩЕГО элемента массива, а не от корня данных.
-  const scopedPath = (base: string, path: string): string => (path.startsWith("/") ? path : `${base}/${path}`);
+  //
+  // Empty string is a SPECIAL case, not an ordinary relative segment (`PWEB-170`): by RFC 6901 an
+  // empty path already means "the whole data" (`resolveDataBinding`, `path === ""`) — here that
+  // same meaning applies to the CURRENT repeat element: "the whole current node, not a field on
+  // it". Without this branch, an empty string would glue into `${base}/` — a path with a
+  // trailing slash that `resolveDataBinding` parses as one with an empty last segment and
+  // resolves nowhere. No second marker (a `.`) is introduced: the meaning already existed, it
+  // just needed to survive repeat scoping.
+  const scopedPath = (base: string, path: string): string =>
+    path === "" ? base : path.startsWith("/") ? path : `${base}/${path}`;
 
   /**
    * Копия узла-шаблона с относительными путями внутри, приведёнными к абсолютным для ОДНОГО
@@ -542,6 +701,15 @@ export function baseAssemblyOf(
     }
 
     if (isAssemblyRepeat(node)) {
+      return { ...node, repeat: { path: scopedPath(base, node.repeat.path) } };
+    }
+
+    // Field-form repeat (`PWEB-171`): same deferral as the wrapper just above — only the node's
+    // own `repeat.path` is rebased here. Its `bind`/`on`/`children` are the per-instance template
+    // and get scoped on the NEXT pass, once `growAll` knows which array index they belong to.
+    // Falling through to the generic branch below would scope them against THIS base instead —
+    // one level too shallow, the same bug the wrapper's own deferral exists to avoid.
+    if ("repeat" in node && node.repeat) {
       return { ...node, repeat: { path: scopedPath(base, node.repeat.path) } };
     }
 
@@ -570,7 +738,9 @@ export function baseAssemblyOf(
           ]),
         )
       : undefined;
-    const boundChildren = node.children?.map((child) => scopeTemplate(child, base));
+    // Ссылка (`PassportAssemblyRef`) детей не несёт — своё содержимое у неё берётся из найденного
+    // по имени шаблона, ПОСЛЕ разрешения, а не здесь.
+    const boundChildren = "children" in node ? node.children?.map((child) => scopeTemplate(child, base)) : undefined;
 
     return {
       ...node,
@@ -588,7 +758,7 @@ export function baseAssemblyOf(
    * @returns имя положенного узла
    */
   const grow = (
-    node: PassportAssemblyPart | PassportAssemblyContent | PassportAssemblyExtra,
+    node: PassportAssemblyElement | PassportAssemblyContent | PassportAssemblyExtra,
     parentId: string | null,
   ): string => {
     if (isAssemblyContent(node)) {
@@ -618,14 +788,21 @@ export function baseAssemblyOf(
       return id;
     }
 
-    const id = nameFor(node.part === passport.root ? address : node.part);
+    // Own part vs. a bare reference to another component of the shared registry — same field
+    // (`node.node`, `PWEB-172`), told apart ONLY by whether the name matches this component's
+    // own anatomy. A foreign name gets NO owner prefix (unlike extra/own-part addressing) — it is
+    // the same bare address `readAddress` already resolves at the top level of any component
+    // (`packages/assembly/src/registry.ts`, untouched by this — it never cared how the address
+    // was written, only what it resolves to).
+    const isOwnPart = declared.includes(node.node);
+    const id = nameFor(isOwnPart && node.node === passport.root ? address : node.node);
     const children: string[] = [];
 
     // Узел кладётся ДО спуска: дети ссылаются на владельца по имени, и имя должно быть занято
     // раньше, чем его займёт повтор той же части глубже по дереву.
     nodes[id] = {
       id,
-      type: addressOf(node.part),
+      type: isOwnPart ? addressOf(node.node) : node.node,
       parentId,
       children,
       ...(node.props ? { props: node.props } : {}),
@@ -644,6 +821,30 @@ export function baseAssemblyOf(
    * массив — ноль узлов, тем же приёмом, что и у остального содержимого без данных: показ
    * молчит, а не падает.
    */
+  /**
+   * Сайт ссылки поверх найденного по имени шаблона (`PWEB-160`) — сайт ПОБЕЖДАЕТ при совпадении
+   * имени, тем же приёмом, что переопределение инстанса поверх мастер-компонента у Figma.
+   * Содержимое и повтор своих `props`/`bind`/`on` не несут — слияние им ничего не добавляет, и
+   * ветка на них не заходит, поэтому объединять там нечего.
+   */
+  const mergeRef = (
+    template: PassportAssemblyNode,
+    ref: PassportAssemblyRef,
+  ): PassportAssemblyNode => {
+    if (isAssemblyContent(template) || isAssemblyRepeat(template)) return template;
+
+    const props = ref.props || template.props ? { ...template.props, ...ref.props } : undefined;
+    const bind = ref.bind || template.bind ? { ...template.bind, ...ref.bind } : undefined;
+    const on = ref.on || template.on ? { ...template.on, ...ref.on } : undefined;
+
+    return {
+      ...template,
+      ...(props ? { props } : {}),
+      ...(bind ? { bind } : {}),
+      ...(on ? { on } : {}),
+    };
+  };
+
   const growAll = (node: PassportAssemblyNode, parentId: string | null): string[] => {
     if (isAssemblyRepeat(node)) {
       const items = resolveDataBinding(data, node.repeat.path);
@@ -654,6 +855,32 @@ export function baseAssemblyOf(
       return items.flatMap((_, index) =>
         growAll(scopeTemplate(node.template, `${node.repeat.path}/${index}`), parentId),
       );
+    }
+
+    // Field-form repeat (`PWEB-171`): the node repeats ITSELF — same expansion as the wrapper
+    // above, just with the node (minus `repeat`) standing in for `template`, since there is no
+    // separate template node to reach for.
+    if ("repeat" in node && node.repeat) {
+      const { repeat, ...template } = node;
+      const items = resolveDataBinding(data, repeat.path);
+      if (!Array.isArray(items)) return [];
+
+      return items.flatMap((_, index) =>
+        growAll(scopeTemplate(template as PassportAssemblyNode, `${repeat.path}/${index}`), parentId),
+      );
+    }
+
+    if (isAssemblyRef(node)) {
+      const template = assembly.refs?.[node.ref];
+      if (!template) {
+        throw new Error(
+          `сборка «${assembly.name}» ссылается на «${node.ref}», которого нет в её refs — дефект объявления`,
+        );
+      }
+
+      // Рекурсия, не `grow` напрямую: найденный шаблон вправе сам оказаться повтором либо
+      // вложенной ссылкой, второй логики под это заводить не нужно.
+      return growAll(mergeRef(template, node), parentId);
     }
 
     return [grow(node, parentId)];

@@ -9,40 +9,24 @@
 // СМЕНА КОМПОНЕНТА СБРАСЫВАЕТ ОСИ: вариация, состояние, сборка и настройки одного компонента не
 // значат ничего для другого — `collapsible` пуст для кнопки так же, как «раскрыт» пуст для неё же.
 
-import { knownComponents } from "@omnifield/probe-web-assembly";
-import { GROUPS, groupOf } from "@omnifield/probe-web-ui/passport";
 import { createSignal, untrack } from "solid-js";
 
 import type { DataPreset } from "@omnifield/probe-web-ui/passport";
 
 import { ANY, type Axis } from "../../../entities/catalog/model/cases.js";
 import { editorInfoOf } from "../../../entities/catalog/model/providers.js";
-import { REGISTRY } from "../../../entities/catalog/model/registry.js";
+import { COMPONENTS } from "../../../entities/catalog/model/store.js";
 import { defaultSettings } from "./settings.js";
 
-/** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */
-export const COMPONENTS = knownComponents(REGISTRY);
-
 /**
- * Компоненты по разделам.
- *
- * Раздел объявляет САМ компонент (`group` в срезе редактора — `PWEB-115`/`PWEB-118`, паспорт
- * рантайма его не несёт), а перечень разделов и их подписи живут у формы паспорта. Своего перечня
- * витрина не заводит: назови она разделы сама — их стало бы два, и у следующего пульта третий.
- * Порядок разделов — порядок объявления в перечне, а не наш.
- *
- * Пустые разделы не показываются: раздел без компонентов это обещание, которого никто не давал.
+ * Заполнение по умолчанию — ПЕРВОЕ, что принёс поставщик компонента (постановка user,
+ * 2026-08-28: «демо кита» без данных больше нет — все данные несёт либо компонент своими
+ * заготовками, либо сам смотрящий). Компонент без заготовок — пустой перечень, законно: «нечем
+ * заполнить» — не то же самое, что «не выбрали».
  */
-export const BY_GROUP = Object.entries(GROUPS)
-  .map(([group, title]) => ({
-    group,
-    title,
-    components: COMPONENTS.filter((component) => {
-      const editorInfo = editorInfoOf(component);
-      return editorInfo !== undefined && groupOf(editorInfo) === group;
-    }),
-  }))
-  .filter((section) => section.components.length > 0);
+function defaultDataPreset(component: string): DataPreset | null {
+  return editorInfoOf(component)?.dataPresets?.[0] ?? null;
+}
 
 /**
  * Состояние просмотра: какой компонент открыт и что из него сейчас видно.
@@ -79,11 +63,14 @@ export function createBrowseState() {
     untrack(() => defaultSettings(current())),
   );
 
-  // ВАРИАНТ ЗАПОЛНЕНИЯ (`PWEB-156`) — какими данными наполнена сборка `filled`, если она есть у
-  // компонента. `null` — не выбран, тем же приёмом «не выбирали», что у остальных осей. Отдельная
-  // ось от `settings`: настройка меняет, ЧЕМ компонент является (`collapsible`, `multiple`), а
-  // заполнение — что он показывает, не трогая устройство ни на волос.
-  const [dataPreset, setDataPresetSignal] = createSignal<DataPreset | null>(null);
+  // ВАРИАНТ ЗАПОЛНЕНИЯ (`PWEB-156`) — какими данными наполнена сборка компонента. По умолчанию —
+  // первая заготовка поставщика (`defaultDataPreset`), а не «не выбрано»: «демо кита» без данных
+  // не существует, показывать нечего без реального содержимого. Отдельная ось от `settings`:
+  // настройка меняет, ЧЕМ компонент является (`collapsible`, `multiple`), а заполнение — что он
+  // показывает, не трогая устройство ни на волос.
+  const [dataPreset, setDataPresetSignal] = createSignal<DataPreset | null>(
+    untrack(() => defaultDataPreset(current())),
+  );
 
   /** Смена компонента сбрасывает оси: чужое состояние на нём не значит ничего. */
   const setCurrent = (component: string) => {
@@ -95,24 +82,27 @@ export function createBrowseState() {
     setSettings(defaultSettings(component));
     // Сборка — тоже чужая: имя «workspace» у сетки ничего не значит для кнопки.
     setAssembly("");
-    // Заполнение — чужие данные: JSON под аккордеон ничего не значит для чекбокса.
-    setDataPreset(null);
+    // Заполнение — чужие данные: JSON под аккордеон ничего не значит для чекбокса. Новый
+    // компонент начинает со СВОЕЙ первой заготовки, не с пустоты (`defaultDataPreset`).
+    setDataPreset(defaultDataPreset(component));
   };
 
   const setSetting = (name: string, value: unknown) =>
     setSettings((previous) => ({ ...previous, [name]: value }));
 
   /**
-   * Выбор заполнения переключает и сборку (`PWEB-156`) — вручную гонять ДВЕ ручки (сперва
-   * «сборка: filled» в шапке, потом «данные: …» в панели) ради одного намерения и есть то
-   * самое «маленько тут, маленько тут», от которого ушли (постановка user, 2026-08-27):
-   * заполнение без `filled`-сборки нечему показывать, и человек не обязан знать об этой
-   * внутренней связи, чтобы ею воспользоваться. Ручной выбор сборки в шапке остаётся —
-   * `setAssembly` никуда не делась, и человек волен переключиться на `basic` сам.
+   * Выбор заполнения сбрасывает сборку на первую объявленную (`PWEB-156`) — вручную гонять ДВЕ
+   * ручки (сперва сборку в шапке, потом «данные: …» в панели) ради одного намерения и есть то
+   * самое «маленько тут, маленько тут», от которого ушли (постановка user, 2026-08-27).
+   *
+   * Имени по умолчанию не называем: у компонента может быть несколько сборок под данные разом
+   * (`с-кнопками`/`с-тогглами`), и называть здесь ОДНУ значило бы решать за поставщика, какая из
+   * них главная. Пустая строка — тот же приём, что и у `setCurrent`: «не выбрали», и
+   * `instanceOf` сам берёт первую объявленную.
    */
   const setDataPreset = (preset: DataPreset | null) => {
     setDataPresetSignal(preset);
-    setAssembly(preset ? "filled" : "");
+    setAssembly("");
   };
 
   return {

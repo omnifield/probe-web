@@ -28,16 +28,16 @@ export const parts: Readonly<Record<TabsPart, PassportPartEditorInfo<TabsPart>>>
     means: "the whole set — the row of tabs together with the panel that's currently showing",
     states: { focus: { means: "some trigger in this set is focused" } },
     accepts: [
-      { kind: "part", name: "list" },
-      { kind: "part", name: "content" },
+      { kind: "component", name: "list" },
+      { kind: "component", name: "content" },
     ],
   },
   list: {
     means: "the row (or column) of tabs — wraps every trigger plus the sliding indicator",
     states: { focus: { means: "some trigger in this list is focused" } },
     accepts: [
-      { kind: "part", name: "trigger" },
-      { kind: "part", name: "indicator" },
+      { kind: "component", name: "trigger" },
+      { kind: "component", name: "indicator" },
     ],
   },
   trigger: {
@@ -60,7 +60,7 @@ export const parts: Readonly<Record<TabsPart, PassportPartEditorInfo<TabsPart>>>
     states: { selected: { means: "this panel's own tab is selected — the panel is visible" } },
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   indicator: {

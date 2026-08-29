@@ -43,9 +43,9 @@ export const parts: Readonly<Record<SliderPart, PassportPartEditorInfo<SliderPar
       "--slider-range-end": { means: "TODO" },
     },
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "valueText" },
-      { kind: "part", name: "control" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "valueText" },
+      { kind: "component", name: "control" },
     ],
   },
   label: {
@@ -62,16 +62,16 @@ export const parts: Readonly<Record<SliderPart, PassportPartEditorInfo<SliderPar
     means: "TODO",
     states: groupMeans,
     accepts: [
-      { kind: "part", name: "track" },
-      { kind: "part", name: "thumb" },
-      { kind: "part", name: "markerGroup" },
-      { kind: "part", name: "draggingIndicator" },
+      { kind: "component", name: "track" },
+      { kind: "component", name: "thumb" },
+      { kind: "component", name: "markerGroup" },
+      { kind: "component", name: "draggingIndicator" },
     ],
   },
   track: {
     means: "TODO",
     states: groupMeans,
-    accepts: [{ kind: "part", name: "range" }],
+    accepts: [{ kind: "component", name: "range" }],
   },
   range: {
     means: "TODO",
@@ -93,7 +93,7 @@ export const parts: Readonly<Record<SliderPart, PassportPartEditorInfo<SliderPar
   markerGroup: {
     means: "TODO",
     states: {},
-    accepts: [{ kind: "part", name: "marker" }],
+    accepts: [{ kind: "component", name: "marker" }],
   },
   marker: {
     means: "TODO",

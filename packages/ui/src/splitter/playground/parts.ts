@@ -35,8 +35,8 @@ export const parts: Readonly<Record<SplitterPart, PassportPartEditorInfo<Splitte
     means: "TODO",
     states: { dragging: { means: "TODO" } },
     accepts: [
-      { kind: "part", name: "panel" },
-      { kind: "part", name: "resizeTrigger" },
+      { kind: "component", name: "panel" },
+      { kind: "component", name: "resizeTrigger" },
     ],
   },
   panel: {
@@ -50,7 +50,7 @@ export const parts: Readonly<Record<SplitterPart, PassportPartEditorInfo<Splitte
   resizeTrigger: {
     means: "TODO",
     states: triggerMeans,
-    accepts: [{ kind: "part", name: "resizeTriggerIndicator" }],
+    accepts: [{ kind: "component", name: "resizeTriggerIndicator" }],
   },
   resizeTriggerIndicator: {
     means: "TODO",

@@ -9,6 +9,7 @@ import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "./assemblies.js";
 import { parts } from "./parts.js";
+import { settings } from "./settings.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
@@ -18,8 +19,12 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // карусели (`packages/skin/src/passport-editor.ts`, `ComponentFootprint`).
   footprint: "wide",
   variantAxis: {
-    means: "имя вариации раскладки; его даёт человек в редакторе, кит пропускает насквозь",
+    means:
+      "как боковые колонки связаны с шапкой и подвалом — sidebar-first (во всю высоту) или " +
+      "header-first (шапка/подвал во всю ширину, классический Holy Grail); имя даёт человек в " +
+      "редакторе, кит пропускает насквозь",
   },
   parts,
+  settings,
   assemblies,
 });

@@ -67,6 +67,7 @@
 // сборка — не рантайм, они за подпутём `./editor`.
 
 import { createAnatomy, type AnatomyPart } from "@zag-js/anatomy";
+import type { PassportSelfAssembly } from "./passport-assembly.js";
 
 /**
  * `createAnatomy`, РЕЭКСПОРТОМ — а не вторым npm-именем на один и тот же поток (`PWEB-112`).
@@ -235,6 +236,7 @@ export const SETTINGS = {
   orientation: "Положение",
   multiple: "Несколько сразу",
   collapsible: "Можно закрыть всё",
+  outlined: "Обводка",
 } as const satisfies Readonly<Record<string, string>>;
 
 /** Имя настройки — ключ закрытого перечня. */
@@ -444,6 +446,12 @@ export interface ComponentPassport<Part extends string = string> {
    * запись — законное состояние: у компонента настроек нет.
    */
   readonly settings: Readonly<Record<string, PassportSetting>>;
+  /**
+   * The component's own behavior — how it assembles itself from props (`PWEB-167`). Optional:
+   * a component with no meaningful "assemble yourself" story (most primitives) doesn't declare
+   * one, and a bare reference to it renders as today (`PWEB-166`).
+   */
+  readonly selfAssembly?: PassportSelfAssembly<Part>;
 }
 
 /**
@@ -472,6 +480,8 @@ export interface PassportSpec<Part extends string> {
    * таблицей. Цена этой строгости — одна строка у каждого объявляющего, и она уплачена.
    */
   readonly settings: Readonly<Record<string, PassportSetting>>;
+  /** The component's own behavior (`PWEB-167`) — passed through to `ComponentPassport` as-is. */
+  readonly selfAssembly?: PassportSelfAssembly<Part>;
 }
 
 /**
@@ -543,6 +553,16 @@ export function definePassport<Part extends string>(
     }
   }
 
+  // Self-assembly's root must be the component's actual root part — same rule `checkAssembly`
+  // applies to showcase assemblies, checked here too because self-assembly has no editor-side
+  // checker of its own (it's a runtime field, `passport-editor.ts` never sees it).
+  if (spec.selfAssembly && spec.selfAssembly.tree.node !== spec.root) {
+    throw new Error(
+      `self-assembly of "${component}" starts at node "${spec.selfAssembly.tree.node}", but the ` +
+        `component's root is "${spec.root}"`,
+    );
+  }
+
   return {
     // `data-scope` — то самое имя, которым компонент подписан на КАЖДОМ своём узле. Берём его
     // оттуда же, откуда его возьмёт скин.
@@ -552,5 +572,6 @@ export function definePassport<Part extends string>(
     parts: spec.parts,
     variantAxis: spec.variantAxis,
     settings: spec.settings,
+    ...(spec.selfAssembly ? { selfAssembly: spec.selfAssembly } : {}),
   };
 }

@@ -21,18 +21,18 @@ export const assemblies: readonly PassportAssembly<ScrollAreaPart>[] = [
     name: "basic",
     means: "рабочая область прокрутки: длинный текст, вертикальный ползунок реально едет",
     tree: {
-      part: "root",
+      node: "root",
       children: [
         {
-          part: "viewport",
-          children: [{ part: "content", children: [{ genus: "text", value: PARAGRAPH }] }],
+          node: "viewport",
+          children: [{ node: "content", children: [{ genus: "text", value: PARAGRAPH }] }],
         },
         {
-          part: "scrollbar",
+          node: "scrollbar",
           props: { orientation: "vertical" },
-          children: [{ part: "thumb", props: { orientation: "vertical" } }],
+          children: [{ node: "thumb", props: { orientation: "vertical" } }],
         },
-        { part: "corner" },
+        { node: "corner" },
       ],
     },
   },

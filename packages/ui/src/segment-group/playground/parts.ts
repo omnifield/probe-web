@@ -30,9 +30,9 @@ export const parts: Readonly<Record<SegmentGroupPart, PassportPartEditorInfo<Seg
     means: "the whole segmented control — the track and every choice in it",
     states: groupStateMeans,
     accepts: [
-      { kind: "part", name: "label" },
-      { kind: "part", name: "item" },
-      { kind: "part", name: "indicator" },
+      { kind: "component", name: "label" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "indicator" },
     ],
   },
   label: {
@@ -44,11 +44,11 @@ export const parts: Readonly<Record<SegmentGroupPart, PassportPartEditorInfo<Seg
     means: "one segment — a clickable slot; click anywhere on it to select",
     states: itemStateMeans,
     accepts: [
-      { kind: "part", name: "itemControl" },
-      { kind: "part", name: "itemText" },
+      { kind: "component", name: "itemControl" },
+      { kind: "component", name: "itemText" },
       // The real hidden `<input type="radio">` (`PWEB-152`) — no address of its own, but the
       // node the real `onChange` lives on; without it a preview looks right and never selects.
-      { kind: "extra", name: "hiddenInput" },
+      { kind: "component", name: "hiddenInput" },
     ],
   },
   itemText: {

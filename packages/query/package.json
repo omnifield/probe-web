@@ -1,0 +1,56 @@
+{
+  "name": "@omnifield/probe-web-query",
+  "version": "0.1.0",
+  "description": "Данные из сети probe-web поверх @tanstack/solid-query: одна точка входа вместо вендора, готовый QueryClient с дефолтами (PROBEWEB-4).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./devtools": {
+      "types": "./dist/devtools.d.ts",
+      "default": "./dist/devtools.js"
+    },
+    "./persist": {
+      "types": "./dist/persist.d.ts",
+      "default": "./dist/persist.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/query-persist-client-core": "^5.102.8",
+    "@tanstack/query-sync-storage-persister": "^5.102.8",
+    "@tanstack/solid-query": "^5.102.8",
+    "@tanstack/solid-query-devtools": "^5.102.8"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
+    "@omnifield/probe-web-lint": "workspace:*",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
+  }
+}

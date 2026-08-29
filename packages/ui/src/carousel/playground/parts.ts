@@ -28,31 +28,31 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
   root: {
     means: "the whole carousel — viewport, navigation, and indicators together",
     accepts: [
-      { kind: "part", name: "control" },
-      { kind: "part", name: "itemGroup" },
-      { kind: "part", name: "indicatorGroup" },
-      { kind: "part", name: "progressText" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "itemGroup" },
+      { kind: "component", name: "indicatorGroup" },
+      { kind: "component", name: "progressText" },
     ],
   },
   itemGroup: {
     means: "the scrollable viewport that holds every slide",
     states: { dragging: { means: "the viewport is being dragged by the pointer (only when allowMouseDrag is on)" } },
-    accepts: [{ kind: "part", name: "item" }],
+    accepts: [{ kind: "component", name: "item" }],
   },
   item: {
     means: "one slide",
     states: { inview: { means: "this slide is currently visible in the viewport (crosses inViewThreshold)" } },
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
     ],
   },
   control: {
     means: "wraps the previous/next navigation buttons and, when present, the autoplay toggle",
     accepts: [
-      { kind: "part", name: "prevTrigger" },
-      { kind: "part", name: "nextTrigger" },
-      { kind: "part", name: "autoplayTrigger" },
+      { kind: "component", name: "prevTrigger" },
+      { kind: "component", name: "nextTrigger" },
+      { kind: "component", name: "autoplayTrigger" },
     ],
   },
   prevTrigger: {
@@ -79,7 +79,7 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
   },
   indicatorGroup: {
     means: "wraps one indicator per slide (or per page, when slidesPerPage is more than one)",
-    accepts: [{ kind: "part", name: "indicator" }],
+    accepts: [{ kind: "component", name: "indicator" }],
   },
   indicator: {
     means: "one dot — jumps straight to its slide when clicked",
@@ -100,7 +100,7 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
-      { kind: "part", name: "autoplayIndicator" },
+      { kind: "component", name: "autoplayIndicator" },
     ],
   },
   progressText: {

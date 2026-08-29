@@ -25,7 +25,7 @@ export const parts: Readonly<
 > = {
   root: {
     means: "the whole set of items — one node wrapping every item",
-    accepts: [{ kind: "part", name: "item" }],
+    accepts: [{ kind: "component", name: "item" }],
   },
   item: {
     means: "one item — a trigger together with its content",
@@ -35,8 +35,8 @@ export const parts: Readonly<
       focus: { means: "focus is on this item's trigger" },
     },
     accepts: [
-      { kind: "part", name: "itemTrigger" },
-      { kind: "part", name: "itemContent" },
+      { kind: "component", name: "itemTrigger" },
+      { kind: "component", name: "itemContent" },
     ],
   },
   itemTrigger: {
@@ -55,7 +55,7 @@ export const parts: Readonly<
       active: { means: "the button is being held down" },
     },
     accepts: [
-      { kind: "part", name: "itemIndicator" },
+      { kind: "component", name: "itemIndicator" },
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
@@ -80,9 +80,16 @@ export const parts: Readonly<
     },
     // Anything goes inside an item's content — this is the consumer's spot, not ours: text, an
     // icon, any component. An empty list here would mean there is nothing to expand.
+    //
+    // `{ kind: "component" }` — a reference to ANY component of the shared registry
+    // (`PassportAssemblyElement` whose `node` names something outside this component's own
+    // anatomy, `PWEB-166`/`PWEB-172`), no name required: this part does not need to
+    // know WHICH component ends up here, only that a real, independently-addressed component is
+    // a legal thing to put in it.
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "content", genus: "component" },
+      { kind: "component" },
+      { kind: "component" },
     ],
   },
   itemIndicator: {
@@ -92,9 +99,14 @@ export const parts: Readonly<
       disabled: { means: "the item is disabled — it cannot be expanded" },
       focus: { means: "focus is on this item's trigger" },
     },
+    // `{ kind: "component" }` — a reference to the real `icon` of the shared registry (a `node`
+    // naming something outside this component's own anatomy, `PWEB-166`/`PWEB-172`), not a text/
+    // icon content placeholder: the arrow here IS the real `icon` component, same registry entry
+    // anything else references.
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
+      { kind: "component" },
     ],
   },
 };
