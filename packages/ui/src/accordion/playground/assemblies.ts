@@ -25,7 +25,7 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
           children: [
             {
               node: "itemTrigger",
-              props: { "data-variant": "tertiary" },
+              props: { "data-variant": "secondary" },
               on: {
                 click: {
                   event: {
@@ -56,7 +56,7 @@ export const assemblies: readonly PassportAssembly<AccordionPart>[] = [
                   node: "button",
                   repeat: { path: "items" },
                   bind: { value: "id", label: "title", payload: "" },
-                  props: { "data-variant": "tertiary" },
+                  props: { "data-variant": "primary" },
                 },
               ],
             },

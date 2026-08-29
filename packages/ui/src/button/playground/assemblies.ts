@@ -23,45 +23,8 @@ type ButtonPart =
 
 export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
-    name: "label",
+    name: "base",
     means: "a button with a label",
-    tree: { node: "root", children: [{ genus: "text", value: "Button" }] },
-  },
-  {
-    name: "icon-label",
-    means: "a button with an icon and a label",
-    // The icon LEADS the label — content order is the view author's call (see the accordion
-    // passport for the same argument). The icon here is a placeholder (`★`), not a real
-    // `lucide-solid` component: the assembly's base is data, not code (`icon.anatomy.ts`).
-    tree: {
-      node: "root",
-      children: [
-        { genus: "icon", value: "★" },
-        { genus: "text", value: "Button with icon" },
-      ],
-    },
-  },
-  {
-    name: "icon-only",
-    means: "a button with a single icon, no label",
-    // A third honest case, not a repeat of the second minus text: an icon-only button is its
-    // own real shape (a toolbar, a compact action), and `root.accepts` lets an icon stand alone,
-    // without a mandatory label next to it.
-    tree: { node: "root", children: [{ genus: "icon", value: "★" }] },
-  },
-  {
-    name: "filled",
-    means: "подпись приходит из данных, не из объявления (PWEB-156)",
-    tree: {
-      node: "root",
-      children: [{ genus: "text", value: { path: "/label" } }],
-    },
-  },
-  {
-    name: "with-event",
-    means:
-      "the button's own behavior (PWEB-167), shown here — not redeclared: the tree is " +
-      "`passport.selfAssembly`, the same one a referencing component's `node` unfolds (PWEB-172)",
-    tree: passport.selfAssembly!.tree,
+    tree: { node: "root", children: [] },
   },
 ];

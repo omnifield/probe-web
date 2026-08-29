@@ -138,3 +138,60 @@ describe("a bare reference to the button unfolds its selfAssembly (PWEB-169)", (
     ]);
   });
 });
+
+describe("a reference's own literal `props` reach the variant — through `bind`, not a DOM-prop passthrough", () => {
+  it("carries a variant the reference names, through data + the button's own bind", () => {
+    const tree: AssemblyTree = {
+      components: {
+        root: "ref",
+        nodes: {
+          ref: {
+            id: "ref",
+            type: "button",
+            parentId: "owner",
+            children: [],
+            props: { "data-variant": "tertiary" },
+            bind: { label: "/title" },
+          },
+        },
+      },
+    };
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => <RenderTree registry={REGISTRY} tree={tree} data={{ title: "Open" }} />,
+      host,
+    );
+
+    const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
+    expect(button?.getAttribute("data-variant")).toBe("tertiary");
+  });
+
+  it("sets no attribute at all when the reference names no variant — the kit owns no default name", () => {
+    const tree: AssemblyTree = {
+      components: {
+        root: "ref",
+        nodes: {
+          ref: {
+            id: "ref",
+            type: "button",
+            parentId: "owner",
+            children: [],
+            bind: { label: "/title" },
+          },
+        },
+      },
+    };
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => <RenderTree registry={REGISTRY} tree={tree} data={{ title: "Open" }} />,
+      host,
+    );
+
+    const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
+    expect(button?.hasAttribute("data-variant")).toBe(false);
+  });
+});
