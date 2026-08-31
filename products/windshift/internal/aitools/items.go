@@ -29,6 +29,7 @@ type itemSummaryDTO struct {
 	PriorityID       *int     `json:"priority_id,omitempty"`
 	Assignee         string   `json:"assignee,omitempty"`
 	AssigneeID       *int     `json:"assignee_id,omitempty"`
+	StartDate        string   `json:"start_date,omitempty"`
 	DueDate          string   `json:"due_date,omitempty"`
 	Type             string   `json:"type,omitempty"`
 	Milestones       []string `json:"milestones,omitempty"`
@@ -75,6 +76,9 @@ func itemToSummary(item *models.Item) itemSummaryDTO {
 	}
 	if item.WorkspaceKey != "" {
 		s.Key = fmt.Sprintf("%s-%d", item.WorkspaceKey, item.WorkspaceItemNumber)
+	}
+	if item.StartDate != nil {
+		s.StartDate = item.StartDate.Format("2006-01-02")
 	}
 	if item.DueDate != nil {
 		s.DueDate = item.DueDate.Format("2006-01-02")
@@ -343,6 +347,14 @@ func init() {
 			if !validationResult.Valid {
 				return map[string]string{"error": validationResult.Error}, nil
 			}
+			startDate, err := parseOptionalDate(args.StartDate)
+			if err != nil {
+				return map[string]string{"error": "invalid start_date format, use YYYY-MM-DD"}, nil
+			}
+			dueDate, err := parseOptionalDate(args.DueDate)
+			if err != nil {
+				return map[string]string{"error": "invalid due_date format, use YYYY-MM-DD"}, nil
+			}
 			itemID, err := services.CreateItem(env.DB, services.ItemCreationParams{
 				WorkspaceID:      args.WorkspaceID,
 				Title:            title,
@@ -352,6 +364,8 @@ func init() {
 				AssigneeID:       args.AssigneeID,
 				ParentID:         args.ParentID,
 				ItemTypeID:       args.ItemTypeID,
+				StartDate:        startDate,
+				DueDate:          dueDate,
 				CreatorID:        &env.UserID,
 				ValidatingUserID: env.UserID,
 				PermService:      env.PermService,
@@ -597,6 +611,8 @@ type createItemArgs struct {
 	AssigneeID  *int   `json:"assignee_id,omitempty" jsonschema:"Assignee user ID"`
 	ParentID    *int   `json:"parent_id,omitempty" jsonschema:"Parent item ID for sub-items"`
 	ItemTypeID  *int   `json:"item_type_id,omitempty" jsonschema:"Item type ID (uses workspace default if omitted)"`
+	StartDate   string `json:"start_date,omitempty" jsonschema:"Start date YYYY-MM-DD (used for roadmap/timeline views)"`
+	DueDate     string `json:"due_date,omitempty" jsonschema:"Due date YYYY-MM-DD (used for roadmap/timeline views)"`
 }
 
 type updateItemArgs struct {
@@ -609,6 +625,7 @@ type updateItemArgs struct {
 	AssigneeID        *int           `json:"assignee_id,omitempty" jsonschema:"New assignee user ID (0 to unassign)"`
 	AssigneeName      *string        `json:"assignee_name,omitempty" jsonschema:"New assignee full name (alternative to ID)"`
 	DueDate           *string        `json:"due_date,omitempty" jsonschema:"Due date YYYY-MM-DD (empty string to clear)"`
+	StartDate         *string        `json:"start_date,omitempty" jsonschema:"Start date YYYY-MM-DD (empty string to clear); used for roadmap/timeline views"`
 	MilestoneID       *int           `json:"milestone_id,omitempty" jsonschema:"Milestone ID"`
 	MilestoneName     *string        `json:"milestone_name,omitempty" jsonschema:"Milestone name (alternative to ID)"`
 	IterationID       *int           `json:"iteration_id,omitempty" jsonschema:"Iteration ID"`
@@ -694,6 +711,17 @@ func buildUpdateData(env *Env, args updateItemArgs, wsID int) (data map[string]a
 		}
 		changed = append(changed, "due_date")
 	}
+	if args.StartDate != nil {
+		if *args.StartDate == "" {
+			out["start_date"] = nil
+		} else {
+			if _, err := time.Parse("2006-01-02", *args.StartDate); err != nil {
+				return nil, nil, fmt.Errorf("invalid start_date format, use YYYY-MM-DD")
+			}
+			out["start_date"] = *args.StartDate
+		}
+		changed = append(changed, "start_date")
+	}
 	switch {
 	case args.MilestoneID != nil:
 		if *args.MilestoneID == 0 {
@@ -747,6 +775,20 @@ func buildUpdateData(env *Env, args updateItemArgs, wsID int) (data map[string]a
 		changed = append(changed, "custom_fields")
 	}
 	return out, changed, nil
+}
+
+// parseOptionalDate parses a YYYY-MM-DD string, returning nil for an empty
+// input. Used by create_item, which has no clear-field semantics (unlike
+// update_item's *string-nil-vs-empty convention).
+func parseOptionalDate(s string) (*time.Time, error) {
+	if s == "" {
+		return nil, nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 func workspaceLookupMap(db database.Database) map[string]int {

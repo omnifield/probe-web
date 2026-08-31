@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -143,6 +144,9 @@ type CreateWorkspaceResult struct {
 	TemplatesCopied          int
 	ItemsCopied              int
 	OmittedCustomFieldValues int
+	PagesCopied              int
+	MilestonesCopied         int
+	IterationsCopied         int
 }
 
 // Create creates a new workspace and grants the Administrator role to the
@@ -200,7 +204,38 @@ func (s *WorkspaceService) Create(ctx context.Context, params CreateWorkspacePar
 			return nil, fmt.Errorf("commit workspace creation: %w", err)
 		}
 
-		if result.ItemsCopied > 0 || result.TemplatesCopied > 0 || result.ConfigSetAttached {
+		// Pages live outside the clone transaction: PageService.Create manages
+		// its own tx per page, so this runs after the workspace/items commit
+		// and is best-effort — a failure here doesn't unwind the workspace
+		// that already exists. Skipped for CreatorID 0 (unknown actor, e.g.
+		// Jira import jobs) since pages require a real created_by user.
+		if params.TemplateWorkspaceID != nil && params.CreatorID > 0 {
+			pagesCopied, pageErr := s.copyTemplatePages(ctx, *params.TemplateWorkspaceID, result.Workspace.ID, params.CreatorID)
+			result.PagesCopied = pagesCopied
+			if pageErr != nil {
+				slog.Warn("workspace template page copy incomplete",
+					slog.String("component", "workspaces"),
+					slog.Int("workspace_id", result.Workspace.ID),
+					slog.Int("source_workspace_id", *params.TemplateWorkspaceID),
+					slog.Int("pages_copied", pagesCopied),
+					slog.String("error", pageErr.Error()))
+			}
+
+			milestonesCopied, iterationsCopied, planningErr := s.copyTemplatePlanning(*params.TemplateWorkspaceID, result.Workspace.ID)
+			result.MilestonesCopied = milestonesCopied
+			result.IterationsCopied = iterationsCopied
+			if planningErr != nil {
+				slog.Warn("workspace template planning copy incomplete",
+					slog.String("component", "workspaces"),
+					slog.Int("workspace_id", result.Workspace.ID),
+					slog.Int("source_workspace_id", *params.TemplateWorkspaceID),
+					slog.Int("milestones_copied", milestonesCopied),
+					slog.Int("iterations_copied", iterationsCopied),
+					slog.String("error", planningErr.Error()))
+			}
+		}
+
+		if result.ItemsCopied > 0 || result.TemplatesCopied > 0 || result.ConfigSetAttached || result.PagesCopied > 0 {
 			repository.InvalidateItemListCountCache(s.db, result.Workspace.ID)
 			logWorkspaceCloneResult(result, time.Since(started))
 		}
