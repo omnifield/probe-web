@@ -17,3 +17,4 @@ export type {
 } from "./types.js";
 
 export { defineEditorInfo } from "./define.js";
+export { checkAssembly } from "./check-assembly.js";

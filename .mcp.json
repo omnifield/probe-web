@@ -18,6 +18,10 @@
     "ark-ui": {
       "command": "npx",
       "args": ["-y", "@ark-ui/mcp"]
+    },
+    "skin": {
+      "command": "node",
+      "args": ["products/skin/.mcp/src/server.js"]
     }
   }
 }
