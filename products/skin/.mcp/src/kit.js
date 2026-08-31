@@ -7,7 +7,32 @@
 
 import { EDITOR_INFOS, PASSPORTS } from "@omnifield/probe-web-ui/passport";
 import { IO } from "@omnifield/probe-web-ui/io";
-import { z } from "@omnifield/probe-web-io";
+import { exampleOf, z } from "@omnifield/probe-web-io";
+
+/**
+ * Значение листа примера — само значение здесь никого не интересует (`checkAssemblyData` только
+ * спрашивает «нашлось ли что-то», не «то ли это значение»), поэтому генератор простой и один на
+ * все листья: enum — первое значение, иначе заглушка по типу.
+ *
+ * @type {import("@omnifield/probe-web-io").ExampleLeafGenerator}
+ */
+function exampleLeaf(node) {
+  if (node.enum && node.enum.length > 0) return node.enum[0];
+  if (node.type === "number" || node.type === "integer") return 0;
+  if (node.type === "boolean") return true;
+  return "example";
+}
+
+/**
+ * Пример данных по io-схеме компонента — то же, чем `checkAssemblyData` сверяет `bind`/
+ * `repeat.path`. Схемы нет — `undefined`, и данные не с чем сверять, а не пустой объект-обман.
+ *
+ * @param {string} component
+ */
+export function exampleDataFor(component) {
+  const input = IO[component]?.input;
+  return input ? exampleOf(input, exampleLeaf) : undefined;
+}
 
 export function listComponents() {
   return Object.keys(PASSPORTS)

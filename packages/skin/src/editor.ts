@@ -1,6 +1,7 @@
 // Design notes: ./editor.README.md
 
 export type {
+  AssemblyDataFlaw,
   ComponentFootprint,
   ComponentGroup,
   PassportComponentGenus,
@@ -14,7 +15,7 @@ export type {
   PassportStateEditorInfo,
   PassportVariableEditorInfo,
 } from "./passport/editor/index.js";
-export { admits, checkAssembly, defineEditorInfo, footprintOf, GROUPS, groupOf } from "./passport/editor/index.js";
+export { admits, checkAssembly, checkAssemblyData, defineEditorInfo, footprintOf, GROUPS, groupOf } from "./passport/editor/index.js";
 
 export type {
   BaseAssemblyContent,

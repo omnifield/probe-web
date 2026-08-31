@@ -14,8 +14,8 @@
 
 | файл | что делает |
 |---|---|
-| `src/kit.js` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP |
-| `src/mechanics.js` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс `checkAssembly` (выведен наружу из `@omnifield/probe-web-skin/editor`, раньше был заперт внутри `defineEditorInfo`) |
+| `src/kit.js` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP; плюс `exampleDataFor` — пример по io-схеме через `packages/io`'s `exampleOf`, для проверки данных сборки |
+| `src/mechanics.js` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@omnifield/probe-web-skin/editor`, раньше были заперты внутри `defineEditorInfo` |
 | `src/store.js` | разговор со службой пресетов (`8787`) — Node-версия клиента `products/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
 | `src/validate.js` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
 | `src/tools.js` | регистрация десяти ручек |
@@ -39,6 +39,21 @@ pnpm --filter @probe-web/skin-mcp typecheck
 
 Нужна живая служба пресетов (`pnpm --filter @probe-web/presets start`, порт `8787`) — без неё
 ручки хранения отвечают `StoreDown`. Адрес переопределяется `SKIN_MCP_PRESETS_URL`.
+
+## Дыра, найденная живым тестом — `checkAssembly` не читает `bind`/`props`/`on` вообще
+
+`checkAssembly` (структура) по устройству механики никогда не смотрит на `bind`/`repeat.path` —
+на уровне типов это закрывает `BoundPath` (`packages/skin/src/passport/assembly/paths.ts`), но
+только пока смотрит `tsc`. Сборка, собранная агентом через MCP, приезжает JSON'ом — компилятора
+над ней нет, и опечатка в пути раньше проходила как `{ok:true}` наравне с верным деревом.
+
+Починка — `checkAssemblyData` (`packages/skin/src/passport/editor/check-assembly-data.ts`),
+второй обход того же дерева: абсолютит каждый путь тем же приёмом, каким это делает рантайм при
+развороте `repeat` (`scopedPath`, вынесена из `expand.ts` — один источник, не два), резолвит через
+уже публичный `resolveDataBinding` и называет путь, ушедший в никуда. `check_assembly` теперь
+проверяет структуру и данные разом; данные — против ПРИМЕРА по io-схеме компонента (`exampleDataFor`,
+`packages/io`'s `exampleOf`), не выдуманного вручную. Компонент без `entity/io.ts` — `dataCheck:
+"skipped"`, честно, а не тихий успех.
 
 ## Побочная находка — почин `packages/io`
 

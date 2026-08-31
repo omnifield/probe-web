@@ -65,7 +65,10 @@ export function registerTools(server) {
     "get_preset",
     {
       title: "Содержимое сохранённого",
-      description: "Содержимое одной записи по имени и ярлыку вида.",
+      description:
+        "Содержимое одной записи по имени и ярлыку вида. Ответ — конверт целиком ({id,label,...,state}). " +
+        "Другим ручкам (check_form/check_outfit/save_preset/assemble_preview) передавайте поле .state, " +
+        "а не весь этот ответ — они ждут голое содержимое Palette/Form/Outfit/ComponentAssembly.",
       inputSchema: { kind: KIND, name: z.string() },
     },
     async ({ kind, name }) => {
@@ -110,8 +113,11 @@ export function registerTools(server) {
     {
       title: "Проверить сборку компонента",
       description:
-        "Проверяет дерево сборки (PassportAssembly) ДО сохранения — обход admits()/анатомии, тот же обход, " +
-        "которым checkAssembly проверяет кодовые сборки кита при загрузке модуля.",
+        "Проверяет дерево сборки (PassportAssembly) ДО сохранения, в два прохода. Структура — обход " +
+        "admits()/анатомии, тот же обход, которым checkAssembly проверяет кодовые сборки кита при загрузке " +
+        "модуля. Данные — КАЖДЫЙ bind/repeat.path сверяется с примером по io-схеме компонента (checkAssemblyData); " +
+        "это то, чего checkAssembly НЕ делает вовсе (сама не читает bind/props/on) — опечатка в пути раньше " +
+        "проходила как ok:true. Компонент без entity/io.ts — dataCheck: \"skipped\", не тихий успех.",
       inputSchema: { component: z.string(), assembly: z.looseObject({ name: z.string() }) },
     },
     async ({ component, assembly }) => json(checkAssembly(component, assembly)),
@@ -169,7 +175,8 @@ export function registerTools(server) {
       title: "Сохранить запись",
       description:
         "Кладёт запись в службу ПОСЛЕ проверки: palette/form через ту же проверку, что и check_palette/check_form, " +
-        "outfit через checkOutfit, assembly через checkAssembly. Флав — отказ до записи, служба не тронута. " +
+        "outfit через checkOutfit, assembly через ту же двухпроходную проверку, что и check_assembly (структура + " +
+        "bind/repeat.path против примера по io-схеме). Флав — отказ до записи, служба не тронута. " +
         "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени.",
       inputSchema: {
         kind: KIND,

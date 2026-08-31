@@ -27,4 +27,4 @@ export type { DataPreset, PassportAssembly } from "./assembly.js";
 export type { BaseAssemblyContent, BaseAssemblyElement, BaseAssemblyNode, BaseAssemblyTree } from "./output.js";
 export { isContentNode } from "./output.js";
 
-export { baseAssemblyOf } from "./expand.js";
+export { baseAssemblyOf, scopedPath } from "./expand.js";

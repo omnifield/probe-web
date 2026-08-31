@@ -18,3 +18,5 @@ export type {
 
 export { defineEditorInfo } from "./define.js";
 export { checkAssembly } from "./check-assembly.js";
+export { checkAssemblyData } from "./check-assembly-data.js";
+export type { AssemblyDataFlaw } from "./check-assembly-data.js";

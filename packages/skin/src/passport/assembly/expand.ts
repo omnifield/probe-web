@@ -16,6 +16,23 @@ import {
 } from "./nodes.js";
 import type { BaseAssemblyNode, BaseAssemblyTree } from "./output.js";
 
+/**
+ * Абсолютит путь узла относительно текущего масштаба (`base`) — тот же приём, каким
+ * `binding.ts`'s `resolveDataBinding` в итоге ждёт путь: `""` значит «весь текущий узел данных»,
+ * ведущий `/` — уже абсолютный (от корня `io.input`), иначе — относительный от `base`.
+ *
+ * Публичная функция, не приватность `baseAssemblyOf`: любой, кто обходит дерево сборки САМ (не
+ * через порождение узлов, а, например, чтобы ПРОВЕРИТЬ путь до записи — `passport/editor`), обязан
+ * абсолютить путь тем же способом, каким это делает рантайм при развороте `repeat`, иначе два
+ * читателя path однажды разойдутся на том, что легально.
+ *
+ * @param base текущий масштаб — `""` на корне, `"/sections/0"` внутри первого `repeat`-элемента
+ * @param path путь узла, как он написан в записи — `""`, относительный или абсолютный
+ */
+export function scopedPath(base: string, path: string): string {
+  return path === "" ? base : path.startsWith("/") ? path : `${base}/${path}`;
+}
+
 export function baseAssemblyOf(
   passport: ComponentPassport,
   assembly: PassportAssembly,
@@ -40,9 +57,6 @@ export function baseAssemblyOf(
   const addressOf = (part: string): string => (part === passport.root ? address : `${address}.${part}`);
 
   const addressOfExtra = (extra: string): string => `${address}.~${extra}`;
-
-  const scopedPath = (base: string, path: string): string =>
-    path === "" ? base : path.startsWith("/") ? path : `${base}/${path}`;
 
   const scopeTemplate = (node: PassportAssemblyNode, base: string): PassportAssemblyNode => {
     if (isAssemblyContent(node)) {
