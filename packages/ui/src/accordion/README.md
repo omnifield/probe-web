@@ -2,7 +2,11 @@
 
 **Group:** disclosure · **Genus:** component · **Footprint:** regular
 
-## Anatomy
+## Passport
+
+Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as the engine sees them.
+
+### Anatomy
 
 | part | meaning |
 |---|---|
@@ -12,7 +16,7 @@
 | itemContent | the item's content — the area that gets expanded |
 | itemIndicator | the expansion indicator — an arrow placed by the consumer |
 
-## States
+### States
 
 | part | state | mark | meaning |
 |---|---|---|---|
@@ -34,7 +38,7 @@
 | itemIndicator | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
 | itemIndicator | focus | [data-focus] | focus is on this item's trigger |
 
-## Settings
+### Settings
 
 | setting | meaning | default | mark |
 |---|---|---|---|
@@ -42,12 +46,177 @@
 | multiple | whether several items can stay expanded at once | `false` | — |
 | collapsible | whether the last expanded item can be closed, leaving the whole accordion collapsed | `false` (depends on `multiple`) | — |
 
-## CSS Variables
+### CSS Variables
 
 | part | variable | set by | meaning |
 |---|---|---|---|
 | itemContent | `--height` | kit | the measured height of the expanded content |
 | itemContent | `--width` | kit | the measured width of the expanded content — needed by a horizontal accordion |
+
+<!-- user:passport:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:passport:end -->
+
+## Data contract
+
+What an assembly's `bind`/`repeat` paths actually point into (`entity/io.ts`) — separate from the look, the same input can be dressed by any recipe.
+
+### Input
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "activeValues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "sections"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Output
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "value"
+  ],
+  "additionalProperties": false
+}
+```
+
+<!-- user:io:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:io:end -->
+
+## Components
+
+Real Solid implementations, one per anatomy part (`components/kit.tsx`) — what actually draws each part, not just its name in the passport.
+
+| part | drawn by |
+|---|---|
+| root | `Accordion` |
+| item | `AccordionItem` |
+| itemTrigger | `AccordionItemTrigger` |
+| itemContent | `AccordionItemContent` |
+| itemIndicator | `AccordionItemIndicator` |
+
+<!-- user:components:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:components:end -->
+
+## Assemblies
+
+Worked `RenderTree` trees (`playground/assemblies/`) — structural skeletons proving the passport composes, not the primary way to use the component (plain JSX composition is).
+
+### base
+
+разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя
+
+```
+root
+  item · repeat: /sections · bind: value
+    itemTrigger · on: click
+      text: {title}
+      itemIndicator
+    itemContent · bind: variant
+```
+
+### action-list
+
+разделы, а в контенте каждого — настоящий Listbox из общего реестра, не своя копия
+
+```
+root
+  item · repeat: /sections · bind: value
+    itemTrigger · on: click
+      text: {title}
+      itemIndicator
+    itemContent
+      listbox · bind: items, value
+        listbox.content
+          listbox.item · repeat: items · bind: item · on: click
+            listbox.itemText
+              text: {label}
+            listbox.itemIndicator
+              icon: "✓"
+```
+
+<!-- user:assemblies:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:assemblies:end -->
+
+## Recipe (proof only)
+
+Proves the passport CAN be dressed by the real skin mechanism (`playground/recipe.ts`) — never ships as-is; a real look for this component lives in `packages/skin`, not here.
+
+No named variants — this proof recipe carries no `data-variant` axis of its own.
+
+Also conditioned by the component's own settings:
+
+| setting | conditions styled |
+|---|---|
+| orientation | horizontal |
+
+<!-- user:recipe:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:recipe:end -->
 
 ## Notes
 

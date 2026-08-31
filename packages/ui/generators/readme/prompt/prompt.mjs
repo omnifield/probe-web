@@ -3,7 +3,7 @@
 // дело мощной модели, не таблиц». Этот генератор не пишет доку сам и не зовёт никакую модель —
 // он собирает ПРОМПТ (текстовый файл), который затем читает агент отдельным шагом.
 //
-// Данные — СЫРЫЕ, необработанные (в отличие от `../readme/readme.mjs`, который аккуратно
+// Данные — СЫРЫЕ, необработанные (в отличие от `../readme.mjs`, который аккуратно
 // раскладывает паспорт в строки таблицы): агент сам решает, что взять из паспорта/editorInfo и
 // куда подставить, а не получает уже нарезанный набор колонок.
 //
@@ -27,7 +27,7 @@ import { importModule } from "@probe-web/generators/extract";
 import { generateScaffoldFiles } from "@probe-web/generators/scaffold";
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
-const srcDir = join(resolve(thisDir, "..", ".."), "src");
+const srcDir = join(resolve(thisDir, "..", "..", ".."), "src");
 const outDir = join(thisDir, "out");
 
 const kitContext = readFileSync(join(thisDir, "kit-context.md"), "utf8");
@@ -72,7 +72,7 @@ const files = await generateScaffoldFiles(entries, {
 
 writeGeneratedFiles(files);
 
-// Тот же довод, что у `../readme/readme.mjs`'s предупреждения: сообщение печатается там, где
+// Тот же довод, что у `../readme.mjs`'s предупреждения: сообщение печатается там, где
 // агент реально смотрит в момент "готово", а не только в README, который он мог уже пролистать.
 console.log(`prompt: собрано ${files.length} промпт-файлов в generators/prompt/out/.`);
 console.log("Это НЕ документация — это СЫРЬЁ для неё. Следующий шаг делает не этот скрипт, а ты:");
