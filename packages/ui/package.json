@@ -34,7 +34,7 @@
     "build": "vite build && tsc -p tsconfig.build.json",
     "generate": "node generators/barrel/generate.mjs",
     "readme": "node generators/readme/readme.mjs",
-    "prompt": "node generators/prompt/prompt.mjs",
+    "prompt": "node generators/readme/prompt/prompt.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
