@@ -8,7 +8,7 @@ type AccordionPart = typeof passport extends ComponentPassport<infer Part> ? Par
 
 export const base: PassportAssembly<AccordionPart, string, Data> = {
   name: "base",
-  means: "разделы, а в контенте каждого — настоящая Button из общего реестра, не своя копия",
+  means: "разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя",
   tree: {
     node: "root",
     children: [

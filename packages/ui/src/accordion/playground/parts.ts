@@ -1,7 +1,7 @@
 // EDITOR-ONLY per-part taxonomy for the accordion — read by `./index.ts`'s `defineEditorInfo`
 // call (`PWEB-115`/`PWEB-118`, decomposed `PWEB-124`). Means, states, variables, and nesting
 // (`accepts`) by part name — the taxonomy half of the editor slice; scenario data
-// (`assemblies.ts`) and setting prose (`settings.ts`) are the other two, split out the same way
+// (`assemblies/`) and setting prose (`settings.ts`) are the other two, split out the same way
 // and for the same reason: three different questions ("what does this part mean", "what is a
 // working instance", "what do the settings mean") stopped fitting one file without a boundary.
 //
@@ -83,7 +83,7 @@ export const parts = {
     // a legal thing to put in it.
     accepts: [
       { kind: "content", genus: "text" },
-      { kind: "component" },
+      { kind: "content", genus: "icon" },
       { kind: "component" },
     ],
   },
