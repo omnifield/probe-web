@@ -44,3 +44,14 @@ text generation).
   `test/extract/accordion-fixture.test.ts`.
 - Not wired into anything yet: the actual per-component README template and
   its hookup into `packages/ui` is next (`GEN-5`).
+- `importModule` — fixed two gaps reported from `packages/ui`'s README
+  pilot (2026-08-31): a transitive CommonJS dependency with no `exports`
+  map (`fast-json-patch` under `@omnifield/probe-web-io`) failed to import,
+  and a `.tsx` file with real Solid JSX failed to parse. Root cause was the
+  same for both — `importModule` ran on `runnerImport()`'s "inline"
+  environment, which hardcodes external resolution and has no CJS runtime
+  under it. Switched to `createServer()` + `server.ssrLoadModule()` (the
+  path a real `vite dev` uses) and gave `importModule` a second, optional
+  `InlineConfig` argument so a caller supplies its own fix
+  (`ssr.noExternal`, `plugins: [solid()]`) without this package baking in
+  knowledge of Solid or `packages/io` — see `src/extract/README.md`.

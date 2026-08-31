@@ -17,11 +17,12 @@ app already sees.
 
 ## How
 
-`importModule` wraps `runnerImport` from `vite` — the same transform
-pipeline Vitest already runs tests through. It resolves this repository's
-own import convention (a relative specifier written with a `.js` extension
-pointing at a sibling `.ts` file) exactly like the real build does, with no
-separate compile step.
+`importModule` runs a headless `createServer()` + `server.ssrLoadModule()` —
+the same dev-server path a real `vite dev` uses, spun up and torn down
+around one import. It resolves this repository's own import convention (a
+relative specifier written with a `.js` extension pointing at a sibling
+`.ts` file) exactly like the real build does, with no separate compile
+step.
 
 ```ts
 import { importModule } from "@probe-web/generators/extract";
@@ -32,6 +33,25 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>(
 
 console.log(passport.parts.map((part) => part.name));
 ```
+
+## Second argument: a caller's own Vite needs
+
+`importModule(path, config?)` takes an optional `InlineConfig` (from
+`vite`), merged in — this package's own required settings (headless SSR
+mode) win on conflicts, everything else passes through. Two real cases so
+far:
+
+- **A transitive CommonJS dependency with no `exports` map** fails with
+  "named export not found", the same way plain Node's ESM interop would —
+  `fast-json-patch` under `@omnifield/probe-web-io` is one. Fix:
+  `{ ssr: { noExternal: ["fast-json-patch"] } }`.
+- **A `.tsx` file with real Solid JSX** fails to parse — the bare tool
+  knows nothing about JSX presets. Fix: `{ plugins: [solid()] }`
+  (`vite-plugin-solid`).
+
+Neither fix lives inside this package: `importModule` stays generic (no
+Solid, no `packages/io` knowledge baked in), and the caller who actually
+needs the workaround supplies it.
 
 ## Zod schemas need no extra tool
 
