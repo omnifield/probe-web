@@ -1,21 +1,34 @@
 #!/usr/bin/env node
-// git-gate.mjs — PreToolUse hook: hard-gate на write-операции git/gh. Уровень доступа —
+// git-gate.mjs — PreToolUse hook: гейт на write-операции git/gh. Уровень доступа —
 // ДАННЫЕ из `.claude/harness.yaml` (config.git[role]): architect=full / owner=commit-only /
 // layer=none. Роль-семантика (ЧТО режет каждый уровень) — рамка (инвариант).
 //
 // Несколько owner-сессий могут работать в одном shared working tree (одна .git).
 // Неконтролируемая смена HEAD / push размазывает работу соседей. Промпт под нагрузкой
-// игнорится — это hard-gate.
+// игнорится — это hard-gate (owner/layer: deny) либо форс-вопрос (architect: ask).
+//
+// `full` НЕ ЗНАЧИТ «без вопросов» (постановка user, 2026-08-31, после того как несколько
+// параллельных/резюмнутых architect-сессий — маркер держит последние 20 id одновременно —
+// молча меняли ветки друг у друга в одном shared working tree: «никто из агентов не смеет
+// трогать гит кроме чтения без моего разрешения»). Рамка `architect: full` не снята — гейт не
+// БЛОКИРУЕТ architect структурно, — но каждая запись в shared `.git` (switch/checkout/merge/
+// rebase/push/reset --hard/branch -D/worktree add/commit/add/gh pr write) ставит РЕАЛЬНЫЙ
+// вопрос человеку (`permissionDecision: "ask"`), поверх любого режима разрешений сессии, в том
+// числе auto-accept. Чтение (status/log/diff/show/fetch и т.п.) вопросов не ставит — не в
+// перечне запрещённых глаголов ни у одной роли.
 //
 // Контракт (Claude Code PreToolUse):
 //   stdin  = JSON { tool_name, tool_input:{command}, session_id, cwd, ... }
 //   stdout = JSON { hookSpecificOutput:{ hookEventName, permissionDecision, permissionDecisionReason } }
+//   permissionDecision: "allow" | "ask" | "deny" — "ask" форсирует запрос у человека даже под
+//   auto-accept сессии, "deny" отказывает без вопроса.
 //   exit 0 всегда; FAIL-OPEN на внутренних ошибках.
 //
 // Уровень доступа сессии:
-//   - marker `.claude/.main-session-id` содержит session_id → architect → 'full' (allow всё).
-//     Marker — ЕДИНСТВЕННЫЙ источник 'full' (subagents наследуют env scope=main, но в marker
-//     их нет → не получают full). Пишет marker только main-session-marker.mjs при scope 'main'.
+//   - marker `.claude/.main-session-id` содержит session_id → architect → 'full' (чтение —
+//     allow, запись — ask). Marker — ЕДИНСТВЕННЫЙ источник 'full' (subagents наследуют env
+//     scope=main, но в marker их нет → не получают full). Пишет marker только
+//     main-session-marker.mjs при scope 'main'.
 //   - иначе env OMNIFIELD_SCOPE → config.git[roleOf(scope)]. Пусто/main без marker (=subagent)
 //     → commit-only (gated), НЕ full.
 
@@ -40,6 +53,26 @@ function deny(reason) {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
+        permissionDecisionReason: reason,
+      },
+    }),
+  );
+  process.exit(0);
+}
+
+/**
+ * Третий вердикт (не allow/deny) — форсирует вопрос ЧЕЛОВЕКУ прямо в моменте, поверх любого
+ * режима разрешений сессии (в том числе auto-accept). Только для `access === "full"` —
+ * architect не заблокирован структурно (рамка `git.architect: full` не снята), но запись в
+ * shared `.git` без явного «да» от user'а больше не проходит тихо (постановка user, 2026-08-31:
+ * «никто из агентов не смеет трогать гит кроме чтения без моего разрешения»).
+ */
+function ask(reason) {
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
         permissionDecisionReason: reason,
       },
     }),
@@ -351,11 +384,17 @@ function scanAll(tokens) {
   return found;
 }
 
-/** Причина блокировки под уровень доступа, либо null. */
+/**
+ * Причина ограничения под уровень доступа, либо null.
+ *
+ * `full` больше не выходит рано: он размечается ТЕМ ЖЕ, самым широким набором глаголов, что и
+ * `none` (`COMMIT_ONLY_VERBS` + `NONE_EXTRA_VERBS` + `GH_VERBS`) — architect не заблокирован
+ * структурно, но каждая запись в shared `.git` должна быть НАЗВАНА, чтобы вызывающий (`main`)
+ * решил, спросить о ней (`full`) или отказать (`owner`/`layer`).
+ */
 export function blockReason(cmd, access) {
-  if (access === "full") return null;
   const gitVerbs =
-    access === "none" ? { ...COMMIT_ONLY_VERBS, ...NONE_EXTRA_VERBS } : COMMIT_ONLY_VERBS;
+    access === "commit-only" ? COMMIT_ONLY_VERBS : { ...COMMIT_ONLY_VERBS, ...NONE_EXTRA_VERBS };
   for (const { tool, verb, args } of gitInvocations(cmd)) {
     const table = tool === "gh" ? GH_VERBS : gitVerbs;
     const label = table[verb]?.(args);
@@ -373,6 +412,14 @@ function buildMessage(cmd, label, access) {
     "Действие: STOP. Не пытайся обойти: гейт разбирает команду, а не ищет подстроку —",
     "`bash -c`, кавычки вокруг verb'а, подстановка и heredoc для интерпретатора видны ему все.",
     "Верни state architect. Architect либо сделает операцию сам, либо выдаст отдельный worktree.",
+  ].join("\n");
+}
+
+/** Вопрос человеку (не агенту) — architect на записи в shared `.git`, постановка user 2026-08-31. */
+function buildAskMessage(cmd, label) {
+  return [
+    `Команда \`${cmd}\` — запись в shared \`.git\` (\`${label}\`).`,
+    "Разрешить именно эту операцию?",
   ].join("\n");
 }
 
@@ -417,6 +464,7 @@ function main() {
   const access = currentAccess(input, config);
   const reason = blockReason(cmd, access);
   if (!reason) return allow();
+  if (access === "full") return ask(buildAskMessage(cmd, reason));
   deny(buildMessage(cmd, reason, access));
 }
 

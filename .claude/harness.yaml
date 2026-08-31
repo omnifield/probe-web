@@ -82,6 +82,14 @@ zones:
 
 # Git-доступ по роли — РАМКА, выключить нельзя: architect=full; owner=commit-only (gate);
 # layer=none. Право архитектора даёт маркер `.claude/.main-session-id`.
+#
+# `full` НЕ значит «без вопросов» (2026-08-31): чтение не гейтится ни у одной роли, но запись
+# в shared `.git` (switch/checkout/merge/rebase/push/reset --hard/branch -D/worktree add/commit/
+# add/gh pr write) у architect ставит форс-вопрос человеку («ask», `git-gate.mjs`), а не тихо
+# проходит — маркер держит несколько параллельных/резюмнутых architect-сессий одновременно, и
+# без вопроса они меняли ветки друг у друга не сговариваясь. У owner та же запись — как и раньше,
+# твёрдый отказ (deny), а не вопрос: owner работает в СВОЕЙ зоне, у него нет причины трогать это
+# вообще, кроме коммита в своих path[].
 git:
   architect: full
   owner: commit-only
