@@ -43,18 +43,18 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { FileUploadProps } from "../components/index.jsx";
+import type { FileUploadProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** The whole widget is disabled — reaches every part. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 /** The value is visible, changing it is not possible. */
-const readOnly: PassportState = { name: "readonly", mark: { kind: "attribute", name: "data-readonly" } };
+const readOnly = { name: "readonly", mark: { kind: "attribute", name: "data-readonly" } } as const satisfies PassportState;
 
 /** This item landed in the accepted list. Shared by six item-related parts. */
-const accepted: PassportState = { name: "accepted", mark: { kind: "attribute", name: "data-type", value: "accepted" } };
+const accepted = { name: "accepted", mark: { kind: "attribute", name: "data-type", value: "accepted" } } as const satisfies PassportState;
 /** This item was rejected (size, type, or count) — the same attribute, the other value. */
-const rejected: PassportState = { name: "rejected", mark: { kind: "attribute", name: "data-type", value: "rejected" } };
+const rejected = { name: "rejected", mark: { kind: "attribute", name: "data-type", value: "rejected" } } as const satisfies PassportState;
 const itemTypeStates: readonly PassportState[] = [accepted, rejected];
 
 /** A genuine button with no JS-tracked pointer state — the plain button's own reasoning. */
@@ -104,5 +104,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `directory`/`maxFiles`/`accept`/`capture` are
   // real props, but none is `orientation`/`multiple`/`collapsible` — the same empty result the
   // dialog's own settings already show.
-  settings: defineSettings<FileUploadProps>({}),
+  settings: defineSettings<FileUploadProps>()({}),
 });

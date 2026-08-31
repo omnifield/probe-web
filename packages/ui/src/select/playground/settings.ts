@@ -3,8 +3,6 @@
 // one entry instead of three: `multiple` is the only name from the closed `SETTINGS` vocabulary
 // that intersects the select's own props (`../entity/passport.ts`).
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   multiple: { means: "whether several items can be selected at once" },
 };

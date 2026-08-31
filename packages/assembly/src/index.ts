@@ -9,5 +9,7 @@ export type {
   ErrorFallbackProps,
   FallbackProps,
   RenderTreeProps,
+  SlotEntry,
+  SlotPlacement,
 } from "./render.jsx";
 export { RenderTree } from "./render.jsx";

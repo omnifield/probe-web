@@ -30,6 +30,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "test", "vitest.config.ts", "scripts"],
+  "include": ["src", "test", "vitest.config.ts", "generators"],
   "exclude": ["dist", "node_modules"]
 }

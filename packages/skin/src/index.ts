@@ -1,26 +1,29 @@
-// ПОВЕРХНОСТЬ пакета: механика скина целиком — модель, проверки, покрытие и порождение CSS.
+// Package surface: the whole skin mechanic — model, checks, coverage, and CSS generation.
 //
-// Порождение отдаёт ВЛОЖЕННУЮ форму, и postcss отсюда не тянется вовсе: браузер разворачивает
-// вложенность сам (Baseline Widely Available с 11 июня 2026). Плоская форма — подпуть `./flat`.
+// Generation hands out the NESTED form, and postcss is not pulled in at all from here: the browser
+// unwraps nesting itself (Baseline Widely Available since June 11, 2026). The flat form is the
+// `./flat` subpath.
 //
-// Кому не нужна даже печать, берёт `./model`.
+// Whoever doesn't need even printing takes `./model`.
 
 export * from "./model.js";
 
-// СВЯЗКА С ИСТОЧНИКОМ ПАСПОРТОВ — корневая: та же модель плюс печать (`PWEB-94`). Свободных
-// `generateSkinCss` / `generateSketchCss` здесь больше нет: пока источник был доводом каждого
-// вызова, подпись разрешала проверить наряд одним источником, а породить другим.
+// BINDING TO THE PASSPORT SOURCE — the root one: the same model plus printing (`PWEB-94`). There
+// are no free-standing `generateSkinCss` / `generateSketchCss` here anymore: while the source was
+// an argument to every call, the signature allowed checking an outfit with one source and
+// generating with another.
 //
-// Имя одно на оба входа НАМЕРЕННО — связыватель у механики один, а входы делят его по тому же
-// шву, что и всё остальное: попадёт ли печать в сборку потребителя. Явный вывоз ниже ЗАТЕНЯЕТ
-// одноимённый из `export *` выше — так устроен модульный вывоз: названное поимённо старше
-// звёздочки. Держится это пробой поверхности (`test/surface.test.ts`), а не расчётом.
-export { SkinRefused, withPassports, type BoundSkin } from "./generate.js";
+// One name for both entries is INTENTIONAL — the mechanic has one binder, and the entries split it
+// along the same seam as everything else: whether printing lands in the consumer's bundle. The
+// explicit export below SHADOWS the same-named one from `export *` above — that's how module
+// re-exports work: named-by-hand outranks the star. Held by a surface test
+// (`test/surface.test.ts`), not by calculation.
+export { SkinRefused, withPassports, type BoundSkin } from "./generate/index.js";
 
-// Читаемость живёт ЗДЕСЬ, а не в `./model`, и это то же правило: делит входы то, что попадёт в
-// сборку потребителя. Формула контраста берётся у зоны значений (иначе «проверено» у нас и у
-// того, кто ставит свой бренд, означало бы разное), а та зона тянет за собой Solid. Хранилищу,
-// которому нужна только форма записи, платить за это не за что.
+// Contrast readability lives HERE, not in `./model`, and it's the same rule: entries split by what
+// lands in the consumer's bundle. The contrast formula is taken from the values zone (otherwise
+// "checked" would mean different things for us and for whoever brings their own brand), and that
+// zone pulls in Solid. A storage layer that only needs the record's shape shouldn't pay for that.
 export type {
   ContrastAddress,
   ContrastNote,
@@ -28,5 +31,5 @@ export type {
   ContrastReport,
   UncheckedQuestion,
   UnreckonableReason,
-} from "./contrast.js";
-export { INDISTINCT, skinContrast } from "./contrast.js";
+} from "./contrast/index.js";
+export { INDISTINCT, skinContrast } from "./contrast/index.js";

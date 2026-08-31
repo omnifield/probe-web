@@ -1,0 +1,17 @@
+# {{title}}
+
+## Anatomy
+
+| part | state | mark |
+|---|---|---|
+{{#each anatomyRows}}
+| {{part}} | {{state}} | {{mark}} |
+{{/each}}
+
+## Settings
+
+| setting | mark | default |
+|---|---|---|
+{{#each settingRows}}
+| {{setting}} | {{mark}} | `{{default}}`{{#if dependsOn}} (depends on `{{dependsOn}}`){{/if}} |
+{{/each}}

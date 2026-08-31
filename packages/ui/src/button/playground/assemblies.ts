@@ -25,6 +25,12 @@ export const assemblies: readonly PassportAssembly<ButtonPart>[] = [
   {
     name: "base",
     means: "a button with a label",
-    tree: { node: "root", children: [] },
+    // Absolute path (`/label`, not `label`): this node is not inside a `repeat`, so nothing
+    // scopes a bare path to the tree's data root (`scopeTemplate` only runs for repeat
+    // expansion, `packages/skin/src/passport-assembly.ts`) — `resolveDataBinding` requires the
+    // leading `/` at top level, the SAME convention `entity/passport.ts`'s `selfAssembly` already
+    // uses for this same field (PWEB-187 continuation: showcase presets need to actually show,
+    // not render an empty button — `means` promised a label, the tree carried none).
+    tree: { node: "root", children: [{ genus: "text", value: { path: "/label" } }] },
   },
 ];

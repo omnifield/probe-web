@@ -18,7 +18,7 @@ type CarouselPart = typeof passport extends ComponentPassport<infer Part> ? Part
 export const assemblies: readonly PassportAssembly<CarouselPart>[] = [
   {
     name: "basic",
-    means: "рабочая карусель: три слайда, стрелки листают, точки прыгают на слайд, кнопка запускает автопрокрутку, счётчик страниц",
+    means: "a working carousel: three slides, arrows page through them, dots jump to a slide, a button starts autoplay, a page counter",
     tree: {
       node: "root",
       props: { slideCount: 3, defaultPage: 0 },
@@ -37,9 +37,9 @@ export const assemblies: readonly PassportAssembly<CarouselPart>[] = [
         {
           node: "itemGroup",
           children: [
-            { node: "item", props: { index: 0 }, children: [{ genus: "text", value: "Слайд 1" }] },
-            { node: "item", props: { index: 1 }, children: [{ genus: "text", value: "Слайд 2" }] },
-            { node: "item", props: { index: 2 }, children: [{ genus: "text", value: "Слайд 3" }] },
+            { node: "item", props: { index: 0 }, children: [{ genus: "text", value: "Slide 1" }] },
+            { node: "item", props: { index: 1 }, children: [{ genus: "text", value: "Slide 2" }] },
+            { node: "item", props: { index: 2 }, children: [{ genus: "text", value: "Slide 3" }] },
           ],
         },
         {

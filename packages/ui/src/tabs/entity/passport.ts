@@ -40,14 +40,14 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are
 // checked against the component's real props.
-import type { TabsProps } from "../components/index.jsx";
+import type { TabsProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Focus — real DOM focus on `root`/`list` is meaningless on their own; this reflects the machine's own "some trigger is focused". */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Passport of tabs — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -101,7 +101,7 @@ export const passport = definePassport({
   // on all five parts above, `PWEB-104`'s own standard for calling a mark "verified"). `disabled`
   // is excluded the same way the checkbox excludes it: already a STATE on `trigger`, a per-tab
   // fact, not an axis an author picks for the whole set.
-  settings: defineSettings<TabsProps>({
+  settings: defineSettings<TabsProps>()({
     orientation: {
       values: {
         kind: "choice",

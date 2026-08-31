@@ -28,6 +28,4 @@ export {
   TableRow,
   type TableRowProps,
   type TableSort,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

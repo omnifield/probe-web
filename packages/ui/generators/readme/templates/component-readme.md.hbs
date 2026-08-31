@@ -1,0 +1,43 @@
+# {{title}}
+
+**Group:** {{group}} · **Genus:** {{genus}} · **Footprint:** {{footprint}}
+
+## Anatomy
+
+| part | meaning |
+|---|---|
+{{#each partMeanings}}
+| {{part}} | {{meaning}} |
+{{/each}}
+
+## States
+
+| part | state | mark | meaning |
+|---|---|---|---|
+{{#each stateRows}}
+| {{part}} | {{state}} | {{mark}} | {{meaning}} |
+{{/each}}
+
+## Settings
+
+| setting | meaning | default | mark |
+|---|---|---|---|
+{{#each settingRows}}
+| {{setting}} | {{meaning}} | `{{default}}`{{#if dependsOn}} (depends on `{{dependsOn}}`){{/if}} | {{mark}} |
+{{/each}}
+
+{{#if variableRows}}
+## CSS Variables
+
+| part | variable | set by | meaning |
+|---|---|---|---|
+{{#each variableRows}}
+| {{part}} | `{{variable}}` | {{setBy}} | {{meaning}} |
+{{/each}}
+
+{{/if}}
+## Notes
+
+<!-- user:start -->
+_Nothing written here yet — this section survives regeneration; everything above it does not._
+<!-- user:end -->

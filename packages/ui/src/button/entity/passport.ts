@@ -39,7 +39,7 @@ import {
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { ButtonProps } from "../components/index.jsx";
+import type { ButtonProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Passport of the button — anatomy plus what anatomy alone does not say. */
@@ -83,7 +83,7 @@ export const passport = definePassport({
   // THE BUTTON HAS NO SETTINGS (`PWEB-89`), and this declares that as a fact, not an omission: an
   // empty `defineSettings<ButtonProps>` is a checkable claim that the button accepts none of the
   // closed settings vocabulary. Should one appear, the type forces it to be declared here.
-  settings: defineSettings<ButtonProps>({}),
+  settings: defineSettings<ButtonProps>()({}),
   // THE BUTTON'S OWN BEHAVIOR (`PWEB-167`): accept a label and a payload in ITS OWN data shape,
   // print the label, and on click hand the payload back out untouched. A component referencing
   // this button (an accordion item, a list row) supplies data in this shape — it does not repeat

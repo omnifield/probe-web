@@ -1,16 +1,16 @@
-// Канон Solid, выраженный машиной, — пресет зоны `lint` (`@omnifield/probe-web-lint`).
+// The Solid canon, expressed by machine — the `lint` zone's preset (`@omnifield/probe-web-lint`).
 //
-// Своей отрисовки у механики скина нет: она превращает данные в текст. Пресет подключён всё
-// равно — из-за проб на живом ките (`test/kit.test.tsx`): там настоящая кнопка, настоящий Solid
-// и ровно тот класс ошибки с реактивностью, который пресет ловит.
+// The skin mechanic has no rendering of its own: it turns data into text. The preset is wired in
+// anyway — because of the live-kit tests (`test/kit.test.tsx`): a real button, real Solid, and
+// exactly the class of reactivity bug the preset catches.
 //
-// Пресет стоит в devDependencies — в поставку не едет.
+// The preset sits in devDependencies — it does not ship.
 
 import { defineConfig } from "@omnifield/probe-web-lint";
 
 export default [
   {
-    // Сборка и зависимости — не наш код.
+    // Build output and dependencies aren't our code.
     ignores: ["dist/**", "node_modules/**"],
   },
   ...defineConfig(),

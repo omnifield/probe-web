@@ -25,18 +25,18 @@ import type { passport } from "../entity/passport.js";
 
 type DatePickerPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const WEEK = ["24", "25", "26", "27", "28", "29", "30"].map((day) => parseDate(`2026-08-${day}`));
 
 export const assemblies: readonly PassportAssembly<DatePickerPart>[] = [
   {
     name: "basic",
-    means: "рабочий календарь: открыт, неделя дней, 25-е выбрано, 27-е — сегодня",
+    means: "a working calendar: open, one week of days, the 25th selected, the 27th today",
     tree: {
       node: "root",
       props: { defaultOpen: true, defaultValue: [WEEK[1]] },
       children: [
-        { node: "label", children: [{ genus: "text", value: "Дата" }] },
+        { node: "label", children: [{ genus: "text", value: "Date" }] },
         {
           node: "control",
           children: [

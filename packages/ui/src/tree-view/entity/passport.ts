@@ -66,27 +66,27 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props. `TreeNode` stands in for the collection's own node type: the
 // passport does not care what shape a consumer's tree data takes.
-import type { TreeNode, TreeViewProps } from "../components/index.jsx";
+import type { TreeNode, TreeViewProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Real DOM/keyboard/pointer focus target — explicit, mirrored where the node itself is not focusable. */
-const focus: PassportState = { name: "focus", mark: { kind: "attribute", name: "data-focus" } };
+const focus = { name: "focus", mark: { kind: "attribute", name: "data-focus" } } as const satisfies PassportState;
 /** This node is part of the current selection. */
-const selected: PassportState = { name: "selected", mark: { kind: "attribute", name: "data-selected" } };
+const selected = { name: "selected", mark: { kind: "attribute", name: "data-selected" } } as const satisfies PassportState;
 /** This node cannot be interacted with. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 /** This node's label is being edited right now (`F2`, or `startRenaming(value)`). */
-const renaming: PassportState = { name: "renaming", mark: { kind: "attribute", name: "data-renaming" } };
+const renaming = { name: "renaming", mark: { kind: "attribute", name: "data-renaming" } } as const satisfies PassportState;
 /** Present only when fully checked — see the file header ("two independent booleans"). */
-const checked: PassportState = { name: "checked", mark: { kind: "attribute", name: "data-checked" } };
+const checked = { name: "checked", mark: { kind: "attribute", name: "data-checked" } } as const satisfies PassportState;
 /** Present only when SOME, not all, descendants are checked — the other of the same pair. */
-const indeterminate: PassportState = { name: "indeterminate", mark: { kind: "attribute", name: "data-indeterminate" } };
+const indeterminate = { name: "indeterminate", mark: { kind: "attribute", name: "data-indeterminate" } } as const satisfies PassportState;
 /** A branch is fetching its own children (`loadChildren`) — leaf parts never carry this. */
-const loading: PassportState = { name: "loading", mark: { kind: "attribute", name: "data-loading" } };
+const loading = { name: "loading", mark: { kind: "attribute", name: "data-loading" } } as const satisfies PassportState;
 /** A branch is expanded. */
-const open: PassportState = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } };
+const open = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } } as const satisfies PassportState;
 /** A branch is collapsed — the same attribute, the other value. */
-const closed: PassportState = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } };
+const closed = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } } as const satisfies PassportState;
 const openClosed: readonly PassportState[] = [open, closed];
 
 /** A genuine, hoverable/pressable surface with no JS-tracked pointer state — see the file header. */
@@ -133,5 +133,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `selectionMode`/`expandOnClick`/`typeahead` are
   // all real props, but none is `orientation`/`multiple`/`collapsible` — the same empty result
   // the dialog's/drawer's own settings already show.
-  settings: defineSettings<TreeViewProps<TreeNode>>({}),
+  settings: defineSettings<TreeViewProps<TreeNode>>()({}),
 });

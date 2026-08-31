@@ -3,9 +3,7 @@
 // the one name from the closed `SETTINGS` vocabulary that intersects the carousel's own props
 // (`../entity/passport.ts`) — same name, same mark (`data-orientation`).
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means: "which axis the slides scroll on — also flips which way prevTrigger/nextTrigger point",
     options: {

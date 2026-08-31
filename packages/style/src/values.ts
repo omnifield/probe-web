@@ -70,8 +70,11 @@ export {
   GRID_STEP,
   ROUND_FALLBACK_NOTE,
   ROUND_SUPPORT_TEST,
+  SPACE_ROLES,
   type DerivedScale,
   type DerivedStep,
+  type SpaceRole,
+  type SpaceRoleEntry,
 } from "./dimension.js";
 
 // Контраст — не утилита, а ГЕЙТ, доступный потребителю. Тот, кто ставит свой бренд, обязан

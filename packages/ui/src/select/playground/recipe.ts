@@ -34,8 +34,13 @@ export const recipe: SlotRecipe = {
       },
     },
     control: {
+      // `flex`/`width: 100%`, not `inline-flex` — an `inline-flex` box shrink-wraps its content,
+      // and a long, `nowrap` value (`valueText` below) then grows the box past its container
+      // instead of the box clamping the text. Found live, 2026-08-30, composed inside a real
+      // sidebar panel with unpredictable caption length.
       props: {
-        display: "inline-flex",
+        display: "flex",
+        width: "100%",
         alignItems: "stretch",
         borderRadius: "var(--radius-md)",
         borderWidth: "var(--border-width-1)",
@@ -55,6 +60,11 @@ export const recipe: SlotRecipe = {
       props: {
         display: "flex",
         flex: "1",
+        // A flex item's automatic MIN width is its content's min-content size by default — for a
+        // `nowrap` label that's the label's full, unbroken width, and it wins over `flex: 1`
+        // trying to shrink the item back down. `minWidth: 0` opts out of that default; `valueText`
+        // itself keeps the actual clamp (`overflow: hidden` down below).
+        minWidth: "0",
         alignItems: "center",
         justifyContent: "space-between",
         gap: "var(--space-2)",
@@ -79,10 +89,10 @@ export const recipe: SlotRecipe = {
       },
     },
     valueText: {
-      props: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-      // `placeholder` НЕ СОСТОЯНИЕ ЭТОЙ ЧАСТИ (`entity/passport.ts`: valueText объявляет только
-      // disabled/invalid/focus) — признак стоит на `trigger`, который её содержит. Адресуем через
-      // предка, тем же приёмом, что аккордеон красит содержимое по состоянию своего пункта.
+      props: { minWidth: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+      // `placeholder` IS NOT A STATE OF THIS PART (`entity/passport.ts`: valueText only declares
+      // disabled/invalid/focus) — the mark sits on `trigger`, which contains it. Addressed through
+      // the ancestor, the same device the accordion uses to color content by its item's state.
       states: { disabled: { props: { color: "var(--neutral-11)" } } },
       ancestors: [
         {
@@ -121,11 +131,11 @@ export const recipe: SlotRecipe = {
         open: { props: { transform: "rotate(180deg)" } },
       },
     },
-    // РАЗМЕР ОГРАНИЧИВАЕТ `positioner`, А НЕ `content`: паспорт ставит `--available-width`/
-    // `--available-height` на `positioner` (`entity/passport.ts`) — узел, который реально их
-    // несёт. `content` эти же переменные читал раньше СЕБЕ, а не своему родителю: механика
-    // скина это отвергает («переменную объявляет паспорт, но на другой части») — правило
-    // приехало бы на страницу с неразрешимым значением. `content` внутри просто прокручивается.
+    // SIZE CAPS `positioner`, NOT `content`: the passport puts `--available-width`/
+    // `--available-height` on `positioner` (`entity/passport.ts`) — the node that actually carries
+    // them. `content` used to read these same variables on ITSELF rather than on its parent: the
+    // skin mechanism rejects that ("the passport declares the variable on a different part") — the
+    // rule would have landed on the page with an unresolvable value. `content` just scrolls inside.
     positioner: {
       props: {
         maxWidth: "var(--available-width)",
@@ -133,9 +143,17 @@ export const recipe: SlotRecipe = {
       },
     },
     content: {
+      // `display`/`flexDirection` live under `states.open`, NOT here — `data-state` on `content`
+      // is unconditional (`entity/passport.ts`: always "open" or "closed", never absent), and Zag
+      // ALSO sets the native `hidden` attribute while closed (`select.connect.mjs`,
+      // `getContentProps`). `[hidden]`'s `display: none` is a user-agent rule — the lowest
+      // priority there is — and an unconditional `display: flex` HERE is still an author rule
+      // that beats it outright. Found live, 2026-08-30: Zag correctly closed (`hidden=""`,
+      // `data-state="closed"`, confirmed by hand in the DOM), the panel stayed on screen anyway,
+      // and Zag itself had already stopped listening for interaction on it — visible but dead,
+      // exactly what a `display` fight with `[hidden]` produces. Scoping `display` to `open`
+      // means CLOSED gets no author `display` rule at all, and `[hidden]` wins by default.
       props: {
-        display: "flex",
-        flexDirection: "column",
         gap: "var(--space-1)",
         padding: "var(--space-1)",
         overflow: "auto",
@@ -144,6 +162,9 @@ export const recipe: SlotRecipe = {
         borderStyle: "solid",
         borderColor: "var(--neutral-6)",
         background: "var(--neutral-1)",
+      },
+      states: {
+        open: { props: { display: "flex", flexDirection: "column" } },
       },
     },
     itemGroupLabel: {
@@ -172,10 +193,11 @@ export const recipe: SlotRecipe = {
         disabled: { props: { color: "var(--neutral-11)", cursor: "not-allowed" } },
       },
     },
-    // `display` НЕ В БАЗЕ: кит прячет неотмеченный индикатор атрибутом `hidden` (нативный
-    // `display: none`), и безусловный `display: inline-flex` в базе перебил бы его для КАЖДОГО
-    // пункта разом — все галочки были бы видны одновременно. Ставим `display` только вместе с
-    // `checked`, когда `hidden` уже снят китом и узел реально показан.
+    // `display` IS NOT IN THE BASE: the kit hides the unchecked indicator with the `hidden`
+    // attribute (native `display: none`), and an unconditional `display: inline-flex` in the base
+    // would override that for EVERY item at once — every checkmark would show simultaneously.
+    // `display` is set only alongside `checked`, when the kit has already lifted `hidden` and the
+    // node is genuinely shown.
     itemIndicator: {
       props: { color: "var(--accent-9)" },
       states: { checked: { props: { display: "inline-flex" } } },

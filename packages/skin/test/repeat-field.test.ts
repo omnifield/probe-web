@@ -7,8 +7,8 @@
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expect, it } from "vitest";
 
-import { baseAssemblyOf, resolveDataBinding, type BaseAssemblyElement } from "../src/passport-assembly.js";
-import { definePassport } from "../src/passport-form.js";
+import { baseAssemblyOf, resolveDataBinding, type BaseAssemblyElement } from "../src/passport/assembly/index.js";
+import { definePassport } from "../src/passport/form/index.js";
 
 const anatomy = createAnatomy("list").parts("root", "section", "row");
 

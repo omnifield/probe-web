@@ -43,7 +43,9 @@ export const recipe: SlotRecipe = {
       props: {
         display: "inline-flex",
         alignItems: "center",
-        gap: "var(--space-1)",
+        // `control-inline-gap` (`space-2`) — иконка↔подпись внутри одного контрола, тот же зазор,
+        // что у кнопки/чекбокса/свитча. Был `space-1` без причины — разъезд найден и починен PWEB-198.
+        gap: "var(--space-2)",
         borderWidth: "0",
         padding: "0",
         background: "transparent",

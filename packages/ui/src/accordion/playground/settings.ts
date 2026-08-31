@@ -1,6 +1,5 @@
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
 
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means:
       "how items are laid out: top to bottom or left to right — this drives keyboard navigation and aria",

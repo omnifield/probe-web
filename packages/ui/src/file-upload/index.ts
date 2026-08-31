@@ -31,6 +31,4 @@ export {
   type FileUploadProps,
   FileUploadTrigger,
   type FileUploadTriggerProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

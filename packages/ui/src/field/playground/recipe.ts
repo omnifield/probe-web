@@ -14,7 +14,10 @@ const controlProps = {
   boxSizing: "border-box",
   width: "100%",
   minBlockSize: "var(--control-height-md)",
-  paddingInline: "var(--space-3)",
+  // `control-padding-inline` (`space-4`) — the md control's own padding, `packages/style/src/
+  // dimension.ts`. Used to be `space-3` (paired with `control-height-sm`, not `-md`) — the
+  // mismatch was found and fixed in PWEB-198.
+  paddingInline: "var(--space-4)",
   borderWidth: "var(--border-width-1)",
   borderStyle: "solid",
   borderColor: "var(--neutral-7)",

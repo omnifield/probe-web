@@ -47,18 +47,18 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { TimerProps } from "../components/index.jsx";
+import type { TimerProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Which time unit this is — shared by `item`/`itemLabel`/`itemValue`. */
-const days: PassportState = { name: "days", mark: { kind: "attribute", name: "data-type", value: "days" } };
-const hours: PassportState = { name: "hours", mark: { kind: "attribute", name: "data-type", value: "hours" } };
-const minutes: PassportState = { name: "minutes", mark: { kind: "attribute", name: "data-type", value: "minutes" } };
-const seconds: PassportState = { name: "seconds", mark: { kind: "attribute", name: "data-type", value: "seconds" } };
-const milliseconds: PassportState = {
+const days = { name: "days", mark: { kind: "attribute", name: "data-type", value: "days" } } as const satisfies PassportState;
+const hours = { name: "hours", mark: { kind: "attribute", name: "data-type", value: "hours" } } as const satisfies PassportState;
+const minutes = { name: "minutes", mark: { kind: "attribute", name: "data-type", value: "minutes" } } as const satisfies PassportState;
+const seconds = { name: "seconds", mark: { kind: "attribute", name: "data-type", value: "seconds" } } as const satisfies PassportState;
+const milliseconds = {
   name: "milliseconds",
   mark: { kind: "attribute", name: "data-type", value: "milliseconds" },
-};
+} as const satisfies PassportState;
 const timePartStates: readonly PassportState[] = [days, hours, minutes, seconds, milliseconds];
 
 /** A genuine button with no JS-tracked pointer state — the plain button's own reasoning. */
@@ -92,5 +92,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `countdown`/`autoStart`/`interval`/`startMs`/
   // `targetMs` are all real props, but none is `orientation`/`multiple`/`collapsible` — the same
   // empty result the dialog's/drawer's own settings already show.
-  settings: defineSettings<TimerProps>({}),
+  settings: defineSettings<TimerProps>()({}),
 });

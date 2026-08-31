@@ -19,6 +19,4 @@ export {
   RadioGroupLabel,
   type RadioGroupLabelProps,
   type RadioGroupProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

@@ -57,26 +57,26 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { ToasterProps } from "../components/index.jsx";
+import type { ToasterProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Six placement values, shared by `group` and `root`. */
-const topStart: PassportState = { name: "top-start", mark: { kind: "attribute", name: "data-placement", value: "top-start" } };
-const top: PassportState = { name: "top", mark: { kind: "attribute", name: "data-placement", value: "top" } };
-const topEnd: PassportState = { name: "top-end", mark: { kind: "attribute", name: "data-placement", value: "top-end" } };
-const bottomStart: PassportState = { name: "bottom-start", mark: { kind: "attribute", name: "data-placement", value: "bottom-start" } };
-const bottom: PassportState = { name: "bottom", mark: { kind: "attribute", name: "data-placement", value: "bottom" } };
-const bottomEnd: PassportState = { name: "bottom-end", mark: { kind: "attribute", name: "data-placement", value: "bottom-end" } };
+const topStart = { name: "top-start", mark: { kind: "attribute", name: "data-placement", value: "top-start" } } as const satisfies PassportState;
+const top = { name: "top", mark: { kind: "attribute", name: "data-placement", value: "top" } } as const satisfies PassportState;
+const topEnd = { name: "top-end", mark: { kind: "attribute", name: "data-placement", value: "top-end" } } as const satisfies PassportState;
+const bottomStart = { name: "bottom-start", mark: { kind: "attribute", name: "data-placement", value: "bottom-start" } } as const satisfies PassportState;
+const bottom = { name: "bottom", mark: { kind: "attribute", name: "data-placement", value: "bottom" } } as const satisfies PassportState;
+const bottomEnd = { name: "bottom-end", mark: { kind: "attribute", name: "data-placement", value: "bottom-end" } } as const satisfies PassportState;
 const placementStates: readonly PassportState[] = [topStart, top, topEnd, bottomStart, bottom, bottomEnd];
 
 /** The vertical half of `placement` — its own attribute, addressable independently of alignment. */
-const sideTop: PassportState = { name: "side-top", mark: { kind: "attribute", name: "data-side", value: "top" } };
-const sideBottom: PassportState = { name: "side-bottom", mark: { kind: "attribute", name: "data-side", value: "bottom" } };
+const sideTop = { name: "side-top", mark: { kind: "attribute", name: "data-side", value: "top" } } as const satisfies PassportState;
+const sideBottom = { name: "side-bottom", mark: { kind: "attribute", name: "data-side", value: "bottom" } } as const satisfies PassportState;
 
 /** The horizontal half of `placement` — its own attribute, addressable independently of side. */
-const alignStart: PassportState = { name: "align-start", mark: { kind: "attribute", name: "data-align", value: "start" } };
-const alignCenter: PassportState = { name: "align-center", mark: { kind: "attribute", name: "data-align", value: "center" } };
-const alignEnd: PassportState = { name: "align-end", mark: { kind: "attribute", name: "data-align", value: "end" } };
+const alignStart = { name: "align-start", mark: { kind: "attribute", name: "data-align", value: "start" } } as const satisfies PassportState;
+const alignCenter = { name: "align-center", mark: { kind: "attribute", name: "data-align", value: "center" } } as const satisfies PassportState;
+const alignEnd = { name: "align-end", mark: { kind: "attribute", name: "data-align", value: "end" } } as const satisfies PassportState;
 
 const positionStates: readonly PassportState[] = [...placementStates, sideTop, sideBottom, alignStart, alignCenter, alignEnd];
 
@@ -124,5 +124,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `placement` is real but store-level and
   // ineligible by name (see the file header) — the same empty result the dialog's/drawer's own
   // settings already show.
-  settings: defineSettings<ToasterProps>({}),
+  settings: defineSettings<ToasterProps>()({}),
 });

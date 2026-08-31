@@ -1,0 +1,51 @@
+{
+  "name": "@probe-web/generators",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Generation tooling: not an application, not a plugin for one specific thing. An Nx plugin (component scaffolding, barrel sync in place of the ad-hoc packages/ui/scripts/generate.mjs) is only one of the generators here; test-data generation (faker) and other template-driven text generation, unrelated to Nx, are meant to land alongside it over time. Nothing in the repository is required to depend on this package — each zone opts in.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "exports": {
+    "./barrel": {
+      "types": "./dist/barrel/index.d.ts",
+      "default": "./dist/barrel/index.js"
+    },
+    "./extract": {
+      "types": "./dist/extract/index.d.ts",
+      "default": "./dist/extract/index.js"
+    },
+    "./scaffold": {
+      "types": "./dist/scaffold/index.d.ts",
+      "default": "./dist/scaffold/index.js"
+    },
+    "./preserve": {
+      "types": "./dist/preserve/index.d.ts",
+      "default": "./dist/preserve/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.9",
+    "vite": "^8.2.1"
+  },
+  "devDependencies": {
+    "@omnifield/probe-web-io": "workspace:*",
+    "@omnifield/probe-web-skin": "workspace:*",
+    "@types/node": "^24.10.1",
+    "@zag-js/accordion": "^1.43.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

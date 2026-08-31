@@ -18,12 +18,15 @@
 //
 // THIN on purpose: taxonomy (`parts.ts`) and scenario data (`assemblies.ts`) live in their own
 // files, the SAME physical shape as every other component's `playground/` — one part and three
-// assemblies still get the full three-file template, not a size-driven exception.
+// assemblies still get the full template, not a size-driven exception. Data PRESETS (`data.ts`,
+// literal `DataPreset[]` with human-facing prose) are GONE (PWEB-180 continuation, 2026-08-29,
+// postановка user): a component no longer carries a pile of example text — it carries `io`
+// (`../entity/io.ts`, the RUNTIME input/output shape, not editor-only), and filling the showcase
+// with content from that shape is the skin editor's job, a mechanic not yet built.
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "./assemblies.js";
-import { dataPresets } from "./data.js";
 import { parts } from "./parts.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
@@ -39,13 +42,12 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   // enter a value with. The provider names the section, because otherwise every editor host
   // would invent its own name for it.
   group: "actions",
-  // Самый мелкий атом действия в ките — не должен занимать в галерее случаев столько же места,
-  // сколько крупный составной компонент (`footprintOf`, `PWEB-31`).
+  // The smallest action atom in the kit — shouldn't take up as much room in the case gallery as
+  // a large composite component (`footprintOf`, `PWEB-31`).
   footprint: "compact",
   variantAxis: {
     means: "the variant name a human gives the button in the editor; the kit passes it through untouched",
   },
   parts,
   assemblies,
-  dataPresets,
 });

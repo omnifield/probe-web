@@ -17,7 +17,7 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   group: "inputs",
   footprint: "compact",
   variantAxis: {
-    means: "имя вариации чекбокса; его даёт человек в редакторе, кит пропускает насквозь",
+    means: "the variant name given to the checkbox in the editor; the kit passes it through untouched",
   },
   parts,
   assemblies,

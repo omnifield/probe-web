@@ -15,7 +15,7 @@ type FieldPart = typeof passport extends ComponentPassport<infer Part> ? Part : 
 export const assemblies: readonly PassportAssembly<FieldPart>[] = [
   {
     name: "basic",
-    means: "рабочее поле: обязательное, с ошибкой — виден и «*», и текст ошибки",
+    means: "a working field: required, invalid — both the \"*\" and the error text are visible",
     tree: {
       node: "root",
       props: { required: true, invalid: true },
@@ -23,13 +23,13 @@ export const assemblies: readonly PassportAssembly<FieldPart>[] = [
         {
           node: "label",
           children: [
-            { genus: "text", value: "Имя" },
+            { genus: "text", value: "Name" },
             { node: "requiredIndicator" },
           ],
         },
         { node: "input" },
-        { node: "helperText", children: [{ genus: "text", value: "Как в паспорте" }] },
-        { node: "errorText", children: [{ genus: "text", value: "Обязательное поле" }] },
+        { node: "helperText", children: [{ genus: "text", value: "As it appears on your ID" }] },
+        { node: "errorText", children: [{ genus: "text", value: "This field is required" }] },
       ],
     },
   },

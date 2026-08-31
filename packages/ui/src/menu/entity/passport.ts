@@ -58,17 +58,17 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { MenuProps } from "../components/index.jsx";
+import type { MenuProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Open — unconditional: the sibling value is always `closed`. */
-const open: PassportState = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } };
+const open = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } } as const satisfies PassportState;
 /** Closed — the same attribute, the other value. */
-const closed: PassportState = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } };
+const closed = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } } as const satisfies PassportState;
 const openClosed: readonly PassportState[] = [open, closed];
 
 /** Present only in a multi-trigger menu (`value` prop) — real either way, always written as a boolean. */
-const current: PassportState = { name: "current", mark: { kind: "attribute", name: "data-current" } };
+const current = { name: "current", mark: { kind: "attribute", name: "data-current" } } as const satisfies PassportState;
 
 /** A genuine button with no JS-tracked pointer state — the plain button's own reasoning. Top-level `trigger` only. */
 const buttonPseudos: readonly PassportState[] = [
@@ -78,13 +78,13 @@ const buttonPseudos: readonly PassportState[] = [
 ];
 
 /** This item cannot be selected — its own flag, or (for `triggerItem`) the parent item's. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 /** The current keyboard/pointer target — a VIRTUAL fact, `content` holds real focus (see the file header). */
-const highlighted: PassportState = { name: "highlighted", mark: { kind: "attribute", name: "data-highlighted" } };
+const highlighted = { name: "highlighted", mark: { kind: "attribute", name: "data-highlighted" } } as const satisfies PassportState;
 
 /** This checkbox/radio item is checked — real only on an OPTION item, see the file header. */
-const checked: PassportState = { name: "checked", mark: { kind: "attribute", name: "data-state", value: "checked" } };
-const unchecked: PassportState = { name: "unchecked", mark: { kind: "attribute", name: "data-state", value: "unchecked" } };
+const checked = { name: "checked", mark: { kind: "attribute", name: "data-state", value: "checked" } } as const satisfies PassportState;
+const unchecked = { name: "unchecked", mark: { kind: "attribute", name: "data-state", value: "unchecked" } } as const satisfies PassportState;
 
 /** Shared by `item`/`itemIndicator`/`itemText` — the option-item pair, absent on a plain item. */
 const optionStates: readonly PassportState[] = [checked, unchecked];
@@ -136,5 +136,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `composite`/`typeahead`/`loopFocus`/
   // `closeOnSelect` are all real props, but none is `orientation`/`multiple`/`collapsible` —
   // the same empty result the dialog's/drawer's own settings already show.
-  settings: defineSettings<MenuProps>({}),
+  settings: defineSettings<MenuProps>()({}),
 });

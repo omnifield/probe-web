@@ -33,18 +33,18 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { ToggleProps } from "../components/index.jsx";
+import type { ToggleProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Two-valued encoding of pressed/unpressed — `data-state`. */
-const on: PassportState = { name: "on", mark: { kind: "attribute", name: "data-state", value: "on" } };
-const off: PassportState = { name: "off", mark: { kind: "attribute", name: "data-state", value: "off" } };
+const on = { name: "on", mark: { kind: "attribute", name: "data-state", value: "on" } } as const satisfies PassportState;
+const off = { name: "off", mark: { kind: "attribute", name: "data-state", value: "off" } } as const satisfies PassportState;
 
 /** Presence-only encoding of the SAME fact — `data-pressed`, absent when unpressed. */
-const pressed: PassportState = { name: "pressed", mark: { kind: "attribute", name: "data-pressed" } };
+const pressed = { name: "pressed", mark: { kind: "attribute", name: "data-pressed" } } as const satisfies PassportState;
 
 /** This node cannot be interacted with. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 
 const sharedStates: readonly PassportState[] = [on, off, pressed, disabled];
 
@@ -62,5 +62,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `pressed`/`defaultPressed`/`onPressedChange`/
   // `disabled` are all real props, but none is `orientation`/`multiple`/`collapsible` — the same
   // empty result the avatar's/dialog's own settings already show.
-  settings: defineSettings<ToggleProps>({}),
+  settings: defineSettings<ToggleProps>()({}),
 });

@@ -43,6 +43,4 @@ export {
   type TreeViewProps,
   TreeViewTree,
   type TreeViewTreeProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

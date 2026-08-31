@@ -1,15 +1,10 @@
-// TEMPLATE — structure prepared, no sample instance written here.
-//
 // STRUCTURAL assembly templates for the avatar — read by `./index.ts`'s `defineEditorInfo` call.
-// Same physical shape as every other component's `playground/assemblies.ts` (`PWEB-127`): the
-// file exists even before it holds anything.
+// Same physical shape as every other component's `playground/assemblies.ts` (`PWEB-127`).
 //
-// LEFT EMPTY for whoever fills the playground zone next — same type derivation as everywhere
-// else, ready to receive entries. A likely first entry, structurally (verified against
-// `../entity/anatomy.ts` and `parts.ts`'s `accepts`, content not written): `root` wrapping
-// `fallback` (initials) and `image` (a real or broken `src` — worth showing BOTH: the pair's own
-// opposite-polarity `visible`/`hidden` states, `../entity/passport.ts`'s own file header, only
-// shows up with a real load or a real failure, not a static mock).
+// ONE entry: `root` wrapping `fallback` (initials) and `image` (a real `src`). Which of the two
+// actually shows is decided at runtime by the real image load (`../entity/passport.ts`'s own file
+// header — `visible`/`hidden` flip on `state.matches("loaded")`), not by anything declared here;
+// a broken `src` is a second, equally real scenario left for whoever extends this next.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -19,4 +14,16 @@ import type { passport } from "../entity/passport.js";
 
 type AvatarPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-export const assemblies: readonly PassportAssembly<AvatarPart>[] = [];
+export const assemblies: readonly PassportAssembly<AvatarPart>[] = [
+  {
+    name: "basic",
+    means: "an avatar with a real image and an initials fallback",
+    tree: {
+      node: "root",
+      children: [
+        { node: "fallback", children: [{ genus: "text", value: "JD" }] },
+        { node: "image", props: { src: "https://i.pravatar.cc/128?img=12", alt: "Jane Doe" } },
+      ],
+    },
+  },
+];

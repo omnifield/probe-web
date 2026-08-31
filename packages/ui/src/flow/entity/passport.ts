@@ -8,7 +8,7 @@
 import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
-import type { FlowProps } from "../components/index.jsx";
+import type { FlowProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 export const passport = definePassport({
@@ -20,5 +20,5 @@ export const passport = definePassport({
   },
   // Настроек из закрытого перечня ряд не принимает: направление у него — раскладочное свойство,
   // то есть ВИД, и приезжает скином (решение «раскладочные свойства это ВИД»).
-  settings: defineSettings<FlowProps>({}),
+  settings: defineSettings<FlowProps>()({}),
 });

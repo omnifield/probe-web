@@ -1,9 +1,7 @@
 // EDITOR-ONLY setting prose for the toggle group — read by `./index.ts`'s `defineEditorInfo`
 // call. Same physical shape as the tabs'/accordion's own `playground/settings.ts`.
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means: "which way the buttons lay out — also drives keyboard navigation (arrow keys)",
     options: {

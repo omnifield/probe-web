@@ -61,20 +61,20 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are
 // checked against the component's real props.
-import type { PopoverProps } from "../components/index.jsx";
+import type { PopoverProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Open — unconditional: the sibling value is always `closed`. */
-const open: PassportState = {
+const open = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
-};
+} as const satisfies PassportState;
 
 /** Closed — the same attribute, the other value. */
-const closed: PassportState = {
+const closed = {
   name: "closed",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
-};
+} as const satisfies PassportState;
 
 /** Passport of the popover — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -133,5 +133,5 @@ export const passport = definePassport({
   // `orientation`/`multiple`/`collapsible` — `defineSettings`'s own `Extract<keyof Props,
   // PassportSettingName>` filters them out by construction, the same empty result the plain
   // button's and the switch's own settings already show.
-  settings: defineSettings<PopoverProps>({}),
+  settings: defineSettings<PopoverProps>()({}),
 });

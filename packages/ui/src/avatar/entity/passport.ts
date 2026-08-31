@@ -31,20 +31,20 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { AvatarProps } from "../components/index.jsx";
+import type { AvatarProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** This node is the one currently showing. */
-const visible: PassportState = {
+const visible = {
   name: "visible",
   mark: { kind: "attribute", name: "data-state", value: "visible" },
-};
+} as const satisfies PassportState;
 
 /** The other node — always exactly one of the two is `visible`, the other `hidden`. */
-const hidden: PassportState = {
+const hidden = {
   name: "hidden",
   mark: { kind: "attribute", name: "data-state", value: "hidden" },
-};
+} as const satisfies PassportState;
 
 const visibleHidden: readonly PassportState[] = [visible, hidden];
 
@@ -63,5 +63,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: the avatar has no `orientation`/`multiple`/
   // `collapsible` prop — the same empty result the plain button's and the dialog's own settings
   // already show.
-  settings: defineSettings<AvatarProps>({}),
+  settings: defineSettings<AvatarProps>()({}),
 });

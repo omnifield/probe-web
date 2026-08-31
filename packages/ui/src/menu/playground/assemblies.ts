@@ -27,7 +27,7 @@ type MenuPart = typeof passport extends ComponentPassport<infer Part> ? Part : n
 export const assemblies: readonly PassportAssembly<MenuPart>[] = [
   {
     name: "basic",
-    means: "плавающее меню само по себе: группа с подписью, разделитель, пункт с отметкой",
+    means: "the floating menu on its own: a labeled group, a separator, a checked item",
     providerProps: { defaultOpen: true },
     tree: {
       node: "positioner",
@@ -39,9 +39,9 @@ export const assemblies: readonly PassportAssembly<MenuPart>[] = [
             {
               node: "itemGroup",
               children: [
-                { node: "itemGroupLabel", children: [{ genus: "text", value: "Файл" }] },
-                { node: "item", props: { value: "rename" }, children: [{ genus: "text", value: "Переименовать" }] },
-                { node: "item", props: { value: "delete" }, children: [{ genus: "text", value: "Удалить" }] },
+                { node: "itemGroupLabel", children: [{ genus: "text", value: "File" }] },
+                { node: "item", props: { value: "rename" }, children: [{ genus: "text", value: "Rename" }] },
+                { node: "item", props: { value: "delete" }, children: [{ genus: "text", value: "Delete" }] },
               ],
             },
             { node: "separator" },
@@ -50,7 +50,7 @@ export const assemblies: readonly PassportAssembly<MenuPart>[] = [
               props: { value: "notify" },
               children: [
                 { node: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
-                { node: "itemText", children: [{ genus: "text", value: "Уведомления" }] },
+                { node: "itemText", children: [{ genus: "text", value: "Notifications" }] },
               ],
             },
           ],

@@ -55,23 +55,23 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { SliderProps } from "../components/index.jsx";
+import type { SliderProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** The slider (or, on `thumb`, this one thumb) is disabled. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 /** The enclosing form rejected the value. */
-const invalid: PassportState = { name: "invalid", mark: { kind: "attribute", name: "data-invalid" } };
+const invalid = { name: "invalid", mark: { kind: "attribute", name: "data-invalid" } } as const satisfies PassportState;
 /** A drag is in progress — group-level on most parts, narrowed to "this thumb" on `thumb` itself. */
-const dragging: PassportState = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } };
+const dragging = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } } as const satisfies PassportState;
 /** A thumb has focus — group-level on most parts, narrowed to "this thumb" on `thumb` itself. */
-const focus: PassportState = { name: "focus", mark: { kind: "attribute", name: "data-focus" } };
+const focus = { name: "focus", mark: { kind: "attribute", name: "data-focus" } } as const satisfies PassportState;
 
 /** Shared by `root`/`label`/`track`/`range`/`control` — every group-level fact each of them carries. */
 const groupStates: readonly PassportState[] = [disabled, invalid, dragging, focus];
 
-const hoverPseudo: PassportState = { name: "hover", mark: { kind: "pseudo", name: ":hover" } };
-const activePseudo: PassportState = { name: "active", mark: { kind: "pseudo", name: ":active" } };
+const hoverPseudo = { name: "hover", mark: { kind: "pseudo", name: ":hover" } } as const satisfies PassportState;
+const activePseudo = { name: "active", mark: { kind: "pseudo", name: ":active" } } as const satisfies PassportState;
 
 /** Passport of the slider — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -127,7 +127,7 @@ export const passport = definePassport({
   // mark, checked present on all ten parts, default `"horizontal"` (`slider.machine.mjs`'s own
   // `props()` default, checked live). `disabled`/`invalid` are excluded the same way the checkbox
   // excludes them: already declared as STATES above.
-  settings: defineSettings<SliderProps>({
+  settings: defineSettings<SliderProps>()({
     orientation: {
       values: {
         kind: "choice",

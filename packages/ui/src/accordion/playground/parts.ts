@@ -9,20 +9,15 @@
 // content inside the item. This is the first place where the nesting rule is checkable at all —
 // the button has no internal parts, and there was nothing to derive "who can be an ancestor" from.
 
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY — see `assemblies.ts` for why: `typeof passport` needs the binding's TYPE, not the
-// module's side effects.
-import type { passport } from "../entity/passport.js";
-
-// The literal part-name union, read off the passport itself — see `assemblies.ts` for the same
-// device and the same reason (no contextual typing reaches into a separate module).
-type AccordionPart =
-  typeof passport extends ComponentPassport<infer Part> ? Part : never;
-
-export const parts: Readonly<
-  Record<AccordionPart, PassportPartEditorInfo<AccordionPart>>
-> = {
+// `as const`, not a `Record<AccordionPart, PassportPartEditorInfo<AccordionPart>>` annotation —
+// the explicit annotation widens `states`'s keys AND `accepts`'s `kind: "component"` values to
+// bare `string` before `defineEditorInfo` ever sees them (`settings.ts`'s own `PWEB-209`
+// follow-up trap, one layer worse here: even bare inference alone still widens `kind` without
+// `as const`, since object literal PROPERTY VALUES widen by default, only KEYS don't). Same
+// trade-off as `settings.ts`: "did I name every real part, and only real parts" is no longer
+// checked by `tsc` either — `defineEditorInfo`'s own runtime check still catches both, one step
+// later.
+export const parts = {
   root: {
     means: "the whole set of items — one node wrapping every item",
     accepts: [{ kind: "component", name: "item" }],
@@ -109,4 +104,4 @@ export const parts: Readonly<
       { kind: "component" },
     ],
   },
-};
+} as const;

@@ -1,19 +1,19 @@
-// РЕЦЕПТ-ДОКАЗАТЕЛЬСТВО (`PWEB-111`, `PWEB-114`) — не поставка, не вкус продукта. Живёт рядом с
-// компонентом, но НИКУДА не экспортируется из `index.ts`/`passport.ts`/`kit.ts` — его читает
-// только `checkbox.test.tsx`, доказывая, что паспорт чекбокса МОЖНО одеть целиком настоящей
-// механикой скина (`skinGaps` пусто, CSS порождается).
+// PROOF RECIPE (`PWEB-111`, `PWEB-114`) — not a shipped product, not product taste. Lives next
+// to the component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only
+// `checkbox.test.tsx` reads it, to prove the checkbox's passport CAN be dressed whole by the
+// real skin mechanism (`skinGaps` empty, CSS is generated).
 
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
-/** Переход вида — тот же приём, что у кнопки и гармошки. */
-const переход = "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
+/** Look transition — same device as the button and the accordion. */
+const transition = "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 
 /**
- * ЧЕКБОКС. Четыре части, одиннадцать состояний.
+ * CHECKBOX. Four parts, eleven states.
  *
- * Управляющая рамка несёт границу и фон; указатель — только цвет знака (сам знак кладёт
- * потребитель). Отмеченность и «отчасти» красят рамку сплошным акцентом — обе трактуются как
- * «есть выбор», обычная норма рынка.
+ * The control frame carries the border and fill; the indicator only carries the mark's color
+ * (the mark itself is placed by the consumer). Checked and indeterminate both paint the frame
+ * with a solid accent — both read as "there is a choice", the ordinary market norm.
  */
 export const recipe: SlotRecipe = {
   base: {
@@ -41,7 +41,7 @@ export const recipe: SlotRecipe = {
         borderStyle: "solid",
         borderColor: "var(--neutral-7)",
         background: "var(--neutral-1)",
-        transition: переход,
+        transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
@@ -58,10 +58,11 @@ export const recipe: SlotRecipe = {
         disabled: { props: { borderColor: "var(--neutral-6)", background: "var(--neutral-3)" } },
       },
     },
-    // `display` НЕ В БАЗЕ: кит прячет указатель атрибутом `hidden` (нативный `display: none`),
-    // пока чекбокс не отмечен и не «отчасти» — безусловный `display: inline-flex` в базе перебил
-    // бы это для КАЖДОГО чекбокса разом, знак был бы виден всегда. Ставим `display` вместе с теми
-    // же двумя состояниями, что снимают `hidden`.
+    // `display` IS NOT IN THE BASE: the kit hides the indicator with the `hidden` attribute
+    // (native `display: none`) while the checkbox is neither checked nor indeterminate — an
+    // unconditional `display: inline-flex` in the base would override that for EVERY checkbox
+    // at once, and the mark would always show. `display` is set alongside the same two states
+    // that lift `hidden`.
     indicator: {
       props: {
         color: "var(--accent-contrast)",
@@ -85,5 +86,5 @@ export const recipe: SlotRecipe = {
   },
 };
 
-/** Форма — запись «имя формы + компонент + рецепт», та же, что примет `assemble`. */
-export const form: Form = { name: "чекбокс-проба", component: "checkbox", recipe };
+/** Form — the "name + component + recipe" record `assemble` accepts. */
+export const form: Form = { name: "checkbox-sample", component: "checkbox", recipe };

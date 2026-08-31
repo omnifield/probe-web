@@ -9,7 +9,7 @@
 import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
-import type { WorkspaceProps } from "../components/index.jsx";
+import type { WorkspaceProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 export const passport = definePassport({
@@ -33,7 +33,7 @@ export const passport = definePassport({
   // раз на все страницы: один и тот же скин ставит панель управления с рамками и витрину без
   // них. Метка — `data-outlined`: `Workspace` её не переводит, атрибут долетает до DOM как есть
   // (`Polymorphic` спредит любой `data-*` без разбора), тем же приёмом, что у `data-variant`.
-  settings: defineSettings<WorkspaceProps>({
+  settings: defineSettings<WorkspaceProps>()({
     outlined: {
       values: { kind: "flag" },
       byDefault: false,

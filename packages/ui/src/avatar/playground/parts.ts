@@ -1,18 +1,11 @@
-// TEMPLATE — structure prepared, prose NOT written here.
-//
 // EDITOR-ONLY per-part taxonomy for the avatar — read by `./index.ts`'s `defineEditorInfo` call.
 // Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`): one file,
 // exhaustive over the anatomy, `accepts`/state KEYS true to the real Ark composition read while
 // building `../entity/`.
 //
-// WHAT IS REAL BELOW: every part key, every state key (matches `../entity/passport.ts` exactly —
-// `defineEditorInfo` throws otherwise), and every `accepts` rule (mirrors the actual Solid
-// nesting: `root` wraps `image` + `fallback`, siblings).
-//
-// WHAT IS A PLACEHOLDER: every `means: "TODO"` — human-facing prose, left for whoever fills the
-// playground zone next. Replace each one; do not remove or rename a key while doing it, or
-// `defineEditorInfo` will throw at build time (parts/states are checked against the passport
-// EXACTLY, not a superset).
+// Every part key, every state key (matches `../entity/passport.ts` exactly — `defineEditorInfo`
+// throws otherwise), and every `accepts` rule (mirrors the actual Solid nesting: `root` wraps
+// `image` + `fallback`, siblings) is real.
 
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -23,13 +16,13 @@ import type { passport } from "../entity/passport.js";
 type AvatarPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 const visibleHiddenMeans = {
-  visible: { means: "TODO" },
-  hidden: { means: "TODO" },
+  visible: { means: "this part is the one currently showing" },
+  hidden: { means: "the other part — image and fallback are never both visible or both hidden at once" },
 } satisfies PassportPartEditorInfo<AvatarPart>["states"];
 
 export const parts: Readonly<Record<AvatarPart, PassportPartEditorInfo<AvatarPart>>> = {
   root: {
-    means: "TODO",
+    means: "the avatar as a whole — wraps the image and its fallback",
     states: {},
     accepts: [
       { kind: "component", name: "image" },
@@ -37,12 +30,12 @@ export const parts: Readonly<Record<AvatarPart, PassportPartEditorInfo<AvatarPar
     ],
   },
   image: {
-    means: "TODO",
+    means: "the picture — a real `<img>`, kept in the DOM even while hidden so its load/error events still fire",
     states: visibleHiddenMeans,
     accepts: [],
   },
   fallback: {
-    means: "TODO",
+    means: "shown while the image hasn't loaded (or has none) — initials, an icon, whatever the consumer puts inside it",
     states: visibleHiddenMeans,
     accepts: [
       { kind: "content", genus: "text" },

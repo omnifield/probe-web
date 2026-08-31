@@ -14,7 +14,7 @@ import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit } from "./components/kit.js";
+import { kit } from "./components/kit.jsx";
 import { passport } from "./entity/passport.js";
 import { editorInfo } from "./playground/index.js";
 
@@ -193,5 +193,19 @@ describe("a reference's own literal `props` reach the variant — through `bind`
 
     const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
     expect(button?.hasAttribute("data-variant")).toBe(false);
+  });
+});
+
+describe("playground assembly \"base\" — shows the label from data (PWEB-187/191)", () => {
+  it("reads /label absolutely — no repeat wraps this node, scopeTemplate never touches it", () => {
+    const assembly = editorInfo.assemblies.find((candidate) => candidate.name === "base")!;
+    const tree = baseAssemblyOf(passport, assembly, "button", { label: "Оформить заказ" });
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{ label: "Оформить заказ" }} />, host);
+
+    const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
+    expect(button?.textContent).toBe("Оформить заказ");
   });
 });

@@ -1,0 +1,38 @@
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@probe-web/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+//
+// Перечень паспортов формы собирается тем же обходом папок `src/*`, что паспорт и кит:
+// компонент, объявивший `entity/io.ts`, попадает сюда самим фактом объявления —
+// НЕОБЯЗАТЕЛЬНО, не каждый компонент несёт данные, но кто завёл, регистрировать себя отдельно
+// в продукте больше не должен (`PWEB-180` продолжение).
+
+import type { z } from "@omnifield/probe-web-io";
+{{#each items}}
+import { passport as {{passportIdentifier}} } from "./{{passportModule}}";
+import * as {{ioIdentifier}} from "./{{ioModule}}";
+{{/each}}
+/** Что компонент объявил в своём `entity/io.ts` — оба поля необязательны по отдельности. */
+export interface ComponentIo {
+  readonly input?: z.ZodType;
+  readonly output?: z.ZodType;
+}
+
+/**
+ * Паспорта формы по имени компонента — только те, кто их завёл.
+ *
+ * Компонент без записи здесь отсутствует ЧЕСТНО: он ещё не объявил `entity/io.ts`, и
+ * молчаливая заглушка выглядела бы как объявленный контракт (тот же довод, что у `PASSPORTS`).
+ */
+export const IO: Readonly<Record<string, ComponentIo>> = {
+{{#each items}}
+  [{{passportIdentifier}}.component]: {{ioIdentifier}},
+{{/each}}
+};
+
+/**
+ * Паспорт формы по имени компонента, либо `undefined` — если компонент его не завёл.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ */
+export function ioOf(component: string): ComponentIo | undefined {
+  return IO[component];
+}
