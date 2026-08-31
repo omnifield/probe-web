@@ -42,7 +42,6 @@ function readable<Part extends string, Data = unknown>(
       name: part.name,
       accepts: editorInfo.parts[part.name]?.accepts,
     })),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- narrow-shape boundary, same as button.test.tsx
     selfAssembly: passport.selfAssembly as any,
   };
 }

@@ -31,7 +31,6 @@ const readableListbox: ReadableComponent = {
       name: part.name,
       accepts: editorInfo.parts[part.name]?.accepts,
     })),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- narrow-shape boundary, same as accordion.test.tsx: `passport` has no `selfAssembly` field to begin with
     selfAssembly: (passport as any).selfAssembly,
   },
   parts: kit.parts,
