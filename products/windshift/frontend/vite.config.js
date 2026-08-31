@@ -91,6 +91,10 @@ export default defineConfig({
         target: 'http://localhost:7777',
         changeOrigin: true,
       },
+      '/mcp': {
+        target: 'http://localhost:7777',
+        changeOrigin: true,
+      },
     },
   },
   build: {

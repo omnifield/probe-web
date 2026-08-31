@@ -1,0 +1,350 @@
+{
+  "id": "51aed54d-ccf9-49fa-ad72-cb7bdb7ced91",
+  "label": "Омнифилд — кнопка",
+  "name": "omnifield-button",
+  "kind": "form",
+  "savedAt": "2026-08-23T14:16:17.583Z",
+  "state": {
+    "name": "omnifield-button",
+    "component": "button",
+    "recipe": {
+      "base": {
+        "root": {
+          "props": {
+            "display": "inline-flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "gap": "var(--space-2)",
+            "minBlockSize": "var(--control-height-md)",
+            "paddingInline": "var(--space-4)",
+            "borderRadius": "var(--radius-md)",
+            "borderWidth": "var(--border-width-1)",
+            "borderStyle": "solid",
+            "borderColor": "transparent",
+            "fontSize": "var(--font-size-sm)",
+            "fontWeight": "var(--weight-medium)",
+            "lineHeight": "var(--leading-tight)",
+            "letterSpacing": "var(--tracking-normal)",
+            "maxInlineSize": "100%",
+            "minInlineSize": "0",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "whiteSpace": "nowrap",
+            "cursor": "pointer",
+            "userSelect": "none",
+            "transition": "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), outline-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-instant) var(--ease-out)"
+          },
+          "states": {
+            "focus-visible": {
+              "props": {
+                "outline": "var(--border-width-2) solid var(--accent-8)",
+                "outlineOffset": "var(--border-width-2)"
+              }
+            },
+            "active": {
+              "props": {
+                "transform": "translateY(1px)"
+              }
+            },
+            "disabled": {
+              "props": {
+                "opacity": 0.55,
+                "cursor": "not-allowed",
+                "transform": "none"
+              }
+            },
+            "busy": {
+              "props": {
+                "cursor": "progress"
+              }
+            }
+          }
+        }
+      },
+      "variants": {
+        "primary": {
+          "root": {
+            "props": {
+              "background": "var(--accent-9)",
+              "color": "var(--accent-contrast)"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--accent-10)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--accent-10)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.28)"
+                }
+              }
+            }
+          }
+        },
+        "secondary": {
+          "root": {
+            "props": {
+              "background": "var(--neutral-1)",
+              "color": "var(--neutral-12)",
+              "borderColor": "var(--neutral-7)"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--neutral-3)",
+                  "borderColor": "var(--neutral-8)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--neutral-4)",
+                  "borderColor": "var(--neutral-8)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.14)"
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "root": {
+            "props": {
+              "background": "var(--danger-9)",
+              "color": "var(--danger-contrast)"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--danger-10)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--danger-10)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.28)"
+                }
+              }
+            }
+          }
+        },
+        "success": {
+          "root": {
+            "props": {
+              "background": "var(--success-9)",
+              "color": "var(--success-contrast)"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--success-10)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--success-10)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.28)"
+                }
+              }
+            }
+          }
+        },
+        "warning": {
+          "root": {
+            "props": {
+              "background": "var(--warning-9)",
+              "color": "var(--warning-contrast)"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--warning-10)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--warning-10)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.28)"
+                }
+              }
+            }
+          }
+        },
+        "tertiary": {
+          "root": {
+            "props": {
+              "background": "transparent",
+              "color": "var(--accent-11)",
+              "borderColor": "transparent"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--accent-3)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--accent-4)",
+                  "color": "var(--accent-12)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.14)"
+                }
+              }
+            }
+          }
+        },
+        "error-quiet": {
+          "root": {
+            "props": {
+              "background": "transparent",
+              "color": "var(--danger-11)",
+              "borderColor": "transparent"
+            },
+            "states": {
+              "hover": {
+                "props": {
+                  "background": "var(--danger-3)"
+                }
+              },
+              "pressed": {
+                "props": {
+                  "background": "var(--danger-4)",
+                  "color": "var(--danger-12)",
+                  "boxShadow": "inset 0 2px 4px rgb(0 0 0 / 0.14)"
+                }
+              }
+            }
+          }
+        }
+      },
+      "defaultVariant": "primary",
+      "compoundVariants": [
+        {
+          "states": [
+            "expanded"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "outline": "var(--border-width-2) solid var(--accent-8)",
+                "outlineOffset": "var(--border-width-2)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "primary"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "var(--accent-9)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "error"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "var(--danger-9)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "success"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "var(--success-9)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "warning"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "var(--warning-9)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "secondary"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "var(--neutral-1)"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "tertiary"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "transparent"
+              }
+            }
+          }
+        },
+        {
+          "variants": [
+            "error-quiet"
+          ],
+          "states": [
+            "disabled",
+            "hover"
+          ],
+          "style": {
+            "root": {
+              "props": {
+                "background": "transparent"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

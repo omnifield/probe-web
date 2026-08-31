@@ -45,11 +45,11 @@ export function ComponentShowcasePage(props: { component: string }) {
     instanceOf(
       "accordion",
       // Тот же скин, что и у аккордеона списка компонентов (`ComponentList`, `pages/_workspace/
-      // index.tsx`, `variant="контурная"`) — постановка user, 2026-08-29: витрина не должна
+      // index.tsx`, `variant="outline"`) — постановка user, 2026-08-29: витрина не должна
       // выглядеть другим компонентом. Открытость — тем же приёмом, что и там: все разделы на
       // старте, каждый переключается независимо.
       {
-        "data-variant": "контурная",
+        "data-variant": "outline",
         multiple: true,
         collapsible: true,
         defaultValue: data().sections.map((section) => section.id),

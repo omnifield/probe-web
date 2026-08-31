@@ -46,7 +46,7 @@ export function WorkspaceLayout() {
       style={{ "block-size": "100dvh" }}
     >
       <WorkspaceSidebar>
-        <ComponentList variant="контурная" />
+        <ComponentList variant="filled" />
       </WorkspaceSidebar>
 
       <WorkspaceHeader
