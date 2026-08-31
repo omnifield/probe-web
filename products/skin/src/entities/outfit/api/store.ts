@@ -1,13 +1,19 @@
 // ХРАНИЛИЩЕ ВИДА — разговор со службой (`PWEB-13`, `PWEB-78`).
 //
-// ## Три записи, а не одна
+// ## Три записи вида, а не одна
 //
 // Вид делится на палитру, форму и наряд (страница раздела «Вид складывается из частей»). Каждая
 // лежит своей записью и помечена своим ярлыком вида: служба ярлык не толкует — она по нему
 // только отбирает, не заглядывая внутрь.
 //
 // Ярлыки наши: понимание формата принадлежит владельцу вида, то есть нам. Служба хранит
-// непрозрачные куски и одинаково безразлична ко всем трём.
+// непрозрачные куски и одинаково безразлична ко всем им.
+//
+// ## Сборка — четвёртый ярлык, но не часть вида
+//
+// `KINDS.assembly` хранит `ComponentAssembly` (`@omnifield/probe-web-skin/model`) — сборку
+// компонента, отложенную человеком в редакторе скина, а не палитру/форму/наряд. Служба всё равно
+// одна и та же: ярлык у неё непрозрачен, четвёртый добавляется тем же приёмом, что и первые три.
 //
 // ## Скинов в коде зоны нет
 //
@@ -20,7 +26,7 @@
 // поэтому и называются разно: пустая служба ждёт первого наряда, отсутствие службы — её подъёма.
 // Слепи их в одно «ничего нет» — человек пойдёт чинить не то.
 
-import type { Form, Outfit, Palette } from "@omnifield/probe-web-skin/model";
+import type { ComponentAssembly, Form, Outfit, Palette } from "@omnifield/probe-web-skin/model";
 
 /**
  * Адрес службы.
@@ -37,6 +43,7 @@ export const KINDS = {
   palette: "palette",
   form: "form",
   outfit: "outfit",
+  assembly: "assembly",
 } as const;
 
 /** Команда, которой поднимают службу. Человеку нужен адрес и команда, а не текст ошибки движка. */
@@ -168,6 +175,24 @@ export async function readOutfit(name: string): Promise<Outfit | undefined> {
   const record = (await listOutfits()).find((item) => item.name === name);
 
   return record === undefined ? undefined : readState<Outfit>(record.id);
+}
+
+/**
+ * Сохранённые сборки: то, что человек собрал в редакторе скина и отложил в службу.
+ *
+ * Ровно тот же перечень, что и у нарядов, — записи без содержимого. Кодовые сборки кита
+ * (`editorInfo.assemblies`) сюда не попадают: их этот перечень не знает и не обязан, служба несёт
+ * только сохранённое.
+ */
+export async function listAssemblies(): Promise<StoreRecord[]> {
+  return listOf(KINDS.assembly);
+}
+
+/** Сохранённая сборка по имени, либо `undefined` — если такой в службе нет. */
+export async function readAssembly(name: string): Promise<ComponentAssembly | undefined> {
+  const record = (await listAssemblies()).find((item) => item.name === name);
+
+  return record === undefined ? undefined : readState<ComponentAssembly>(record.id);
 }
 
 /**
