@@ -83,6 +83,22 @@ import {
   type NodeId,
 } from "./tree.js";
 
+/** Куда относительно ОБЪЯВЛЕННЫХ в дереве детей узла встаёт результат слота (`slots`). */
+export type SlotPlacement = "before" | "after" | "replace";
+
+/**
+ * Живой контент на месте конкретного узла, переданный СВЕРХУ вызывающим кодом, а не декларацией
+ * дерева (`slots`, ROADMAP «Слоты RenderTree» — PWEB-174). Узел резолвится через реестр КАК
+ * ОБЫЧНО (обёртка, `data-node`, `editOverlay` целы) — слот меняет только источник ЕГО
+ * СОДЕРЖИМОГО, никогда не подменяет сам узел/компонент.
+ */
+export interface SlotEntry {
+  /** Резолвленные пропы узла — то же самое, что получил бы обычный компонент (`props`+`bind`). */
+  readonly render: (resolved: Record<string, unknown>) => JSX.Element;
+  /** Относительно объявленных в дереве детей узла. Не задано — `"replace"`. */
+  readonly placement?: SlotPlacement;
+}
+
 /** Что получает запасной вид: чей адрес не разрешился и у какого узла. */
 export interface FallbackProps {
   readonly type: string;
@@ -158,6 +174,11 @@ export interface RenderTreeProps {
    * отсутствие `data`.
    */
   dispatch?: (event: DispatchedEvent) => void;
+  /**
+   * Живой контент на место узла по его адресу (`SlotEntry`). Не задано — узлы рисуют объявленных
+   * в дереве детей как раньше, ни одного лишнего узла, ни одной регрессии.
+   */
+  slots?: Readonly<Record<string, SlotEntry>>;
 }
 
 /**
@@ -221,6 +242,7 @@ interface RenderNodeProps {
   editOverlay?: Component<EditOverlayProps>;
   data?: unknown;
   dispatch?: (event: DispatchedEvent) => void;
+  slots?: Readonly<Record<string, SlotEntry>>;
 }
 
 /**
@@ -282,24 +304,39 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
    */
   const contentOf = () => {
     const current = node();
-    if (!current || current.children.length === 0) return null;
+    if (!current) return null;
 
-    return (
-      <For each={(node()?.children ?? []) as readonly NodeId[]}>
-        {(childId) => (
-          <RenderNode
-            nodeId={childId}
-            tree={props.tree}
-            registry={props.registry}
-            fallback={props.fallback}
-            errorFallback={props.errorFallback}
-            editOverlay={props.editOverlay}
-            data={props.data}
-            dispatch={props.dispatch}
-          />
-        )}
-      </For>
-    );
+    const declared =
+      current.children.length === 0 ? null : (
+        <For each={(node()?.children ?? []) as readonly NodeId[]}>
+          {(childId) => (
+            <RenderNode
+              nodeId={childId}
+              tree={props.tree}
+              registry={props.registry}
+              fallback={props.fallback}
+              errorFallback={props.errorFallback}
+              editOverlay={props.editOverlay}
+              data={props.data}
+              dispatch={props.dispatch}
+              slots={props.slots}
+            />
+          )}
+        </For>
+      );
+
+    // Слот встаёт по адресу УЗЛА (`current.type`), не по роду содержимого — содержимое (текст)
+    // адреса не несёт вовсе, слот на него не бывает. Проверяется НЕЗАВИСИМО от того, есть ли у
+    // узла объявленные дети (`itemContent` со `слотом` может быть объявлен пустым — `children:
+    // []` — и всё равно принять контент сверху; ранний выход по пустым детям здесь снят нарочно).
+    const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
+    if (!entry) return declared;
+
+    const rendered = entry.render(ownProps());
+    const placement = entry.placement ?? "replace";
+    if (placement === "before") return <>{rendered}{declared}</>;
+    if (placement === "after") return <>{declared}{rendered}</>;
+    return rendered;
   };
 
   /**
@@ -563,6 +600,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
             dispatch={props.dispatch}
             fallback={props.fallback}
             errorFallback={props.errorFallback}
+            slots={props.slots}
           />
         );
       }
@@ -737,6 +775,7 @@ export const RenderTree: Component<RenderTreeProps> = (props) => {
       editOverlay={props.editOverlay}
       data={props.data}
       dispatch={props.dispatch}
+      slots={props.slots}
     />
   );
 

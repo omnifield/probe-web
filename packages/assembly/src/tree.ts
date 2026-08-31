@@ -59,6 +59,8 @@
 // `components.nodes`, `type`/`props`/`children` — один в один. Наши добавки (`parentId`, `meta`)
 // выводимы или необязательны, то есть расхождение не структурное. Таблица соответствия — в README.
 
+import { getValueByPointer } from "fast-json-patch";
+
 import type { Genus } from "./passport-read.js";
 
 /** Устойчивое имя узла в дереве. Уникально в пределах одного дерева. */
@@ -188,34 +190,30 @@ export function isDataBinding(value: DynamicValue): value is DataBinding {
 }
 
 /**
- * Значение по пути в данных — RFC 6901 JSON Pointer (`/a/b/0`, `~0`→`~`, `~1`→`/`).
+ * Значение по пути в данных — RFC 6901 JSON Pointer (`/a/b/0`, `~0`→`~`, `~1`→`/`), через
+ * `fast-json-patch` (`PWEB-180` продолжение, 2026-08-29), не свой парсер: этот же алгоритм
+ * раньше был написан здесь и НЕЗАВИСИМО в `packages/io` — второй раз тот же путь-резолвер
+ * копипастить не стали, взято готовое (разбор рынка и решение — `packages/io/src/paths.ts`).
  *
- * Не найдено (путь мимо, узел данных не дошёл, индекс вне массива) — `undefined`, а не бросок:
- * решение, что показать вместо, принимает вызывающий (`render.tsx`), не эта функция.
+ * Не найдено (путь мимо, узел данных не дошёл, индекс вне массива, путь без ведущего `/` —
+ * относительные пути нормализует `baseAssemblyOf` ДО того, как дерево доходит сюда) —
+ * `undefined`, а не бросок: решение, что показать вместо, принимает вызывающий (`render.tsx`),
+ * не эта функция. `try/catch` здесь не наш парсер, а обход документированной асимметрии самой
+ * библиотеки: `getValueByPointer` тихо отдаёт `undefined` на промахе в один сегмент, но бросает
+ * при промахе ЧЕРЕЗ несуществующее звено глубже первого — для нас обе причины одна и та же
+ * «не нашлось».
  *
  * @param data объект данных, отданный вызывающим `RenderTree`
  * @param path JSON Pointer; пустая строка указывает на сами данные целиком
  */
 export function resolveDataBinding(data: unknown, path: string): unknown {
   if (path === "") return data;
-  if (!path.startsWith("/")) return undefined;
 
-  let current: unknown = data;
-  for (const raw of path.slice(1).split("/")) {
-    const segment = raw.replace(/~1/g, "/").replace(/~0/g, "~");
-    if (current === null || current === undefined) return undefined;
-
-    if (Array.isArray(current)) {
-      const index = Number(segment);
-      current = Number.isInteger(index) ? current[index] : undefined;
-    } else if (typeof current === "object") {
-      current = (current as Record<string, unknown>)[segment];
-    } else {
-      return undefined;
-    }
+  try {
+    return getValueByPointer(data, path);
+  } catch {
+    return undefined;
   }
-
-  return current;
 }
 
 /**

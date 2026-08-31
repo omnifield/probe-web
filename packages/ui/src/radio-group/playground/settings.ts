@@ -3,9 +3,7 @@
 // from the closed `SETTINGS` vocabulary that intersects the radio group's own props (`../entity/
 // passport.ts`) — same name, same mark (`data-orientation`), a DIFFERENT default (`"vertical"`).
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means: "which way the choices stack — also drives keyboard navigation (arrow keys)",
     options: {

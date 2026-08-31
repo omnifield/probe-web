@@ -17,68 +17,68 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { SegmentGroupProps } from "../components/index.jsx";
+import type { SegmentGroupProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** The group is disabled — no item can be chosen. Reaches `root`/`label`/`item`s/`indicator`. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** The enclosing form rejected the value; the set cannot say why, only that. */
-const invalid: PassportState = {
+const invalid = {
   name: "invalid",
   mark: { kind: "attribute", name: "data-invalid" },
-};
+} as const satisfies PassportState;
 
 /** The form will demand a choice on submit. Group-level only — `root`/`label`. */
-const required: PassportState = {
+const required = {
   name: "required",
   mark: { kind: "attribute", name: "data-required" },
-};
+} as const satisfies PassportState;
 
 /** This item is the one currently chosen — the same attribute names `unchecked` below with the other value. */
-const checked: PassportState = {
+const checked = {
   name: "checked",
   mark: { kind: "attribute", name: "data-state", value: "checked" },
-};
+} as const satisfies PassportState;
 
 /** Not the chosen item — always one or the other. */
-const unchecked: PassportState = {
+const unchecked = {
   name: "unchecked",
   mark: { kind: "attribute", name: "data-state", value: "unchecked" },
-};
+} as const satisfies PassportState;
 
 /** This item's value is visible, choosing a different one is not possible. */
-const readOnly: PassportState = {
+const readOnly = {
   name: "readonly",
   mark: { kind: "attribute", name: "data-readonly" },
-};
+} as const satisfies PassportState;
 
 /** Pointer is over this item. Zag tracks the pointer itself (`onPointerMove`/`onPointerLeave` on `item`), not the browser. */
-const hover: PassportState = {
+const hover = {
   name: "hover",
   mark: { kind: "attribute", name: "data-hover" },
-};
+} as const satisfies PassportState;
 
 /** This item is being pressed. `itemControl` ONLY — `item`/`itemText` never carry it. */
-const active: PassportState = {
+const active = {
   name: "active",
   mark: { kind: "attribute", name: "data-active" },
-};
+} as const satisfies PassportState;
 
 /** Focus, MIRRORED from the item's hidden input onto the parts that cannot receive it themselves. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Keyboard focus — the same mirrored device, a separate name: `:focus-visible` would aim at nothing. */
-const focusVisible: PassportState = {
+const focusVisible = {
   name: "focus-visible",
   mark: { kind: "attribute", name: "data-focus-visible" },
-};
+} as const satisfies PassportState;
 
 /** Shared by `root`/`label` — the group's own facts, not any one item's. */
 const groupStates: readonly PassportState[] = [disabled, invalid, required];
@@ -128,7 +128,7 @@ export const passport = definePassport({
   // default (`"vertical"`, `radio-group.machine.mjs`'s own `props()` default) as the radio
   // group's own, because it is the exact same machine. `disabled`/`invalid`/`required` are
   // excluded the same way — already declared as STATES above.
-  settings: defineSettings<SegmentGroupProps>({
+  settings: defineSettings<SegmentGroupProps>()({
     orientation: {
       values: {
         kind: "choice",

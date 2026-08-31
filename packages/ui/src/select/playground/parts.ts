@@ -10,15 +10,14 @@
 // `positioner` holding `content`, `content` holding items directly OR through `list` (see
 // `../entity/anatomy.ts` for why `list` is here at all, undocumented as it is upstream).
 
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY — see `assemblies.ts` for why: `typeof passport` needs the binding's TYPE, not the
-// module's side effects.
-import type { passport } from "../entity/passport.js";
-
-type SelectPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
-
-export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPart>>> = {
+// `as const`, not a `Record<SelectPart, PassportPartEditorInfo<SelectPart>>` annotation — the
+// explicit annotation widens `states`'s keys AND `accepts`'s `kind: "component"` values to bare
+// `string` before `defineEditorInfo` ever sees them (found live on the accordion's own
+// `parts.ts`, 2026-08-30: a typo in a state name compiled clean with this annotation in place,
+// and only `defineEditorInfo`'s runtime check caught it — one step later than it should).
+// `defineEditorInfo`'s own runtime check still catches a wrong/missing key either way; `as const`
+// additionally lets `tsc` catch it at the call site.
+export const parts = {
   root: {
     means: "the select as a whole — label, control, and the floating dropdown together",
     states: {
@@ -190,4 +189,4 @@ export const parts: Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPar
       { kind: "content", genus: "icon" },
     ],
   },
-};
+} as const;

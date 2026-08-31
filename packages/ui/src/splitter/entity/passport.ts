@@ -58,23 +58,23 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { SplitterProps } from "../components/index.jsx";
+import type { SplitterProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Group-wide: true while ANY resize trigger in this splitter is being dragged. */
-const groupDragging: PassportState = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } };
+const groupDragging = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } } as const satisfies PassportState;
 
 /** Per-trigger: true only for the ONE trigger actually being dragged — same attribute, narrower scope. */
-const ownDragging: PassportState = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } };
+const ownDragging = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } } as const satisfies PassportState;
 
 /** Real keyboard/roving focus — also true while dragging (see file header). */
-const focus: PassportState = { name: "focus", mark: { kind: "attribute", name: "data-focus" } };
+const focus = { name: "focus", mark: { kind: "attribute", name: "data-focus" } } as const satisfies PassportState;
 
 /** This trigger cannot be dragged or focused. */
-const disabled: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabled = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 
 /** Real, JS-tracked pointer presence that never reaches the DOM as a mark — see the file header. */
-const hoverPseudo: PassportState = { name: "hover", mark: { kind: "pseudo", name: ":hover" } };
+const hoverPseudo = { name: "hover", mark: { kind: "pseudo", name: ":hover" } } as const satisfies PassportState;
 
 /** Passport of the splitter — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -94,7 +94,7 @@ export const passport = definePassport({
   // `keyboardResizeBy`/`registry`/`onResize*`/`onCollapse`/`onExpand` are all real props, but none
   // of them is in the closed vocabulary — `defineSettings`'s own `Extract<keyof Props,
   // PassportSettingName>` filters them out by construction.
-  settings: defineSettings<SplitterProps>({
+  settings: defineSettings<SplitterProps>()({
     orientation: {
       values: {
         kind: "choice",

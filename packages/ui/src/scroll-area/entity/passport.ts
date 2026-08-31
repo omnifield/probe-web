@@ -54,23 +54,23 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { ScrollAreaProps } from "../components/index.jsx";
+import type { ScrollAreaProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Horizontal content overflows — a scrollbar CAN exist on this axis. */
-const overflowX: PassportState = { name: "overflow-x", mark: { kind: "attribute", name: "data-overflow-x" } };
+const overflowX = { name: "overflow-x", mark: { kind: "attribute", name: "data-overflow-x" } } as const satisfies PassportState;
 /** Vertical content overflows — the same fact, the other axis. */
-const overflowY: PassportState = { name: "overflow-y", mark: { kind: "attribute", name: "data-overflow-y" } };
+const overflowY = { name: "overflow-y", mark: { kind: "attribute", name: "data-overflow-y" } } as const satisfies PassportState;
 const overflowStates: readonly PassportState[] = [overflowX, overflowY];
 
 /** Which axis this instance is — TWO real nodes per part, see the file header. */
-const vertical: PassportState = { name: "vertical", mark: { kind: "attribute", name: "data-orientation", value: "vertical" } };
-const horizontal: PassportState = { name: "horizontal", mark: { kind: "attribute", name: "data-orientation", value: "horizontal" } };
+const vertical = { name: "vertical", mark: { kind: "attribute", name: "data-orientation", value: "vertical" } } as const satisfies PassportState;
+const horizontal = { name: "horizontal", mark: { kind: "attribute", name: "data-orientation", value: "horizontal" } } as const satisfies PassportState;
 const orientationStates: readonly PassportState[] = [vertical, horizontal];
 
 /** ONE service-level fact mirrored onto three parts — see the file header, not literal per-node hover. */
-const hover: PassportState = { name: "hover", mark: { kind: "attribute", name: "data-hover" } };
-const dragging: PassportState = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } };
+const hover = { name: "hover", mark: { kind: "attribute", name: "data-hover" } } as const satisfies PassportState;
+const dragging = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } } as const satisfies PassportState;
 const hoverDragging: readonly PassportState[] = [hover, dragging];
 
 /** Passport of the scroll area — anatomy plus what anatomy alone does not say. */
@@ -118,5 +118,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: the scroll area has no `orientation` prop of
   // its own (the STATE above is per-instance, not author-picked) and no `multiple`/`collapsible`
   // concept — the same empty result the plain button's and the dialog's own settings already show.
-  settings: defineSettings<ScrollAreaProps>({}),
+  settings: defineSettings<ScrollAreaProps>()({}),
 });

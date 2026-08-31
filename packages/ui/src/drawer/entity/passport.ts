@@ -56,26 +56,26 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { DrawerProps } from "../components/index.jsx";
+import type { DrawerProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Open — unconditional: the sibling value is always `closed`. Shared by `positioner`/`content`/`trigger`/`backdrop`/`swipeArea`. */
-const open: PassportState = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } };
+const open = { name: "open", mark: { kind: "attribute", name: "data-state", value: "open" } } as const satisfies PassportState;
 /** Closed — the same attribute, the other value. */
-const closed: PassportState = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } };
+const closed = { name: "closed", mark: { kind: "attribute", name: "data-state", value: "closed" } } as const satisfies PassportState;
 const openClosed: readonly PassportState[] = [open, closed];
 
 /** Which physical edge the drawer slides from/dismisses toward — real, runtime-fixed, not settings-eligible (see file header). */
-const swipeUp: PassportState = { name: "up", mark: { kind: "attribute", name: "data-swipe-direction", value: "up" } };
-const swipeDown: PassportState = { name: "down", mark: { kind: "attribute", name: "data-swipe-direction", value: "down" } };
-const swipeLeft: PassportState = { name: "left", mark: { kind: "attribute", name: "data-swipe-direction", value: "left" } };
-const swipeRight: PassportState = { name: "right", mark: { kind: "attribute", name: "data-swipe-direction", value: "right" } };
+const swipeUp = { name: "up", mark: { kind: "attribute", name: "data-swipe-direction", value: "up" } } as const satisfies PassportState;
+const swipeDown = { name: "down", mark: { kind: "attribute", name: "data-swipe-direction", value: "down" } } as const satisfies PassportState;
+const swipeLeft = { name: "left", mark: { kind: "attribute", name: "data-swipe-direction", value: "left" } } as const satisfies PassportState;
+const swipeRight = { name: "right", mark: { kind: "attribute", name: "data-swipe-direction", value: "right" } } as const satisfies PassportState;
 const swipeDirectionStates: readonly PassportState[] = [swipeUp, swipeDown, swipeLeft, swipeRight];
 
 /** A drag or an opening swipe is in progress right now — shared by `content`/`backdrop`/`swipeArea`, one condition each. */
-const swiping: PassportState = { name: "swiping", mark: { kind: "attribute", name: "data-swiping" } };
+const swiping = { name: "swiping", mark: { kind: "attribute", name: "data-swiping" } } as const satisfies PassportState;
 /** A drag specifically (not the post-release settle) — `content` only. */
-const dragging: PassportState = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } };
+const dragging = { name: "dragging", mark: { kind: "attribute", name: "data-dragging" } } as const satisfies PassportState;
 
 /** A genuine button with no JS-tracked pointer state — the plain button's own reasoning. */
 const buttonPseudos: readonly PassportState[] = [
@@ -159,5 +159,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `swipeDirection` is real but ineligible by
   // name (see the file header); `snapPoints`/`modal`/`trapFocus`/etc. are real props with nothing
   // in the closed vocabulary to attach to — the same empty result the dialog's own settings show.
-  settings: defineSettings<DrawerProps>({}),
+  settings: defineSettings<DrawerProps>()({}),
 });

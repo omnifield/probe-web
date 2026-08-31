@@ -23,7 +23,7 @@
 import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
-import type { GridProps } from "../components/index.jsx";
+import type { GridProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 export const passport = definePassport({
@@ -35,5 +35,5 @@ export const passport = definePassport({
   },
   // Настроек из закрытого перечня сетка не принимает: число колонок — раскладочное свойство,
   // то есть ВИД, и приезжает скином.
-  settings: defineSettings<GridProps>({}),
+  settings: defineSettings<GridProps>()({}),
 });

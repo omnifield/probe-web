@@ -26,20 +26,20 @@ import type { passport } from "../entity/passport.js";
 
 type FileUploadPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-const acceptedFile = new File(["résumé contents"], "резюме.pdf", { type: "application/pdf" });
-const rejectedFile = new File(["oversized contents"], "видео.mp4", { type: "video/mp4" });
+const acceptedFile = new File(["résumé contents"], "resume.pdf", { type: "application/pdf" });
+const rejectedFile = new File(["oversized contents"], "video.mp4", { type: "video/mp4" });
 
 export const assemblies: readonly PassportAssembly<FileUploadPart>[] = [
   {
     name: "basic",
-    means: "рабочая загрузка: одно принятое, одно отклонённое, точки удаления кликабельны",
+    means: "a working upload: one accepted file, one rejected, delete triggers are clickable",
     tree: {
       node: "root",
       children: [
-        { node: "label", children: [{ genus: "text", value: "Файлы" }] },
+        { node: "label", children: [{ genus: "text", value: "Files" }] },
         {
           node: "dropzone",
-          children: [{ node: "trigger", children: [{ genus: "text", value: "Выбрать файлы" }] }],
+          children: [{ node: "trigger", children: [{ genus: "text", value: "Choose files" }] }],
         },
         {
           node: "itemGroup",
@@ -51,7 +51,7 @@ export const assemblies: readonly PassportAssembly<FileUploadPart>[] = [
               children: [
                 { node: "itemPreview", children: [{ genus: "icon", value: "📄" }] },
                 { node: "itemName", children: [{ genus: "text", value: acceptedFile.name }] },
-                { node: "itemSizeText", children: [{ genus: "text", value: "16 Б" }] },
+                { node: "itemSizeText", children: [{ genus: "text", value: "16 B" }] },
                 { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
               ],
             },
@@ -67,13 +67,13 @@ export const assemblies: readonly PassportAssembly<FileUploadPart>[] = [
               children: [
                 { node: "itemPreview", children: [{ genus: "icon", value: "🎬" }] },
                 { node: "itemName", children: [{ genus: "text", value: rejectedFile.name }] },
-                { node: "itemSizeText", children: [{ genus: "text", value: "превышает лимит" }] },
+                { node: "itemSizeText", children: [{ genus: "text", value: "exceeds the limit" }] },
                 { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
               ],
             },
           ],
         },
-        { node: "clearTrigger", children: [{ genus: "text", value: "Очистить всё" }] },
+        { node: "clearTrigger", children: [{ genus: "text", value: "Clear all" }] },
         { extra: "hiddenInput" },
       ],
     },

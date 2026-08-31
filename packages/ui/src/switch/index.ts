@@ -15,6 +15,4 @@ export {
   type SwitchLabelProps,
   SwitchHiddenInput,
   type SwitchHiddenInputProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

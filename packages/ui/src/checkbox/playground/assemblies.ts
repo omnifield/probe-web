@@ -18,7 +18,7 @@ type CheckboxPart = typeof passport extends ComponentPassport<infer Part> ? Part
 export const assemblies: readonly PassportAssembly<CheckboxPart>[] = [
   {
     name: "basic",
-    means: "чекбокс с подписью, управляющей рамкой и указателем",
+    means: "a checkbox with a label, control frame, and indicator",
     tree: {
       node: "root",
       children: [
@@ -26,7 +26,7 @@ export const assemblies: readonly PassportAssembly<CheckboxPart>[] = [
           node: "control",
           children: [{ node: "indicator", children: [{ genus: "text", value: "✓" }] }],
         },
-        { node: "label", children: [{ genus: "text", value: "Согласен с условиями" }] },
+        { node: "label", children: [{ genus: "text", value: "I agree to the terms" }] },
         { extra: "hiddenInput" },
       ],
     },

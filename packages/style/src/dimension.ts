@@ -199,6 +199,145 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
   },
 ];
 
+// ПРОСТРАНСТВЕННЫЕ РОЛИ (`PWEB-197`) — тот же приём, что `STEP_PURPOSE` у цвета
+// (`packages/style/src/scale.ts`), другая ось. Число само по себе смысла не несёт: `space-4` —
+// это просто четыре шага сетки, и до этой таблицы каждый `recipe.ts` компонента выбирал ступень
+// на глаз. Измерено на живых данных (`PWEB-196`): одна и та же по смыслу роль — «горизонтальная
+// набивка интерактивного контрола» — получила `space-2`/`space-3`/`space-4` в разных
+// компонентах кита без единого правила, и один компонент (кнопка) разъехался даже со СВОИМ
+// эталонным рецептом.
+//
+// У отступов, в отличие от цвета, нет пяти параллельных шкал (семей) — шкала одна, поэтому
+// вторая ось (какая семья) не нужна. Нужна ровно таблица «роль → ступень», закрытая тем же
+// приёмом, что `STEP_PURPOSE`/`GROUPS`.
+//
+// РОЛЬ УКАЗЫВАЕТ НА ИМЯ СТУПЕНИ (`"space-4"`), А НЕ НА ЧИСЛО. Вставка новой промежуточной
+// ступени в шкалу `space` (`DERIVED_SCALES` выше) не должна сдвигать роли молча — тем же
+// доводом, по которому сама ступень названа множителем, а не порядковым номером (см. комментарий
+// у `seed: "space"` выше).
+//
+// ПЕРЕСМОТРЕНО ПО ФАКТУ РЕВИЗИИ (`PWEB-198`, 2026-08-30) — черновик из PWEB-196 был грубее
+// реальности. Прочитаны все `padding*`/`gap` во всех `packages/ui/src/*/playground/recipe.ts`
+// (19 компонентов) — и рынок оказался не хаосом, а СКРЫТОЙ закономерностью пополам с реальными
+// разъездами:
+//
+//  • `minHeight/minBlockSize: control-height-md` почти всюду шёл в паре с `paddingInline:
+//    space-4` (button, accordion itemTrigger, file-upload trigger, select trigger, tabs
+//    trigger, popover trigger, menu trigger) — а `control-height-sm` с `space-3` (segment-group
+//    itemText, toggle-group item, tree-view row). Пара НЕ названа была нигде, поэтому нашлись
+//    и нарушители: `field`/`date-picker` держали `control-height-md` с `paddingInline: space-3`,
+//    `date-picker`'s `controlSmall` — `control-height-sm` с `space-2`. Ровно то расхождение,
+//    про которое говорил user («где-то 12, где-то 8, где-то 18»), только числа наши.
+//  • список/панель, несущая СВОИ пункты (`menu`/`select` content, `tabs` enclosed list), берёт
+//    внешнюю рамку `space-1` — пункты уже несут собственную набивку, вторая была бы двойной;
+//    контейнер свободного содержимого (`popover` content, `surface` root) — `space-4`.
+//  • зазор иконка↔подпись ВНУТРИ одного контрола — почти везде `space-2` (button, checkbox,
+//    switch, radio-group item, tree-view row, select trigger, carousel controls, tabs trigger,
+//    toggle-group item) — кроме `table`'s `headerSortTrigger`, взявшего `space-1` без причины.
+//  • зазор МЕЖДУ соседними пунктами списка (не внутри одного) — стабильно `space-1` (accordion
+//    root, file-upload список, menu/select content, tabs list, toggle/segment-group root).
+//
+// Роли ниже называют то, что уже фактически сложилось большинством, — а тикет 2 чинит
+// найденные здесь нарушения (перечислены построчно в его отчёте), а не переписывает всё подряд.
+export type SpaceRole =
+  | "item-stack-gap"
+  | "control-inline-gap"
+  | "compact-padding-block"
+  | "compact-padding-inline"
+  | "section-gap"
+  | "control-padding-inline"
+  | "listbox-inset"
+  | "content-container-padding"
+  | "card-padding"
+  | "panel-padding"
+  | "modal-padding"
+  | "page-margin-narrow"
+  | "page-margin-wide"
+  | "layout-gap";
+
+export interface SpaceRoleEntry {
+  /** Имя ступени `space`, которую роль называет — именем, не числом (см. комментарий выше). */
+  readonly step: string;
+  /** Что это за роль — человеку. */
+  readonly means: string;
+}
+
+export const SPACE_ROLES: Readonly<Record<SpaceRole, SpaceRoleEntry>> = {
+  "item-stack-gap": {
+    step: "space-1",
+    means: "зазор между соседними пунктами списка/группы — секции аккордеона, пункты меню/селекта, вкладки-список, файлы в списке загрузки",
+  },
+  "listbox-inset": {
+    step: "space-1",
+    means: "внешняя рамка панели, несущей СВОИ пункты (список меню/селекта, вкладки-панель) — пункты уже несут собственную набивку",
+  },
+  "control-inline-gap": {
+    step: "space-2",
+    means: "зазор между иконкой и подписью внутри ОДНОГО интерактивного контрола",
+  },
+  "compact-padding-block": {
+    step: "space-2",
+    means: "вертикальная набивка компактного (sm) контрола или ячейки списка/таблицы",
+  },
+  "compact-padding-inline": {
+    step: "space-3",
+    means: "горизонтальная набивка компактного (sm) контрола или ячейки списка/таблицы — в паре с `control-height-sm`",
+  },
+  "section-gap": {
+    step: "space-3",
+    means: "зазор между крупными частями ОДНОГО составного компонента — трек/контролы/индикаторы карусели, список/панель вкладок",
+  },
+  "control-padding-inline": {
+    step: "space-4",
+    means: "горизонтальная набивка крупного самостоятельного контрола (кнопка, триггер аккордеона/селекта/вкладок/поповера/меню/загрузки файла) — в паре с `control-height-md`",
+  },
+  "content-container-padding": {
+    step: "space-4",
+    means: "набивка контейнера свободного содержимого — попап, поверхность",
+  },
+  "card-padding": {
+    step: "space-6",
+    means: "набивка карточки — например зона перетаскивания файла",
+  },
+  "panel-padding": {
+    step: "space-8",
+    means: "зазор между виджетами на странице",
+  },
+  "modal-padding": {
+    step: "space-12",
+    means: "набивка модалки, зазор между секциями страницы",
+  },
+  "page-margin-narrow": {
+    step: "space-16",
+    means: "внешние поля страницы на узком экране",
+  },
+  "page-margin-wide": {
+    step: "space-24",
+    means: "внешние поля страницы на широком экране",
+  },
+  "layout-gap": {
+    step: "space-32",
+    means: "зазор между крупными блоками лэйаута",
+  },
+};
+
+// СВЕРКА НА ИСПОЛНЕНИИ, А НЕ ТОЛЬКО ТИПОМ — тот же довод, что у `defineKitComponent`
+// (`packages/ui/README.md`, «Как стережётся»): поставщик роли вправе приехать без TypeScript,
+// и тогда между «опечатался в имени ступени» и молча неодетой ролью не стоит ничего. Падает при
+// загрузке модуля, а не тихо у первого потребителя, — опечатка в имени ступени иначе
+// обнаружилась бы человеком по сломанному виду, не по отказу.
+{
+  const spaceStepNames = new Set(
+    DERIVED_SCALES.find((scale) => scale.seed === "space")!.steps.map((step) => step.name),
+  );
+
+  for (const [role, entry] of Object.entries(SPACE_ROLES)) {
+    if (!spaceStepNames.has(entry.step)) {
+      throw new Error(`роль отступа «${role}» называет несуществующую ступень «${entry.step}»`);
+    }
+  }
+}
+
 /**
  * Токены, у которых шкалы НЕТ и не должно быть.
  *

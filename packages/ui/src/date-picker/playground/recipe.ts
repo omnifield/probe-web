@@ -42,7 +42,9 @@ const iconButtonStates = {
 const controlLook = {
   boxSizing: "border-box",
   minBlockSize: "var(--control-height-md)",
-  paddingInline: "var(--space-3)",
+  // `control-padding-inline` (`space-4`) — набивка md-контрола, `packages/style/src/dimension.ts`.
+  // Была `space-3` (пара с `control-height-sm`, не с `-md`) — разъезд найден и починен PWEB-198.
+  paddingInline: "var(--space-4)",
   borderWidth: "var(--border-width-1)",
   borderStyle: "solid",
   borderColor: "var(--neutral-7)",
@@ -120,7 +122,9 @@ export const recipe: SlotRecipe = {
         display: "inline-flex",
         alignItems: "center",
         gap: "var(--space-1)",
-        paddingInline: "var(--space-2)",
+        // `compact-padding-inline` (`space-3`) — пара с `control-height-sm`. Была `space-2` —
+        // разъезд найден тестом `test/space-roles.test.ts`, починен PWEB-198.
+        paddingInline: "var(--space-3)",
         minBlockSize: "var(--control-height-sm)",
         borderWidth: "0",
         borderRadius: "var(--radius-md)",
@@ -248,7 +252,9 @@ function controlProps() {
 
 /** `monthSelect`/`yearSelect`'s look: the same control base, smaller — they sit inline in `viewControl`. */
 function controlSmall() {
-  return { ...controlLook, minBlockSize: "var(--control-height-sm)", paddingInline: "var(--space-2)", fontSize: "var(--font-size-sm)" };
+  // `compact-padding-inline` (`space-3`) — пара с `control-height-sm`. Была `space-2` — разъезд
+  // найден и починен PWEB-198.
+  return { ...controlLook, minBlockSize: "var(--control-height-sm)", paddingInline: "var(--space-3)", fontSize: "var(--font-size-sm)" };
 }
 
 /** Form — the "name + component + recipe" record `assemble` accepts. */

@@ -25,7 +25,7 @@
 import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
-import type { CheckboxProps } from "../components/index.jsx";
+import type { CheckboxProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 // Словарь состояний ОДИН на все четыре адресуемые части: `getRootProps`, `getLabelProps`,
@@ -33,70 +33,70 @@ import { anatomy } from "./anatomy.js";
 // (`checkbox.connect.mjs`) — состояние чекбокса видно целиком на каждом его узле, а не по частям.
 
 /** Отмечен — словарный атрибут с тремя значениями, здесь первое из трёх. */
-const checked: PassportState = {
+const checked = {
   name: "checked",
   mark: { kind: "attribute", name: "data-state", value: "checked" },
-};
+} as const satisfies PassportState;
 
 /** Не отмечен — то же состояние, второе значение. Приезжает всегда, когда не отмечен и не «отчасти». */
-const unchecked: PassportState = {
+const unchecked = {
   name: "unchecked",
   mark: { kind: "attribute", name: "data-state", value: "unchecked" },
-};
+} as const satisfies PassportState;
 
 /** Отмечен ОТЧАСТИ — третье значение того же атрибута: часть вложенных отмечена, часть нет. */
-const indeterminate: PassportState = {
+const indeterminate = {
   name: "indeterminate",
   mark: { kind: "attribute", name: "data-state", value: "indeterminate" },
-};
+} as const satisfies PassportState;
 
 /** Отключён — данными, а не нативным `disabled`: узлы `label`/`div`/`span` его не несут. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** Только для чтения — отметку видно, переключить нельзя, в отличие от отключённого — не тускло. */
-const readOnly: PassportState = {
+const readOnly = {
   name: "readonly",
   mark: { kind: "attribute", name: "data-readonly" },
-};
+} as const satisfies PassportState;
 
 /** Невалиден — форма отвергла значение; чекбоксу нечем сказать почему, только что. */
-const invalid: PassportState = {
+const invalid = {
   name: "invalid",
   mark: { kind: "attribute", name: "data-invalid" },
-};
+} as const satisfies PassportState;
 
 /** Обязателен — форма его потребует при отправке. */
-const required: PassportState = {
+const required = {
   name: "required",
   mark: { kind: "attribute", name: "data-required" },
-};
+} as const satisfies PassportState;
 
 /** Наведение — Zag следит указателем сам (см. заголовок файла), не браузер: атрибут, не псевдокласс. */
-const hover: PassportState = {
+const hover = {
   name: "hover",
   mark: { kind: "attribute", name: "data-hover" },
-};
+} as const satisfies PassportState;
 
 /** Нажат — указатель зажат на чекбоксе. Тоже данные, тем же доводом, что у наведения. */
-const active: PassportState = {
+const active = {
   name: "active",
   mark: { kind: "attribute", name: "data-active" },
-};
+} as const satisfies PassportState;
 
 /** Фокус — на СКРЫТОМ вводе, но виден здесь: Zag зеркалит его данными на видимые части. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Клавиатурный фокус — та же зеркальная запись, отдельным именем: `:focus-visible` навёл бы мимо. */
-const focusVisible: PassportState = {
+const focusVisible = {
   name: "focus-visible",
   mark: { kind: "attribute", name: "data-focus-visible" },
-};
+} as const satisfies PassportState;
 
 /** Общий словарь — ссылкой, чтобы не разойтись между четырьмя частями молча. */
 const states: readonly PassportState[] = [
@@ -141,5 +141,5 @@ export const passport = definePassport({
   // Настроек из закрытого перечня чекбокс не принимает: `disabled`/`invalid`/`required`/
   // `readOnly` уже объявлены СОСТОЯНИЯМИ (они не выбор автора вида, а факт формы), а оси вроде
   // `orientation` у одиночного чекбокса нет — она появится у `CheckboxGroup`, не здесь.
-  settings: defineSettings<CheckboxProps>({}),
+  settings: defineSettings<CheckboxProps>()({}),
 });

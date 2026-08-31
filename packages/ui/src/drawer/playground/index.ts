@@ -1,5 +1,3 @@
-// TEMPLATE — structure prepared, prose NOT written here.
-//
 // EDITOR-ONLY metadata for the drawer. Human-facing text, taxonomy, and nesting rules for the
 // visual editor and for agents reading the catalog — never for the running app. Same split as
 // every other component: `defineEditorInfo` depends one-way on `passport` (the runtime contract
@@ -11,14 +9,11 @@
 // `settings.ts` — the drawer has no setting from the closed vocabulary (`../entity/passport.ts`:
 // `swipeDirection` is real but ineligible by name).
 //
-// `genus`/`group` are real classifications, not prose, and are filled in: a plain component
-// (`genus: "component"`); `group` is left `other`, the same open question the tabs'/table's/
-// dialog's/scroll area's/avatar's own comment already names (`PWEB-34`) — a drawer is not
-// `disclosure` and no better-fitting section exists yet. `footprint` is real too (`footprintOf`,
-// `PWEB-31`): `"regular"` — the same middle bracket the dialog's own modal panel sits in, the
-// same reasoning (real content, but not inherently full-row the way a table's grid is).
-// `variantAxis.means` is prose — left as "TODO" for whoever fills the playground zone next, same
-// as every state's `means` in `parts.ts`.
+// `genus`/`group` are real classifications, not prose: a plain component (`genus: "component"`);
+// `group` is `overlays` — the dialog's own section (`PWEB-34`), since a drawer is a sliding modal,
+// not something that expands in place. `footprint` is real too (`footprintOf`, `PWEB-31`):
+// `"regular"` — the same middle bracket the dialog's own modal panel sits in, the same reasoning
+// (real content, but not inherently full-row the way a table's grid is).
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
@@ -28,9 +23,10 @@ import { parts } from "./parts.js";
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
   genus: "component",
+  group: "overlays",
   footprint: "regular",
   variantAxis: {
-    means: "TODO",
+    means: "the variant name a human gives the drawer in the editor; the kit passes it through untouched",
   },
   parts,
   assemblies,

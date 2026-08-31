@@ -1,12 +1,4 @@
-// ПОДПУТЬ `./model` — механика скина БЕЗ порождения: модель, адресация, сборка правил, проверки.
-//
-// Отдельный вход, а не кусок общего, потому что у этой половины другой потребитель: хранилищу
-// скинов, проверке сохранённой записи и редактору на стадии «человек ещё правит» нужны форма и
-// отказы, а печатать текст им нечего и незачем.
-//
-// Обратное неверно: порождение стоит на модели, поэтому корневой вход отдаёт и её тоже.
-//
-// Оба этих входа postcss не тянут — он живёт за третьим, `./flat` (`PWEB-36`).
+// Design notes: ./model.README.md
 
 export type {
   AncestorStyle,
@@ -23,7 +15,7 @@ export type {
   SlotRecipe,
   StyleObject,
   StyleValue,
-} from "./recipe.js";
+} from "./recipe/index.js";
 
 export {
   DARK_CLASS,
@@ -32,20 +24,8 @@ export {
   NODE_ATTRIBUTE,
   SKETCH_LAYER,
   SKIN_LAYER,
-} from "./marks.js";
+} from "./marks/index.js";
 
-// ФОРМА ПАСПОРТА (`PWEB-110`, пересматривает `PWEB-26`) — переехала сюда физически: она общая
-// для любого поставщика компонентов, а не привилегия конкретного кита. Разбор критерия и то, что
-// НЕ переехало (`PASSPORTS`, `passportOf` — реестр и читатель реестра ЭТОГО кита, остались в
-// `@omnifield/probe-web-ui/passport`), — в шапке `passport-form.ts`.
-//
-// Наружу — тем же подпутём, что и всегда: держатель реестра (кит, продуктовый пакет со своей
-// таблицей) объявляет паспорты этими типами и этой функцией, а не своей копией формы.
-//
-// Здесь — ТОЛЬКО срез РАНТАЙМА (`PWEB-115`): то, что действительно читают `generateSkinCss`/
-// `checkOutfit`/`assemble`. Род, группа, пакет, правило вложенности, сборки и все `means` —
-// срез РЕДАКТОРА, подпуть `./editor`, и здесь физически не переэкспортируются: держи их этот
-// барьер тоже пропускать — граница осталась бы обещанием, а не свойством модулей.
 export type {
   ComponentPassport,
   PassportAnatomy,
@@ -61,7 +41,7 @@ export type {
   PassportState,
   PassportVariable,
   PassportVariantAxis,
-} from "./passport-form.js";
+} from "./passport/form/index.js";
 export {
   addressesView,
   createAnatomy,
@@ -69,18 +49,11 @@ export {
   definePassport,
   SETTINGS,
   settingApplies,
-} from "./passport-form.js";
+} from "./passport/form/index.js";
 
-// ЧИТАТЕЛЬ ПАСПОРТА ПОД ВИД (`PWEB-27`) — мост от живого узла к координате скина, тоже общий для
-// любого поставщика.
-export type { SkinAncestor, SkinCoordinate } from "./passport-view.js";
-export { coordinateOf, partOf } from "./passport-view.js";
+export type { SkinAncestor, SkinCoordinate } from "./passport-view/index.js";
+export { coordinateOf, partOf } from "./passport-view/index.js";
 
-// Self-assembly (`PWEB-167`/`PWEB-168`) and the node vocabulary it's built from — RUNTIME slice,
-// unlike the showcase-facing `PassportAssembly`/`DataPreset` (those carry `means` and scenario
-// names, stay editor-only, `./editor`). A reference to a component from someone else's tree
-// unfolds THIS tree at render time, so the render mechanic needs these types reachable without
-// pulling in the editor slice.
 export type {
   DataBinding,
   DispatchAction,
@@ -93,7 +66,7 @@ export type {
   PassportAssemblyRepeat,
   PassportGenus,
   PassportSelfAssembly,
-} from "./passport-assembly.js";
+} from "./passport/assembly/index.js";
 export {
   isAssemblyContent,
   isAssemblyExtra,
@@ -101,13 +74,9 @@ export {
   isAssemblyRepeat,
   isDataBinding,
   resolveDataBinding,
-} from "./passport-assembly.js";
+} from "./passport/assembly/index.js";
 
-export type { PassportLookup } from "./address.js";
-// `passportLookup` едет наружу ТЕМ ЖЕ входом, что и тип (`PWEB-95`): место сборки карты одно, и
-// объявить это в комментарии, не отдав саму сборку, значило потребовать от каждого держателя
-// перечня написать свою карту — ровно то, что запрещено. Держатель перечня теперь связывает
-// механику в два хода: `withPassports(passportLookup(PASSPORTS))`.
+export type { PassportLookup } from "./address/index.js";
 export {
   ancestorSelector,
   markSelector,
@@ -118,7 +87,7 @@ export {
   safeName,
   stateSelector,
   variantSelector,
-} from "./address.js";
+} from "./address/index.js";
 
 export type {
   CssRule,
@@ -129,37 +98,21 @@ export type {
   SkinRules,
   SketchRules,
   ValueVocabulary,
-} from "./rules.js";
+} from "./rules/index.js";
 
-// ИСТОЧНИК ПАСПОРТОВ НАЗЫВАЕТСЯ ОДИН РАЗ (`PWEB-94`). Проверки скина, правок образца и наряда
-// приезжают связанными, а свободных подписей с доводом-источником на поверхности не осталось:
-// пока они были, подпись разрешала проверить одним источником, а породить другим. Разбор — в
-// `bound.ts`.
-export type { BoundModel } from "./bound.js";
-export { withPassports } from "./bound.js";
+export type { BoundModel } from "./bound/index.js";
+export { withPassports } from "./bound/index.js";
 
-export type { SkinGap, SkinGapKind } from "./coverage.js";
-export { skinGaps } from "./coverage.js";
+export type { SkinGap, SkinGapKind } from "./coverage/index.js";
+export { skinGaps } from "./coverage/index.js";
 
-// ГРАНИЦА «ВИД ПРОТИВ ДВИЖЕНИЯ» (`PWEB-99`) — наружу по тому же доводу, что и род запрета
-// текучести: редактор обязан сказать человеку ЗАРАНЕЕ, что законно под ненадёжным признаком, а
-// разбирать для этого строку отказа ему не с руки. Решение зоны названо в одном месте
-// (`motion.ts`), и здесь только его дверь.
-export { isMotion, MOTION_FAMILIES } from "./motion.js";
+export { isMotion, MOTION_FAMILIES } from "./motion/index.js";
 
-// Значения скина: построение семенами и то, чем правка человека помечена. Живёт в `./model`,
-// потому что это МОДЕЛЬ — от неё зависят и проверка имён, и порождение, и читаемость. Цена
-// названа: построение шкал берётся у зоны значений, и она приезжает сюда одноранговой.
-export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds.js";
-export { NOT_SEEDED, skinValues, valueNames } from "./seeds.js";
-// Размерные шкалы: второй ряд посеваемого. Наружу — потому что редактор и хранилище спрашивают
-// то же самое, что и порождение: какие семена законны и что скин объявляет на самом деле.
-export type { SizeRefusal, SizeSeed } from "./sizes.js";
-export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes.js";
+export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds/index.js";
+export { NOT_SEEDED, skinValues, valueNames } from "./seeds/index.js";
+export type { SizeRefusal, SizeSeed } from "./sizes/index.js";
+export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes/index.js";
 
-// ТЕКУЧИЙ РАЗМЕР (`PWEB-80`): семя объявляется полюсами, выражение печатает механика. Наружу —
-// потому что спрашивают все: редактор показывает человеку края, хранилище проверяет запись,
-// проба сверяет вычисленное.
 export type {
   DimensionSeed,
   FluidBarKind,
@@ -167,11 +120,9 @@ export type {
   FluidRefusal,
   FluidReport,
   FluidSeed,
-} from "./fluid.js";
-export { fluidBar, fluidExpression, fluidPoles, fluidRefusals, isFluid } from "./fluid.js";
+} from "./fluid/index.js";
+export { fluidBar, fluidExpression, fluidPoles, fluidRefusals, isFluid } from "./fluid/index.js";
 
-// ВИД ДЕЛИТСЯ НА ТРИ (`PWEB-78`): палитра, форма, наряд — записи, складываемые ПРИ НАДЕВАНИИ.
-// `Skin` от этого не снят: он стал тем, что сборка производит. Разбор — в `look.ts`.
 export type {
   Assembled,
   Form,
@@ -181,10 +132,8 @@ export type {
   OutfitFlawName,
   OutfitReport,
   Palette,
-} from "./look.js";
-export { OutfitRefused } from "./look.js";
+} from "./look/index.js";
+export { OutfitRefused } from "./look/index.js";
 
-// СЛОВАРЬ — машинный контракт между тремя записями. Наружу, потому что его спрашивают все:
-// редактор перечисляет роли человеку, хранилище отказывает неполной палитре, проба проверяет.
-export type { Role, RoleKind } from "./vocabulary.js";
-export { knownRole, ROLE_NAMES, SCALE_ROLES, VOCABULARY } from "./vocabulary.js";
+export type { Role, RoleKind } from "./vocabulary/index.js";
+export { knownRole, ROLE_NAMES, SCALE_ROLES, VOCABULARY } from "./vocabulary/index.js";

@@ -1,0 +1,13 @@
+{
+  "//": "Emits real JS, not just declarations: this package is required from plain Node scripts (packages/ui/scripts/generate.mjs runs outside any bundler), so `./scan.js` etc. must exist on disk, not just resolve through a bundler. No JSX anywhere in this zone, so plain tsc is enough — no vite step needed (contrast packages/skin, which needs vite for JSX emission).",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

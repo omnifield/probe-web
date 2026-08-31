@@ -14,8 +14,7 @@
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
-import { assemblies } from "./assemblies.js";
-import { dataPresets } from "./data.js";
+import { assemblies } from "./assemblies/index.js";
 import { settings } from "./settings.js";
 import { parts } from "./parts.js";
 
@@ -36,5 +35,4 @@ export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   parts,
   settings,
   assemblies,
-  dataPresets,
 });

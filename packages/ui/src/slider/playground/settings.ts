@@ -5,9 +5,7 @@
 // one name from the closed `SETTINGS` vocabulary that intersects the slider's own props
 // (`../entity/passport.ts`) — same name, same mark (`data-orientation`), default `"horizontal"`.
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means: "TODO",
     options: {

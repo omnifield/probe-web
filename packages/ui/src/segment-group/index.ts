@@ -19,6 +19,4 @@ export {
   SegmentGroupLabel,
   type SegmentGroupLabelProps,
   type SegmentGroupProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

@@ -22,7 +22,7 @@ type PopoverPart = typeof passport extends ComponentPassport<infer Part> ? Part 
 export const assemblies: readonly PassportAssembly<PopoverPart>[] = [
   {
     name: "basic",
-    means: "плавающая панель поповера сама по себе: заголовок, текст, крестик закрытия, стрелка",
+    means: "the popover's floating panel on its own: title, text, close cross, arrow",
     providerProps: { defaultOpen: true },
     tree: {
       node: "positioner",
@@ -30,8 +30,8 @@ export const assemblies: readonly PassportAssembly<PopoverPart>[] = [
         {
           node: "content",
           children: [
-            { node: "title", children: [{ genus: "text", value: "Заголовок" }] },
-            { node: "description", children: [{ genus: "text", value: "Пояснение к тому, что показано." }] },
+            { node: "title", children: [{ genus: "text", value: "Title" }] },
+            { node: "description", children: [{ genus: "text", value: "An explanation of what's shown here." }] },
             { node: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
           ],
         },

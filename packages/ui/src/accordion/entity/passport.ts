@@ -67,20 +67,20 @@ import {
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are checked
 // against the component's real props, not an idea of them.
-import type { AccordionProps } from "../components/index.jsx";
+import type { AccordionProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Expansion — Zag's shared vocabulary attribute; it sits on the item, the content, and the indicator. */
-const open: PassportState = {
+const open = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
-};
+} as const satisfies PassportState;
 
 /** Disabledness, expressed as data: the whole item and everything inside it. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /**
  * The CONTENT's expansion — the same state, with its mark's unreliability named (`PWEB-97`).
@@ -89,24 +89,24 @@ const disabled: PassportState = {
  * always, and attaching the caveat to them would lie the other way — the look would stop
  * addressing an expanded item that IS addressed reliably.
  */
-const openContent: PassportState = {
+const openContent = {
   ...open,
   absentWhen:
     "the item expanded WITHOUT animation: Zag's collapsible drops `data-state` entirely " +
     "(`skip = !initial && open`), and an item expanded from the very start has no mark at all",
-};
+} as const satisfies PassportState;
 
 /** Collapsedness — the same vocabulary attribute with a different value. It always arrives on the content. */
-const closed: PassportState = {
+const closed = {
   name: "closed",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
-};
+} as const satisfies PassportState;
 
 /** Focus within an item: known by the state machine, not the browser — hence an attribute. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Passport of the accordion — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -166,7 +166,7 @@ export const passport = definePassport({
   // Keys are checked against the component's REAL props: `defineSettings<AccordionProps>` will
   // not allow declaring a setting the accordion does not have, and will not allow forgetting one
   // it does.
-  settings: defineSettings<AccordionProps>({
+  settings: defineSettings<AccordionProps>()({
     orientation: {
       values: {
         kind: "choice",

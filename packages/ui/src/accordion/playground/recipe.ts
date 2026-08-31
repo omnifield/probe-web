@@ -121,8 +121,11 @@ export const recipe: SlotRecipe = {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "var(--space-2)",
-        minHeight: "var(--control-height-md)",
-        paddingInline: "var(--space-4)",
+        // `control-height-sm`/`space-3` — the OTHER half of the same documented pair
+        // (`packages/style/src/dimension.ts`'s `SPACE_ROLES`, enforced by `test/space-roles.
+        // test.ts`), not `md`/`space-4` any more: found too roomy live, 2026-08-30.
+        minHeight: "var(--control-height-sm)",
+        paddingInline: "var(--space-3)",
         borderWidth: "0",
         background: "var(--neutral-3)",
         color: "var(--neutral-12)",

@@ -13,52 +13,42 @@ import type { passport } from "../entity/passport.js";
 // device and the same reason (no contextual typing reaches into a separate module).
 type CheckboxPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
+const sharedStates = {
+  checked: { means: "the checkbox is checked" },
+  unchecked: { means: "the checkbox is unchecked" },
+  indeterminate: { means: "partially checked — typically a checkbox summarizing partially-checked children" },
+  disabled: { means: "the checkbox is disabled — it cannot be toggled" },
+  readonly: { means: "the checkbox is read-only — its state is visible but cannot be toggled" },
+  invalid: { means: "the checkbox is invalid per the form's validation rules" },
+  required: { means: "the checkbox is required for form submission" },
+  hover: { means: "the pointer is over the checkbox" },
+  active: { means: "the checkbox is being pressed by the pointer" },
+  focus: { means: "focus is on the checkbox" },
+  "focus-visible": { means: "focus arrived from the keyboard — a focus ring belongs here" },
+} as const;
+
 export const parts: Readonly<Record<CheckboxPart, PassportPartEditorInfo<CheckboxPart>>> = {
   root: {
-    means: "чекбокс целиком — узел `<label>`, клик по нему переключает отметку",
-    states: {
-      checked: { means: "чекбокс отмечен" },
-      unchecked: { means: "чекбокс не отмечен" },
-      indeterminate: { means: "отмечен отчасти — обычно у чекбокса с частично отмеченными вложенными" },
-      disabled: { means: "чекбокс отключён — переключить нельзя" },
-      readonly: { means: "чекбокс только для чтения — состояние видно, переключить нельзя" },
-      invalid: { means: "чекбокс невалиден по правилам формы" },
-      required: { means: "чекбокс обязателен для отправки формы" },
-      hover: { means: "указатель наведён на чекбокс" },
-      active: { means: "чекбокс нажат указателем" },
-      focus: { means: "фокус стоит на чекбоксе" },
-      "focus-visible": { means: "фокус пришёл с клавиатуры — кольцу фокуса тут самое место" },
-    },
-    // Подпись и управляющая часть кладутся внутрь потребителем; своих частей корень
-    // принимает три — control, indicator (вложен в control реальной разметкой Ark, но
-    // паспорт называет вложенность как ДОСТУПНУЮ, а не как единственно верную структуру,
-    // тем же приёмом, что у гармошки) и label.
+    means: "the checkbox as a whole — a `<label>` node; clicking it toggles the mark",
+    states: sharedStates,
+    // The label and control are placed inside by the consumer; the root accepts three parts
+    // of its own — control, indicator (nested inside control by Ark's real markup, but the
+    // passport states nesting as ALLOWED, not as the one true structure — the same device as
+    // the accordion) and label.
     accepts: [
       { kind: "component", name: "control" },
       { kind: "component", name: "indicator" },
       { kind: "component", name: "label" },
       { kind: "content", genus: "text" },
       { kind: "component" },
-      // Настоящий скрытый `<input type="checkbox">` (`PWEB-152`) — узел, на котором реально
-      // висит `onChange`; без него превью выглядит верно, но клик ничего не переключает.
+      // The real hidden `<input type="checkbox">` (`PWEB-152`) — the node the actual
+      // `onChange` lives on; without it the preview looks right but a click toggles nothing.
       { kind: "component", name: "hiddenInput" },
     ],
   },
   control: {
-    means: "управляющая рамка — видимый квадрат, в который кладут указатель отметки",
-    states: {
-      checked: { means: "чекбокс отмечен" },
-      unchecked: { means: "чекбокс не отмечен" },
-      indeterminate: { means: "отмечен отчасти — обычно у чекбокса с частично отмеченными вложенными" },
-      disabled: { means: "чекбокс отключён — переключить нельзя" },
-      readonly: { means: "чекбокс только для чтения — состояние видно, переключить нельзя" },
-      invalid: { means: "чекбокс невалиден по правилам формы" },
-      required: { means: "чекбокс обязателен для отправки формы" },
-      hover: { means: "указатель наведён на чекбокс" },
-      active: { means: "чекбокс нажат указателем" },
-      focus: { means: "фокус стоит на чекбоксе" },
-      "focus-visible": { means: "фокус пришёл с клавиатуры — кольцу фокуса тут самое место" },
-    },
+    means: "the control frame — the visible square that holds the checked-mark indicator",
+    states: sharedStates,
     accepts: [
       { kind: "component", name: "indicator" },
       { kind: "content", genus: "icon" },
@@ -66,40 +56,16 @@ export const parts: Readonly<Record<CheckboxPart, PassportPartEditorInfo<Checkbo
     ],
   },
   indicator: {
-    means: "указатель отметки — галочка или черта, которую кладёт потребитель",
-    states: {
-      checked: { means: "чекбокс отмечен" },
-      unchecked: { means: "чекбокс не отмечен" },
-      indeterminate: { means: "отмечен отчасти — обычно у чекбокса с частично отмеченными вложенными" },
-      disabled: { means: "чекбокс отключён — переключить нельзя" },
-      readonly: { means: "чекбокс только для чтения — состояние видно, переключить нельзя" },
-      invalid: { means: "чекбокс невалиден по правилам формы" },
-      required: { means: "чекбокс обязателен для отправки формы" },
-      hover: { means: "указатель наведён на чекбокс" },
-      active: { means: "чекбокс нажат указателем" },
-      focus: { means: "фокус стоит на чекбоксе" },
-      "focus-visible": { means: "фокус пришёл с клавиатуры — кольцу фокуса тут самое место" },
-    },
+    means: "the checked-mark indicator — a check or a dash, placed by the consumer",
+    states: sharedStates,
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
   label: {
-    means: "подпись чекбокса",
-    states: {
-      checked: { means: "чекбокс отмечен" },
-      unchecked: { means: "чекбокс не отмечен" },
-      indeterminate: { means: "отмечен отчасти — обычно у чекбокса с частично отмеченными вложенными" },
-      disabled: { means: "чекбокс отключён — переключить нельзя" },
-      readonly: { means: "чекбокс только для чтения — состояние видно, переключить нельзя" },
-      invalid: { means: "чекбокс невалиден по правилам формы" },
-      required: { means: "чекбокс обязателен для отправки формы" },
-      hover: { means: "указатель наведён на чекбокс" },
-      active: { means: "чекбокс нажат указателем" },
-      focus: { means: "фокус стоит на чекбоксе" },
-      "focus-visible": { means: "фокус пришёл с клавиатуры — кольцу фокуса тут самое место" },
-    },
+    means: "the checkbox's label",
+    states: sharedStates,
     accepts: [{ kind: "content", genus: "text" }],
   },
 };

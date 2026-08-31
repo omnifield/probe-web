@@ -37,9 +37,4 @@ export {
   type SelectItemIndicatorProps,
   SelectHiddenSelect,
   type SelectHiddenSelectProps,
-  createListCollection,
-  type CollectionItem,
-  type ListCollection,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

@@ -5,15 +5,15 @@
 
 export {
   Workspace,
+  WorkspaceFooter,
   WorkspaceHeader,
   WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
+  type WorkspaceFooterProps,
   type WorkspaceHeaderProps,
   type WorkspaceMainProps,
   type WorkspaceProps,
   type WorkspaceRightbarProps,
   type WorkspaceSidebarProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

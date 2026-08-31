@@ -64,50 +64,50 @@ import {
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are
 // checked against the component's real props.
-import type { SelectProps } from "../components/index.jsx";
+import type { SelectProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Open — the set's floating content is shown. Unconditional: the sibling value is `closed`. */
-const open: PassportState = {
+const open = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
-};
+} as const satisfies PassportState;
 
 /** Closed — the same attribute, the other value. Always one or the other, never absent. */
-const closed: PassportState = {
+const closed = {
   name: "closed",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
-};
+} as const satisfies PassportState;
 
 /** Disabled, expressed as data — the mark `trigger` carries ALONGSIDE its native `disabled`. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** Invalid — the enclosing form rejected the value; the select cannot say why, only that. */
-const invalid: PassportState = {
+const invalid = {
   name: "invalid",
   mark: { kind: "attribute", name: "data-invalid" },
-};
+} as const satisfies PassportState;
 
 /** Read-only — the value is visible, choosing a different one is not possible. */
-const readOnly: PassportState = {
+const readOnly = {
   name: "readonly",
   mark: { kind: "attribute", name: "data-readonly" },
-};
+} as const satisfies PassportState;
 
 /** Required — the form will demand a value on submit. */
-const required: PassportState = {
+const required = {
   name: "required",
   mark: { kind: "attribute", name: "data-required" },
-};
+} as const satisfies PassportState;
 
 /** Focus, MIRRORED from the trigger's real DOM focus onto a sibling that cannot receive it itself. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Passport of the select — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -215,7 +215,7 @@ export const passport = definePassport({
   // return value, and as a native attribute on the unaddressed hidden `<select>`). `disabled` /
   // `invalid` / `readOnly` / `required` are excluded the same way the checkbox excludes them:
   // already declared as STATES above, a form fact rather than a look an author picks.
-  settings: defineSettings<SelectProps>({
+  settings: defineSettings<SelectProps>()({
     multiple: { values: { kind: "flag" }, byDefault: false },
   }),
 });

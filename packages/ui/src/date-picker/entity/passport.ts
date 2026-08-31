@@ -87,47 +87,47 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { DatePickerProps } from "../components/index.jsx";
+import type { DatePickerProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Open — the calendar panel is showing. Shared by `root`/`label`/`content`/`trigger`/`input`. */
-const open: PassportState = {
+const open = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
-};
+} as const satisfies PassportState;
 
 /** Closed — the same attribute, the other value. */
-const closed: PassportState = {
+const closed = {
   name: "closed",
   mark: { kind: "attribute", name: "data-state", value: "closed" },
-};
+} as const satisfies PassportState;
 
 const openClosed: readonly PassportState[] = [open, closed];
 
 /** No value selected yet. Mark NAME differs per part (`data-empty` on `root`, `data-placeholder-shown` elsewhere) — same fact, different attribute, checked on each part rather than assumed uniform. */
-const emptyRoot: PassportState = { name: "empty", mark: { kind: "attribute", name: "data-empty" } };
-const emptyPlaceholder: PassportState = {
+const emptyRoot = { name: "empty", mark: { kind: "attribute", name: "data-empty" } } as const satisfies PassportState;
+const emptyPlaceholder = {
   name: "empty",
   mark: { kind: "attribute", name: "data-placeholder-shown" },
-};
+} as const satisfies PassportState;
 
 /** Currently showing the day / month / year grid — one shared attribute, three values, TEN parts. */
-const dayView: PassportState = { name: "day", mark: { kind: "attribute", name: "data-view", value: "day" } };
-const monthView: PassportState = {
+const dayView = { name: "day", mark: { kind: "attribute", name: "data-view", value: "day" } } as const satisfies PassportState;
+const monthView = {
   name: "month",
   mark: { kind: "attribute", name: "data-view", value: "month" },
-};
-const yearView: PassportState = { name: "year", mark: { kind: "attribute", name: "data-view", value: "year" } };
+} as const satisfies PassportState;
+const yearView = { name: "year", mark: { kind: "attribute", name: "data-view", value: "year" } } as const satisfies PassportState;
 const viewStates: readonly PassportState[] = [dayView, monthView, yearView];
 
 /** Explicit `data-disabled` — declared per-part below only where the connector actually emits it. */
-const disabledData: PassportState = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } };
+const disabledData = { name: "disabled", mark: { kind: "attribute", name: "data-disabled" } } as const satisfies PassportState;
 
 /** Native-only `disabled`/`readOnly`/`required` — no `data-*` twin on these parts, so the honest mark is the pseudo-class. */
-const disabledPseudo: PassportState = { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } };
-const hoverPseudo: PassportState = { name: "hover", mark: { kind: "pseudo", name: ":hover" } };
-const focusVisiblePseudo: PassportState = { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } };
-const activePseudo: PassportState = { name: "active", mark: { kind: "pseudo", name: ":active" } };
+const disabledPseudo = { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } } as const satisfies PassportState;
+const hoverPseudo = { name: "hover", mark: { kind: "pseudo", name: ":hover" } } as const satisfies PassportState;
+const focusVisiblePseudo = { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } } as const satisfies PassportState;
+const activePseudo = { name: "active", mark: { kind: "pseudo", name: ":active" } } as const satisfies PassportState;
 
 /** A genuine button's pointer/keyboard trio — no JS pointer tracking overrides these, the plain button's own reasoning. */
 const buttonPseudos: readonly PassportState[] = [hoverPseudo, focusVisiblePseudo, activePseudo];
@@ -136,33 +136,33 @@ const buttonPseudos: readonly PassportState[] = [hoverPseudo, focusVisiblePseudo
 const tableSectionStates: readonly PassportState[] = [...viewStates, disabledData];
 
 // tableCellTrigger's own dictionary — see the file header ("the richest part in the kit").
-const selectable: PassportState = { name: "selectable", mark: { kind: "attribute", name: "data-selectable" } };
-const selected: PassportState = { name: "selected", mark: { kind: "attribute", name: "data-selected" } };
-const focus: PassportState = { name: "focus", mark: { kind: "attribute", name: "data-focus" } };
-const outsideRange: PassportState = {
+const selectable = { name: "selectable", mark: { kind: "attribute", name: "data-selectable" } } as const satisfies PassportState;
+const selected = { name: "selected", mark: { kind: "attribute", name: "data-selected" } } as const satisfies PassportState;
+const focus = { name: "focus", mark: { kind: "attribute", name: "data-focus" } } as const satisfies PassportState;
+const outsideRange = {
   name: "outside-range",
   mark: { kind: "attribute", name: "data-outside-range" },
-};
-const rangeStart: PassportState = { name: "range-start", mark: { kind: "attribute", name: "data-range-start" } };
-const rangeEnd: PassportState = { name: "range-end", mark: { kind: "attribute", name: "data-range-end" } };
-const inRange: PassportState = { name: "in-range", mark: { kind: "attribute", name: "data-in-range" } };
+} as const satisfies PassportState;
+const rangeStart = { name: "range-start", mark: { kind: "attribute", name: "data-range-start" } } as const satisfies PassportState;
+const rangeEnd = { name: "range-end", mark: { kind: "attribute", name: "data-range-end" } } as const satisfies PassportState;
+const inRange = { name: "in-range", mark: { kind: "attribute", name: "data-in-range" } } as const satisfies PassportState;
 /** Real only under `selectionMode="range"` — the attribute key is always present, just always absent otherwise. */
-const inHoverRange: PassportState = {
+const inHoverRange = {
   name: "in-hover-range",
   mark: { kind: "attribute", name: "data-in-hover-range" },
-};
-const hoverRangeStart: PassportState = {
+} as const satisfies PassportState;
+const hoverRangeStart = {
   name: "hover-range-start",
   mark: { kind: "attribute", name: "data-hover-range-start" },
-};
-const hoverRangeEnd: PassportState = {
+} as const satisfies PassportState;
+const hoverRangeEnd = {
   name: "hover-range-end",
   mark: { kind: "attribute", name: "data-hover-range-end" },
-};
+} as const satisfies PassportState;
 /** DAY VIEW ONLY — absent entirely from the month/year cell triggers, not just false. */
-const today: PassportState = { name: "today", mark: { kind: "attribute", name: "data-today" } };
-const unavailable: PassportState = { name: "unavailable", mark: { kind: "attribute", name: "data-unavailable" } };
-const weekend: PassportState = { name: "weekend", mark: { kind: "attribute", name: "data-weekend" } };
+const today = { name: "today", mark: { kind: "attribute", name: "data-today" } } as const satisfies PassportState;
+const unavailable = { name: "unavailable", mark: { kind: "attribute", name: "data-unavailable" } } as const satisfies PassportState;
+const weekend = { name: "weekend", mark: { kind: "attribute", name: "data-weekend" } } as const satisfies PassportState;
 
 const tableCellTriggerStates: readonly PassportState[] = [
   ...viewStates,
@@ -241,5 +241,5 @@ export const passport = definePassport({
   // (`single`/`multiple`/`range`) but its NAME is not `"multiple"` — `defineSettings`'s own
   // `Extract<keyof Props, PassportSettingName>` filters it out by construction, the same empty
   // result the plain button's and the popover's own settings already show.
-  settings: defineSettings<DatePickerProps>({}),
+  settings: defineSettings<DatePickerProps>()({}),
 });

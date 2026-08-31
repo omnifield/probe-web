@@ -21,18 +21,18 @@ type RadioGroupPart = typeof passport extends ComponentPassport<infer Part> ? Pa
 export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
   {
     name: "basic",
-    means: "рабочая группа: три варианта, точка едет к выбранному",
+    means: "a working group: three choices, the dot travels to whichever is picked",
     tree: {
       node: "root",
       props: { defaultValue: "standard" },
       children: [
-        { node: "label", children: [{ genus: "text", value: "Доставка" }] },
+        { node: "label", children: [{ genus: "text", value: "Delivery" }] },
         {
           node: "item",
           props: { value: "standard" },
           children: [
             { node: "itemControl" },
-            { node: "itemText", children: [{ genus: "text", value: "Стандартная" }] },
+            { node: "itemText", children: [{ genus: "text", value: "Standard" }] },
             { extra: "hiddenInput" },
           ],
         },
@@ -41,7 +41,7 @@ export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
           props: { value: "express" },
           children: [
             { node: "itemControl" },
-            { node: "itemText", children: [{ genus: "text", value: "Экспресс" }] },
+            { node: "itemText", children: [{ genus: "text", value: "Express" }] },
             { extra: "hiddenInput" },
           ],
         },
@@ -50,7 +50,7 @@ export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
           props: { value: "pickup" },
           children: [
             { node: "itemControl" },
-            { node: "itemText", children: [{ genus: "text", value: "Самовывоз" }] },
+            { node: "itemText", children: [{ genus: "text", value: "Pickup" }] },
             { extra: "hiddenInput" },
           ],
         },

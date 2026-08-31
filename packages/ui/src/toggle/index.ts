@@ -9,6 +9,4 @@ export {
   ToggleIndicator,
   type ToggleIndicatorProps,
   type ToggleProps,
-} from "./components/index.jsx";
-export { kit } from "./components/kit.js";
-export { anatomy, anatomyParts, passport } from "./entity";
+} from "./components/index.js";

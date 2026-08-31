@@ -1,18 +1,11 @@
-// TEMPLATE — structure prepared, prose NOT written here.
-//
 // EDITOR-ONLY per-part taxonomy for the toggle — read by `./index.ts`'s `defineEditorInfo` call.
 // Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`): one file,
 // exhaustive over the anatomy, `accepts`/state KEYS true to the real Ark composition read while
 // building `../entity/`.
 //
-// WHAT IS REAL BELOW: every part key, every state key (matches `../entity/passport.ts` exactly —
-// `defineEditorInfo` throws otherwise), and every `accepts` rule (mirrors the actual Solid
-// nesting: `root` wraps `indicator`, the only child).
-//
-// WHAT IS A PLACEHOLDER: every `means: "TODO"` — human-facing prose, left for whoever fills the
-// playground zone next. Replace each one; do not remove or rename a key while doing it, or
-// `defineEditorInfo` will throw at build time (parts/states are checked against the passport
-// EXACTLY, not a superset).
+// Every part key, every state key (matches `../entity/passport.ts` exactly — `defineEditorInfo`
+// throws otherwise), and every `accepts` rule (mirrors the actual Solid nesting: `root` wraps
+// `indicator`, the only child) is real.
 
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -23,20 +16,20 @@ import type { passport } from "../entity/passport.js";
 type TogglePart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 const sharedMeans = {
-  on: { means: "TODO" },
-  off: { means: "TODO" },
-  pressed: { means: "TODO" },
-  disabled: { means: "TODO" },
+  on: { means: "the toggle is pressed" },
+  off: { means: "the toggle is not pressed" },
+  pressed: { means: "the toggle is pressed — the same fact as `on`, encoded as presence rather than a two-valued attribute" },
+  disabled: { means: "the toggle is disabled — it cannot be pressed" },
 } satisfies PassportPartEditorInfo<TogglePart>["states"];
 
 export const parts: Readonly<Record<TogglePart, PassportPartEditorInfo<TogglePart>>> = {
   root: {
-    means: "TODO",
+    means: "the toggle as a whole — a single `<button aria-pressed>`, wraps `indicator`",
     states: sharedMeans,
     accepts: [{ kind: "component", name: "indicator" }],
   },
   indicator: {
-    means: "TODO",
+    means: "the glyph shown inside the button — an icon, a checkmark, whatever the consumer puts inside it",
     states: sharedMeans,
     accepts: [
       { kind: "content", genus: "text" },

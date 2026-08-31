@@ -37,20 +37,20 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { ToggleGroupProps } from "../components/index.jsx";
+import type { ToggleGroupProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Some item in this set is focused — an aggregate fact, real on `root` only in the tab-in case. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** The whole set is disabled, or (on `item`) this one item is — either its own prop or the group's. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** Passport of the toggle group — anatomy plus what anatomy alone does not say. */
 export const passport = definePassport({
@@ -83,7 +83,7 @@ export const passport = definePassport({
   // the same way the checkbox excludes it: already a STATE above. `deselectable`/`rovingFocus` are
   // real zag props but outside the closed `SETTINGS` vocabulary (`orientation`/`multiple`/
   // `collapsible` only) — not modeled, the same way `loopFocus`/`ids` are not on any component.
-  settings: defineSettings<ToggleGroupProps>({
+  settings: defineSettings<ToggleGroupProps>()({
     orientation: {
       values: {
         kind: "choice",

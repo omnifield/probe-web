@@ -1,12 +1,4 @@
-// ПОДПУТЬ `./editor` (`PWEB-115`) — срез РЕДАКТОРА паспорта: всё, что читают только человек и
-// редакторская механика продукта, и что `generateSkinCss`/`checkOutfit`/`assemble` не трогают.
-//
-// Отдельный вход, а не часть `./model` или корня, — и это НЕ стиль, а сама граница: приложение,
-// импортирующее `.`/`./model`, не создаёт ссылки НИ НА ОДНУ привязку этого файла, и бандлер
-// вправе выбросить редакторские данные (`means`, сборки) как мёртвый код. Импорт `./editor` —
-// осознанный акт того, кто действительно строит редактор, а не случайная утечка через общий вход.
-//
-// Разбор устройства, довод и рецепт объявления — в шапке `passport-editor.ts`.
+// Design notes: ./editor.README.md
 
 export type {
   ComponentFootprint,
@@ -21,12 +13,9 @@ export type {
   PassportSettingOptionEditorInfo,
   PassportStateEditorInfo,
   PassportVariableEditorInfo,
-} from "./passport-editor.js";
-export { admits, defineEditorInfo, footprintOf, GROUPS, groupOf } from "./passport-editor.js";
+} from "./passport/editor/index.js";
+export { admits, defineEditorInfo, footprintOf, GROUPS, groupOf } from "./passport/editor/index.js";
 
-// БАЗОВАЯ СБОРКА (`PWEB-89`) — держатель переехал в `PassportEditorInfo.assemblies` и стал
-// списком (`PWEB-115`); объявление дерева и его разворот в плоскую форму остались здесь же, где
-// были всегда.
 export type {
   BaseAssemblyContent,
   BaseAssemblyElement,
@@ -43,7 +32,7 @@ export type {
   PassportAssemblyNode,
   PassportAssemblyRef,
   PassportAssemblyRepeat,
-} from "./passport-assembly.js";
+} from "./passport/assembly/index.js";
 export {
   baseAssemblyOf,
   isAssemblyContent,
@@ -53,4 +42,4 @@ export {
   isContentNode,
   isDataBinding,
   resolveDataBinding,
-} from "./passport-assembly.js";
+} from "./passport/assembly/index.js";

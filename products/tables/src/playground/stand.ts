@@ -1,16 +1,17 @@
 // Состояние стенда — ОДНО на все страницы.
 //
-// Страницы разные, данные одни: выбрал источник на «Переходнике», поставил условие на
-// «Фильтрах», ушёл на «Таблицу» — и там тот же набор строк, тот же отбор. Разрезали ЭКРАН, а
-// не данные: три состояния, живущие по страницам, разъехались бы, и стенд перестал бы
-// показывать то единственное, ради чего он есть, — что всё стоит на одном словаре полей.
+// `rows` — фиксированный канон (`data.ts`'s `ROWS`): страница «Переходник» снята вместе с
+// `src/adapter/` (постановка user, 2026-08-29 — переходник переехал в `packages/io`, PWEB-180..
+// 183), выбора формы данных на стенде сегодня нет.
+//
+// Здесь же лежит связка «график ↔ отбор»: щелчок по величине кладёт условие в тот же фильтр.
+// Отдельной механики «график управляет таблицей» не существует — обе смотрят в одно состояние.
 //
 // Здесь же лежит связка «график ↔ отбор»: щелчок по величине кладёт условие в тот же фильтр.
 // Отдельной механики «график управляет таблицей» не существует — обе смотрят в одно состояние.
 
 import { type Accessor, createMemo, createSignal, type Setter } from "solid-js";
 
-import { type Adapted, type AdapterSpec, applyAdapter } from "../adapter/index.js";
 import {
   type ChartSelection,
   type ChartSpec,
@@ -34,7 +35,7 @@ import {
   type SessionState,
   type ViewState,
 } from "../table/index.js";
-import { COLUMNS, type DemoSource, SOURCES } from "./data.js";
+import { COLUMNS, ROWS } from "./data.js";
 import { trace } from "./trace.js";
 
 const LABELS = labelsOf(COLUMNS);
@@ -67,14 +68,6 @@ export interface Selected {
 }
 
 export interface Stand {
-  /** Выбранная форма данных на входе. */
-  source: Accessor<DemoSource>;
-  setSourceId(id: string): void;
-  /** Переходник выбранного источника — свой у каждого, правки не перетекают. */
-  adapter: Accessor<AdapterSpec>;
-  setAdapter(next: AdapterSpec): void;
-  /** Что приехало после переходника: строки, отчёт о непонятом, ошибка разбора. */
-  adapted: Accessor<Adapted>;
   rows: Accessor<Row[]>;
 
   filter: Accessor<FilterState>;
@@ -111,15 +104,7 @@ export interface Stand {
  * @returns состояние стенда целиком
  */
 export function createStand(): Stand {
-  const [sourceId, setSourceId] = createSignal(SOURCES[0]!.id);
-  const source = createMemo(() => SOURCES.find((one) => one.id === sourceId()) ?? SOURCES[0]!);
-
-  // Правки переходника держим ПО ИСТОЧНИКУ: переключился туда-обратно — настройка на месте.
-  const [edited, setEdited] = createSignal<Record<string, AdapterSpec>>({});
-  const adapter = createMemo(() => edited()[sourceId()] ?? source().adapter);
-
-  const adapted = createMemo(() => applyAdapter(source().response, adapter()));
-  const rows = createMemo(() => adapted().rows);
+  const rows = () => ROWS;
 
   const [filter, setFilter] = createSignal<FilterState>(EMPTY_FILTER);
   const [chart, setChart] = createSignal<ChartSpec>(START_CHART);
@@ -147,11 +132,6 @@ export function createStand(): Stand {
   );
 
   return {
-    source,
-    setSourceId: (id) => setSourceId(id),
-    adapter,
-    setAdapter: (next) => setEdited((current) => ({ ...current, [sourceId()]: next })),
-    adapted,
     rows,
 
     filter,

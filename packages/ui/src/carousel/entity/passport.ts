@@ -39,7 +39,7 @@ import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model"
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are
 // checked against the component's real props.
-import type { CarouselProps } from "../components/index.jsx";
+import type { CarouselProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Passport of the carousel — anatomy plus what anatomy alone does not say. */
@@ -105,7 +105,7 @@ export const passport = definePassport({
   // the carousel accepts, but none of them is in the closed vocabulary — `defineSettings`'s own
   // `Extract<keyof Props, PassportSettingName>` filters them out by construction, the same result
   // the plain button's empty settings already demonstrates for its own unmatched props.
-  settings: defineSettings<CarouselProps>({
+  settings: defineSettings<CarouselProps>()({
     orientation: {
       values: {
         kind: "choice",

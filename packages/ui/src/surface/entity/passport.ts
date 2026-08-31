@@ -9,7 +9,7 @@
 import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
 // ТИП пропов — только тип: `import type` стирается сборкой, и подпуть `./passport`
 // остаётся данными без Solid. Нужен, чтобы ключи настроек сверялись с настоящими пропами.
-import type { SurfaceProps } from "../components/index.jsx";
+import type { SurfaceProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 export const passport = definePassport({
@@ -20,5 +20,5 @@ export const passport = definePassport({
     mark: { kind: "attribute", name: "data-variant" },
   },
   // Настроек из закрытого перечня поверхность не принимает.
-  settings: defineSettings<SurfaceProps>({}),
+  settings: defineSettings<SurfaceProps>()({}),
 });

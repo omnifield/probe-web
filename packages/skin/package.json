@@ -1,7 +1,7 @@
 {
   "name": "@omnifield/probe-web-skin",
   "version": "0.0.0",
-  "description": "Механика скина probe-web: модель, сборка рецепта по частям, адресация из анатомии и порождение CSS (PWEB-4). Механика — фреймворк; сама одежда живёт продуктом.",
+  "description": "probe-web skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, and CSS generation (PWEB-4). The mechanic is a framework; the actual dressing lives in the product.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,

@@ -22,68 +22,68 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { SwitchProps } from "../components/index.jsx";
+import type { SwitchProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Checked — the switch is on. */
-const checked: PassportState = {
+const checked = {
   name: "checked",
   mark: { kind: "attribute", name: "data-state", value: "checked" },
-};
+} as const satisfies PassportState;
 
 /** Unchecked — the same attribute, the other value. Always one or the other. */
-const unchecked: PassportState = {
+const unchecked = {
   name: "unchecked",
   mark: { kind: "attribute", name: "data-state", value: "unchecked" },
-};
+} as const satisfies PassportState;
 
 /** Disabled — data, not native `:disabled`: `root` is a `<label>`, `control`/`thumb` are `<span>`s. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** Read-only — the value is visible, toggling it is not possible. */
-const readOnly: PassportState = {
+const readOnly = {
   name: "readonly",
   mark: { kind: "attribute", name: "data-readonly" },
-};
+} as const satisfies PassportState;
 
 /** Invalid — the enclosing form rejected the value; the switch cannot say why, only that. */
-const invalid: PassportState = {
+const invalid = {
   name: "invalid",
   mark: { kind: "attribute", name: "data-invalid" },
-};
+} as const satisfies PassportState;
 
 /** Required — the form will demand a value on submit. */
-const required: PassportState = {
+const required = {
   name: "required",
   mark: { kind: "attribute", name: "data-required" },
-};
+} as const satisfies PassportState;
 
 /** Hover — Zag tracks the pointer itself on `root` (`onPointerMove`/`onPointerLeave`), not the browser. */
-const hover: PassportState = {
+const hover = {
   name: "hover",
   mark: { kind: "attribute", name: "data-hover" },
-};
+} as const satisfies PassportState;
 
 /** Active — the switch is being pressed. Data, same reasoning as hover. */
-const active: PassportState = {
+const active = {
   name: "active",
   mark: { kind: "attribute", name: "data-active" },
-};
+} as const satisfies PassportState;
 
 /** Focus, MIRRORED from the hidden input's real DOM focus onto parts that cannot receive it themselves. */
-const focus: PassportState = {
+const focus = {
   name: "focus",
   mark: { kind: "attribute", name: "data-focus" },
-};
+} as const satisfies PassportState;
 
 /** Keyboard focus — the same mirrored device, a separate name: `:focus-visible` would aim at nothing. */
-const focusVisible: PassportState = {
+const focusVisible = {
   name: "focus-visible",
   mark: { kind: "attribute", name: "data-focus-visible" },
-};
+} as const satisfies PassportState;
 
 /** Shared dictionary — by reference, so the four parts cannot drift from one another silently. */
 const states: readonly PassportState[] = [
@@ -121,5 +121,5 @@ export const passport = definePassport({
   // already declared as STATES above (a form fact, not a look an author picks), and the switch
   // has no `orientation`/`multiple`/`collapsible` prop for the other three names to attach to —
   // the same empty result the plain button and the icon already declare.
-  settings: defineSettings<SwitchProps>({}),
+  settings: defineSettings<SwitchProps>()({}),
 });

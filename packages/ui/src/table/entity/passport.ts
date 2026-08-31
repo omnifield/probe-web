@@ -40,26 +40,26 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // the component's real props. `Record<string, unknown>` stands in for `TData` (TanStack's own
 // `RowData` bound rules out bare `unknown`): the passport does not care what a row's own data
 // type is, only that `TableRootProps` has no setting-vocabulary prop to declare.
-import type { TableRootProps } from "../components/index.jsx";
+import type { TableRootProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Sorted ascending. Shared by `headerCell` and `headerSortTrigger` — the same fact, two addresses. */
-const ascending: PassportState = {
+const ascending = {
   name: "ascending",
   mark: { kind: "attribute", name: "data-state", value: "ascending" },
-};
+} as const satisfies PassportState;
 
 /** Sorted descending — the same attribute, the other active value. */
-const descending: PassportState = {
+const descending = {
   name: "descending",
   mark: { kind: "attribute", name: "data-state", value: "descending" },
-};
+} as const satisfies PassportState;
 
 /** Sortable, but not currently sorted. Absent entirely on `headerCell` when the column cannot sort at all. */
-const none: PassportState = {
+const none = {
   name: "none",
   mark: { kind: "attribute", name: "data-state", value: "none" },
-};
+} as const satisfies PassportState;
 
 /** Shared by `headerCell` and `headerSortTrigger` — see the file header for the "omitted, not `none`" case. */
 const sortStates: readonly PassportState[] = [ascending, descending, none];
@@ -94,5 +94,5 @@ export const passport = definePassport({
   // THE TABLE HAS NO SETTINGS (same declaration the button/icon already make): sorting is STATE
   // (a fact of the moment, expressed above), not a closed-vocabulary axis an author picks, and
   // `orientation`/`multiple`/`collapsible` have nothing on a table to attach to.
-  settings: defineSettings<TableRootProps<Record<string, unknown>>>({}),
+  settings: defineSettings<TableRootProps<Record<string, unknown>>>()({}),
 });

@@ -40,32 +40,32 @@ import { defineSettings, definePassport, type PassportState } from "@omnifield/p
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.
-import type { FieldProps } from "../components/index.jsx";
+import type { FieldProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 /** Disabled — the field (or its enclosing fieldset) is disabled. */
-const disabled: PassportState = {
+const disabled = {
   name: "disabled",
   mark: { kind: "attribute", name: "data-disabled" },
-};
+} as const satisfies PassportState;
 
 /** Invalid — the form rejected the value; the field cannot say why, only that. */
-const invalid: PassportState = {
+const invalid = {
   name: "invalid",
   mark: { kind: "attribute", name: "data-invalid" },
-};
+} as const satisfies PassportState;
 
 /** Read-only — the value is visible, changing it is not possible. */
-const readOnly: PassportState = {
+const readOnly = {
   name: "readonly",
   mark: { kind: "attribute", name: "data-readonly" },
-};
+} as const satisfies PassportState;
 
 /** Required — the form will demand a value on submit. */
-const required: PassportState = {
+const required = {
   name: "required",
   mark: { kind: "attribute", name: "data-required" },
-};
+} as const satisfies PassportState;
 
 /** Shared dictionary for the three native control renderers — identical marks on all three. */
 const controlStates: readonly PassportState[] = [
@@ -104,5 +104,5 @@ export const passport = definePassport({
   // NO settings from the closed vocabulary apply: `disabled`/`invalid`/`readOnly`/`required` are
   // already declared as STATES above (a form fact, not a look an author picks), and the field has
   // no `orientation`/`multiple`/`collapsible` prop for the other three names to attach to.
-  settings: defineSettings<FieldProps>({}),
+  settings: defineSettings<FieldProps>()({}),
 });

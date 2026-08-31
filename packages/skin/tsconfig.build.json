@@ -1,8 +1,8 @@
 {
   "//": [
-    "Сборка ТИПОВ. JS собирает `vite build` (library mode, фабрика зоны `build`) — здесь",
-    "остаются только декларации: `.d.ts` собирает тот же компилятор, что проверяет код, и",
-    "второго источника правды о типах в пакете нет."
+    "Builds TYPES. `vite build` builds the JS (library mode, the `build` zone's factory) — only",
+    "declarations are left here: the `.d.ts` files are built by the same compiler that checks the",
+    "code, and there is no second source of truth about types in the package."
   ],
   "extends": "./tsconfig.json",
   "compilerOptions": {

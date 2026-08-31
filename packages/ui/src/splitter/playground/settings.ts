@@ -8,9 +8,7 @@
 // WHAT IS A PLACEHOLDER: every `means: "TODO"` — human-facing prose, left for whoever fills the
 // playground zone next.
 
-import type { PassportSettingEditorInfo } from "@omnifield/probe-web-skin/editor";
-
-export const settings: Readonly<Record<string, PassportSettingEditorInfo>> = {
+export const settings = {
   orientation: {
     means: "TODO",
     options: {

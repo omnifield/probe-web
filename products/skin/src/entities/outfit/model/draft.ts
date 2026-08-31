@@ -32,7 +32,7 @@
 
 import { withPassports, type Form, type Outfit, type Palette } from "@omnifield/probe-web-skin/model";
 
-import { passportOf } from "../../catalog/model/providers.js";
+import { passportOf } from "../../component/model/providers.js";
 import { readOutfit, readParts, StoreRefused } from "../api/store.js";
 
 // Связка своя, а не привезённая из `index.ts`: витрина зовёт черновик, и импорт назад завёл бы
