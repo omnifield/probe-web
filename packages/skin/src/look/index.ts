@@ -2,6 +2,7 @@
 
 export type {
   Assembled,
+  ComponentAssembly,
   Form,
   LookParts,
   Outfit,

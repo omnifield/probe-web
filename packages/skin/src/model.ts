@@ -125,6 +125,7 @@ export { fluidBar, fluidExpression, fluidPoles, fluidRefusals, isFluid } from ".
 
 export type {
   Assembled,
+  ComponentAssembly,
   Form,
   LookParts,
   Outfit,
