@@ -44,6 +44,8 @@ export interface IoRegistry {
   /** То же, что `get`, но явный отказ вместо `undefined` — где вызывающий без паспорта дальше не может. */
   require(component: string): IoEntry;
   has(component: string): boolean;
+  /** Все зарегистрированные паспорта — тому, кому нужно пройтись по каждому (например, сгенерировать по записи на компонент). */
+  list(): readonly IoEntry[];
 }
 
 export function createIoRegistry(): IoRegistry {
@@ -72,6 +74,9 @@ export function createIoRegistry(): IoRegistry {
     },
     has(component) {
       return byComponent.has(component);
+    },
+    list() {
+      return [...byComponent.values()];
     },
   };
 }

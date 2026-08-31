@@ -165,4 +165,21 @@ Two things stay the consumer's responsibility, because the kit cannot know them:
 button needs its own accessible name (`aria-label`), and a button that expands or controls another
 region needs the corresponding `aria-expanded` / `aria-controls` — which in this kit normally
 arrives from the outer component the button is composed into.
+
+## Assembly & skin notes
+
+Concrete things that cost real time to find — read this before writing a new assembly that
+references `button`, or a new variant of its recipe.
+
+- **Referencing it from someone else's assembly needs no children.** `button` is the one component
+  in the kit today with `passport.selfAssembly` — a bare `{ node: "button" }` reference (root only;
+  it has no other parts to address with a dotted form) unfolds its own click → `"select"` event
+  wiring automatically. Every other component covered here does NOT have this — see their own
+  notes below before assuming the same shortcut applies.
+- **A variant name reaches the DOM through `bind`, never a literal prop passthrough on the
+  reference** (PWEB-166..172) — `{ props: { "data-variant": "primary" } }` on a `button` reference
+  works because `props` is a real assembly field, not because the reference specially understands
+  `data-variant`; the button itself sets no default variant name.
+- **One part, no dotted addressing ever.** `anatomy` has exactly `root` — there is nothing to
+  reference as `button.<part>`, unlike every composite component in this kit.
 <!-- user:end -->

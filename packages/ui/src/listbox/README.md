@@ -250,4 +250,37 @@ behavior includes: arrow-key navigation along the `orientation` axis moves the h
 text, and — unless `disallowSelectAll` is set — `Cmd`/`Ctrl`+`A` selects every item at once in
 `multiple`/`extended` mode. `loopFocus` controls whether navigating past the last item wraps back
 to the first.
+
+## Assembly & skin notes
+
+Concrete things that cost real time to find on this component's nearest sibling (`select`) —
+listed here because the same traps apply to `listbox` for the same reasons, even though none of
+them has actually bitten this component yet.
+
+- **No `selfAssembly`.** A bare `{ node: "listbox" }` reference from elsewhere gets you the root
+  and nothing else — the whole compound tree (`content`/`item`/`itemText`/`itemIndicator`, plus
+  `itemGroup`/`itemGroupLabel` if needed) has to be authored by hand, mirroring this component's
+  own `playground/assemblies.ts`. Proven working composed inside `accordion`'s `action-list.ts`.
+- **Non-root parts of a reference are addressed with a dot**: `listbox.content`, `listbox.item`,
+  `listbox.itemText` — a bare `content` resolves nowhere in the OWNING assembly's own anatomy and
+  silently renders no children, no error (found live composing this exact component into
+  `accordion`'s `itemContent`).
+- **`item`'s own native click composes fine with an assembly's `on.click`** — both fire from the
+  same click (proven live: `accordion`'s `action-list.ts` dispatches a `"select"` event carrying
+  the whole item as `payload` via the empty-path marker, `path: ""`, while Ark's own selection
+  still happens normally in the same click).
+- **No floating layer, no `Portal`, no open/closed pair anywhere** — unlike `select`, there is
+  nothing here that Zag hides with the native `hidden` attribute, so the `display`-vs-`[hidden]`
+  conflict that broke `select`'s `content` cannot happen to this component's own parts the same
+  way. `itemIndicator` still uses `hidden` for its unchecked case (the kit sets it, not Zag) — the
+  shipped recipe already scopes `display` to `states.checked` only; don't set an unconditional
+  `display` on it if the recipe ever changes, for the same reason `select`'s `content` couldn't.
+- **A repeated, per-instance controlled `value` needs binding to real data, not `defaultValue`, if
+  more than one instance exists and only one should reflect an outside fact.** See `accordion`'s
+  own notes — its `action-list.ts` composes exactly one `listbox` per section this way.
+- **Known open gap (as of 2026-08-31, PWEB-211):** `playground/parts.ts` still annotates `parts`
+  with the wide `Record<ListboxPart, PassportPartEditorInfo<ListboxPart>>` form rather than `as
+  const`. A typo in a state name there will NOT be caught by `tsc` — only by `defineEditorInfo`'s
+  runtime check, one step later than on `accordion`/`select`/`button`, where this was already
+  fixed. Same fix applies here; just not done yet.
 <!-- user:end -->

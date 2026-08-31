@@ -243,4 +243,33 @@ Accordion follows the WAI-ARIA [Accordion pattern](https://www.w3.org/WAI/ARIA/a
 | `ArrowRight` / `ArrowLeft` (`horizontal`) | Moves focus to the next / previous trigger |
 | `Home` | Moves focus to the first trigger |
 | `End` | Moves focus to the last trigger |
+
+## Assembly & skin notes
+
+Concrete things that cost real time to find — read this before writing a new assembly for
+`accordion`, or composing another real component into it.
+
+- **No `selfAssembly`.** A bare `{ node: "accordion" }` reference from elsewhere gets you the root
+  and nothing else — the whole compound tree (`item`/`itemTrigger`/`itemContent`/`itemIndicator`)
+  has to be authored by hand, mirroring `playground/assemblies/base.ts`.
+- **Composing a real component into a part (e.g. `action-list.ts`'s `listbox` inside
+  `itemContent`) needs a dotted address for anything past that component's own root**:
+  `listbox.content`, `listbox.item`, `listbox.itemText` — a bare `content` resolves nowhere (it
+  isn't `accordion`'s own anatomy) and silently renders no children at all, no error thrown, the
+  root still mounts fine. Same rule applies the other way if anyone ever references `accordion`'s
+  own non-root parts from a foreign assembly: `accordion.item`, `accordion.itemTrigger`, etc.
+- **`itemContent`'s `open` mark can be entirely absent** depending on whether the expansion
+  animated — never key a look off it directly. Address the expanded look through the `item`
+  ancestor instead, which holds the mark reliably (see "States" above).
+- **A repeated, per-item live component needs its own controlled state bound to real data if you
+  want exactly one instance to reflect something external.** `action-list.ts`'s nested `listbox`
+  (one per section) originally left its `value` unbound — every section's listbox then tracked
+  "checked" completely independently (more than one section could show a checked item at once),
+  and none of them survived a page reload, because nothing tied the mark to the one fact that
+  should decide it. Fixed by binding `value` to a data field (`activeValues`) computed from that
+  external fact (which route is currently active) rather than leaving it uncontrolled.
+- **`itemTrigger`'s own `on.click` composes fine with Ark's native expand/collapse handling** — both
+  fire from the same click, proven live (`triggerClick` dispatches the whole section as `payload`
+  via the empty-path marker, `path: ""`, at the same time the item actually expands). The same
+  device works on a referenced component's own items (see `select`'s and `listbox`'s own notes).
 <!-- user:end -->

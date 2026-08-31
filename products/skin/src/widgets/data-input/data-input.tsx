@@ -32,10 +32,43 @@ import { REGISTRY } from "#/entities/component/model/registry.js";
 import { PACKS } from "#/entities/packs/model/registry.js";
 import { previewStore, usePreviewComponent } from "#/entities/preview/model/store.js";
 
-/** Подпись для пункта списка — `label`, если он есть строкой, иначе запись целиком. */
+const CAPTION_FIELDS = ["label", "title", "name"] as const;
+const CAPTION_MAX_LENGTH = 40;
+
+function truncated(text: string): string {
+  return text.length > CAPTION_MAX_LENGTH ? `${text.slice(0, CAPTION_MAX_LENGTH - 1)}…` : text;
+}
+
+function firstCaptionField(item: Record<string, unknown>): string | undefined {
+  for (const field of CAPTION_FIELDS) {
+    const value = item[field];
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return undefined;
+}
+
+/**
+ * Короткая подпись для пункта списка — как у любого нормального селекта, не вся запись целиком.
+ *
+ * `label`/`title`/`name`, если есть строкой на самом верху записи; иначе то же самое поле у
+ * ПЕРВОГО элемента первого вложенного массива (аккордеон не несёт `label` сам — его несёт
+ * `sections[0].title`). Ничего не нашлось — единственный случай, где остаётся `JSON.stringify`,
+ * и то усечённый: показывать целое дерево данных пунктом списка не может ни один селект.
+ */
 function captionOf(item: Record<string, unknown>): string {
-  const label = item["label"];
-  return typeof label === "string" ? label : JSON.stringify(item);
+  const direct = firstCaptionField(item);
+  if (direct !== undefined) return truncated(direct);
+
+  for (const value of Object.values(item)) {
+    if (!Array.isArray(value) || value.length === 0) continue;
+    const [first] = value as unknown[];
+    if (first === null || typeof first !== "object") continue;
+
+    const nested = firstCaptionField(first as Record<string, unknown>);
+    if (nested !== undefined) return truncated(nested);
+  }
+
+  return truncated(JSON.stringify(item));
 }
 
 export function DataInput() {

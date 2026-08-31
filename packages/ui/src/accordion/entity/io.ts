@@ -12,6 +12,15 @@ const section = z.object({
   id: z.string(),
   title: z.string(),
   items: z.array(item).optional(),
+  // The nested listbox's OWN controlled `value` (`action-list.ts`) — zero or one of THIS
+  // section's item values, never more: a listbox's `value` is an array only because `multiple`
+  // is a real axis for it elsewhere, not because this composition ever picks more than one.
+  // Bound per section, not globally, because each section repeats its own listbox instance —
+  // an uncontrolled listbox per section is what let more than one item read "checked" at once
+  // across DIFFERENT sections, and what dropped the mark entirely on reload (found live,
+  // 2026-08-31): nothing tied "checked" to the one fact that should decide it, which component
+  // routing is actually showing.
+  activeValues: z.array(z.string()).optional(),
 });
 
 /** What the accordion's own assembly reads: `/sections` (`playground/assemblies.ts`). */

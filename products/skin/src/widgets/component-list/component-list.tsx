@@ -28,6 +28,15 @@
 // `ComponentList` это событие не изобретает, а просто СЛУШАЕТ через `dispatch`. `payload` — весь
 // пункт раздела (`AccordionItemData`, `./adapter.ts`), `payload.value` — имя компонента, оно же
 // адрес показа (`/showcase/<имя>`).
+//
+// ОТМЕТКА ИДЁТ ОБРАТНО ОТ РОУТИНГА, НЕ ОТ ЛИСТБОКСА (найдено живьём, 2026-08-31). Раньше `value`
+// листбокса каждого раздела был неконтролируем — отсюда можно было отметить пункт СРАЗУ в
+// нескольких разделах (у каждого своё независимое состояние), а после перезагрузки отметка
+// пропадала везде (свежий, пустой Zag на каждом). Теперь `value` листбокса — `bind: { value:
+// "activeValues" }` (`action-list.ts`), а `activeValues` считает адаптер (`./adapter.ts`) от
+// `usePreviewComponent()` — того же факта «что показано сейчас», которым уже живёт `DataInput`.
+// Один активный компонент — один источник правды, клик по пункту его не решает напрямую, только
+// переключает маршрут, а маршрут уже сам решает отметку через тот же стор.
 
 import { RenderTree, type DispatchedEvent } from "@omnifield/probe-web-assembly";
 import { useNavigate } from "@omnifield/probe-web-router";
@@ -36,6 +45,7 @@ import { createMemo } from "solid-js";
 import { useComponentGroups } from "../../entities/component/model/store.js";
 import { instanceOf } from "../../entities/component/model/instance.js";
 import { REGISTRY } from "../../entities/component/model/registry.js";
+import { usePreviewComponent } from "../../entities/preview/model/store.js";
 import { groupsToSectionsData, type AccordionItemData } from "./adapter.js";
 
 const ASSEMBLY_NAME = "action-list";
@@ -46,7 +56,10 @@ export function ComponentList(props: {
 }) {
   const navigate = useNavigate();
   const groups = useComponentGroups();
-  const data = createMemo(() => groupsToSectionsData(groups()));
+  // Тот же факт, что ведёт `DataInput`/`ComponentPreview` — «что показано сейчас», а не второй
+  // источник правды, заведённый специально для отметки в списке.
+  const active = usePreviewComponent();
+  const data = createMemo(() => groupsToSectionsData(groups(), active()));
 
   const tree = createMemo(() =>
     instanceOf(
