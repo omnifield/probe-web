@@ -26,14 +26,14 @@ describe("importModule against a real component (copied accordion/entity, not sy
     expect(Object.keys(passport.settings)).toEqual(["orientation", "multiple", "collapsible"]);
   });
 
-  // io.ts extraction is blocked upstream, not by this tool: @omnifield/probe-web-io's `paths.ts`
-  // imports `getValueByPointer` from `fast-json-patch`, which plain Node's ESM interop does not
-  // expose as a named export (reproduced independently of `importModule` — plain
-  // `node --input-type=module -e "import { input } from '.../packages/io/dist/index.js'"` fails
-  // the exact same way). Vitest's own transform papers over it, which is why `packages/io`'s own
-  // test suite stays green. A packages/io fix, not ours — tracked, not worked around here.
-  it.skip("extracts the real io.ts Zod schema — blocked by a packages/io bug (fast-json-patch interop), not by importModule", async () => {
-    const { input } = await importModule<{ readonly input: unknown }>(join(entityDir, "io.ts"));
+  // `fast-json-patch` (under @omnifield/probe-web-io's `paths.ts`) is CommonJS with no `exports`
+  // map — plain Node's ESM interop, and this tool's default headless mode, both fail to find its
+  // named exports (see extract/README's "Second argument" section). `ssr.noExternal` fixes it:
+  // proof this is a caller-suppliable escape hatch, not a packages/io bug.
+  it("extracts the real io.ts Zod schema once the CJS dependency is marked noExternal", async () => {
+    const { input } = await importModule<{ readonly input: unknown }>(join(entityDir, "io.ts"), {
+      ssr: { noExternal: ["fast-json-patch"] },
+    });
 
     expect(input).toBeDefined();
   });
