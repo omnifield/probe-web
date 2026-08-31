@@ -23,7 +23,7 @@ const section = z.object({
   activeValues: z.array(z.string()).optional(),
 });
 
-/** What the accordion's own assembly reads: `/sections` (`playground/assemblies.ts`). */
+/** What the accordion's own assemblies read: `/sections` (`playground/assemblies/`). */
 export const input = z.object({ sections: z.array(section) });
 
 /** Expanded section ids — `value`/`onValueChange`. */
