@@ -8,6 +8,13 @@
         "Authorization": "Bearer ${WINDSHIFT_TOKEN}"
       }
     },
+    "newWindshift": {
+      "type": "http",
+      "url": "http://localhost:7777/mcp",
+      "headers": {
+        "Authorization": "Bearer ${WINDSHIFT_LOCAL_TOKEN}"
+      }
+    },
     "ark-ui": {
       "command": "npx",
       "args": ["-y", "@ark-ui/mcp"]
