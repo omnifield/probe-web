@@ -52,7 +52,14 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
                 // already carries the title, and repeating it inside the content would say the
                 // same thing twice.
                 node: "listbox",
-                bind: { items: "items" },
+                // `value` is CONTROLLED, bound to `activeValues` — not `defaultValue`, and no
+                // `onValueChange` either: this listbox's own checked mark is not this listbox's
+                // own business to decide. The consumer's `on.click` below already dispatches
+                // `"select"` for navigation; whatever the consumer's data says is currently
+                // routed comes back down through `activeValues` and is the ONLY thing that
+                // decides the mark, the same way every other node here is driven by data, not by
+                // Ark's own internal state.
+                bind: { items: "items", value: "activeValues" },
                 props: { "data-variant": "compact" },
                 // `listbox.content`/`listbox.item`/… — DOTTED, the same `component.part`
                 // address `baseAssemblyOf` gives the OWNER's own parts (`addressOf`); a bare

@@ -1,28 +1,28 @@
-// Живая проба (PWEB-190): в каждой заявленной теме известное число записей реально проходит
-// вход кнопки — ровно те, что задуманы совместимыми, ни больше, ни меньше.
+// Живая проба (PWEB-190, по схемам — 2026-08-31): каждый компонент, объявивший `entity/io.ts`,
+// получает свою тему из СТОЛЬКО ЖЕ записей, сколько строит `exampleOf` — и КАЖДАЯ реально
+// проходит его собственную схему, не какую-то одну общую форму (кнопки, как было раньше).
 
 import { compatibleItems } from "@omnifield/probe-web-io";
-import { ioOf } from "@omnifield/probe-web-ui/io";
 import { describe, expect, it } from "vitest";
 
+import { IO } from "../../component/model/io.js";
 import { PACKS } from "./registry.js";
 
-const buttonInput = ioOf("button")!.input!;
-
-describe("заготовки витрины — подбор под вход кнопки", () => {
-  it("технологии: 5 совместимых из 7 записей", () => {
-    expect(compatibleItems(buttonInput, PACKS.require("технологии"))).toHaveLength(5);
+describe("заготовки витрины — по схеме каждого компонента", () => {
+  it("тема существует на каждый компонент с entity/io.ts", () => {
+    const componentsWithIo = IO.list().map((entry) => entry.meta.component).sort();
+    expect(PACKS.themes().sort()).toEqual(componentsWithIo);
   });
 
-  it("коммерция: 5 совместимых из 6 записей", () => {
-    expect(compatibleItems(buttonInput, PACKS.require("коммерция"))).toHaveLength(5);
+  it("каждая запись темы компонента реально проходит его собственную схему", () => {
+    for (const entry of IO.list()) {
+      const items = PACKS.require(entry.meta.component);
+      expect(items.length).toBeGreaterThan(0);
+      expect(compatibleItems(entry.schema, items)).toHaveLength(items.length);
+    }
   });
 
-  it("музыка: 5 совместимых из 6 записей", () => {
-    expect(compatibleItems(buttonInput, PACKS.require("музыка"))).toHaveLength(5);
-  });
-
-  it("themes() называет все три темы", () => {
-    expect(PACKS.themes().sort()).toEqual(["коммерция", "музыка", "технологии"]);
+  it("воспроизводимо между прогонами — сид фиксирован", () => {
+    expect(PACKS.require("button")).toEqual(PACKS.require("button"));
   });
 });

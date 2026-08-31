@@ -21,21 +21,33 @@ export interface AccordionItemData {
   readonly label: string;
 }
 
-/** Данные под путь `/sections`: раздел → id/подпись/пункты. */
+/** Данные под путь `/sections`: раздел → id/подпись/пункты/отмеченный пункт. */
 export interface AccordionSectionsData {
   readonly sections: readonly {
     readonly id: string;
     readonly title: string;
     readonly items: readonly AccordionItemData[];
+    /** Ровно то, что примет `bind: { value: "activeValues" }` листбокса раздела. */
+    readonly activeValues: readonly string[];
   }[];
 }
 
-export function groupsToSectionsData(groups: readonly ComponentGroup[]): AccordionSectionsData {
+/**
+ * @param active показанный сейчас компонент (`entities/preview/model/store.ts`'s
+ *   `usePreviewComponent()`) — единственный источник правды для «какой пункт отмечен»; листбокс
+ *   каждого раздела больше не решает это сам (найдено живьём, 2026-08-31: без этого можно было
+ *   отметить по пункту в КАЖДОМ разделе разом, а после перезагрузки отметка пропадала везде).
+ */
+export function groupsToSectionsData(
+  groups: readonly ComponentGroup[],
+  active: string | undefined,
+): AccordionSectionsData {
   return {
     sections: groups.map((section) => ({
       id: section.group,
       title: section.title,
       items: section.components.map((component) => ({ value: component, label: component })),
+      activeValues: active !== undefined && section.components.includes(active) ? [active] : [],
     })),
   };
 }

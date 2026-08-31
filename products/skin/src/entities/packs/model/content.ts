@@ -1,53 +1,65 @@
-// ЗАГОТОВКИ ИЗ КОРОБКИ (PWEB-187/190) — содержимое, а не механизм: РЕШЕНИЕ, какие темы
-// показывать, живёт в продукте, не во фреймворке (`packages/io` несёт только пустой реестр,
-// `createPackRegistry`, и подбор, `compatibleItems`, — «средство, а не решение», его же
-// README). Faker — тоже зависимость ЭТОГО продукта, не `packages/io`: пакет-механизм не должен
-// тащить faker транзитивно в каждого, кому заготовки не нужны вовсе (найдено user, 2026-08-29).
+// ЗАГОТОВКИ ИЗ КОРОБКИ (PWEB-187/190, ПО СХЕМАМ — 2026-08-31) — по записи (несколько) на КАЖДЫЙ
+// компонент, который реально объявил `entity/io.ts` (`IO`, `entities/component/model/io.ts`), а
+// не руками подобранные тексты, случайно похожие на форму одного-двух компонентов. Раньше здесь
+// лежали три темы под кнопку — аккордеон и селект не получали ни одной совместимой записи
+// никогда, их форма ни с чем не пересекалась (постановка user, 2026-08-31: «данные должны
+// строиться так же динамически, как компоненты подключаются к витрине»).
 //
-// Содержимое ГЕНЕРИРУЕТ `@faker-js/faker` (9.9M скачиваний/неделю, стандарт индустрии), не
-// пишем тексты руками: темы — это его же модули (`hacker` — технологии, `commerce` —
-// коммерция, `music` — музыка). Seed ФИКСИРОВАН — набор воспроизводим между прогонами, не новый
-// случайный шум при каждой загрузке витрины.
+// МЕХАНИЗМ (`exampleOf`, `packages/io`) читает САМУ СХЕМУ компонента (`z.toJSONSchema`) и
+// строит запись, гарантированно проходящую её `safeParse` — не гадает форму снаружи. РЕШЕНИЕ,
+// какой текст класть в лист, — это файл, не механизм: faker остаётся зависимостью ПРОДУКТА
+// (найдено раньше — фреймворк не должен тянуть его транзитивно ради того, кому заготовки не
+// нужны вовсе).
 //
-// Записи КАЖДОЙ темы — НАРОЧНО разной формы: часть похожа на вход кнопки (`{label, payload?}`,
-// `packages/ui/src/button/entity/io.ts`), часть — нет. Доказывает, что подбор
-// (`compatibleItems`) реально фильтрует, а не подсовывает всё подряд.
+// SEED ФИКСИРОВАН, тем же приёмом, что и у прежних тем — набор воспроизводим между прогонами,
+// не новый случайный шум при каждой загрузке витрины.
 
+import { exampleOf, z, type ExampleLeafGenerator } from "@omnifield/probe-web-io";
 import { faker } from "@faker-js/faker";
 
-function themed(seed: number, build: () => readonly unknown[]): readonly unknown[] {
-  faker.seed(seed);
-  return build();
+import { IO } from "../../component/model/io.js";
+
+/** Сколько примеров строить на каждый зарегистрированный компонент. */
+const EXAMPLES_PER_COMPONENT = 3;
+
+/** Последний НЕ числовой сегмент пути — числовой означает индекс внутри массива, не имя поля. */
+function fieldNameOf(path: readonly string[]): string {
+  for (let index = path.length - 1; index >= 0; index -= 1) {
+    const segment = path[index]!;
+    if (!/^\d+$/.test(segment)) return segment;
+  }
+  return "";
 }
 
-/** Технологии — звонкие технические фразы, годятся в подпись кнопки. */
-const TECHNOLOGY = themed(1, () => [
-  ...Array.from({ length: 5 }, () => ({ label: faker.hacker.phrase() })),
-  // Не подходит под {label: string} — форма другая, доказательство фильтрации.
-  { headline: faker.hacker.phrase() },
-  { command: faker.hacker.abbreviation(), verb: faker.hacker.verb() },
-]);
+/** Текст листа — по ТИПУ схемы и, для строк, по ИМЕНИ поля (та же осмысленность, что и у прежних тем руками). */
+const leaf: ExampleLeafGenerator = (node, path) => {
+  if (node.enum && node.enum.length > 0) return faker.helpers.arrayElement(node.enum);
+  if (node.type === "boolean") return faker.datatype.boolean();
+  if (node.type === "number" || node.type === "integer") return faker.number.int({ min: 1, max: 100 });
+  if (node.type !== "string") return null;
 
-/** Коммерция — названия товаров, годятся в подпись кнопки. */
-const COMMERCE = themed(2, () => [
-  ...Array.from({ length: 5 }, () => ({
-    label: faker.commerce.productName(),
-    payload: { price: faker.commerce.price() },
-  })),
-  // Не подходит — нет label вовсе.
-  { product: faker.commerce.productName(), department: faker.commerce.department() },
-]);
+  const field = fieldNameOf(path).toLowerCase();
 
-/** Музыка — названия песен, годятся в подпись кнопки. */
-const MUSIC = themed(3, () => [
-  ...Array.from({ length: 5 }, () => ({ label: faker.music.songName() })),
-  // Не подходит — label не строка.
-  { label: { genre: faker.music.genre() } },
-]);
-
-/** Что показывает витрина из коробки — тема → её записи. */
-export const BUILTIN_PACKS: Readonly<Record<string, readonly unknown[]>> = {
-  технологии: TECHNOLOGY,
-  коммерция: COMMERCE,
-  музыка: MUSIC,
+  if (field === "id" || field === "value" || field.endsWith("id")) return faker.string.alphanumeric(8);
+  if (field === "placeholder") return `— ${faker.word.noun()} —`;
+  if (field === "title" || field === "label" || field === "name") return faker.hacker.phrase();
+  if (field.includes("description") || field.includes("text") || field.includes("content")) return faker.lorem.sentence();
+  return faker.lorem.words(2);
 };
+
+function examplesFor(schema: z.ZodType): readonly unknown[] {
+  return Array.from({ length: EXAMPLES_PER_COMPONENT }, () => exampleOf(schema, leaf));
+}
+
+function builtBySchema(): Readonly<Record<string, readonly unknown[]>> {
+  faker.seed(0);
+
+  const byComponent: Record<string, readonly unknown[]> = {};
+  for (const entry of IO.list()) {
+    byComponent[entry.meta.component] = examplesFor(entry.schema);
+  }
+  return byComponent;
+}
+
+/** Что показывает витрина из коробки — тема → её записи. Одна тема на компонент, по его же схеме. */
+export const BUILTIN_PACKS: Readonly<Record<string, readonly unknown[]>> = builtBySchema();

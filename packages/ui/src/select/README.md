@@ -181,4 +181,45 @@ value, and items all driven by data — no hardcoded item list, unlike this comp
 pass (which baked a hand-built collection and a literal `fruits` array into the assembly and was
 corrected out). Most consumers should reach for the plain JSX composition above; the tree format is
 a secondary reference for realistic data shapes.
+
+## Assembly & skin notes
+
+This component cost real debugging time on two separate, unrelated fronts — both are closed now,
+but the pattern behind each is worth knowing before touching this component again.
+
+- **No `selfAssembly`.** Referencing `select` from someone else's assembly (bare `{ node: "select"
+  }`) gives you the root and nothing else — you must author the whole compound tree yourself
+  (`content`/`item`/`itemText`/`itemIndicator`, and `listbox`/`itemGroup` if you need them),
+  mirroring this component's own `playground/assemblies.ts`. There is no shortcut like the
+  button's.
+- **Non-root parts of a `select` reference are addressed with a dot**: `select.content`,
+  `select.item`, `select.itemText` — a bare `content` resolves nowhere (it isn't in the *owning*
+  assembly's own anatomy) and silently renders no children at all, no error. Same rule for
+  referencing any other composite component's non-root parts.
+- **Catching a pick goes through `on.click` + `dispatch`, never `onValueChange` as a root prop.**
+  `onValueChange` is a real Ark callback, but nothing in the assembly/`RenderTree` pipeline ever
+  reads a literal prop named that way and calls it — passing it via `instanceOf`'s `rootProps` is
+  silently inert. The working path: put `on: { click: { event: { name: "...", context: { payload:
+  { path: "" } } } } }` on the `item` node (composes fine with Ark's own click handling, proven
+  live) and listen for that event via `RenderTree`'s `dispatch`, the same path
+  `widgets/component-list/component-list.tsx` already uses for `listbox`.
+- **`content`'s recipe must never set `display` unconditionally in `base`.** Zag marks the closed
+  state with the native `hidden` attribute (`select.connect.mjs`'s `getContentProps`) — a
+  user-agent-stylesheet rule, the lowest priority CSS has. ANY author rule that sets `display` on
+  the same node, regardless of selector specificity, beats it outright. The panel then stays
+  visually on screen even though Zag has genuinely closed it and stopped listening for interaction
+  on it (found live: hover stopped responding, the panel never visually closed, yet the value kept
+  changing on click — Zag's own state was correct the whole time). Fix: scope `display` to
+  `states.open` only, so CLOSED gets no author `display` rule at all and `[hidden]` wins normally.
+- **`control` needs `display: flex; width: 100%`, not `inline-flex`.** An `inline-flex` box
+  shrink-wraps to its content, and a long, `white-space: nowrap` label (`valueText`) then grows the
+  box past whatever container it sits in instead of the box clamping the text. `trigger` and
+  `valueText` also need `min-width: 0` — a flex item's automatic minimum width is its content's
+  full, unbroken size unless something opts out of that default, and it wins over `flex: 1`/
+  `overflow: hidden` otherwise.
+- **A controlled `value` needs binding to real data, not `defaultValue`.** If more than one
+  instance of this component exists at once (e.g. one per repeated row) and you want exactly one
+  of them to reflect an outside fact (which one matches the current route, say), bind `value` to a
+  data field computed from that fact. Left uncontrolled, every instance keeps its own independent
+  Zag state — more than one can show "checked" at once, and none survive a reload.
 <!-- user:end -->
