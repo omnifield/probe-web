@@ -8,10 +8,10 @@ import { dropAddress } from "../../../shared/utils/slot-chain.js";
 import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
 
-export type TreeItemContentProps = JSX.HTMLAttributes<HTMLDivElement>;
+export type TreeContentProps = JSX.HTMLAttributes<HTMLDivElement>;
 
-export function TreeItemContent(props: TreeItemContentProps) {
-  traceLife("ui.tree-item-content");
+export function TreeContent(props: TreeContentProps) {
+  traceLife("ui.tree-content");
 
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
@@ -20,14 +20,14 @@ export function TreeItemContent(props: TreeItemContentProps) {
     <Show
       when={node().isBranch}
       fallback={
-        <div {...dropAddress(rest)} {...anatomyParts.itemContent.attrs}>
+        <div {...dropAddress(rest)} {...anatomyParts.content.attrs}>
           {local.children}
         </div>
       }
     >
       <ArkBranchContent
         {...dropAddress(rest)}
-        {...anatomyParts.itemContent.attrs}
+        {...anatomyParts.content.attrs}
       >
         {local.children}
       </ArkBranchContent>

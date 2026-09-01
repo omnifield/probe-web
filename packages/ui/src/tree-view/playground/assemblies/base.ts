@@ -19,7 +19,7 @@ export const base: PassportAssembly<TreeViewPart> = {
         bind: { node: "" },
         children: [
           {
-            node: "itemControl",
+            node: "control",
             on: {
               click: {
                 event: {
@@ -29,12 +29,12 @@ export const base: PassportAssembly<TreeViewPart> = {
               },
             },
             children: [
-              { genus: "text", value: { path: "title" } },
+              { genus: "text", value: { path: "label" } },
               { node: "controlIndicator", children: [] },
             ],
           },
           {
-            node: "itemContent",
+            node: "content",
             children: [],
           },
         ],

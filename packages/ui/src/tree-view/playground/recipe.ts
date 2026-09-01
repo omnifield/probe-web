@@ -52,7 +52,7 @@ export const recipe: SlotRecipe = {
         closed: { props: { marginBlockEnd: "0" } },
       },
     },
-    itemControl: {
+    control: {
       props: {
         display: "flex",
         alignItems: "center",
@@ -99,7 +99,7 @@ export const recipe: SlotRecipe = {
         focus: { props: { color: "var(--neutral-12)" } },
       },
     },
-    itemContent: {
+    content: {
       props: { position: "relative" },
     },
   },

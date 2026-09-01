@@ -1,5 +1,7 @@
 import { anatomy as treeViewAnatomy } from "@zag-js/tree-view/anatomy";
 
+import { parts } from "../../shared/data/anatomy.js";
+
 export const anatomy = treeViewAnatomy
   .omit(
     "label",
@@ -16,6 +18,6 @@ export const anatomy = treeViewAnatomy
     "nodeCheckbox",
     "nodeRenameInput",
   )
-  .extendWith("itemControl", "controlIndicator", "itemContent");
+  .extendWith(...parts.controlSet, ...parts.content);
 
 export const anatomyParts = anatomy.build();

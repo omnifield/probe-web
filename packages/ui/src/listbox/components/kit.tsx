@@ -28,7 +28,7 @@ import { defineKitComponent } from "../../kit-form.js";
 import {
   createListCollection,
   type CollectionItem,
-} from "../../shared/data/collection.js";
+} from "../../shared/utils/collection.js";
 import { dropAddress } from "../../shared/utils/slot-chain.js";
 import { traceLife } from "../../shared/utils/trace.js";
 import { passport } from "../entity/passport.js";
@@ -55,12 +55,12 @@ import { passport } from "../entity/passport.js";
 // outward"), and `kit.ts` had to import the very components it was named to just describe,
 // making it a SECOND, accidental export surface for the same components under a different name.
 //
-// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/data/collection.js`
+// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/utils/collection.js`
 // now, not from this Ark subpath directly (`PWEB-195` continuation, 2026-08-30) — the same three
 // names the select's own `Select` reaches for, ONE place instead of two copies that would collide
 // once the package's root `index.ts` starts re-exporting every folder with `export *`. Not
 // re-exported from HERE any more either: a consumer building an item array by hand reaches for
-// `shared/data/collection.js` directly, the same as this file does.
+// `shared/utils/collection.js` directly, the same as this file does.
 //
 // ## `items`, not `collection` — the live object is built ONE layer in, not carried by the caller
 //

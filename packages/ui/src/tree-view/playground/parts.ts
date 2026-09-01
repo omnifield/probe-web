@@ -34,11 +34,11 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     },
     variables: { "--depth": { means: "глубина вложенности узла — от неё считается отступ строки" } },
     accepts: [
-      { kind: "component", name: "itemControl" },
-      { kind: "component", name: "itemContent" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "content" },
     ],
   },
-  itemControl: {
+  control: {
     means: "шапка узла — кликабельная и фокусируемая строка; своё содержимое решает потребитель",
     states: {
       ...openClosedMeans,
@@ -68,7 +68,7 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     },
     accepts: [{ kind: "content", genus: "icon" }],
   },
-  itemContent: {
+  content: {
     means: "открытый слот узла — своего вида не несёт, содержимое (в том числе ещё узлы) решает потребитель",
     states: {},
     accepts: [

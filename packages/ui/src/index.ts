@@ -51,7 +51,7 @@ export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";
 export * from "./tree-view/index.js";
 export * from "./workspace/index.js";
-export * from "./shared/data/collection.js";
+export * from "./shared/utils/collection.js";
 // Карта частей вместе с паспортами (`PWEB-84`) и форма самой карты (`kit-form.js`, `export *`
 // внутри `kit.js` уже её несёт).
 export * from "./kit.js";

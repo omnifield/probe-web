@@ -30,11 +30,11 @@ export const passport = definePassport({
       variables: [{ name: "--depth", setBy: "kit" }],
     },
     {
-      name: "itemControl",
+      name: "control",
       states: [...openClosed, disabled, selected, focus, renaming, checked, indeterminate, loading, ...hoverActivePseudos],
     },
     { name: "controlIndicator", states: [...openClosed, disabled, selected, focus, loading] },
-    { name: "itemContent", states: [] },
+    { name: "content", states: [] },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },
