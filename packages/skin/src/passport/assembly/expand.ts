@@ -106,9 +106,15 @@ export function baseAssemblyOf(
     };
   };
 
+  // Props a node's OWN `props` plus, when it named `indexPathBind`, the accumulated repeat index
+  // under that key — a literal `number[]`, never a `bind` path (see `ElementFields.indexPathBind`).
+  const propsOf = (node: { props?: Readonly<Record<string, unknown>>; indexPathBind?: string }, indexPath: readonly number[]) =>
+    node.props || node.indexPathBind ? { props: { ...node.props, ...(node.indexPathBind ? { [node.indexPathBind]: indexPath } : {}) } } : {};
+
   const grow = (
     node: PassportAssemblyElement | PassportAssemblyContent | PassportAssemblyExtra,
     parentId: string | null,
+    indexPath: readonly number[],
   ): string => {
     if (isAssemblyContent(node)) {
       const id = nameFor(node.genus);
@@ -127,12 +133,12 @@ export function baseAssemblyOf(
         type: addressOfExtra(node.extra),
         parentId,
         children,
-        ...(node.props ? { props: node.props } : {}),
+        ...propsOf(node, indexPath),
         ...(node.bind ? { bind: node.bind } : {}),
         ...(node.on ? { on: node.on } : {}),
       };
 
-      for (const child of node.children ?? []) children.push(...growAll(child, id));
+      for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath));
 
       return id;
     }
@@ -146,12 +152,12 @@ export function baseAssemblyOf(
       type: isOwnPart ? addressOf(node.node) : node.node,
       parentId,
       children,
-      ...(node.props ? { props: node.props } : {}),
+      ...propsOf(node, indexPath),
       ...(node.bind ? { bind: node.bind } : {}),
       ...(node.on ? { on: node.on } : {}),
     };
 
-    for (const child of node.children ?? []) children.push(...growAll(child, id));
+    for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath));
 
     return id;
   };
@@ -162,22 +168,24 @@ export function baseAssemblyOf(
     const props = ref.props || template.props ? { ...template.props, ...ref.props } : undefined;
     const bind = ref.bind || template.bind ? { ...template.bind, ...ref.bind } : undefined;
     const on = ref.on || template.on ? { ...template.on, ...ref.on } : undefined;
+    const indexPathBind = ref.indexPathBind ?? template.indexPathBind;
 
     return {
       ...template,
       ...(props ? { props } : {}),
       ...(bind ? { bind } : {}),
       ...(on ? { on } : {}),
+      ...(indexPathBind !== undefined ? { indexPathBind } : {}),
     };
   };
 
-  const growAll = (node: PassportAssemblyNode, parentId: string | null): string[] => {
+  const growAll = (node: PassportAssemblyNode, parentId: string | null, indexPath: readonly number[]): string[] => {
     if (isAssemblyRepeat(node)) {
       const items = resolveDataBinding(data, node.repeat.path);
       if (!Array.isArray(items)) return [];
 
       return items.flatMap((_, index) =>
-        growAll(scopeTemplate(node.template, `${node.repeat.path}/${index}`), parentId),
+        growAll(scopeTemplate(node.template, `${node.repeat.path}/${index}`), parentId, [...indexPath, index]),
       );
     }
 
@@ -187,7 +195,7 @@ export function baseAssemblyOf(
       if (!Array.isArray(items)) return [];
 
       return items.flatMap((_, index) =>
-        growAll(scopeTemplate(template as PassportAssemblyNode, `${repeat.path}/${index}`), parentId),
+        growAll(scopeTemplate(template as PassportAssemblyNode, `${repeat.path}/${index}`), parentId, [...indexPath, index]),
       );
     }
 
@@ -199,13 +207,13 @@ export function baseAssemblyOf(
         );
       }
 
-      return growAll(mergeRef(template, node), parentId);
+      return growAll(mergeRef(template, node), parentId, indexPath);
     }
 
-    return [grow(node, parentId)];
+    return [grow(node, parentId, indexPath)];
   };
 
-  const root = grow(assembly.tree, null);
+  const root = grow(assembly.tree, null, []);
 
   return {
     components: {
