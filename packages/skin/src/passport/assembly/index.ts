@@ -14,13 +14,12 @@ export { isDataBinding, resolveDataBinding } from "./binding.js";
 export type {
   PassportAssemblyContent,
   PassportAssemblyElement,
-  PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyRef,
   PassportAssemblyRepeat,
   PassportSelfAssembly,
 } from "./nodes.js";
-export { isAssemblyContent, isAssemblyExtra, isAssemblyRef, isAssemblyRepeat } from "./nodes.js";
+export { isAssemblyContent, isAssemblyRef, isAssemblyRepeat } from "./nodes.js";
 
 export type { DataPreset, PassportAssembly } from "./assembly.js";
 

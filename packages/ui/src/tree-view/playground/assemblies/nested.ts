@@ -17,6 +17,11 @@ type TreeViewPart = typeof passport extends ComponentPassport<infer Part> ? Part
  * здесь как один общий пример — `entity/io.ts`'s `TreeItem` рекурсивен и это переживёт, но КОНКРЕТНАЯ
  * сборка на неограниченную глубину — отдельная задача, когда появится реальный потребитель
  * (заводить её просто «для полноты» — натягивать то, что никто не просил).
+ *
+ * `~nodeProvider` НЕ адресуется нигде (постановка user, 2026-09-01, README «Разбор боем:
+ * `nodeProvider` НЕ нужен был как `extra` вообще») — `branch`/`item` несут `repeat`/`bind`/
+ * `indexPathBind` прямо на себе, `TreeViewBranch`/`TreeViewItem` (`components/kit.tsx`) сами
+ * оборачиваются в провайдер, читая `node`/`indexPath` со своих же пропов.
  */
 export const nested: PassportAssembly<TreeViewPart> = {
   name: "nested",
@@ -25,38 +30,28 @@ export const nested: PassportAssembly<TreeViewPart> = {
     node: "root",
     children: [
       {
-        // `tree` НЕ здесь (постановка user, 2026-09-01) — `root` сам кладёт в себя настоящий
-        // `TreeViewTree` (`components/kit.tsx`), схема адресует `~nodeProvider` прямо под `root`.
-        extra: "nodeProvider",
-        indexPathBind: "indexPath",
+        node: "branch",
         repeat: { path: "/items" },
         bind: { node: "" },
+        // Структурный факт формы дерева (какой по счёту узел на этом повторе), не факт данных —
+        // движок сам считает и кладёт литералом, не `bind`-путём.
+        indexPathBind: "indexPath",
         children: [
           {
-            node: "branch",
+            node: "branchControl",
+            children: [{ node: "branchText", children: [{ genus: "text", value: { path: "label" } }] }],
+          },
+          {
+            node: "branchContent",
             children: [
               {
-                node: "branchControl",
-                children: [{ node: "branchText", children: [{ genus: "text", value: { path: "label" } }] }],
-              },
-              {
-                node: "branchContent",
-                children: [
-                  {
-                    extra: "nodeProvider",
-                    // Накопленный путь — `[индекс ветки, индекс листа]`, не только свой —
-                    // движок сам ведёт его через оба уровня повтора.
-                    indexPathBind: "indexPath",
-                    repeat: { path: "children" },
-                    bind: { node: "" },
-                    children: [
-                      {
-                        node: "item",
-                        children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
-                      },
-                    ],
-                  },
-                ],
+                node: "item",
+                repeat: { path: "children" },
+                bind: { node: "" },
+                // Накопленный путь — `[индекс ветки, индекс листа]`, не только свой — движок сам
+                // ведёт его через оба уровня повтора.
+                indexPathBind: "indexPath",
+                children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
               },
             ],
           },

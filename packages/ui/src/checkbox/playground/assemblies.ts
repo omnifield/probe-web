@@ -2,10 +2,9 @@
 // call (split out `PWEB-127`). Same physical shape as every other component's
 // `playground/assemblies.ts` — one working instance still gets its own file.
 //
-// `root` also holds the real hidden `<input type="checkbox">` (`{ extra: "hiddenInput" }`,
-// `PWEB-152`) — a direct sibling of `control`/`label`, matching Ark's own documented composition
-// (`../components/index.tsx`'s own doc example). Without it the preview looks right but a click
-// never actually toggles the checked state: the real `onChange` lives on that exact node.
+// The real hidden `<input type="checkbox">` is NOT named here (постановка user, 2026-09-01,
+// README «`extras` — проверка по всему киту: кейса не нашлось ни одного») — `Checkbox`'s own root
+// (`../components/kit.tsx`) already renders one, it takes no data from this schema at all.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -27,7 +26,6 @@ export const assemblies: readonly PassportAssembly<CheckboxPart>[] = [
           children: [{ node: "indicator", children: [{ genus: "text", value: "✓" }] }],
         },
         { node: "label", children: [{ genus: "text", value: "I agree to the terms" }] },
-        { extra: "hiddenInput" },
       ],
     },
   },

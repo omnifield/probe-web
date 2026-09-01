@@ -5,12 +5,10 @@ import type { PassportAssembly } from "./assembly.js";
 import { isDataBinding, resolveDataBinding } from "./binding.js";
 import {
   isAssemblyContent,
-  isAssemblyExtra,
   isAssemblyRef,
   isAssemblyRepeat,
   type PassportAssemblyContent,
   type PassportAssemblyElement,
-  type PassportAssemblyExtra,
   type PassportAssemblyNode,
   type PassportAssemblyRef,
 } from "./nodes.js";
@@ -55,8 +53,6 @@ export function baseAssemblyOf(
   };
 
   const addressOf = (part: string): string => (part === passport.root ? address : `${address}.${part}`);
-
-  const addressOfExtra = (extra: string): string => `${address}.~${extra}`;
 
   const scopeTemplate = (node: PassportAssemblyNode, base: string): PassportAssemblyNode => {
     if (isAssemblyContent(node)) {
@@ -112,7 +108,7 @@ export function baseAssemblyOf(
     node.props || node.indexPathBind ? { props: { ...node.props, ...(node.indexPathBind ? { [node.indexPathBind]: indexPath } : {}) } } : {};
 
   const grow = (
-    node: PassportAssemblyElement | PassportAssemblyContent | PassportAssemblyExtra,
+    node: PassportAssemblyElement | PassportAssemblyContent,
     parentId: string | null,
     indexPath: readonly number[],
     base: string,
@@ -121,25 +117,6 @@ export function baseAssemblyOf(
       const id = nameFor(node.genus);
 
       nodes[id] = { id, genus: node.genus, value: node.value, parentId, children: [] };
-
-      return id;
-    }
-
-    if (isAssemblyExtra(node)) {
-      const id = nameFor(node.extra);
-      const children: string[] = [];
-
-      nodes[id] = {
-        id,
-        type: addressOfExtra(node.extra),
-        parentId,
-        children,
-        ...propsOf(node, indexPath),
-        ...(node.bind ? { bind: node.bind } : {}),
-        ...(node.on ? { on: node.on } : {}),
-      };
-
-      for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath, base));
 
       return id;
     }

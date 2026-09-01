@@ -4,8 +4,9 @@
 // ONE assembly — `root` wrapping `control` (wrapping `thumb`) and `label`, checked by default so
 // the thumb's resting position at the "on" end is visible without a click.
 //
-// `root` also holds the real hidden `<input type="checkbox">` (`{ extra: "hiddenInput" }`,
-// `PWEB-152`) — without it the preview looks right but a click never actually toggles the switch.
+// The real hidden `<input type="checkbox">` is NOT named here (постановка user, 2026-09-01,
+// README «`extras` — проверка по всему киту: кейса не нашлось ни одного») — `Switch`'s own root
+// (`../components/kit.tsx`) already renders one.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -23,7 +24,6 @@ export const assemblies: readonly PassportAssembly<SwitchPart>[] = [
       children: [
         { node: "control", children: [{ node: "thumb" }] },
         { node: "label", children: [{ genus: "text", value: "Уведомления" }] },
-        { extra: "hiddenInput" },
       ],
     },
   },

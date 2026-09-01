@@ -36,9 +36,13 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     states: {},
     // `tree` НЕ в списке (постановка user, 2026-09-01) — движку схемы всё равно, откуда взялся
     // `role="tree"` с клавиатурной навигацией: кит (`components/kit.tsx`'s `TreeView`) теперь сам
-    // оборачивает свои дети в настоящий `TreeViewTree` изнутри. Схема адресует `root` и получает
-    // `~nodeProvider` прямо под ним, как если бы разделения не было вовсе.
-    accepts: [{ kind: "component", name: "nodeProvider" }],
+    // оборачивает свои дети в настоящий `TreeViewTree` изнутри. `nodeProvider` ТОЖЕ не в списке —
+    // `item`/`branch` сами оборачивают себя в него (`components/kit.tsx`), схема адресует их
+    // напрямую под `root`, `~nodeProvider` нигде не называется вообще.
+    accepts: [
+      { kind: "component", name: "item" },
+      { kind: "component", name: "branch" },
+    ],
   },
   label: {
     means: "подпись дерева — заголовок над списком",
@@ -46,14 +50,14 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     accepts: [{ kind: "content", genus: "text" }],
   },
   tree: {
-    means: "список узлов верхнего уровня — `role=\"tree\"`; вложенные листья и ветки строятся рекурсивно",
+    means: "список узлов верхнего уровня — `role=\"tree\"`; вложенные листья и ветки строятся рекурсивно; схема этот узел не называет вообще, кит кладёт его сам (`components/kit.tsx`'s `TreeView`)",
     states: {},
-    // ТОЛЬКО `nodeProvider` — не `item`/`branch` напрямую. Часть внутри узла (`item`/`branch` и
-    // всё, что внутри них) читает контекст, который раздаёт только `~nodeProvider` (`extras`,
-    // `components/kit.tsx`) — без него падает при отрисовке, проверено живьём
-    // (`test/node-provider.test.tsx`). Перечень называет то, что РЕАЛЬНО работает, а не то, что
-    // выглядело бы симметрично с другими компонентами кита.
-    accepts: [{ kind: "component", name: "nodeProvider" }],
+    // Схема сюда не адресуется никогда (см. `means`) — перечень остаётся для полноты (каждая
+    // часть анатомии описана), но `accepts` этой части ни разу не проверяется на исполнении.
+    accepts: [
+      { kind: "component", name: "item" },
+      { kind: "component", name: "branch" },
+    ],
   },
   item: {
     means: "один лист — конечный узел без потомков; кликабельная и фокусируемая строка (roving tabindex)",
@@ -166,10 +170,12 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
   branchContent: {
     means: "контейнер потомков ветки — виден только пока она раскрыта; при закрытии скрывается целиком атрибутом `hidden`, без измеренной высоты и без анимации (в отличие от аккордеона — у этой части нет `--height`)",
     states: openClosedMeans,
-    // Та же причина, что у `tree` выше — потомки идут через `~nodeProvider`, не напрямую.
+    // `item`/`branch` напрямую — оба сами оборачивают себя в `TreeViewNodeProvider`
+    // (`components/kit.tsx`), схема `~nodeProvider` больше нигде не называет.
     accepts: [
       { kind: "component", name: "branchIndentGuide" },
-      { kind: "component", name: "nodeProvider" },
+      { kind: "component", name: "item" },
+      { kind: "component", name: "branch" },
     ],
   },
   branchIndentGuide: {

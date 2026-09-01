@@ -3,7 +3,8 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 
 import { passport } from "../../entity/passport.js";
 
-type TreeViewPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+type TreeViewPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 // `Data` (`entity/io.ts`) intentionally NOT threaded as the third type argument here: `TreeItem`
 // is self-referential (`children?: readonly TreeItem[]`), and `Paths<T>`'s own recursion bound
@@ -22,22 +23,18 @@ type TreeViewPart = typeof passport extends ComponentPassport<infer Part> ? Part
 // empty here on purpose: what a consumer wants BEYOND the label is theirs to decide, never ours.
 export const base: PassportAssembly<TreeViewPart> = {
   name: "base",
-  means: "один уровень, каждый лист подписан и кликабелен, свой клик шлёт наружу, есть открытый слот под лишнее",
+  means:
+    "один уровень, каждый лист подписан и кликабелен, свой клик шлёт наружу, есть открытый слот под лишнее",
   tree: {
     node: "root",
     children: [
       {
-        extra: "nodeProvider",
-        // `indexPath` — структурный факт формы дерева (какой по счёту узел на этом повторе), не
-        // факт данных: движок сам считает и кладёт литералом, не `bind`-путём.
-        indexPathBind: "indexPath",
+        node: "item",
         repeat: { path: "/items" },
-        // `""` — весь текущий элемент повтора целиком, тот самый объект, которого ждёт
-        // `TreeViewNodeProvider` как `node`.
-        bind: { node: "" },
+        bind: { value: "id" },
         children: [
           {
-            node: "item",
+            node: "itemTrigger",
             on: {
               click: {
                 event: {
@@ -47,10 +44,13 @@ export const base: PassportAssembly<TreeViewPart> = {
               },
             },
             children: [
-              { node: "itemText", children: [{ genus: "text", value: { path: "label" } }] },
+              { genus: "text", value: { path: "title" } },
               { node: "itemIndicator", children: [] },
-              { node: "itemContent", children: [] },
             ],
+          },
+          {
+            node: "itemContent",
+            children: [],
           },
         ],
       },

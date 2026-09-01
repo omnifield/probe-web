@@ -105,7 +105,9 @@ export type TreeViewProps<T extends TreeNode = TreeNode> = ArkRootProps<T>;
  * </TreeView>
  * ```
  */
-export function TreeView<T extends TreeNode = TreeNode>(props: TreeViewProps<T>) {
+export function TreeView<T extends TreeNode = TreeNode>(
+  props: TreeViewProps<T>,
+) {
   traceLife("ui.tree-view");
 
   // Постановка user, 2026-09-01: движку схемы всё равно, приехали `root`/`tree` раздельно или
@@ -156,24 +158,37 @@ export type TreeViewNodeProviderProps<T = unknown> = ArkNodeProviderProps<T>;
 /**
  * Provides `node`/`indexPath` context to every part rendered inside it — REQUIRED, not optional:
  * `item`/`branch`/… all need to know which tree node they belong to (`../entity/anatomy.ts`
- * explains why this carries no address of its own).
+ * explains why this carries no address of its own). `TreeViewItem`/`TreeViewBranch` (below) each
+ * wrap themselves in one of these already, reading `node`/`indexPath` off their OWN props — this
+ * stays exported for whoever composes by hand instead of through a schema (`data-output.tsx`
+ * still does, one per recursion level, the same shape Ark's own docs show).
  */
-export function TreeViewNodeProvider<T = unknown>(
-  props: TreeViewNodeProviderProps<T>,
-) {
+export function TreeViewNodeProvider<T = unknown>(props: TreeViewNodeProviderProps<T>) {
   traceLife("ui.tree-view-node-provider");
 
   return <ArkNodeProvider {...props} />;
 }
 
 /** Props of `TreeViewItem`. */
-export type TreeViewItemProps = ArkItemProps;
+export type TreeViewItemProps = ArkItemProps & { node?: unknown; indexPath?: number[] };
 
-/** One LEAF node's own row — never used for a branch (`../entity/anatomy.ts`). */
+/**
+ * One LEAF node's own row — never used for a branch (`../entity/anatomy.ts`). Wraps itself in
+ * `TreeViewNodeProvider`, reading `node`/`indexPath` straight off its own props (постановка user,
+ * 2026-09-01: these are ordinary `bind`/`indexPathBind` values a schema can put on ANY node,
+ * `packages/skin/src/passport/assembly/nodes.ts`'s `ElementFields` — not a privilege `extra`
+ * needed) — a schema names `item` directly, `~nodeProvider` is not addressed anywhere anymore.
+ */
 export function TreeViewItem(props: TreeViewItemProps) {
   traceLife("ui.tree-view-item");
 
-  return <ArkItem {...dropAddress(props)} />;
+  const [own, rest] = splitProps(props, ["node", "indexPath"]);
+
+  return (
+    <ArkNodeProvider node={own.node} indexPath={own.indexPath ?? []}>
+      <ArkItem {...dropAddress(rest)} />
+    </ArkNodeProvider>
+  );
 }
 
 /** Props of `TreeViewItemContent`. */
@@ -212,13 +227,23 @@ export function TreeViewItemIndicator(props: TreeViewItemIndicatorProps) {
 }
 
 /** Props of `TreeViewBranch`. */
-export type TreeViewBranchProps = ArkBranchProps;
+export type TreeViewBranchProps = ArkBranchProps & { node?: unknown; indexPath?: number[] };
 
-/** One BRANCH node's own row — wraps `branchControl` and, when expanded, `branchContent`. */
+/**
+ * One BRANCH node's own row — wraps `branchControl` and, when expanded, `branchContent`. Wraps
+ * ITSELF in `TreeViewNodeProvider` the same way `TreeViewItem` does, and for the same reason —
+ * `node`/`indexPath` are ordinary bound props here, not a separate schema-level `~nodeProvider`.
+ */
 export function TreeViewBranch(props: TreeViewBranchProps) {
   traceLife("ui.tree-view-branch");
 
-  return <ArkBranch {...dropAddress(props)} />;
+  const [own, rest] = splitProps(props, ["node", "indexPath"]);
+
+  return (
+    <ArkNodeProvider node={own.node} indexPath={own.indexPath ?? []}>
+      <ArkBranch {...dropAddress(rest)} />
+    </ArkNodeProvider>
+  );
 }
 
 /** Props of `TreeViewBranchControl`. */
@@ -323,31 +348,28 @@ import { passport } from "../entity/passport.js";
 /**
  * The tree view's passport together with whatever draws each of its sixteen parts.
  *
- * `nodeProvider` lives in `extras` (`PWEB-152`): a real component without an anatomy address —
- * every part inside a node needs its `node`/`indexPath` context to know which tree node it
- * belongs to, so a preview built without it would not just look wrong, it would not render at
- * all. `TreeViewNodeCheckboxIndicator` is NOT here: it is a pure content-composition helper (no
- * DOM node, `../entity/anatomy.ts` explains why), not required for a preview to work.
+ * NO `extras` (постановка user, 2026-09-01 — README «`extras` — проверка по всему киту: кейса не
+ * нашлось ни одного»): `TreeViewItem`/`TreeViewBranch` already wrap themselves in
+ * `TreeViewNodeProvider`, reading `node`/`indexPath` off their own props — a schema never
+ * addresses `~nodeProvider` separately, so the kit's own map has nothing to register it under.
+ * `TreeViewNodeCheckboxIndicator` is NOT here either: a pure content-composition helper (no DOM
+ * node, `../entity/anatomy.ts` explains why), not required for a preview to work.
  */
-export const kit = defineKitComponent(
-  passport,
-  {
-    root: TreeView,
-    label: TreeViewLabel,
-    tree: TreeViewTree,
-    item: TreeViewItem,
-    itemText: TreeViewItemText,
-    itemIndicator: TreeViewItemIndicator,
-    itemContent: TreeViewItemContent,
-    branch: TreeViewBranch,
-    branchControl: TreeViewBranchControl,
-    branchText: TreeViewBranchText,
-    branchIndicator: TreeViewBranchIndicator,
-    branchTrigger: TreeViewBranchTrigger,
-    branchContent: TreeViewBranchContent,
-    branchIndentGuide: TreeViewBranchIndentGuide,
-    nodeCheckbox: TreeViewNodeCheckbox,
-    nodeRenameInput: TreeViewNodeRenameInput,
-  },
-  { nodeProvider: TreeViewNodeProvider },
-);
+export const kit = defineKitComponent(passport, {
+  root: TreeView,
+  label: TreeViewLabel,
+  tree: TreeViewTree,
+  item: TreeViewItem,
+  itemText: TreeViewItemText,
+  itemIndicator: TreeViewItemIndicator,
+  itemContent: TreeViewItemContent,
+  branch: TreeViewBranch,
+  branchControl: TreeViewBranchControl,
+  branchText: TreeViewBranchText,
+  branchIndicator: TreeViewBranchIndicator,
+  branchTrigger: TreeViewBranchTrigger,
+  branchContent: TreeViewBranchContent,
+  branchIndentGuide: TreeViewBranchIndentGuide,
+  nodeCheckbox: TreeViewNodeCheckbox,
+  nodeRenameInput: TreeViewNodeRenameInput,
+});

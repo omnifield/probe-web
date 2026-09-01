@@ -119,26 +119,4 @@ describe("indexPathBind — the repeat index growAll already counts, named as a 
     const row = Object.values(tree.components.nodes).find((node) => isElement(node) && node.type === "list.row") as BaseAssemblyElement;
     expect(row.props?.["fromTemplate"]).toEqual([0]);
   });
-
-  it("an extra (no anatomy address) gets the same treatment as an own part", () => {
-    const tree = baseAssemblyOf(
-      passport,
-      {
-        name: "proof",
-        means: "proof",
-        tree: {
-          node: "root",
-          children: [{ node: "section", repeat: { path: "/sections" }, children: [{ extra: "marker", indexPathBind: "indexPath" }] }],
-        },
-      },
-      "list",
-      data,
-    );
-
-    const isExtra = (node: unknown): node is BaseAssemblyElement =>
-      typeof node === "object" && node !== null && "type" in node && (node as BaseAssemblyElement).type.includes("~marker");
-
-    const markers = Object.values(tree.components.nodes).filter(isExtra) as BaseAssemblyElement[];
-    expect(markers.map((marker) => marker.props?.["indexPath"])).toEqual([[0], [1]]);
-  });
 });

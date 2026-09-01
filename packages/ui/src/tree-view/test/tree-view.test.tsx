@@ -4,10 +4,11 @@
 //
 // Both rely on `indexPathBind` (`PassportAssemblyElement.indexPathBind`, `packages/skin`) — the
 // accumulated repeat index, written in as a literal `props` value, never a `bind` path (a
-// structural fact of the tree's shape, not a fact of data). `~nodeProvider` (`components/kit.tsx`'s
-// `extras`) is REQUIRED on every node — every part inside a node reads context only it provides.
-// Both findings, and the two real engine gaps that had to close before either assembly could work
-// at all, are written up in `packages/ui/README.md`.
+// structural fact of the tree's shape, not a fact of data). `branch`/`item` carry it (and
+// `repeat`/`bind`) directly on themselves — `TreeViewBranch`/`TreeViewItem` (`components/kit.tsx`)
+// wrap themselves in `TreeViewNodeProvider`, reading `node`/`indexPath` off their own props;
+// nothing addresses `~nodeProvider` as a separate schema node anymore (постановка user,
+// 2026-09-01, README «Разбор боем: `nodeProvider` НЕ нужен был как `extra` вообще»).
 
 import { createRegistry, RenderTree, updateNode, type AssemblyTree, type DispatchedEvent, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
 import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
@@ -43,7 +44,6 @@ const REGISTRY: Registry = createRegistry({
     "tree-view": {
       passport: readable(treeViewPassport, treeViewEditorInfo),
       parts: treeViewKit.parts,
-      extras: treeViewKit.extras,
     },
   },
   admits,

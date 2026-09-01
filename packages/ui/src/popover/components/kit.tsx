@@ -196,6 +196,5 @@ export const kit = defineKitComponent(
     description: PopoverDescription,
     closeTrigger: PopoverCloseTrigger,
   },
-  undefined,
   Popover,
 );

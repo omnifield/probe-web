@@ -11,6 +11,8 @@ import {
   type SwitchHiddenInputProps as ArkHiddenInputProps,
 } from "@ark-ui/solid/switch";
 
+import { splitProps } from "solid-js";
+
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 
@@ -41,14 +43,22 @@ export type SwitchProps = ArkRootProps;
  *     <SwitchThumb />
  *   </SwitchControl>
  *   <SwitchLabel>Enable feature</SwitchLabel>
- *   <SwitchHiddenInput />
  * </Switch>
  * ```
  */
 export function Switch(props: SwitchProps) {
   traceLife("ui.switch");
 
-  return <ArkRoot {...dropAddress(props)} />;
+  // Несёт свой скрытый `<input type="checkbox">` сам (постановка user, 2026-09-01, README
+  // «`extras` — проверка по всему киту: кейса не нашлось ни одного») — он не берёт от сборки данных.
+  const [local, rest] = splitProps(props, ["children"]);
+
+  return (
+    <ArkRoot {...dropAddress(rest)}>
+      {local.children}
+      <ArkHiddenInput />
+    </ArkRoot>
+  );
 }
 
 /** Props of `SwitchControl`. */
@@ -88,7 +98,8 @@ export type SwitchHiddenInputProps = ArkHiddenInputProps;
  * The real, visually hidden `<input type="checkbox">` — focus, form submission, native `change`.
  *
  * Carries no address (`../entity/anatomy.ts`, "hiddenInput carries NO part"): a node the provider
- * does not address is not addressable by us either.
+ * does not address is not addressable by us either. `Switch` (above) already renders one of these
+ * itself — this export stays for manual composition outside a schema, not for reuse there.
  */
 export function SwitchHiddenInput(props: SwitchHiddenInputProps) {
   traceLife("ui.switch-hidden-input");
@@ -98,22 +109,16 @@ export function SwitchHiddenInput(props: SwitchHiddenInputProps) {
 
 // MAP of the switch: passport part → the component that draws it (`PWEB-84`).
 //
-// `hiddenInput` is not in `parts`: it carries no part in the anatomy (`../entity/anatomy.ts`), and
-// `parts`' keys are checked against anatomy parts, not against the full set of rendered nodes. It
-// lives in `extras` instead (`PWEB-152`): a real, addressable-by-name-only component an assembly
-// tree can still place — without it a preview looks right but a click never toggles the switch.
+// НЕТ `hiddenInput` в карте (постановка user, 2026-09-01, README «`extras` — проверка по всему
+// киту: кейса не нашлось ни одного») — он не берёт от сборки данных, `Switch` кладёт его сам.
 
 import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";
 
 /** The switch's passport together with whatever draws each of its four parts. */
-export const kit = defineKitComponent(
-  passport,
-  {
-    root: Switch,
-    control: SwitchControl,
-    thumb: SwitchThumb,
-    label: SwitchLabel,
-  },
-  { hiddenInput: SwitchHiddenInput },
-);
+export const kit = defineKitComponent(passport, {
+  root: Switch,
+  control: SwitchControl,
+  thumb: SwitchThumb,
+  label: SwitchLabel,
+});

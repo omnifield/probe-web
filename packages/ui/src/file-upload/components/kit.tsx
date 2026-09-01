@@ -27,6 +27,8 @@ import {
   type FileUploadTriggerProps as ArkTriggerProps,
 } from "@ark-ui/solid/file-upload";
 
+import { splitProps } from "solid-js";
+
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 
@@ -60,14 +62,22 @@ export type FileUploadProps = ArkRootProps;
  *     <For each={api().acceptedFiles}>{(file) => <FileUploadItem file={file} />}</For>
  *   </FileUploadItemGroup>
  *   <FileUploadClearTrigger>Clear all</FileUploadClearTrigger>
- *   <FileUploadHiddenInput />
  * </FileUpload>
  * ```
  */
 export function FileUpload(props: FileUploadProps) {
   traceLife("ui.file-upload");
 
-  return <ArkRoot {...dropAddress(props)} />;
+  // Несёт свой скрытый `<input type="file">` сам (постановка user, 2026-09-01, README «`extras`
+  // — проверка по всему киту: кейса не нашлось ни одного») — он не берёт от сборки данных.
+  const [local, rest] = splitProps(props, ["children"]);
+
+  return (
+    <ArkRoot {...dropAddress(rest)}>
+      {local.children}
+      <ArkHiddenInput />
+    </ArkRoot>
+  );
 }
 
 /** Props of `FileUploadLabel`. */
@@ -108,7 +118,8 @@ export type FileUploadHiddenInputProps = ArkHiddenInputProps;
  * here.
  *
  * Carries no address (`../entity/passport.ts`, "the hidden input, again"): a part the provider
- * never addressed is not addressable by us either.
+ * never addressed is not addressable by us either. `FileUpload` (above) already renders one of
+ * these itself — this export stays for manual composition outside a schema, not for reuse there.
  */
 export function FileUploadHiddenInput(props: FileUploadHiddenInputProps) {
   traceLife("ui.file-upload-hidden-input");
@@ -198,31 +209,24 @@ export function FileUploadClearTrigger(props: FileUploadClearTriggerProps) {
 
 // MAP of the file upload: passport part → the component that draws it (`PWEB-84`).
 //
-// `hiddenInput` sits outside `parts` — it has no part in the passport (`../entity/anatomy.ts`),
-// and `parts`' keys are checked against the anatomy's parts, not against every node the
-// components render. It lives in `extras` instead (`PWEB-152`): a real, addressable-by-name-only
-// component an assembly tree can still place — the native file picker and form participation live
-// on that exact node.
+// НЕТ `hiddenInput` в карте (постановка user, 2026-09-01, README «`extras` — проверка по всему
+// киту: кейса не нашлось ни одного») — он не берёт от сборки данных, `FileUpload` кладёт его сам.
 
 import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";
 
 /** The file upload's passport together with whatever draws each of its twelve parts. */
-export const kit = defineKitComponent(
-  passport,
-  {
-    root: FileUpload,
-    dropzone: FileUploadDropzone,
-    label: FileUploadLabel,
-    trigger: FileUploadTrigger,
-    clearTrigger: FileUploadClearTrigger,
-    itemGroup: FileUploadItemGroup,
-    item: FileUploadItem,
-    itemName: FileUploadItemName,
-    itemSizeText: FileUploadItemSizeText,
-    itemPreview: FileUploadItemPreview,
-    itemPreviewImage: FileUploadItemPreviewImage,
-    itemDeleteTrigger: FileUploadItemDeleteTrigger,
-  },
-  { hiddenInput: FileUploadHiddenInput },
-);
+export const kit = defineKitComponent(passport, {
+  root: FileUpload,
+  dropzone: FileUploadDropzone,
+  label: FileUploadLabel,
+  trigger: FileUploadTrigger,
+  clearTrigger: FileUploadClearTrigger,
+  itemGroup: FileUploadItemGroup,
+  item: FileUploadItem,
+  itemName: FileUploadItemName,
+  itemSizeText: FileUploadItemSizeText,
+  itemPreview: FileUploadItemPreview,
+  itemPreviewImage: FileUploadItemPreviewImage,
+  itemDeleteTrigger: FileUploadItemDeleteTrigger,
+});

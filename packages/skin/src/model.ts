@@ -60,7 +60,6 @@ export type {
   DynamicValue,
   PassportAssemblyContent,
   PassportAssemblyElement,
-  PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyRef,
   PassportAssemblyRepeat,
@@ -69,7 +68,6 @@ export type {
 } from "./passport/assembly/index.js";
 export {
   isAssemblyContent,
-  isAssemblyExtra,
   isAssemblyRef,
   isAssemblyRepeat,
   isDataBinding,

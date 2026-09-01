@@ -118,9 +118,8 @@ kit.
   `onFileAccept`, `onFileReject`). Track picked files yourself from those callbacks rather than
   reaching for a context hook that isn't exported here.
 - **The real hidden `<input type="file">` carries no address** — same device as the checkbox's own
-  hidden input: a part the provider never addressed isn't addressable by this kit either. It lives
-  in `extras` (`{ extra: "hiddenInput" }` in an assembly tree) since it's still a real, necessary
-  node — the native picker and form participation live on it.
+  hidden input: a part the provider never addressed isn't addressable by this kit either.
+  `FileUpload`'s own root renders one automatically — an assembly never names it.
 
 ## Anatomy
 

@@ -8,9 +8,9 @@
 // guessed at. Three choices is the minimum that shows the indicator PASSING OVER one it isn't
 // headed to, the same reasoning the tabs' own "basic" assembly used for its third tab.
 //
-// Each item ALSO holds the real hidden `<input type="radio">` (`{ extra: "hiddenInput" }`,
-// `PWEB-152`) — without it the preview looks right but a click never actually changes the chosen
-// value: the real `onChange` lives on that exact node, `item`'s own `<label>` has none.
+// The real hidden `<input type="radio">` is NOT named per item here (постановка user, 2026-09-01,
+// README «`extras` — проверка по всему киту: кейса не нашлось ни одного») — `RadioGroupItem`'s
+// own root (`../components/kit.tsx`) already renders one per item.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -33,7 +33,6 @@ export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Standard" }] },
-            { extra: "hiddenInput" },
           ],
         },
         {
@@ -42,7 +41,6 @@ export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Express" }] },
-            { extra: "hiddenInput" },
           ],
         },
         {
@@ -51,7 +49,6 @@ export const assemblies: readonly PassportAssembly<RadioGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Pickup" }] },
-            { extra: "hiddenInput" },
           ],
         },
         { node: "indicator" },

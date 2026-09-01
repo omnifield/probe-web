@@ -77,25 +77,6 @@ export interface PassportAssemblyContent<Data = unknown, AtRoot extends boolean 
   readonly value: DynamicValue<Data, AtRoot>;
 }
 
-// `extra` stays a bare `string`, not `Part | Registry`: an extra's name is PRIVATE to this
-// component's own assembly (`PWEB-165` — "extra приватен не глобален"), not a member of either
-// closed list `Registry` stands for. No `repeat` variant either — an extra never carries one
-// (`admission.ts`'s own README notes extras are addressed by `name`, not shaped like a part).
-export interface PassportAssemblyExtra<
-  Part extends string = string,
-  Registry extends string = string,
-  Data = unknown,
-  AtRoot extends boolean = true,
-> {
-  readonly extra: string;
-  readonly props?: Readonly<Record<string, unknown>>;
-  readonly bind?: Readonly<Record<string, BoundPath<Data, AtRoot>>>;
-  readonly on?: Readonly<Record<string, DispatchAction<Data, AtRoot>>>;
-  /** See `ElementFields.indexPathBind` — same field, same meaning, an extra carries it too. */
-  readonly indexPathBind?: string;
-  readonly children?: readonly PassportAssemblyNode<Part, Registry, Data, AtRoot>[];
-}
-
 // The tree's own entry always starts `AtRoot` — nothing has narrowed anything yet.
 export interface PassportSelfAssembly<Part extends string = string, Registry extends string = string, Data = unknown> {
   readonly tree: PassportAssemblyElement<Part, Registry, Data, true>;
@@ -159,14 +140,9 @@ export type PassportAssemblyNode<
 > =
   | PassportAssemblyElement<Part, Registry, Data, AtRoot>
   | PassportAssemblyContent<Data, AtRoot>
-  | PassportAssemblyExtra<Part, Registry, Data, AtRoot>
   | PassportAssemblyRepeat<Part, Registry, Data, AtRoot>
   | PassportAssemblyRef;
 
 export function isAssemblyContent(node: PassportAssemblyNode): node is PassportAssemblyContent {
   return "genus" in node;
-}
-
-export function isAssemblyExtra(node: PassportAssemblyNode): node is PassportAssemblyExtra {
-  return "extra" in node;
 }

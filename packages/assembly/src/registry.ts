@@ -55,14 +55,6 @@ export interface ReadableComponent {
    */
   readonly parts: Readonly<Record<string, unknown>>;
   /**
-   * Вспомогательные компоненты кита — БЕЗ адреса анатомии (`PWEB-152`): скрытый `<input>`
-   * чекбокса/радиогруппы и подобные — реальные, но не адресованные Ark'ом узлы, без которых
-   * поставленный клиенту компонент не работает. Отдельная карта, а не примесь к `parts`: ключи
-   * `parts` сверяются с анатомией (`checkRegistry`), ключи extras — по построению вне неё, сверять
-   * их с тем же перечнем значило бы отвергать их же как «часть, которой нет в анатомии».
-   */
-  readonly extras?: Readonly<Record<string, unknown>>;
-  /**
    * Невидимый провайдер, оборачивающий корень (`PWEB-153`): у компонентов вроде поповера/меню
    * корневая ЧАСТЬ (`positioner`) не рисует настоящего DOM-узла сама по себе — состояние ей даёт
    * контекст, который раздаёт этот провайдер. Отсутствует у компонентов, чей корень — реальный узел.
@@ -102,16 +94,10 @@ export interface Address {
   readonly component: string;
   /** Паспорт этого компонента. */
   readonly passport: ReadablePassport;
-  /** Имя части (или, при `kind: "extra"`, имя в карте `extras` — без ведущей `~`). */
+  /** Имя части. */
   readonly part: string;
   /** Нормализованный адрес части: `<component>.<part>` либо сам `component` для корня. */
   readonly address: string;
-  /**
-   * Откуда доставать компонент — `parts` (часть анатомии, обычный случай) или `extras`
-   * (вспомогательный компонент кита без адреса анатомии, `PWEB-152`). Корень компонента целиком
-   * всегда `"part"`: у extras нет своего адреса, они не могут быть корнем.
-   */
-  readonly kind: "part" | "extra";
 }
 
 /** Из чего собирается реестр: пары поставщика и правило допуска. Механика не сочиняет ни одной. */
@@ -182,7 +168,6 @@ export function readAddress(registry: Registry, address: string): Address | unde
       passport: whole.passport,
       part: whole.passport.root,
       address,
-      kind: "part",
     };
   }
 
@@ -196,15 +181,6 @@ export function readAddress(registry: Registry, address: string): Address | unde
 
   const passport = supplied.passport;
 
-  // Отдельный неймспейс для extras — та же тильда, что ставит `baseAssemblyOf` (`PWEB-152`):
-  // часть с таким именем анатомия не заведёт никогда, коллизия исключена структурно.
-  if (segment.startsWith("~")) {
-    const extra = segment.slice(1);
-    if (!supplied.extras || !Object.hasOwn(supplied.extras, extra)) return undefined;
-
-    return { component, passport, part: extra, address, kind: "extra" };
-  }
-
   // Часть, которой нет в анатомии, — не адрес, а опечатка. Молчаливое «ну пусть будет» здесь
   // означало бы узел, который отрисовка не найдёт, а проверка вложенности сочтёт законным.
   if (!passport.anatomy.keys().includes(segment)) return undefined;
@@ -212,10 +188,10 @@ export function readAddress(registry: Registry, address: string): Address | unde
   // Корневая часть, названная явно, — тот же узел, что компонент целиком. Приводим к одному
   // виду сразу, чтобы дальше по коду двух записей одного места не существовало.
   if (segment === passport.root) {
-    return { component, passport, part: segment, address: component, kind: "part" };
+    return { component, passport, part: segment, address: component };
   }
 
-  return { component, passport, part: segment, address, kind: "part" };
+  return { component, passport, part: segment, address };
 }
 
 /**
@@ -237,7 +213,7 @@ export function resolveComponent(registry: Registry, address: string): unknown {
   if (!read) return undefined;
 
   const supplied = registry.components[read.component];
-  const found = read.kind === "extra" ? supplied?.extras?.[read.part] : supplied?.parts[read.part];
+  const found = supplied?.parts[read.part];
   return typeof found === "function" ? found : undefined;
 }
 

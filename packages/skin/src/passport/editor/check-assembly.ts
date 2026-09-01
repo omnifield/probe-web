@@ -3,14 +3,12 @@
 import {
   admits,
   isAssemblyContent,
-  isAssemblyExtra,
   isAssemblyRef,
   isAssemblyRepeat,
   type PassportAdmission,
   type PassportAssembly,
   type PassportAssemblyContent,
   type PassportAssemblyElement,
-  type PassportAssemblyExtra,
   type PassportAssemblyNode,
 } from "../assembly/index.js";
 import type { ComponentPassport } from "../form/index.js";
@@ -20,7 +18,7 @@ import type { PassportPartEditorInfo } from "./types.js";
 // never needs to widen a real-schema `PassportAssembly` into this function's own parameter (the
 // widening `../assembly/README.md#paths` documents as broken for exactly this class of type).
 // Nothing BELOW that boundary reads `Data` at all: this traversal only ever asks about `node`/
-// `children`/`extra`/`ref`/`repeat`/`genus` — never `bind`/`props`/`on`, the only fields `Data`
+// `children`/`ref`/`repeat`/`genus` — never `bind`/`props`/`on`, the only fields `Data`
 // touches — so `tree` is re-typed to the permissive default ONCE, right after entry, and every
 // helper below works with that shape for the rest of the function.
 export function checkAssembly<Part extends string, Registry extends string = string, Data = unknown>(
@@ -53,7 +51,7 @@ export function checkAssembly<Part extends string, Registry extends string = str
 
   const templateOf = (
     node: PassportAssemblyNode<Part, Registry>,
-  ): PassportAssemblyElement<Part, Registry> | PassportAssemblyContent | PassportAssemblyExtra<Part, Registry> => {
+  ): PassportAssemblyElement<Part, Registry> | PassportAssemblyContent => {
     if (isAssemblyRepeat(node)) return templateOf(node.template);
 
     if (isAssemblyRef(node)) {
@@ -67,33 +65,27 @@ export function checkAssembly<Part extends string, Registry extends string = str
     return node;
   };
 
-  const walk = (node: PassportAssemblyElement<Part, Registry> | PassportAssemblyExtra<Part, Registry>): void => {
-    const owner = !isAssemblyExtra(node) && isOwnPart(node) ? parts[node.node as Part] : undefined;
+  const walk = (node: PassportAssemblyElement<Part, Registry>): void => {
+    const owner = isOwnPart(node) ? parts[node.node as Part] : undefined;
 
     for (const declaredChild of node.children ?? []) {
       const child = templateOf(declaredChild);
       const candidate: PassportAdmission = isAssemblyContent(child)
         ? { kind: "content", genus: child.genus }
-        : { kind: "component", name: isAssemblyExtra(child) ? child.extra : child.node };
+        : { kind: "component", name: child.node };
 
       if (owner && !admits(owner, candidate)) {
         const what = isAssemblyContent(child)
           ? `content of genus "${child.genus}"`
-          : isAssemblyExtra(child)
-            ? `extra component "${child.extra}"`
-            : isOwnPart(child)
-              ? `part "${child.node}"`
-              : `registry reference "${child.node}"`;
-        const into = isAssemblyExtra(node)
-          ? `extra node "${node.extra}"`
-          : isOwnPart(node)
-            ? `part "${node.node}"`
-            : `reference "${node.node}"`;
+          : isOwnPart(child)
+            ? `part "${child.node}"`
+            : `registry reference "${child.node}"`;
+        const into = isOwnPart(node) ? `part "${node.node}"` : `reference "${node.node}"`;
 
         throw new Error(`assembly "${component}.${assembly.name}" puts ${what} inside ${into}, which does not admit it`);
       }
 
-      if (!isAssemblyContent(child) && (isAssemblyExtra(child) || isOwnPart(child))) walk(child);
+      if (!isAssemblyContent(child) && isOwnPart(child)) walk(child);
     }
   };
 

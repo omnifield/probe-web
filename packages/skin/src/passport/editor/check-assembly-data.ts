@@ -10,7 +10,7 @@
 // never imports `zod` or anything io-shaped; it takes whatever `data` it is handed) and reports
 // which ones resolve to nothing.
 
-import { isAssemblyContent, isAssemblyExtra, isAssemblyRef, isAssemblyRepeat, isDataBinding, resolveDataBinding, scopedPath } from "../assembly/index.js";
+import { isAssemblyContent, isAssemblyRef, isAssemblyRepeat, isDataBinding, resolveDataBinding, scopedPath } from "../assembly/index.js";
 import type { PassportAssembly, PassportAssemblyElement, PassportAssemblyNode } from "../assembly/index.js";
 
 export interface AssemblyDataFlaw {
@@ -69,7 +69,7 @@ export function checkAssemblyData<Part extends string, Registry extends string =
   };
 
   // `Node` widened to the permissive default right after entry — same call-boundary reasoning as
-  // `check-assembly.ts`: this traversal only ever reads `bind`/`children`/`extra`/`ref`/`repeat`/
+  // `check-assembly.ts`: this traversal only ever reads `bind`/`children`/`ref`/`repeat`/
   // `genus`/`value`, never anything `Data`-typed narrows, so re-typing once here lets every helper
   // below work with one shape for the rest of the function.
   const walk = (node: PassportAssemblyNode, base: string, where: string): void => {
@@ -110,7 +110,7 @@ export function checkAssemblyData<Part extends string, Registry extends string =
       return;
     }
 
-    const label = isAssemblyExtra(node) ? `~${node.extra}` : node.node;
+    const label = node.node;
 
     for (const [prop, path] of Object.entries(node.bind ?? {})) checkOne(`${where}.bind.${prop}`, path, base, false);
     for (const child of node.children ?? []) walk(child, base, `${where} > ${label}`);

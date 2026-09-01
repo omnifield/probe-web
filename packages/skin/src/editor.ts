@@ -29,7 +29,6 @@ export type {
   PassportAssembly,
   PassportAssemblyContent,
   PassportAssemblyElement,
-  PassportAssemblyExtra,
   PassportAssemblyNode,
   PassportAssemblyRef,
   PassportAssemblyRepeat,
@@ -37,7 +36,6 @@ export type {
 export {
   baseAssemblyOf,
   isAssemblyContent,
-  isAssemblyExtra,
   isAssemblyRef,
   isAssemblyRepeat,
   isContentNode,

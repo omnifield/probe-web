@@ -5,9 +5,9 @@
 // assembly (same machine, `PWEB-134`): `root` wrapping `label` + one `item` per choice + one
 // shared `indicator`.
 //
-// Each item ALSO holds the real hidden `<input type="radio">` (`{ extra: "hiddenInput" }`,
-// `PWEB-152`) — without it the preview looks right but a click never actually changes the chosen
-// value: the real `onChange` lives on that exact node.
+// The real hidden `<input type="radio">` is NOT named per item here (постановка user, 2026-09-01,
+// README «`extras` — проверка по всему киту: кейса не нашлось ни одного») — `SegmentGroupItem`'s
+// own root (`../components/kit.tsx`) already renders one per item.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -34,7 +34,6 @@ export const assemblies: readonly PassportAssembly<SegmentGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Список" }] },
-            { extra: "hiddenInput" },
           ],
         },
         {
@@ -43,7 +42,6 @@ export const assemblies: readonly PassportAssembly<SegmentGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Плитка" }] },
-            { extra: "hiddenInput" },
           ],
         },
         {
@@ -52,7 +50,6 @@ export const assemblies: readonly PassportAssembly<SegmentGroupPart>[] = [
           children: [
             { node: "itemControl" },
             { node: "itemText", children: [{ genus: "text", value: "Доска" }] },
-            { extra: "hiddenInput" },
           ],
         },
       ],

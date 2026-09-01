@@ -15,6 +15,8 @@ import {
   type RadioGroupRootProps as ArkRootProps,
 } from "@ark-ui/solid/radio-group";
 
+import { splitProps } from "solid-js";
+
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 
@@ -76,11 +78,24 @@ export function RadioGroupLabel(props: RadioGroupLabelProps) {
 /** Props of `RadioGroupItem`. */
 export type RadioGroupItemProps = ArkItemProps;
 
-/** One choice — a `<label>` node; `value` is required. */
+/**
+ * One choice — a `<label>` node; `value` is required.
+ *
+ * Несёт своё скрытое `<input type="radio">` сам (постановка user, 2026-09-01, README «`extras` —
+ * проверка по всему киту: кейса не нашлось ни одного») — оно не берёт от сборки данных, только
+ * контекст, который уже поднял этот же `item` (своё `value` читает оттуда, не из пропов).
+ */
 export function RadioGroupItem(props: RadioGroupItemProps) {
   traceLife("ui.radio-group-item");
 
-  return <ArkItem {...dropAddress(props)} />;
+  const [local, rest] = splitProps(props, ["children"]);
+
+  return (
+    <ArkItem {...dropAddress(rest)}>
+      {local.children}
+      <ArkItemHiddenInput />
+    </ArkItem>
+  );
 }
 
 /** Props of `RadioGroupItemText`. */
@@ -111,7 +126,8 @@ export type RadioGroupItemHiddenInputProps = ArkItemHiddenInputProps;
  * screen reader.
  *
  * Carries no address (`../entity/passport.ts`, "the hidden input, again"): a part the provider
- * never addressed is not addressable by us either.
+ * never addressed is not addressable by us either. `RadioGroupItem` (above) already renders one
+ * of these itself, per item — this export stays for manual composition outside a schema.
  */
 export function RadioGroupItemHiddenInput(props: RadioGroupItemHiddenInputProps) {
   traceLife("ui.radio-group-item-hidden-input");
@@ -140,22 +156,15 @@ import { passport } from "../entity/passport.js";
 /**
  * The radio group's passport together with whatever draws each of its six parts.
  *
- * `itemHiddenInput` sits outside `parts` — it has no part in the passport (`../entity/
- * anatomy.ts`), and `parts`' keys are checked against the anatomy's parts, not against every node
- * the components render. It lives in `extras` instead (`PWEB-152`): a real, addressable-by-name-
- * only-not-by-anatomy component an assembly tree can still place — without it, a preview built
- * from an assembly renders the right look but a click never changes the chosen value: the real
- * `onChange` that drives `SET_VALUE` lives on this exact node, not on the label (`item`).
+ * НЕТ `hiddenInput` в карте (постановка user, 2026-09-01, README «`extras` — проверка по всему
+ * киту: кейса не нашлось ни одного») — он не берёт от сборки данных, `RadioGroupItem` кладёт его
+ * сам, по одному на каждый пункт.
  */
-export const kit = defineKitComponent(
-  passport,
-  {
-    root: RadioGroup,
-    label: RadioGroupLabel,
-    item: RadioGroupItem,
-    itemText: RadioGroupItemText,
-    itemControl: RadioGroupItemControl,
-    indicator: RadioGroupIndicator,
-  },
-  { hiddenInput: RadioGroupItemHiddenInput },
-);
+export const kit = defineKitComponent(passport, {
+  root: RadioGroup,
+  label: RadioGroupLabel,
+  item: RadioGroupItem,
+  itemText: RadioGroupItemText,
+  itemControl: RadioGroupItemControl,
+  indicator: RadioGroupIndicator,
+});

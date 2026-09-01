@@ -15,6 +15,8 @@ import {
   type SegmentGroupRootProps as ArkRootProps,
 } from "@ark-ui/solid/segment-group";
 
+import { splitProps } from "solid-js";
+
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 
@@ -45,12 +47,10 @@ export type SegmentGroupProps = ArkRootProps;
  *   <SegmentGroupItem value="react">
  *     <SegmentGroupItemText>React</SegmentGroupItemText>
  *     <SegmentGroupItemControl />
- *     <SegmentGroupItemHiddenInput />
  *   </SegmentGroupItem>
  *   <SegmentGroupItem value="solid">
  *     <SegmentGroupItemText>Solid</SegmentGroupItemText>
  *     <SegmentGroupItemControl />
- *     <SegmentGroupItemHiddenInput />
  *   </SegmentGroupItem>
  * </SegmentGroup>
  * ```
@@ -74,11 +74,24 @@ export function SegmentGroupLabel(props: SegmentGroupLabelProps) {
 /** Props of `SegmentGroupItem`. */
 export type SegmentGroupItemProps = ArkItemProps;
 
-/** One choice — a `<label>` node; `value` is required. */
+/**
+ * One choice — a `<label>` node; `value` is required.
+ *
+ * Несёт своё скрытое `<input type="radio">` сам (постановка user, 2026-09-01, README «`extras` —
+ * проверка по всему киту: кейса не нашлось ни одного») — оно не берёт от сборки данных, только
+ * контекст, который уже поднял этот же `item`.
+ */
 export function SegmentGroupItem(props: SegmentGroupItemProps) {
   traceLife("ui.segment-group-item");
 
-  return <ArkItem {...dropAddress(props)} />;
+  const [local, rest] = splitProps(props, ["children"]);
+
+  return (
+    <ArkItem {...dropAddress(rest)}>
+      {local.children}
+      <ArkItemHiddenInput />
+    </ArkItem>
+  );
 }
 
 /** Props of `SegmentGroupItemText`. */
@@ -109,7 +122,8 @@ export type SegmentGroupItemHiddenInputProps = ArkItemHiddenInputProps;
  * screen reader.
  *
  * Carries no address (`../entity/passport.ts`, "the hidden input, again"): a part the provider
- * never addressed is not addressable by us either.
+ * never addressed is not addressable by us either. `SegmentGroupItem` (above) already renders one
+ * of these itself, per item — this export stays for manual composition outside a schema.
  */
 export function SegmentGroupItemHiddenInput(props: SegmentGroupItemHiddenInputProps) {
   traceLife("ui.segment-group-item-hidden-input");
@@ -138,21 +152,15 @@ import { passport } from "../entity/passport.js";
 /**
  * The segment group's passport together with whatever draws each of its six parts.
  *
- * `itemHiddenInput` sits outside `parts` — it has no part in the passport (`../entity/
- * anatomy.ts`), and `parts`' keys are checked against the anatomy's parts, not against every node
- * the components render. It lives in `extras` instead (`PWEB-152`): a real, addressable-by-name-
- * only-not-by-anatomy component an assembly tree can still place — without it a preview looks
- * right but a click never changes the chosen value.
+ * НЕТ `hiddenInput` в карте (постановка user, 2026-09-01, README «`extras` — проверка по всему
+ * киту: кейса не нашлось ни одного») — он не берёт от сборки данных, `SegmentGroupItem` кладёт
+ * его сам, по одному на каждый пункт.
  */
-export const kit = defineKitComponent(
-  passport,
-  {
-    root: SegmentGroup,
-    label: SegmentGroupLabel,
-    item: SegmentGroupItem,
-    itemText: SegmentGroupItemText,
-    itemControl: SegmentGroupItemControl,
-    indicator: SegmentGroupIndicator,
-  },
-  { hiddenInput: SegmentGroupItemHiddenInput },
-);
+export const kit = defineKitComponent(passport, {
+  root: SegmentGroup,
+  label: SegmentGroupLabel,
+  item: SegmentGroupItem,
+  itemText: SegmentGroupItemText,
+  itemControl: SegmentGroupItemControl,
+  indicator: SegmentGroupIndicator,
+});

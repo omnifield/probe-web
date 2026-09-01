@@ -282,6 +282,5 @@ export const kit = defineKitComponent(
     itemIndicator: MenuItemIndicator,
     itemText: MenuItemText,
   },
-  undefined,
   Menu,
 );

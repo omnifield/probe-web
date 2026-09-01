@@ -17,8 +17,9 @@
 // `File` would make Ark's own image-only guard throw (`../entity/anatomy.ts`'s own header names
 // this), and a proof recipe has no business depending on the browser having decoded a real image.
 //
-// `root` also holds the real hidden `<input type="file">` (`{ extra: "hiddenInput" }`,
-// `PWEB-152`) — the native file picker and form participation live on that exact node.
+// The real hidden `<input type="file">` is NOT named here (постановка user, 2026-09-01, README
+// «`extras` — проверка по всему киту: кейса не нашлось ни одного») — `FileUpload`'s own root
+// (`../components/kit.tsx`) already renders one.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
@@ -74,7 +75,6 @@ export const assemblies: readonly PassportAssembly<FileUploadPart>[] = [
           ],
         },
         { node: "clearTrigger", children: [{ genus: "text", value: "Clear all" }] },
-        { extra: "hiddenInput" },
       ],
     },
   },
