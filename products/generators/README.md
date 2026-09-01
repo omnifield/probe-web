@@ -22,11 +22,37 @@ text generation).
 
 | module | what it does |
 |---|---|
+| [`src/cli.ts`](#clits) | the actual entry point — loads a product's TypeScript config file and runs it, the way `vite`'s own CLI loads `vite.config.ts` |
 | [`src/plugin/`](src/plugin/README.md) | the surface a product actually writes against — `vite`/`webpack`-shaped: a runner owns scanning/reading/writing/zone-merging, a plugin is data plus a few functions |
 | [`src/barrel/`](src/barrel/README.md) | scan a directory of uniform folders, render one or more aggregate files from what each folder declares — the engine behind `plugin`'s `AggregatePlugin` |
 | [`src/extract/`](src/extract/README.md) | read a real, executed value out of a TypeScript file (a passport, a Zod schema) instead of parsing its text |
 | [`src/scaffold/`](src/scaffold/README.md) | `barrel`'s mirror image — one file PER entry (e.g. a README next to each component), not one aggregate for all of them — the engine behind `plugin`'s `PerEntryPlugin` |
 | [`src/preserve/`](src/preserve/README.md) | one hand-written region, bracketed by markers, survives a full-file regeneration — `plugin`'s `zones` call this automatically, so a plugin never invokes it itself |
+
+## `cli.ts`
+
+A product's whole generator becomes one TypeScript file:
+
+```ts
+// generators.config.ts
+import { defineConfig, hasFile } from "@probe-web/generators/plugin";
+
+export default defineConfig({
+  rootDir: "src",
+  isEntry: hasFile("entity/passport.ts"),
+  plugins: [/* ... */],
+});
+```
+
+```
+node .../products/generators/dist/cli.js ./generators.config.ts
+```
+
+No `fileURLToPath`/`dirname`/`await run(...)` boilerplate in the product's own script — `runCli`
+loads the config by EXECUTING it (`extract`'s `importModule`, same as everywhere else here: a
+config built by `defineConfig({...})` is a real value once it runs, not text worth parsing) and
+calls `run` on it. `runCli` is exported on its own too, for a caller that wants the written files
+back (tests, a wrapper script) instead of a process exit code.
 
 ## What's done
 
@@ -64,7 +90,17 @@ text generation).
   `PerEntryPlugin` are the plugin shapes `barrel`/`scaffold` sit behind;
   `zones` replaces a plugin author calling `preserve` by hand. `barrel`,
   `scaffold`, `extract`, `preserve` are unchanged — `plugin` is an
-  additive layer calling them, not a rewrite. `packages/ui/generators/*`
-  moving onto this (`barrel/generate.mjs`'s raw `existsSync`/`join`,
-  `readme/readme.mjs`'s manual zone-merge loop) is the next step, not done
-  yet — see `src/plugin/README.md`.
+  additive layer calling them, not a rewrite — see `src/plugin/README.md`.
+  A first pass moved `packages/ui/generators/*` onto it directly
+  (hand-written `.mjs` plugin objects in `packages/ui`) — user's call
+  (2026-09-01): still messy, and the wrong split anyway — a product
+  should configure ready plugins, not author them itself, for anything
+  that isn't genuinely unique to that product. Reverted; going in order
+  instead.
+- `cli.ts` — the actual entry point (2026-09-01, same decision): a
+  product's generator script is now ONE TypeScript config file plus one
+  `node dist/cli.js <config>` call, no hand-rolled `run(...)` invocation —
+  see `## cli.ts` above. Reusable plugins (`barrel`-as-plugin,
+  `readme`-as-plugin) living IN this product, not in `packages/ui`, are
+  next — `packages/ui`'s own config becomes thin: import the ready
+  plugins, pass paths/templates.
