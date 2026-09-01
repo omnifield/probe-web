@@ -17,8 +17,8 @@ import {
 
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Radio group — one value chosen out of several, from Ark
 // (`ark-ui.com/docs/components/radio-group`).
@@ -129,7 +129,9 @@ export type RadioGroupItemHiddenInputProps = ArkItemHiddenInputProps;
  * never addressed is not addressable by us either. `RadioGroupItem` (above) already renders one
  * of these itself, per item — this export stays for manual composition outside a schema.
  */
-export function RadioGroupItemHiddenInput(props: RadioGroupItemHiddenInputProps) {
+export function RadioGroupItemHiddenInput(
+  props: RadioGroupItemHiddenInputProps,
+) {
   traceLife("ui.radio-group-item-hidden-input");
 
   return <ArkItemHiddenInput {...dropAddress(props)} />;

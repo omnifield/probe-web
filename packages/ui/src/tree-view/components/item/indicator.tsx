@@ -5,8 +5,8 @@ import {
   useTreeViewNodeContext,
 } from "@ark-ui/solid/tree-view";
 
-import { dropAddress } from "../../../utils/slot-chain.js";
-import { traceLife } from "../../../utils/trace.js";
+import { dropAddress } from "../../../shared/utils/slot-chain.js";
+import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
 
 export type TreeControlIndicatorProps = JSX.HTMLAttributes<HTMLDivElement>;
@@ -21,12 +21,18 @@ export function TreeControlIndicator(props: TreeControlIndicatorProps) {
     <Show
       when={node().isBranch}
       fallback={
-        <ArkItemIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
+        <ArkItemIndicator
+          {...dropAddress(rest)}
+          {...anatomyParts.controlIndicator.attrs}
+        >
           {local.children}
         </ArkItemIndicator>
       }
     >
-      <ArkBranchIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
+      <ArkBranchIndicator
+        {...dropAddress(rest)}
+        {...anatomyParts.controlIndicator.attrs}
+      >
         {local.children}
       </ArkBranchIndicator>
     </Show>

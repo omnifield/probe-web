@@ -11,8 +11,8 @@ import {
   type TabIndicatorProps as ArkIndicatorProps,
 } from "@ark-ui/solid/tabs";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Tabs — one panel visible at a time, selected by a row of triggers
 // (`ark-ui.com/docs/components/tabs`).

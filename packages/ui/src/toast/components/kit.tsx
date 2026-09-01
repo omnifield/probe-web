@@ -17,8 +17,8 @@ import {
 } from "@ark-ui/solid/toast";
 import type { JSX } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Toast — the kit's only component backed by TWO zag machines at once (`../entity/anatomy.ts`
 // explains the split): a singleton STORE holding every live toast (`group`), and one machine PER

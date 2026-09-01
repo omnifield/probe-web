@@ -13,8 +13,8 @@ import {
 
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Switch — a toggle, the same binary fact a checkbox holds, drawn as a track and a moving thumb
 // instead of a check mark (`ark-ui.com/docs/components/switch`).

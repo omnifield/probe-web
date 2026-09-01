@@ -1,8 +1,8 @@
 import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useAddress, slotAware } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { useAddress, slotAware } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 // Поверхность — плоскость, отделяющая содержимое от того, что под ним.
@@ -33,7 +33,8 @@ import { anatomyParts } from "../entity/anatomy.js";
  *
  * @typeParam T — что рендерить. По умолчанию `div`.
  */
-export type SurfaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+export type SurfaceProps<T extends ValidComponent = "div"> =
+  PolymorphicProps<T>;
 
 /**
  * Поверхность — ОДИН узел с адресом и ничем больше.
@@ -47,9 +48,9 @@ export type SurfaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T>
  * <Surface as="section" aria-labelledby="итоги">…</Surface>
  * ```
  */
-export const Surface = slotAware(function Surface<T extends ValidComponent = "div">(
-  props: SurfaceProps<T>,
-) {
+export const Surface = slotAware(function Surface<
+  T extends ValidComponent = "div",
+>(props: SurfaceProps<T>) {
   traceLife("ui.surface");
 
   // Адрес едет через `useAddress`, а не прямым спредом: при композиции `as={…}` с нашим же

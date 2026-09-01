@@ -25,9 +25,12 @@ import {
 import { createMemo, splitProps } from "solid-js";
 
 import { defineKitComponent } from "../../kit-form.js";
-import { createListCollection, type CollectionItem } from "../../shared/collection.js";
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import {
+  createListCollection,
+  type CollectionItem,
+} from "../../shared/data/collection.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { passport } from "../entity/passport.js";
 
 // Listbox — a selectable list of options, single or multiple, over a data-driven item collection
@@ -52,12 +55,12 @@ import { passport } from "../entity/passport.js";
 // outward"), and `kit.ts` had to import the very components it was named to just describe,
 // making it a SECOND, accidental export surface for the same components under a different name.
 //
-// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/collection.js`
+// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/data/collection.js`
 // now, not from this Ark subpath directly (`PWEB-195` continuation, 2026-08-30) — the same three
 // names the select's own `Select` reaches for, ONE place instead of two copies that would collide
 // once the package's root `index.ts` starts re-exporting every folder with `export *`. Not
 // re-exported from HERE any more either: a consumer building an item array by hand reaches for
-// `shared/collection.js` directly, the same as this file does.
+// `shared/data/collection.js` directly, the same as this file does.
 //
 // ## `items`, not `collection` — the live object is built ONE layer in, not carried by the caller
 //
@@ -81,10 +84,10 @@ import { passport } from "../entity/passport.js";
 // itself, `listbox-empty.tsx`) — the kit passes it through unchanged; there is nothing to gate a
 // second time.
 
-
 /** Props of `Listbox` — the root, generic over the item type. `collection` is not among them. */
-export interface ListboxProps<T extends CollectionItem = CollectionItem>
-  extends Omit<ArkRootProps<T>, "collection"> {
+export interface ListboxProps<
+  T extends CollectionItem = CollectionItem,
+> extends Omit<ArkRootProps<T>, "collection"> {
   /** Plain items — the kit builds the real `ListCollection` from these, once, memoized. */
   readonly items: readonly T[];
 }
@@ -109,7 +112,9 @@ export interface ListboxProps<T extends CollectionItem = CollectionItem>
  * </Listbox>
  * ```
  */
-export function Listbox<T extends CollectionItem = CollectionItem>(props: ListboxProps<T>) {
+export function Listbox<T extends CollectionItem = CollectionItem>(
+  props: ListboxProps<T>,
+) {
   traceLife("ui.listbox");
 
   const [local, rest] = splitProps(props, ["items"]);
@@ -123,7 +128,9 @@ export function Listbox<T extends CollectionItem = CollectionItem>(props: Listbo
   // (`resolveDataBinding`), not a shape the assembly author wrote or the type checker can catch.
   // `createListCollection` itself throws `TypeError: options.items is not iterable` on that,
   // measured live, not guessed — an empty list is the honest look for "no items yet", not a crash.
-  const collection = createMemo(() => createListCollection<T>({ items: local.items ?? [] }));
+  const collection = createMemo(() =>
+    createListCollection<T>({ items: local.items ?? [] }),
+  );
 
   return <ArkRoot {...dropAddress(rest)} collection={collection()} />;
 }

@@ -12,8 +12,8 @@ import {
 } from "@tanstack/solid-table";
 import { createSignal, For, splitProps, type JSX } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 // Table — the kit's first OWN compound component (`../entity/anatomy.ts`): no Ark UI, no Zag
@@ -74,11 +74,15 @@ export interface TableSort {
   desc: boolean;
 }
 
-function toSortingState(sort: TableSort | null): { id: string; desc: boolean }[] {
+function toSortingState(
+  sort: TableSort | null,
+): { id: string; desc: boolean }[] {
   return sort === null ? [] : [{ id: sort.columnId, desc: sort.desc }];
 }
 
-function fromSortingState(state: readonly { id: string; desc: boolean }[]): TableSort | null {
+function fromSortingState(
+  state: readonly { id: string; desc: boolean }[],
+): TableSort | null {
   const first = state[0];
   return first === undefined ? null : { columnId: first.id, desc: first.desc };
 }
@@ -102,7 +106,9 @@ export type TableRootProps<TData extends RowData> = Omit<
 };
 
 /** What the default structure (no `children` given) uses for a column's visible header text. */
-function defaultHeaderText<TData extends RowData>(header: TableColumnHeader<TData>): string {
+function defaultHeaderText<TData extends RowData>(
+  header: TableColumnHeader<TData>,
+): string {
   const declared = header.column.columnDef.header;
   return typeof declared === "string" ? declared : header.column.id;
 }
@@ -113,7 +119,9 @@ function defaultHeaderText<TData extends RowData>(header: TableColumnHeader<TDat
  * assembly tree (which can only ever hand a node plain props, never a function, `PWEB-83`) has a
  * working shape with a single `root` node and no children of its own.
  */
-function DefaultTableBody<TData extends RowData>(props: { table: TableInstance<TData> }): JSX.Element {
+function DefaultTableBody<TData extends RowData>(props: {
+  table: TableInstance<TData>;
+}): JSX.Element {
   return (
     <>
       <TableHead>
@@ -137,7 +145,9 @@ function DefaultTableBody<TData extends RowData>(props: { table: TableInstance<T
         <For each={props.table.getRowModel().rows}>
           {(row) => (
             <TableRow>
-              <For each={row.getAllCells()}>{(cell) => <TableCell>{String(cell.getValue())}</TableCell>}</For>
+              <For each={row.getAllCells()}>
+                {(cell) => <TableCell>{String(cell.getValue())}</TableCell>}
+              </For>
             </TableRow>
           )}
         </For>
@@ -197,9 +207,8 @@ function DefaultTableBody<TData extends RowData>(props: { table: TableInstance<T
 export function TableRoot<TData extends RowData>(props: TableRootProps<TData>) {
   traceLife("ui.table");
 
-  const [uncontrolledSorting, setUncontrolledSorting] = createSignal<TableSort | null>(
-    props.defaultSorting ?? null,
-  );
+  const [uncontrolledSorting, setUncontrolledSorting] =
+    createSignal<TableSort | null>(props.defaultSorting ?? null);
   const sorting = (): TableSort | null =>
     props.sorting !== undefined ? props.sorting : uncontrolledSorting();
   const setSorting = (next: TableSort | null): void => {
@@ -237,7 +246,11 @@ export function TableRoot<TData extends RowData>(props: TableRootProps<TData>) {
 
   return (
     <table {...dropAddress(rest)} {...anatomyParts.root.attrs}>
-      {local.children ? local.children(table) : <DefaultTableBody table={table} />}
+      {local.children ? (
+        local.children(table)
+      ) : (
+        <DefaultTableBody table={table} />
+      )}
     </table>
   );
 }
@@ -287,13 +300,19 @@ export type TableHeaderCellProps<TData extends RowData> = Omit<
  * gets neither attribute: `aria-sort="none"` on every column, sortable or not, would claim a
  * capability that is not there.
  */
-export function TableHeaderCell<TData extends RowData>(props: TableHeaderCellProps<TData>) {
+export function TableHeaderCell<TData extends RowData>(
+  props: TableHeaderCellProps<TData>,
+) {
   traceLife("ui.table-header-cell");
 
   const state = (): "ascending" | "descending" | "none" | undefined => {
     if (!props.header.column.getCanSort()) return undefined;
     const sorted = props.header.column.getIsSorted();
-    return sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none";
+    return sorted === "asc"
+      ? "ascending"
+      : sorted === "desc"
+        ? "descending"
+        : "none";
   };
 
   const [, rest] = splitProps(props, ["header"]);
@@ -330,7 +349,11 @@ export function TableHeaderSortTrigger<TData extends RowData>(
 
   const state = (): "ascending" | "descending" | "none" => {
     const sorted = props.header.column.getIsSorted();
-    return sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none";
+    return sorted === "asc"
+      ? "ascending"
+      : sorted === "desc"
+        ? "descending"
+        : "none";
   };
 
   const [, rest] = splitProps(props, ["header"]);
@@ -341,7 +364,9 @@ export function TableHeaderSortTrigger<TData extends RowData>(
       disabled={!props.header.column.getCanSort()}
       {...dropAddress(rest)}
       data-state={state()}
-      onClick={(event) => props.header.column.getToggleSortingHandler()?.(event)}
+      onClick={(event) =>
+        props.header.column.getToggleSortingHandler()?.(event)
+      }
       {...anatomyParts.headerSortTrigger.attrs}
     />
   );

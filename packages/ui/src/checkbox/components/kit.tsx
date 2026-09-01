@@ -13,8 +13,8 @@ import {
 
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Чекбокс — первый компонент ФОРМЫ, из Ark (`PWEB-114`).
 //

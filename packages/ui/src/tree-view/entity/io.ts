@@ -1,4 +1,5 @@
 import { z } from "@omnifield/probe-web-io";
+import { fields } from "../../shared/data/fields.js";
 
 export interface TreeItem {
   readonly id: string;
@@ -9,7 +10,7 @@ export interface TreeItem {
 const item: z.ZodType<TreeItem> = z.lazy(() =>
   z.object({
     id: z.string(),
-    label: z.string(),
+    ...fields.labeled,
     children: z.array(item).optional(),
   }),
 );

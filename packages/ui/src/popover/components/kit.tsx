@@ -23,8 +23,8 @@ import {
   type PopoverCloseTriggerProps as ArkCloseTriggerProps,
 } from "@ark-ui/solid/popover";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Popover — a floating panel anchored to a trigger, with its own title/description/close button
 // (`ark-ui.com/docs/components/popover`).

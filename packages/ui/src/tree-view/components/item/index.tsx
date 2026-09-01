@@ -6,8 +6,8 @@ import {
   type TreeNode,
 } from "@ark-ui/solid/tree-view";
 
-import { dropAddress } from "../../../utils/slot-chain.js";
-import { traceLife } from "../../../utils/trace.js";
+import { dropAddress } from "../../../shared/utils/slot-chain.js";
+import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
 
 export interface TreeItemProps<T extends TreeNode = TreeNode> {
@@ -16,11 +16,16 @@ export interface TreeItemProps<T extends TreeNode = TreeNode> {
   readonly children?: JSX.Element;
 }
 
-export function TreeItem<T extends TreeNode = TreeNode>(props: TreeItemProps<T>) {
+export function TreeItem<T extends TreeNode = TreeNode>(
+  props: TreeItemProps<T>,
+) {
   traceLife("ui.tree-item");
 
   const [own, rest] = splitProps(props, ["node", "indexPath", "children"]);
-  const isBranch = () => Boolean((own.node as { children?: unknown[] } | undefined)?.children?.length);
+  const isBranch = () =>
+    Boolean(
+      (own.node as { children?: unknown[] } | undefined)?.children?.length,
+    );
 
   return (
     <ArkNodeProvider node={own.node} indexPath={own.indexPath ?? []}>

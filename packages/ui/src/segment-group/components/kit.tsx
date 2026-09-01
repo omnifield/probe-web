@@ -17,8 +17,8 @@ import {
 
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Segment group — one value chosen out of several, shown as a segmented control, from Ark
 // (`ark-ui.com/docs/components/segment-group`).
@@ -125,7 +125,9 @@ export type SegmentGroupItemHiddenInputProps = ArkItemHiddenInputProps;
  * never addressed is not addressable by us either. `SegmentGroupItem` (above) already renders one
  * of these itself, per item — this export stays for manual composition outside a schema.
  */
-export function SegmentGroupItemHiddenInput(props: SegmentGroupItemHiddenInputProps) {
+export function SegmentGroupItemHiddenInput(
+  props: SegmentGroupItemHiddenInputProps,
+) {
   traceLife("ui.segment-group-item-hidden-input");
 
   return <ArkItemHiddenInput {...dropAddress(props)} />;

@@ -1,8 +1,8 @@
 import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useAddress, slotAware } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { useAddress, slotAware } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 // Поток — элементы друг за другом по одной оси.
@@ -62,12 +62,13 @@ export const Flow = slotAware(function Flow<T extends ValidComponent = "div">(
  *
  * @typeParam T — что рендерить. По умолчанию `div`.
  */
-export type FlowItemProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+export type FlowItemProps<T extends ValidComponent = "div"> =
+  PolymorphicProps<T>;
 
 /** Место одного элемента в потоке — ОДИН узел с адресом. */
-export const FlowItem = slotAware(function FlowItem<T extends ValidComponent = "div">(
-  props: FlowItemProps<T>,
-) {
+export const FlowItem = slotAware(function FlowItem<
+  T extends ValidComponent = "div",
+>(props: FlowItemProps<T>) {
   traceLife("ui.flow-item");
 
   const [address, rest] = useAddress(props, anatomyParts.item.attrs);

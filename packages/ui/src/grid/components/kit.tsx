@@ -1,8 +1,8 @@
 import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useAddress, slotAware } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { useAddress, slotAware } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 // Сетка — общие дорожки, по которым элементы выравниваются и поперёк строк.
@@ -58,12 +58,13 @@ export const Grid = slotAware(function Grid<T extends ValidComponent = "div">(
  *
  * @typeParam T — что рендерить. По умолчанию `div`.
  */
-export type GridCellProps<T extends ValidComponent = "div"> = PolymorphicProps<T>;
+export type GridCellProps<T extends ValidComponent = "div"> =
+  PolymorphicProps<T>;
 
 /** Место одного элемента в сетке — ОДИН узел с адресом. */
-export const GridCell = slotAware(function GridCell<T extends ValidComponent = "div">(
-  props: GridCellProps<T>,
-) {
+export const GridCell = slotAware(function GridCell<
+  T extends ValidComponent = "div",
+>(props: GridCellProps<T>) {
   traceLife("ui.grid-cell");
 
   const [address, rest] = useAddress(props, anatomyParts.cell.attrs);

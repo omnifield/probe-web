@@ -37,8 +37,8 @@ import {
   type MenuTriggerProps as ArkTriggerProps,
 } from "@ark-ui/solid/menu";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Menu — a floating list of actions, with plain, checkbox, and radio items, from Ark
 // (`ark-ui.com/docs/components/menu`).

@@ -23,8 +23,8 @@ import {
   type CarouselAutoplayIndicatorProps as ArkAutoplayIndicatorProps,
 } from "@ark-ui/solid/carousel";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Carousel — one slide in view at a time (or several, via `slidesPerPage`), scrolled by trigger,
 // drag, wheel, or autoplay (`ark-ui.com/docs/components/carousel`).
@@ -174,7 +174,9 @@ export type CarouselAutoplayIndicatorProps = ArkAutoplayIndicatorProps;
  * Shows `children` while autoplay is running, the `fallback` prop while it is paused — ONE node,
  * always mounted; only its content switches.
  */
-export function CarouselAutoplayIndicator(props: CarouselAutoplayIndicatorProps) {
+export function CarouselAutoplayIndicator(
+  props: CarouselAutoplayIndicatorProps,
+) {
   traceLife("ui.carousel-autoplay-indicator");
 
   return <ArkAutoplayIndicator {...dropAddress(props)} />;

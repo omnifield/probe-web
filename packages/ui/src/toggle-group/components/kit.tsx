@@ -5,8 +5,8 @@ import {
   type ToggleGroupRootProps as ArkRootProps,
 } from "@ark-ui/solid/toggle-group";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Toggle group — a row of buttons, one or several pressed at once, from Ark
 // (`ark-ui.com/docs/components/toggle-group`).

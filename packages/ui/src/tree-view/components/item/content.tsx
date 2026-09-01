@@ -4,8 +4,8 @@ import {
   useTreeViewNodeContext,
 } from "@ark-ui/solid/tree-view";
 
-import { dropAddress } from "../../../utils/slot-chain.js";
-import { traceLife } from "../../../utils/trace.js";
+import { dropAddress } from "../../../shared/utils/slot-chain.js";
+import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
 
 export type TreeItemContentProps = JSX.HTMLAttributes<HTMLDivElement>;
@@ -25,7 +25,10 @@ export function TreeItemContent(props: TreeItemContentProps) {
         </div>
       }
     >
-      <ArkBranchContent {...dropAddress(rest)} {...anatomyParts.itemContent.attrs}>
+      <ArkBranchContent
+        {...dropAddress(rest)}
+        {...anatomyParts.itemContent.attrs}
+      >
         {local.children}
       </ArkBranchContent>
     </Show>

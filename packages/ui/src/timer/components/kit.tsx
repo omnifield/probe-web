@@ -15,8 +15,8 @@ import {
 } from "@ark-ui/solid/timer";
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Timer — a start/pause/reset stopwatch or countdown, from Ark
 // (`ark-ui.com/docs/components/timer`).
@@ -97,7 +97,12 @@ export function TimerItemLabel(props: TimerItemLabelProps) {
   const [local, rest] = splitProps(props, ["type"]);
   const timer = useTimerContext();
 
-  return <div {...dropAddress(rest)} {...timer().getItemLabelProps({ type: local.type })} />;
+  return (
+    <div
+      {...dropAddress(rest)}
+      {...timer().getItemLabelProps({ type: local.type })}
+    />
+  );
 }
 
 /** Props of `TimerItemValue` — same shape as `TimerItem`'s own. */
@@ -113,7 +118,12 @@ export function TimerItemValue(props: TimerItemValueProps) {
   const [local, rest] = splitProps(props, ["type"]);
   const timer = useTimerContext();
 
-  return <div {...dropAddress(rest)} {...timer().getItemValueProps({ type: local.type })} />;
+  return (
+    <div
+      {...dropAddress(rest)}
+      {...timer().getItemValueProps({ type: local.type })}
+    />
+  );
 }
 
 /** Props of `TimerSeparator`. */

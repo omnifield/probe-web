@@ -13,8 +13,8 @@ import {
   type ScrollAreaViewportProps as ArkViewportProps,
 } from "@ark-ui/solid/scroll-area";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Scroll area — a scrollable region with its own (skinnable) scrollbar, from Ark
 // (`ark-ui.com/docs/components/scroll-area`).

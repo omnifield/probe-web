@@ -1,8 +1,11 @@
 import { Show, splitProps, type JSX } from "solid-js";
-import { TreeViewBranchControl as ArkBranchControl, useTreeViewNodeContext } from "@ark-ui/solid/tree-view";
+import {
+  TreeViewBranchControl as ArkBranchControl,
+  useTreeViewNodeContext,
+} from "@ark-ui/solid/tree-view";
 
-import { dropAddress } from "../../../utils/slot-chain.js";
-import { traceLife } from "../../../utils/trace.js";
+import { dropAddress } from "../../../shared/utils/slot-chain.js";
+import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
 
 export type TreeItemControlProps = JSX.HTMLAttributes<HTMLDivElement>;
@@ -22,7 +25,10 @@ export function TreeItemControl(props: TreeItemControlProps) {
         </div>
       }
     >
-      <ArkBranchControl {...dropAddress(rest)} {...anatomyParts.itemControl.attrs}>
+      <ArkBranchControl
+        {...dropAddress(rest)}
+        {...anatomyParts.itemControl.attrs}
+      >
         {local.children}
       </ArkBranchControl>
     </Show>

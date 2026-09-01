@@ -7,8 +7,8 @@ import {
   type AvatarRootProps as ArkRootProps,
 } from "@ark-ui/solid/avatar";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Avatar — a picture with a loading-state fallback, from Ark
 // (`ark-ui.com/docs/components/avatar`).

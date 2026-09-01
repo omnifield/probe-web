@@ -23,8 +23,8 @@ import {
   type DrawerTriggerProps as ArkTriggerProps,
 } from "@ark-ui/solid/drawer";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Drawer — a modal that slides in from an edge and can be swipe-dismissed, from Ark
 // (`ark-ui.com/docs/components/drawer`).

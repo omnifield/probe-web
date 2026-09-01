@@ -39,9 +39,9 @@ import { defineKitComponent } from "../../kit-form.js";
 import {
   createListCollection,
   type CollectionItem,
-} from "../../shared/collection.js";
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+} from "../../shared/data/collection.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { passport } from "../entity/passport.js";
 
 // Select — a floating dropdown over a data-driven item collection, the kit's first component
@@ -57,7 +57,7 @@ import { passport } from "../entity/passport.js";
 // AND the passport-part map that draws them together, in one place. `./index.ts` is the OUTWARD
 // face — a plain re-export list, nothing defined there.
 //
-// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/collection.js`
+// `createListCollection`/`CollectionItem`/`ListCollection` come from `../../shared/data/collection.js`
 // now, not from `@ark-ui/solid/select` directly — the same three names the listbox's own
 // `Listbox` reaches for, ONE place instead of two copies that would collide once the package's
 // root `index.ts` starts re-exporting every folder with `export *`. Same fix as the listbox's own

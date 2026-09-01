@@ -17,8 +17,8 @@ import {
   type DialogTriggerProps as ArkTriggerProps,
 } from "@ark-ui/solid/dialog";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Dialog — the kit's modal, from Ark (`ark-ui.com/docs/components/dialog`).
 //

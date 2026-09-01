@@ -55,8 +55,8 @@ import {
   type DatePickerYearSelectProps as ArkYearSelectProps,
 } from "@ark-ui/solid/date-picker";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Date picker — the kit's biggest Ark-provided component, 25 parts
 // (`ark-ui.com/docs/components/date-picker`).
@@ -338,7 +338,9 @@ export function DatePickerTableCell(props: DatePickerTableCellProps) {
 export type DatePickerTableCellTriggerProps = ArkTableCellTriggerProps;
 
 /** The clickable surface INSIDE a cell — role `button`, real keyboard/pointer handling. */
-export function DatePickerTableCellTrigger(props: DatePickerTableCellTriggerProps) {
+export function DatePickerTableCellTrigger(
+  props: DatePickerTableCellTriggerProps,
+) {
   traceLife("ui.date-picker-table-cell-trigger");
 
   return <ArkTableCellTrigger {...dropAddress(props)} />;
@@ -351,7 +353,9 @@ export type DatePickerWeekNumberHeaderCellProps = ArkWeekNumberHeaderCellProps;
  * The header cell above the week-number column — `<th>`. Carries `tableCell`'s own address, not
  * one of its own (`../entity/anatomy.ts`); only rendered when `showWeekNumbers` is set.
  */
-export function DatePickerWeekNumberHeaderCell(props: DatePickerWeekNumberHeaderCellProps) {
+export function DatePickerWeekNumberHeaderCell(
+  props: DatePickerWeekNumberHeaderCellProps,
+) {
   traceLife("ui.date-picker-week-number-header-cell");
 
   return <ArkWeekNumberHeaderCell {...dropAddress(props)} />;

@@ -11,8 +11,8 @@ import {
   type AccordionRootProps as ArkRootProps,
 } from "@ark-ui/solid/accordion";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Disclosure items — the FIRST component the kit took from Ark UI (`PWEB-37`).
 //

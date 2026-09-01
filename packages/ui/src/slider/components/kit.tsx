@@ -23,8 +23,8 @@ import {
   type SliderValueTextProps as ArkValueTextProps,
 } from "@ark-ui/solid/slider";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Slider — one or several values picked by dragging along a track, from Ark
 // (`ark-ui.com/docs/components/slider`).

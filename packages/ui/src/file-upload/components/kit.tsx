@@ -29,8 +29,8 @@ import {
 
 import { splitProps } from "solid-js";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // File upload — a dropzone plus a list of picked files, from Ark
 // (`ark-ui.com/docs/components/file-upload`).
@@ -181,7 +181,9 @@ export function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
 export type FileUploadItemPreviewImageProps = ArkItemPreviewImageProps;
 
 /** The actual thumbnail — a real `<img>`; throws if the file is not an image (Ark's own guard, not this wrapper's). */
-export function FileUploadItemPreviewImage(props: FileUploadItemPreviewImageProps) {
+export function FileUploadItemPreviewImage(
+  props: FileUploadItemPreviewImageProps,
+) {
   traceLife("ui.file-upload-item-preview-image");
 
   return <ArkItemPreviewImage {...dropAddress(props)} />;
@@ -191,7 +193,9 @@ export function FileUploadItemPreviewImage(props: FileUploadItemPreviewImageProp
 export type FileUploadItemDeleteTriggerProps = ArkItemDeleteTriggerProps;
 
 /** Removes ONE file — a real `<button>`, no graphic of its own. */
-export function FileUploadItemDeleteTrigger(props: FileUploadItemDeleteTriggerProps) {
+export function FileUploadItemDeleteTrigger(
+  props: FileUploadItemDeleteTriggerProps,
+) {
   traceLife("ui.file-upload-item-delete-trigger");
 
   return <ArkItemDeleteTrigger {...dropAddress(props)} />;

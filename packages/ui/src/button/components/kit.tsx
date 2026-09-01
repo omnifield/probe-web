@@ -1,9 +1,16 @@
-import { Root as KobalteButton, type ButtonRootProps } from "@kobalte/core/button";
+import {
+  Root as KobalteButton,
+  type ButtonRootProps,
+} from "@kobalte/core/button";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ValidComponent } from "solid-js";
 
-import { useAddress, useSlot, slotAware } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import {
+  useAddress,
+  useSlot,
+  slotAware,
+} from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 /**
@@ -48,7 +55,9 @@ export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
  * <Button data-variant="primary">Save</Button>
  * ```
  */
-export const Button = slotAware(function Button<T extends ValidComponent = "button">(props: ButtonProps<T>) {
+export const Button = slotAware(function Button<
+  T extends ValidComponent = "button",
+>(props: ButtonProps<T>) {
   traceLife("ui.button");
 
   const [slot, rest] = useSlot(props, "button");
@@ -70,7 +79,9 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   // `data-slot` still sits next to the anatomy address: slot names are a zone commitment
   // (`PROBEWEB-12`, item 7) and cannot be dropped without a major version. It leaves once styling
   // moves onto anatomy addresses — that is an architect's release, not a side effect of a kit fix.
-  return <KobalteButton {...slot} {...(clean as ButtonRootProps)} {...address} />;
+  return (
+    <KobalteButton {...slot} {...(clean as ButtonRootProps)} {...address} />
+  );
 });
 
 // MAP of the button: passport part → the component that draws it (`PWEB-84`).

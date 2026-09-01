@@ -22,8 +22,8 @@ import {
   type FieldItemProps as ArkItemProps,
 } from "@ark-ui/solid/field";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Field — a composition helper, not a widget (`ark-ui.com/docs/components/field`). Unlike every
 // other component in the kit, there is no `@zag-js` machine underneath it at all — no open/closed,

@@ -5,8 +5,8 @@ import {
   type ToggleRootProps as ArkRootProps,
 } from "@ark-ui/solid/toggle";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Toggle — a single pressed/unpressed button, from Ark (`ark-ui.com/docs/components/toggle`).
 //
