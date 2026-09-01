@@ -66,18 +66,26 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       indeterminate: { means: "отмечена только часть — у листа своих потомков нет, но отметку можно задать извне тем же атрибутом, что и у ветки" },
     },
     variables: { "--depth": { means: "глубина вложенности листа — от неё считается отступ строки" } },
-    // Что показывать внутри листа — дело потребителя, не кита (README «Каждый компонент —
-    // минимум одна БАЗА-сборка»): нужен текст — берёт `itemText`, нужен произвольный компонент —
-    // кладёт его прямо сюда. `{ kind: "component" }` без имени — та же строка, что у аккордеона
-    // (`accordion/playground/parts.ts`'s `itemContent`): ссылка на ЛЮБОЙ компонент реестра,
-    // листу не нужно знать заранее, какой именно.
+    // Именованные части — не открытый список: то, что показывать внутри листа СВЕРХ них, идёт
+    // через `itemContent` (одно место на "положи сюда что угодно", как у `itemTrigger`/
+    // `itemContent` аккордеона, README «Кит не переизобретает Ark, но и не копирует его слепо»).
     accepts: [
       { kind: "component", name: "itemText" },
       { kind: "component", name: "itemIndicator" },
       { kind: "component", name: "nodeCheckbox" },
       { kind: "component", name: "nodeRenameInput" },
-      { kind: "content", genus: "icon" },
+      { kind: "component", name: "itemContent" },
+    ],
+  },
+  itemContent: {
+    means: "открытый слот листа — своего вида не несёт, содержимое решает потребитель",
+    states: {},
+    // `{ kind: "component" }` без имени — та же строка, что у аккордеона (`accordion/playground/
+    // parts.ts`'s `itemContent`): ссылка на ЛЮБОЙ компонент реестра, части не нужно знать заранее,
+    // какой именно.
+    accepts: [
       { kind: "content", genus: "text" },
+      { kind: "content", genus: "icon" },
       { kind: "component" },
     ],
   },

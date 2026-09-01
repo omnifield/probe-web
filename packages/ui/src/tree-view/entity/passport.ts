@@ -110,6 +110,9 @@ export const passport = definePassport({
     },
     { name: "itemText", states: [disabled, selected, focus] },
     { name: "itemIndicator", states: [disabled, selected, focus] },
+    // Наша часть (`entity/anatomy.ts`'s `extendWith`), не Ark — своих состояний не несёт, ровно
+    // как и `tree` выше: место под содержимое потребителя, у него нет собственного вида.
+    { name: "itemContent", states: [] },
     {
       name: "branch",
       states: [selected, disabled, loading, ...openClosed],

@@ -24,6 +24,8 @@ export {
   TreeViewBranchTrigger,
   type TreeViewBranchTriggerProps,
   TreeViewItem,
+  TreeViewItemContent,
+  type TreeViewItemContentProps,
   TreeViewItemIndicator,
   type TreeViewItemIndicatorProps,
   type TreeViewItemProps,

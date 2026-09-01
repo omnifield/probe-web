@@ -39,10 +39,11 @@ import {
   type TreeViewTreeProps as ArkTreeProps,
 } from "@ark-ui/solid/tree-view";
 
-import { splitProps } from "solid-js";
+import { splitProps, type JSX } from "solid-js";
 
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
+import { anatomyParts } from "../entity/anatomy.js";
 
 // Tree view — a nested list of expandable branches and leaves, from Ark
 // (`ark-ui.com/docs/components/tree-view`).
@@ -175,6 +176,21 @@ export function TreeViewItem(props: TreeViewItemProps) {
   return <ArkItem {...dropAddress(props)} />;
 }
 
+/** Props of `TreeViewItemContent`. */
+export type TreeViewItemContentProps = JSX.HTMLAttributes<HTMLDivElement>;
+
+/**
+ * A leaf's own open content slot — OURS, not Ark's (`../entity/anatomy.ts`'s `extendWith`): no
+ * connector backs it, so the address comes straight from the built anatomy, not from a
+ * `getXxxProps()` this component doesn't have. Same rule everywhere else in this file — address
+ * spreads LAST, never overridden by an incoming one (`PWEB-46`).
+ */
+export function TreeViewItemContent(props: TreeViewItemContentProps) {
+  traceLife("ui.tree-view-item-content");
+
+  return <div {...dropAddress(props)} {...anatomyParts.itemContent.attrs} />;
+}
+
 /** Props of `TreeViewItemText`. */
 export type TreeViewItemTextProps = ArkItemTextProps;
 
@@ -305,7 +321,7 @@ import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";
 
 /**
- * The tree view's passport together with whatever draws each of its fifteen parts.
+ * The tree view's passport together with whatever draws each of its sixteen parts.
  *
  * `nodeProvider` lives in `extras` (`PWEB-152`): a real component without an anatomy address —
  * every part inside a node needs its `node`/`indexPath` context to know which tree node it
@@ -322,6 +338,7 @@ export const kit = defineKitComponent(
     item: TreeViewItem,
     itemText: TreeViewItemText,
     itemIndicator: TreeViewItemIndicator,
+    itemContent: TreeViewItemContent,
     branch: TreeViewBranch,
     branchControl: TreeViewBranchControl,
     branchText: TreeViewBranchText,

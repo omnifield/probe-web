@@ -3,7 +3,7 @@
 // view's passport CAN be dressed whole by the real skin mechanism, the same role every other
 // component's own recipe plays.
 //
-// Fifteen parts, the biggest part count in the kit after the date picker's. `item`/`branch` carry
+// Sixteen parts, the biggest part count in the kit. `item`/`branch` carry
 // `--depth` (`../entity/passport.ts`) as an inline custom property. `branchControl`/
 // `branchIndentGuide` need it too but do NOT own it — this file's own test
 // (`../test/tree-view.test.tsx`) caught both as `variable-elsewhere`: the mechanic does not take
@@ -75,8 +75,9 @@ const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity
 const checkedFill = { background: "var(--accent-2)" };
 
 /**
- * TREE VIEW. Fifteen parts, the reading order matches the DOM: a leaf draws `item` alone; a
- * branch draws `branch` wrapping `branchControl` (the row) and `branchContent` (the children).
+ * TREE VIEW. Sixteen parts, the reading order matches the DOM: a leaf draws `item` (plus
+ * `itemContent`, its own open slot); a branch draws `branch` wrapping `branchControl` (the row)
+ * and `branchContent` (the children).
  */
 export const recipe: SlotRecipe = {
   base: {
@@ -133,6 +134,13 @@ export const recipe: SlotRecipe = {
         disabled: { props: { opacity: "0.5" } },
         focus: { props: { color: "var(--accent-10)" } },
       },
+    },
+    // Ours, not Ark's (`entity/anatomy.ts`'s `extendWith`) — an open slot, no look of its own by
+    // definition (`../parts.ts`'s own `means`). `display: contents` says that honestly: the node
+    // exists for addressing, not for a box — whatever a consumer puts inside lays out as if it
+    // sat directly in `item`, not behind an extra wrapper it never asked for.
+    itemContent: {
+      props: { display: "contents" },
     },
     branch: {
       props: { display: "flex", flexDirection: "column" },
