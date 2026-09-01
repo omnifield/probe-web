@@ -1,0 +1,26 @@
+{
+  "name": "@probe-web/skin-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Зона skin-mcp: локальный MCP-сервер для создания скина — ручки на уже готовую механику packages/skin, а не новая. Обкатка v1 — только текст (CSS-текст, отчёты проверок); скриншот-превью — вторая волна.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@omnifield/probe-web-io": "workspace:*",
+    "@omnifield/probe-web-skin": "workspace:*",
+    "@omnifield/probe-web-ui": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^7.0.2"
+  }
+}

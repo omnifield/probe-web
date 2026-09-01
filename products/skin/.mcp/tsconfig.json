@@ -1,0 +1,27 @@
+{
+  "//": [
+    "Своя настройка, а не `@omnifield/probe-web-build/tsconfig` — тот же довод, что у",
+    "`products/presets`: серверный процесс без базы фронта, оснастка сборки ему не нужна.",
+    "",
+    "Проверяем ИСХОДНЫЙ JS с типами в JSDoc (`checkJs`), а не собираем TS в dist: сборки в",
+    "этой зоне нет вообще, MCP-хост запускает ровно те файлы, что лежат в репозитории."
+  ],
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["esnext"],
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "test"]
+}

@@ -28,7 +28,17 @@
 // Тот же долг остаётся у `packages/assembly` — не эта зона, но то же исправление стоит сделать и
 // там отдельным заходом (названо, не решено этим тикетом).
 
-import { escapePathComponent, getValueByPointer, unescapePathComponent } from "fast-json-patch";
+// НАЗВАННЫЙ импорт трёх функций отсюда не читается настоящим Node ESM (не бандлером — `tsc`
+// эмитит импорт как есть, а рантайм-интероп CJS→ESM у Node статический, `cjs-module-lexer`):
+// `escapePathComponent`/`unescapePathComponent` библиотека присваивает `exports.` напрямую и
+// лексер их видит, а `getValueByPointer` попадает в `exports` только через `Object.assign(exports,
+// core)` (`fast-json-patch/index.js`) — динамика, которую статический анализ не видит, и
+// именованный импорт этого имени падает `ERR_MODULE_NOT_FOUND` под голым `node`, оставаясь
+// незамеченным под Vite/Vitest (там интероп терпимее). ДЕФОЛТНЫЙ импорт работает всегда — это
+// весь `module.exports` целиком, синтезированный интероп Node тут ни при чём.
+import jsonpatch from "fast-json-patch";
+
+const { escapePathComponent, getValueByPointer, unescapePathComponent } = jsonpatch;
 
 /** Ссылка на значение — JSON Pointer: `/a/b/0`, пустая строка — сами данные целиком. */
 export type FieldRef = string;

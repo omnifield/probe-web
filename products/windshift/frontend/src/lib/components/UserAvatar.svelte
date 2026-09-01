@@ -2,7 +2,7 @@
   import { authStore, workspacesStore, attachmentStatus } from '../stores';
   import { navigate } from '../router.js';
   import DropdownMenu from '../layout/DropdownMenu.svelte';
-  import { User, Home, Shield, Sun, Moon, Monitor, Download } from '@lucide/svelte';
+  import { User, Home, Shield, Plug, Sun, Moon, Monitor, Download } from '@lucide/svelte';
   import { themeStore } from '../stores/theme.svelte.js';
   import { t } from '../stores/i18n.svelte.js';
   import { api } from '../api';
@@ -152,6 +152,15 @@
       title: t('components.userAvatar.security'),
       subtitle: t('components.userAvatar.securitySubtitle'),
       onClick: () => navigate('/security')
+    },
+    {
+      id: 'mcp-console',
+      type: 'regular',
+      icon: Plug,
+      iconColor: '#3b82f6',
+      title: t('components.userAvatar.mcpConsole'),
+      subtitle: t('components.userAvatar.mcpConsoleSubtitle'),
+      onClick: () => navigate('/mcp-console')
     },
     { type: 'divider' }] : []),
     {

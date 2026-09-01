@@ -26,6 +26,11 @@ packages:
   - packages/build/test/fixture-dep
   - packages/lint/test/consumer
 
+  # MCP-сервер зоны skin (`products/skin/.mcp`) — вложен глубже одного уровня, `products/*`
+  # его не видит. Ручки на уже готовую механику `packages/skin`, отдельный процесс, свой
+  # package.json — тот же довод, что у стендов выше.
+  - products/skin/.mcp
+
 # Постинсталл-скрипты pnpm по умолчанию не пускает, а esbuild без своего бинаря не работает —
 # на нём стоит сборка обеих веток поставки кита (`packages/ui/scripts/build.mjs`) и оснастка
 # зоны `build`. Переехало из `packages/ui` и `packages/build`.

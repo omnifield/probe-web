@@ -15,7 +15,7 @@
 // универсальный механизм переедет из фреймворка позже, здесь только конкретная форма под эти пути.
 //
 // ВИД — ИЗ НАДЕТОГО СКИНА, `variant` только называет, каким вариантом одеть корень (`data-variant`
-// аккордеона, например `"контурная"`, `omnifield-accordion`) — тем же приёмом, что и любой другой
+// аккордеона, например `"outline"`, `omnifield-accordion`) — тем же приёмом, что и любой другой
 // показанный на витрине компонент.
 //
 // СБОРКА `action-list` (`PWEB-166`, лист вместо кнопки — 2026-08-30): контент раздела — настоящий
@@ -51,7 +51,7 @@ import { groupsToSectionsData, type AccordionItemData } from "./adapter.js";
 const ASSEMBLY_NAME = "action-list";
 
 export function ComponentList(props: {
-  /** Вариация надетого скина для `Accordion` (например `"контурная"`, `omnifield-accordion`). */
+  /** Вариация надетого скина для `Accordion` (например `"outline"`, `omnifield-accordion`). */
   variant?: string;
 }) {
   const navigate = useNavigate();

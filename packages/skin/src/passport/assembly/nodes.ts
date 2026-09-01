@@ -28,6 +28,15 @@ interface ElementFields<Part extends string, Registry extends string, Data, AtRo
   readonly props?: Readonly<Record<string, unknown>>;
   readonly bind?: Readonly<Record<string, BoundPath<Data, AtRoot>>>;
   readonly on?: Readonly<Record<string, DispatchAction<Data, AtRoot>>>;
+  /**
+   * Name of a prop to receive this node's accumulated repeat index — `[0, 2, 1]` for a node three
+   * `repeat`s deep, `[]` for one outside any. A STRUCTURAL fact of the tree's shape, known already
+   * at `baseAssemblyOf` (how many repeats deep, and at which index, THIS expansion is) — not a
+   * fact of data, so it is never a `bind` path for later resolution; the engine counts it while
+   * growing and writes it in as a literal `number[]`, the same way `repeat` itself counts an
+   * index only to throw it away today (the gap this field closes).
+   */
+  readonly indexPathBind?: string;
 }
 
 // One variant PER legal `repeat.path` literal (`K`) — not `repeat: {path: RepeatPath<...>}` as a
@@ -82,6 +91,8 @@ export interface PassportAssemblyExtra<
   readonly props?: Readonly<Record<string, unknown>>;
   readonly bind?: Readonly<Record<string, BoundPath<Data, AtRoot>>>;
   readonly on?: Readonly<Record<string, DispatchAction<Data, AtRoot>>>;
+  /** See `ElementFields.indexPathBind` — same field, same meaning, an extra carries it too. */
+  readonly indexPathBind?: string;
   readonly children?: readonly PassportAssemblyNode<Part, Registry, Data, AtRoot>[];
 }
 
@@ -127,6 +138,8 @@ export interface PassportAssemblyRef {
   readonly props?: Readonly<Record<string, unknown>>;
   readonly bind?: Readonly<Record<string, string>>;
   readonly on?: Readonly<Record<string, DispatchAction>>;
+  /** Overrides the referenced template's own `indexPathBind`, same rule as `bind`/`props`/`on`. */
+  readonly indexPathBind?: string;
 }
 
 export function isAssemblyRef<

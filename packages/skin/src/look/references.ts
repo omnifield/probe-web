@@ -69,12 +69,43 @@ function refsIn(value: unknown): string[] {
   return [...JSON.stringify(value ?? null).matchAll(/var\(\s*(--[^\s,)]+)/gu)].map((m) => bare(m[1]!));
 }
 
+/** Refs from a part's OWN `props`/`states` — never descends into `ancestors`, see `partRefs`. */
+function localRefs(style: LocalStyle, part: string, where: string): FormReference[] {
+  const found: FormReference[] = [];
+
+  if (style.props) for (const name of refsIn(style.props)) found.push({ name, part, where });
+  for (const nested of Object.values(style.states ?? {})) found.push(...localRefs(nested, part, where));
+
+  return found;
+}
+
+/**
+ * A rule inside `.ancestors[]` still lands on THIS part's node — `ancestors` conditions the
+ * selector with a prefix, it does not relocate the declaration (`growAncestor`,
+ * `rules/traverse/local.ts`). But a variable referenced there is legal when the ANCESTOR declares
+ * it, not when this part does — that is the whole point of the block, and the flaw's own text
+ * ("Move the rule to that part, or address it through an ancestor") promises exactly this. Refs
+ * found here are attributed to `ancestor.part`, not the growing part, so the legality check below
+ * asks the right passport part the right question.
+ */
+function partRefs(style: PartStyle, part: string, where: string): FormReference[] {
+  const found = localRefs(style, part, where);
+
+  (style.ancestors ?? []).forEach((ancestor, index) => {
+    found.push(...localRefs(ancestor.style, ancestor.part, `${where}.ancestors[${index}]`));
+  });
+
+  return found;
+}
+
 export function formRefs(form: Form): FormReference[] {
   const found: FormReference[] = [];
 
   for (const { where, styles } of recipeGroups(form.recipe)) {
     for (const [part, style] of Object.entries(styles)) {
-      for (const name of refsIn(style)) found.push({ name, part, where: `${where}.${part}` });
+      if (style === undefined) continue;
+
+      found.push(...partRefs(style, part, `${where}.${part}`));
     }
   }
 
