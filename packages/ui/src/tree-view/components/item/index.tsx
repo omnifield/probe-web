@@ -3,6 +3,7 @@ import {
   TreeViewBranch as ArkBranch,
   TreeViewItem as ArkItem,
   TreeViewNodeProvider as ArkNodeProvider,
+  useTreeViewContext,
   type TreeNode,
 } from "@ark-ui/solid/tree-view";
 
@@ -22,10 +23,8 @@ export function TreeItem<T extends TreeNode = TreeNode>(
   traceLife("ui.tree-item");
 
   const [own, rest] = splitProps(props, ["node", "indexPath", "children"]);
-  const isBranch = () =>
-    Boolean(
-      (own.node as { children?: unknown[] } | undefined)?.children?.length,
-    );
+  const api = useTreeViewContext();
+  const isBranch = () => Boolean(own.node && api().collection.isBranchNode(own.node));
 
   return (
     <ArkNodeProvider node={own.node} indexPath={own.indexPath ?? []}>
