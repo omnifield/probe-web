@@ -6,6 +6,8 @@
 
 - 🧩 [Анатомия](#анатомия)
 - 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
 - 🚀 [Использование](#использование)
 
 <h2 id="анатомия">🧩 Анатомия</h2>
@@ -40,6 +42,51 @@ root
 | ➖   | indeterminate | `[data-indeterminate]` | item, control                   | отмечена только часть потомков                      |
 | 🖱️   | hover         | `:hover`               | control                         | указатель наведён на строку                         |
 | 👆   | active        | `:active`              | control                         | строка нажата указателем                            |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "items": [
+    {
+      "id": "string",
+      "label": "string",
+      "children": [recursive]
+    }
+  ]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```tsx
+const onDispatch = (event: DispatchedEvent) => {
+  // Клик по узлу, возвращает все данные кликнотого узла, кроме детей.
+  // event.context.payload = { id: "a", label: "Alpha" }
+};
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  dispatch={onDispatch}
+/>;
+```
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-base">🧱 base</h3>
+
+```
+root
+  item[] 🍃/🌿          · repeat: /items · bind: весь узел
+    control ▶️           · on: click → controlClick
+      🏷️ text: {label}
+      controlIndicator 🔽
+    content 📂
+```
 
 <h2 id="использование">🚀 Использование</h2>
 
