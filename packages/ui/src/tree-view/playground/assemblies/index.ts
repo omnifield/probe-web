@@ -3,9 +3,9 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 
 import { passport } from "../../entity/passport.js";
 import { base } from "./base.js";
-import { nested } from "./nested.js";
 
-type TreeViewPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+type TreeViewPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 // `Data` not threaded — see `./base.ts`'s own header comment.
-export const assemblies: readonly PassportAssembly<TreeViewPart>[] = [base, nested];
+export const assemblies: readonly PassportAssembly<TreeViewPart>[] = [base];
