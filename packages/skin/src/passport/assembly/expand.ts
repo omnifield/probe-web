@@ -115,6 +115,7 @@ export function baseAssemblyOf(
     node: PassportAssemblyElement | PassportAssemblyContent | PassportAssemblyExtra,
     parentId: string | null,
     indexPath: readonly number[],
+    base: string,
   ): string => {
     if (isAssemblyContent(node)) {
       const id = nameFor(node.genus);
@@ -138,7 +139,7 @@ export function baseAssemblyOf(
         ...(node.on ? { on: node.on } : {}),
       };
 
-      for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath));
+      for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath, base));
 
       return id;
     }
@@ -157,7 +158,7 @@ export function baseAssemblyOf(
       ...(node.on ? { on: node.on } : {}),
     };
 
-    for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath));
+    for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath, base));
 
     return id;
   };
@@ -179,14 +180,15 @@ export function baseAssemblyOf(
     };
   };
 
-  const growAll = (node: PassportAssemblyNode, parentId: string | null, indexPath: readonly number[]): string[] => {
+  const growAll = (node: PassportAssemblyNode, parentId: string | null, indexPath: readonly number[], base: string): string[] => {
     if (isAssemblyRepeat(node)) {
       const items = resolveDataBinding(data, node.repeat.path);
       if (!Array.isArray(items)) return [];
 
-      return items.flatMap((_, index) =>
-        growAll(scopeTemplate(node.template, `${node.repeat.path}/${index}`), parentId, [...indexPath, index]),
-      );
+      return items.flatMap((_, index) => {
+        const scoped = `${node.repeat.path}/${index}`;
+        return growAll(scopeTemplate(node.template, scoped), parentId, [...indexPath, index], scoped);
+      });
     }
 
     if ("repeat" in node && node.repeat) {
@@ -194,9 +196,10 @@ export function baseAssemblyOf(
       const items = resolveDataBinding(data, repeat.path);
       if (!Array.isArray(items)) return [];
 
-      return items.flatMap((_, index) =>
-        growAll(scopeTemplate(template as PassportAssemblyNode, `${repeat.path}/${index}`), parentId, [...indexPath, index]),
-      );
+      return items.flatMap((_, index) => {
+        const scoped = `${repeat.path}/${index}`;
+        return growAll(scopeTemplate(template as PassportAssemblyNode, scoped), parentId, [...indexPath, index], scoped);
+      });
     }
 
     if (isAssemblyRef(node)) {
@@ -207,13 +210,21 @@ export function baseAssemblyOf(
         );
       }
 
-      return growAll(mergeRef(template, node), parentId, indexPath);
+      // A ref does not change scope BY ITSELF — only a `repeat` does (the branches above) — but
+      // unlike a plain child reached by direct nesting, a ref's content was never handed to
+      // `scopeTemplate` at the point where it sits (`scopeTemplate`'s own generic walk has no
+      // `children` to descend into on a ref node — `refs` resolve lazily, here, not structurally
+      // during that walk). Applied now, on the MERGED result, with the scope this reference was
+      // actually reached at: a ref inside a repeat's template absolutizes against that repeat's
+      // element, a ref at the root absolutizes against `""` — same as if the referenced tree had
+      // been written out by hand at this exact position instead of named.
+      return growAll(scopeTemplate(mergeRef(template, node), base), parentId, indexPath, base);
     }
 
-    return [grow(node, parentId, indexPath)];
+    return [grow(node, parentId, indexPath, base)];
   };
 
-  const root = grow(assembly.tree, null, []);
+  const root = grow(assembly.tree, null, [], "");
 
   return {
     components: {
