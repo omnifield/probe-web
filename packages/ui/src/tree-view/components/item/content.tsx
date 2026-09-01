@@ -1,4 +1,4 @@
-import { splitProps, type JSX } from "solid-js";
+import { Show, splitProps, type JSX } from "solid-js";
 import {
   TreeViewBranchContent as ArkBranchContent,
   useTreeViewNodeContext,
@@ -16,16 +16,18 @@ export function TreeItemContent(props: TreeItemContentProps) {
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
 
-  return node().isBranch ? (
-    <ArkBranchContent
-      {...dropAddress(rest)}
-      {...anatomyParts.itemContent.attrs}
+  return (
+    <Show
+      when={node().isBranch}
+      fallback={
+        <div {...dropAddress(rest)} {...anatomyParts.itemContent.attrs}>
+          {local.children}
+        </div>
+      }
     >
-      {local.children}
-    </ArkBranchContent>
-  ) : (
-    <div {...dropAddress(rest)} {...anatomyParts.itemContent.attrs}>
-      {local.children}
-    </div>
+      <ArkBranchContent {...dropAddress(rest)} {...anatomyParts.itemContent.attrs}>
+        {local.children}
+      </ArkBranchContent>
+    </Show>
   );
 }

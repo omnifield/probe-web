@@ -1,4 +1,4 @@
-import { splitProps, type JSX } from "solid-js";
+import { Show, splitProps, type JSX } from "solid-js";
 import { TreeViewBranchControl as ArkBranchControl, useTreeViewNodeContext } from "@ark-ui/solid/tree-view";
 
 import { dropAddress } from "../../../utils/slot-chain.js";
@@ -13,13 +13,18 @@ export function TreeItemControl(props: TreeItemControlProps) {
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
 
-  return node().isBranch ? (
-    <ArkBranchControl {...dropAddress(rest)} {...anatomyParts.itemControl.attrs}>
-      {local.children}
-    </ArkBranchControl>
-  ) : (
-    <div {...dropAddress(rest)} {...anatomyParts.itemControl.attrs}>
-      {local.children}
-    </div>
+  return (
+    <Show
+      when={node().isBranch}
+      fallback={
+        <div {...dropAddress(rest)} {...anatomyParts.itemControl.attrs}>
+          {local.children}
+        </div>
+      }
+    >
+      <ArkBranchControl {...dropAddress(rest)} {...anatomyParts.itemControl.attrs}>
+        {local.children}
+      </ArkBranchControl>
+    </Show>
   );
 }

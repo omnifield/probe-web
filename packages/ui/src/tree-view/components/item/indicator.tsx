@@ -1,4 +1,4 @@
-import { splitProps, type JSX } from "solid-js";
+import { Show, splitProps, type JSX } from "solid-js";
 import {
   TreeViewBranchIndicator as ArkBranchIndicator,
   TreeViewItemIndicator as ArkItemIndicator,
@@ -17,13 +17,18 @@ export function TreeControlIndicator(props: TreeControlIndicatorProps) {
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
 
-  return node().isBranch ? (
-    <ArkBranchIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
-      {local.children}
-    </ArkBranchIndicator>
-  ) : (
-    <ArkItemIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
-      {local.children}
-    </ArkItemIndicator>
+  return (
+    <Show
+      when={node().isBranch}
+      fallback={
+        <ArkItemIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
+          {local.children}
+        </ArkItemIndicator>
+      }
+    >
+      <ArkBranchIndicator {...dropAddress(rest)} {...anatomyParts.controlIndicator.attrs}>
+        {local.children}
+      </ArkBranchIndicator>
+    </Show>
   );
 }
