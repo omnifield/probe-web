@@ -4,11 +4,13 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import type { Data } from "../../entity/io.js";
 import { passport } from "../../entity/passport.js";
 
-type AccordionPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+type AccordionPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 export const base: PassportAssembly<AccordionPart, string, Data> = {
   name: "base",
-  means: "разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя",
+  means:
+    "разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя",
   tree: {
     node: "root",
     children: [
@@ -19,7 +21,6 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
         children: [
           {
             node: "itemTrigger",
-            props: { "data-variant": "secondary" },
             on: {
               click: {
                 event: {
@@ -35,7 +36,6 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
           },
           {
             node: "itemContent",
-            bind: { variant: "id" },
             children: [],
           },
         ],

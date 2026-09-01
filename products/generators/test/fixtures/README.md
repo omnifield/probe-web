@@ -3,7 +3,7 @@
 Real component data, copied in — not synthetic. `accordion/entity/` is an
 unedited copy of `packages/ui/src/accordion/entity/` (2026-08-30): the real
 `passport.ts`/`anatomy.ts`/`io.ts`/`index.ts`, kept isolated here so testing
-`extract`/`scaffold` against a realistic component does not depend on files a
+`extract`/`plugin` against a realistic component does not depend on files a
 live component-kit session is actively editing.
 
 Only `entity/` is copied, not the whole component: `components/`,

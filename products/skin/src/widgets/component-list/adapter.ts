@@ -1,53 +1,34 @@
 // АДАПТЕР — каталожные данные (разделы кита из стора, `entities/component/model/store.ts`) → форма,
-// которую ждут сборки аккордеона по путям `/sections/N/{id,title,items/M/{value,label}}`
-// (`packages/ui/src/accordion/playground/assemblies/action-list.ts`).
+// которую ждёт сборка `nested` tree-view по пути `/items/N/{id,label,children/M/{id,label}}`
+// (`packages/ui/src/tree-view/playground/assemblies/nested.ts`).
 //
 // ВРЕМЕННО ПРОДУКТОВЫЙ (постановка user, 2026-08-28): «адаптер — это будет отдельная тема, это
 // будет универсальная меха, и она поедет из фреймворка чуть позже, пока сделай у себя». Здесь —
-// не универсальный механизм, а конкретная, ручная форма под ЭТИ пути: каждый раздел каталога →
-// один узел `/sections`, каждый компонент раздела → один пункт `items` (рисуется настоящим
-// `Listbox` из общего реестра — content'ом раздела вместо кнопки, 2026-08-30).
+// не универсальный механизм, а конкретная, ручная форма под ЭТИ пути.
 //
-// `value`/`label`, не `id`/`title`: пункт читает настоящий листбокс (`packages/ui/src/listbox/
-// entity/io.ts`), а он по умолчанию берёт эти два поля (`@zag-js/collection`'s `fallback.
-// itemToValue`/`itemToString`) — переименовано вместе со схемой в ките, иначе пункты рисуются
-// пустыми (значение и подпись не находятся).
+// ПЕРЕХОД С АККОРДЕОНА НА TREE-VIEW (`PWEB-163` продолжение, постановка user 2026-09-01): ЭТАП
+// 1 — только отрисовка, сборкой `nested`, проверенной тестом
+// (`packages/ui/src/tree-view/test/tree-view.test.tsx`). Клик по пункту и отметка активного
+// компонента (было решено через `usePreviewComponent()`/`activeValues` у аккордеона) — отдельная
+// тема, обсуждаем следующим заходом, здесь НЕ реализованы.
 
 import type { ComponentGroup } from "../../entities/component/model/store.js";
 
-/** Один пункт раздела — компонент кита: value/label = его же адрес. */
-export interface AccordionItemData {
-  readonly value: string;
+/** Один узел дерева — форма `TreeItem` (`packages/ui/src/tree-view/entity/io.ts`): id/label/
+ * необязательные дети. */
+export interface TreeItemData {
+  readonly id: string;
   readonly label: string;
+  readonly children?: readonly TreeItemData[];
 }
 
-/** Данные под путь `/sections`: раздел → id/подпись/пункты/отмеченный пункт. */
-export interface AccordionSectionsData {
-  readonly sections: readonly {
-    readonly id: string;
-    readonly title: string;
-    readonly items: readonly AccordionItemData[];
-    /** Ровно то, что примет `bind: { value: "activeValues" }` листбокса раздела. */
-    readonly activeValues: readonly string[];
-  }[];
-}
-
-/**
- * @param active показанный сейчас компонент (`entities/preview/model/store.ts`'s
- *   `usePreviewComponent()`) — единственный источник правды для «какой пункт отмечен»; листбокс
- *   каждого раздела больше не решает это сам (найдено живьём, 2026-08-31: без этого можно было
- *   отметить по пункту в КАЖДОМ разделе разом, а после перезагрузки отметка пропадала везде).
- */
-export function groupsToSectionsData(
-  groups: readonly ComponentGroup[],
-  active: string | undefined,
-): AccordionSectionsData {
+/** Раздел кита → ветка, компонент раздела → лист внутри неё. */
+export function groupsToTreeItems(groups: readonly ComponentGroup[]): { readonly items: readonly TreeItemData[] } {
   return {
-    sections: groups.map((section) => ({
+    items: groups.map((section) => ({
       id: section.group,
-      title: section.title,
-      items: section.components.map((component) => ({ value: component, label: component })),
-      activeValues: active !== undefined && section.components.includes(active) ? [active] : [],
+      label: section.title,
+      children: section.components.map((component) => ({ id: component, label: component })),
     })),
   };
 }

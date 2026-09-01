@@ -1,111 +1,143 @@
-// Live proof for the tree view's PROOF RECIPE (`../playground/recipe.ts`, `PWEB-111`) — same role
-// every other component's own recipe plays: prove the passport CAN be dressed whole by the real
-// skin mechanism (`skinGaps` empty, CSS generated), not read it and hope. Found live: this recipe
-// had never actually been run through the mechanic before this file existed — see the fix below.
+// Live proof for both of the tree view's real assemblies (`../playground/assemblies/`) — one
+// block each, same reason `accordion.test.tsx` splits its own two: different shape, different way
+// to break.
 //
-// No assembly-rendering block here, unlike accordion's own `test/accordion.test.tsx` — this
-// component's `playground/assemblies.ts` is deliberately empty. A working tree assembly needs a
-// per-node context provider (`TreeViewNodeProvider`) wrapping EVERY recursive node, not once at
-// the tree's root the way `RenderTree`'s own `provider` mechanism (`PWEB-153`) works — a real,
-// unbuilt capability in `packages/assembly`, not a missing convenience. Recorded in that file's own
-// header, not repeated here.
-//
-// Goes through `assemble`, not a hand-built `Skin` object — the SAME two-pass path the skin-mcp's
-// own `check_form` uses (`products/skin/.mcp/src/validate.js`): a bare `{name, recipes}` object
-// has no `variables` at all, and every `var(--space-2)`-style reference reads as "unknown-value"
-// against an empty vocabulary — not a defect in the recipe, a gap in a shortcut. `assemble` merges
-// a real palette's `scales`/`dimensions`/`light`/`dark` into the resulting `Skin.variables` the
-// same way production does.
+// Both rely on `indexPathBind` (`PassportAssemblyElement.indexPathBind`, `packages/skin`) — the
+// accumulated repeat index, written in as a literal `props` value, never a `bind` path (a
+// structural fact of the tree's shape, not a fact of data). `~nodeProvider` (`components/kit.tsx`'s
+// `extras`) is REQUIRED on every node — every part inside a node reads context only it provides.
+// Both findings, and the two real engine gaps that had to close before either assembly could work
+// at all, are written up in `packages/ui/README.md`.
 
-import { passportLookup, skinGaps, withPassports } from "@omnifield/probe-web-skin";
-import type { Outfit, Palette } from "@omnifield/probe-web-skin/model";
-import { describe, expect, it } from "vitest";
+import { createRegistry, RenderTree, updateNode, type AssemblyTree, type DispatchedEvent, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
+import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
+import type { PassportAssembly, PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import { render } from "solid-js/web";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { passport } from "../entity/passport.js";
-import { editorInfo } from "../playground/index.js";
-import { form } from "../playground/recipe.js";
+import { createTreeCollection, kit as treeViewKit } from "../components/index.jsx";
+import type { Data } from "../entity/io.js";
+import { passport as treeViewPassport } from "../entity/passport.js";
+import { assemblies } from "../playground/assemblies/index.js";
+import { editorInfo as treeViewEditorInfo } from "../playground/index.js";
 
-const lookup = passportLookup([passport]);
-const bound = withPassports(lookup);
+function readable<Part extends string, EditorData = unknown>(
+  passport: ComponentPassport<Part>,
+  editorInfo: PassportEditorInfo<Part, string, EditorData>,
+): ReadableComponent["passport"] {
+  return {
+    component: passport.component,
+    genus: editorInfo.genus,
+    anatomy: passport.anatomy,
+    root: passport.root,
+    parts: passport.parts.map((part) => ({
+      name: part.name,
+      accepts: editorInfo.parts[part.name]?.accepts,
+    })),
+  };
+}
 
-// A REAL palette (`omnifield-palette`, `products/presets`), embedded verbatim so this test stays
-// hermetic — no network, no live service. Kept WHOLE, not trimmed to what this recipe happens to
-// reference: `assemble` requires a palette to close the FULL vocabulary regardless of which roles
-// any one form actually uses (confirmed live — a trimmed copy here read as `palette-incomplete`,
-// 64 roles short).
-const palette: Palette = {
-  name: "test-palette",
-  scales: {
-    accent: "#3457d5",
-    neutral: "#6b7280",
-    danger: "#c2282e",
-    success: "#197a3d",
-    warning: "#a35a06",
+const REGISTRY: Registry = createRegistry({
+  components: {
+    "tree-view": {
+      passport: readable(treeViewPassport, treeViewEditorInfo),
+      parts: treeViewKit.parts,
+      extras: treeViewKit.extras,
+    },
   },
-  dimensions: {
-    radius: "10px",
-    space: { narrow: "0.375rem", wide: "0.5rem", between: ["360px", "1280px"] },
-    "font-size": { narrow: "0.9375rem", wide: "1rem", between: ["360px", "1280px"] },
-    column: "1rem",
-    "control-height": { narrow: "2rem", wide: "2.25rem", between: ["360px", "1280px"] },
-    "border-width": "1px",
-    tracking: "0em",
-    density: "1",
-  },
-  light: {
-    "leading-none": "1",
-    "leading-tight": "1.2",
-    "leading-snug": "1.35",
-    "leading-normal": "1.5",
-    "leading-relaxed": "1.7",
-    "weight-normal": "400",
-    "weight-medium": "500",
-    "weight-semibold": "600",
-    "weight-bold": "700",
-    "motion-instant": "75ms",
-    "motion-fast": "150ms",
-    "motion-normal": "250ms",
-    "motion-slow": "400ms",
-    "ease-linear": "linear",
-    "ease-in": "cubic-bezier(0.4, 0, 1, 1)",
-    "ease-out": "cubic-bezier(0, 0, 0.2, 1)",
-    "ease-in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
-    "accent-contrast": "#ffffff",
-    "danger-contrast": "#ffffff",
-    "success-contrast": "#ffffff",
-    "warning-contrast": "#ffffff",
-  },
-  dark: {
-    "accent-contrast": "#ffffff",
-    "danger-contrast": "#ffffff",
-    "success-contrast": "#ffffff",
-    "warning-contrast": "#ffffff",
-    "accent-9": "#3457d5",
-    "accent-10": "#4062df",
-    "danger-9": "#c2282e",
-    "danger-10": "#d13237",
-    "success-9": "#197a3d",
-    "success-10": "#1a8040",
-    "warning-9": "#a35a06",
-    "warning-10": "#aa5e06",
-  },
-};
+  admits,
+});
 
-const outfit: Outfit = { name: "tree-view-proof", palette: palette.name, forms: [form.name] };
-const assembled = bound.assemble(outfit, { palettes: [palette], forms: [form] });
+let dispose: (() => void) | undefined;
 
-describe("tree view proof recipe — the passport dressed whole (PWEB-111)", () => {
-  it("carries no reference/structural flaw against a real palette", () => {
-    expect(bound.checkSkin(assembled.skin)).toEqual([]);
+afterEach(() => {
+  dispose?.();
+  dispose = undefined;
+  document.body.innerHTML = "";
+});
+
+/** `collection` — a real object, never `bind`-able — merged onto the root the same way `instanceOf`'s own `rootProps` would (`products/skin`). */
+function mount(assembly: PassportAssembly, data: Data, dispatch?: (event: DispatchedEvent) => void): HTMLElement {
+  const rootNode = { id: "ROOT", name: "", children: data.items };
+  const collection = createTreeCollection({
+    nodeToValue: (node: { id: string }) => node.id,
+    nodeToString: (node: { label?: string; name?: string }) => node.label ?? node.name ?? "",
+    rootNode,
   });
 
-  it("generates real CSS, not an empty rule set", () => {
-    const css = bound.generateSkinCss(assembled.skin);
-    expect(css.length).toBeGreaterThan(0);
-    expect(css).toContain('[data-scope="tree-view"]');
-  });
+  const base = baseAssemblyOf(treeViewPassport, assembly, "tree-view", data);
+  const onRoot = updateNode(base as AssemblyTree, base.components.root, { props: { collection } });
+  if (!onRoot.ok) throw new Error(`витрина: экземпляр отвергнут механикой — ${onRoot.means}`);
 
-  it("covers every state the passport declares — no silent gap", () => {
-    expect(skinGaps(assembled.skin, [passport], [editorInfo])).toEqual([]);
+  const host = document.createElement("div");
+  document.body.append(host);
+  dispose = render(() => <RenderTree registry={REGISTRY} tree={onRoot.tree} data={data} dispatch={dispatch} />, host);
+  return host;
+}
+
+describe('tree view "base" — one level, every leaf labeled and clickable, click dispatches', () => {
+  it("labels each item from data and dispatches triggerClick with the whole item as payload", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+
+    const dispatched: DispatchedEvent[] = [];
+    // `baseAssemblyOf` is a plain runtime tree walker — it never reads `Data`, only resolves
+    // paths against whatever `data` it is handed at call time, so widening here is correct (same
+    // reasoning as `accordion.test.tsx`'s own identical cast).
+    const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
+
+    const texts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item-text"]')].map(
+      (node) => node.textContent,
+    );
+    expect(texts).toEqual(["Alpha", "Beta"]);
+
+    // `data-depth` — Ark's OWN attribute, set from the REAL `indexPath` the assembly handed
+    // `~nodeProvider` — not this test's own count, proof the value actually reached Zag's machine.
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
+
+    // `on.click` composes with Ark's OWN click handling (selection), same device proven on
+    // accordion's `itemTrigger`/listbox's `item` (`README.md`'s "Сборка ссылается на чужой
+    // компонент") — clicking still selects the leaf natively AND fires our own dispatch.
+    (items[1] as HTMLElement).click();
+    await Promise.resolve();
+
+    expect(dispatched).toEqual([
+      expect.objectContaining({ name: "triggerClick", context: { payload: data.items[1] } }),
+    ]);
+    expect(items[1]!.getAttribute("data-selected")).toBe("");
+  });
+});
+
+describe('tree view "nested" — top level always a branch, its children always items', () => {
+  it("shows branch labels, expands to real item children, both levels correctly depth-marked", () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "nested")!;
+    const data: Data = {
+      items: [
+        { id: "g1", label: "Group 1", children: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] },
+        { id: "g2", label: "Group 2", children: [{ id: "c", label: "Gamma" }] },
+      ],
+    };
+
+    // `baseAssemblyOf` is a plain runtime tree walker — it never reads `Data`, only resolves
+    // paths against whatever `data` it is handed at call time, so widening here is correct (same
+    // reasoning as `accordion.test.tsx`'s own identical cast).
+    const host = mount(assembly as PassportAssembly, data);
+
+    const branchTexts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="branch-text"]')].map(
+      (node) => node.textContent,
+    );
+    const itemTexts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item-text"]')].map(
+      (node) => node.textContent,
+    );
+
+    expect(branchTexts).toEqual(["Group 1", "Group 2"]);
+    expect(itemTexts).toEqual(["Alpha", "Beta", "Gamma"]);
+
+    const branches = [...host.querySelectorAll('[data-scope="tree-view"][data-part="branch"]')];
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(branches.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["2", "2", "2"]);
   });
 });

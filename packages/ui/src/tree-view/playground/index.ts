@@ -5,8 +5,8 @@
 // `/editor` never pays for a single word written below.
 //
 // THIN on purpose, the same physical shape as every other component's `playground/` (`PWEB-127`):
-// taxonomy (`parts.ts`) and scenario data (`assemblies.ts`) live in their own files. No
-// `settings.ts` — the tree view has no setting from the closed vocabulary (`../entity/
+// taxonomy (`parts.ts`) and worked compositions (`assemblies/`) live in their own files/folder.
+// No `settings.ts` — the tree view has no setting from the closed vocabulary (`../entity/
 // passport.ts`).
 //
 // `genus`/`group` are real classifications, not prose, and are filled in: a plain component
@@ -19,7 +19,7 @@
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
-import { assemblies } from "./assemblies.js";
+import { assemblies } from "./assemblies/index.js";
 import { parts } from "./parts.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {

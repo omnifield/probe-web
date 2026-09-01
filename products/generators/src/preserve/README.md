@@ -1,8 +1,8 @@
 # preserve
 
-The other two engines here (`barrel`, `scaffold`) both carry the same
-discipline: generated output says "do not edit by hand" and means it — a
-regeneration overwrites the whole file, in full, every time. That is
+`engine` (`../engine`) carries the same discipline: generated output says
+"do not edit by hand" and means it — a regeneration overwrites the whole
+file, in full, every time. That is
 correct for data that can ALWAYS be derived again (a passport's parts, a
 Zod schema) — but some content genuinely cannot be: prose a human wrote
 because they know something the data does not say (why a state's mark is
@@ -39,12 +39,13 @@ const merged = mergeMarkedRegions(
 
 ## What this deliberately does not do
 
-- **No opinion on where the engine's generate step wires this in.** `barrel`
-  and `scaffold` write in full, unconditionally — merging in a preserved
-  region is the CALLER's job, done after `render` and before
-  `writeGeneratedFiles`, exactly like the example above. Baking it into the
-  generate step itself would force every consumer to opt into the
-  filesystem-read cost even when nothing needs preserving.
+- **No opinion on where the generate step wires this in.** This module
+  itself writes nothing and reads nothing — merging is the CALLER's job,
+  done after `render` and before the actual write, exactly like the
+  example above. The engine's `zones` (`../engine/README.md`) is the one
+  caller in this product that does that wiring, only for plugins that
+  declare a zone — a plugin with none pays no filesystem-read cost for a
+  region it never asked to preserve.
 - **No support for more than one marked region per file.** A second,
   independent region needs its own, differently-named marker pair and its
   own call to `mergeMarkedRegions` — this function does not scan for

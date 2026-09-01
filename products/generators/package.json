@@ -2,40 +2,39 @@
   "name": "@probe-web/generators",
   "version": "0.0.0",
   "private": true,
-  "description": "Generation tooling: not an application, not a plugin for one specific thing. An Nx plugin (component scaffolding, barrel sync in place of the ad-hoc packages/ui/scripts/generate.mjs) is only one of the generators here; test-data generation (faker) and other template-driven text generation, unrelated to Nx, are meant to land alongside it over time. Nothing in the repository is required to depend on this package — each zone opts in.",
+  "description": "Generation tooling: a vite/webpack-shaped runner (defineConfig + plugins) plus a CLI to run it. Component scaffolding, barrel sync in place of the ad-hoc packages/ui/scripts/generate.mjs, is only one consumer; test-data generation (faker) and other template-driven text generation are meant to land alongside it over time as their own plugins. Nothing in the repository is required to depend on this package — each zone opts in.",
   "license": "UNLICENSED",
   "type": "module",
   "imports": {
     "#/*": "./src/*"
   },
   "exports": {
-    "./barrel": {
-      "types": "./dist/barrel/index.d.ts",
-      "default": "./dist/barrel/index.js"
-    },
     "./extract": {
       "types": "./dist/extract/index.d.ts",
       "default": "./dist/extract/index.js"
-    },
-    "./scaffold": {
-      "types": "./dist/scaffold/index.d.ts",
-      "default": "./dist/scaffold/index.js"
     },
     "./preserve": {
       "types": "./dist/preserve/index.d.ts",
       "default": "./dist/preserve/index.js"
     },
-    "./plugin": {
-      "types": "./dist/plugin/index.d.ts",
-      "default": "./dist/plugin/index.js"
+    "./engine": {
+      "types": "./dist/engine/index.d.ts",
+      "default": "./dist/engine/index.js"
+    },
+    "./plugins/kit": {
+      "types": "./dist/plugins/kit/index.d.ts",
+      "default": "./dist/plugins/kit/index.js"
     }
   },
   "files": [
     "dist",
     "README.md"
   ],
+  "bin": {
+    "probe-generate": "./dist/cli.js"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
     "test": "vitest run"

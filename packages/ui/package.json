@@ -32,9 +32,7 @@
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
-    "generate": "node generators/barrel/generate.mjs",
-    "readme": "node generators/readme/readme.mjs",
-    "prompt": "node generators/readme/prompt/prompt.mjs",
+    "generate": "node ../../products/generators/dist/cli.js generators/generate.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
@@ -42,7 +40,7 @@
   "//nx": [
     "ПОРОЖДЕНИЕ — ОТДЕЛЬНЫЙ ШАГ СО СВОИМИ ВЫХОДАМИ (`PWEB-86`).",
     "",
-    "`generators/barrel/generate.mjs` пишет `src/passport.ts` и `src/kit.ts`, и оба под `.gitignore`.",
+    "`generators/generate.config.ts` пишет `src/passport.ts` и `src/kit.ts`, и оба под `.gitignore`.",
     "Nx считает отпечаток по файлам, которые ВИДИТ, а игнорируемые он не смотрит вовсе —",
     "значит порождённое не входит ни в отпечаток, ни в восстановление. Следствие замерено:",
     "на чистом дереве `nx build` попадает в кеш, кладёт `dist` и НЕ кладёт порождённые входы;",
@@ -52,7 +50,7 @@
     "место в графе. Тогда порождённое восстанавливается кешем наравне с `dist`, а отпечаток",
     "сборки включает отпечаток порождения — потому что сборка зависит от него ЯВНО.",
     "",
-    "Входы порождения — `production` целиком, а не выборка вида `generators/barrel/generate.mjs` плюс",
+    "Входы порождения — `production` целиком, а не выборка вида `generators/generate.config.ts` плюс",
     "`src/*/*.anatomy.ts`. Выборка точнее ровно до первого файла, о котором забыли, и",
     "промах там молчит: отпечаток не сменится, старый выход восстановится. Широкий вход",
     "ошибается в сторону лишнего прогона, а прогон здесь — два обхода каталога.",
@@ -60,10 +58,11 @@
     "`dependsOn` перечислен у каждого шага, который порождённое читает, и `^build` в нём",
     "повторён намеренно: значение из `nx.json` не дополняется, а заменяется целиком.",
     "",
-    "`generate` сам обзавёлся `dependsOn: [\"^build\"]` (PWEB-205, 2026-08-30): обход и запись",
-    "переехали в `@probe-web/generators/barrel`, и шаг читает его `dist`, а не только свой",
-    "исходник — `^production` в `inputs` по той же причине: правка движка обязана расценить",
-    "кеш этого шага устаревшим, а без `^production` смена чужого пакета осталась бы невидимой."
+    "`generate` сам обзавёлся `dependsOn: [\"^build\"]` (PWEB-205, 2026-08-30 → GEN-9, 2026-09-01):",
+    "обход/запись/CLI-точка входа — в `@probe-web/generators` (`plugin`+`cli.ts`), и шаг читает",
+    "его `dist`, а не только свой исходник — `^production` в `inputs` по той же причине: правка",
+    "движка обязана расценить кеш этого шага устаревшим, а без `^production` смена чужого пакета",
+    "осталась бы невидимой."
   ],
   "nx": {
     "targets": {
@@ -77,12 +76,6 @@
           "{projectRoot}/src/io.ts",
           "{projectRoot}/src/index.ts"
         ]
-      },
-      "readme": {
-        "dependsOn": ["^build"],
-        "cache": true,
-        "inputs": ["production", "^production"],
-        "outputs": ["{projectRoot}/src/*/README.md"]
       },
       "build": { "dependsOn": ["^build", "generate"] },
       "typecheck": { "dependsOn": ["build", "^build"] },

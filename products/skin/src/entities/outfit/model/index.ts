@@ -83,20 +83,35 @@ export async function assembleOutfit(name: string) {
  * @param component адрес компонента (`data-scope`) — тот же, каким он известен реестру витрины
  */
 export async function variantsOf(component: string): Promise<string[]> {
+  const byComponent = await variantsByComponent();
+  return [...(byComponent[component] ?? [])];
+}
+
+/**
+ * То же самое, но для ВСЕХ компонентов разом, одним чтением службы (`PWEB-XXX`, дерево списка
+ * компонентов) — `variantsOf` читает `readParts()` заново на каждый вызов, и строить дерево
+ * «раздел → компонент → вариант» её же циклом значило бы читать формы по разу на каждый компонент
+ * кита. Компонент без формы в наряде или без единой вариации — честно отсутствует в перечне
+ * ключей, не пустой массив по умолчанию: разные причины «нечего показать» не должны выглядеть
+ * одинаково.
+ */
+export async function variantsByComponent(): Promise<Readonly<Record<string, readonly string[]>>> {
   const name = wornSkin()?.name;
-  if (name === undefined) return [];
+  if (name === undefined) return {};
 
   const outfit = await readOutfit(name);
-  if (!outfit) return [];
+  if (!outfit) return {};
 
   const { forms } = await readParts();
-  const names = new Set<string>();
+  const byComponent: Record<string, Set<string>> = {};
+
   for (const form of forms) {
-    if (form.component !== component || !outfit.forms.includes(form.name)) continue;
+    if (!outfit.forms.includes(form.name)) continue;
+    const names = (byComponent[form.component] ??= new Set());
     for (const variant of Object.keys(form.recipe.variants ?? {})) names.add(variant);
   }
 
-  return [...names];
+  return Object.fromEntries(Object.entries(byComponent).map(([component, names]) => [component, [...names]]));
 }
 
 /**

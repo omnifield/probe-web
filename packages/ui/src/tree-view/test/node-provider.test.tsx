@@ -18,12 +18,12 @@
 //     recurses into an extra's own `children` exactly like any other node — no special-casing
 //     needed, none added.
 //
-// What this does NOT prove: that the DECLARATIVE `PassportAssembly` repeat/bind DSL
-// (`playground/assemblies/` on other components) can express this. It cannot — `repeat` expands
-// one array, once; it has no way to compute an INCREMENTING `indexPath` across nested levels.
-// A recursive structure like this one needs a real function that walks the source data and emits
-// the flat `AssemblyTree` directly (`buildTree` below) — a data-adapter concern belonging to
-// whoever builds the assembly, not a gap in the engine.
+// UPDATE (2026-09-01): the declarative `PassportAssembly` repeat/bind DSL now expresses this too —
+// `indexPathBind` (`packages/skin`) closes exactly the gap this file's header used to name here,
+// and the tree view's REAL, shipped assemblies (`playground/assemblies/base.ts`/`nested.ts`,
+// proven in `test/tree-view.test.tsx`) use it, not the hand-built approach below. This file stays
+// as a lower-level proof of the `extras` mechanism itself — useful on its own, no longer the only
+// working path.
 
 import { createRegistry, RenderTree, type AssemblyTree, type Registry } from "@omnifield/probe-web-assembly";
 import { admits } from "@omnifield/probe-web-skin/editor";

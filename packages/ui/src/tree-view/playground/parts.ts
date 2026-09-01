@@ -47,10 +47,12 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
   tree: {
     means: "список узлов верхнего уровня — `role=\"tree\"`; вложенные листья и ветки строятся рекурсивно",
     states: {},
-    accepts: [
-      { kind: "component", name: "item" },
-      { kind: "component", name: "branch" },
-    ],
+    // ТОЛЬКО `nodeProvider` — не `item`/`branch` напрямую. Часть внутри узла (`item`/`branch` и
+    // всё, что внутри них) читает контекст, который раздаёт только `~nodeProvider` (`extras`,
+    // `components/kit.tsx`) — без него падает при отрисовке, проверено живьём
+    // (`test/node-provider.test.tsx`). Перечень называет то, что РЕАЛЬНО работает, а не то, что
+    // выглядело бы симметрично с другими компонентами кита.
+    accepts: [{ kind: "component", name: "nodeProvider" }],
   },
   item: {
     means: "один лист — конечный узел без потомков; кликабельная и фокусируемая строка (roving tabindex)",
@@ -63,12 +65,19 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       indeterminate: { means: "отмечена только часть — у листа своих потомков нет, но отметку можно задать извне тем же атрибутом, что и у ветки" },
     },
     variables: { "--depth": { means: "глубина вложенности листа — от неё считается отступ строки" } },
+    // Что показывать внутри листа — дело потребителя, не кита (README «Каждый компонент —
+    // минимум одна БАЗА-сборка»): нужен текст — берёт `itemText`, нужен произвольный компонент —
+    // кладёт его прямо сюда. `{ kind: "component" }` без имени — та же строка, что у аккордеона
+    // (`accordion/playground/parts.ts`'s `itemContent`): ссылка на ЛЮБОЙ компонент реестра,
+    // листу не нужно знать заранее, какой именно.
     accepts: [
       { kind: "component", name: "itemText" },
       { kind: "component", name: "itemIndicator" },
       { kind: "component", name: "nodeCheckbox" },
       { kind: "component", name: "nodeRenameInput" },
       { kind: "content", genus: "icon" },
+      { kind: "content", genus: "text" },
+      { kind: "component" },
     ],
   },
   itemText: {
@@ -108,11 +117,15 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       loading: { means: "ветка подгружает своих потомков" },
       ...hoverActiveMeans,
     },
+    // Та же развилка, что у листа выше: содержимое строки ветки решает потребитель.
     accepts: [
       { kind: "component", name: "branchIndicator" },
       { kind: "component", name: "branchText" },
       { kind: "component", name: "nodeCheckbox" },
       { kind: "component", name: "nodeRenameInput" },
+      { kind: "content", genus: "icon" },
+      { kind: "content", genus: "text" },
+      { kind: "component" },
     ],
   },
   branchText: {
@@ -144,10 +157,10 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
   branchContent: {
     means: "контейнер потомков ветки — виден только пока она раскрыта; при закрытии скрывается целиком атрибутом `hidden`, без измеренной высоты и без анимации (в отличие от аккордеона — у этой части нет `--height`)",
     states: openClosedMeans,
+    // Та же причина, что у `tree` выше — потомки идут через `~nodeProvider`, не напрямую.
     accepts: [
       { kind: "component", name: "branchIndentGuide" },
-      { kind: "component", name: "item" },
-      { kind: "component", name: "branch" },
+      { kind: "component", name: "nodeProvider" },
     ],
   },
   branchIndentGuide: {

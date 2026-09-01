@@ -1,0 +1,12 @@
+export { toEntryContext } from "./context.js";
+export type { EntryContext } from "./context.js";
+export { identifierFromEntryName } from "./identifier.js";
+export { hasFile } from "./predicates.js";
+export { defineConfig, run } from "./runner.js";
+export type { GeneratorConfig } from "./runner.js";
+export { discoverEntries } from "./scan.js";
+export type { DiscoverEntriesOptions } from "./scan.js";
+export { fromEntryTemplate, fromTemplate } from "./template.js";
+export { isAggregatePlugin } from "./types.js";
+export type { AggregatePlugin, Entry, GeneratedFile, GeneratorPlugin, PerEntryPlugin } from "./types.js";
+export { writeGeneratedFiles } from "./write.js";

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // THE ENTRY POINT — the one thing a product actually invokes. Mirrors `vite`'s own CLI: a product
 // writes a config file (TypeScript, `export default defineConfig({ rootDir, isEntry, plugins })`),
 // and runs it through this instead of hand-writing `fileURLToPath`/`dirname`/`await run(...)`
@@ -9,9 +10,9 @@
 import { pathToFileURL } from "node:url";
 
 import { importModule } from "./extract/module.js";
-import type { GeneratedFile } from "./barrel/types.js";
-import type { GeneratorConfig } from "./plugin/runner.js";
-import { run } from "./plugin/runner.js";
+import type { GeneratedFile } from "./engine/types.js";
+import type { GeneratorConfig } from "./engine/runner.js";
+import { run } from "./engine/runner.js";
 
 interface ConfigModule {
   readonly default?: GeneratorConfig;
