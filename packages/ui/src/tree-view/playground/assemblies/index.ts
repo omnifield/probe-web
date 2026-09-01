@@ -7,5 +7,4 @@ import { base } from "./base.js";
 type TreeViewPart =
   typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// `Data` not threaded — see `./base.ts`'s own header comment.
 export const assemblies: readonly PassportAssembly<TreeViewPart>[] = [base];

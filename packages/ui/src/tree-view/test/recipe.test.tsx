@@ -1,19 +1,3 @@
-// Live proof for the tree view's PROOF RECIPE (`../playground/recipe.ts`, `PWEB-111`) — same role
-// every other component's own recipe plays: prove the passport CAN be dressed whole by the real
-// skin mechanism (`skinGaps` empty, CSS generated), not read it and hope. Found live: this recipe
-// had never actually been run through the mechanic before this file existed — see the fix below.
-//
-// No assembly-rendering block here — that lives in the sibling `test/tree-view.test.tsx`, one
-// file per concern (recipe vs. assemblies), same reason accordion's own `test/accordion.test.tsx`
-// only covers assemblies: this file is purely about `playground/recipe.ts` (`PWEB-111`).
-//
-// Goes through `assemble`, not a hand-built `Skin` object — the SAME two-pass path the skin-mcp's
-// own `check_form` uses (`products/skin/.mcp/src/validate.js`): a bare `{name, recipes}` object
-// has no `variables` at all, and every `var(--space-2)`-style reference reads as "unknown-value"
-// against an empty vocabulary — not a defect in the recipe, a gap in a shortcut. `assemble` merges
-// a real palette's `scales`/`dimensions`/`light`/`dark` into the resulting `Skin.variables` the
-// same way production does.
-
 import { passportLookup, skinGaps, withPassports } from "@omnifield/probe-web-skin";
 import type { Outfit, Palette } from "@omnifield/probe-web-skin/model";
 import { describe, expect, it } from "vitest";
@@ -25,11 +9,6 @@ import { form } from "../playground/recipe.js";
 const lookup = passportLookup([passport]);
 const bound = withPassports(lookup);
 
-// A REAL palette (`omnifield-palette`, `products/presets`), embedded verbatim so this test stays
-// hermetic — no network, no live service. Kept WHOLE, not trimmed to what this recipe happens to
-// reference: `assemble` requires a palette to close the FULL vocabulary regardless of which roles
-// any one form actually uses (confirmed live — a trimmed copy here read as `palette-incomplete`,
-// 64 roles short).
 const palette: Palette = {
   name: "test-palette",
   scales: {
