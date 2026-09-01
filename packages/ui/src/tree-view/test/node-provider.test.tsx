@@ -92,9 +92,11 @@ function buildTree(rootNode: Node, registryAddress: string, collection: unknown)
     return providerId;
   }
 
+  // `root` — NOT `tree` — is the parent of the top level now: `TreeView` (`components/kit.tsx`)
+  // wraps its own children in a real `TreeViewTree` internally (postановка user, 2026-09-01), so
+  // a hand-built tree names `root` here too, same as the declarative assemblies do.
   const topIds = (rootNode.children ?? []).map((child, i) => walk(child, [i]));
-  nodes["root"] = { id: "root", type: registryAddress, parentId: null, children: ["tree"], props: { collection } };
-  nodes["tree"] = { id: "tree", type: `${registryAddress}.tree`, parentId: "root", children: topIds, props: {} };
+  nodes["root"] = { id: "root", type: registryAddress, parentId: null, children: topIds, props: { collection } };
 
   return { components: { root: "root", nodes } } as unknown as AssemblyTree;
 }

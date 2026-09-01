@@ -32,12 +32,13 @@ const hoverActiveMeans = {
 
 export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeViewPart>>> = {
   root: {
-    means: "дерево целиком — один узел, оборачивающий подпись и сам список",
+    means: "дерево целиком — один узел; список внутри рисуется своим собственным `tree` (`role=\"tree\"`), но кит кладёт его туда сам, в схеме `tree` не называют",
     states: {},
-    accepts: [
-      { kind: "component", name: "label" },
-      { kind: "component", name: "tree" },
-    ],
+    // `tree` НЕ в списке (постановка user, 2026-09-01) — движку схемы всё равно, откуда взялся
+    // `role="tree"` с клавиатурной навигацией: кит (`components/kit.tsx`'s `TreeView`) теперь сам
+    // оборачивает свои дети в настоящий `TreeViewTree` изнутри. Схема адресует `root` и получает
+    // `~nodeProvider` прямо под ним, как если бы разделения не было вовсе.
+    accepts: [{ kind: "component", name: "nodeProvider" }],
   },
   label: {
     means: "подпись дерева — заголовок над списком",

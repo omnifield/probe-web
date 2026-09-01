@@ -25,37 +25,34 @@ export const nested: PassportAssembly<TreeViewPart> = {
     node: "root",
     children: [
       {
-        node: "tree",
+        // `tree` НЕ здесь (постановка user, 2026-09-01) — `root` сам кладёт в себя настоящий
+        // `TreeViewTree` (`components/kit.tsx`), схема адресует `~nodeProvider` прямо под `root`.
+        extra: "nodeProvider",
+        indexPathBind: "indexPath",
+        repeat: { path: "/items" },
+        bind: { node: "" },
         children: [
           {
-            extra: "nodeProvider",
-            indexPathBind: "indexPath",
-            repeat: { path: "/items" },
-            bind: { node: "" },
+            node: "branch",
             children: [
               {
-                node: "branch",
+                node: "branchControl",
+                children: [{ node: "branchText", children: [{ genus: "text", value: { path: "label" } }] }],
+              },
+              {
+                node: "branchContent",
                 children: [
                   {
-                    node: "branchControl",
-                    children: [{ node: "branchText", children: [{ genus: "text", value: { path: "label" } }] }],
-                  },
-                  {
-                    node: "branchContent",
+                    extra: "nodeProvider",
+                    // Накопленный путь — `[индекс ветки, индекс листа]`, не только свой —
+                    // движок сам ведёт его через оба уровня повтора.
+                    indexPathBind: "indexPath",
+                    repeat: { path: "children" },
+                    bind: { node: "" },
                     children: [
                       {
-                        extra: "nodeProvider",
-                        // Накопленный путь — `[индекс ветки, индекс листа]`, не только свой —
-                        // движок сам ведёт его через оба уровня повтора.
-                        indexPathBind: "indexPath",
-                        repeat: { path: "children" },
-                        bind: { node: "" },
-                        children: [
-                          {
-                            node: "item",
-                            children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
-                          },
-                        ],
+                        node: "item",
+                        children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
                       },
                     ],
                   },

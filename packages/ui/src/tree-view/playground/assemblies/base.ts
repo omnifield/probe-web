@@ -14,28 +14,26 @@ type TreeViewPart =
 // here) keeps `bind`/`repeat.path` as plain strings, checked only at runtime — the same trade the
 // whole kit made before compile-time path-checking existed at all.
 //
-// 2026-09-01: "нахуя мне там айтемтекст, если там должен быть пустой узел, который юзер сам
-// подставит"). This assembly does not decide `itemText` any more than accordion's own `base.ts`
-// decides what fills `itemContent` — a consumer wanting a label writes their OWN component (which
-// may itself be `itemText`, may be anything else) and puts it here; `item`'s `accepts` (`../
-// parts.ts`) already admits a bare `{ kind: "content", genus: "text" }`, an `itemText` reference,
-// or `{ kind: "component" }` (any registry component) — this file picks none of them on purpose.
+// BASE — root admits `~nodeProvider` DIRECTLY (postановка user, 2026-09-01: `components/kit.tsx`'s
+// `TreeView` now wraps its own children in a real `TreeViewTree` internally, so the schema never
+// names `tree` — root reads exactly like it has no such split, same idea `../parts.ts`'s `root`
+// entry now states). `item` stays the real Ark row (`itemText`/`itemIndicator` inside it, own
+// click dispatch) — never replaced, only ITS content is the draft's own call, kept as written.
 export const base: PassportAssembly<TreeViewPart> = {
   name: "base",
   means:
-    "минимальный скелет — один уровень, лист без потомков, узел ПУСТ: что в него класть, решает потребитель",
+    "один уровень, каждый лист подписан и кликабелен, свой клик шлёт наружу",
   tree: {
     node: "root",
     children: [
       {
-        node: "item",
+        extra: "nodeProvider",
+        indexPathBind: "indexPath",
         repeat: { path: "/items" },
-        bind: { node: "id" },
+        bind: { node: "" },
         children: [
           {
-            node: "itemTrigger",
-            extra: "nodeProvider",
-            indexPathBind: "indexPath",
+            node: "item",
             on: {
               click: {
                 event: {
@@ -45,13 +43,11 @@ export const base: PassportAssembly<TreeViewPart> = {
               },
             },
             children: [
-              { genus: "text", value: { path: "title" } },
-              { node: "itemIndicator", children: [] },
+              {
+                node: "itemContent",
+                children: [],
+              },
             ],
-          },
-          {
-            node: "itemContent",
-            children: [],
           },
         ],
       },

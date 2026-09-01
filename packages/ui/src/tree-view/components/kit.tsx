@@ -39,6 +39,8 @@ import {
   type TreeViewTreeProps as ArkTreeProps,
 } from "@ark-ui/solid/tree-view";
 
+import { splitProps } from "solid-js";
+
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 
@@ -64,7 +66,12 @@ import { traceLife } from "../../utils/trace.js";
 // assembly can construct on its own (`PWEB-134`'s own correction about non-JSON props applies
 // the same way here).
 
-export { createFileTreeCollection, createTreeCollection, type TreeCollection, type TreeNode };
+export {
+  createFileTreeCollection,
+  createTreeCollection,
+  type TreeCollection,
+  type TreeNode,
+};
 
 /** Props of `TreeView` — the root, generic over the collection's own node type. */
 export type TreeViewProps<T extends TreeNode = TreeNode> = ArkRootProps<T>;
@@ -100,7 +107,19 @@ export type TreeViewProps<T extends TreeNode = TreeNode> = ArkRootProps<T>;
 export function TreeView<T extends TreeNode = TreeNode>(props: TreeViewProps<T>) {
   traceLife("ui.tree-view");
 
-  return <ArkRoot {...dropAddress(props)} />;
+  // Постановка user, 2026-09-01: движку схемы всё равно, приехали `root`/`tree` раздельно или
+  // `tree` уже лежит внутри `root`, — он рисует то, что дал компонент, а не решает за него.
+  // `children` схемы (повтор веток/листьев) едут В `ArkTree` — настоящий узел с `role="tree"` и
+  // клавиатурной навигацией (`onKeyDown` коннектора, `../entity/passport.ts`), — остальные пропы
+  // рута (`collection`, `selectedValue`, `expandedValue`, …) остаются на `ArkRoot` и в `ArkTree`
+  // НЕ дублируются: разделены `splitProps`, не сплошным спредом.
+  const [local, rest] = splitProps(props, ["children"]);
+
+  return (
+    <ArkRoot {...dropAddress(rest)}>
+      <ArkTree>{local.children}</ArkTree>
+    </ArkRoot>
+  );
 }
 
 /** Props of `TreeViewLabel`. */
@@ -116,7 +135,14 @@ export function TreeViewLabel(props: TreeViewLabelProps) {
 /** Props of `TreeViewTree`. */
 export type TreeViewTreeProps = ArkTreeProps;
 
-/** The tree's own root list — ONE node, `role="tree"`; holds the top-level items/branches. */
+/**
+ * The tree's own list, standalone — `role="tree"`, real keyboard navigation. `TreeView` (above)
+ * now renders one of these itself around its own `children`, so an assembly never names `tree`
+ * directly; this stays exported and mapped (`kit.parts.tree`, required by `defineKitComponent`'s
+ * completeness check against the real Ark anatomy) for whoever composes by hand instead of
+ * through a schema — `data-output.tsx` still does, with its own explicit `TreeViewLabel` beside
+ * it, a composition this file does not decide for them.
+ */
 export function TreeViewTree(props: TreeViewTreeProps) {
   traceLife("ui.tree-view-tree");
 
@@ -131,7 +157,9 @@ export type TreeViewNodeProviderProps<T = unknown> = ArkNodeProviderProps<T>;
  * `item`/`branch`/… all need to know which tree node they belong to (`../entity/anatomy.ts`
  * explains why this carries no address of its own).
  */
-export function TreeViewNodeProvider<T = unknown>(props: TreeViewNodeProviderProps<T>) {
+export function TreeViewNodeProvider<T = unknown>(
+  props: TreeViewNodeProviderProps<T>,
+) {
   traceLife("ui.tree-view-node-provider");
 
   return <ArkNodeProvider {...props} />;
@@ -231,7 +259,9 @@ export function TreeViewBranchContent(props: TreeViewBranchContentProps) {
 export type TreeViewBranchIndentGuideProps = ArkBranchIndentGuideProps;
 
 /** A vertical guide line at one nesting depth — no graphic of its own, purely structural. */
-export function TreeViewBranchIndentGuide(props: TreeViewBranchIndentGuideProps) {
+export function TreeViewBranchIndentGuide(
+  props: TreeViewBranchIndentGuideProps,
+) {
   traceLife("ui.tree-view-branch-indent-guide");
 
   return <ArkBranchIndentGuide {...dropAddress(props)} />;
@@ -251,7 +281,9 @@ export function TreeViewNodeCheckbox(props: TreeViewNodeCheckboxProps) {
 export type TreeViewNodeCheckboxIndicatorProps = ArkNodeCheckboxIndicatorProps;
 
 /** Picks `children`/`indeterminate`/`fallback` to show, based on the node's own checked state. */
-export function TreeViewNodeCheckboxIndicator(props: TreeViewNodeCheckboxIndicatorProps) {
+export function TreeViewNodeCheckboxIndicator(
+  props: TreeViewNodeCheckboxIndicatorProps,
+) {
   traceLife("ui.tree-view-node-checkbox-indicator");
 
   return <ArkNodeCheckboxIndicator {...props} />;
