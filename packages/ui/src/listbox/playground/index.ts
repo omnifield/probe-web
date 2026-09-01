@@ -9,10 +9,11 @@
 // in their own files.
 //
 // `genus`/`group`/`footprint` are real classifications, not prose: a plain component
-// (`genus: "component"`); grouped with the select/switch/checkbox as a form input
-// (`group: "inputs"`); `footprint: "regular"` — real, variable-height content, the same middle
-// bracket the select's own dropdown content sits in, not inherently full-row the way a table's
-// grid is.
+// (`genus: "component"`); grouped with the tree view as an iteration component
+// (`group: "iteration"`, user's own call, 2026-09-01) — its point is iterating a flat list of
+// options, not just producing a value the way a checkbox/switch does; `footprint: "regular"` —
+// real, variable-height content, the same middle bracket the select's own dropdown content sits
+// in, not inherently full-row the way a table's grid is.
 
 import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { passport } from "../entity/passport.js";
@@ -23,7 +24,7 @@ import { settings } from "./settings.js";
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
   genus: "component",
-  group: "inputs",
+  group: "iteration",
   footprint: "regular",
   variantAxis: {
     means: "the variant name a human gives the listbox in the editor; the kit passes it through untouched",

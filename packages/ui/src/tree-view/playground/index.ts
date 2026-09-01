@@ -5,6 +5,7 @@ import { parts } from "./parts.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
   package: "@omnifield/probe-web-ui",
+  group: "iteration",
   genus: "component",
   footprint: "wide",
   variantAxis: {

@@ -6,6 +6,7 @@ export const GROUPS = {
   navigation: "Navigation",
   overlays: "Overlays",
   disclosure: "Disclosure",
+  iteration: "Iteration",
   feedback: "Feedback",
   layout: "Layout",
   other: "Other",
