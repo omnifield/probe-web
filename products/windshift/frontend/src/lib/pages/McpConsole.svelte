@@ -128,13 +128,13 @@
   }
 </script>
 
-<div class="flex flex-col h-full" style="background-color: var(--ds-surface);">
+<div style="background-color: var(--ds-surface);">
   <div class="px-6 pt-6">
     <PageHeader icon={Plug} title={t('mcpConsole.title')} subtitle={t('mcpConsole.subtitle')} />
   </div>
 
   {#if loading}
-    <div class="flex-1 flex items-center justify-center">
+    <div class="flex items-center justify-center py-16">
       <Spinner />
     </div>
   {:else if tokenError}
@@ -142,15 +142,15 @@
       <AlertBox variant="error" message={tokenError} />
     </div>
   {:else}
-    <div class="flex-1 flex gap-4 px-6 pb-6 min-h-0">
+    <div class="flex gap-4 px-6 pb-6 items-start">
       <div
-        class="w-72 shrink-0 flex flex-col rounded-md border min-h-0"
+        class="w-72 shrink-0 flex flex-col rounded-md border"
         style="border-color: var(--ds-border); background-color: var(--ds-surface-raised);"
       >
         <div class="p-2 border-b" style="border-color: var(--ds-border);">
           <Input placeholder={t('mcpConsole.searchPlaceholder')} bind:value={search} />
         </div>
-        <div class="flex-1 overflow-y-auto">
+        <div class="max-h-[75vh] overflow-y-auto">
           {#if toolsError}
             <div class="p-3">
               <AlertBox variant="error" message={toolsError} size="sm" />
@@ -175,7 +175,7 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto min-h-0">
+      <div class="flex-1 min-w-0">
         {#if !selectedTool}
           <EmptyState title={t('mcpConsole.selectPrompt')} />
         {:else}

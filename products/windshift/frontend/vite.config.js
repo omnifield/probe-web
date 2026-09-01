@@ -91,9 +91,12 @@ export default defineConfig({
         target: 'http://localhost:7777',
         changeOrigin: true,
       },
+      // Exact-path only: '/mcp' would otherwise prefix-match app routes like
+      // '/mcp-console' and hijack their SPA navigation into a backend proxy.
       '/mcp': {
         target: 'http://localhost:7777',
         changeOrigin: true,
+        bypass: (req) => (req.url !== '/mcp' ? req.url : undefined),
       },
     },
   },

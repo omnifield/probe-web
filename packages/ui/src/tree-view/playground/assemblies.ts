@@ -1,27 +1,31 @@
 // STRUCTURAL assembly templates for the tree view — read by `./index.ts`'s `defineEditorInfo`
 // call. Same physical shape as every other component's `playground/assemblies.ts` (`PWEB-127`).
 //
-// LEFT EMPTY ON PURPOSE, and not a placeholder waiting to be filled the usual way: a real entry
-// crashes at render, checked live (`useTreeViewNodePropsContext returned undefined`, thrown by
-// Ark's `TreeViewBranch`/`TreeViewItem`/… — every node-scoped part reads this context, twelve of
-// the fifteen parts, confirmed by reading `@ark-ui/solid`'s own compiled source directly).
+// LEFT EMPTY, but NOT because the engine is missing anything — a PRIOR version of this comment
+// claimed exactly that (per-node `TreeViewNodeProvider` context needs plumbing nobody had built),
+// and it was wrong: checked live (`../test/node-provider.test.tsx`), a real three-level
+// branch→item tree renders correctly through the mechanism that already exists.
 //
-// WHY THIS IS DEEPER than the missing-`TreeViewNodeProvider` wrapper the earlier draft of this
-// file named: the context a node-scoped part reads is not a plain value — `TreeViewBranch` calls
-// `treeView().getBranchProps(nodeProps)`, which asks the Zag MACHINE to look `nodeProps.indexPath`
-// up in the collection actually passed to `TreeView.Root`'s own `collection` prop. An assembly
-// tree has no such collection at all (`PassportAssemblyElement` addresses PARTS and CONTENT, the
-// same "root's real machinery" gap the table's own assemblies file names for its own root) — so
-// there is no node for `indexPath` to resolve to, synthetic or otherwise, without ALSO
-// synthesizing a matching `createTreeCollection(...)` at the root and wiring every node-scoped
-// part underneath it to a `TreeViewNodeProvider` carrying the matching `node`/`indexPath`.
+// What actually resolves each node's context: `defineKitComponent`'s THIRD argument
+// (`../components/kit.tsx`) already registers `nodeProvider` as an `extra` — `tree-view.~nodeProvider`
+// resolves through the registry (`packages/assembly/src/registry.ts`) exactly like any named part,
+// and `RenderNode` recurses into an extra's own children the same uniform way it recurses into
+// anything else. `AssemblyElement.props` is `Record<string, unknown>` (`packages/assembly/src/
+// tree.ts`), not JSON-restricted — a hand-built tree's `props` can carry a real `TreeCollection`
+// instance, a real node object, a real `indexPath` array, which is all `TreeViewNodeProvider`
+// itself actually needs (`createSplitProps()(props, ["indexPath", "node"])` — plain props, no
+// magic). The earlier comment checked `render.tsx`'s ROOT-level `provider` mechanism (PWEB-153,
+// one provider for the WHOLE tree) and concluded per-node wrapping needed the same kind of engine
+// change — without checking whether `extras`, sitting right there in this same component's own
+// `kit.tsx`, already solved it a different way.
 //
-// That is real plumbing, not prose — it belongs to whoever owns the render path (`../components/
-// index.tsx`'s own kit wrappers, or a generic per-node provider in `packages/assembly`'s own
-// `render.tsx`, which today only wraps a tree ONCE at the root — `PWEB-153`, for parts like the
-// popover's/menu's own `positioner` that need a single shared context, not one context PER NODE).
-// Filling this file with a working `root`/`label`/`tree`/`item`/`branch` tree is blocked on that
-// plumbing landing first, not on picking a better shape of tree to describe.
+// WHY THIS FILE STAYS EMPTY ANYWAY: it holds `PassportAssembly[]`, the DECLARATIVE repeat/bind
+// authoring format every other component's assemblies use — and that format genuinely cannot
+// express this. `repeat` expands one array, once; it has no way to compute an INCREMENTING
+// `indexPath` across nested levels the way a real recursive walk needs. A working tree-view
+// assembly needs a programmatic function that walks real source data and emits the flat
+// `AssemblyTree` directly (`buildTree`, `../test/node-provider.test.tsx`) — a real, but different,
+// piece of code from what this file's own shape is for. Not started here; not blocked either.
 
 import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
