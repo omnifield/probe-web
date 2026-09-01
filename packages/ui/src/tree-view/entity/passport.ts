@@ -108,6 +108,10 @@ export const passport = definePassport({
       states: [focus, selected, disabled, renaming, checked, indeterminate],
       variables: [{ name: "--depth", setBy: "kit" }],
     },
+    // Наша часть (`entity/anatomy.ts`'s `extendWith`), не Ark — своих состояний не несёт: реальный
+    // фокус/выделение живут на `item` самом, `itemTrigger` только группирует `itemText`/
+    // `itemIndicator`, зеркаля `branchControl` для листа (без раскрытия — раскрывать нечего).
+    { name: "itemTrigger", states: [] },
     { name: "itemText", states: [disabled, selected, focus] },
     { name: "itemIndicator", states: [disabled, selected, focus] },
     // Наша часть (`entity/anatomy.ts`'s `extendWith`), не Ark — своих состояний не несёт, ровно

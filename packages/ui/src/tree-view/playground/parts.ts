@@ -70,15 +70,27 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       indeterminate: { means: "отмечена только часть — у листа своих потомков нет, но отметку можно задать извне тем же атрибутом, что и у ветки" },
     },
     variables: { "--depth": { means: "глубина вложенности листа — от неё считается отступ строки" } },
-    // Именованные части — не открытый список: то, что показывать внутри листа СВЕРХ них, идёт
-    // через `itemContent` (одно место на "положи сюда что угодно", как у `itemTrigger`/
-    // `itemContent` аккордеона, README «Кит не переизобретает Ark, но и не копирует его слепо»).
+    // Зеркалит `branch` для листа (README «Кит не переизобретает Ark...»): `itemTrigger` (шапка,
+    // как `branchControl`) + `itemContent` (открытый слот, как `branchContent`, но без рекурсии —
+    // раскрывать нечего). Ровно ДВЕ части — не открытый список.
+    accepts: [
+      { kind: "component", name: "itemTrigger" },
+      { kind: "component", name: "itemContent" },
+    ],
+  },
+  itemTrigger: {
+    means: "шапка листа — группирует подпись и индикатор; своего клика не переопределяет, реальный фокус/выделение остаются на `item`",
+    states: {},
+    // Та же развилка, что у `branchControl`: именованные части плюс открытый список «положи сюда
+    // что угодно ещё» — `{ kind: "component" }` без имени, та же строка, что у аккордеона.
     accepts: [
       { kind: "component", name: "itemText" },
       { kind: "component", name: "itemIndicator" },
       { kind: "component", name: "nodeCheckbox" },
       { kind: "component", name: "nodeRenameInput" },
-      { kind: "component", name: "itemContent" },
+      { kind: "content", genus: "icon" },
+      { kind: "content", genus: "text" },
+      { kind: "component" },
     ],
   },
   itemContent: {

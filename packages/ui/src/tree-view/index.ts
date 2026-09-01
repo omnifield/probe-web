@@ -31,6 +31,8 @@ export {
   type TreeViewItemProps,
   TreeViewItemText,
   type TreeViewItemTextProps,
+  TreeViewItemTrigger,
+  type TreeViewItemTriggerProps,
   TreeViewLabel,
   type TreeViewLabelProps,
   TreeViewNodeCheckbox,

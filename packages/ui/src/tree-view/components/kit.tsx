@@ -41,6 +41,7 @@ import {
 
 import { splitProps, type JSX } from "solid-js";
 
+import { ownPart } from "../../shared/own-part.js";
 import { dropAddress } from "../../utils/slot-chain.js";
 import { traceLife } from "../../utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
@@ -191,20 +192,26 @@ export function TreeViewItem(props: TreeViewItemProps) {
   );
 }
 
+/** Props of `TreeViewItemTrigger`. */
+export type TreeViewItemTriggerProps = JSX.HTMLAttributes<HTMLDivElement>;
+
+/**
+ * A leaf's own header — OURS, not Ark's (`../entity/anatomy.ts`'s `extendWith`): groups
+ * `itemText`/`itemIndicator`, mirroring `branchControl` for a leaf. No connector backs it (a leaf
+ * has no disclosure to click), so it carries no state of its own — real focus/selection stay on
+ * `item` itself. Built with `../../shared/own-part.js`, the shared template for exactly this
+ * shape of part.
+ */
+export const TreeViewItemTrigger = ownPart("ui.tree-view-item-trigger", anatomyParts.itemTrigger.attrs);
+
 /** Props of `TreeViewItemContent`. */
 export type TreeViewItemContentProps = JSX.HTMLAttributes<HTMLDivElement>;
 
 /**
- * A leaf's own open content slot — OURS, not Ark's (`../entity/anatomy.ts`'s `extendWith`): no
- * connector backs it, so the address comes straight from the built anatomy, not from a
- * `getXxxProps()` this component doesn't have. Same rule everywhere else in this file — address
- * spreads LAST, never overridden by an incoming one (`PWEB-46`).
+ * A leaf's own open content slot — OURS, not Ark's (`../entity/anatomy.ts`'s `extendWith`), the
+ * same shared template as `TreeViewItemTrigger` above.
  */
-export function TreeViewItemContent(props: TreeViewItemContentProps) {
-  traceLife("ui.tree-view-item-content");
-
-  return <div {...dropAddress(props)} {...anatomyParts.itemContent.attrs} />;
-}
+export const TreeViewItemContent = ownPart("ui.tree-view-item-content", anatomyParts.itemContent.attrs);
 
 /** Props of `TreeViewItemText`. */
 export type TreeViewItemTextProps = ArkItemTextProps;
@@ -346,7 +353,7 @@ import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";
 
 /**
- * The tree view's passport together with whatever draws each of its sixteen parts.
+ * The tree view's passport together with whatever draws each of its seventeen parts.
  *
  * NO `extras` (постановка user, 2026-09-01 — README «`extras` — проверка по всему киту: кейса не
  * нашлось ни одного»): `TreeViewItem`/`TreeViewBranch` already wrap themselves in
@@ -360,6 +367,7 @@ export const kit = defineKitComponent(passport, {
   label: TreeViewLabel,
   tree: TreeViewTree,
   item: TreeViewItem,
+  itemTrigger: TreeViewItemTrigger,
   itemText: TreeViewItemText,
   itemIndicator: TreeViewItemIndicator,
   itemContent: TreeViewItemContent,

@@ -51,7 +51,12 @@ export const nested: PassportAssembly<TreeViewPart> = {
                 // Накопленный путь — `[индекс ветки, индекс листа]`, не только свой — движок сам
                 // ведёт его через оба уровня повтора.
                 indexPathBind: "indexPath",
-                children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
+                children: [
+                  {
+                    node: "itemTrigger",
+                    children: [{ node: "itemText", children: [{ genus: "text", value: { path: "label" } }] }],
+                  },
+                ],
               },
             ],
           },

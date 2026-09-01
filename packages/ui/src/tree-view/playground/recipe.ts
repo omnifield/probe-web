@@ -3,7 +3,7 @@
 // view's passport CAN be dressed whole by the real skin mechanism, the same role every other
 // component's own recipe plays.
 //
-// Sixteen parts, the biggest part count in the kit. `item`/`branch` carry
+// Seventeen parts, the biggest part count in the kit. `item`/`branch` carry
 // `--depth` (`../entity/passport.ts`) as an inline custom property. `branchControl`/
 // `branchIndentGuide` need it too but do NOT own it — this file's own test
 // (`../test/tree-view.test.tsx`) caught both as `variable-elsewhere`: the mechanic does not take
@@ -75,9 +75,10 @@ const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity
 const checkedFill = { background: "var(--accent-2)" };
 
 /**
- * TREE VIEW. Sixteen parts, the reading order matches the DOM: a leaf draws `item` (plus
- * `itemContent`, its own open slot); a branch draws `branch` wrapping `branchControl` (the row)
- * and `branchContent` (the children).
+ * TREE VIEW. Seventeen parts, the reading order matches the DOM: a leaf draws `item` wrapping
+ * `itemTrigger` (the row) and `itemContent` (its own open slot) — a branch draws `branch` wrapping
+ * `branchControl` (the row) and `branchContent` (the children). Same shape, `item`/`itemTrigger`
+ * simply have nothing to recurse into.
  */
 export const recipe: SlotRecipe = {
   base: {
@@ -100,9 +101,22 @@ export const recipe: SlotRecipe = {
     tree: {
       props: { display: "flex", flexDirection: "column" },
     },
+    // Mirrors `branch` — a plain, functional wrapper, no LOOK of its own: the row's look lives on
+    // `itemTrigger`, the same split `branch`/`branchControl` already use. Only `disabled` stops
+    // clicks from reaching a leaf that has no business accepting them (`branch`'s own device).
     item: {
-      props: { ...rowProps, paddingInlineStart: depthIndent },
+      props: { display: "flex", flexDirection: "column" },
       states: {
+        disabled: { props: { pointerEvents: "none" } },
+      },
+    },
+    // Mirrors `branchControl` for a leaf — same row shape, same states, minus `open`/`closed`/
+    // `loading` (a leaf never expands or loads children).
+    itemTrigger: {
+      props: rowProps,
+      states: {
+        hover: { props: { background: "var(--neutral-4)" } },
+        active: { props: { background: "var(--neutral-5)" } },
         selected: { props: selectedFill },
         // Checked/indeterminate get their OWN, softer tint (`checkedFill`) — the mark itself lives
         // on `nodeCheckbox`, this is only a light "this row carries a mark" cue on the row itself.
@@ -113,6 +127,9 @@ export const recipe: SlotRecipe = {
         // Clicking a renaming row edits text, not selection — the row's own cursor says so.
         renaming: { props: { cursor: "text" } },
       },
+      // `itemTrigger` does not own `--depth` — `item` does. Reached through `ancestors`, the same
+      // device `branchControl` uses to reach `branch`'s own `--depth`.
+      ancestors: [{ component: "tree-view", part: "item", style: { props: { paddingInlineStart: depthIndent } } }],
     },
     itemText: {
       props: { flex: "1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
