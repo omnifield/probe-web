@@ -22,9 +22,11 @@ text generation).
 
 | module | what it does |
 |---|---|
-| [`src/barrel/`](src/barrel/README.md) | scan a directory of uniform folders, render one or more aggregate files from what each folder declares |
+| [`src/plugin/`](src/plugin/README.md) | the surface a product actually writes against — `vite`/`webpack`-shaped: a runner owns scanning/reading/writing/zone-merging, a plugin is data plus a few functions |
+| [`src/barrel/`](src/barrel/README.md) | scan a directory of uniform folders, render one or more aggregate files from what each folder declares — the engine behind `plugin`'s `AggregatePlugin` |
 | [`src/extract/`](src/extract/README.md) | read a real, executed value out of a TypeScript file (a passport, a Zod schema) instead of parsing its text |
-| [`src/scaffold/`](src/scaffold/README.md) | `barrel`'s mirror image — one file PER entry (e.g. a README next to each component), not one aggregate for all of them |
+| [`src/scaffold/`](src/scaffold/README.md) | `barrel`'s mirror image — one file PER entry (e.g. a README next to each component), not one aggregate for all of them — the engine behind `plugin`'s `PerEntryPlugin` |
+| [`src/preserve/`](src/preserve/README.md) | one hand-written region, bracketed by markers, survives a full-file regeneration — `plugin`'s `zones` call this automatically, so a plugin never invokes it itself |
 
 ## What's done
 
@@ -55,3 +57,14 @@ text generation).
   `InlineConfig` argument so a caller supplies its own fix
   (`ssr.noExternal`, `plugins: [solid()]`) without this package baking in
   knowledge of Solid or `packages/io` — see `src/extract/README.md`.
+- `plugin` — the `vite`/`webpack`-shaped runner (2026-09-01, user decision:
+  a product's generator script should configure a tool, not hand-write
+  filesystem plumbing). `EntryContext` replaces every `node:fs`/`node:path`
+  call a product's own script used to make; `AggregatePlugin`/
+  `PerEntryPlugin` are the plugin shapes `barrel`/`scaffold` sit behind;
+  `zones` replaces a plugin author calling `preserve` by hand. `barrel`,
+  `scaffold`, `extract`, `preserve` are unchanged — `plugin` is an
+  additive layer calling them, not a rewrite. `packages/ui/generators/*`
+  moving onto this (`barrel/generate.mjs`'s raw `existsSync`/`join`,
+  `readme/readme.mjs`'s manual zone-merge loop) is the next step, not done
+  yet — see `src/plugin/README.md`.
