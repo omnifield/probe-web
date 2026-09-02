@@ -1,8 +1,4 @@
-import {
-  createTreeCollection,
-  Surface,
-  type TreeCollection,
-} from "@omnifield/probe-web-ui";
+import { Surface } from "@omnifield/probe-web-ui";
 import {
   RenderTree,
   type DispatchedEvent,
@@ -30,21 +26,12 @@ export function ComponentList(props: { variant?: string }) {
     return component !== undefined && assembly !== undefined ? `${component}/${assembly}` : undefined;
   });
 
-  const collection = createMemo(
-    (): TreeCollection<TreeItemData> =>
-      createTreeCollection<TreeItemData>({
-        nodeToValue: (node) => node.id,
-        nodeToString: (node) => node.label,
-        rootNode: { id: "ROOT", label: "", children: data().items },
-      }),
-  );
-
   const tree = createMemo(() =>
     instanceOf(
       "tree-view",
       {
         "data-variant": props.variant,
-        collection: collection(),
+        items: data().items,
         selectionMode: "single",
         defaultExpandedValue: data().items.map((item) => item.id),
         activeValue: activeValue(),

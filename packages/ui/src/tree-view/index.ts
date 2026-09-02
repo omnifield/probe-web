@@ -1,8 +1,4 @@
 export {
-  createFileTreeCollection,
-  createTreeCollection,
-  type TreeCollection,
-  type TreeNode,
   TreeRoot,
   type TreeRootProps,
   TreeItem,

@@ -1,5 +1,3 @@
-export { createFileTreeCollection, createTreeCollection, type TreeCollection, type TreeNode } from "@ark-ui/solid/tree-view";
-
 export { TreeRoot, type TreeRootProps } from "./root.js";
 export { TreeItem, type TreeItemProps } from "./item/index.js";
 export { TreeControl, type TreeControlProps } from "./item/control.js";

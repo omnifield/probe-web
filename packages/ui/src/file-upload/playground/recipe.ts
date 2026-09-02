@@ -1,8 +1,3 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
@@ -16,6 +11,7 @@ const buttonStates = {
       outlineOffset: "var(--border-width-2)",
     },
   },
+  readonly: { props: { cursor: "default" } },
   disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
 } as const;
 
@@ -23,10 +19,18 @@ export const recipe: SlotRecipe = {
   base: {
     root: {
       props: { display: "flex", flexDirection: "column", gap: "var(--space-2)" },
-      states: { disabled: { props: { opacity: "0.6" } } },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { opacity: "1" } },
+        dragging: { props: { cursor: "copy" } },
+      },
     },
     label: {
       props: { fontSize: "var(--font-size-md)", fontWeight: "var(--weight-medium)", color: "var(--neutral-12)" },
+      states: {
+        disabled: { props: { color: "var(--neutral-11)" } },
+        required: { props: { fontWeight: "var(--weight-semibold)" } },
+      },
     },
     dropzone: {
       props: {
@@ -47,6 +51,7 @@ export const recipe: SlotRecipe = {
       states: {
         dragging: { props: { borderColor: "var(--accent-8)", background: "var(--accent-2)" } },
         invalid: { props: { borderColor: "var(--danger-9)" } },
+        readonly: { props: { background: "var(--neutral-2)" } },
         disabled: { props: { cursor: "not-allowed" } },
       },
     },
@@ -93,11 +98,17 @@ export const recipe: SlotRecipe = {
             outlineOffset: "var(--border-width-2)",
           },
         },
+        readonly: { props: { cursor: "default" } },
         disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
       },
     },
     itemGroup: {
       props: { display: "flex", flexDirection: "column", gap: "var(--space-1)" },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        accepted: { props: { gap: "var(--space-1)" } },
+        rejected: { props: { gap: "var(--space-1)" } },
+      },
     },
     item: {
       props: {
@@ -109,6 +120,8 @@ export const recipe: SlotRecipe = {
         background: "var(--neutral-2)",
       },
       states: {
+        disabled: { props: { opacity: "0.6" } },
+        accepted: { props: { background: "var(--neutral-2)" } },
         rejected: {
           props: {
             background: "var(--danger-2)",
@@ -129,6 +142,11 @@ export const recipe: SlotRecipe = {
         blockSize: "2rem",
         fontSize: "var(--font-size-md)",
       },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        accepted: { props: { opacity: "1" } },
+        rejected: { props: { filter: "grayscale(1)" } },
+      },
     },
     itemPreviewImage: {
       props: {
@@ -136,6 +154,11 @@ export const recipe: SlotRecipe = {
         blockSize: "2rem",
         objectFit: "cover",
         borderRadius: "var(--radius-sm)",
+      },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        accepted: { props: { opacity: "1" } },
+        rejected: { props: { filter: "grayscale(1)" } },
       },
     },
     itemName: {
@@ -147,11 +170,19 @@ export const recipe: SlotRecipe = {
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
       },
-      states: { rejected: { props: { color: "var(--danger-11)" } } },
+      states: {
+        disabled: { props: { color: "var(--neutral-11)" } },
+        accepted: { props: { color: "var(--neutral-12)" } },
+        rejected: { props: { color: "var(--danger-11)" } },
+      },
     },
     itemSizeText: {
       props: { fontSize: "var(--font-size-sm)", color: "var(--neutral-11)" },
-      states: { rejected: { props: { color: "var(--danger-10)" } } },
+      states: {
+        disabled: { props: { opacity: "0.7" } },
+        accepted: { props: { color: "var(--neutral-11)" } },
+        rejected: { props: { color: "var(--danger-11)" } },
+      },
     },
     itemDeleteTrigger: {
       props: {
@@ -178,11 +209,13 @@ export const recipe: SlotRecipe = {
             outlineOffset: "var(--border-width-2)",
           },
         },
+        readonly: { props: { cursor: "default" } },
         disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
+        accepted: { props: { color: "var(--neutral-11)" } },
+        rejected: { props: { color: "var(--danger-11)" } },
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "file-upload-sample", component: "file-upload", recipe };

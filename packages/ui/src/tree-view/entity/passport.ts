@@ -4,7 +4,7 @@ import {
   type PassportState,
 } from "@omnifield/probe-web-skin/model";
 
-import type { TreeNode, TreeRootProps } from "../components/index.js";
+import type { TreeRootProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 
 const focus = {
@@ -105,5 +105,5 @@ export const passport = definePassport({
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },
   },
-  settings: defineSettings<TreeRootProps<TreeNode>>()({}),
+  settings: defineSettings<TreeRootProps>()({}),
 });

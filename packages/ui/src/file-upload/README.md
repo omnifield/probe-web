@@ -1,179 +1,165 @@
-# File Upload
+# 📤 File Upload
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole file upload — label, dropzone, and the picked-file list together |
-| dropzone | the drop target — click opens the file picker, drag-and-drop is wired natively |
-| label | the whole widget's own label |
-| trigger | opens the file picker explicitly — optional alongside the dropzone's own click |
-| clearTrigger | removes every accepted file at once — hidden by the kit while none are picked |
-| itemGroup | wraps a list of picked files — one group for accepted, a second optional one for rejected |
-| item | one picked file's own row |
-| itemName | the file's own name |
-| itemSizeText | the file's own formatted size |
-| itemPreview | wraps a file's preview — an image thumbnail, or a generic icon for non-image files |
-| itemPreviewImage | the actual thumbnail — only ever mounted for an accepted, image-typed file |
-| itemDeleteTrigger | removes one file |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole widget is disabled |
-| root | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| root | dragging | [data-dragging] | a file is being dragged over the widget |
-| dropzone | disabled | [data-disabled] | the whole widget is disabled |
-| dropzone | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| dropzone | dragging | [data-dragging] | a file is being dragged over the dropzone right now |
-| dropzone | invalid | [data-invalid] | the file(s) just dropped or picked failed validation |
-| label | disabled | [data-disabled] | the whole widget is disabled |
-| label | required | [data-required] | the form will demand a file on submit |
-| trigger | disabled | [data-disabled] | the whole widget is disabled |
-| trigger | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| trigger | invalid | [data-invalid] | the file(s) just picked failed validation |
-| trigger | hover | :hover | pointer is over this button |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | this button is being held down |
-| clearTrigger | disabled | [data-disabled] | the whole widget is disabled |
-| clearTrigger | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| clearTrigger | hover | :hover | pointer is over this button |
-| clearTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| clearTrigger | active | :active | this button is being held down |
-| itemGroup | disabled | [data-disabled] | the whole widget is disabled |
-| itemGroup | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemGroup | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| item | disabled | [data-disabled] | the whole widget is disabled |
-| item | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| item | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemName | disabled | [data-disabled] | the whole widget is disabled |
-| itemName | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemName | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemSizeText | disabled | [data-disabled] | the whole widget is disabled |
-| itemSizeText | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemSizeText | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemPreview | disabled | [data-disabled] | the whole widget is disabled |
-| itemPreview | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemPreview | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemPreviewImage | disabled | [data-disabled] | the whole widget is disabled |
-| itemPreviewImage | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemPreviewImage | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemDeleteTrigger | disabled | [data-disabled] | the whole widget is disabled |
-| itemDeleteTrigger | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| itemDeleteTrigger | accepted | [data-type="accepted"] | this file landed in the accepted list |
-| itemDeleteTrigger | rejected | [data-type="rejected"] | this file was rejected (size, type, or count) |
-| itemDeleteTrigger | hover | :hover | pointer is over this button |
-| itemDeleteTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemDeleteTrigger | active | :active | this button is being held down |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-File Upload is a dropzone plus a list of picked files — click or drag-and-drop to pick files,
-validated against constraints the consumer sets, with accepted and rejected files tracked
-separately. Twelve parts, the same anatomy-owns-the-address device as the rest of the Ark-provided
-kit.
-
-## Features
-
-- **Click and drag-and-drop, both wired in** — `dropzone`'s click opens the picker; drop is native
-  (`allowDrop`, default `true`, turns it off). `trigger` is an optional, explicit alternative
-  alongside the dropzone's own click, not a replacement for it.
-- **Real validation constraints** — `accept` (MIME types or extensions), `maxFiles` (default `1`),
-  `maxFileSize`/`minFileSize` (bytes), plus a `validate` function for anything the built-in
-  constraints don't cover. A file failing any of these lands in the rejected list, not the accepted
-  one.
-- **Accepted and rejected files are two separate lists** — `itemGroup`'s `type` prop
-  (`"accepted"`/`"rejected"`) decides which list its `item`s belong to; the Solid `Item` component
-  reads this from its *enclosing* `itemGroup`, not from a per-item prop — a single group can't hold
-  both types at once with per-item overrides.
-- **Controlled or uncontrolled accepted files** — `acceptedFiles` + `onFileChange` for controlled
-  use, `defaultAcceptedFiles` for uncontrolled; `onFileAccept`/`onFileReject` fire for just one side
-  each.
-- **File transformation before acceptance** — `transformFiles` runs an async function (e.g. image
-  compression) over incoming files before they're added to the accepted list.
-- **Directory and camera capture** — `directory` (webkit-only) accepts whole folders, exposing each
-  file's `webkitRelativePath`; `capture` (`"user"`/`"environment"`) opens the device camera instead
-  of the file browser.
-- **Type-matched previews** — `itemPreview`'s `type` prop (default `.*`, matching everything) picks
-  which preview renders for a given file's MIME type; mount several `itemPreview`s with different
-  `type`s side by side (e.g. `image/*` showing `itemPreviewImage`, `.*` showing a generic icon) and
-  only the matching one actually renders.
-- **`itemPreviewImage` throws on a non-image file** — it's a real `<img>`, and Ark's own guard
-  throws if the file isn't image-typed; always pair it with a `type="image/*"` on its enclosing
-  `itemPreview`, never mount it unconditionally.
-- **This kit doesn't re-export Ark's `Context`/`useFileUploadContext`** — unlike Ark's own docs
-  examples, which read `acceptedFiles`/`rejectedFiles`/`openFilePicker`/`getFileSize` off a context
-  render prop, this kit only exposes the plain root props (`acceptedFiles`, `onFileChange`,
-  `onFileAccept`, `onFileReject`). Track picked files yourself from those callbacks rather than
-  reaching for a context hook that isn't exported here.
-- **The real hidden `<input type="file">` carries no address** — same device as the checkbox's own
-  hidden input: a part the provider never addressed isn't addressable by this kit either.
-  `FileUpload`'s own root renders one automatically — an assembly never names it.
-
-## Anatomy
-
-```tsx
-import {
-  FileUpload,
-  FileUploadLabel,
-  FileUploadDropzone,
-  FileUploadTrigger,
-  FileUploadItemGroup,
-  FileUploadItem,
-  FileUploadItemPreview,
-  FileUploadItemPreviewImage,
-  FileUploadItemName,
-  FileUploadItemSizeText,
-  FileUploadItemDeleteTrigger,
-  FileUploadClearTrigger,
-  FileUploadHiddenInput,
-} from "@omnifield/probe-web-ui";
-
-<FileUpload>
-  <FileUploadLabel>{/* text */}</FileUploadLabel>
-  <FileUploadDropzone>
-    <FileUploadTrigger>{/* text or icon */}</FileUploadTrigger>
-  </FileUploadDropzone>
-  <FileUploadItemGroup type="accepted">
-    {/* one FileUploadItem per accepted file; `file` is required */}
-    <FileUploadItem file={someFile}>
-      <FileUploadItemPreview type="image/*">
-        <FileUploadItemPreviewImage />
-      </FileUploadItemPreview>
-      <FileUploadItemPreview type=".*">{/* generic icon */}</FileUploadItemPreview>
-      <FileUploadItemName />
-      <FileUploadItemSizeText />
-      <FileUploadItemDeleteTrigger>{/* text or icon */}</FileUploadItemDeleteTrigger>
-    </FileUploadItem>
-  </FileUploadItemGroup>
-  <FileUploadClearTrigger>{/* text or icon */}</FileUploadClearTrigger>
-  <FileUploadHiddenInput />
-</FileUpload>
+```
+root
+├─ label 🏷️
+├─ dropzone ⬇️
+│  └─ trigger 🔘
+├─ itemGroup (accepted) 📁
+│  └─ item 📄
+│     ├─ itemPreview / itemPreviewImage 🖼️
+│     ├─ itemName
+│     ├─ itemSizeText
+│     └─ itemDeleteTrigger ✕
+├─ itemGroup (rejected) 📁
+│  └─ item 📄 …
+└─ clearTrigger 🗑️
 ```
 
-## Examples
+| часть               | значение                                                                        | принимает внутри                     | рисуется                       |
+| -------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------- |
+| 📤 `root`            | файловый загрузчик целиком — подпись, зона сброса и список выбранных файлов вместе | `label`, `dropzone`, `itemGroup`, `clearTrigger`, любой компонент | `FileUpload`             |
+| 🏷️ `label`           | подпись виджета целиком                                                          | текст                                      | `FileUploadLabel`             |
+| ⬇️ `dropzone`        | зона сброса — клик открывает выбор файлов, drag-and-drop работает нативно         | `trigger`, текст                           | `FileUploadDropzone`          |
+| 🔘 `trigger`         | открывает выбор файлов явной кнопкой — необязательная альтернатива клику по зоне сброса | текст, иконка                        | `FileUploadTrigger`           |
+| 🗑️ `clearTrigger`    | убирает разом все принятые файлы — кит прячет её, пока ничего не выбрано          | текст, иконка                              | `FileUploadClearTrigger`      |
+| 📁 `itemGroup`       | оборачивает список выбранных файлов — одна группа на принятые, вторая необязательная на отклонённые | `item`                     | `FileUploadItemGroup`         |
+| 📄 `item`            | строка одного выбранного файла                                                   | `itemPreview`, `itemName`, `itemSizeText`, `itemDeleteTrigger` | `FileUploadItem`  |
+| `itemName`           | имя файла                                                                        | текст                                      | `FileUploadItemName`          |
+| `itemSizeText`       | отформатированный размер файла                                                   | текст                                      | `FileUploadItemSizeText`      |
+| 🖼️ `itemPreview`     | оборачивает превью файла — миниатюру изображения или обобщённую иконку           | `itemPreviewImage`, иконка                 | `FileUploadItemPreview`       |
+| `itemPreviewImage`   | настоящая миниатюра — монтируется только для принятого файла с типом изображения | —                                           | `FileUploadItemPreviewImage`  |
+| ✕ `itemDeleteTrigger`| убирает один файл                                                                | текст, иконка                              | `FileUploadItemDeleteTrigger` |
 
-### Basic, tracking accepted files yourself
+> [!NOTE]
+> Настоящий `<input type="file">` смонтирован всегда — кладёт его сам корень `FileUpload`,
+> потребителю добавлять его не нужно и нельзя: своего адреса он не несёт, в карту кита не входит и
+> наружу из кита не экспортируется вовсе. Это `extras` (см. корневой README кита) — проверка по
+> всему киту нашла в этой роли только скрытые инпуты чекбокса и файлового загрузчика, ни одного
+> другого случая.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние       | метка                    | значение                                                              |
+| ---- | ---------------- | -------------------------- | ------------------------------------------------------------------------ |
+| 🚫   | disabled         | `[data-disabled]`          | весь виджет отключён                                                     |
+| 🔒   | readonly         | `[data-readonly]`          | значение видно, изменить нельзя                                          |
+| 🖱️   | dragging         | `[data-dragging]`          | файл сейчас перетаскивают над виджетом / зоной сброса                    |
+| ⚠️   | invalid          | `[data-invalid]`           | только что сброшенный или выбранный файл(ы) не прошёл валидацию          |
+| ❗   | required         | `[data-required]`          | форма потребует файл при отправке                                        |
+| 📥   | accepted         | `[data-type="accepted"]`   | этот файл попал в список принятых                                        |
+| 📛   | rejected         | `[data-type="rejected"]`   | этот файл отклонён (размер, тип или превышен лимит количества)           |
+| 🖱️   | hover            | `:hover`                    | указатель наведён на эту кнопку                                          |
+| 👆   | active           | `:active`                    | кнопка нажата и удерживается                                             |
+| ⌨️   | focus-visible    | `:focus-visible`             | фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум       |
+
+Состояния распределены по двенадцати частям неравномерно — честное отражение того, что каждая часть
+реально может выражать, а не единый набор для всех:
+
+- `root`/`dropzone` несут `dragging` — перетаскивание файла происходит физически над этими двумя
+  узлами, остальные части его не видят.
+- `dropzone`/`trigger` несут `invalid` — файл может провалить валидацию и при клике, и при сбросе.
+- `label` несёт `required`, а не `disabled`+`readonly`+весь остальной набор — читаемость подписи
+  реагирует только на обязательность и отключённость.
+- `trigger`/`clearTrigger`/`itemDeleteTrigger` — настоящие кнопки: `hover`/`focus-visible`/`active`
+  — псевдоклассы браузера, не `data-*` атрибуты, в отличие от `disabled`/`readonly`, которые здесь
+  остаются явными марками.
+- Шесть частей внутри `item` (`itemGroup`, `item`, `itemName`, `itemSizeText`, `itemPreview`,
+  `itemPreviewImage`, `itemDeleteTrigger`) несут пару `accepted`/`rejected` — какой список занял
+  файл, а не то, как он выглядит по отдельности; общий атрибут `data-type` на всех семи, тот же
+  приём, что использует `view` датапикера для одного атрибута с более чем двумя осмысленными
+  значениями.
+- `itemPreviewImage` несёт `rejected` наравне с `accepted`, хотя рисует настоящий `<img>` и падает
+  на файле без типа изображения — отклонённый файл может остаться картинкой, просто превысить
+  лимит размера, так что пара действительно двузначна и для этой части тоже.
+- `clearTrigger`'s нативный `hidden` (виден, пока `acceptedFiles.length === 0`) не адресован
+  отдельной маркой — ни один другой атрибут коннектора не называет «список файлов пуст», подменять
+  тут нечего.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "label": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Файловый загрузчик ничего не диспатчит через сборку — выбор и удаление файлов ведёт сам виджет
+(колбэки `onFileChange`/`onFileAccept`/`onFileReject` на корне), это не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+Рабочая загрузка из данных: один принятый файл, один отклонённый, кнопки удаления кликабельны.
+
+```
+root
+  label 🏷️ · text: {label}
+  dropzone ⬇️
+    trigger 🔘 · text: "Выбрать файлы"
+  itemGroup (accepted) 📁
+    item 📄 · file: resume.pdf
+      itemPreview 🖼️ · icon: "📄"
+      itemName · text: "resume.pdf"
+      itemSizeText · text: "16 Б"
+      itemDeleteTrigger ✕ · text: "✕"
+  itemGroup (rejected) 📁
+    item 📄 · file: video.mp4
+      itemPreview 🖼️ · icon: "🎬"
+      itemName · text: "video.mp4"
+      itemSizeText · text: "превышен лимит"
+      itemDeleteTrigger ✕ · text: "✕"
+  clearTrigger 🗑️ · text: "Очистить всё"
+```
+
+Файлы — настоящие `File` (`new File(...)`), той же категории, что `collection` у select'а или
+`DateValue` у датапикера, а не JSON-заглушки: `FileUploadItemProps.file` реально ожидает
+инстанс. Обе группы заведены раздельно, а не одной с полем `type` на каждом `item` — реальная
+`Item`-компонента Ark вообще не принимает проп `type`, читая «принят/отклонён» с ЗАКРЫВАЮЩЕГО
+`itemGroup`, а не с себя.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+Двенадцать частей с неравномерным набором состояний означают не единую сетку, а разное число
+слотов на часть — большинство визуально нейтральны, но `skinGaps` требует адресовать все: пустое
+правило не засчитывается, поэтому нейтральные случаи оформлены явными, но безобидными правилами
+(например, `itemGroup`'s `accepted`/`rejected` — тот же `gap`, что уже в базе, просто явно).
+Осмысленные состояния получили реальную разницу: `itemPreview`/`itemPreviewImage` обесцвечиваются
+(`grayscale(1)`) для отклонённого файла, `itemName`/`itemSizeText`/`itemDeleteTrigger` красятся в
+`--danger-11` там же.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input type="file">` класть не нужно — корень несёт его сам.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal, For } from "solid-js";
 
 const [files, setFiles] = createSignal<File[]>([]);
 
 <FileUpload maxFiles={5} acceptedFiles={files()} onFileChange={(details) => setFiles(details.acceptedFiles)}>
-  <FileUploadLabel>Attachments</FileUploadLabel>
-  <FileUploadTrigger>Choose file(s)</FileUploadTrigger>
+  <FileUploadLabel>Вложения</FileUploadLabel>
+  <FileUploadTrigger>Выбрать файл(ы)</FileUploadTrigger>
   <FileUploadItemGroup type="accepted">
     <For each={files()}>
       {(file) => (
@@ -184,11 +170,20 @@ const [files, setFiles] = createSignal<File[]>([]);
       )}
     </For>
   </FileUploadItemGroup>
-  <FileUploadHiddenInput />
 </FileUpload>
 ```
 
-### Restricted by type and size, with rejected files shown separately
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам корень — сборке о нём знать не нужно.
+
+```tsx
+const data = { label: "Файлы" };
+const tree = instanceOf("file-upload", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Ограничение по типу и размеру, отклонённые — отдельным списком.**
 
 ```tsx
 import { createSignal } from "solid-js";
@@ -203,68 +198,36 @@ const [rejected, setRejected] = createSignal<{ file: File; errors: string[] }[]>
   onFileAccept={(details) => setAccepted(details.files)}
   onFileReject={(details) => setRejected(details.files)}
 >
-  <FileUploadLabel>Upload Images (PNG/JPEG, max 1MB)</FileUploadLabel>
-  <FileUploadDropzone>Drop your images here, or click to browse</FileUploadDropzone>
-  <FileUploadItemGroup type="accepted">
-    <For each={accepted()}>
-      {(file) => (
-        <FileUploadItem file={file}>
-          <FileUploadItemPreview type="image/*">
-            <FileUploadItemPreviewImage />
-          </FileUploadItemPreview>
-          <FileUploadItemName />
-          <FileUploadItemSizeText />
-          <FileUploadItemDeleteTrigger>✕</FileUploadItemDeleteTrigger>
-        </FileUploadItem>
-      )}
-    </For>
-  </FileUploadItemGroup>
-  <FileUploadItemGroup type="rejected">
-    <For each={rejected()}>
-      {({ file }) => (
-        <FileUploadItem file={file}>
-          <FileUploadItemName />
-        </FileUploadItem>
-      )}
-    </For>
-  </FileUploadItemGroup>
-  <FileUploadHiddenInput />
+  <FileUploadLabel>Загрузка изображений (PNG/JPEG, до 1 МБ)</FileUploadLabel>
+  <FileUploadDropzone>Перетащите изображения сюда или нажмите для выбора</FileUploadDropzone>
+  <FileUploadItemGroup type="accepted">{/* … */}</FileUploadItemGroup>
+  <FileUploadItemGroup type="rejected">{/* … */}</FileUploadItemGroup>
 </FileUpload>
 ```
 
-### Clearing everything at once
-
-```tsx
-<FileUploadClearTrigger>Clear all</FileUploadClearTrigger>
-```
-
-### Dropzone plus an explicit browse button, without opening the picker twice
-
-`disableClick` on the dropzone keeps its own click from firing alongside a nested `trigger`'s:
+**Дропзона плюс явная кнопка, без двойного открытия пикера.** `disableClick` на дропзоне гасит её
+собственный клик, чтобы не срабатывать вместе со вложенным `trigger`.
 
 ```tsx
 <FileUploadDropzone disableClick>
-  <FileUploadTrigger>Choose Files</FileUploadTrigger>
-  Drag files here
+  <FileUploadTrigger>Выбрать файлы</FileUploadTrigger>
+  Перетащите файлы сюда
 </FileUploadDropzone>
 ```
 
-## Styling hooks
+**Превью, подобранное по типу.** `itemPreview`'s проп `type` (по умолчанию `.*`, ловит всё) решает,
+какое превью рисуется для данного MIME-типа файла — можно смонтировать несколько `itemPreview` с
+разными `type` рядом, отрисуется только подходящий.
 
-Every part in the States table above shares `data-disabled`; most also carry `data-readonly` and
-the `accepted`/`rejected` pair via `data-type` — the same mark, repeated on `item` and every part
-nested inside it (`itemName`, `itemSizeText`, `itemPreview`, `itemPreviewImage`,
-`itemDeleteTrigger`), so a skin can select at whichever granularity it needs. `root`/`dropzone`
-carry `data-dragging` while a file is being dragged over them — the dropzone's own primary styling
-hook. `trigger`/`clearTrigger`/`itemDeleteTrigger` are all real buttons with the usual
-`:hover`/`:focus-visible`/`:active` pseudo-classes on top of their `data-*` marks.
+```tsx
+<FileUploadItem file={file}>
+  <FileUploadItemPreview type="image/*">
+    <FileUploadItemPreviewImage />
+  </FileUploadItemPreview>
+  <FileUploadItemPreview type=".*">🗎</FileUploadItemPreview>
+  <FileUploadItemName />
+</FileUploadItem>
+```
 
-## Accessibility
-
-Ark documents no dedicated WAI-ARIA widget pattern or keyboard table for File Upload specifically —
-`dropzone` is a clickable region wired to the native file picker, and `trigger`/`clearTrigger`/
-`itemDeleteTrigger` are each ordinary buttons following the plain
-[Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) (`Space`/`Enter` to activate,
-`Tab` to move focus). `label` is wired to the real hidden `<input type="file">` via `htmlFor`, the
-same as any native form label.
-<!-- user:end -->
+`itemPreviewImage` — настоящий `<img>`, падает на файле без типа изображения; ставить его без
+охраняющего `type="image/*"` на `itemPreview` нельзя.

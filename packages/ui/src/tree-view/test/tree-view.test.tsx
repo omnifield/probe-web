@@ -5,7 +5,7 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createTreeCollection, kit as treeViewKit } from "../components/index.jsx";
+import { kit as treeViewKit } from "../components/index.jsx";
 import type { Data } from "../entity/io.js";
 import { passport as treeViewPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
@@ -51,15 +51,10 @@ function mount(
   dispatch?: (event: DispatchedEvent) => void,
   rootProps?: Readonly<Record<string, unknown>>,
 ): HTMLElement {
-  const rootNode = { id: "ROOT", label: "", children: data.items };
-  const collection = createTreeCollection({
-    nodeToValue: (node: { id: string }) => node.id,
-    nodeToString: (node: { label?: string }) => node.label ?? "",
-    rootNode,
-  });
-
   const base = baseAssemblyOf(treeViewPassport, assembly, "tree-view", data);
-  const onRoot = updateNode(base as AssemblyTree, base.components.root, { props: { collection, ...rootProps } });
+  const onRoot = updateNode(base as AssemblyTree, base.components.root, {
+    props: { items: data.items, ...rootProps },
+  });
   if (!onRoot.ok) throw new Error(`витрина: экземпляр отвергнут механикой — ${onRoot.means}`);
 
   const host = document.createElement("div");
