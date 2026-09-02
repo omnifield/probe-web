@@ -21,6 +21,7 @@ export const recipe: SlotRecipe = {
         display: "flex",
         flexDirection: "column",
         "--active-color": "initial",
+        "--active-weight": "initial",
       },
       states: {
         disabled: { props: { pointerEvents: "none" } },
@@ -29,29 +30,21 @@ export const recipe: SlotRecipe = {
         focus: { props: { zIndex: "1" } },
         selected: {
           props: {
-            borderInlineStartWidth: "var(--border-width-2)",
-            borderInlineStartStyle: "solid",
-            borderInlineStartColor: "var(--accent-8)",
-
+            // Единственная ступень шкалы, у которой одновременно и цвет бренда, и обещание
+            // контраста КАК ТЕКСТА (`STEP_PURPOSE`/`NO_PROMISE`, packages/style) — та же
+            // ступень что у листа, что у ветки, различие не в цвете, а в весе ниже.
             "--active-color": "var(--accent-11)",
+            "--active-weight": "var(--weight-semibold)",
           },
           states: {
-            branch: { props: { "--active-color": "var(--accent-9)" } },
+            branch: { props: { "--active-weight": "var(--weight-medium)" } },
           },
         },
         checked: {
-          props: {
-            borderInlineStartWidth: "var(--border-width-2)",
-            borderInlineStartStyle: "solid",
-            borderInlineStartColor: "var(--accent-6)",
-          },
+          props: { borderInlineStartWidth: "0" },
         },
         indeterminate: {
-          props: {
-            borderInlineStartWidth: "var(--border-width-2)",
-            borderInlineStartStyle: "solid",
-            borderInlineStartColor: "var(--accent-6)",
-          },
+          props: { borderInlineStartWidth: "0" },
         },
         open: { props: { marginBlockEnd: "var(--space-1)" } },
         closed: { props: { marginBlockEnd: "0" } },
@@ -77,7 +70,7 @@ export const recipe: SlotRecipe = {
       states: {
         hover: { props: { background: "transparent" } },
         active: { props: { background: "transparent" } },
-        selected: { props: { fontWeight: "var(--weight-semibold)" } },
+        selected: { props: { background: "transparent" } },
         checked: { props: { background: "transparent" } },
         indeterminate: { props: { background: "transparent" } },
         focus: { props: { outline: "none" } },
@@ -91,7 +84,13 @@ export const recipe: SlotRecipe = {
         {
           component: "tree-view",
           part: "item",
-          style: { props: { paddingInlineStart: depthIndent, color: "var(--active-color, var(--neutral-12))" } },
+          style: {
+            props: {
+              paddingInlineStart: depthIndent,
+              color: "var(--active-color, var(--neutral-12))",
+              fontWeight: "var(--active-weight, var(--weight-medium))",
+            },
+          },
         },
       ],
     },
@@ -110,7 +109,7 @@ export const recipe: SlotRecipe = {
           props: { display: "inline-flex", transform: "rotate(0deg)" },
         },
         selected: {
-          props: { display: "inline-flex", color: "var(--accent-10)" },
+          props: { display: "inline-flex", color: "var(--accent-11)" },
         },
         disabled: { props: { opacity: "0.6" } },
         loading: { props: { opacity: "0.6" } },

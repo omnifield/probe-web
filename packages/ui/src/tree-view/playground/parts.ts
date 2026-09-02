@@ -38,6 +38,9 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       "--active-color": {
         means: "цвет текста строки, если узел на пути к активному — узел выставляет себе сам, по своим selected/branch",
       },
+      "--active-weight": {
+        means: "насыщенность текста строки на пути к активному — тот же приём, что и `--active-color`",
+      },
     },
     accepts: [
       { kind: "component", name: "control" },

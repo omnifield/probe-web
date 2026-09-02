@@ -3,6 +3,7 @@
 import type { StyleObject } from "../recipe/index.js";
 import { homesText, referenceVerdict, type VariableHome } from "../variables/index.js";
 import { Flaws } from "./flaws.js";
+import { checkStepPurpose } from "./step-purpose.js";
 import { VAR_REFERENCE } from "./var-reference.js";
 
 const NESTED_AT_RULES = ["@media", "@supports", "@container"];
@@ -38,6 +39,7 @@ export function checkStyle(
     }
 
     checkValue(value, at, known, flaws, homes);
+    checkStepPurpose(key, value, at, flaws, homes);
   }
 }
 

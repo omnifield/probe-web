@@ -52,6 +52,32 @@ export const STEP_PURPOSE: Record<ScaleStep, string> = {
 /** Имя ступени в токене: `--<scale>-<step>`; `contrast` — текст поверх сплошной ступени. */
 export type ScaleKey = `${ScaleStep}` | "contrast";
 
+/**
+ * Класс назначения ступени — заливка (обещания контраста нет, см. `NO_PROMISE`) или краска
+ * (обещание контраста есть). Формализует то же деление, что уже названо прозой в `STEP_PURPOSE`
+ * построчно; данные нужны отдельно, потому что потребитель (гейт рецепта, `packages/skin`) сверяет
+ * их МАШИНОЙ — `color: var(--accent-9)` обязан ловиться так же, как обращение к несуществующей
+ * переменной, а не читаться человеком по тексту назначения.
+ */
+export type StepPurposeClass = "fill" | "ink";
+
+/** Ступени 1–10 красят заливку и границу, 11/12/`contrast` — текст и иконку. */
+export const STEP_PURPOSE_CLASS: Record<ScaleKey, StepPurposeClass> = {
+  "1": "fill",
+  "2": "fill",
+  "3": "fill",
+  "4": "fill",
+  "5": "fill",
+  "6": "fill",
+  "7": "fill",
+  "8": "fill",
+  "9": "fill",
+  "10": "fill",
+  "11": "ink",
+  "12": "ink",
+  contrast: "ink",
+};
+
 /** Значения шкалы: строка `oklch(...)` на каждую ступень. */
 export type ScaleValues = Record<ScaleKey, string>;
 

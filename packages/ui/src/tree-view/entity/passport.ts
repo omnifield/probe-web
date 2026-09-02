@@ -75,6 +75,7 @@ export const passport = definePassport({
       variables: [
         { name: "--depth", setBy: "kit" },
         { name: "--active-color", setBy: "kit" },
+        { name: "--active-weight", setBy: "kit" },
       ],
     },
     {

@@ -33,6 +33,7 @@ export {
   NO_PROMISE,
   SCALE_STEPS,
   STEP_PURPOSE,
+  STEP_PURPOSE_CLASS,
   buildAlphaScale,
   buildChartScale,
   buildScale,
@@ -44,6 +45,7 @@ export {
   type ScaleMode,
   type ScaleStep,
   type ScaleValues,
+  type StepPurposeClass,
 } from "./scale.js";
 export { LAYERS, LAYER_TOKENS, type Layer } from "./layer.js";
 // СЕМАНТИЧЕСКИХ РОЛЕЙ И УСТАРЕВШИХ ИМЁН ЗДЕСЬ НЕТ (`PWEB-61`). Были: 35 ролей (`--surface`,

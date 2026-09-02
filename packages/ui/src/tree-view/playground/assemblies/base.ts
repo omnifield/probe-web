@@ -31,8 +31,8 @@ export const base: PassportAssembly<TreeViewPart> = {
               },
             },
             children: [
+              { node: "controlIndicator", children: [{ genus: "icon", value: "▶" }] },
               { genus: "text", value: { path: "label" } },
-              { node: "controlIndicator", children: [] },
             ],
           },
           {

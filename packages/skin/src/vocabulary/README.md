@@ -84,6 +84,12 @@ palette to close something nobody uses.
 list is taken from the values zone (`SCALE_STEPS`), not written here: a second list would drift from
 the first on the very next ladder edit, and whichever was consulted last would end up "right".
 
+`colorStepPurpose` — the reverse lookup: full variable name (`--accent-9`) to its purpose class (`fill`
+or `ink`, from the values zone's `STEP_PURPOSE_CLASS`). Built off the SAME `SCALE_ROLES` × `STEPS`
+cross product as `VOCABULARY` below, on purpose — a second cross product would know a different set of
+names than the one the vocabulary actually closes. Feeds `../rules/step-purpose.ts`; a name that is
+not a color-scale step at all returns `undefined`, read as "nothing to check", not "anything goes".
+
 ## Rows (`rows.ts`)
 
 `ROWS` — rows without a seed: ratios, weights, and motion. A palette gives the values, the vocabulary

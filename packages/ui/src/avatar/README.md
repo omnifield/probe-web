@@ -1,69 +1,88 @@
-# Avatar
+# 🖼️ Avatar
 
-**Group:** other · **Genus:** component · **Footprint:** compact
+🏷️ other · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the avatar as a whole — wraps the image and its fallback |
-| image | the picture — a real `<img>`, kept in the DOM even while hidden so its load/error events still fire |
-| fallback | shown while the image hasn't loaded (or has none) — initials, an icon, whatever the consumer puts inside it |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| image | visible | [data-state="visible"] | this part is the one currently showing |
-| image | hidden | [data-state="hidden"] | the other part — image and fallback are never both visible or both hidden at once |
-| fallback | visible | [data-state="visible"] | this part is the one currently showing |
-| fallback | hidden | [data-state="hidden"] | the other part — image and fallback are never both visible or both hidden at once |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Avatar is a graphical stand-in for a person or entity — a picture, with a fallback shown while that
-picture hasn't loaded or has none at all. It's the smallest composite component in the kit: three
-parts, no settings, and exactly one fact that matters — did the image load.
-
-## Features
-
-- **Automatic image/fallback swap** — driven entirely by the real image load outcome, not a prop:
-  whichever of `image`/`fallback` matches what actually happened is the one showing.
-- **Fallback content is the consumer's choice** — initials, an icon, anything; the kit brings no
-  default fallback graphic.
-- **Image stays mounted while hidden** — `image` is a real `<img>` kept in the DOM even when
-  `fallback` is showing, so its `load`/`error` events still fire and the swap can happen at all.
-- **Load status observable from outside** — `onStatusChange` on the root reports the same
-  loaded/error transition that drives `image`/`fallback`'s own states.
-- **The wrapper carries no state of its own** — `root` has none; a skin styling "did this avatar's
-  image load" has to select `image` or `fallback` directly; see `entity/passport.ts`.
-
-## Anatomy
-
-```tsx
-import { Avatar, AvatarImage, AvatarFallback } from "@omnifield/probe-web-ui";
-
-<Avatar>
-  <AvatarFallback>{/* text or icon, shown while there's no loaded image */}</AvatarFallback>
-  <AvatarImage src="..." alt="..." />
-</Avatar>
+```
+root
+├─ image 🖼️
+└─ fallback 🔤
 ```
 
-`root` accepts only `image` and `fallback`, as siblings — order in the JSX doesn't matter, which one
-paints on top is decided by `visible`/`hidden`, not by DOM order.
+| часть        | значение                                                                        | принимает внутри | рисуется          |
+| ------------ | -------------------------------------------------------------------------------- | ------------------ | -------------------- |
+| 🖼️ `root`    | аватар целиком — оборачивает картинку и её заглушку                              | только `image`, `fallback` | `Avatar`          |
+| 🖼️ `image`   | картинка — настоящий `<img>`, остаётся в разметке даже скрытым, чтобы load/error всё равно сработали | ничего              | `AvatarImage`     |
+| 🔤 `fallback` | показывается, пока картинка не загрузилась (или её нет) — инициалы, иконка, что положит потребитель | текст, иконку       | `AvatarFallback`  |
 
-## Examples
+<h2 id="состояния">🎛️ Состояния</h2>
 
-### Basic, with an initials fallback
+|      | состояние       | метка              | где               | значение                                                                    |
+| ---- | ---------------- | -------------------- | ------------------ | ------------------------------------------------------------------------------ |
+| 👁️   | visible / hidden | `[data-state]`       | image, fallback     | ОДИН факт с противоположным знаком: `image` показан ровно тогда, когда `fallback` скрыт, и наоборот |
+
+`root` своего состояния не несёт вовсе — узнать, загрузилась ли картинка, можно только у `image`
+или `fallback` напрямую.
+
+> [!NOTE]
+> Скрытая часть дополнительно несёт нативный `[hidden]` — та же самая пара `visible`/`hidden`
+> отражена и в атрибуте, и в разметке, не только в `data-state`.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "src": "string",
+  "alt": "string",
+  "fallback": "string"
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Аватар ничего не диспатчит — он не интерактивный виджет, только показывает то, что дали.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  fallback 🔤
+    🏷️ text: {fallback}
+  image 🖼️ · bind: src, alt
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+Своих настроек и вариантов, кроме общей оси `data-variant`, у аватара нет.
+
+Фиксированный круглый (`--radius-full`) квадрат `--control-height-md` на сторону, `overflow: hidden`
+на `root` — `image` и `fallback` заполняют его целиком (`inset: 0`/`100%×100%`), кто из двух виден,
+решает `visible`/`hidden`, а не порядок в разметке.
+
+> [!WARNING]
+> `hidden` у `image`/`fallback` адресован явно (`display: "none"`), не пустым правилом — `skinGaps`
+> не засчитывает состояние, за которым не стоит ни одного реального CSS-свойства, даже если
+> визуально скрытие и так уже выполняет нативный `[hidden]`.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Avatar>
@@ -72,64 +91,23 @@ paints on top is decided by `visible`/`hidden`, not by DOM order.
 </Avatar>
 ```
 
-### An icon fallback instead of initials
-
-`fallback` accepts icon content the same way it accepts text — there's no separate "icon fallback"
-mode, just different children:
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует `RenderTree`.
 
 ```tsx
-<Avatar>
-  <AvatarFallback>
-    <UserIcon />
-  </AvatarFallback>
-  <AvatarImage src={user.avatarUrl} alt={user.name} />
-</Avatar>
+const data = { src: "/jane-doe.jpg", alt: "Jane Doe", fallback: "JD" };
+const tree = instanceOf("avatar", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
 ```
 
-### Observing the load status
-
-`onStatusChange` fires with `{ status: "loaded" | "error" }` exactly when the image finishes loading
-or fails to — the same transition that flips `image`/`fallback`'s own `data-state`, for whenever
-something outside the avatar needs to know too:
+**Наблюдение за статусом загрузки** — `onStatusChange` на корне сообщает тот же переход
+`loaded`/`error`, что двигает `image`/`fallback`, для того, кому нужно знать об этом снаружи.
 
 ```tsx
-import { createSignal } from "solid-js";
-
 const [status, setStatus] = createSignal<"loaded" | "error">();
 
 <Avatar onStatusChange={(details) => setStatus(details.status)}>
   <AvatarFallback>JD</AvatarFallback>
   <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
-</Avatar>
+</Avatar>;
 ```
-
-### No `src`, or one that fails to load
-
-There's no prop that forces the fallback to show — it's simply what happens whenever `image` has no
-`src`, or a `src` that fails to load. Both are realistic, not edge cases to special-case:
-
-```tsx
-<Avatar>
-  <AvatarFallback>JD</AvatarFallback>
-  <AvatarImage alt="Jane Doe" />
-</Avatar>
-```
-
-## Styling hooks
-
-`image` and `fallback` each carry `data-state="visible" | "hidden"` (see `packages/skin`) — and,
-unusually for this kit, the two marks describe one shared fact from opposite sides: `image` is
-`visible` exactly when `fallback` is `hidden`, and vice versa, always. There's no third "loading"
-mark to style against — a skin that wants a loading look styles `fallback` while it's `visible`, the
-same node a plain broken-image state would also show. `root` carries no state mark at all, only the
-usual `data-variant` every part in the kit shares.
-
-## Accessibility
-
-Avatar isn't an interactive widget — it has no dedicated WAI-ARIA pattern or keyboard interactions,
-being a static image rather than a control. The real accessibility surface is content, not
-mechanics: `AvatarImage`'s `alt` is a native `<img>` attribute the kit does nothing special with, and
-`AvatarFallback`'s content is what a screen reader (or a browser with images off) reads when the
-picture never loads — worth writing something meaningful there (initials or a name), not leaving it
-empty.
-<!-- user:end -->

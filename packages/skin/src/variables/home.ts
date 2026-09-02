@@ -1,5 +1,6 @@
 // Design notes: ./README.md#home
 
+import type { StepPurposeClass } from "@omnifield/probe-web-style";
 import type { PassportLookup } from "../address/index.js";
 import type { ComponentPassport } from "../passport/form/index.js";
 
@@ -7,6 +8,7 @@ export interface VariableHome {
   readonly component: string;
   readonly part: string;
   readonly setBy: string;
+  readonly colorPurpose?: StepPurposeClass;
 }
 
 export function property(name: string): string {
@@ -29,7 +31,10 @@ export function variableHomes(lookup: PassportLookup, components: Iterable<strin
     for (const part of passport.parts) {
       for (const variable of part.variables ?? []) {
         const name = property(variable.name);
-        homes.set(name, [...(homes.get(name) ?? []), { component, part: part.name, setBy: variable.setBy }]);
+        homes.set(name, [
+          ...(homes.get(name) ?? []),
+          { component, part: part.name, setBy: variable.setBy, colorPurpose: variable.colorPurpose },
+        ]);
       }
     }
   }

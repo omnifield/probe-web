@@ -19,7 +19,8 @@ export type SkinFlawName =
   | "unknown-value"
   | "variable-elsewhere"
   | "empty-value"
-  | "free-selector";
+  | "free-selector"
+  | "step-purpose-mismatch";
 
 export interface SkinFlaw {
   readonly name: SkinFlawName;
