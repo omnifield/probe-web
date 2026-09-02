@@ -251,6 +251,12 @@ export default {
     mermaidRendering: 'Отрисовка диаграммы',
     mermaidParseError: 'Ошибка разбора Mermaid',
     mermaidEmpty: 'Пустой блок Mermaid',
+    // Алерты в стиле GitHub (`> [!NOTE]` и т.д.)
+    alertNote: 'Заметка',
+    alertTip: 'Совет',
+    alertImportant: 'Важно',
+    alertWarning: 'Предупреждение',
+    alertCaution: 'Осторожно',
   },
 
   dialogs: {

@@ -3,8 +3,7 @@ import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
 const focusRing = {
-  outline: "var(--border-width-2) solid var(--accent-8)",
-  outlineOffset: "calc(var(--border-width-2) * -1)",
+  boxShadow: "inset 0 0 0 var(--border-width-2) var(--accent-8)",
 };
 
 const selectedFill = { background: "var(--accent-3)", color: "var(--accent-12)" };
@@ -13,7 +12,9 @@ const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity
 
 const checkedFill = { background: "var(--accent-2)" };
 
-const depthIndent = "calc(var(--space-3) + var(--depth) * var(--space-6))";
+// --depth считает Zag от 1 (сам repeat, см. indexPathBind) — верхний уровень не должен получать
+// отступ, поэтому единицу вычитаем: 1 → 0, 2 → half-space-6, и так далее.
+const depthIndent = "calc((var(--depth) - 1) * var(--space-6) / 2)";
 
 export const recipe: SlotRecipe = {
   base: {
@@ -61,6 +62,7 @@ export const recipe: SlotRecipe = {
         paddingInlineEnd: "var(--space-3)",
         borderRadius: "var(--radius-sm)",
         color: "var(--neutral-12)",
+        fontWeight: "var(--weight-medium)",
         cursor: "pointer",
         userSelect: "none",
         transition,

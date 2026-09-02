@@ -23,6 +23,7 @@
   import { excalidrawBlock } from './milkdown-excalidraw-block.svelte.js';
   import PageDiagramModal from '../features/pages/PageDiagramModal.svelte';
   import { highlightCodeBlocks } from './code-highlight.js';
+  import { applyGithubAlerts } from './github-alerts.js';
   import { t } from '../stores/i18n.svelte.js';
   import { attachmentStatus } from '../stores/attachmentStatus.svelte.js';
   import { navigate } from '../router.js';
@@ -705,6 +706,7 @@
       editor.action(replaceAll(content || ''));
       requestAnimationFrame(() => {
         highlightCodeBlocks(editorElement).catch((e) => console.warn('code highlight failed', e));
+        applyGithubAlerts(editorElement);
       });
     }
   });
@@ -1044,6 +1046,71 @@
     margin: 0.75rem 0;
     font-style: italic;
     color: var(--ds-text-subtle);
+  }
+
+  /* GitHub-style alerts (`> [!NOTE]` etc.) — see github-alerts.js, which
+     strips the marker and stamps data-alert after render. */
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert]) {
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    font-style: normal;
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert] p) {
+    color: var(--ds-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-title) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-style: normal;
+    margin-bottom: 0.35rem;
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-title svg) {
+    flex-shrink: 0;
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='note']) {
+    border-left-color: var(--ds-status-info-border);
+    background-color: var(--ds-status-info-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='note'] .gfm-alert-title) {
+    color: var(--ds-status-info-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='tip']) {
+    border-left-color: var(--ds-status-success-border);
+    background-color: var(--ds-status-success-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='tip'] .gfm-alert-title) {
+    color: var(--ds-status-success-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='important']) {
+    border-left-color: var(--ds-accent-purple);
+    background-color: var(--ds-accent-purple-subtle);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='important'] .gfm-alert-title) {
+    color: var(--ds-accent-purple);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='warning']) {
+    border-left-color: var(--ds-status-warning-border);
+    background-color: var(--ds-status-warning-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='warning'] .gfm-alert-title) {
+    color: var(--ds-status-warning-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='caution']) {
+    border-left-color: var(--ds-status-danger-border);
+    background-color: var(--ds-status-danger-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='caution'] .gfm-alert-title) {
+    color: var(--ds-status-danger-text);
   }
 
   :global(.milkdown-editor .ProseMirror code) {

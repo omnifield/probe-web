@@ -17,6 +17,7 @@ export const base: PassportAssembly<TreeViewPart> = {
         node: "item",
         repeat: { path: "/items" },
         bind: { node: "" },
+        indexPathBind: "indexPath",
         children: [
           {
             node: "control",

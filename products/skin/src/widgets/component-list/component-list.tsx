@@ -1,5 +1,11 @@
-import { createTreeCollection, type TreeCollection } from "@omnifield/probe-web-ui";
-import { RenderTree, type DispatchedEvent } from "@omnifield/probe-web-assembly";
+import {
+  createTreeCollection,
+  type TreeCollection,
+} from "@omnifield/probe-web-ui";
+import {
+  RenderTree,
+  type DispatchedEvent,
+} from "@omnifield/probe-web-assembly";
 import { useNavigate } from "@omnifield/probe-web-router";
 import { createMemo } from "solid-js";
 
@@ -9,9 +15,7 @@ import { REGISTRY } from "../../entities/component/model/registry.js";
 import { usePreviewComponent } from "../../entities/preview/model/store.js";
 import { groupsToTreeItems, type TreeItemData } from "./adapter.js";
 
-export function ComponentList(props: {
-  variant?: string;
-}) {
+export function ComponentList(props: { variant?: string }) {
   const navigate = useNavigate();
   const groups = useComponentGroups();
   const active = usePreviewComponent();
@@ -36,7 +40,7 @@ export function ComponentList(props: {
         selectedValue: active() ? [active()] : [],
         defaultExpandedValue: data().items.map((item) => item.id),
       },
-      "groups",
+      "gg",
       data(),
     ),
   );
@@ -47,8 +51,18 @@ export function ComponentList(props: {
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;
 
-    void navigate({ to: "/showcase/$component", params: { component: payload.id } });
+    void navigate({
+      to: "/showcase/$component",
+      params: { component: payload.id },
+    });
   };
 
-  return <RenderTree tree={tree()} registry={REGISTRY} data={data()} dispatch={onDispatch} />;
+  return (
+    <RenderTree
+      tree={tree()}
+      registry={REGISTRY}
+      data={data()}
+      dispatch={onDispatch}
+    />
+  );
 }

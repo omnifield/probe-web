@@ -75,7 +75,7 @@ describe('tree view "base" — one level, every item labeled and clickable, clic
     expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "Beta"]);
 
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
-    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["0", "0"]);
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
 
     (controls[1] as HTMLElement).click();
     await Promise.resolve();

@@ -249,6 +249,12 @@ export default {
     mermaidRendering: 'Rendering diagram',
     mermaidParseError: 'Mermaid parse error',
     mermaidEmpty: 'Empty mermaid block',
+    // GitHub-style blockquote alerts (`> [!NOTE]` etc.)
+    alertNote: 'Note',
+    alertTip: 'Tip',
+    alertImportant: 'Important',
+    alertWarning: 'Warning',
+    alertCaution: 'Caution',
   },
 
   dialogs: {
