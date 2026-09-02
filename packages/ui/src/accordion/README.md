@@ -12,9 +12,9 @@ Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as 
 |---|---|
 | root | the whole set of items — one node wrapping every item |
 | item | one item — a trigger together with its content |
-| itemTrigger | the item's button — expands and collapses it |
-| itemContent | the item's content — the area that gets expanded |
-| itemIndicator | the expansion indicator — an arrow placed by the consumer |
+| control | the item's button — expands and collapses it |
+| content | the item's content — the area that gets expanded |
+| controlIndicator | the expansion indicator — an arrow placed by the consumer |
 
 ### States
 
@@ -24,19 +24,19 @@ Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as 
 | item | open | [data-state="open"] | the item is expanded — its content is visible |
 | item | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
 | item | focus | [data-focus] | focus is on this item's trigger |
-| itemTrigger | open | [data-state="open"] | the item is expanded — its content is visible |
-| itemTrigger | focus | [data-focus] | focus is on this item's trigger |
-| itemTrigger | disabled | :disabled | the button is disabled — clicking it does not expand the item |
-| itemTrigger | hover | :hover | pointer is over the button |
-| itemTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemTrigger | active | :active | the button is being held down |
-| itemContent | open | [data-state="open"] · may be absent | the item is expanded — its content is visible |
-| itemContent | closed | [data-state="closed"] | the item is collapsed — its content is hidden, but the node stays in place |
-| itemContent | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| itemContent | focus | [data-focus] | focus is on this item's trigger |
-| itemIndicator | open | [data-state="open"] | the item is expanded — its content is visible |
-| itemIndicator | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| itemIndicator | focus | [data-focus] | focus is on this item's trigger |
+| control | open | [data-state="open"] | the item is expanded — its content is visible |
+| control | focus | [data-focus] | focus is on this item's trigger |
+| control | disabled | :disabled | the button is disabled — clicking it does not expand the item |
+| control | hover | :hover | pointer is over the button |
+| control | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
+| control | active | :active | the button is being held down |
+| content | open | [data-state="open"] · may be absent | the item is expanded — its content is visible |
+| content | closed | [data-state="closed"] | the item is collapsed — its content is hidden, but the node stays in place |
+| content | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
+| content | focus | [data-focus] | focus is on this item's trigger |
+| controlIndicator | open | [data-state="open"] | the item is expanded — its content is visible |
+| controlIndicator | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
+| controlIndicator | focus | [data-focus] | focus is on this item's trigger |
 
 ### Settings
 
@@ -50,8 +50,8 @@ Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as 
 
 | part | variable | set by | meaning |
 |---|---|---|---|
-| itemContent | `--height` | kit | the measured height of the expanded content |
-| itemContent | `--width` | kit | the measured width of the expanded content — needed by a horizontal accordion |
+| content | `--height` | kit | the measured height of the expanded content |
+| content | `--width` | kit | the measured width of the expanded content — needed by a horizontal accordion |
 
 <!-- gen:passport:start -->
 _Nothing written here yet — this section survives regeneration; everything above it does not._
@@ -153,9 +153,9 @@ Real Solid implementations, one per anatomy part (`components/kit.tsx`) — what
 |---|---|
 | root | `Accordion` |
 | item | `AccordionItem` |
-| itemTrigger | `AccordionItemTrigger` |
-| itemContent | `AccordionItemContent` |
-| itemIndicator | `AccordionItemIndicator` |
+| control | `AccordionControl` |
+| content | `AccordionContent` |
+| controlIndicator | `AccordionControlIndicator` |
 
 <!-- gen:components:start -->
 _Nothing written here yet — this section survives regeneration; everything above it does not._
@@ -172,10 +172,10 @@ Worked `RenderTree` trees (`playground/assemblies/`) — structural skeletons pr
 ```
 root
   item · repeat: /sections · bind: value
-    itemTrigger · on: click
+    control · on: click
       text: {title}
-      itemIndicator
-    itemContent · bind: variant
+      controlIndicator
+    content · bind: variant
 ```
 
 ### action-list
@@ -185,10 +185,10 @@ root
 ```
 root
   item · repeat: /sections · bind: value
-    itemTrigger · on: click
+    control · on: click
       text: {title}
-      itemIndicator
-    itemContent
+      controlIndicator
+    content
       listbox · bind: items, value
         listbox.content
           listbox.item · repeat: items · bind: item · on: click

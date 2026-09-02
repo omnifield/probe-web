@@ -30,11 +30,11 @@ export const parts = {
       focus: { means: "focus is on this item's trigger" },
     },
     accepts: [
-      { kind: "component", name: "itemTrigger" },
-      { kind: "component", name: "itemContent" },
+      { kind: "component", name: "control" },
+      { kind: "component", name: "content" },
     ],
   },
-  itemTrigger: {
+  control: {
     means: "the item's button — expands and collapses it",
     states: {
       open: { means: "the item is expanded — its content is visible" },
@@ -50,12 +50,29 @@ export const parts = {
       active: { means: "the button is being held down" },
     },
     accepts: [
-      { kind: "component", name: "itemIndicator" },
+      { kind: "component", name: "controlIndicator" },
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
-  itemContent: {
+  controlIndicator: {
+    means: "the expansion indicator — an arrow placed by the consumer",
+    states: {
+      open: { means: "the item is expanded — its content is visible" },
+      disabled: { means: "the item is disabled — it cannot be expanded" },
+      focus: { means: "focus is on this item's trigger" },
+    },
+    // `{ kind: "component" }` — a reference to the real `icon` of the shared registry (a `node`
+    // naming something outside this component's own anatomy, `PWEB-166`/`PWEB-172`), not a text/
+    // icon content placeholder: the arrow here IS the real `icon` component, same registry entry
+    // anything else references.
+    accepts: [
+      { kind: "content", genus: "text" },
+      { kind: "content", genus: "icon" },
+      { kind: "component" },
+    ],
+  },
+  content: {
     means: "the item's content — the area that gets expanded",
     states: {
       open: { means: "the item is expanded — its content is visible" },
@@ -81,23 +98,6 @@ export const parts = {
     // anatomy, `PWEB-166`/`PWEB-172`), no name required: this part does not need to
     // know WHICH component ends up here, only that a real, independently-addressed component is
     // a legal thing to put in it.
-    accepts: [
-      { kind: "content", genus: "text" },
-      { kind: "content", genus: "icon" },
-      { kind: "component" },
-    ],
-  },
-  itemIndicator: {
-    means: "the expansion indicator — an arrow placed by the consumer",
-    states: {
-      open: { means: "the item is expanded — its content is visible" },
-      disabled: { means: "the item is disabled — it cannot be expanded" },
-      focus: { means: "focus is on this item's trigger" },
-    },
-    // `{ kind: "component" }` — a reference to the real `icon` of the shared registry (a `node`
-    // naming something outside this component's own anatomy, `PWEB-166`/`PWEB-172`), not a text/
-    // icon content placeholder: the arrow here IS the real `icon` component, same registry entry
-    // anything else references.
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },

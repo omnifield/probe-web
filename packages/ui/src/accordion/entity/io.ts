@@ -3,7 +3,7 @@
 import { z } from "@omnifield/probe-web-io";
 
 // `value`/`label`, not `id`/`title`: this nested item's only consumer is a real `listbox`
-// composed into `itemContent` (`playground/assemblies/action-list.ts`) — matching the field
+// composed into `content` (`playground/assemblies/action-list.ts`) — matching the field
 // names `listbox`'s/`select`'s own `entity/io.ts` already use for the same shape lets the
 // assembly `bind` the whole array through as-is, no per-field rename at the call site.
 const item = z.object({ value: z.string(), label: z.string() });

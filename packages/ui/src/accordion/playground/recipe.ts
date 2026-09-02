@@ -116,7 +116,7 @@ export const recipe: SlotRecipe = {
         focus: { props: { borderColor: "var(--accent-8)" } },
       },
     },
-    itemTrigger: {
+    control: {
       props: {
         display: "flex",
         alignItems: "center",
@@ -152,7 +152,7 @@ export const recipe: SlotRecipe = {
         disabled: { props: { cursor: "not-allowed", opacity: "0.6" } },
       },
     },
-    itemContent: {
+    content: {
       props: {
         paddingInline: "var(--space-4)",
         paddingBlock: "var(--space-3)",
@@ -202,7 +202,7 @@ export const recipe: SlotRecipe = {
         },
       ],
     },
-    itemIndicator: {
+    controlIndicator: {
       props: {
         display: "inline-flex",
         alignItems: "center",
@@ -230,7 +230,7 @@ export const recipe: SlotRecipe = {
       horizontal: {
         root: { props: { flexDirection: "row" } },
         item: { props: { flexDirection: "row" } },
-        itemContent: {
+        content: {
           states: {
             open: {
               props: {

@@ -20,7 +20,7 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
         bind: { value: "id" },
         children: [
           {
-            node: "itemTrigger",
+            node: "control",
             on: {
               click: {
                 event: {
@@ -31,11 +31,11 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
             },
             children: [
               { genus: "text", value: { path: "title" } },
-              { node: "itemIndicator", children: [] },
+              { node: "controlIndicator", children: [] },
             ],
           },
           {
-            node: "itemContent",
+            node: "content",
             // `variant` — not a real accordion prop, a slot's own reading of "which look to
             // preview": the showcase (`test/accordion.test.tsx`'s second block) replaces this
             // node with a live component picked by `resolved.variant`. Bound from the SAME field

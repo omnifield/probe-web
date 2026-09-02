@@ -122,7 +122,7 @@ export const passport = definePassport({
     },
     { name: "item", states: [open, disabled, focus] },
     {
-      name: "itemTrigger",
+      name: "control",
       states: [
         open,
         focus,
@@ -137,8 +137,9 @@ export const passport = definePassport({
         { name: "active", mark: { kind: "pseudo", name: ":active" } },
       ],
     },
+    { name: "controlIndicator", states: [open, disabled, focus] },
     {
-      name: "itemContent",
+      name: "content",
       // Expansion is declared WITH its caveat: its mark does not always arrive (see the file
       // header). It does not serve the look as an address — a reader working for the look drops
       // it itself, and the expanded look of the content is still addressed through the `item`
@@ -155,7 +156,6 @@ export const passport = definePassport({
         { name: "--width", setBy: "kit" },
       ],
     },
-    { name: "itemIndicator", states: [open, disabled, focus] },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },

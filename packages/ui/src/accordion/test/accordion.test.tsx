@@ -20,7 +20,7 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as accordionKit } from "../components/kit.jsx";
+import { kit as accordionKit } from "../components/index.js";
 import { passport as accordionPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as accordionEditorInfo } from "../playground/index.js";
@@ -99,7 +99,7 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
       host,
     );
 
-    const trigger = host.querySelector('[data-scope="accordion"][data-part="item-trigger"]') as HTMLElement | null;
+    const trigger = host.querySelector('[data-scope="accordion"][data-part="control"]') as HTMLElement | null;
     expect(trigger?.textContent).toBe("Section 1");
 
     const list = host.querySelector('[data-scope="listbox"]') as HTMLElement | null;
@@ -157,14 +157,14 @@ describe('accordion "base" — sections from data, the content spot left for who
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={treeOf()} data={data} />, host);
 
-    expect(partsOf(host, "item-trigger").map((trigger) => trigger.textContent)).toEqual([
+    expect(partsOf(host, "control").map((trigger) => trigger.textContent)).toEqual([
       "контурная",
       "сплошная",
     ]);
 
     // The content spot is declared EMPTY on purpose (`../playground/assemblies/base.ts`): the node
     // is there with nothing inside it, waiting for whoever renders the assembly to fill it.
-    const contents = partsOf(host, "item-content");
+    const contents = partsOf(host, "content");
     expect(contents).toHaveLength(2);
     expect(contents.map((content) => content.textContent)).toEqual(["", ""]);
   });
@@ -182,7 +182,7 @@ describe('accordion "base" — sections from data, the content spot left for who
             // Exactly what the showcase does here: `resolved.variant` picks which variant of the
             // previewed component to dress. It arrives from `bind: { variant: "id" }` in the
             // assembly — drop that bind and THIS goes red, instead of a page in another zone.
-            "accordion.itemContent": {
+            "accordion.content": {
               render: (resolved) => <span>{String(resolved.variant)}</span>,
               placement: "replace",
             },
@@ -192,7 +192,7 @@ describe('accordion "base" — sections from data, the content spot left for who
       host,
     );
 
-    expect(partsOf(host, "item-content").map((content) => content.textContent)).toEqual([
+    expect(partsOf(host, "content").map((content) => content.textContent)).toEqual([
       "контурная",
       "сплошная",
     ]);

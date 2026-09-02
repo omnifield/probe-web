@@ -6,13 +6,13 @@
 
 export {
   Accordion,
-  AccordionItem,
-  AccordionItemContent,
-  type AccordionItemContentProps,
-  AccordionItemIndicator,
-  type AccordionItemIndicatorProps,
-  type AccordionItemProps,
-  AccordionItemTrigger,
-  type AccordionItemTriggerProps,
   type AccordionProps,
+  AccordionItem,
+  type AccordionItemProps,
+  AccordionControl,
+  type AccordionControlProps,
+  AccordionControlIndicator,
+  type AccordionControlIndicatorProps,
+  AccordionContent,
+  type AccordionContentProps,
 } from "./components/index.js";

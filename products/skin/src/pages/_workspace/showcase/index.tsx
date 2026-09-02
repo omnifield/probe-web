@@ -69,7 +69,7 @@ export function ComponentShowcasePage(props: { component: string; assembly?: str
         registry={REGISTRY}
         data={data()}
         slots={{
-          "accordion.itemContent": {
+          "accordion.content": {
             render: (resolved) => (
               <ComponentPreview
                 component={props.component}

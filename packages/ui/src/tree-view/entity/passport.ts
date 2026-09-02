@@ -35,6 +35,10 @@ const loading = {
   name: "loading",
   mark: { kind: "attribute", name: "data-loading" },
 } as const satisfies PassportState;
+const branch = {
+  name: "branch",
+  mark: { kind: "attribute", name: "data-branch" },
+} as const satisfies PassportState;
 const open = {
   name: "open",
   mark: { kind: "attribute", name: "data-state", value: "open" },
@@ -65,6 +69,7 @@ export const passport = definePassport({
         checked,
         indeterminate,
         loading,
+        branch,
         ...openClosed,
       ],
       variables: [{ name: "--depth", setBy: "kit" }],

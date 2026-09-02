@@ -71,7 +71,7 @@ export function WorkspaceLayout() {
       <WorkspaceFooter
         style={{ display: "flex", gap: "var(--space-6)", "flex-wrap": "wrap" }}
       >
-        <DataOutput />
+        {/* <DataOutput /> */}
       </WorkspaceFooter>
     </Workspace>
   );

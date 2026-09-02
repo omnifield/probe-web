@@ -30,6 +30,7 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       checked: { means: "узел отмечен целиком — для дерева с чекбоксами" },
       indeterminate: { means: "отмечена только часть потомков узла" },
       loading: { means: "узел — ветка, подгружает своих потомков (`loadChildren`)" },
+      branch: { means: "узел — ветка (есть дети), а не лист; у листа этого атрибута просто нет" },
       ...openClosedMeans,
     },
     variables: { "--depth": { means: "глубина вложенности узла — от неё считается отступ строки" } },

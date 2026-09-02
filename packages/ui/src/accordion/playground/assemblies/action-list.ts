@@ -18,7 +18,7 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
         bind: { value: "id" },
         children: [
           {
-            node: "itemTrigger",
+            node: "control",
             props: { "data-variant": "secondary" },
             on: {
               click: {
@@ -30,11 +30,11 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
             },
             children: [
               { genus: "text", value: { path: "title" } },
-              { node: "itemIndicator", children: [] },
+              { node: "controlIndicator", children: [] },
             ],
           },
           {
-            node: "itemContent",
+            node: "content",
             children: [
               {
                 // ONE node, not a `repeat` — a listbox takes the whole `items` array itself
@@ -73,7 +73,7 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
                         node: "listbox.item",
                         repeat: { path: "items" },
                         bind: { item: "" },
-                        // Same device as `itemTrigger` above: `on.click` composes with the
+                        // Same device as `control` above: `on.click` composes with the
                         // part's own native click handling (Zag's selection here, expand/
                         // collapse there) — proven live on the trigger, reused rather than
                         // rediscovered. `payload: ""` — the whole current item (`{value, label}`).

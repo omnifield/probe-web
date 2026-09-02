@@ -5,18 +5,12 @@ import {
 
 import { dropAddress } from "../../../shared/utils/slot-chain.js";
 import { traceLife } from "../../../shared/utils/trace.js";
+import { anatomyParts } from "../../entity/anatomy.js";
 
-/** Props of `AccordionItemIndicator`. */
-export type AccordionItemIndicatorProps = ArkItemIndicatorProps;
+export type AccordionControlIndicatorProps = ArkItemIndicatorProps;
 
-/**
- * The expansion indicator — ONE node, hidden from screen readers (`aria-hidden`).
- *
- * The consumer places an arrow inside it: the kit brings no graphic of its own. Rotation is the
- * skin's job, which is exactly why the expansion state is declared on the indicator itself.
- */
-export function AccordionItemIndicator(props: AccordionItemIndicatorProps) {
-  traceLife("ui.accordion-item-indicator");
+export function AccordionControlIndicator(props: AccordionControlIndicatorProps) {
+  traceLife("ui.accordion-control-indicator");
 
-  return <ArkItemIndicator {...dropAddress(props)} />;
+  return <ArkItemIndicator {...dropAddress(props)} {...anatomyParts.controlIndicator.attrs} />;
 }

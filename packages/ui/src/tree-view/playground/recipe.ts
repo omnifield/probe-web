@@ -2,8 +2,6 @@ import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
-const selectedFill = { color: "var(--accent-12)" };
-
 const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity: "0.6" };
 
 // --depth считает Zag от 1 (сам repeat, см. indexPathBind) — верхний уровень не должен получать
@@ -45,6 +43,9 @@ export const recipe: SlotRecipe = {
         },
         open: { props: { marginBlockEnd: "var(--space-1)" } },
         closed: { props: { marginBlockEnd: "0" } },
+        // Само состояние не меняет вид узла — оно читается через `ancestors` у `control`
+        // (см. ниже), где отличает активный лист от активной ветки по цвету текста.
+        branch: { props: { display: "flex" } },
       },
     },
     control: {
@@ -65,7 +66,7 @@ export const recipe: SlotRecipe = {
       states: {
         hover: { props: { background: "transparent" } },
         active: { props: { background: "transparent" } },
-        selected: { props: selectedFill },
+        selected: { props: { fontWeight: "var(--weight-semibold)" } },
         checked: { props: { background: "transparent" } },
         indeterminate: { props: { background: "transparent" } },
         focus: { props: { outline: "none" } },
@@ -75,7 +76,13 @@ export const recipe: SlotRecipe = {
         open: { props: { background: "transparent" } },
         closed: { props: { background: "transparent" } },
       },
-      ancestors: [{ component: "tree-view", part: "item", style: { props: { paddingInlineStart: depthIndent } } }],
+      ancestors: [
+        { component: "tree-view", part: "item", style: { props: { paddingInlineStart: depthIndent } } },
+        // Активный ЛИСТ (нет `data-branch`) — яркий примари. Активная ВЕТКА — правило ниже
+        // (два атрибута вместо одного) перекрывает это по специфичности.
+        { component: "tree-view", part: "item", states: ["selected"], style: { props: { color: "var(--accent-9)" } } },
+        { component: "tree-view", part: "item", states: ["selected", "branch"], style: { props: { color: "var(--accent-12)" } } },
+      ],
     },
     controlIndicator: {
       props: {

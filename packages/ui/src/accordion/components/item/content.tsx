@@ -5,13 +5,12 @@ import {
 
 import { dropAddress } from "../../../shared/utils/slot-chain.js";
 import { traceLife } from "../../../shared/utils/trace.js";
+import { anatomyParts } from "../../entity/anatomy.js";
 
-/** Props of `AccordionItemContent`. */
-export type AccordionItemContentProps = ArkItemContentProps;
+export type AccordionContentProps = ArkItemContentProps;
 
-/** An item's content — ONE node; when collapsed it is hidden, not removed. */
-export function AccordionItemContent(props: AccordionItemContentProps) {
-  traceLife("ui.accordion-item-content");
+export function AccordionContent(props: AccordionContentProps) {
+  traceLife("ui.accordion-content");
 
-  return <ArkItemContent {...dropAddress(props)} />;
+  return <ArkItemContent {...dropAddress(props)} {...anatomyParts.content.attrs} />;
 }
