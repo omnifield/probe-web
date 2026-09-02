@@ -72,7 +72,10 @@ export const passport = definePassport({
         branch,
         ...openClosed,
       ],
-      variables: [{ name: "--depth", setBy: "kit" }],
+      variables: [
+        { name: "--depth", setBy: "kit" },
+        { name: "--active-color", setBy: "kit" },
+      ],
     },
     {
       name: "control",

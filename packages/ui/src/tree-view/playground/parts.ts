@@ -33,7 +33,12 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       branch: { means: "узел — ветка (есть дети), а не лист; у листа этого атрибута просто нет" },
       ...openClosedMeans,
     },
-    variables: { "--depth": { means: "глубина вложенности узла — от неё считается отступ строки" } },
+    variables: {
+      "--depth": { means: "глубина вложенности узла — от неё считается отступ строки" },
+      "--active-color": {
+        means: "цвет текста строки, если узел на пути к активному — узел выставляет себе сам, по своим selected/branch",
+      },
+    },
     accepts: [
       { kind: "component", name: "control" },
       { kind: "component", name: "content" },

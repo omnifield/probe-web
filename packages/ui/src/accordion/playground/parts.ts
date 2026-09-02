@@ -1,33 +1,14 @@
-// EDITOR-ONLY per-part taxonomy for the accordion — read by `./index.ts`'s `defineEditorInfo`
-// call (`PWEB-115`/`PWEB-118`, decomposed `PWEB-124`). Means, states, variables, and nesting
-// (`accepts`) by part name — the taxonomy half of the editor slice; scenario data
-// (`assemblies/`) and setting prose (`settings.ts`) are the other two, split out the same way
-// and for the same reason: three different questions ("what does this part mean", "what is a
-// working instance", "what do the settings mean") stopped fitting one file without a boundary.
-//
-// Nesting is declared TWO levels deep here: the item inside the root, the trigger and the
-// content inside the item. This is the first place where the nesting rule is checkable at all —
-// the button has no internal parts, and there was nothing to derive "who can be an ancestor" from.
-
-// `as const`, not a `Record<AccordionPart, PassportPartEditorInfo<AccordionPart>>` annotation —
-// the explicit annotation widens `states`'s keys AND `accepts`'s `kind: "component"` values to
-// bare `string` before `defineEditorInfo` ever sees them (`settings.ts`'s own `PWEB-209`
-// follow-up trap, one layer worse here: even bare inference alone still widens `kind` without
-// `as const`, since object literal PROPERTY VALUES widen by default, only KEYS don't). Same
-// trade-off as `settings.ts`: "did I name every real part, and only real parts" is no longer
-// checked by `tsc` either — `defineEditorInfo`'s own runtime check still catches both, one step
-// later.
 export const parts = {
   root: {
-    means: "the whole set of items — one node wrapping every item",
+    means: "весь набор разделов — один узел, оборачивающий каждый раздел",
     accepts: [{ kind: "component", name: "item" }],
   },
   item: {
-    means: "one item — a trigger together with its content",
+    means: "один раздел — кнопка вместе со своим содержимым",
     states: {
-      open: { means: "the item is expanded — its content is visible" },
-      disabled: { means: "the item is disabled — it cannot be expanded" },
-      focus: { means: "focus is on this item's trigger" },
+      open: { means: "раздел раскрыт — его содержимое видно" },
+      disabled: { means: "раздел отключён — его нельзя раскрыть" },
+      focus: { means: "фокус стоит на кнопке этого раздела" },
     },
     accepts: [
       { kind: "component", name: "control" },
@@ -35,19 +16,19 @@ export const parts = {
     ],
   },
   control: {
-    means: "the item's button — expands and collapses it",
+    means: "кнопка раздела — раскрывает и закрывает его",
     states: {
-      open: { means: "the item is expanded — its content is visible" },
-      focus: { means: "focus is on this item's trigger" },
+      open: { means: "раздел раскрыт — его содержимое видно" },
+      focus: { means: "фокус стоит на кнопке этого раздела" },
       disabled: {
-        means: "the button is disabled — clicking it does not expand the item",
+        means: "кнопка отключена — клик по ней не раскрывает раздел",
       },
-      hover: { means: "pointer is over the button" },
+      hover: { means: "указатель наведён на кнопку" },
       "focus-visible": {
         means:
-          "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise",
+          "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это было бы шумом",
       },
-      active: { means: "the button is being held down" },
+      active: { means: "кнопка нажата и удерживается" },
     },
     accepts: [
       { kind: "component", name: "controlIndicator" },
@@ -56,16 +37,12 @@ export const parts = {
     ],
   },
   controlIndicator: {
-    means: "the expansion indicator — an arrow placed by the consumer",
+    means: "индикатор раскрытия — стрелку кладёт потребитель",
     states: {
-      open: { means: "the item is expanded — its content is visible" },
-      disabled: { means: "the item is disabled — it cannot be expanded" },
-      focus: { means: "focus is on this item's trigger" },
+      open: { means: "раздел раскрыт — его содержимое видно" },
+      disabled: { means: "раздел отключён — его нельзя раскрыть" },
+      focus: { means: "фокус стоит на кнопке этого раздела" },
     },
-    // `{ kind: "component" }` — a reference to the real `icon` of the shared registry (a `node`
-    // naming something outside this component's own anatomy, `PWEB-166`/`PWEB-172`), not a text/
-    // icon content placeholder: the arrow here IS the real `icon` component, same registry entry
-    // anything else references.
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
@@ -73,31 +50,23 @@ export const parts = {
     ],
   },
   content: {
-    means: "the item's content — the area that gets expanded",
+    means: "содержимое раздела — область, которая раскрывается",
     states: {
-      open: { means: "the item is expanded — its content is visible" },
+      open: { means: "раздел раскрыт — его содержимое видно" },
       closed: {
         means:
-          "the item is collapsed — its content is hidden, but the node stays in place",
+          "раздел закрыт — содержимое скрыто, но узел остаётся в разметке",
       },
-      disabled: { means: "the item is disabled — it cannot be expanded" },
-      focus: { means: "focus is on this item's trigger" },
+      disabled: { means: "раздел отключён — его нельзя раскрыть" },
+      focus: { means: "фокус стоит на кнопке этого раздела" },
     },
     variables: {
-      "--height": { means: "the measured height of the expanded content" },
+      "--height": { means: "измеренная высота раскрытого содержимого" },
       "--width": {
         means:
-          "the measured width of the expanded content — needed by a horizontal accordion",
+          "измеренная ширина раскрытого содержимого — нужна горизонтальной гармошке",
       },
     },
-    // Anything goes inside an item's content — this is the consumer's spot, not ours: text, an
-    // icon, any component. An empty list here would mean there is nothing to expand.
-    //
-    // `{ kind: "component" }` — a reference to ANY component of the shared registry
-    // (`PassportAssemblyElement` whose `node` names something outside this component's own
-    // anatomy, `PWEB-166`/`PWEB-172`), no name required: this part does not need to
-    // know WHICH component ends up here, only that a real, independently-addressed component is
-    // a legal thing to put in it.
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },

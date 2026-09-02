@@ -36,11 +36,6 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
           },
           {
             node: "content",
-            // `variant` — not a real accordion prop, a slot's own reading of "which look to
-            // preview": the showcase (`test/accordion.test.tsx`'s second block) replaces this
-            // node with a live component picked by `resolved.variant`. Bound from the SAME field
-            // as the item's own `value` — `id` — so a slot filling this content sees which
-            // section it is without a second field carrying the same fact under a new name.
             bind: { variant: "id" },
             children: [],
           },

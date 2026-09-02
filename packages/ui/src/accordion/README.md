@@ -1,225 +1,178 @@
-# Accordion
+# 🪗 Accordion
 
-**Group:** disclosure · **Genus:** component · **Footprint:** regular
+🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Passport
+## 🧭 Навигация
 
-Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as the engine sees them.
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-### Anatomy
-
-| part | meaning |
-|---|---|
-| root | the whole set of items — one node wrapping every item |
-| item | one item — a trigger together with its content |
-| control | the item's button — expands and collapses it |
-| content | the item's content — the area that gets expanded |
-| controlIndicator | the expansion indicator — an arrow placed by the consumer |
-
-### States
-
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| item | open | [data-state="open"] | the item is expanded — its content is visible |
-| item | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| item | focus | [data-focus] | focus is on this item's trigger |
-| control | open | [data-state="open"] | the item is expanded — its content is visible |
-| control | focus | [data-focus] | focus is on this item's trigger |
-| control | disabled | :disabled | the button is disabled — clicking it does not expand the item |
-| control | hover | :hover | pointer is over the button |
-| control | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| control | active | :active | the button is being held down |
-| content | open | [data-state="open"] · may be absent | the item is expanded — its content is visible |
-| content | closed | [data-state="closed"] | the item is collapsed — its content is hidden, but the node stays in place |
-| content | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| content | focus | [data-focus] | focus is on this item's trigger |
-| controlIndicator | open | [data-state="open"] | the item is expanded — its content is visible |
-| controlIndicator | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| controlIndicator | focus | [data-focus] | focus is on this item's trigger |
-
-### Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | how items are laid out: top to bottom or left to right — this drives keyboard navigation and aria | `vertical` | [data-orientation] |
-| multiple | whether several items can stay expanded at once | `false` | — |
-| collapsible | whether the last expanded item can be closed, leaving the whole accordion collapsed | `false` (depends on `multiple`) | — |
-
-### CSS Variables
-
-| part | variable | set by | meaning |
-|---|---|---|---|
-| content | `--height` | kit | the measured height of the expanded content |
-| content | `--width` | kit | the measured width of the expanded content — needed by a horizontal accordion |
-
-<!-- gen:passport:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:passport:end -->
-
-## Data contract
-
-What an assembly's `bind`/`repeat` paths actually point into (`entity/io.ts`) — separate from the look, the same input can be dressed by any recipe.
-
-### Input
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "sections": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value",
-                "label"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "activeValues": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "title"
-        ],
-        "additionalProperties": false
-      }
-    }
-  },
-  "required": [
-    "sections"
-  ],
-  "additionalProperties": false
-}
-```
-
-### Output
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "value": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [
-    "value"
-  ],
-  "additionalProperties": false
-}
-```
-
-<!-- gen:io:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:io:end -->
-
-## Components
-
-Real Solid implementations, one per anatomy part (`components/kit.tsx`) — what actually draws each part, not just its name in the passport.
-
-| part | drawn by |
-|---|---|
-| root | `Accordion` |
-| item | `AccordionItem` |
-| control | `AccordionControl` |
-| content | `AccordionContent` |
-| controlIndicator | `AccordionControlIndicator` |
-
-<!-- gen:components:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:components:end -->
-
-## Assemblies
-
-Worked `RenderTree` trees (`playground/assemblies/`) — structural skeletons proving the passport composes, not the primary way to use the component (plain JSX composition is).
-
-### base
-
-разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя
+<h2 id="анатомия">🧩 Анатомия</h2>
 
 ```
 root
-  item · repeat: /sections · bind: value
-    control · on: click
-      text: {title}
-      controlIndicator
-    content · bind: variant
+└─ item[]
+   ├─ control ▶️
+   │  └─ controlIndicator 🔽
+   └─ content 📂
 ```
 
-### action-list
+| часть                 | значение                                              | принимает внутри                  | рисуется                    |
+| --------------------- | ----------------------------------------------------- | --------------------------------- | --------------------------- |
+| 🪗 `root`             | весь набор разделов — один узел, оборачивающий каждый | только `item`                     | `Accordion`                 |
+| 📁 `item`             | один раздел — кнопка вместе со своим содержимым       | `control`, `content`              | `AccordionItem`             |
+| ▶️ `control`          | кнопка раздела — раскрывает и закрывает его           | текст, иконку, `controlIndicator` | `AccordionControl`          |
+| 🔽 `controlIndicator` | индикатор раскрытия — стрелку кладёт потребитель      | текст, иконку, любой компонент    | `AccordionControlIndicator` |
+| 📂 `content`          | содержимое раздела — область, которая раскрывается    | текст, иконку, любой компонент    | `AccordionContent`          |
 
-разделы, а в контенте каждого — настоящий Listbox из общего реестра, не своя копия
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние     | метка                                                | где                                      | значение                                                                |
+| ---- | ------------- | ---------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
+| 🔓🔒 | open / closed | `[data-state]` · у content может отсутствовать       | item, control, controlIndicator, content | раздел раскрыт / закрыт                                                 |
+| 🚫   | disabled      | `[data-disabled]` · у control это `:disabled` кнопки | item, control, controlIndicator, content | раздел отключён — на `control` это НАСТОЯЩИЙ атрибут кнопки, не `data-` |
+| 🎯   | focus         | `[data-focus]`                                       | item, control, controlIndicator, content | фокус стоит на кнопке раздела                                           |
+| 🖱️   | hover         | `:hover`                                             | control                                  | указатель наведён на кнопку                                             |
+| ⌨️   | focus-visible | `:focus-visible`                                     | control                                  | фокус пришёл с клавиатуры — при клике мышью это было бы шумом           |
+| 👆   | active        | `:active`                                            | control                                  | кнопка нажата и удерживается                                            |
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения                | по умолчанию | означает                                                                            |
+| ------------- | ----------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| `orientation` | `vertical`/`horizontal` | `vertical`   | как расположены разделы — от этого зависит навигация с клавиатуры и aria            |
+| `multiple`    | вкл/выкл                | выкл         | можно ли держать раскрытыми сразу несколько разделов                                |
+| `collapsible` | вкл/выкл                | выкл         | можно ли закрыть последний раскрытый раздел (не нужно, если `multiple` уже включён) |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "sections": [
+    {
+      "id": "string",
+      "title": "string",
+      "items": [{ "value": "string", "label": "string" }],
+      "activeValues": ["string"]
+    }
+  ]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```tsx
+const onDispatch = (event: DispatchedEvent) => {
+  // Клик по кнопке раздела, возвращает данные раздела целиком, кроме вложенных items.
+  // event.context.payload = { id: "a", title: "Alpha" }
+};
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  dispatch={onDispatch}
+/>;
+```
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-base">🧱 base</h3>
 
 ```
 root
-  item · repeat: /sections · bind: value
-    control · on: click
-      text: {title}
-      controlIndicator
-    content
-      listbox · bind: items, value
+  item[]              · repeat: /sections · bind: value
+    control ▶️         · on: click → triggerClick
+      🏷️ text: {title}
+      controlIndicator 🔽
+    content 📂         · bind: variant
+```
+
+<h3 id="сборка-action-list">🧱 action-list</h3>
+
+```
+root
+  item[]              · repeat: /sections · bind: value
+    control ▶️         · on: click → triggerClick
+      🏷️ text: {title}
+      controlIndicator 🔽
+    content 📂
+      listbox           · bind: items, value
         listbox.content
-          listbox.item · repeat: items · bind: item · on: click
+          listbox.item[] · repeat: items · bind: item · on: click → select
             listbox.itemText
-              text: {label}
+              🏷️ text: {label}
             listbox.itemIndicator
-              icon: "✓"
+              🎨 icon: "✓"
 ```
 
-<!-- gen:assemblies:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:assemblies:end -->
+<h2 id="рецепт">🎨 Рецепт</h2>
 
-## Recipe (proof only)
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+Своих вариантов нет — рецепт не несёт оси `data-variant`, только настройку `orientation`.
 
-Proves the passport CAN be dressed by the real skin mechanism (`playground/recipe.ts`) — never ships as-is; a real look for this component lives in `packages/skin`, not here.
+> [!WARNING]
+> Раскрытие `content` — не гарантированная отметка: если раздел раскрыт БЕЗ анимации, `data-state="open"`
+> на content может не прийти вовсе. Для ВИДА это не проблема — правило смотрит на состояние `item`
+> через `ancestors`, не на сам `content`. Для АНИМАЦИИ это единственный сигнал: отметка приходит
+> ровно тогда, когда переход реально проигрывается.
 
-No named variants — this proof recipe carries no `data-variant` axis of its own.
+Раскрытие анимируется по измеренному размеру, не по `auto`:
 
-Also conditioned by the component's own settings:
+```
+expand:   height 0 → var(--height)
+collapse: height var(--height) → 0
+```
 
-| setting | conditions styled |
-|---|---|
-| orientation | horizontal |
+Для горизонтальной гармошки — та же пара по ширине (`expand-sideways`/`collapse-sideways`),
+включается настройкой `orientation`, а не отдельным вариантом.
 
-<!-- gen:recipe:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:recipe:end -->
+<h2 id="использование">🚀 Использование</h2>
 
-## Notes
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
-<!-- gen:notes:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- gen:notes:end -->
+```tsx
+<Accordion>
+  <AccordionItem value="shipping">
+    <h3>
+      <AccordionControl>
+        Shipping
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
+    </h3>
+    <AccordionContent>Courier and pickup</AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
+
+```tsx
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Рендер через движок с передачей компонента в нужный слот** — то же дерево движка, но узел
+`content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
+
+```tsx
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  slots={{ "accordion.content": { render: () => <div>CONTENT</div> } }}
+/>;
+```

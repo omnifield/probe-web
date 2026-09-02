@@ -1,9 +1,3 @@
-// Live proof for the accordion's own proof recipe (`playground/recipe.ts`) — the gap its own
-// header comment claims is closed ("only `accordion.test.tsx` reads it, to prove ... `skinGaps`
-// empty, CSS is generated") but wasn't: `accordion.test.tsx` only ever exercised the assemblies,
-// never ran the recipe through the real skin mechanism. `tree-view/test/recipe.test.tsx` is the
-// shape this follows — same palette, same three checks (structural, CSS, coverage).
-
 import { passportLookup, skinGaps, withPassports } from "@omnifield/probe-web-skin";
 import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { Outfit, Palette } from "@omnifield/probe-web-skin/model";
@@ -89,9 +83,6 @@ describe("accordion proof recipe — the passport dressed whole (PWEB-111)", () 
   });
 
   it("covers every state the passport declares — no silent gap", () => {
-    // Widened to the bare `PassportEditorInfo` (`Data = unknown`) — same cast `src/passport.ts`'s
-    // generated `EDITOR_INFOS` uses for the same reason: `skinGaps` never reads through `Data`
-    // itself, only `tsc` cannot see that across a concrete `Data` instantiation.
     expect(skinGaps(assembled.skin, [passport], [editorInfo as PassportEditorInfo])).toEqual([]);
   });
 });
