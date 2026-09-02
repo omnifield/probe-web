@@ -37,6 +37,17 @@ interface ElementFields<Part extends string, Registry extends string, Data, AtRo
    * index only to throw it away today (the gap this field closes).
    */
   readonly indexPathBind?: string;
+  /**
+   * Recursion as a behavior of the WALK, not a value inside the schema (replaces the earlier
+   * `refs`/`ref` name-table, `PWEB-160` — a node cannot literally contain a reference to itself as
+   * data; a self-referencing NAME table was the workaround, and it read as ceremony for what is
+   * really "this node's own data may nest more of itself"). `path` resolves relative to THIS
+   * node's own data scope, the same as a `repeat.path` would; if it resolves to an array, `grow`
+   * re-applies this SAME node's own template once per element, one level deeper, and attaches the
+   * results as children of the declared child part named `into` — an ordinary recursive-component
+   * shape ("if my own data has nested items, render myself again"), not a name lookup.
+   */
+  readonly recur?: { readonly path: string; readonly into: Part | Registry };
 }
 
 // One variant PER legal `repeat.path` literal (`K`) — not `repeat: {path: RepeatPath<...>}` as a
@@ -107,31 +118,6 @@ export function isAssemblyRepeat<
   return "template" in node;
 }
 
-// `ref` stays a bare `string` too: it names a subtree WITHIN this same assembly's own `refs` map
-// (`PWEB-160`), not a registry name either. `bind` here stays the untyped default (`Data`/`AtRoot`
-// left out, not threaded): a ref's template is stored ONCE in `refs` and reused wherever it's
-// referenced, each use potentially at a DIFFERENT tree position with a DIFFERENT `Data` — closing
-// this properly needs the reference's OWN use-site `Data` threaded through `mergeRef`
-// (`expand.ts`), which is real work left to a follow-up, not a silent gap introduced here (the
-// bare `string` this had before `PWEB-209` is exactly the bare `string` it still has).
-export interface PassportAssemblyRef {
-  readonly ref: string;
-  readonly props?: Readonly<Record<string, unknown>>;
-  readonly bind?: Readonly<Record<string, string>>;
-  readonly on?: Readonly<Record<string, DispatchAction>>;
-  /** Overrides the referenced template's own `indexPathBind`, same rule as `bind`/`props`/`on`. */
-  readonly indexPathBind?: string;
-}
-
-export function isAssemblyRef<
-  Part extends string = string,
-  Registry extends string = string,
-  Data = unknown,
-  AtRoot extends boolean = true,
->(node: PassportAssemblyNode<Part, Registry, Data, AtRoot>): node is PassportAssemblyRef {
-  return "ref" in node;
-}
-
 export type PassportAssemblyNode<
   Part extends string = string,
   Registry extends string = string,
@@ -140,8 +126,7 @@ export type PassportAssemblyNode<
 > =
   | PassportAssemblyElement<Part, Registry, Data, AtRoot>
   | PassportAssemblyContent<Data, AtRoot>
-  | PassportAssemblyRepeat<Part, Registry, Data, AtRoot>
-  | PassportAssemblyRef;
+  | PassportAssemblyRepeat<Part, Registry, Data, AtRoot>;
 
 export function isAssemblyContent(node: PassportAssemblyNode): node is PassportAssemblyContent {
   return "genus" in node;

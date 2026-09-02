@@ -86,3 +86,53 @@ describe('tree view "base" — one level, every item labeled and clickable, clic
     expect(items[1]!.getAttribute("data-selected")).toBe("");
   });
 });
+
+describe('tree view "base" — recur grows the same node again from its own data, depth from data alone', () => {
+  it("labels and dispatches correctly three levels deep, off ONE small schema with no per-level node", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = {
+      items: [
+        {
+          id: "a",
+          label: "Alpha",
+          children: [
+            {
+              id: "a1",
+              label: "Alpha One",
+              children: [{ id: "a1x", label: "Alpha One X" }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const dispatched: DispatchedEvent[] = [];
+    const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
+
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "Alpha One", "Alpha One X"]);
+
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "2", "3"]);
+
+    (controls[2] as HTMLElement).click();
+    await Promise.resolve();
+
+    expect(dispatched).toEqual([
+      expect.objectContaining({
+        name: "controlClick",
+        context: { payload: data.items[0]!.children![0]!.children![0] },
+      }),
+    ]);
+  });
+
+  it("stops on its own where the data stops — no children means no deeper nodes, not an error", () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = { items: [{ id: "a", label: "Alpha" }] };
+
+    const host = mount(assembly as PassportAssembly, data);
+
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1"]);
+  });
+});

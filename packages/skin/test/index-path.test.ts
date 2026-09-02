@@ -101,22 +101,4 @@ describe("indexPathBind — the repeat index growAll already counts, named as a 
     expect(section.props).toEqual({ role: "listitem", depth: [0] });
   });
 
-  it("a ref's own indexPathBind overrides the template's, same rule as bind/props/on", () => {
-    const tree = baseAssemblyOf(
-      passport,
-      {
-        name: "proof",
-        means: "proof",
-        tree: { node: "root", children: [{ node: "section", repeat: { path: "/sections" }, children: [{ ref: "row" }] }] },
-        refs: { row: { node: "row", indexPathBind: "fromTemplate" } },
-      },
-      "list",
-      data,
-    );
-
-    // The ref itself doesn't override here — proves the template's OWN indexPathBind reaches the
-    // grown node at all, through mergeRef, before the override case is exercised below.
-    const row = Object.values(tree.components.nodes).find((node) => isElement(node) && node.type === "list.row") as BaseAssemblyElement;
-    expect(row.props?.["fromTemplate"]).toEqual([0]);
-  });
 });

@@ -91,25 +91,6 @@ describe("checkAssemblyData", () => {
     expect(checkAssemblyData("list", brokenAbsolute, { items: [{ id: "a", title: "A" }] })).toHaveLength(1);
   });
 
-  it("merges a ref's own bind over the template's, checking what actually resolves at the use site", () => {
-    const withRef: PassportAssembly<"root" | "item"> = {
-      name: "ref-case",
-      means: "proof",
-      tree: { node: "root", children: [{ ref: "row", bind: { value: "/items" } }] },
-      refs: { row: { node: "item", bind: { value: "id" } } },
-    };
-
-    // The ref overrides `value` to a path the template never had — proof the merge, not the bare
-    // template, is what gets checked.
-    expect(checkAssemblyData("list", withRef, { items: [{ id: "a", title: "A" }] })).toEqual([]);
-
-    const overriddenBadly: PassportAssembly<"root" | "item"> = {
-      ...withRef,
-      tree: { node: "root", children: [{ ref: "row", bind: { value: "/nope" } }] },
-    };
-    expect(checkAssemblyData("list", overriddenBadly, { items: [{ id: "a", title: "A" }] })).toHaveLength(1);
-  });
-
   it('treats the empty-string path ("whole current node") as always legal', () => {
     const whole: PassportAssembly<"root"> = { name: "whole", means: "proof", tree: { node: "root", bind: { value: "" } } };
     expect(checkAssemblyData("thing", whole, "any value at all")).toEqual([]);

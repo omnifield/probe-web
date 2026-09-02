@@ -9,7 +9,7 @@ type TreeViewPart =
 export const base: PassportAssembly<TreeViewPart> = {
   name: "base",
   means:
-    "один уровень, каждый лист подписан и кликабелен, свой клик шлёт наружу, есть открытый слот под лишнее",
+    "дерево произвольной глубины, каждый узел подписан и кликабелен, свой клик шлёт наружу",
   tree: {
     node: "root",
     children: [
@@ -18,6 +18,7 @@ export const base: PassportAssembly<TreeViewPart> = {
         repeat: { path: "/items" },
         bind: { node: "" },
         indexPathBind: "indexPath",
+        recur: { path: "children", into: "content" },
         children: [
           {
             node: "control",

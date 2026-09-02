@@ -30,13 +30,11 @@ export type {
   PassportAssemblyContent,
   PassportAssemblyElement,
   PassportAssemblyNode,
-  PassportAssemblyRef,
   PassportAssemblyRepeat,
 } from "./passport/assembly/index.js";
 export {
   baseAssemblyOf,
   isAssemblyContent,
-  isAssemblyRef,
   isAssemblyRepeat,
   isContentNode,
   isDataBinding,

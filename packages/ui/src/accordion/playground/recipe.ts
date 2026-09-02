@@ -1,10 +1,11 @@
 // PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. The kit holds "zero
 // styles by default" (README, "Four principles"), and this file does not break that: it lives
 // next to the component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only
-// `accordion.test.tsx` reads it, to prove the accordion's passport CAN be dressed whole by the
-// real skin mechanism (`skinGaps` empty, CSS is generated, a live browser expands and collapses
-// items frame by frame). This used to be proven by a separate package, `packages/skin-reference`
-// (removed, `PWEB-110`) — now the component proves itself, in its own folder.
+// tests read it. `test/recipe.test.tsx` proves the accordion's passport CAN be dressed whole by
+// the real skin mechanism (`skinGaps` empty, real CSS generated); `test/accordion.test.tsx`
+// separately proves the ASSEMBLIES compose and dispatch. This used to be proven by a separate
+// package, `packages/skin-reference` (removed, `PWEB-110`) — now the component proves itself, in
+// its own folder.
 //
 // Ported line-for-line from `packages/skin-reference/src/recipes.ts` (git history is intact at
 // `git show 5d560ae:packages/skin-reference/src/recipes.ts`); the look did not change in the

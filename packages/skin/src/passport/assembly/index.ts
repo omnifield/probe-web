@@ -15,11 +15,10 @@ export type {
   PassportAssemblyContent,
   PassportAssemblyElement,
   PassportAssemblyNode,
-  PassportAssemblyRef,
   PassportAssemblyRepeat,
   PassportSelfAssembly,
 } from "./nodes.js";
-export { isAssemblyContent, isAssemblyRef, isAssemblyRepeat } from "./nodes.js";
+export { isAssemblyContent, isAssemblyRepeat } from "./nodes.js";
 
 export type { DataPreset, PassportAssembly } from "./assembly.js";
 

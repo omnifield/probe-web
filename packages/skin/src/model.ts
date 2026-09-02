@@ -61,14 +61,12 @@ export type {
   PassportAssemblyContent,
   PassportAssemblyElement,
   PassportAssemblyNode,
-  PassportAssemblyRef,
   PassportAssemblyRepeat,
   PassportGenus,
   PassportSelfAssembly,
 } from "./passport/assembly/index.js";
 export {
   isAssemblyContent,
-  isAssemblyRef,
   isAssemblyRepeat,
   isDataBinding,
   resolveDataBinding,

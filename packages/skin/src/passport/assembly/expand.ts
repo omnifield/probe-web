@@ -5,14 +5,12 @@ import type { PassportAssembly } from "./assembly.js";
 import { isDataBinding, resolveDataBinding } from "./binding.js";
 import {
   isAssemblyContent,
-  isAssemblyRef,
   isAssemblyRepeat,
   type PassportAssemblyContent,
   type PassportAssemblyElement,
   type PassportAssemblyNode,
-  type PassportAssemblyRef,
 } from "./nodes.js";
-import type { BaseAssemblyNode, BaseAssemblyTree } from "./output.js";
+import { isContentNode, type BaseAssemblyElement, type BaseAssemblyNode, type BaseAssemblyTree } from "./output.js";
 
 /**
  * Абсолютит путь узла относительно текущего масштаба (`base`) — тот же приём, каким
@@ -30,6 +28,18 @@ import type { BaseAssemblyNode, BaseAssemblyTree } from "./output.js";
 export function scopedPath(base: string, path: string): string {
   return path === "" ? base : path.startsWith("/") ? path : `${base}/${path}`;
 }
+
+/**
+ * Guards `grow`/`growAll`'s mutual recursion against an unbounded chain — a self-recursing
+ * `recur` with no exit in its own data, or `repeat`-wrapped data that happens to cycle (a node's
+ * own descendant array circling back to an ancestor), both recurse with no other exit condition.
+ * 300 comfortably exceeds any real assembly's structural depth while staying well short of a
+ * native stack overflow — `recur` chains more real call frames per logical level than a flat
+ * `repeat` does (`grow` → its own children → the `recur` re-entry → `growAll` again), so this sits
+ * lower than a naive per-frame budget would suggest; measured empirically against this same
+ * engine (`test/assembly-depth-guard.test.ts`), not assumed.
+ */
+const MAX_ASSEMBLY_DEPTH = 300;
 
 export function baseAssemblyOf(
   passport: ComponentPassport,
@@ -64,6 +74,11 @@ export function baseAssemblyOf(
     }
 
     if ("repeat" in node && node.repeat) {
+      // A nested repeat found while walking an OUTER template's own children (see the generic
+      // branch below) — only its `repeat.path` needs fixing up here, so a LATER pass (when
+      // `growAll` actually unwraps THIS repeat) resolves the right array. `bind`/`children`/
+      // `recur` on this same node get their real scoping on that later pass, once `repeat` is
+      // stripped and this same function runs again through the generic branch.
       return { ...node, repeat: { path: scopedPath(base, node.repeat.path) } };
     }
 
@@ -93,12 +108,14 @@ export function baseAssemblyOf(
         )
       : undefined;
     const boundChildren = "children" in node ? node.children?.map((child) => scopeTemplate(child, base)) : undefined;
+    const boundRecur = "recur" in node && node.recur ? { ...node.recur, path: scopedPath(base, node.recur.path) } : undefined;
 
     return {
       ...node,
       ...(boundBind ? { bind: boundBind } : {}),
       ...(boundOn ? { on: boundOn } : {}),
       ...(boundChildren ? { children: boundChildren } : {}),
+      ...(boundRecur ? { recur: boundRecur } : {}),
     };
   };
 
@@ -107,11 +124,21 @@ export function baseAssemblyOf(
   const propsOf = (node: { props?: Readonly<Record<string, unknown>>; indexPathBind?: string }, indexPath: readonly number[]) =>
     node.props || node.indexPathBind ? { props: { ...node.props, ...(node.indexPathBind ? { [node.indexPathBind]: indexPath } : {}) } } : {};
 
+  // `pristine` — the never-yet-scoped literal a `recur` on THIS node would need to reuse. A
+  // repeat's own `template` (both forms) is already kept around unscoped for exactly this reason
+  // (re-applied fresh on every index); `recur` needs the same discipline for the same reason —
+  // re-scoping an ALREADY-scoped node is a no-op on every path that already starts with "/"
+  // (`scopedPath`'s own absolute-path short-circuit), so reusing the post-scope `node` itself
+  // would freeze every recursive level at the FIRST level's bindings. Defaults to `node`: a plain
+  // child reached by ordinary nesting (not through a `repeat`) is never scoped away from how its
+  // author wrote it, so it already IS its own pristine form.
   const grow = (
     node: PassportAssemblyElement | PassportAssemblyContent,
     parentId: string | null,
     indexPath: readonly number[],
     base: string,
+    depth: number,
+    pristine: PassportAssemblyNode = node,
   ): string => {
     if (isAssemblyContent(node)) {
       const id = nameFor(node.genus);
@@ -135,36 +162,56 @@ export function baseAssemblyOf(
       ...(node.on ? { on: node.on } : {}),
     };
 
-    for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath, base));
+    for (const child of node.children ?? []) children.push(...growAll(child, id, indexPath, base, depth + 1));
+
+    if (node.recur) {
+      const items = resolveDataBinding(data, node.recur.path);
+
+      if (Array.isArray(items)) {
+        const targetType = declared.includes(node.recur.into) ? addressOf(node.recur.into) : node.recur.into;
+        const targetId = children.find((childId) => {
+          const target = nodes[childId];
+          return target !== undefined && !isContentNode(target) && target.type === targetType;
+        });
+
+        if (targetId) {
+          const grown = items.flatMap((_, index) => {
+            const scoped = `${node.recur!.path}/${index}`;
+            return growAll(scopeTemplate(pristine, scoped), targetId, [...indexPath, index], scoped, depth + 1, pristine);
+          });
+
+          const target = nodes[targetId] as BaseAssemblyElement;
+          nodes[targetId] = { ...target, children: [...target.children, ...grown] };
+        }
+      }
+    }
 
     return id;
   };
 
-  const mergeRef = (template: PassportAssemblyNode, ref: PassportAssemblyRef): PassportAssemblyNode => {
-    if (isAssemblyContent(template) || isAssemblyRepeat(template)) return template;
+  const growAll = (
+    node: PassportAssemblyNode,
+    parentId: string | null,
+    indexPath: readonly number[],
+    base: string,
+    depth: number,
+    pristine: PassportAssemblyNode = node,
+  ): string[] => {
+    if (depth > MAX_ASSEMBLY_DEPTH) {
+      const at = "node" in node ? `node "${node.node}"` : "content node";
+      throw new Error(
+        `assembly "${assembly.name}" grew past ${MAX_ASSEMBLY_DEPTH} levels at ${at} — a self-recursing node with ` +
+          `no exit in its data, or repeat-bound data that cycles back on itself, never stops on its own`,
+      );
+    }
 
-    const props = ref.props || template.props ? { ...template.props, ...ref.props } : undefined;
-    const bind = ref.bind || template.bind ? { ...template.bind, ...ref.bind } : undefined;
-    const on = ref.on || template.on ? { ...template.on, ...ref.on } : undefined;
-    const indexPathBind = ref.indexPathBind ?? template.indexPathBind;
-
-    return {
-      ...template,
-      ...(props ? { props } : {}),
-      ...(bind ? { bind } : {}),
-      ...(on ? { on } : {}),
-      ...(indexPathBind !== undefined ? { indexPathBind } : {}),
-    };
-  };
-
-  const growAll = (node: PassportAssemblyNode, parentId: string | null, indexPath: readonly number[], base: string): string[] => {
     if (isAssemblyRepeat(node)) {
       const items = resolveDataBinding(data, node.repeat.path);
       if (!Array.isArray(items)) return [];
 
       return items.flatMap((_, index) => {
         const scoped = `${node.repeat.path}/${index}`;
-        return growAll(scopeTemplate(node.template, scoped), parentId, [...indexPath, index], scoped);
+        return growAll(scopeTemplate(node.template, scoped), parentId, [...indexPath, index], scoped, depth + 1, node.template);
       });
     }
 
@@ -175,33 +222,21 @@ export function baseAssemblyOf(
 
       return items.flatMap((_, index) => {
         const scoped = `${repeat.path}/${index}`;
-        return growAll(scopeTemplate(template as PassportAssemblyNode, scoped), parentId, [...indexPath, index], scoped);
+        return growAll(
+          scopeTemplate(template as PassportAssemblyNode, scoped),
+          parentId,
+          [...indexPath, index],
+          scoped,
+          depth + 1,
+          template as PassportAssemblyNode,
+        );
       });
     }
 
-    if (isAssemblyRef(node)) {
-      const template = assembly.refs?.[node.ref];
-      if (!template) {
-        throw new Error(
-          `assembly "${assembly.name}" references "${node.ref}", which is not in its refs — a declaration defect`,
-        );
-      }
-
-      // A ref does not change scope BY ITSELF — only a `repeat` does (the branches above) — but
-      // unlike a plain child reached by direct nesting, a ref's content was never handed to
-      // `scopeTemplate` at the point where it sits (`scopeTemplate`'s own generic walk has no
-      // `children` to descend into on a ref node — `refs` resolve lazily, here, not structurally
-      // during that walk). Applied now, on the MERGED result, with the scope this reference was
-      // actually reached at: a ref inside a repeat's template absolutizes against that repeat's
-      // element, a ref at the root absolutizes against `""` — same as if the referenced tree had
-      // been written out by hand at this exact position instead of named.
-      return growAll(scopeTemplate(mergeRef(template, node), base), parentId, indexPath, base);
-    }
-
-    return [grow(node, parentId, indexPath, base)];
+    return [grow(node, parentId, indexPath, base, depth, pristine)];
   };
 
-  const root = grow(assembly.tree, null, [], "");
+  const root = grow(assembly.tree, null, [], "", 0);
 
   return {
     components: {
