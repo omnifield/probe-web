@@ -1,9 +1,18 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { Checkbox, type CheckboxProps } from "./root.js";
+export { CheckboxControl, type CheckboxControlProps } from "./control.js";
+export { CheckboxIndicator, type CheckboxIndicatorProps } from "./indicator.js";
+export { CheckboxLabel, type CheckboxLabelProps } from "./label.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { Checkbox } from "./root.js";
+import { CheckboxControl } from "./control.js";
+import { CheckboxIndicator } from "./indicator.js";
+import { CheckboxLabel } from "./label.js";
+
+export const kit = defineKitComponent(passport, {
+  root: Checkbox,
+  control: CheckboxControl,
+  indicator: CheckboxIndicator,
+  label: CheckboxLabel,
+});

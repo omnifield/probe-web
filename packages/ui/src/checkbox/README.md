@@ -1,164 +1,131 @@
-# Checkbox
+# ☑️ Checkbox
 
-**Group:** inputs · **Genus:** component · **Footprint:** compact
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the checkbox as a whole — a `<label>` node; clicking it toggles the mark |
-| control | the control frame — the visible square that holds the checked-mark indicator |
-| indicator | the checked-mark indicator — a check or a dash, placed by the consumer |
-| label | the checkbox's label |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | checked | [data-state="checked"] | the checkbox is checked |
-| root | unchecked | [data-state="unchecked"] | the checkbox is unchecked |
-| root | indeterminate | [data-state="indeterminate"] | partially checked — typically a checkbox summarizing partially-checked children |
-| root | disabled | [data-disabled] | the checkbox is disabled — it cannot be toggled |
-| root | readonly | [data-readonly] | the checkbox is read-only — its state is visible but cannot be toggled |
-| root | invalid | [data-invalid] | the checkbox is invalid per the form's validation rules |
-| root | required | [data-required] | the checkbox is required for form submission |
-| root | hover | [data-hover] | the pointer is over the checkbox |
-| root | active | [data-active] | the checkbox is being pressed by the pointer |
-| root | focus | [data-focus] | focus is on the checkbox |
-| root | focus-visible | [data-focus-visible] | focus arrived from the keyboard — a focus ring belongs here |
-| control | checked | [data-state="checked"] | the checkbox is checked |
-| control | unchecked | [data-state="unchecked"] | the checkbox is unchecked |
-| control | indeterminate | [data-state="indeterminate"] | partially checked — typically a checkbox summarizing partially-checked children |
-| control | disabled | [data-disabled] | the checkbox is disabled — it cannot be toggled |
-| control | readonly | [data-readonly] | the checkbox is read-only — its state is visible but cannot be toggled |
-| control | invalid | [data-invalid] | the checkbox is invalid per the form's validation rules |
-| control | required | [data-required] | the checkbox is required for form submission |
-| control | hover | [data-hover] | the pointer is over the checkbox |
-| control | active | [data-active] | the checkbox is being pressed by the pointer |
-| control | focus | [data-focus] | focus is on the checkbox |
-| control | focus-visible | [data-focus-visible] | focus arrived from the keyboard — a focus ring belongs here |
-| indicator | checked | [data-state="checked"] | the checkbox is checked |
-| indicator | unchecked | [data-state="unchecked"] | the checkbox is unchecked |
-| indicator | indeterminate | [data-state="indeterminate"] | partially checked — typically a checkbox summarizing partially-checked children |
-| indicator | disabled | [data-disabled] | the checkbox is disabled — it cannot be toggled |
-| indicator | readonly | [data-readonly] | the checkbox is read-only — its state is visible but cannot be toggled |
-| indicator | invalid | [data-invalid] | the checkbox is invalid per the form's validation rules |
-| indicator | required | [data-required] | the checkbox is required for form submission |
-| indicator | hover | [data-hover] | the pointer is over the checkbox |
-| indicator | active | [data-active] | the checkbox is being pressed by the pointer |
-| indicator | focus | [data-focus] | focus is on the checkbox |
-| indicator | focus-visible | [data-focus-visible] | focus arrived from the keyboard — a focus ring belongs here |
-| label | checked | [data-state="checked"] | the checkbox is checked |
-| label | unchecked | [data-state="unchecked"] | the checkbox is unchecked |
-| label | indeterminate | [data-state="indeterminate"] | partially checked — typically a checkbox summarizing partially-checked children |
-| label | disabled | [data-disabled] | the checkbox is disabled — it cannot be toggled |
-| label | readonly | [data-readonly] | the checkbox is read-only — its state is visible but cannot be toggled |
-| label | invalid | [data-invalid] | the checkbox is invalid per the form's validation rules |
-| label | required | [data-required] | the checkbox is required for form submission |
-| label | hover | [data-hover] | the pointer is over the checkbox |
-| label | active | [data-active] | the checkbox is being pressed by the pointer |
-| label | focus | [data-focus] | focus is on the checkbox |
-| label | focus-visible | [data-focus-visible] | focus arrived from the keyboard — a focus ring belongs here |
+```
+root
+├─ control ☐
+│  └─ indicator ✓
+└─ label 🏷️
+```
 
-## Settings
+| часть        | значение                                                  | принимает внутри            | рисуется           |
+| ------------ | ------------------------------------------------------------ | ------------------------------ | --------------------- |
+| ☑️ `root`    | чекбокс целиком — узел `<label>`, клик по нему переключает отметку | `control`, `indicator`, `label`, любой компонент | `Checkbox`        |
+| ☐ `control`  | управляющая рамка — видимый квадрат, держит указатель отметки | `indicator`, иконку, любой компонент | `CheckboxControl` |
+| ✓ `indicator`| указатель отметки — галочка или черта, кладёт потребитель  | текст, иконку                  | `CheckboxIndicator`|
+| 🏷️ `label`   | подпись чекбокса                                            | текст                          | `CheckboxLabel`     |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+> [!NOTE]
+> Настоящий `<input type="checkbox">` смонтирован всегда — кладёт его сам корень `Checkbox`,
+> потребителю добавлять его не нужно и нельзя: своего адреса он не несёт, в карту кита не входит и
+> наружу из кита не экспортируется вовсе. Это `extras` (см. корневой README кита): технический узел
+> ради фокуса, формы и скринридера, не строительный кубик схемы.
 
-## Notes
+<h2 id="состояния">🎛️ Состояния</h2>
 
-<!-- user:start -->
-## Overview
+|      | состояние       | метка                    | значение                                                                 |
+| ---- | ---------------- | -------------------------- | ------------------------------------------------------------------------ |
+| ✅   | checked          | `[data-state="checked"]`     | чекбокс отмечен                                                          |
+| ⬜   | unchecked        | `[data-state="unchecked"]`   | чекбокс не отмечен                                                       |
+| ➖   | indeterminate    | `[data-state="indeterminate"]` | отмечен отчасти — обычно чекбокс, суммирующий частично отмеченных потомков |
+| 🚫   | disabled         | `[data-disabled]`            | нельзя переключить                                                       |
+| 🔒   | readonly         | `[data-readonly]`            | отметку видно, переключить нельзя                                       |
+| ⚠️   | invalid          | `[data-invalid]`             | невалиден по правилам валидации формы                                    |
+| ❗   | required         | `[data-required]`            | обязателен для отправки формы                                            |
+| 🖱️   | hover            | `[data-hover]`               | указатель наведён                                                        |
+| 👆   | active           | `[data-active]`              | нажат указателем                                                         |
+| 🎯   | focus            | `[data-focus]`               | фокус стоит на чекбоксе                                                  |
+| ⌨️   | focus-visible    | `[data-focus-visible]`       | фокус пришёл с клавиатуры                                                |
 
-Checkbox is a form input — one control a person toggles between checked and unchecked, and which
-can also sit in a third, "indeterminate" state (partially checked, typically used for a checkbox
-that summarizes a set of other checkboxes). It was the first *form* component the kit took from Ark
-UI (`PWEB-114`), following the same anatomy-owns-the-address approach as `accordion`: Ark itself
-sets the `data-scope`/`data-part` addresses, the kit only wraps.
+Все одиннадцать состояний — **атрибуты, не псевдоклассы**, и это находка, не выбор кита. Реальный
+фокус лежит на скрытом `<input>`, а не на видимых узлах, и браузерные `:hover`/`:focus`/`:active` на
+них просто не сработают — Zag следит за указателем и фокусом сам и кладёт результат данными.
+Одиннадцать состояний повторяются **одинаково на всех четырёх частях** — `getRootProps`/
+`getControlProps`/`getIndicatorProps`/`getLabelProps` спредят один и тот же объект атрибутов: у
+чекбокса нет части, которая «владеет» состоянием больше других.
 
-## Features
+<h2 id="io">🔌 IO</h2>
 
-- **Three-state, not two** — `checked` / `defaultChecked` accept `boolean | "indeterminate"`, and
-  `root`/`control`/`indicator`/`label` all carry the matching `data-state` mark.
-- **Controlled or uncontrolled** — `checked` + `onCheckedChange` for controlled use, `defaultChecked`
-  for uncontrolled.
-- **Disableable** — `disabled` stops the checkbox from toggling; `root`, `control`, `indicator`, and
-  `label` all pick up `data-disabled` together.
-- **Read-only** — `readOnly` shows the current state without letting it change, marked
-  `data-readonly` on every part.
-- **Form-validation hooks** — `invalid` and `required` are plain booleans you set from your own
-  validation logic; the kit only renders the corresponding `data-invalid` / `data-required` marks,
-  it never computes validity itself.
-- **Interactive states carried on every part** — `hover`, `active`, `focus`, and `focus-visible` are
-  all marked identically on `root`, `control`, `indicator`, and `label`, so a skin can style
-  whichever part needs to react.
-- **Real form participation** — `name` and `value` (default `"on"`) on the root make the checkbox
-  submit like a native `<input type="checkbox">`, because underneath, it is one.
+<h3 id="io-вход">📥 Вход</h3>
 
-## Anatomy
+```json
+{ "label": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Чекбокс ничего не диспатчит через сборку — переключение отметки ведёт скрытый `<input>` сам, это
+не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  control ☐
+    indicator ✓ · text: "✓"
+  label 🏷️ · text: {label}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!WARNING]
+> `display` у `indicator` — не в базе: кит прячет узел атрибутом `hidden` (нативный `display:
+> none`), пока чекбокс не отмечен и не «отчасти». Безусловный `display: inline-flex` в базе
+> перебил бы это специфичностью для КАЖДОГО чекбокса разом — указатель отметки всегда бы
+> показывался. `display` появляется только внутри состояний `checked`/`indeterminate` (и явно
+> `none` в `unchecked` — то же самое, но явно, чтобы `skinGaps` не считал состояние пропущенным).
+
+Одиннадцать состояний на четырёх частях означают сорок четыре слота — большинство визуально
+нейтральны (не у каждой части есть что показать на каждое состояние), но `skinGaps` требует
+адресовать все: пустое правило не засчитывается (`declares(style.props)` требует хотя бы одно
+настоящее CSS-свойство), поэтому нейтральные случаи оформлены явными, но безобидными правилами
+(например, `root`'s `checked`/`unchecked`/`indeterminate` — тот же `cursor: "pointer"`, что уже в
+базе, просто явно).
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` класть не нужно — корень несёт его сам.
 
 ```tsx
-import {
-  Checkbox,
-  CheckboxControl,
-  CheckboxIndicator,
-  CheckboxLabel,
-  CheckboxHiddenInput,
-} from "@omnifield/probe-web-ui";
-
 <Checkbox>
   <CheckboxControl>
-    <CheckboxIndicator>{/* checked mark: text or icon */}</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>{/* text */}</CheckboxLabel>
-  <CheckboxHiddenInput />
-</Checkbox>
-```
-
-`CheckboxHiddenInput` is not optional decoration: it's a real `<input type="checkbox">`, and the
-actual `onChange` that flips the checked state lives on *that* node, not on `control` or `label`
-(`PWEB-152`). Omit it and the checkbox renders correctly but clicking it does nothing. It also has
-no passport part of its own — it carries no visual states or marks, unlike the other four parts.
-
-## Examples
-
-### Uncontrolled, starting checked
-
-`defaultChecked` sets the initial state without you having to manage it:
-
-```tsx
-<Checkbox defaultChecked>
-  <CheckboxControl>
     <CheckboxIndicator>✓</CheckboxIndicator>
   </CheckboxControl>
-  <CheckboxLabel>I agree to the terms and conditions</CheckboxLabel>
-  <CheckboxHiddenInput />
+  <CheckboxLabel>Согласен с условиями</CheckboxLabel>
 </Checkbox>
 ```
 
-### Controlled
-
-`checked` + `onCheckedChange` hand you the state instead of letting the checkbox own it:
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам корень — сборке о нём знать не нужно.
 
 ```tsx
-import { createSignal } from "solid-js";
+const data = { label: "Согласен с условиями" };
+const tree = instanceOf("checkbox", {}, "basic", data);
 
-const [checked, setChecked] = createSignal<boolean | "indeterminate">(false);
-
-<Checkbox checked={checked()} onCheckedChange={(details) => setChecked(details.checked)}>
-  <CheckboxControl>
-    <CheckboxIndicator>✓</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>Subscribe to updates</CheckboxLabel>
-  <CheckboxHiddenInput />
-</Checkbox>
+<RenderTree tree={tree} registry={registry} data={data} />;
 ```
 
-### Indeterminate, with its own mark
-
-`checked="indeterminate"` puts the checkbox in the third state. `CheckboxIndicator` takes its own
-`indeterminate` prop — mount two, and each renders only for its own state, so the checked mark and
-the indeterminate mark can look different (a check versus a dash, for instance):
+**Третье состояние — «отчасти».** `CheckboxIndicator` берёт свой проп `indeterminate` — можно
+смонтировать два указателя, и каждый рисуется только для своего состояния (галочка и черта — разная
+графика).
 
 ```tsx
 <Checkbox checked="indeterminate">
@@ -166,66 +133,21 @@ the indeterminate mark can look different (a check versus a dash, for instance):
     <CheckboxIndicator>✓</CheckboxIndicator>
     <CheckboxIndicator indeterminate>–</CheckboxIndicator>
   </CheckboxControl>
-  <CheckboxLabel>Select all</CheckboxLabel>
-  <CheckboxHiddenInput />
+  <CheckboxLabel>Выбрать всё</CheckboxLabel>
 </Checkbox>
 ```
 
-### Disabled
+**Настоящее участие в форме.** `name`/`value` делают чекбокс настоящим полем формы — `FormData`
+подхватывает его как родной `<input type="checkbox">`.
 
 ```tsx
-<Checkbox disabled defaultChecked>
-  <CheckboxControl>
-    <CheckboxIndicator>✓</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>Sync automatically (managed by your admin)</CheckboxLabel>
-  <CheckboxHiddenInput />
-</Checkbox>
-```
-
-### Submitting with a form
-
-`name` and `value` turn the checkbox into a real form field — `FormData` picks it up like any
-native checkbox input, checked or not:
-
-```tsx
-<form
-  onSubmit={(event) => {
-    event.preventDefault();
-    console.log(new FormData(event.currentTarget).get("terms"));
-  }}
->
+<form onSubmit={handleSubmit}>
   <Checkbox name="terms" value="accepted">
     <CheckboxControl>
       <CheckboxIndicator>✓</CheckboxIndicator>
     </CheckboxControl>
-    <CheckboxLabel>I agree to the terms and conditions</CheckboxLabel>
-    <CheckboxHiddenInput />
+    <CheckboxLabel>Согласен с условиями</CheckboxLabel>
   </Checkbox>
-  <button type="submit">Submit</button>
+  <button type="submit">Отправить</button>
 </form>
 ```
-
-## Styling hooks
-
-`checked` / `unchecked` / `indeterminate` / `disabled` / `readonly` / `invalid` / `required` /
-`hover` / `active` / `focus` / `focus-visible` are all real `data-*` marks (see the States table
-above), and — unusually for this kit — every one of them is repeated identically on `root`,
-`control`, `indicator`, *and* `label`, not just on whichever part logically owns the state. That
-means a skin can select at whatever granularity it needs — style only the `indicator` differently
-per state without touching the `label`, or select the shared `root` mark once and let it cascade —
-without hunting for which part actually carries a given attribute (see `packages/skin`).
-`CheckboxHiddenInput` carries none of these marks; it stays visually hidden and isn't meant to be
-styled directly.
-
-## Accessibility
-
-Checkbox follows the WAI-ARIA [Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/).
-
-| Key | What it does |
-|---|---|
-| `Space` | Toggles the checkbox between checked and unchecked |
-
-`Tab` / `Shift + Tab` move focus onto and off of the checkbox the same way they do for any native
-form control — that's browser behavior, not something this pattern defines on top.
-<!-- user:end -->
