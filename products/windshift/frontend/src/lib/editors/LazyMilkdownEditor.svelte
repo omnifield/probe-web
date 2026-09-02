@@ -13,6 +13,7 @@
     expectedContentHash = '',
     onBeforeDiagramOpen = async () => {},
     onDiagramPersisted = (_payload) => {},
+    onAnchorClick = null,
     testId = null
   } = $props();
 
@@ -113,6 +114,7 @@
       {expectedContentHash}
       {onBeforeDiagramOpen}
       {onDiagramPersisted}
+      {onAnchorClick}
       {testId}
     />
   {/key}

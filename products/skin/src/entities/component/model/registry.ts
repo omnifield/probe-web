@@ -50,7 +50,7 @@ import { editorInfoOf, KIT } from "./providers.js";
 
 /** Пара кита плюс срез редактора, сложенные в форму, которую просит механика сборки. */
 function readable(component: string): ReadableComponent {
-  const { passport, parts, extras, provider } = KIT[component];
+  const { passport, parts, provider } = KIT[component];
   const editorInfo = editorInfoOf(component);
 
   if (!editorInfo) {
@@ -79,9 +79,8 @@ function readable(component: string): ReadableComponent {
       selfAssembly: passport.selfAssembly as SelfAssembly | undefined,
     },
     parts,
-    // Вспомогательные узлы кита без адреса анатомии (`PWEB-152`) и невидимый провайдер корня
-    // (`PWEB-153`) — прокидываются как есть: витрина не решает, у кого они есть, это дело кита.
-    ...(extras ? { extras } : {}),
+    // Невидимый провайдер корня (`PWEB-153`) — прокидывается как есть: витрина не решает, у кого
+    // он есть, это дело кита.
     ...(provider ? { provider } : {}),
   };
 }

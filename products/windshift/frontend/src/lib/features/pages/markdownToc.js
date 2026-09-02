@@ -31,13 +31,17 @@ export function parseMarkdownHeadings(source) {
   return out;
 }
 
-/** Slugify a heading to match the editor's rendered-DOM lookup. */
+/** Slugify a heading to match the editor's rendered-DOM lookup.
+ * Uses Unicode letter/number classes (not [a-z0-9]) so headings in Cyrillic
+ * or any other non-Latin script still produce a usable, non-empty slug
+ * instead of collapsing to ''. NFKD + combining-mark stripping still runs
+ * first so accented Latin ("café") normalizes to plain ASCII as before. */
 export function slugify(text) {
   return text
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80);
 }

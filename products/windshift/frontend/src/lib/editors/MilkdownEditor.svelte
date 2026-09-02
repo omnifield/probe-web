@@ -38,6 +38,7 @@
     expectedContentHash = '',
     onBeforeDiagramOpen = async () => {},
     onDiagramPersisted = (_payload) => {},
+    onAnchorClick = null,
     testId = null
   } = $props();
 
@@ -407,6 +408,24 @@
     return true;
   }
 
+  // In-page anchor links (`[Overview](#overview)`, a manual table of
+  // contents, etc). Milkdown never stamps heading `id`s onto the rendered
+  // DOM, so the browser's native "jump to #id" has nothing to jump to and
+  // the click does nothing. Don't preventDefault — the browser still
+  // updates location.hash, which is worth keeping for copy-a-link-to-this-
+  // section — just also hand the target slug to the caller so it can
+  // scroll to the heading itself (PagesView matches it against its own
+  // parsed heading list).
+  function handleAnchorLinkClick(event) {
+    if (!onAnchorClick) return false;
+    const link = event.target?.closest?.('a[href]');
+    if (!link) return false;
+    const href = link.getAttribute('href') || '';
+    if (!href.startsWith('#') || href.length < 2) return false;
+    onAnchorClick(decodeURIComponent(href.slice(1)));
+    return false;
+  }
+
   function handleDiagramSaved({ attachmentId, name, contentHash, pageContent }) {
     if (!editor) return;
     editor.action(replaceAll(pageContent || ''));
@@ -505,6 +524,7 @@
                 if (handleInternalPageLinkClick(event)) {
                   return true;
                 }
+                handleAnchorLinkClick(event);
                 // Close mention picker when clicking elsewhere
                 if (mentionPickerOpen) {
                   closeMentionPicker();
