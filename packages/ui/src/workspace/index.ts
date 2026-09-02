@@ -1,19 +1,14 @@
-// Что уезжает из папки компонента наружу.
-//
-// Две разные вещи и два разных читателя: РАЗМЕТКУ забирает вход примитивов (`src/index.ts`),
-// ПАСПОРТ — сборка подпути `./passport`, которая обходит папки и собирает перечень сама.
-
 export {
   Workspace,
-  WorkspaceFooter,
-  WorkspaceHeader,
-  WorkspaceMain,
-  WorkspaceRightbar,
-  WorkspaceSidebar,
-  type WorkspaceFooterProps,
-  type WorkspaceHeaderProps,
-  type WorkspaceMainProps,
   type WorkspaceProps,
-  type WorkspaceRightbarProps,
+  WorkspaceHeader,
+  type WorkspaceHeaderProps,
+  WorkspaceSidebar,
   type WorkspaceSidebarProps,
+  WorkspaceMain,
+  type WorkspaceMainProps,
+  WorkspaceRightbar,
+  type WorkspaceRightbarProps,
+  WorkspaceFooter,
+  type WorkspaceFooterProps,
 } from "./components/index.js";

@@ -96,7 +96,11 @@ export const passport = definePassport({
       name: "controlIndicator",
       states: [...openClosed, disabled, selected, focus, loading],
     },
-    { name: "content", states: [] },
+    {
+      name: "content",
+      states: [...openClosed],
+      variables: [{ name: "--height", setBy: "kit" }],
+    },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },

@@ -8,7 +8,7 @@ import {
   type DispatchedEvent,
 } from "@omnifield/probe-web-assembly";
 import { useNavigate } from "@omnifield/probe-web-router";
-import { createMemo } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 
 import { useComponentGroups } from "../../entities/component/model/store.js";
 import { instanceOf } from "../../entities/component/model/instance.js";
@@ -23,10 +23,19 @@ export function ComponentList(props: { variant?: string }) {
   const activeAssembly = usePreviewAssembly();
   const data = createMemo(() => groupsToTreeItems(groups()));
 
+  // Клик по ветке (раскрыть/закрыть) — это ОБЫЧНЫЙ клик Zag-глазами, а не только наш `controlClick`:
+  // Zag сам на любом клике по строке выполняет `selectNode` (выбирает ТОЛЬКО эту ветку), стирая наш
+  // составной путь — `activePath` при этом не меняется (клик по ветке никуда не навигирует), и
+  // без явного триггера пересчёта `selectedValue` не уходит обратно в дерево. `tick` — искусственная
+  // зависимость: сам факт клика (не важно, по чему) заставляет `activePath` пересчитаться и
+  // отправить наш путь заново, поверх того, что Zag только что понаставил себе внутри.
+  const [tick, bumpTick] = createSignal(0, { equals: false });
+
   // Весь путь до активного листа, не только сам лист — id раздела, id компонента, составной id
   // сборки. Zag сам метит `data-selected` на КАЖДЫЙ id из массива `selectedValue`: одна и та же
   // проверка на всех трёх уровнях, ничего не поправлено ни в паспорте, ни в компоненте кита.
   const activePath = createMemo((): readonly string[] => {
+    tick();
     const component = active();
     if (component === undefined) return [];
 
@@ -66,6 +75,10 @@ export function ComponentList(props: { variant?: string }) {
 
   const onDispatch = (event: DispatchedEvent) => {
     if (event.name !== "controlClick") return;
+
+    // Клик по ЛЮБОЙ строке (ветка или лист) — перечитать наш путь и отправить его снова,
+    // перекрывая внутренний `selectNode` Zag, см. комментарий у `tick` выше.
+    bumpTick((n) => n + 1);
 
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;

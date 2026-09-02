@@ -69,6 +69,7 @@ export function checkOutfit(outfit: Outfit, parts: LookParts, lookup: PassportLo
   }
 
   const claimed = new Map<string, string>();
+  const claimedKeyframes = new Map<string, { readonly formName: string; readonly frames: unknown }>();
 
   outfit.forms.forEach((name, index) => {
     const form = parts.forms.find((candidate) => candidate.name === name);
@@ -96,6 +97,25 @@ export function checkOutfit(outfit: Outfit, parts: LookParts, lookup: PassportLo
     }
 
     claimed.set(form.component, name);
+
+    for (const [movement, frames] of Object.entries(form.keyframes ?? {})) {
+      const previous = claimedKeyframes.get(movement);
+
+      if (previous && JSON.stringify(previous.frames) !== JSON.stringify(frames)) {
+        flaws.push({
+          name: "keyframe-collision",
+          where: `forms[${index}].keyframes.${movement}`,
+          means:
+            `motion "${movement}" is already declared by form "${previous.formName}" with different ` +
+            `steps. Merging an outfit's forms overwrites keyframes by name (\`Object.assign\`, ` +
+            "`assemble.ts`), and the cascade would not tell you which one survived. Rename one of " +
+            "them, or — if they are meant to be the same movement — share the same steps",
+        });
+        continue;
+      }
+
+      claimedKeyframes.set(movement, { formName: name, frames });
+    }
 
     const passport = lookup(form.component);
 

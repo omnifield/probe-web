@@ -72,7 +72,7 @@ describe('tree view "base" — one level, every item labeled and clickable, clic
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
 
     const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
-    expect(controls.map((node) => node.textContent)).toEqual(["▶Alpha", "▶Beta"]);
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "Beta"]);
 
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
     expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
@@ -84,6 +84,9 @@ describe('tree view "base" — one level, every item labeled and clickable, clic
       expect.objectContaining({ name: "controlClick", context: { payload: data.items[1] } }),
     ]);
     expect(items[1]!.getAttribute("data-selected")).toBe("");
+    // Лист не заводит индикатор вовсе — даже активный, ему нечего раскрывать.
+    expect(controls[1]!.querySelector('[data-part="control-indicator"]')).toBeNull();
+    expect(controls[1]!.textContent).toBe("Beta");
   });
 });
 
@@ -110,7 +113,7 @@ describe('tree view "base" — recur grows the same node again from its own data
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
 
     const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
-    expect(controls.map((node) => node.textContent)).toEqual(["▶Alpha", "▶Alpha One", "▶Alpha One X"]);
+    expect(controls.map((node) => node.textContent)).toEqual(["▶Alpha", "▶Alpha One", "Alpha One X"]);
 
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
     expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "2", "3"]);

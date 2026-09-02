@@ -268,6 +268,28 @@ func CanonicalCustomFieldType(fieldType string) string {
 	return fieldType
 }
 
+// simpleCustomFieldTypes are field types with no foreign-key relationship to
+// validate (a link type, an asset set, ...) — see IsSimpleCustomFieldType.
+var simpleCustomFieldTypes = map[string]bool{
+	"text":                  true,
+	"textarea":              true,
+	"number":                true,
+	"date":                  true,
+	"select":                true,
+	"multiselect":           true,
+	CustomFieldTypeBoolean:  true,
+	CustomFieldTypeCheckbox: true,
+}
+
+// IsSimpleCustomFieldType reports whether fieldType can be created without
+// relationship validation (a referenced link type, asset set, etc). It's the
+// shared allowlist for surfaces that create custom field definitions without
+// replicating the full admin-UI validation for relationship-shaped types
+// (linking, asset, user, milestone, iteration, portal customer/organisation).
+func IsSimpleCustomFieldType(fieldType string) bool {
+	return simpleCustomFieldTypes[CanonicalCustomFieldType(fieldType)]
+}
+
 // CustomFieldDefinition represents a custom field definition
 type CustomFieldDefinition struct {
 	ID                             int       `json:"id"`

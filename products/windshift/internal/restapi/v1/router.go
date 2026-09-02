@@ -508,6 +508,14 @@ func RegisterRoutes(deps restapi.Deps) {
 
 	adminV1 := v1.Group("", bearerAuth.RequireSystemAdmin)
 
+	// Item types / custom fields are a global, cross-workspace catalog — the
+	// cookie surface gates their creation on system-admin (RequireSystemAdmin
+	// in internal/routes/misc.go), so the token surface mirrors that under
+	// /admin/... rather than opening the plain (read-only-by-design)
+	// /item-types and /custom-fields paths to writes.
+	adminV1.HandleWithMiddleware("POST /admin/item-types", itemTypeHandler.Create, bearerAuth.RequirePermission("admin:item-types:write"))
+	adminV1.HandleWithMiddleware("POST /admin/custom-fields", customFieldHandler.Create, bearerAuth.RequirePermission("admin:custom-fields:write"))
+
 	adminV1.HandleWithMiddleware("GET /admin/users", adminUserHandler.List, bearerAuth.RequirePermission("admin:users:read"))
 	adminV1.HandleWithMiddleware("PUT /admin/users/{id}", adminUserHandler.Update, bearerAuth.RequirePermission("admin:users:write"), router.RequireNumericID)
 

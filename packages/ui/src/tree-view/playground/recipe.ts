@@ -1,4 +1,4 @@
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import { GROW_SHRINK_BLOCK, type Form, type SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition =
   "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
@@ -56,11 +56,12 @@ export const recipe: SlotRecipe = {
       props: {
         display: "flex",
         alignItems: "center",
-        gap: "var(--space-2)",
+        gap: "var(--space-1)",
         minHeight: "var(--control-height-sm)",
         paddingInlineEnd: "var(--space-3)",
         borderRadius: "var(--radius-sm)",
         color: "var(--neutral-12)",
+        fontSize: "var(--font-size-md)",
         fontWeight: "var(--weight-medium)",
         cursor: "pointer",
         userSelect: "none",
@@ -100,16 +101,21 @@ export const recipe: SlotRecipe = {
         justifyContent: "center",
         flexShrink: "0",
         color: "var(--neutral-11)",
+        fontSize: "var(--font-size-sm)",
         transition: "transform var(--motion-fast) var(--ease-out)",
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
+        // Лист не носит `data-state` вовсе (только ветка) — эти два правила физически не
+        // применяются к листу. У листа же `hidden` стоит нативно, если узел НЕ выбран (родное
+        // поведение Ark для чекмарки, которое здесь просто не трогаем) — раз иконка на листе не
+        // нужна вообще, лишний `display` в состоянии `selected` только включал её обратно.
         open: { props: { display: "inline-flex", transform: "rotate(90deg)" } },
         closed: {
           props: { display: "inline-flex", transform: "rotate(0deg)" },
         },
         selected: {
-          props: { display: "inline-flex", color: "var(--accent-11)" },
+          props: { color: "var(--accent-11)" },
         },
         disabled: { props: { opacity: "0.6" } },
         loading: { props: { opacity: "0.6" } },
@@ -117,7 +123,24 @@ export const recipe: SlotRecipe = {
       },
     },
     content: {
-      props: { position: "relative" },
+      // `overflow`+`boxSizing` — то же устройство, что у аккордеона: без них раскрытие/сжатие по
+      // измеренной `--height` (сценарий `GROW_SHRINK_BLOCK`) не отсекало бы содержимое на
+      // промежуточных кадрах.
+      props: { position: "relative", overflow: "hidden", boxSizing: "border-box" },
+      states: {
+        open: {
+          props: {
+            animation: "grow-block-size var(--motion-normal) var(--ease-out)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
+        closed: {
+          props: {
+            animation: "shrink-block-size var(--motion-normal) var(--ease-out)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
+      },
     },
   },
 };
@@ -126,4 +149,5 @@ export const form: Form = {
   name: "tree-view-sample",
   component: "tree-view",
   recipe,
+  keyframes: { ...GROW_SHRINK_BLOCK },
 };

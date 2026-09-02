@@ -121,6 +121,15 @@ const (
 	ScopeAdminAuditLogsRead  = "admin:audit-logs:read"
 	ScopeAdminAPITokensRead  = "admin:api-tokens:read"
 	ScopeAdminAPITokensWrite = "admin:api-tokens:write"
+
+	// admin:item-types:write / admin:custom-fields:write grant API tokens the
+	// same schema-catalog authoring the cookie-session admin UI has (POST
+	// /admin/item-types, /admin/custom-fields) — global, cross-workspace
+	// config, so it stays in the admin bucket (system admin role required)
+	// rather than living under item-types:*/custom-fields:* (currently
+	// read-only by design — see the "Configuration resources" block above).
+	ScopeAdminItemTypesWrite    = "admin:item-types:write"
+	ScopeAdminCustomFieldsWrite = "admin:custom-fields:write"
 )
 
 // ScopeInfo describes one entry in the token scope catalog. Every surface that
@@ -214,6 +223,8 @@ var scopeCatalog = []ScopeInfo{
 	{Scope: ScopeAdminAuditLogsRead, Resource: "admin:audit-logs", ResourceLabel: "Audit logs (admin)", Action: "read", Label: "Read audit logs", Description: "Read the central audit log.", Admin: true},
 	{Scope: ScopeAdminAPITokensRead, Resource: "admin:api-tokens", ResourceLabel: "API tokens (admin)", Action: "read", Label: "Read all API tokens", Description: "List API tokens belonging to any user.", Admin: true},
 	{Scope: ScopeAdminAPITokensWrite, Resource: "admin:api-tokens", ResourceLabel: "API tokens (admin)", Action: "write", Label: "Revoke all API tokens", Description: "Revoke API tokens belonging to any user.", Admin: true},
+	{Scope: ScopeAdminItemTypesWrite, Resource: "admin:item-types", ResourceLabel: "Item types (admin)", Action: "write", Label: "Manage item types", Description: "Create item types shared across every workspace.", Admin: true},
+	{Scope: ScopeAdminCustomFieldsWrite, Resource: "admin:custom-fields", ResourceLabel: "Custom fields (admin)", Action: "write", Label: "Manage custom fields", Description: "Create custom field definitions shared across every workspace.", Admin: true},
 }
 
 // ScopeCatalog returns a copy of the scope catalog in presentation order.

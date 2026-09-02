@@ -1,25 +1,6 @@
-import type { Form, Keyframes, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE, type Form, type SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
-
-export const keyframes: Keyframes = {
-  expand: {
-    from: { height: "0", paddingBlock: "0" },
-    to: { height: "var(--height)", paddingBlock: "var(--space-3)" },
-  },
-  collapse: {
-    from: { height: "var(--height)", paddingBlock: "var(--space-3)" },
-    to: { height: "0", paddingBlock: "0" },
-  },
-  "expand-sideways": {
-    from: { width: "0", paddingInline: "0" },
-    to: { width: "var(--width)", paddingInline: "var(--space-4)" },
-  },
-  "collapse-sideways": {
-    from: { width: "var(--width)", paddingInline: "var(--space-4)" },
-    to: { width: "0", paddingInline: "0" },
-  },
-};
 
 export const recipe: SlotRecipe = {
   base: {
@@ -115,13 +96,13 @@ export const recipe: SlotRecipe = {
       states: {
         open: {
           props: {
-            animation: "expand var(--motion-normal) var(--ease-out)",
+            animation: "grow-block-size var(--motion-normal) var(--ease-out)",
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
         closed: {
           props: {
-            animation: "collapse var(--motion-normal) var(--ease-out)",
+            animation: "shrink-block-size var(--motion-normal) var(--ease-out)",
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
@@ -147,13 +128,13 @@ export const recipe: SlotRecipe = {
           states: {
             open: {
               props: {
-                animation: "expand-sideways var(--motion-normal) var(--ease-out)",
+                animation: "grow-inline-size var(--motion-normal) var(--ease-out)",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               },
             },
             closed: {
               props: {
-                animation: "collapse-sideways var(--motion-normal) var(--ease-out)",
+                animation: "shrink-inline-size var(--motion-normal) var(--ease-out)",
                 "@media (prefers-reduced-motion: reduce)": { animation: "none" },
               },
             },
@@ -164,4 +145,9 @@ export const recipe: SlotRecipe = {
   },
 };
 
-export const form: Form = { name: "accordion-sample", component: "accordion", recipe, keyframes };
+export const form: Form = {
+  name: "accordion-sample",
+  component: "accordion",
+  recipe,
+  keyframes: { ...GROW_SHRINK_BLOCK, ...GROW_SHRINK_INLINE },
+};

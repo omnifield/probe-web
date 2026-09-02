@@ -102,7 +102,7 @@ export { withPassports } from "./bound/index.js";
 export type { SkinGap, SkinGapKind } from "./coverage/index.js";
 export { skinGaps } from "./coverage/index.js";
 
-export { isMotion, MOTION_FAMILIES } from "./motion/index.js";
+export { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE, isMotion, MOTION_FAMILIES } from "./motion/index.js";
 
 export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds/index.js";
 export { NOT_SEEDED, skinValues, valueNames } from "./seeds/index.js";

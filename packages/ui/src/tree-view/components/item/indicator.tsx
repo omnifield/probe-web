@@ -1,7 +1,6 @@
 import { Show, splitProps, type JSX } from "solid-js";
 import {
   TreeViewBranchIndicator as ArkBranchIndicator,
-  TreeViewItemIndicator as ArkItemIndicator,
   useTreeViewNodeContext,
 } from "@ark-ui/solid/tree-view";
 
@@ -17,18 +16,12 @@ export function TreeControlIndicator(props: TreeControlIndicatorProps) {
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
 
+  // Лист не раскрывается — индикатору тут нечего показывать (Ark сам не рисует ItemIndicator у
+  // листа в своих примерах). ArkItemIndicator существует для другого сценария (чекмарка
+  // выбранного пункта) — рисовать его ради стрелки раскрытия, которой у листа нет, значило бы
+  // прятать лишний узел стилями вместо того, чтобы просто не класть его в разметку.
   return (
-    <Show
-      when={node().isBranch}
-      fallback={
-        <ArkItemIndicator
-          {...dropAddress(rest)}
-          {...anatomyParts.controlIndicator.attrs}
-        >
-          {local.children}
-        </ArkItemIndicator>
-      }
-    >
+    <Show when={node().isBranch}>
       <ArkBranchIndicator
         {...dropAddress(rest)}
         {...anatomyParts.controlIndicator.attrs}

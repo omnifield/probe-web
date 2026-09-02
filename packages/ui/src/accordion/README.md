@@ -125,15 +125,18 @@ root
 > через `ancestors`, не на сам `content`. Для АНИМАЦИИ это единственный сигнал: отметка приходит
 > ровно тогда, когда переход реально проигрывается.
 
-Раскрытие анимируется по измеренному размеру, не по `auto`:
+Раскрытие анимируется по измеренному размеру, не по `auto` — общим сценарием кита
+(`GROW_SHRINK_BLOCK`, `@omnifield/probe-web-skin/model`), не своим `@keyframes`:
 
 ```
-expand:   height 0 → var(--height)
-collapse: height var(--height) → 0
+grow-block-size:   blockSize 0 → var(--height)
+shrink-block-size: blockSize var(--height) → 0
 ```
 
-Для горизонтальной гармошки — та же пара по ширине (`expand-sideways`/`collapse-sideways`),
-включается настройкой `orientation`, а не отдельным вариантом.
+Для горизонтальной гармошки — тот же сценарий по строчной оси (`GROW_SHRINK_INLINE`:
+`grow-inline-size`/`shrink-inline-size`), включается настройкой `orientation`, а не отдельным
+вариантом. Оба сценария — общие с деревом (`tree-view`'s `content`), одно и то же движение под
+одним именем, не переписанное заново.
 
 <h2 id="использование">🚀 Использование</h2>
 

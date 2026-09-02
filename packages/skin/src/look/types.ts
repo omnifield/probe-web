@@ -47,7 +47,8 @@ export type OutfitFlawName =
   | "outside-vocabulary"
   | "palette-incomplete"
   | "component-twice"
-  | "variable-elsewhere";
+  | "variable-elsewhere"
+  | "keyframe-collision";
 
 export interface OutfitFlaw {
   readonly name: OutfitFlawName;

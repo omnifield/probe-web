@@ -79,7 +79,12 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
   },
   content: {
     means: "открытый слот узла — своего вида не несёт, содержимое (в том числе ещё узлы) решает потребитель",
-    states: {},
+    states: {
+      ...openClosedMeans,
+    },
+    variables: {
+      "--height": { means: "измеренная высота содержимого ветки — по ней растёт/сжимается раскрытие" },
+    },
     accepts: [
       { kind: "component", name: "item" },
       { kind: "content", genus: "text" },

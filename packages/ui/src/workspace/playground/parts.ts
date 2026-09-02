@@ -1,12 +1,5 @@
-// EDITOR-ONLY per-part taxonomy for the workspace — read by `./index.ts`'s `defineEditorInfo`
-// call (`PWEB-154`). Means and nesting — the taxonomy half of the editor slice; scenario data
-// (`assemblies.ts`) is the other, split out the same way: the same physical shape as every other
-// component's `playground/`.
-
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY — see `assemblies.ts` for why: `typeof passport` needs the binding's TYPE, not the
-// module's side effects.
 import type { passport } from "../entity/passport.js";
 
 type WorkspacePart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
