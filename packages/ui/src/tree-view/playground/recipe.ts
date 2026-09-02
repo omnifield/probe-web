@@ -2,11 +2,9 @@ import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
-const selectedFill = { background: "var(--accent-3)", color: "var(--accent-12)" };
+const selectedFill = { color: "var(--accent-12)" };
 
 const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity: "0.6" };
-
-const checkedFill = { background: "var(--accent-2)" };
 
 // --depth считает Zag от 1 (сам repeat, см. indexPathBind) — верхний уровень не должен получать
 // отступ, поэтому единицу вычитаем: 1 → 0, 2 → half-space-6, и так далее.
@@ -65,16 +63,16 @@ export const recipe: SlotRecipe = {
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        hover: { props: { background: "var(--neutral-4)" } },
-        active: { props: { background: "var(--neutral-5)" } },
+        hover: { props: { background: "transparent" } },
+        active: { props: { background: "transparent" } },
         selected: { props: selectedFill },
-        checked: { props: checkedFill },
-        indeterminate: { props: checkedFill },
+        checked: { props: { background: "transparent" } },
+        indeterminate: { props: { background: "transparent" } },
         focus: { props: { outline: "none" } },
         disabled: { props: disabledRow },
         loading: { props: { cursor: "progress", opacity: "0.7" } },
         renaming: { props: { cursor: "text" } },
-        open: { props: { background: "var(--neutral-2)" } },
+        open: { props: { background: "transparent" } },
         closed: { props: { background: "transparent" } },
       },
       ancestors: [{ component: "tree-view", part: "item", style: { props: { paddingInlineStart: depthIndent } } }],

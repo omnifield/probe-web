@@ -9,6 +9,8 @@ import { createStore, useSelector } from "@omnifield/probe-web-store";
 
 interface PreviewState {
   readonly component: string | undefined;
+  /** Какая именно сборка показанного компонента активна — нет роута с ней, нет и значения. */
+  readonly assembly: string | undefined;
   /** Выбранная запись заготовки — наполняет ВСЕ показанные варианты текущего компонента разом. */
   readonly fill: Record<string, unknown> | undefined;
   /**
@@ -20,12 +22,13 @@ interface PreviewState {
 }
 
 export const previewStore = createStore({
-  context: { component: undefined, fill: undefined, lastEvent: undefined } as PreviewState,
+  context: { component: undefined, assembly: undefined, fill: undefined, lastEvent: undefined } as PreviewState,
   on: {
     // Смена показанного компонента сбрасывает наполнение и последнее событие: и то, и другое
     // принадлежало прежнему показу, чужому новому не обязаны быть верны.
-    shown: (_context, event: { component: string }): PreviewState => ({
+    shown: (_context, event: { component: string; assembly: string | undefined }): PreviewState => ({
       component: event.component,
+      assembly: event.assembly,
       fill: undefined,
       lastEvent: undefined,
     }),
@@ -43,6 +46,11 @@ export const previewStore = createStore({
 /** Какой компонент сейчас показан — реактивный аксессор. */
 export function usePreviewComponent() {
   return useSelector(previewStore, (state) => state.context.component);
+}
+
+/** Какая сборка показанного компонента сейчас активна — реактивный аксессор. */
+export function usePreviewAssembly() {
+  return useSelector(previewStore, (state) => state.context.assembly);
 }
 
 /** Чем наполнен текущий показ — реактивный аксессор. */

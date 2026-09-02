@@ -1,9 +1,14 @@
 // OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
 //
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+// Real implementations are grouped by ownership: `root.tsx` for the set's own root, `item/` for
+// the item and everything that only ever exists inside one — `trigger`, `content`, `indicator`
+// never occur without an item around them, so their files live inside `item/` instead of flat
+// next to `root.tsx`. The passport-part map (`defineKitComponent`) lives in `./kit.tsx`; this
+// barrel just re-exports it, same as every other component in the kit.
 
-export * from "./kit.jsx";
+export { Accordion, type AccordionProps } from "./root.js";
+export { AccordionItem, type AccordionItemProps } from "./item/index.js";
+export { AccordionItemTrigger, type AccordionItemTriggerProps } from "./item/trigger.js";
+export { AccordionItemContent, type AccordionItemContentProps } from "./item/content.js";
+export { AccordionItemIndicator, type AccordionItemIndicatorProps } from "./item/indicator.js";
+export { kit } from "./kit.js";

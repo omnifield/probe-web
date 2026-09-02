@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/solid-router";
 
-import { ComponentShowcasePage } from "../../../pages/_workspace/showcase/index.jsx";
+import { ComponentShowcasePage } from "../../../../pages/_workspace/showcase/index.jsx";
 
-export const Route = createFileRoute("/_workspace/showcase/$component")({
+export const Route = createFileRoute("/_workspace/showcase/$component/")({
   component: () => {
     // Хук — ОДИН РАЗ на установке компонента: `params` дальше просто читаемый аксессор. Раньше
     // весь вызов `Route.useParams()()` стоял прямо в JSX-пропе — Solid делает из такого пропа
