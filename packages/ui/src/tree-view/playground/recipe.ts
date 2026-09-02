@@ -2,10 +2,6 @@ import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
-const focusRing = {
-  boxShadow: "inset 0 0 0 var(--border-width-2) var(--accent-8)",
-};
-
 const selectedFill = { background: "var(--accent-3)", color: "var(--accent-12)" };
 
 const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity: "0.6" };
@@ -74,7 +70,7 @@ export const recipe: SlotRecipe = {
         selected: { props: selectedFill },
         checked: { props: checkedFill },
         indeterminate: { props: checkedFill },
-        focus: { props: focusRing },
+        focus: { props: { outline: "none" } },
         disabled: { props: disabledRow },
         loading: { props: { cursor: "progress", opacity: "0.7" } },
         renaming: { props: { cursor: "text" } },

@@ -40,7 +40,7 @@ export function ComponentList(props: { variant?: string }) {
         selectedValue: active() ? [active()] : [],
         defaultExpandedValue: data().items.map((item) => item.id),
       },
-      "gg",
+      "base",
       data(),
     ),
   );

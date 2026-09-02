@@ -23,7 +23,7 @@
   import { excalidrawBlock } from './milkdown-excalidraw-block.svelte.js';
   import PageDiagramModal from '../features/pages/PageDiagramModal.svelte';
   import { highlightCodeBlocks } from './code-highlight.js';
-  import { applyGithubAlerts } from './github-alerts.js';
+  import { githubAlertsPlugin } from './github-alerts-plugin.js';
   import { t } from '../stores/i18n.svelte.js';
   import { attachmentStatus } from '../stores/attachmentStatus.svelte.js';
   import { navigate } from '../router.js';
@@ -551,6 +551,7 @@
         .use(upload)  // Include upload in main chain per docs
         .use(imageBlockComponent)  // Enable image resizing
         .use(mentionDecorationPlugin)  // Add mention chip decorations
+        .use(githubAlertsPlugin)       // Style `> [!NOTE]`-style GitHub alerts
         .use(linkSanitizerPlugin);     // Sanitize dangerous URL schemes in links/images
 
       if (enableDiagrams) {
@@ -706,7 +707,6 @@
       editor.action(replaceAll(content || ''));
       requestAnimationFrame(() => {
         highlightCodeBlocks(editorElement).catch((e) => console.warn('code highlight failed', e));
-        applyGithubAlerts(editorElement);
       });
     }
   });
@@ -1048,8 +1048,12 @@
     color: var(--ds-text-subtle);
   }
 
-  /* GitHub-style alerts (`> [!NOTE]` etc.) — see github-alerts.js, which
-     strips the marker and stamps data-alert after render. */
+  /* GitHub-style alerts (`> [!NOTE]` etc.) — see github-alerts-plugin.js,
+     which decorates the blockquote and hides/replaces the marker text. The
+     underlying "[!IMPORTANT]" text is still in the document (decorations
+     don't touch content), just visually collapsed via .gfm-alert-marker-hidden
+     the same way milkdown-mention-mark.js hides the raw @" "  of a quoted
+     mention. */
   :global(.milkdown-editor .ProseMirror blockquote[data-alert]) {
     border-radius: 0.375rem;
     padding: 0.75rem 1rem;
@@ -1058,6 +1062,12 @@
 
   :global(.milkdown-editor .ProseMirror blockquote[data-alert] p) {
     color: var(--ds-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-marker-hidden) {
+    font-size: 0;
+    width: 0;
+    display: inline;
   }
 
   :global(.milkdown-editor .ProseMirror .gfm-alert-title) {
