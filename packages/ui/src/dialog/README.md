@@ -1,224 +1,161 @@
-# Dialog
+# 🗔 Dialog
 
-**Group:** overlays · **Genus:** component · **Footprint:** regular
+🏷️ overlays · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| trigger | opens the dialog |
-| backdrop | the dimmed overlay behind the dialog |
-| positioner | centers the dialog's content in the viewport — a pure wrapper, no look of its own |
-| content | the dialog's own panel |
-| title | the dialog's own title |
-| description | the dialog's own description |
-| closeTrigger | closes the dialog |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| trigger | open | [data-state="open"] | the dialog is open |
-| trigger | closed | [data-state="closed"] | the dialog is closed |
-| trigger | current | [data-current] | in a multi-trigger dialog, this is the trigger that opened it |
-| trigger | hover | :hover | pointer is over this button |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | this button is being held down |
-| backdrop | open | [data-state="open"] | the dialog is open |
-| backdrop | closed | [data-state="closed"] | the dialog is closed |
-| positioner | — | — | — |
-| content | open | [data-state="open"] | the dialog is open |
-| content | closed | [data-state="closed"] | the dialog is closed |
-| title | — | — | — |
-| description | — | — | — |
-| closeTrigger | hover | :hover | pointer is over this button |
-| closeTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| closeTrigger | active | :active | this button is being held down |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Dialog is the kit's modal — a focused panel that sits above the page, dims everything behind it, and
-traps focus until dismissed. Seven parts; the root itself renders no DOM node, holding only open
-state and context.
-
-## Features
-
-- **The root is pure context** — `Dialog` renders nothing; `trigger`/`backdrop` are real DOM
-  siblings of `positioner`, not its ancestors or descendants, tied together only through that
-  shared context. The passport's own `root` stands in as `positioner`, since anatomy needs some
-  part to call the root.
-- **Controlled or uncontrolled open state** — `open` + `onOpenChange` for controlled use,
-  `defaultOpen` for uncontrolled.
-- **Alert-dialog mode** — `role="alertdialog"` changes behavior, not just semantics: focus lands on
-  the close/cancel control by default, and outside clicks stop dismissing it — appropriate for
-  confirming a destructive action.
-- **Modal by default** — `modal` (default `true`) disables pointer interaction and hides content
-  behind the dialog from assistive tech; `modal={false}` allows interacting with the page behind it
-  and also turns off focus trapping and scroll prevention.
-- **Configurable dismissal** — `closeOnEscape` and `closeOnInteractOutside` (both default `true`)
-  can be turned off independently; `onEscapeKeyDown`/`onInteractOutside` let a consumer intercept
-  and `preventDefault()` a close attempt (e.g. to confirm discarding unsaved changes) instead of
-  disabling it outright.
-- **Focus is managed, not left to the browser** — `trapFocus` (default `true`) keeps Tab cycling
-  inside the dialog; `initialFocusEl`/`finalFocusEl` override which element receives focus on open
-  and close, `restoreFocus` returns it to the trigger by default.
-- **Multiple triggers, one dialog** — a `trigger`'s `value` distinguishes which trigger opened a
-  shared dialog; `onTriggerValueChange` reports which one, and that trigger alone carries
-  `data-current`.
-- **Lazy mounting** — `lazyMount` (content mounts only once opened) plus `unmountOnExit` (unmounts
-  again on close) avoid paying for dialog content that may never open; Ark's own guidance is to
-  reach for these rather than conditionally rendering `Dialog` itself, which breaks focus/scroll
-  cleanup.
-- **`closeTrigger` carries no mark of its own** — a real `<button>` addressed only by
-  `:hover`/`:focus-visible`/`:active`, the same shape the popover's own `closeTrigger` has.
-
-## Anatomy
-
-```tsx
-import {
-  Dialog,
-  DialogTrigger,
-  DialogBackdrop,
-  DialogPositioner,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogCloseTrigger,
-} from "@omnifield/probe-web-ui";
-
-<Dialog>
-  <DialogTrigger>{/* text or icon */}</DialogTrigger>
-  <DialogBackdrop />
-  <DialogPositioner>
-    <DialogContent>
-      <DialogTitle>{/* text */}</DialogTitle>
-      <DialogDescription>{/* text */}</DialogDescription>
-      {/* any body content the consumer wants */}
-      <DialogCloseTrigger>{/* text or icon */}</DialogCloseTrigger>
-    </DialogContent>
-  </DialogPositioner>
-</Dialog>
+```
+positioner
+└─ content
+   ├─ title
+   ├─ description
+   └─ closeTrigger
 ```
 
-## Examples
+`trigger`/`backdrop` — реальные соседи `positioner` в разметке, не его предки и не потомки.
 
-### Basic
+| часть          | значение                                     | принимает внутри                     | рисуется               |
+| --------------- | ---------------------------------------------- | --------------------------------------- | ------------------------ |
+| 🔘 `trigger`    | открывает диалог                               | текст, иконку                            | `DialogTrigger`         |
+| ⬛ `backdrop`   | затемнённая подложка за диалогом               | ничего                                   | `DialogBackdrop`        |
+| 🎯 `positioner` | центрирует содержимое во вьюпорте — чистая обёртка, своего вида не несёт | `content`  | `DialogPositioner`      |
+| 🗔 `content`    | собственная панель диалога                     | `title`, `description`, `closeTrigger`, любой компонент | `DialogContent` |
+| 🏷️ `title`      | заголовок                                      | текст                                    | `DialogTitle`            |
+| 📝 `description`| описание                                       | текст                                    | `DialogDescription`      |
+| ✕ `closeTrigger`| закрывает диалог                               | текст, иконку                            | `DialogCloseTrigger`     |
+
+> [!NOTE]
+> Частей семь, но нет части `root` — сам `Dialog` рисует не DOM-узел, а чистый контекст. Паспорт
+> называет своим номинальным корнем `positioner` — часть, которая реально держит то, чем диалог
+> визуально является (`content` со всем содержимым внутри). У `positioner` в `accepts` нет
+> `trigger`/`backdrop` — они настоящие соседи по разметке, а не потомки; собрать их в одно дерево
+> схема не может.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние      | метка                    | где                          | значение                                            |
+| ---- | --------------- | -------------------------- | ------------------------------ | ------------------------------------------------------ |
+| 🔓🔒 | open / closed   | `[data-state]`              | trigger, backdrop, content     | диалог открыт / закрыт                                |
+| 🎯   | current         | `[data-current]`            | trigger                        | в диалоге с несколькими триггерами — тот, что его открыл |
+| 🖱️   | hover           | `:hover`                    | trigger, closeTrigger           | указатель наведён                                     |
+| ⌨️   | focus-visible   | `:focus-visible`            | trigger, closeTrigger           | фокус пришёл с клавиатуры                             |
+| 👆   | active          | `:active`                   | trigger, closeTrigger           | нажат указателем                                      |
+
+`positioner`/`title`/`description` своих состояний не несут — чистая раскладка и текст. У
+`positioner` нет и переменных геометрии, в отличие от поповера/селекта: диалог центрируется
+обычным CSS, не привязан к триггеру `@zag-js/popper`'ом.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "title": "string", "description": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Диалог ничего не диспатчит через сборку — открытие/закрытие ведёт настоящая машина состояний
+Ark сама, не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+positioner 🎯 · providerProps: defaultOpen
+  content 🗔
+    title 🏷️ · text: {title}
+    description 📝 · text: {description}
+    closeTrigger ✕ · text: "✕"
+```
+
+> [!NOTE]
+> Сборка показывает только «плавающую половину» — `trigger`/`backdrop` в это дерево структурно не
+> попадают (см. предупреждение в разделе «Анатомия»), рабочий клик собирается или рендерится
+> отдельно, рядом. `providerProps: { defaultOpen: true }` раскрывает панель без реального клика —
+> движку сборки нужен контекст `Dialog` вокруг `positioner`, тот же приём `RenderTree`, что даёт
+> поповеру и меню state снаружи их собственного DOM-узла.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+`positioner` фиксирован на весь экран (`position: fixed; inset: 0`) с `pointer-events: none` —
+пропускает клики фону под собой везде, КРОМЕ `content`, которая сама возвращает `pointer-events:
+auto`. `backdrop` — отдельный полноэкранный слой под ним, с затемнением. Открытие/закрытие
+`content` анимируется именованными кадрами (`dialog-in`/`dialog-out`), тем же приёмом, что и у
+остальных компонентов кита.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Dialog>
-  <DialogTrigger>Open Dialog</DialogTrigger>
+  <DialogTrigger>Открыть</DialogTrigger>
   <DialogBackdrop />
   <DialogPositioner>
     <DialogContent>
+      <DialogTitle>Заголовок</DialogTitle>
+      <DialogDescription>Описание</DialogDescription>
       <DialogCloseTrigger>✕</DialogCloseTrigger>
-      <DialogTitle>Welcome Back</DialogTitle>
-      <DialogDescription>Sign in to your account to continue.</DialogDescription>
     </DialogContent>
   </DialogPositioner>
 </Dialog>
 ```
 
-### Alert dialog, for a destructive confirmation
+**Рендер через движок** — та же композиция плавающей половины, но по схеме (сборка `basic`),
+которую рисует `RenderTree`. Реестр должен знать про `provider: Dialog` для этого компонента —
+без контекста вокруг `positioner` он падает при попытке его прочитать.
+
+```tsx
+const data = { title: "Добро пожаловать", description: "Войдите в аккаунт, чтобы продолжить." };
+const tree = instanceOf("dialog", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Диалог-предупреждение, для подтверждения опасного действия.** `role="alertdialog"` — не только
+семантика: фокус по умолчанию уходит на кнопку закрытия/отмены, а клик снаружи диалог не закрывает.
 
 ```tsx
 <Dialog role="alertdialog">
-  <DialogTrigger>Delete Account</DialogTrigger>
+  <DialogTrigger>Удалить аккаунт</DialogTrigger>
   <DialogBackdrop />
   <DialogPositioner>
     <DialogContent>
-      <DialogTitle>Are you absolutely sure?</DialogTitle>
-      <DialogDescription>This action cannot be undone.</DialogDescription>
-      <DialogCloseTrigger>Cancel</DialogCloseTrigger>
-      <button data-variant="solid" onClick={deleteAccount}>Delete Account</button>
+      <DialogTitle>Точно удалить?</DialogTitle>
+      <DialogDescription>Действие необратимо.</DialogDescription>
+      <DialogCloseTrigger>Отмена</DialogCloseTrigger>
+      <button data-variant="danger" onClick={deleteAccount}>Удалить</button>
     </DialogContent>
   </DialogPositioner>
 </Dialog>
 ```
 
-### Controlled, with confirmation before closing
-
-```tsx
-import { createSignal } from "solid-js";
-
-const [open, setOpen] = createSignal(false);
-const [hasUnsavedChanges, setHasUnsavedChanges] = createSignal(false);
-
-<Dialog
-  open={open()}
-  onOpenChange={(details) => setOpen(details.open)}
-  onInteractOutside={(event) => {
-    if (hasUnsavedChanges()) event.preventDefault();
-  }}
->
-  <DialogTrigger>Edit</DialogTrigger>
-  <DialogBackdrop />
-  <DialogPositioner>
-    <DialogContent>
-      <DialogTitle>Edit Content</DialogTitle>
-      <DialogCloseTrigger>Close</DialogCloseTrigger>
-    </DialogContent>
-  </DialogPositioner>
-</Dialog>
-```
-
-### Non-modal
-
-```tsx
-<Dialog modal={false}>
-  <DialogTrigger>Open Non-Modal Dialog</DialogTrigger>
-  <DialogPositioner>
-    <DialogContent>
-      <DialogTitle>Non-Modal Dialog</DialogTitle>
-      <DialogDescription>You can still interact with the page behind this one.</DialogDescription>
-      <DialogCloseTrigger>✕</DialogCloseTrigger>
-    </DialogContent>
-  </DialogPositioner>
-</Dialog>
-```
-
-### Shared across multiple triggers
+**Общий диалог на несколько триггеров.** `value` у триггера различает, какой из них открыл диалог
+— тот же приём, что у отдельно стоящей кнопки-переключателя.
 
 ```tsx
 <Dialog onTriggerValueChange={(details) => setActiveUserId(details.value)}>
-  <For each={users}>{(user) => <DialogTrigger value={user.id}>Edit {user.name}</DialogTrigger>}</For>
+  <For each={users}>{(user) => <DialogTrigger value={user.id}>Изменить {user.name}</DialogTrigger>}</For>
   <DialogBackdrop />
   <DialogPositioner>
     <DialogContent>
-      <DialogTitle>Edit User</DialogTitle>
-      {/* body reads whichever user's id came through onTriggerValueChange */}
+      <DialogTitle>Изменение пользователя</DialogTitle>
       <DialogCloseTrigger>✕</DialogCloseTrigger>
     </DialogContent>
   </DialogPositioner>
 </Dialog>
 ```
-
-## Styling hooks
-
-`backdrop`/`content`/`trigger` all carry the open/closed pair (see `packages/skin`); `trigger`
-additionally carries `data-current` in a multi-trigger dialog. `positioner` carries no state at all
-— it's pure positioning (typically `display: flex; place-items: center`), and unlike the
-popover's/select's/date-picker's own positioner, it has no floating-UI geometry variables to read,
-since a dialog centers with plain CSS rather than anchoring to a trigger. `content` also receives
-`data-nested`/`data-has-nested` and a `--nested-layer-count` variable when dialogs stack, useful for
-a zoom-out effect on the parent — real Ark behavior, though not currently declared in this file's
-own passport/CSS-variables table.
-
-## Accessibility
-
-Dialog follows the WAI-ARIA [Dialog (Modal) pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
-
-| Key | What it does |
-|---|---|
-| `Enter` | When focus is on the trigger, opens the dialog |
-| `Tab` | Moves focus to the next focusable element inside the dialog — focus is trapped there |
-| `Shift + Tab` | Moves focus to the previous focusable element — same trap |
-| `Esc` | Closes the dialog and moves focus to the trigger (or `finalFocusEl`, if set) |
-<!-- user:end -->
