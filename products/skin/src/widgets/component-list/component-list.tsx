@@ -7,7 +7,7 @@ import {
   RenderTree,
   type DispatchedEvent,
 } from "@omnifield/probe-web-assembly";
-import { useNavigate } from "@omnifield/probe-web-router";
+import { useNavigate, useParams } from "@omnifield/probe-web-router";
 import { createMemo } from "solid-js";
 
 import { useComponentGroups } from "../../entities/component/model/store.js";
@@ -20,6 +20,15 @@ export function ComponentList(props: { variant?: string }) {
   const navigate = useNavigate();
   const groups = useComponentGroups();
   const data = createMemo(() => groupsToTreeItems(groups()));
+
+  // Дерево само не знает, какой компонент сейчас показан — это решает адрес. Айди листа тот же,
+  // что кладёт `adapter.ts` (`компонент/сборка`), нет `$assembly` в адресе (пока на разделе или
+  // на компоненте без сборки) — подсвечивать нечего, дерево работает своей внутренней логикой.
+  const params = useParams({ strict: false, select: (p) => ({ component: p.component, assembly: p.assembly }) });
+  const activeValue = createMemo(() => {
+    const { component, assembly } = params();
+    return component !== undefined && assembly !== undefined ? `${component}/${assembly}` : undefined;
+  });
 
   const collection = createMemo(
     (): TreeCollection<TreeItemData> =>
@@ -38,6 +47,7 @@ export function ComponentList(props: { variant?: string }) {
         collection: collection(),
         selectionMode: "single",
         defaultExpandedValue: data().items.map((item) => item.id),
+        activeValue: activeValue(),
       },
       "base",
       data(),

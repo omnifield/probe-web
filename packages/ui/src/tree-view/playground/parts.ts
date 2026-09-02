@@ -36,7 +36,7 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
     variables: {
       "--depth": { means: "глубина вложенности узла — от неё считается отступ строки" },
       "--active-color": {
-        means: "цвет текста строки, если узел на пути к активному — узел выставляет себе сам, по своим selected/branch",
+        means: "цвет текста строки, если узел активен — узел выставляет себе сам, по своему selected",
       },
       "--active-weight": {
         means: "насыщенность текста строки на пути к активному — тот же приём, что и `--active-color`",

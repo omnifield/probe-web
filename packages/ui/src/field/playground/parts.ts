@@ -1,33 +1,26 @@
-// EDITOR-ONLY per-part taxonomy for the field — read by `./index.ts`'s `defineEditorInfo` call.
-// Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`).
-//
-// `select`'s `accepts` stays UNDECLARED, as the template left it — a native `<select>` needs real
-// `<option>` children, and the kit's content-genus vocabulary has no place for one yet.
-
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import type { passport } from "../entity/passport.js";
 
 type FieldPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// The shared state-name/`means` dictionary for the three native control renderers.
 const controlStateMeans = {
-  invalid: { means: "the enclosing form rejected the value" },
-  required: { means: "the form will demand a value on submit" },
-  readonly: { means: "the value is visible, changing it is not possible" },
-  disabled: { means: "this control cannot be used" },
-  hover: { means: "pointer is over this control" },
-  focus: { means: "this control has keyboard or pointer focus" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
+  invalid: { means: "окружающая форма отвергла значение" },
+  required: { means: "форма потребует значение при отправке" },
+  readonly: { means: "значение видно, изменить нельзя" },
+  disabled: { means: "этим контролом нельзя пользоваться" },
+  hover: { means: "указатель наведён на этот контрол" },
+  focus: { means: "на этом контроле фокус — с клавиатуры или указателя" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это было бы шумом" },
 } satisfies PassportPartEditorInfo<FieldPart>["states"];
 
 export const parts: Readonly<Record<FieldPart, PassportPartEditorInfo<FieldPart>>> = {
   root: {
-    means: "the whole field — label, control, helper/error text and required marker, wired into one addressable, accessible group",
+    means: "поле целиком — подпись, контрол, подсказка/ошибка и метка обязательности, увязанные в одну адресуемую доступную группу",
     states: {
-      disabled: { means: "the whole field is disabled" },
-      invalid: { means: "the enclosing form rejected the value" },
-      readonly: { means: "the value is visible, changing it is not possible" },
+      disabled: { means: "поле целиком отключено" },
+      invalid: { means: "окружающая форма отвергла значение" },
+      readonly: { means: "значение видно, изменить нельзя" },
     },
     accepts: [
       { kind: "component", name: "label" },
@@ -41,12 +34,12 @@ export const parts: Readonly<Record<FieldPart, PassportPartEditorInfo<FieldPart>
     ],
   },
   label: {
-    means: "the field's own label",
+    means: "подпись поля",
     states: {
-      disabled: { means: "the whole field is disabled" },
-      invalid: { means: "the enclosing form rejected the value" },
-      readonly: { means: "the value is visible, changing it is not possible" },
-      required: { means: "the form will demand a value on submit" },
+      disabled: { means: "поле целиком отключено" },
+      invalid: { means: "окружающая форма отвергла значение" },
+      readonly: { means: "значение видно, изменить нельзя" },
+      required: { means: "форма потребует значение при отправке" },
     },
     accepts: [
       { kind: "content", genus: "text" },
@@ -54,31 +47,30 @@ export const parts: Readonly<Record<FieldPart, PassportPartEditorInfo<FieldPart>
     ],
   },
   input: {
-    means: "a plain text control wired to the field — one of three interchangeable renderers",
+    means: "обычный текстовый контрол, подключённый к полю — один из трёх взаимозаменяемых рендереров",
     states: controlStateMeans,
     accepts: [],
   },
-  // `accepts` intentionally undeclared — see file header.
   select: {
-    means: "a plain native dropdown control wired to the field — one of three interchangeable renderers",
+    means: "обычный нативный выпадающий контрол, подключённый к полю — один из трёх взаимозаменяемых рендереров",
     states: controlStateMeans,
   },
   textarea: {
-    means: "a plain multi-line text control wired to the field — one of three interchangeable renderers",
+    means: "обычный многострочный текстовый контрол, подключённый к полю — один из трёх взаимозаменяемых рендереров",
     states: controlStateMeans,
     accepts: [],
   },
   helperText: {
-    means: "hint text — stays mounted regardless of validity",
-    states: { disabled: { means: "the whole field is disabled" } },
+    means: "подсказка — смонтирована всегда, независимо от валидности",
+    states: { disabled: { means: "поле целиком отключено" } },
     accepts: [{ kind: "content", genus: "text" }],
   },
   errorText: {
-    means: "the validation message — mounted only while the field is invalid",
+    means: "сообщение об ошибке валидации — смонтировано только пока поле невалидно",
     accepts: [{ kind: "content", genus: "text" }],
   },
   requiredIndicator: {
-    means: "the required marker — mounted only while the field is required; defaults to \"*\"",
+    means: "метка обязательности — смонтирована только пока поле обязательно; по умолчанию «*»",
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },

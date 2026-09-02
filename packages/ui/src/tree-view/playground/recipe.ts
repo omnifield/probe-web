@@ -28,16 +28,12 @@ export const recipe: SlotRecipe = {
         loading: { props: { pointerEvents: "none" } },
         renaming: { props: { cursor: "text" } },
         focus: { props: { zIndex: "1" } },
+        // Единственная ступень шкалы, у которой одновременно и цвет бренда, и обещание контраста
+        // КАК ТЕКСТА (`STEP_PURPOSE`/`NO_PROMISE`, packages/style).
         selected: {
           props: {
-            // Единственная ступень шкалы, у которой одновременно и цвет бренда, и обещание
-            // контраста КАК ТЕКСТА (`STEP_PURPOSE`/`NO_PROMISE`, packages/style) — та же
-            // ступень что у листа, что у ветки, различие не в цвете, а в весе ниже.
             "--active-color": "var(--accent-11)",
             "--active-weight": "var(--weight-semibold)",
-          },
-          states: {
-            branch: { props: { "--active-weight": "var(--weight-medium)" } },
           },
         },
         checked: {

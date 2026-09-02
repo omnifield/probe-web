@@ -7,6 +7,7 @@ import {
 import { dropAddress } from "../../../shared/utils/slot-chain.js";
 import { traceLife } from "../../../shared/utils/trace.js";
 import { anatomyParts } from "../../entity/anatomy.js";
+import { activeOverride, useTreeActiveValue } from "../root.js";
 
 export type TreeControlIndicatorProps = JSX.HTMLAttributes<HTMLDivElement>;
 
@@ -15,6 +16,7 @@ export function TreeControlIndicator(props: TreeControlIndicatorProps) {
 
   const [local, rest] = splitProps(props, ["children"]);
   const node = useTreeViewNodeContext();
+  const activeValue = useTreeActiveValue();
 
   // Лист не раскрывается — индикатору тут нечего показывать (Ark сам не рисует ItemIndicator у
   // листа в своих примерах). ArkItemIndicator существует для другого сценария (чекмарка
@@ -25,6 +27,7 @@ export function TreeControlIndicator(props: TreeControlIndicatorProps) {
       <ArkBranchIndicator
         {...dropAddress(rest)}
         {...anatomyParts.controlIndicator.attrs}
+        {...activeOverride(activeValue(), node().value)}
       >
         {local.children}
       </ArkBranchIndicator>

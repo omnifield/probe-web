@@ -45,7 +45,12 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(assembly: PassportAssembly, data: Data, dispatch?: (event: DispatchedEvent) => void): HTMLElement {
+function mount(
+  assembly: PassportAssembly,
+  data: Data,
+  dispatch?: (event: DispatchedEvent) => void,
+  rootProps?: Readonly<Record<string, unknown>>,
+): HTMLElement {
   const rootNode = { id: "ROOT", label: "", children: data.items };
   const collection = createTreeCollection({
     nodeToValue: (node: { id: string }) => node.id,
@@ -54,7 +59,7 @@ function mount(assembly: PassportAssembly, data: Data, dispatch?: (event: Dispat
   });
 
   const base = baseAssemblyOf(treeViewPassport, assembly, "tree-view", data);
-  const onRoot = updateNode(base as AssemblyTree, base.components.root, { props: { collection } });
+  const onRoot = updateNode(base as AssemblyTree, base.components.root, { props: { collection, ...rootProps } });
   if (!onRoot.ok) throw new Error(`витрина: экземпляр отвергнут механикой — ${onRoot.means}`);
 
   const host = document.createElement("div");
@@ -137,5 +142,40 @@ describe('tree view "base" — recur grows the same node again from its own data
 
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
     expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1"]);
+  });
+});
+
+describe('tree view "base" — externally driven activeValue overrides Zag\'s own click-driven selection', () => {
+  it("highlights exactly the given id, and a real click elsewhere does not move it", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+
+    const host = mount(assembly as PassportAssembly, data, undefined, { activeValue: "a" });
+
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items[0]!.getAttribute("data-selected")).toBe("");
+    expect(items[1]!.getAttribute("data-selected")).toBeNull();
+
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    (controls[1] as HTMLElement).click();
+    await Promise.resolve();
+
+    // Клик по Beta — родной `selectNode` у Zag его бы выбрал, но снаружи задан "a", и он побеждает.
+    expect(items[0]!.getAttribute("data-selected")).toBe("");
+    expect(items[1]!.getAttribute("data-selected")).toBeNull();
+  });
+
+  it("without activeValue, native click-driven selection works exactly as before", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+
+    const host = mount(assembly as PassportAssembly, data);
+
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    (controls[1] as HTMLElement).click();
+    await Promise.resolve();
+
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items[1]!.getAttribute("data-selected")).toBe("");
   });
 });

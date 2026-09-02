@@ -1,206 +1,184 @@
-# Field
+# 🏟️ Field
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole field — label, control, helper/error text and required marker, wired into one addressable, accessible group |
-| label | the field's own label |
-| input | a plain text control wired to the field — one of three interchangeable renderers |
-| select | a plain native dropdown control wired to the field — one of three interchangeable renderers |
-| textarea | a plain multi-line text control wired to the field — one of three interchangeable renderers |
-| helperText | hint text — stays mounted regardless of validity |
-| errorText | the validation message — mounted only while the field is invalid |
-| requiredIndicator | the required marker — mounted only while the field is required; defaults to "*" |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole field is disabled |
-| root | invalid | [data-invalid] | the enclosing form rejected the value |
-| root | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| label | disabled | [data-disabled] | the whole field is disabled |
-| label | invalid | [data-invalid] | the enclosing form rejected the value |
-| label | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| label | required | [data-required] | the form will demand a value on submit |
-| input | invalid | [data-invalid] | the enclosing form rejected the value |
-| input | required | [data-required] | the form will demand a value on submit |
-| input | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| input | disabled | :disabled | this control cannot be used |
-| input | hover | :hover | pointer is over this control |
-| input | focus | :focus | this control has keyboard or pointer focus |
-| input | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| select | invalid | [data-invalid] | the enclosing form rejected the value |
-| select | required | [data-required] | the form will demand a value on submit |
-| select | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| select | disabled | :disabled | this control cannot be used |
-| select | hover | :hover | pointer is over this control |
-| select | focus | :focus | this control has keyboard or pointer focus |
-| select | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| textarea | invalid | [data-invalid] | the enclosing form rejected the value |
-| textarea | required | [data-required] | the form will demand a value on submit |
-| textarea | readonly | [data-readonly] | the value is visible, changing it is not possible |
-| textarea | disabled | :disabled | this control cannot be used |
-| textarea | hover | :hover | pointer is over this control |
-| textarea | focus | :focus | this control has keyboard or pointer focus |
-| textarea | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| helperText | disabled | [data-disabled] | the whole field is disabled |
-| errorText | — | — | — |
-| requiredIndicator | — | — | — |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Field is a composition helper, not a widget — unlike every other component in the kit, there is no
-state machine underneath it. Its whole job is wiring one label, one control, a helper message, an
-error message, and a required marker into one addressable, accessible group, whether that control
-is a plain `<input>`/`<select>`/`<textarea>` or a foreign component like this kit's own `Checkbox`
-or `Switch`.
-
-## Features
-
-- **Three interchangeable native renderers** — `input`/`select`/`textarea` all wire into the same
-  field state; use whichever one matches the data, never more than one at a time.
-- **Foreign controls wire in through context, not props** — `FieldContext`/`useFieldContext`/
-  `useField` are re-exported as-is (not wrapped) because Ark's own guidance is that a custom
-  control reads the field's context itself; `Field` never pushes props down to arbitrary children
-  on its own.
-- **Conditionally mounted, not conditionally styled** — `requiredIndicator` only exists in the DOM
-  while `required` is set, `errorText` only while `invalid` is set; `helperText` stays mounted
-  regardless. A skin has nothing to hide with CSS here — the kit already didn't render the node.
-- **`requiredIndicator` defaults to `"*"`**, but takes a `fallback` prop the same shape as the
-  checkbox's own indicator — supply different content for the non-required case if `"*"` alone
-  isn't the right default for a given design.
-- **`FieldItem` scopes one repeated instance** — renders no node of its own, only re-addresses ids
-  and passes `children` through; useful when several fields share meaning but need independently
-  addressable label/control/error ids (e.g. a list of similar inputs). It carries no anatomy part
-  of its own — nothing for the kit to draw or style.
-- **`select` takes real `<option>` children** — a genuine native `<select>`, not one of the kit's
-  own listbox-shaped components; the kit's content-genus vocabulary (text/icon/component) has no
-  slot for raw `<option>` elements, a named gap, not something worked around here.
-- **No settings at all** — declared as a fact: none of `required`/`invalid`/`readOnly`/`disabled`
-  is part of the kit's closed settings vocabulary.
-
-## Anatomy
-
-```tsx
-import {
-  Field,
-  FieldLabel,
-  FieldInput,
-  FieldHelperText,
-  FieldErrorText,
-  FieldRequiredIndicator,
-} from "@omnifield/probe-web-ui";
-
-<Field required>
-  <FieldLabel>
-    {/* text */}
-    <FieldRequiredIndicator />
-  </FieldLabel>
-  {/* exactly one of: FieldInput, FieldSelect, FieldTextarea — or a foreign control via context */}
-  <FieldInput />
-  <FieldHelperText>{/* text */}</FieldHelperText>
-  <FieldErrorText>{/* text */}</FieldErrorText>
-</Field>
+```
+root
+├─ label 🏷️
+│  └─ requiredIndicator ❗
+├─ input / select / textarea ✏️
+├─ helperText 💬
+└─ errorText ⚠️
 ```
 
-## Examples
+| часть              | значение                                                                      | принимает внутри                        | рисуется                    |
+| ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------- |
+| 🏟️ `root`          | поле целиком — подпись, контрол, подсказка/ошибка и метка обязательности, увязанные в одну адресуемую доступную группу | `label`, `input`, `select`, `textarea`, `helperText`, `errorText`, `requiredIndicator`, любой компонент | `Field`               |
+| 🏷️ `label`         | подпись поля                                                                  | текст, `requiredIndicator`                  | `FieldLabel`           |
+| ✏️ `input`         | обычный текстовый контрол — один из трёх взаимозаменяемых рендереров           | —                                            | `FieldInput`           |
+| ✏️ `select`        | обычный нативный выпадающий контрол — один из трёх взаимозаменяемых рендереров | —                                            | `FieldSelect`          |
+| ✏️ `textarea`      | обычный многострочный текстовый контрол — один из трёх взаимозаменяемых рендереров | —                                        | `FieldTextarea`        |
+| 💬 `helperText`    | подсказка — смонтирована всегда, независимо от валидности                     | текст                                        | `FieldHelperText`      |
+| ⚠️ `errorText`     | сообщение об ошибке валидации — смонтировано только пока поле невалидно       | текст                                        | `FieldErrorText`       |
+| ❗ `requiredIndicator` | метка обязательности — смонтирована только пока поле обязательно, по умолчанию «*» | текст, иконку                          | `FieldRequiredIndicator` |
 
-### Basic, with a plain input
+> [!NOTE]
+> Field — единственный компонент кита без стейт-машины под собой: анатомия взята не из `@zag-js`,
+> а напрямую из `@ark-ui/solid/anatomy` (`fieldAnatomy`). Вся работа компонента — развести один
+> `<label>`, один контрол, подсказку, ошибку и метку обязательности по одной адресуемой группе, а
+> не управлять переключением состояний самостоятельно: состояния приходят снаружи, через пропсы
+> корня (`disabled`/`invalid`/`readOnly`/`required`).
 
-```tsx
-<Field>
-  <FieldLabel>Name</FieldLabel>
-  <FieldInput />
-  <FieldHelperText>As it appears on your ID</FieldHelperText>
-  <FieldErrorText>Name is required</FieldErrorText>
-</Field>
+> [!NOTE]
+> `input`/`select`/`textarea` — три взаимозаменяемых рендерера одного и того же поля, не три
+> разные части схемы: в реальной композиции кладётся ровно один из них. Чужой контрол (например,
+> кит-компонент `Checkbox`) подключается не через них, а через `FieldContext`/`useFieldContext` —
+> они реэкспортированы как есть, без обёртки, потому что сам контрол читает контекст поля
+> самостоятельно.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние       | метка                | значение                                                              |
+| ---- | ---------------- | ---------------------- | ------------------------------------------------------------------------ |
+| 🚫   | disabled         | `[data-disabled]`      | поле целиком отключено                                                   |
+| ⚠️   | invalid          | `[data-invalid]`       | окружающая форма отвергла значение                                       |
+| 🔒   | readonly         | `[data-readonly]`      | значение видно, изменить нельзя                                          |
+| ❗   | required         | `[data-required]`      | форма потребует значение при отправке                                    |
+| 🚫   | disabled (контрол) | `:disabled`           | этим контролом нельзя пользоваться                                        |
+| 🖱️   | hover            | `:hover`                | указатель наведён на контрол                                             |
+| 🎯   | focus            | `:focus`                | на контроле фокус — с клавиатуры или указателя                          |
+| ⌨️   | focus-visible    | `:focus-visible`        | фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум       |
+
+Состояния распределены неравномерно между частями — не выбор кита, а честное отражение того, что
+каждая часть реально может выражать:
+
+- `root` несёт `disabled`/`invalid`/`readonly` — эти три относятся к полю целиком.
+- `label` несёт те же три плюс `required` — подпись меняется, когда поле обязательно.
+- `input`/`select`/`textarea` несут восьмёрку целиком, но **не единым стилем**: `invalid`/
+  `required`/`readonly` — атрибуты `data-*`, потому что это состояния поля, спущенные на контрол; а
+  `disabled`/`hover`/`focus`/`focus-visible` — настоящие нативные псевдоклассы, потому что это
+  реальные `<input>`/`<select>`/`<textarea>`, которые браузер и так отслеживает сам — дублировать
+  их атрибутами незачем.
+- `helperText` несёт только `disabled` — подсказка не бывает «невалидной» сама по себе.
+- `errorText` и `requiredIndicator` не несут состояний вовсе: их присутствие в DOM уже и есть
+  состояние (см. предупреждение в разделе «Рецепт»).
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "label": "string", "helperText": "string", "errorText": "string" }
 ```
 
-### Required and invalid
+<h3 id="io-выход">📤 Выход</h3>
+
+Field ничего не диспатчит через сборку — ввод в контрол ведёт сам контрол (`input`/`select`/
+`textarea` или чужой, подключённый через контекст), это не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+Рабочее поле из данных: обязательное, невалидное — видны и «*», и текст ошибки.
+
+```
+root · required · invalid
+  label 🏷️
+    text: {label}
+    requiredIndicator ❗
+  input ✏️
+  helperText 💬 · text: {helperText}
+  errorText ⚠️ · text: {errorText}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!WARNING]
+> `errorText` и `requiredIndicator` не адресуются рецептом по состояниям — кит монтирует их в DOM
+> только когда есть что показать (поле невалидно / поле обязательно), а не всегда с `display:
+> none`. Стилизовать тут нечего скрывать — отсутствие узла уже и есть скрытие.
+
+`input`/`select`/`textarea` делят один и тот же объект состояний (`controlStates`) — три
+взаимозаменяемых рендерера одного поля не нуждаются в разных наборах правил. `focus` (не
+`focus-visible`, наведённый или программный фокус без клавиатуры) явно гасит нативную обводку
+браузера (`outline: none`) — настоящую рамку рисует только `focus-visible`.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Field required invalid>
   <FieldLabel>
-    Name
+    Имя
     <FieldRequiredIndicator />
   </FieldLabel>
   <FieldInput />
-  <FieldErrorText>Name is required</FieldErrorText>
+  <FieldHelperText>Как в документе</FieldHelperText>
+  <FieldErrorText>Поле обязательно</FieldErrorText>
 </Field>
 ```
 
-### A select, with real options
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
 
 ```tsx
-import { FieldSelect } from "@omnifield/probe-web-ui";
+const data = { label: "Имя", helperText: "Как в документе", errorText: "Поле обязательно" };
+const tree = instanceOf("field", { required: true, invalid: true }, "basic", data);
 
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**`select` с настоящими `<option>`.** Это обычный нативный `<select>`, а не один из кит-компонентов
+листбокса — словарь content-genus кита (текст/иконка/компонент) не несёт слота под сырые `<option>`
+элементы, поэтому такая композиция кладётся руками, а не через сборку.
+
+```tsx
 <Field>
-  <FieldLabel>Country</FieldLabel>
+  <FieldLabel>Страна</FieldLabel>
   <FieldSelect>
-    <option value="us">United States</option>
-    <option value="ca">Canada</option>
+    <option value="ru">Россия</option>
+    <option value="us">США</option>
   </FieldSelect>
 </Field>
 ```
 
-### An autoresizing textarea
+**Чужой контрол через контекст.** `FieldContext` отдаёт контролу те же пропсы, что Ark отдал бы
+нативному `<input>` — пригождается, когда ни `input`/`select`/`textarea` не подходят и отдельной
+интеграции для контрола нет. Кит-компонент вроде `Checkbox` подключается тем же способом, читая
+контекст поля сам.
 
 ```tsx
-import { FieldTextarea } from "@omnifield/probe-web-ui";
-
-<Field>
-  <FieldLabel>Notes</FieldLabel>
-  <FieldTextarea autoresize />
-</Field>
-```
-
-### Wiring in a foreign control
-
-`FieldContext` hands a custom or foreign control the same props Ark would give a native
-`<input>` — useful when neither `input`/`select`/`textarea` fits and there's no dedicated
-integration for the control in question:
-
-```tsx
-import { FieldContext } from "@omnifield/probe-web-ui";
-
 <Field invalid>
-  <FieldLabel>Any control</FieldLabel>
+  <FieldLabel>Любой контрол</FieldLabel>
   <FieldContext>{(context) => <input {...context().getInputProps()} />}</FieldContext>
-  <FieldErrorText>This field has an error</FieldErrorText>
+  <FieldErrorText>В поле ошибка</FieldErrorText>
 </Field>
 ```
 
-Composing one of the kit's own controls (e.g. `Checkbox`) works the same way, since that control
-reads the field's context internally.
+**`FieldItem` — переадресация для повтора.** Не рисует собственного узла, только переставляет id
+подписи/контрола/ошибки и пробрасывает `children` — пригождается, когда несколько полей повторяют
+одну схему, но должны адресоваться независимо (например, список похожих инпутов). Собственной части
+анатомии не несёт — рисовать и стилизовать тут нечего.
 
-## Styling hooks
-
-`root`/`label`/`input`/`select`/`textarea`/`helperText` all carry combinations of
-`data-disabled`/`data-invalid`/`data-readonly`/`data-required` (see `packages/skin`) — but
-`errorText` and `requiredIndicator` carry no state marks of their own, because they don't need any:
-their very presence in the DOM already is the state. `input`/`select`/`textarea` mix native
-pseudo-classes (`:disabled`, `:hover`, `:focus`, `:focus-visible`) with kit-declared `data-*`
-attributes (`invalid`/`required`/`readonly`) on the same node — disabledness in particular is native
-`:disabled`, not `data-disabled`, since these are real form controls the browser already tracks.
-
-## Accessibility
-
-Field has no dedicated WAI-ARIA widget pattern or keyboard table of its own — it's a composition
-helper, not an interactive control, and carries no state machine to drive keyboard behavior. Its
-accessibility contribution is wiring: `label` is a real `<label>` associated with its control,
-`helperText`/`errorText` are connected via `aria-describedby`, and `required`/`invalid` propagate to
-the control's own `aria-required`/`aria-invalid` — the actual keyboard behavior belongs entirely to
-whichever control (`input`, `select`, `textarea`, or a foreign one) is composed inside.
-<!-- user:end -->
+```tsx
+<FieldItem>
+  <FieldLabel>Имя участника</FieldLabel>
+  <FieldInput />
+</FieldItem>
+```
