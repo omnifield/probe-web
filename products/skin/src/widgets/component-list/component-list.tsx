@@ -51,9 +51,12 @@ export function ComponentList(props: { variant?: string }) {
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;
 
+    // Лист — сборка конкретного компонента, id составной (`компонент/сборка`, см. adapter.ts) —
+    // на переход сейчас идёт только компонент, какую сборку показать — отдельная тема.
+    const [component] = payload.id.split("/");
     void navigate({
       to: "/showcase/$component",
-      params: { component: payload.id },
+      params: { component: component! },
     });
   };
 
