@@ -176,7 +176,7 @@
               onclick={async () => {
                 const confirmed = await confirm({
                   title: t('common.delete'),
-                  message: 'Are you sure you want to delete this section?',
+                  message: t('portal.confirmDeleteSection'),
                   confirmText: t('common.delete'),
                   cancelText: t('common.cancel'),
                   variant: 'danger'
@@ -199,7 +199,7 @@
               {@render sectionEditInput(
                 'text-xl font-medium mb-1 bg-transparent border-b-2 focus:outline-none w-full',
                 'border-color: var(--ds-border-focused); color: var(--ds-text);',
-                'Section title (click to edit)'
+                t('portal.sectionTitlePlaceholder')
               )}
             {:else if section.title}
               <button
@@ -215,7 +215,7 @@
                 class="text-xs mb-2 text-left hover:opacity-70 transition-opacity"
                 style="color: var(--ds-text-subtle);"
               >
-                + Add title
+                {t('portal.addTitleButton')}
               </button>
             {/if}
           {:else if section.title}
@@ -230,7 +230,7 @@
               {@render sectionEditInput(
                 'text-sm mb-4 bg-transparent border-b focus:outline-none w-full',
                 'border-color: var(--ds-border-focused); color: var(--ds-text-subtle);',
-                'Subtitle (optional, click to edit)'
+                t('portal.sectionSubtitlePlaceholder')
               )}
             {:else}
               <button
@@ -238,7 +238,7 @@
                 class="text-sm mb-4 text-left w-full hover:opacity-70 transition-opacity"
                 style="color: var(--ds-text-subtle);"
               >
-                {section.subtitle || '(Click to add subtitle)'}
+                {section.subtitle || t('portal.clickToAddSubtitle')}
               </button>
             {/if}
           {:else if section.subtitle}
@@ -313,7 +313,7 @@
                               class="px-1.5 py-0.5 text-[10px] font-medium rounded"
                               style="background-color: var(--ds-background-neutral); color: var(--ds-text-subtle);"
                             >
-                              INACTIVE
+                              {t('common.inactive')}
                             </span>
                           {/if}
                         </div>

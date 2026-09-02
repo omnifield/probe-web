@@ -41,10 +41,10 @@
   const COLLAPSED_WIDTH = 48;
 
   const PERSONAL_NAV_ITEMS = [
-    { icon: CheckSquare, label: 'My Tasks', route: '/personal', view: 'personal-workspace' },
-    { icon: BookOpen, label: 'Reviews', route: '/personal/reviews', view: 'workspace-reviews' },
-    { icon: Calendar, label: 'Weekly Calendar', route: '/personal/calendar', view: 'workspace-calendar' },
-    { icon: Sparkles, label: 'Plan My Day', route: '/personal/plan', view: 'personal-plan' },
+    { icon: CheckSquare, labelKey: 'workspaceNav.personalNav.myTasks', route: '/personal', view: 'personal-workspace' },
+    { icon: BookOpen, labelKey: 'workspaceNav.personalNav.reviews', route: '/personal/reviews', view: 'workspace-reviews' },
+    { icon: Calendar, labelKey: 'workspaceNav.personalNav.weeklyCalendar', route: '/personal/calendar', view: 'workspace-calendar' },
+    { icon: Sparkles, labelKey: 'workspaceNav.personalNav.planMyDay', route: '/personal/plan', view: 'personal-plan' },
   ];
 
   // Full list of workspace admin route views (registry-driven).
@@ -100,7 +100,7 @@
   let collections = $state([]);
   let allCollections = $state([]);
   let currentCollectionId = $state(null); // Track by ID instead of name
-  let currentCollectionName = $state('Default'); // For display
+  let currentCollectionName = $state(t('workspaceNav.defaultCollection')); // For display
   let collectionDropdownItems = $state([]);
   let testsExpanded = $state(true);
   let workspaceToolsExpanded = $state(true);
@@ -178,10 +178,10 @@
       currentCollectionId = routeCollectionId;
       // Update the display name based on ID
       const collection = collections.find(c => c.id == routeCollectionId);
-      currentCollectionName = collection ? collection.name : 'Default';
+      currentCollectionName = collection ? collection.name : t('workspaceNav.defaultCollection');
     } else {
       currentCollectionId = null;
-      currentCollectionName = 'Default';
+      currentCollectionName = t('workspaceNav.defaultCollection');
     }
     buildCollectionDropdownItems();
   }
@@ -200,7 +200,7 @@
       console.error('Failed to load collections:', error);
       collections = [];
       currentCollectionId = null;
-      currentCollectionName = 'Default';
+      currentCollectionName = t('workspaceNav.defaultCollection');
       buildCollectionDropdownItems();
     }
   }
@@ -221,7 +221,7 @@
 
   // Helper function to truncate long workspace names
   function truncateWorkspaceName(name) {
-    if (!name) return 'Workspace';
+    if (!name) return t('workspaceNav.workspaceFallback');
     // Truncate to ~20 characters to fit in 2 lines max
     if (name.length <= 20) return name;
     return name.substring(0, 17) + '...';
@@ -236,8 +236,8 @@
     items.push({
       id: 'default',
       type: 'regular',
-      title: `${workspaceName} - Default`,
-      subtitle: 'Show all items in workspace',
+      title: `${workspaceName} - ${t('workspaceNav.defaultCollection')}`,
+      subtitle: t('workspaceNav.showAllItemsInWorkspace'),
       badge: currentCollectionId === null ? '✓' : null,
       badgeClass: currentCollectionId === null ? '' : '',
       badgeStyle: currentCollectionId === null ? 'color: var(--ds-text-link);' : 'color: var(--ds-text-subtlest);',
@@ -269,7 +269,7 @@
         id: 'add-collection',
         type: 'regular',
         icon: Plus,
-        title: 'Add Collection',
+        title: t('workspaceNav.addCollection'),
         color: 'var(--ds-text-link)',
         onClick: () => {
           window.dispatchEvent(new CustomEvent('show-create-modal', {
@@ -297,7 +297,7 @@
   function selectCollection(collection) {
     if (collection === null) {
       currentCollectionId = null;
-      currentCollectionName = 'Default';
+      currentCollectionName = t('workspaceNav.defaultCollection');
     } else {
       currentCollectionId = collection.id;
       currentCollectionName = collection.name;
@@ -438,9 +438,9 @@
     <div class="flex items-center gap-3">
       {@render workspaceAvatar(false)}
       <div class="flex-1 min-w-0">
-        <Tooltip content={$currentWorkspace?.name || 'Workspace'}>
+        <Tooltip content={$currentWorkspace?.name || t('workspaceNav.workspaceFallback')}>
           <div class="font-medium text-sm truncate" style="color: var(--ds-text);">
-            {$currentWorkspace?.name || 'Workspace'}
+            {$currentWorkspace?.name || t('workspaceNav.workspaceFallback')}
           </div>
         </Tooltip>
         {#if backLink}
@@ -449,7 +449,7 @@
             <span>{t('workspaceSettings.backToWorkspace')}</span>
           </a>
         {:else if $currentWorkspace?.is_personal}
-          <div class="text-xs text-orange-600">Personal</div>
+          <div class="text-xs text-orange-600">{t('workspaceNav.personal')}</div>
         {:else if $currentWorkspace?.description}
           <Tooltip content={$currentWorkspace.description}>
             <div class="text-xs truncate" style="color: var(--ds-text-subtle);">
@@ -518,38 +518,38 @@
     {:else if $currentWorkspace?.is_personal}
       <div class="flex flex-col items-center space-y-1 mt-6">
         {#each PERSONAL_NAV_ITEMS as item}
-          {@render collapsedNavIcon({ href: item.route, label: item.label, icon: item.icon, isActive: $currentRoute.view === item.view })}
+          {@render collapsedNavIcon({ href: item.route, label: t(item.labelKey), icon: item.icon, isActive: $currentRoute.view === item.view })}
         {/each}
       </div>
     {:else}
       <div class="flex flex-col items-center space-y-1 mt-6">
-        {@render collapsedNavIcon({ href: getNavigationUrl('overview'), label: 'Overview', icon: Home, isActive: $currentRoute.view === 'workspace-overview' })}
+        {@render collapsedNavIcon({ href: getNavigationUrl('overview'), label: t('common.overview'), icon: Home, isActive: $currentRoute.view === 'workspace-overview' })}
 
         {#each workspaceViewItems as view}
-          {@render collapsedNavIcon({ href: getNavigationUrl(view.id), label: view.label, icon: view.icon, isActive: $currentRoute.view === `workspace-${view.id}` })}
+          {@render collapsedNavIcon({ href: getNavigationUrl(view.id), label: t(view.labelKey), icon: view.icon, isActive: $currentRoute.view === `workspace-${view.id}` })}
         {/each}
 
         {#if $moduleSettings.test_management_enabled && canViewTests && !currentCollectionId}
           {@render sectionDivider()}
           {#each testNavigationItems as view}
-            {@render collapsedNavIcon({ href: getTestNavigationUrl(view.id), label: view.label, icon: view.icon, isActive: activeTestNavId === view.id })}
+            {@render collapsedNavIcon({ href: getTestNavigationUrl(view.id), label: t(view.labelKey), icon: view.icon, isActive: activeTestNavId === view.id })}
           {/each}
         {/if}
 
         {@render sectionDivider()}
         {#each filteredWorkspaceOnlyViews as view}
-          {@render collapsedNavIcon({ href: getNavigationUrl(view.id), label: view.label, icon: view.icon, testId: view.testId, isActive: isWorkspaceViewActive(view) })}
+          {@render collapsedNavIcon({ href: getNavigationUrl(view.id), label: t(view.labelKey), icon: view.icon, testId: view.testId, isActive: isWorkspaceViewActive(view) })}
         {/each}
 
         {#if canAdmin}
-          {@render collapsedNavIcon({ href: `/workspaces/${workspaceId}/settings/general`, label: 'Settings', icon: Settings, isActive: isSettingsActive() })}
+          {@render collapsedNavIcon({ href: `/workspaces/${workspaceId}/settings/general`, label: t('common.settings'), icon: Settings, isActive: isSettingsActive() })}
         {/if}
       </div>
     {/if}
 
     <div class="flex-1"></div>
 
-    <Tooltip content="Expand sidebar" placement="right">
+    <Tooltip content={t('workspaceNav.expandSidebar')} placement="right">
       <button
         type="button"
         onclick={() => uiStore.wsSidebarCollapsed = false}
@@ -597,7 +597,7 @@
 
     <nav class="flex-1 px-4 pt-2 space-y-1">
       {#each PERSONAL_NAV_ITEMS as item}
-        {@render navLink({ href: item.route, label: item.label, icon: item.icon, isActive: $currentRoute.view === item.view })}
+        {@render navLink({ href: item.route, label: t(item.labelKey), icon: item.icon, isActive: $currentRoute.view === item.view })}
       {/each}
     </nav>
 
@@ -610,7 +610,7 @@
 
     <!-- Collection Selector -->
     <div class="px-4 pt-2 mb-6">
-      <Tooltip content="Collection" placement="right">
+      <Tooltip content={t('workspaceNav.collection')} placement="right">
         <DropdownMenu
           triggerText={currentCollectionName}
           items={collectionDropdownItems}
@@ -625,18 +625,18 @@
     </div>
 
     <nav class="flex-1 px-4 space-y-1">
-      {@render navLink({ href: getNavigationUrl('overview'), label: 'Overview', tooltip: 'Workspace overview and dashboard', icon: Home, isActive: $currentRoute.view === 'workspace-overview' })}
+      {@render navLink({ href: getNavigationUrl('overview'), label: t('common.overview'), tooltip: t('workspaceNav.tooltips.overview'), icon: Home, isActive: $currentRoute.view === 'workspace-overview' })}
 
       {#each workspaceViewItems as view}
-        {@render navLink({ href: getNavigationUrl(view.id), label: view.label, tooltip: view.tooltip, icon: view.icon, testId: view.testId, isActive: $currentRoute.view === `workspace-${view.id}` })}
+        {@render navLink({ href: getNavigationUrl(view.id), label: t(view.labelKey), tooltip: t(view.tooltipKey), icon: view.icon, testId: view.testId, isActive: $currentRoute.view === `workspace-${view.id}` })}
       {/each}
 
       {#if currentCollectionId}
         <div class="mt-4 pt-4 border-t" style="border-color: var(--ds-border);">
           <div class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: var(--ds-text-subtle);">
-            Collection
+            {t('workspaceNav.collection')}
           </div>
-          {@render navLink({ href: `/collections/${currentCollectionId}?workspace=${workspaceId}`, label: 'Edit Collection', icon: Pencil, isActive: false })}
+          {@render navLink({ href: `/collections/${currentCollectionId}?workspace=${workspaceId}`, label: t('workspaceNav.editCollection'), icon: Pencil, isActive: false })}
         </div>
       {/if}
 
@@ -653,14 +653,14 @@
             onmouseleave={(e) => e.currentTarget.style.color = 'var(--ds-text-subtle)'}
             onclick={toggleTestsSection}
           >
-            <span>Tests</span>
+            <span>{t('workspaceNav.testsSection')}</span>
             <ChevronDown class={`w-4 h-4 transition-transform ${testsExpanded ? 'rotate-180' : ''}`} />
           </button>
 
           {#if testsExpanded}
             <div id="workspace-tests-navigation" class="space-y-1" data-testid="workspace-tests-navigation">
               {#each testNavigationItems as view}
-                {@render navLink({ href: getTestNavigationUrl(view.id), label: view.label, tooltip: view.tooltip, icon: view.icon, isActive: activeTestNavId === view.id })}
+                {@render navLink({ href: getTestNavigationUrl(view.id), label: t(view.labelKey), tooltip: t(view.tooltipKey), icon: view.icon, isActive: activeTestNavId === view.id })}
               {/each}
             </div>
           {/if}
@@ -676,19 +676,19 @@
           onmouseleave={(e) => e.currentTarget.style.color = 'var(--ds-text-subtle)'}
           onclick={toggleWorkspaceToolsSection}
         >
-          <span>Workspace tools</span>
+          <span>{t('workspaceNav.workspaceToolsSection')}</span>
           <ChevronDown class={`w-4 h-4 transition-transform ${workspaceToolsExpanded ? 'rotate-180' : ''}`} />
         </button>
 
         {#if workspaceToolsExpanded}
           <div class="space-y-1" data-testid="workspace-tools-navigation">
             {#each filteredWorkspaceOnlyViews as view}
-              {@render navLink({ href: getNavigationUrl(view.id), label: view.label, tooltip: view.tooltip, icon: view.icon, testId: view.testId, isActive: isWorkspaceViewActive(view) })}
+              {@render navLink({ href: getNavigationUrl(view.id), label: t(view.labelKey), tooltip: t(view.tooltipKey), icon: view.icon, testId: view.testId, isActive: isWorkspaceViewActive(view) })}
             {/each}
 
             {#if canAdmin}
-              {@render navLink({ href: `/workspaces/${workspaceId}/look-and-feel`, label: 'Look and Feel', tooltip: 'Customize appearance and layout', icon: Palette, isActive: $currentRoute.view === 'workspace-look-and-feel' })}
-              {@render navLink({ href: `/workspaces/${workspaceId}/settings/general`, label: 'Settings', tooltip: 'Configure workspace settings and preferences', icon: Settings, isActive: isSettingsActive() })}
+              {@render navLink({ href: `/workspaces/${workspaceId}/look-and-feel`, label: t('lookAndFeel.title'), tooltip: t('workspaceNav.lookAndFeelTooltip'), icon: Palette, isActive: $currentRoute.view === 'workspace-look-and-feel' })}
+              {@render navLink({ href: `/workspaces/${workspaceId}/settings/general`, label: t('common.settings'), tooltip: t('workspaceNav.settingsTooltip'), icon: Settings, isActive: isSettingsActive() })}
             {/if}
           </div>
         {/if}

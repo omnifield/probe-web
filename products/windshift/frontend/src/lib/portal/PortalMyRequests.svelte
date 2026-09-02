@@ -17,6 +17,7 @@
   import PageHeader from '../layout/PageHeader.svelte';
   import SafeMarkdown from '../components/SafeMarkdown.svelte';
   import { iconMap, portalStore } from '../stores/portal.svelte.js';
+  import { t } from '../stores/i18n.svelte.js';
   import { formatDateSimple, formatDateTimeLocale } from '../utils/dateFormatter.js';
 </script>
 
@@ -33,7 +34,7 @@
       data-testid="portal-request-detail-back"
     >
       <ArrowLeft class="w-4 h-4" />
-      Back to requests
+      {t('portal.backToRequests')}
     </button>
 
     <div class="request-detail-grid">
@@ -76,12 +77,12 @@
           <div class="flex flex-wrap gap-x-5 gap-y-2 mt-6 text-sm" style="color: var(--ds-text-subtle);">
             <div class="flex items-center gap-1.5">
               <Calendar class="w-4 h-4" />
-              Created {formatDateSimple(request.created_at)}
+              {t('portal.createdOn', { date: formatDateSimple(request.created_at) })}
             </div>
             {#if request.comment_count > 0}
               <div class="flex items-center gap-1.5">
                 <MessageSquare class="w-4 h-4" />
-                {request.comment_count} {request.comment_count === 1 ? 'comment' : 'comments'}
+                {t('portal.commentCount', { count: request.comment_count })}
               </div>
             {/if}
           </div>
@@ -89,7 +90,7 @@
 
         <section class="request-activity">
           <div class="flex items-center justify-between gap-3 mb-5">
-            <h2 class="text-lg font-semibold" style="color: var(--ds-text);">Activity</h2>
+            <h2 class="text-lg font-semibold" style="color: var(--ds-text);">{t('portal.activity')}</h2>
             {#if portalStore.requestComments.length > 0}
               <Badge variant="neutral" size="sm">{portalStore.requestComments.length}</Badge>
             {/if}
@@ -123,20 +124,20 @@
               {:else}
                 <div class="request-empty-activity">
                   <MessageSquare class="w-5 h-5" style="color: var(--ds-icon-subtle);" />
-                  <p class="text-sm" style="color: var(--ds-text-subtle);">No comments yet.</p>
+                  <p class="text-sm" style="color: var(--ds-text-subtle);">{t('portal.noCommentsYet')}</p>
                 </div>
               {/each}
             </div>
 
             <div class="request-comment-form">
               <label class="block text-sm font-medium mb-2" style="color: var(--ds-text);" for="portal-request-comment">
-                Add a comment
+                {t('portal.addCommentLabel')}
               </label>
               <Textarea
                 id="portal-request-comment"
                 value={portalStore.newCommentContent}
                 oninput={(event) => (portalStore.newCommentContent = event.target.value)}
-                placeholder="Write an update or question…"
+                placeholder={t('portal.writeCommentPlaceholder')}
                 rows={3}
               />
               <div class="flex justify-end mt-3">
@@ -147,7 +148,7 @@
                   disabled={!portalStore.newCommentContent.trim() || portalStore.addingComment}
                   loading={portalStore.addingComment}
                 >
-                  Add comment
+                  {t('portal.submitComment')}
                 </Button>
               </div>
             </div>
@@ -159,12 +160,12 @@
         <div class="request-details-card">
           <div class="flex items-center gap-2 pb-4 border-b" style="border-color: var(--ds-border);">
             <Info class="w-4 h-4" style="color: var(--ds-icon-subtle);" />
-            <h2 class="text-base font-semibold" style="color: var(--ds-text);">Request details</h2>
+            <h2 class="text-base font-semibold" style="color: var(--ds-text);">{t('portal.requestDetails')}</h2>
           </div>
 
           <dl class="space-y-5 pt-5">
             <div data-testid="portal-request-detail-status">
-              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">Status</dt>
+              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">{t('common.status')}</dt>
               <dd>
                 <StatusBadge
                   status={{ label: request.status, categoryColor: request.status_category_color }}
@@ -174,28 +175,28 @@
             </div>
 
             <div data-testid="portal-request-detail-type">
-              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">Request type</dt>
+              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">{t('portal.requestType')}</dt>
               <dd class="text-sm font-semibold" style="color: var(--ds-text);">
-                {request.request_type_name || 'Not specified'}
+                {request.request_type_name || t('portal.notSpecified')}
               </dd>
             </div>
 
             <div data-testid="portal-request-detail-service">
-              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">Service</dt>
+              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">{t('portal.service')}</dt>
               <dd class="text-sm font-semibold" style="color: var(--ds-text);">
-                {request.workspace_name || request.workspace_key || 'Not specified'}
+                {request.workspace_name || request.workspace_key || t('portal.notSpecified')}
               </dd>
             </div>
 
             <div data-testid="portal-request-detail-priority">
-              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">Priority</dt>
+              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">{t('common.priority')}</dt>
               <dd class="text-sm font-semibold" style="color: {request.priority ? 'var(--ds-text)' : 'var(--ds-text-subtle)'};">
-                {request.priority || 'Not specified'}
+                {request.priority || t('portal.notSpecified')}
               </dd>
             </div>
 
             <div data-testid="portal-request-detail-created">
-              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">Created</dt>
+              <dt class="text-sm mb-1.5" style="color: var(--ds-text-subtle);">{t('common.created')}</dt>
               <dd class="text-sm font-semibold" style="color: var(--ds-text);">
                 {formatDateSimple(request.created_at)}
               </dd>
@@ -208,8 +209,8 @@
 {:else}
   <div>
     <PageHeader
-      title="My requests"
-      subtitle="Track requests and continue conversations with the team."
+      title={t('portal.myRequestsTitle')}
+      subtitle={t('portal.myRequestsSubtitle')}
       count={!portalStore.loadingRequests && portalStore.myRequests.length > 0
         ? portalStore.myRequests.length
         : null}
@@ -222,9 +223,9 @@
         <div class="flex items-start gap-3">
           <List class="w-5 h-5 mt-0.5" style="color: var(--ds-text-subtle);" />
           <div>
-            <h2 class="text-base font-medium" style="color: var(--ds-text);">No requests yet</h2>
+            <h2 class="text-base font-medium" style="color: var(--ds-text);">{t('portal.noRequestsYetTitle')}</h2>
             <p class="text-sm mt-1" style="color: var(--ds-text-subtle);">
-              Requests submitted through this portal will appear here.
+              {t('portal.noRequestsSubtitle')}
             </p>
           </div>
         </div>

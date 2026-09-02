@@ -30,7 +30,7 @@
                 oninput={(e) => portalStore.updateColumnTitle(columnIndex, /** @type {HTMLInputElement} */ (e.target).value)}
                 class="text-sm font-semibold mb-3 bg-transparent border-b border-dashed focus:outline-none w-full"
                 style="color: var(--ds-text); border-color: var(--ds-border);"
-                placeholder="Column {columnIndex + 1} title"
+                placeholder={t('portal.columnTitlePlaceholder', { number: columnIndex + 1 })}
               />
             {:else if column.title}
               <h3 class="text-sm font-semibold mb-3" style="color: var(--ds-text);">
@@ -50,7 +50,7 @@
                         oninput={(e) => portalStore.updateFooterLink(columnIndex, linkIndex, 'text', /** @type {HTMLInputElement} */ (e.target).value)}
                         class="w-full text-sm bg-transparent border-b border-dashed focus:outline-none"
                         style="color: var(--ds-text-subtle); border-color: var(--ds-border);"
-                        placeholder="Link text"
+                        placeholder={t('portal.linkTextPlaceholder')}
                       />
                       <Input
                         type="text"
@@ -58,7 +58,7 @@
                         oninput={(e) => portalStore.updateFooterLink(columnIndex, linkIndex, 'url', /** @type {HTMLInputElement} */ (e.target).value)}
                         class="w-full text-xs bg-transparent border-b border-dashed focus:outline-none"
                         style="color: var(--ds-text-subtle); border-color: var(--ds-border);"
-                        placeholder="URL"
+                        placeholder={t('portal.urlPlaceholder')}
                       />
                     </div>
                     <button
@@ -102,7 +102,7 @@
       <!-- "Powered by {APP_NAME}" - Not configurable -->
       <div class="{portalStore.isEditing || hasFooterContent ? 'border-t pt-3' : ''} text-center" style="border-color: var(--ds-border);">
         <p class="text-xs" style="color: var(--ds-text-subtle);">
-          Powered by <a href="https://windshift.sh" target="_blank" rel="noopener noreferrer" class="hover:underline" style="color: var(--ds-text-subtle);">{APP_NAME}</a>
+          {t('portal.poweredBy')} <a href="https://windshift.sh" target="_blank" rel="noopener noreferrer" class="hover:underline" style="color: var(--ds-text-subtle);">{APP_NAME}</a>
         </p>
       </div>
     </div>

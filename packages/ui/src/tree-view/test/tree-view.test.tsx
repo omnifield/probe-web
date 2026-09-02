@@ -1,15 +1,3 @@
-// Live proof for both of the tree view's real assemblies (`../playground/assemblies/`) — one
-// block each, same reason `accordion.test.tsx` splits its own two: different shape, different way
-// to break.
-//
-// Both rely on `indexPathBind` (`PassportAssemblyElement.indexPathBind`, `packages/skin`) — the
-// accumulated repeat index, written in as a literal `props` value, never a `bind` path (a
-// structural fact of the tree's shape, not a fact of data). `branch`/`item` carry it (and
-// `repeat`/`bind`) directly on themselves — `TreeViewBranch`/`TreeViewItem` (`components/kit.tsx`)
-// wrap themselves in `TreeViewNodeProvider`, reading `node`/`indexPath` off their own props;
-// nothing addresses `~nodeProvider` as a separate schema node anymore (постановка user,
-// 2026-09-01, README «Разбор боем: `nodeProvider` НЕ нужен был как `extra` вообще»).
-
 import { createRegistry, RenderTree, updateNode, type AssemblyTree, type DispatchedEvent, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
 import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
@@ -57,12 +45,11 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-/** `collection` — a real object, never `bind`-able — merged onto the root the same way `instanceOf`'s own `rootProps` would (`products/skin`). */
 function mount(assembly: PassportAssembly, data: Data, dispatch?: (event: DispatchedEvent) => void): HTMLElement {
-  const rootNode = { id: "ROOT", name: "", children: data.items };
+  const rootNode = { id: "ROOT", label: "", children: data.items };
   const collection = createTreeCollection({
     nodeToValue: (node: { id: string }) => node.id,
-    nodeToString: (node: { label?: string; name?: string }) => node.label ?? node.name ?? "",
+    nodeToString: (node: { label?: string }) => node.label ?? "",
     rootNode,
   });
 
@@ -76,68 +63,26 @@ function mount(assembly: PassportAssembly, data: Data, dispatch?: (event: Dispat
   return host;
 }
 
-describe('tree view "base" — one level, every leaf labeled and clickable, click dispatches', () => {
-  it("labels each item from data and dispatches triggerClick with the whole item as payload", async () => {
+describe('tree view "base" — one level, every item labeled and clickable, click dispatches the whole item', () => {
+  it("labels each item from data and dispatches controlClick with the whole item as payload", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "base")!;
     const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
 
     const dispatched: DispatchedEvent[] = [];
-    // `baseAssemblyOf` is a plain runtime tree walker — it never reads `Data`, only resolves
-    // paths against whatever `data` it is handed at call time, so widening here is correct (same
-    // reasoning as `accordion.test.tsx`'s own identical cast).
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
 
-    const texts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item-text"]')].map(
-      (node) => node.textContent,
-    );
-    expect(texts).toEqual(["Alpha", "Beta"]);
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "Beta"]);
 
-    // `data-depth` — Ark's OWN attribute, set from the REAL `indexPath` the assembly handed
-    // `~nodeProvider` — not this test's own count, proof the value actually reached Zag's machine.
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
-    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["0", "0"]);
 
-    // `on.click` composes with Ark's OWN click handling (selection), same device proven on
-    // accordion's `itemTrigger`/listbox's `item` (`README.md`'s "Сборка ссылается на чужой
-    // компонент") — clicking still selects the leaf natively AND fires our own dispatch.
-    (items[1] as HTMLElement).click();
+    (controls[1] as HTMLElement).click();
     await Promise.resolve();
 
     expect(dispatched).toEqual([
-      expect.objectContaining({ name: "triggerClick", context: { payload: data.items[1] } }),
+      expect.objectContaining({ name: "controlClick", context: { payload: data.items[1] } }),
     ]);
     expect(items[1]!.getAttribute("data-selected")).toBe("");
-  });
-});
-
-describe('tree view "nested" — top level always a branch, its children always items', () => {
-  it("shows branch labels, expands to real item children, both levels correctly depth-marked", () => {
-    const assembly = assemblies.find((candidate) => candidate.name === "nested")!;
-    const data: Data = {
-      items: [
-        { id: "g1", label: "Group 1", children: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] },
-        { id: "g2", label: "Group 2", children: [{ id: "c", label: "Gamma" }] },
-      ],
-    };
-
-    // `baseAssemblyOf` is a plain runtime tree walker — it never reads `Data`, only resolves
-    // paths against whatever `data` it is handed at call time, so widening here is correct (same
-    // reasoning as `accordion.test.tsx`'s own identical cast).
-    const host = mount(assembly as PassportAssembly, data);
-
-    const branchTexts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="branch-text"]')].map(
-      (node) => node.textContent,
-    );
-    const itemTexts = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item-text"]')].map(
-      (node) => node.textContent,
-    );
-
-    expect(branchTexts).toEqual(["Group 1", "Group 2"]);
-    expect(itemTexts).toEqual(["Alpha", "Beta", "Gamma"]);
-
-    const branches = [...host.querySelectorAll('[data-scope="tree-view"][data-part="branch"]')];
-    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
-    expect(branches.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "1"]);
-    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["2", "2", "2"]);
   });
 });

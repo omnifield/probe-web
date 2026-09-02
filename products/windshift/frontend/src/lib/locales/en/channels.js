@@ -491,8 +491,121 @@ export default {
     noRequestTypesInSection:
       'No request types in this section yet. Drag request types here from the sidebar.',
 
+    // Footer
+    poweredBy: 'Powered by',
+    columnTitlePlaceholder: 'Column {number} title',
+    linkTextPlaceholder: 'Link text',
+    urlPlaceholder: 'URL',
+
+    // My drafts
+    draftsEmptyTitle: 'No drafts yet',
+
+    // Hero search
+    searchBoxPlaceholderLabel: 'Search Box Placeholder:',
+    searchPlaceholderTextPlaceholder: 'Search placeholder text',
+    searchHintTextLabel: 'Search Hint Text:',
+    searchHintTextPlaceholder: 'Search hint text',
+    searchingKnowledgeBase: 'Searching knowledge base...',
+    searchFailed: 'Search Failed',
+    searchResultsFound: 'Found {count} results for "{query}"',
+    searchResultsFound_one: 'Found {count} result for "{query}"',
+    searchResultsFound_other: 'Found {count} results for "{query}"',
+    noResultsFound: 'No Results Found',
+    noResultsMatching: 'We couldn’t find any articles matching "{query}"',
+
+    // My approvals
+    backToApprovals: 'Back to approvals',
+    approvalNumber: 'Approval #{id}',
+    openedAt: 'Opened {date}',
+    closedAt: 'Closed {date}',
+    steps: 'Steps',
+    stepNumber: 'Step {number}',
+    escalatesAt: 'Escalates {date}',
+    decisionRequired: 'Your decision is required',
+    optionalCommentPlaceholder: 'Optional comment…',
+    approve: 'Approve',
+    reject: 'Reject',
+    commentAction: 'Comment',
+    auditLog: 'Audit log',
+    myApprovalsTitle: 'My approvals',
+    myApprovalsSubtitle: 'Review requests that are waiting for your decision.',
+    nothingToApprove: 'Nothing to approve',
+    nothingToApproveSubtitle: 'No approval requests are waiting for your decision.',
+    itemNumber: 'Item #{id}',
+    decisionApproved: '{actor} approved',
+    decisionRejected: '{actor} rejected',
+    decisionCommented: '{actor} commented',
+    decisionCancelled: '{actor} cancelled the request',
+    decisionOpened: '{actor} opened the request',
+    decisionCompleted: '{actor} finalized the request',
+    decisionReassigned: '{actor} reassigned approvers',
+    decisionEscalated: '{actor} was escalated',
+    decisionSubstituted: '{actor} used a substitute',
+    actorCustomer: 'Customer #{id}',
+    actorUser: 'User #{id}',
+    actorSystem: 'System',
+
+    // Profile / passkeys
+    failedToLoadPasskeys: 'Failed to load passkeys',
+    passkeyNameRequired: 'Please give this passkey a name.',
+    passkeysNotSupportedBrowser: 'Passkeys are not supported in this browser.',
+    removePasskeyConfirm:
+      'Remove passkey "{name}"? You won’t be able to sign in with this device anymore.',
+    failedToRemovePasskey: 'Failed to remove passkey',
+    addPasskeyToSignIn: 'Add a passkey to sign in without waiting for an email link.',
+    passkeyNamePlaceholder: 'e.g. Personal MacBook',
+
+    // Login modal
+    loginFailed: 'Login failed',
+    or: 'or',
+    staffLabel: 'Windshift staff',
+
+    // Sections editing
+    confirmDeleteSection: 'Are you sure you want to delete this section?',
+    sectionTitlePlaceholder: 'Section title (click to edit)',
+    addTitleButton: '+ Add title',
+    sectionSubtitlePlaceholder: 'Subtitle (optional, click to edit)',
+    clickToAddSubtitle: '(Click to add subtitle)',
+
+    // Asset report table
+    failedToLoadAssets: 'Failed to load assets',
+    failedToLoadFormFields: 'Failed to load form fields',
+
+    // My requests
+    backToRequests: 'Back to requests',
+    createdOn: 'Created {date}',
+    commentCount: '{count} comments',
+    commentCount_one: '{count} comment',
+    commentCount_other: '{count} comments',
+    activity: 'Activity',
+    noCommentsYet: 'No comments yet.',
+    addCommentLabel: 'Add a comment',
+    writeCommentPlaceholder: 'Write an update or question…',
+    submitComment: 'Add comment',
+    requestDetails: 'Request details',
+    requestType: 'Request type',
+    service: 'Service',
+    notSpecified: 'Not specified',
+    myRequestsTitle: 'My requests',
+    myRequestsSubtitle: 'Track requests and continue conversations with the team.',
+    noRequestsYetTitle: 'No requests yet',
+    noRequestsSubtitle: 'Requests submitted through this portal will appear here.',
+
+    // Header
+    windshiftUserFallback: 'Windshift user',
+    portalTitlePlaceholder: 'Portal title',
+    myApprovals: 'My approvals',
+    approvalsShort: 'Approvals',
+    portalSettings: 'Portal settings',
+    closePortalSettings: 'Close portal settings',
+    openAccountMenu: 'Open account menu',
+    closeAccountMenu: 'Close account menu',
+    portalHome: 'Portal home',
+
     // Customize panel
     customize: {
+      editMode: 'Edit Mode',
+      editModeActiveBanner: 'Edit mode active — make changes directly on the portal',
       heroGradient: 'Background',
       background: 'Background',
       navigation: 'Navigation',

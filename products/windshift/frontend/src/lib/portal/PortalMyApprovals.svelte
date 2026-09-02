@@ -8,6 +8,7 @@
   import { portalStore } from '../stores/portal.svelte.js';
   import { portalAuthStore } from '../stores/portalAuth.svelte.js';
   import { authStore } from '../stores';
+  import { t } from '../stores/i18n.svelte.js';
   import { formatDateTimeLocale } from '../utils/dateFormatter.js';
 
   // Resolve "is this customer in the active pool" so we know whether to show
@@ -44,35 +45,36 @@
     }
   }
 
-  function decisionLabel(d) {
+  function decisionText(d) {
+    const actor = actorLabel(d);
     switch (d.decision) {
       case 'approve':
-        return 'approved';
+        return t('portal.decisionApproved', { actor });
       case 'reject':
-        return 'rejected';
+        return t('portal.decisionRejected', { actor });
       case 'comment':
-        return 'commented';
+        return t('portal.decisionCommented', { actor });
       case 'cancel':
-        return 'cancelled the request';
+        return t('portal.decisionCancelled', { actor });
       case 'requested':
-        return 'opened the request';
+        return t('portal.decisionOpened', { actor });
       case 'completed':
-        return 'finalized the request';
+        return t('portal.decisionCompleted', { actor });
       case 'reassign':
-        return 'reassigned approvers';
+        return t('portal.decisionReassigned', { actor });
       case 'escalate':
-        return 'was escalated';
+        return t('portal.decisionEscalated', { actor });
       case 'substitute':
-        return 'used a substitute';
+        return t('portal.decisionSubstituted', { actor });
       default:
-        return d.decision;
+        return `${actor} ${d.decision}`;
     }
   }
 
   function actorLabel(d) {
-    if (d.actor_portal_customer_id) return `Customer #${d.actor_portal_customer_id}`;
-    if (d.actor_user_id) return `User #${d.actor_user_id}`;
-    return 'System';
+    if (d.actor_portal_customer_id) return t('portal.actorCustomer', { id: d.actor_portal_customer_id });
+    if (d.actor_user_id) return t('portal.actorUser', { id: d.actor_user_id });
+    return t('portal.actorSystem');
   }
 </script>
 
@@ -93,7 +95,7 @@
         id="portal-approval-close"
       >
         <ArrowLeft class="w-4 h-4" />
-        Back to approvals
+        {t('portal.backToApprovals')}
       </button>
 
       <div class="pb-6 border-b" style="border-color: var(--ds-border);">
@@ -101,15 +103,15 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-2">
               <span class="text-sm font-mono" style="color: var(--ds-text-subtle);">
-                Approval #{req.id}
+                {t('portal.approvalNumber', { id: req.id })}
               </span>
               <Badge size="sm" variant={statusVariant(req.status)}>
                 {req.status}
               </Badge>
             </div>
             <div class="text-sm" style="color: var(--ds-text-subtle);">
-              Opened {formatDateTimeLocale(req.created_at)}
-              {#if req.completed_at} · Closed {formatDateTimeLocale(req.completed_at)}{/if}
+              {t('portal.openedAt', { date: formatDateTimeLocale(req.created_at) })}
+              {#if req.completed_at} · {t('portal.closedAt', { date: formatDateTimeLocale(req.completed_at) })}{/if}
             </div>
           </div>
         </div>
@@ -140,7 +142,7 @@
 
       <!-- Step list -->
       <div class="p-6 rounded" style="background-color: var(--ds-surface-card); border: 1px solid var(--ds-border);">
-        <h4 class="text-lg font-semibold mb-4" style="color: var(--ds-text);">Steps</h4>
+        <h4 class="text-lg font-semibold mb-4" style="color: var(--ds-text);">{t('portal.steps')}</h4>
         <div class="space-y-2">
           {#each req.step_instances ?? [] as si (si.id)}
             <div class="flex items-start gap-3 p-3 rounded" style="background-color: var(--ds-surface-raised);">
@@ -150,14 +152,14 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium" style="color: var(--ds-text);">
-                    Step {si.display_order + 1}
+                    {t('portal.stepNumber', { number: si.display_order + 1 })}
                   </span>
                   <Badge size="xs" variant={statusVariant(si.status)}>{si.status}</Badge>
                 </div>
                 {#if si.escalation_due_at && si.status === 'pending'}
                   <div class="text-xs mt-1 flex items-center gap-1" style="color: var(--ds-text-subtle);">
                     <Clock class="w-3 h-3" />
-                    Escalates {formatDateTimeLocale(si.escalation_due_at)}
+                    {t('portal.escalatesAt', { date: formatDateTimeLocale(si.escalation_due_at) })}
                   </div>
                 {/if}
               </div>
@@ -176,13 +178,13 @@
           <div class="flex items-center gap-2">
             <ShieldCheck class="w-5 h-5" style="color: var(--ds-text);" />
             <span class="text-base font-semibold" style="color: var(--ds-text);">
-              Your decision is required
+              {t('portal.decisionRequired')}
             </span>
           </div>
           <Textarea
             value={portalStore.approvalComment}
             oninput={(e) => (portalStore.approvalComment = e.target.value)}
-            placeholder="Optional comment…"
+            placeholder={t('portal.optionalCommentPlaceholder')}
             rows={3}
             data-testid="portal-approval-comment"
           />
@@ -195,7 +197,7 @@
               onclick={() => portalStore.decideApproval('approve')}
               dataTestid="portal-approval-approve"
             >
-              Approve
+              {t('portal.approve')}
             </Button>
             <Button
               variant="danger"
@@ -204,7 +206,7 @@
               onclick={() => portalStore.decideApproval('reject')}
               dataTestid="portal-approval-reject"
             >
-              Reject
+              {t('portal.reject')}
             </Button>
             <Button
               variant="default"
@@ -213,7 +215,7 @@
               onclick={() => portalStore.decideApproval('comment')}
               dataTestid="portal-approval-comment-submit"
             >
-              Comment
+              {t('portal.commentAction')}
             </Button>
           </div>
         </div>
@@ -226,12 +228,11 @@
           style="background-color: var(--ds-surface-card); border: 1px solid var(--ds-border);"
           data-testid="portal-approval-audit"
         >
-          <h4 class="text-sm font-semibold mb-3" style="color: var(--ds-text-subtle);">Audit log</h4>
+          <h4 class="text-sm font-semibold mb-3" style="color: var(--ds-text-subtle);">{t('portal.auditLog')}</h4>
           <ul class="space-y-2 text-sm">
             {#each req.decisions as d (d.id)}
               <li style="color: var(--ds-text-subtle);">
-                <span style="color: var(--ds-text);">{actorLabel(d)}</span>
-                {decisionLabel(d)}
+                <span style="color: var(--ds-text);">{decisionText(d)}</span>
                 <span class="opacity-70"> · {formatDateTimeLocale(d.created_at)}</span>
                 {#if d.comment}
                   <div class="ml-4 mt-1 italic" style="color: var(--ds-text);">"{d.comment}"</div>
@@ -245,8 +246,8 @@
   {:else}
     <!-- Inbox List -->
     <PageHeader
-      title="My approvals"
-      subtitle="Review requests that are waiting for your decision."
+      title={t('portal.myApprovalsTitle')}
+      subtitle={t('portal.myApprovalsSubtitle')}
     />
     {#if portalStore.loadingApprovals}
       <div class="flex justify-center py-12">
@@ -257,9 +258,9 @@
         <div class="flex items-start gap-3">
           <ShieldCheck class="w-5 h-5 mt-0.5" style="color: var(--ds-text-subtle);" />
           <div>
-            <h2 class="text-base font-medium" style="color: var(--ds-text);">Nothing to approve</h2>
+            <h2 class="text-base font-medium" style="color: var(--ds-text);">{t('portal.nothingToApprove')}</h2>
             <p class="text-sm mt-1" style="color: var(--ds-text-subtle);">
-              No approval requests are waiting for your decision.
+              {t('portal.nothingToApproveSubtitle')}
             </p>
           </div>
         </div>
@@ -278,14 +279,14 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="text-sm font-medium" style="color: var(--ds-text);">
-                    Approval #{approval.id}
+                    {t('portal.approvalNumber', { id: approval.id })}
                   </span>
                   <Badge size="sm" variant={statusVariant(approval.status)}>
                     {approval.status}
                   </Badge>
                 </div>
                 <div class="text-xs" style="color: var(--ds-text-subtle);">
-                  Item #{approval.item_id} · Opened {formatDateTimeLocale(approval.created_at)}
+                  {t('portal.itemNumber', { id: approval.item_id })} · {t('portal.openedAt', { date: formatDateTimeLocale(approval.created_at) })}
                 </div>
               </div>
             </div>

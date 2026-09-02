@@ -53,7 +53,7 @@
       credentials = Array.isArray(result) ? result : [];
       portalAuthStore.setPasskeyCount(credentials.length);
     } catch (err) {
-      listError = err?.message || 'Failed to load passkeys';
+      listError = err?.message || t('portal.failedToLoadPasskeys');
     } finally {
       loadingCredentials = false;
     }
@@ -76,11 +76,11 @@
     e?.preventDefault?.();
     const name = newCredentialName.trim();
     if (!name) {
-      actionError = 'Please give this passkey a name.';
+      actionError = t('portal.passkeyNameRequired');
       return;
     }
     if (!passkeySupported) {
-      actionError = 'Passkeys are not supported in this browser.';
+      actionError = t('portal.passkeysNotSupportedBrowser');
       return;
     }
     registering = true;
@@ -108,7 +108,7 @@
 
   async function handleRemove(credential) {
     const ok = window.confirm(
-      `Remove passkey "${credential.credential_name}"? You won't be able to sign in with this device anymore.`
+      t('portal.removePasskeyConfirm', { name: credential.credential_name })
     );
     if (!ok) return;
     removingId = credential.id;
@@ -117,7 +117,7 @@
       await api.portalPasskey.remove(slug, credential.id);
       await loadCredentials();
     } catch (err) {
-      actionError = err?.message || 'Failed to remove passkey';
+      actionError = err?.message || t('portal.failedToRemovePasskey');
     } finally {
       removingId = null;
     }
@@ -228,9 +228,9 @@
       <div class="mt-6 py-5 flex items-start gap-3">
         <KeyRound class="w-5 h-5 mt-0.5" style="color: var(--ds-text-subtle);" />
         <div>
-          <h3 class="font-medium" style="color: var(--ds-text);">No passkeys yet</h3>
+          <h3 class="font-medium" style="color: var(--ds-text);">{t('portal.noPasskeys')}</h3>
           <p class="text-sm mt-1" style="color: var(--ds-text-subtle);">
-            Add a passkey to sign in without waiting for an email link.
+            {t('portal.addPasskeyToSignIn')}
           </p>
         </div>
       </div>
@@ -283,7 +283,7 @@
       type="button"
       onclick={closeAddModal}
       class="absolute top-3 right-3 p-2 rounded hover:bg-black/5 transition-colors"
-      aria-label="Close"
+      aria-label={t('common.close')}
       disabled={registering}
     >
       <X class="w-4 h-4" style="color: var(--ds-text);" />
@@ -308,7 +308,7 @@
         id="passkey-name"
         type="text"
         bind:value={newCredentialName}
-        placeholder="e.g. Personal MacBook"
+        placeholder={t('portal.passkeyNamePlaceholder')}
         maxlength={100}
         autocomplete="off"
         disabled={registering}

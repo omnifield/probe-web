@@ -51,7 +51,7 @@
     }
     if ($portalAuthStore.isAuthenticated && $portalAuthStore.user) {
       return {
-        name: $portalAuthStore.user.name || 'Windshift user',
+        name: $portalAuthStore.user.name || t('portal.windshiftUserFallback'),
         email: $portalAuthStore.user.email,
         avatar: internalAvatar,
         canManageProfile: false,
@@ -153,7 +153,7 @@
           onclick={(event) => event.stopPropagation()}
           class="min-w-0 w-full max-w-md bg-transparent text-base font-semibold focus:outline-none"
           style="color: {shellText};"
-          placeholder="Portal title"
+          placeholder={t('portal.portalTitlePlaceholder')}
         />
       {:else}
         <span
@@ -196,10 +196,10 @@
             style="color: {shellText}; background-color: {portalStore.showMyApprovals
               ? shellControl
               : 'transparent'};"
-            title="My approvals"
+            title={t('portal.myApprovals')}
           >
             <ShieldCheck class="w-4 h-4" />
-            <span>Approvals</span>
+            <span>{t('portal.approvalsShort')}</span>
             <span
               class="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full text-[11px] font-semibold"
               style="background-color: var(--ds-warning-subtle, #fffbeb); color: var(--ds-text-warning, #92400e);"
@@ -220,8 +220,8 @@
             }}
             class="h-9 w-9 inline-flex items-center justify-center rounded-md transition-colors"
             style="color: {shellTextSubtle};"
-            title="Portal settings"
-            aria-label="Portal settings"
+            title={t('portal.portalSettings')}
+            aria-label={t('portal.portalSettings')}
           >
             <Settings class="w-[18px] h-[18px]" />
           </button>
@@ -231,7 +231,7 @@
               type="button"
               class="fixed inset-0 z-[-1] cursor-default"
               onclick={() => (portalStore.showMainMenu = false)}
-              aria-label="Close portal settings"
+              aria-label={t('portal.closePortalSettings')}
             ></button>
             <div
               class="absolute top-11 right-0 w-56 rounded-lg border p-1.5 shadow-lg"
@@ -284,7 +284,7 @@
             }}
             class="relative h-9 w-9 inline-flex items-center justify-center rounded-full border transition-colors"
             style="color: {shellText}; border-color: {hasVisualBackground ? 'rgba(255,255,255,0.28)' : 'var(--ds-border)'}; background-color: {hasVisualBackground ? 'rgba(255,255,255,0.1)' : 'var(--ds-surface-card)'};"
-            aria-label="Open account menu"
+            aria-label={t('portal.openAccountMenu')}
           >
             <span
               data-testid="portal-user-avatar-fallback"
@@ -332,7 +332,7 @@
             type="button"
             class="fixed inset-0 z-[-1] cursor-default"
             onclick={() => (portalStore.showProfileMenu = false)}
-            aria-label="Close account menu"
+            aria-label={t('portal.closeAccountMenu')}
           ></button>
           <div
             class="fixed left-4 right-4 top-[4.5rem] sm:absolute sm:left-auto sm:right-0 sm:top-11 sm:w-72 rounded-lg border p-1.5 shadow-lg"
@@ -375,7 +375,7 @@
 
             <button type="button" onclick={goHome} class="portal-menu-item sm:hidden">
               <Home class="w-4 h-4" />
-              <span>Portal home</span>
+              <span>{t('portal.portalHome')}</span>
             </button>
             <button
               type="button"
@@ -406,7 +406,7 @@
               class:portal-menu-active={portalStore.showMyApprovals}
             >
               <CheckSquare class="w-4 h-4" />
-              <span class="flex-1">My approvals</span>
+              <span class="flex-1">{t('portal.myApprovals')}</span>
               {#if portalStore.pendingApprovalCount > 0}
                 <span class="portal-menu-count">{portalStore.pendingApprovalCount}</span>
               {/if}

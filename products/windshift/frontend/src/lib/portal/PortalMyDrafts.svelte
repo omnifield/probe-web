@@ -38,7 +38,7 @@
       <div class="flex items-start gap-3">
         <FileText class="w-5 h-5 mt-0.5" style="color: var(--ds-text-subtle);" />
         <div>
-          <h2 class="text-base font-medium" style="color: var(--ds-text);">No drafts yet</h2>
+          <h2 class="text-base font-medium" style="color: var(--ds-text);">{t('portal.draftsEmptyTitle')}</h2>
           <p class="text-sm mt-1" style="color: var(--ds-text-subtle);">
             {t('portal.draftsEmpty')}
           </p>

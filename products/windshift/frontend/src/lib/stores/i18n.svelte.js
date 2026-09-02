@@ -1,10 +1,16 @@
 /** Reactive i18n store with lazy locales, RTL, interpolation, pluralization,
  * backend-error translation, and persisted selection. */
 
-import { getPluralCategory, negotiateLocale } from './i18n-utils.js';
+import { getPluralCategory } from './i18n-utils.js';
 
 const STORAGE_KEY = 'windshift-locale';
+// Reference locale: the only catalog guaranteed complete, used as the
+// fallback when a key is missing from the active locale. Keep this 'en'
+// even though the UI now defaults to ru — see DEFAULT_UI_LOCALE below.
 const DEFAULT_LOCALE = 'en';
+// Locale shown to a visitor who hasn't picked one yet (no saved
+// preference). Deliberately independent of the browser's language.
+const DEFAULT_UI_LOCALE = 'ru';
 
 // Supported locale metadata.
 export const SUPPORTED_LOCALES = [
@@ -167,21 +173,14 @@ async function loadTranslations(localeCode) {
  * Initialize i18n with saved or default locale
  */
 async function init() {
-  let initialLocale = DEFAULT_LOCALE;
-  let hasSavedPreference = false;
+  let initialLocale = DEFAULT_UI_LOCALE;
 
   // Check localStorage for saved preference
   if (typeof localStorage !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && SUPPORTED_LOCALES.some((l) => l.code === saved)) {
       initialLocale = saved;
-      hasSavedPreference = true;
     }
-  }
-
-  // Only fall back to browser language when no preference was explicitly saved
-  if (!hasSavedPreference && typeof navigator !== 'undefined') {
-    initialLocale = negotiateLocale(navigator.language, SUPPORTED_LOCALES, DEFAULT_LOCALE);
   }
 
   await loadTranslations(initialLocale);

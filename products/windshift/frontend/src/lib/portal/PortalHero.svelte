@@ -3,6 +3,7 @@
   import Spinner from '../components/Spinner.svelte';
   import Input from '../components/Input.svelte';
   import { portalStore, gradients } from '../stores/portal.svelte.js';
+  import { t } from '../stores/i18n.svelte.js';
   import { safeCssUrl } from '../utils/sanitize';
 
   function handleSearch(e) {
@@ -66,25 +67,25 @@
       {#if portalStore.isEditing}
         <div class="mt-4 space-y-3">
           <div>
-            <label for="search-box-placeholder" class="text-xs text-white/60 block mb-1">Search Box Placeholder:</label>
+            <label for="search-box-placeholder" class="text-xs text-white/60 block mb-1">{t('portal.searchBoxPlaceholderLabel')}</label>
             <Input
               id="search-box-placeholder"
               type="text"
               value={portalStore.editableSearchPlaceholder}
               oninput={(e) => portalStore.editableSearchPlaceholder = /** @type {HTMLInputElement} */ (e.target).value}
               class="text-sm text-white bg-transparent text-center focus:outline-none w-full"
-              placeholder="Search placeholder text"
+              placeholder={t('portal.searchPlaceholderTextPlaceholder')}
             />
           </div>
           <div>
-            <label for="search-hint-text" class="text-xs text-white/60 block mb-1">Search Hint Text:</label>
+            <label for="search-hint-text" class="text-xs text-white/60 block mb-1">{t('portal.searchHintTextLabel')}</label>
             <Input
               id="search-hint-text"
               type="text"
               value={portalStore.editableSearchHint}
               oninput={(e) => portalStore.editableSearchHint = /** @type {HTMLInputElement} */ (e.target).value}
               class="text-sm text-white bg-transparent text-center focus:outline-none w-full"
-              placeholder="Search hint text"
+              placeholder={t('portal.searchHintTextPlaceholder')}
             />
           </div>
         </div>
@@ -106,7 +107,7 @@
               <!-- Loading State -->
               <div class="flex flex-col items-center justify-center py-12">
                 <Spinner size="lg" class="mb-4" />
-                <p class="text-sm" style="color: var(--ds-text-subtle);">Searching knowledge base...</p>
+                <p class="text-sm" style="color: var(--ds-text-subtle);">{t('portal.searchingKnowledgeBase')}</p>
               </div>
             {:else if portalStore.searchError}
               <!-- Error State -->
@@ -114,7 +115,7 @@
                 <div class="w-12 h-12 rounded-full flex items-center justify-center mb-4" style="background-color: var(--ds-danger-subtle);">
                   <X class="w-6 h-6" style="color: var(--ds-text-danger);" />
                 </div>
-                <h3 class="text-lg font-semibold mb-2" style="color: var(--ds-text);">Search Failed</h3>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--ds-text);">{t('portal.searchFailed')}</h3>
                 <p class="text-sm text-center" style="color: var(--ds-text-subtle);">
                   {portalStore.searchError}
                 </p>
@@ -123,7 +124,7 @@
               <!-- Results List -->
               <div class="space-y-3">
                 <div class="text-sm mb-4" style="color: var(--ds-text-subtle);">
-                  Found {portalStore.searchResults.data.length} result{portalStore.searchResults.data.length !== 1 ? 's' : ''} for "{portalStore.searchQuery}"
+                  {t('portal.searchResultsFound', { count: portalStore.searchResults.data.length, query: portalStore.searchQuery })}
                 </div>
                 {#each portalStore.searchResults.data as result}
                   {@const parsed = portalStore.parseDocmostShareLink(portalStore.knowledgeBaseShareLink)}
@@ -167,9 +168,9 @@
                 <div class="w-12 h-12 rounded-full flex items-center justify-center mb-4" style="background-color: var(--ds-background-neutral);">
                   <Search class="w-6 h-6" style="color: var(--ds-text-subtle);" />
                 </div>
-                <h3 class="text-lg font-semibold mb-2" style="color: var(--ds-text);">No Results Found</h3>
+                <h3 class="text-lg font-semibold mb-2" style="color: var(--ds-text);">{t('portal.noResultsFound')}</h3>
                 <p class="text-sm text-center" style="color: var(--ds-text-subtle);">
-                  We couldn't find any articles matching "{portalStore.searchQuery}"
+                  {t('portal.noResultsMatching', { query: portalStore.searchQuery })}
                 </p>
               </div>
             {/if}

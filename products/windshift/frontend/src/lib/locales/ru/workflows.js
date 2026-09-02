@@ -165,9 +165,9 @@ export default {
     fields: 'Поля',
     noScreens: 'Экраны не найдены. Создайте свой первый экран, чтобы начать.',
     cannotDeleteDefault:
-      'Нельзя удалить экран по умолчанию. Этот экран необходим для рабочих пространств без настроенной конфигурации.',
+      'Нельзя удалить экран по умолчанию. Этот экран необходим для воркспейсов без настроенной конфигурации.',
     confirmDeleteScreen:
-      'Вы уверены, что хотите удалить экран «{name}»? Это повлияет на все рабочие пространства, использующие этот экран.',
+      'Вы уверены, что хотите удалить экран «{name}»? Это повлияет на все воркспейсы, использующие этот экран.',
     fieldWidths: {
       full: 'Полная ширина',
       half: 'Половина ширины',
@@ -310,7 +310,7 @@ export default {
     approverSourceUser: 'Конкретный пользователь',
     approverSourceRegularField: 'Обычное поле (assignee_id, creator_id, …)',
     approverSourceCustomField: 'Пользовательское поле (вводится пользователем)',
-    approverSourceRole: 'Роль в рабочем пространстве',
+    approverSourceRole: 'Роль в воркспейсе',
     approverSourceGroup: 'Группа',
     approverFieldIdentifier: 'Идентификатор поля',
     approverFieldIdentifierHelp: 'Разрешённые поля: assignee_id, creator_id, reporter_id.',
