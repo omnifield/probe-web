@@ -27,42 +27,44 @@ export const parts: Readonly<Record<PopoverPart, PassportPartEditorInfo<PopoverP
     accepts: [],
   },
   anchor: {
-    means: "необязательная точка отсчёта — поповер позиционируется по ней вместо триггера",
+    means: "необязательная точка отсчёта — поповер позиционируется по ней вместо контрола",
     states: {},
     accepts: [{ kind: "component" }],
   },
-  trigger: {
+  control: {
     means: "открывает и закрывает поповер",
     states: {
       ...openClosedMeans,
-      current: { means: "это тот триггер, что открыл поповер (только в поповере с несколькими триггерами)" },
+      current: { means: "это тот контрол, что открыл поповер (только в поповере с несколькими триггерами)" },
       ...buttonPseudoMeans,
     },
     accepts: [
+      { kind: "component", name: "controlIndicator" },
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
-  indicator: {
-    means: "метка на триггере о том, открыт ли поповер — иконку кладёт потребитель",
+  controlIndicator: {
+    means: "метка на контроле о том, открыт ли поповер — иконку кладёт потребитель",
     states: openClosedMeans,
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
+      { kind: "component" },
     ],
   },
   positioner: {
-    means: "позиционирует содержимое относительно триггера (или якоря) — чистая обёртка без своего вида",
+    means: "позиционирует содержимое относительно контрола (или якоря) — чистая обёртка без своего вида",
     states: {},
     variables: {
-      "--reference-width": { means: "измеренная ширина триггера (или якоря), относительно которого позиционируется поповер" },
-      "--reference-height": { means: "измеренная высота триггера (или якоря), относительно которого позиционируется поповер" },
+      "--reference-width": { means: "измеренная ширина контрола (или якоря), относительно которого позиционируется поповер" },
+      "--reference-height": { means: "измеренная высота контрола (или якоря), относительно которого позиционируется поповер" },
       "--available-width": { means: "место, оставшееся до края области просмотра" },
       "--available-height": { means: "место, оставшееся до края области просмотра" },
     },
     accepts: [
-      { kind: "component", name: "content" },
       { kind: "component", name: "arrow" },
+      { kind: "component", name: "content" },
     ],
   },
   content: {

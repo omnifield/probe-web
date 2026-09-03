@@ -1,168 +1,184 @@
-# Popover
+# 💬 Popover
 
-**Group:** overlays · **Genus:** component · **Footprint:** compact
+🏷️ overlays · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| arrow | the outer clipping box for the pointing arrow |
-| arrowTip | the arrow's actual point — rotated into a diamond by the kit's own positioning |
-| anchor | an optional reference point the popover positions against, instead of the trigger |
-| trigger | opens and closes the popover |
-| indicator | open/closed glyph — the consumer places the actual icon |
-| positioner | positions the floating content relative to the trigger (or the anchor) — a pure wrapper, no look of its own |
-| content | the floating panel itself — hidden, not removed, while closed |
-| title | the panel's own heading |
-| description | the panel's own body text |
-| closeTrigger | closes the popover |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| arrow | — | — | — |
-| arrowTip | — | — | — |
-| anchor | — | — | — |
-| trigger | open | [data-state="open"] | the popover panel is showing |
-| trigger | closed | [data-state="closed"] | the popover panel is hidden |
-| trigger | current | [data-current] | this is the trigger that opened the popover (multi-trigger popovers only) |
-| trigger | hover | :hover | pointer is over this button |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | this button is being held down |
-| indicator | open | [data-state="open"] | the popover panel is showing |
-| indicator | closed | [data-state="closed"] | the popover panel is hidden |
-| positioner | — | — | — |
-| content | open | [data-state="open"] | the popover panel is showing |
-| content | closed | [data-state="closed"] | the popover panel is hidden |
-| title | — | — | — |
-| description | — | — | — |
-| closeTrigger | hover | :hover | pointer is over this button |
-| closeTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| closeTrigger | active | :active | this button is being held down |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## CSS Variables
-
-| part | variable | set by | meaning |
-|---|---|---|---|
-| positioner | `--reference-width` | kit | measured width of the trigger (or anchor) the panel is positioned against |
-| positioner | `--reference-height` | kit | measured height of the trigger (or anchor) the panel is positioned against |
-| positioner | `--available-width` | kit | space left before the panel would hit the viewport edge |
-| positioner | `--available-height` | kit | space left before the panel would hit the viewport edge |
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Popover is a floating panel anchored to a trigger, with its own title, description, and close
-button — a lighter-weight, non-modal-by-default sibling of the dialog. Ten parts; the root itself
-renders no DOM node.
-
-## Features
-
-- **The root is pure context** — same shape as `Dialog`/`Drawer`/`Menu`: `trigger`/`anchor`/
-  `positioner` are its real DOM siblings, not children.
-- **An optional separate anchor point** — `anchor` positions the panel against a different element
-  than the one that opens it (e.g. an input next to the trigger button), instead of the trigger's
-  own position.
-- **Controlled or uncontrolled open state** — `open` + `onOpenChange` for controlled use,
-  `defaultOpen` for uncontrolled.
-- **Not modal by default, unlike the dialog** — `modal` (default `false`) opts into trapping focus,
-  blocking scroll, disabling outside interaction, and hiding page content from assistive tech; a
-  plain popover allows interacting with the rest of the page while open.
-- **Configurable dismissal** — `closeOnEscape`/`closeOnInteractOutside` (both default `true`) can be
-  turned off independently, same as the dialog.
-- **Focus is managed, not left to the browser** — `autoFocus` (default `true`) focuses the first
-  focusable element in content on open; `initialFocusEl`/`finalFocusEl` override which element
-  receives focus on open/close, `restoreFocus` (default `true`) returns it to the trigger.
-- **Multiple triggers, one popover** — same device as the dialog: a `trigger`'s `value`
-  distinguishes which one opened a shared popover, and only that trigger carries `data-current`;
-  the popover repositions to whichever trigger was activated, without closing.
-- **Nestable** — a `Popover` can be composed inside another popover's `content`; each maintains its
-  own independent open state and positioning.
-- **`--available-width`/`--available-height` are for capping size, not just informational** — Ark's
-  own guidance uses them directly in a `max-height`/`max-width` rule so the panel never grows past
-  the viewport edge.
-- **This kit doesn't re-export a `Portal` component** — Ark's own docs wrap every `Positioner` in
-  `<Portal>`, and `portalled` (a real root prop, default `true`) exists specifically to keep tabbing
-  behavior correct regardless of where content actually renders in the DOM — but this kit provides
-  no `Portal` wrapper of its own to pair it with; content renders in normal document flow here.
-
-## Anatomy
-
-```tsx
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverPositioner,
-  PopoverContent,
-  PopoverArrow,
-  PopoverArrowTip,
-  PopoverTitle,
-  PopoverDescription,
-  PopoverCloseTrigger,
-} from "@omnifield/probe-web-ui";
-
-<Popover>
-  <PopoverTrigger>{/* text or icon */}</PopoverTrigger>
-  <PopoverPositioner>
-    <PopoverContent>
-      <PopoverArrow>
-        <PopoverArrowTip />
-      </PopoverArrow>
-      <PopoverTitle>{/* text */}</PopoverTitle>
-      <PopoverDescription>{/* text */}</PopoverDescription>
-      <PopoverCloseTrigger>{/* text or icon */}</PopoverCloseTrigger>
-    </PopoverContent>
-  </PopoverPositioner>
-</Popover>
+```
+(control 🔘 / anchor ⚓)
+positioner 🎯
+├─ arrow ▲
+│  └─ arrowTip
+└─ content 💬
+   ├─ title 🏷️
+   ├─ description 📝
+   └─ closeTrigger ✕
 ```
 
-## Examples
+`control`/`anchor` — реальные соседи `positioner` в разметке, не его предки и не потомки.
 
-### Basic
+| часть                  | значение                                                                  | принимает внутри                               | рисуется                    |
+| ----------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------- |
+| 🔘 `control`           | открывает и закрывает поповер                                                | текст, иконку, `controlIndicator`                     | `PopoverControl`           |
+| 🔽 `controlIndicator`  | метка на контроле о том, открыт ли поповер — иконку кладёт потребитель        | текст, иконку, любой компонент                        | `PopoverControlIndicator`  |
+| ⚓ `anchor`             | необязательная точка отсчёта — поповер позиционируется по ней вместо контрола | любой компонент                                       | `PopoverAnchor`            |
+| 🎯 `positioner`        | позиционирует содержимое относительно контрола (или якоря) — чистая обёртка   | `arrow`, `content`                                    | `PopoverPositioner`        |
+| ▲ `arrow`              | оборачивает `arrowTip` — кит сам ставит позицию                              | `arrowTip`                                            | `PopoverArrow`             |
+| `arrowTip`             | видимый треугольник внутри `arrow`                                           | —                                                      | `PopoverArrowTip`          |
+| 💬 `content`           | собственная плавающая панель поповера                                        | `title`, `description`, `closeTrigger`, любой компонент | `PopoverContent`         |
+| 🏷️ `title`             | заголовок поповера                                                          | текст                                                  | `PopoverTitle`             |
+| 📝 `description`       | описание поповера                                                           | текст                                                  | `PopoverDescription`       |
+| ✕ `closeTrigger`       | закрывает поповер                                                           | текст, иконку                                          | `PopoverCloseTrigger`      |
+
+> [!NOTE]
+> Частей десять, но нет части `root` — сам `Popover` рисует не DOM-узел, а чистый контекст. Паспорт
+> называет своим номинальным корнем `positioner` — часть, которая реально держит то, чем поповер
+> визуально является (`arrow` и `content` со всем содержимым внутри). У `positioner` в `accepts`
+> нет `control`/`anchor` — они настоящие соседи по разметке, а не потомки; собрать их в одно дерево
+> схема не может.
+
+> [!NOTE]
+> `control`/`controlIndicator` — та же общая форма «кликабельная штука с индикатором», что и у
+> `accordion`/`tree-view` (`shared/data/anatomy.ts`'s `parts.controlSet`): родные заговские имена
+> (`trigger`/`indicator`) срезаны и заведены заново под общий кит-овый адрес, обёртки по-прежнему
+> рисуют настоящий `PopoverTrigger`/`PopoverIndicator` изнутри — переименован только адрес
+> (`data-part`), не поведение.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние      | метка              | где                              | значение                                                       |
+| ---- | --------------- | -------------------- | ----------------------------------- | ------------------------------------------------------------------- |
+| 🔓🔒 | open / closed   | `[data-state]`        | control, controlIndicator, content  | поповер открыт / закрыт                                            |
+| 🎯   | current         | `[data-current]`      | control                             | это тот контрол, что открыл поповер (только с несколькими триггерами) |
+| 🖱️   | hover           | `:hover`              | control, closeTrigger               | указатель наведён                                                   |
+| ⌨️   | focus-visible   | `:focus-visible`      | control, closeTrigger               | фокус пришёл с клавиатуры                                           |
+| 👆   | active          | `:active`             | control, closeTrigger               | нажат указателем                                                     |
+
+`positioner`/`anchor`/`arrow`/`arrowTip`/`title`/`description` своих состояний не несут — точка
+отсчёта, чистая раскладка и текст.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "title": "string", "description": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Поповер ничего не диспатчит через сборку — открытие/закрытие ведёт настоящая машина состояний Ark
+сама, не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+positioner 🎯 · providerProps: defaultOpen
+  arrow ▲
+    arrowTip
+  content 💬
+    title 🏷️ · text: {title}
+    description 📝 · text: {description}
+    closeTrigger ✕ · text: "✕"
+```
+
+> [!NOTE]
+> Сборка показывает только «плавающую половину» — `control`/`anchor` в это дерево структурно не
+> попадают (см. предупреждение в разделе «Анатомия»), рабочий клик собирается или рендерится
+> отдельно, рядом. `providerProps: { defaultOpen: true }` раскрывает панель без реального клика —
+> движку сборки нужен контекст `Popover` вокруг `positioner`, тот же приём `RenderTree`, что даёт
+> диалогу/меню state снаружи их собственного DOM-узла.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+`arrow`/`arrowTip` — `@zag-js/popper`'s `get-styles.mjs` пишет INLINE `arrow`'s ширину/высоту из
+`var(--arrow-size)`, `arrowTip`'s фон из `var(--arrow-background)` — но сами переменные нигде не
+имеют значения по умолчанию, рецепт их ОПРЕДЕЛЯЕТ, а не переопределяет инлайн-стиль.
+`--arrow-background` равен фону `content`, чтобы кончик стрелки читался как часть панели, а не
+отдельная фигура. `anchor` получает `display: contents` — прозрачная точка отсчёта не должна
+добавлять свой бокс в раскладку потребителя.
+
+Открытие/закрытие `content` анимируется именованными кадрами (`popover-in`/`popover-out`) на
+`--motion-fast` — легче, чем `dialog-in`/`dialog-out` диалога на `--motion-normal`: поповер —
+более лёгкий, не модальный по умолчанию родственник диалога.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Popover>
-  <PopoverTrigger>Click Me</PopoverTrigger>
+  <PopoverControl>
+    Click Me
+    <PopoverControlIndicator>▾</PopoverControlIndicator>
+  </PopoverControl>
   <PopoverPositioner>
+    <PopoverArrow>
+      <PopoverArrowTip />
+    </PopoverArrow>
     <PopoverContent>
       <PopoverTitle>Favorite Frameworks</PopoverTitle>
       <PopoverDescription>Manage and organize your favorite web frameworks.</PopoverDescription>
+      <PopoverCloseTrigger>✕</PopoverCloseTrigger>
     </PopoverContent>
   </PopoverPositioner>
 </Popover>
 ```
 
-### With an arrow and close button
+**Рендер через движок** — та же композиция плавающей половины, но по схеме (сборка `basic`),
+которую рисует `RenderTree`. Реестр должен знать про `provider: Popover` для этого компонента —
+без контекста вокруг `positioner` он падает при попытке его прочитать.
 
 ```tsx
+const data = { title: "Favorite Frameworks", description: "Manage and organize your favorite web frameworks." };
+const tree = instanceOf("popover", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Точка отсчёта отдельно от контрола.** `anchor` позиционирует панель относительно другого
+элемента, а не самого контрола.
+
+```tsx
+import { PopoverAnchor } from "@omnifield/probe-web-ui";
+
 <Popover>
-  <PopoverTrigger>Click Me</PopoverTrigger>
+  <div>
+    <PopoverControl>Click Me</PopoverControl>
+    <PopoverAnchor>
+      <input placeholder="Type here..." />
+    </PopoverAnchor>
+  </div>
   <PopoverPositioner>
     <PopoverContent>
-      <PopoverArrow>
-        <PopoverArrowTip />
-      </PopoverArrow>
-      <PopoverCloseTrigger>✕</PopoverCloseTrigger>
-      <PopoverTitle>Notifications</PopoverTitle>
-      <PopoverDescription>You have 3 unread messages.</PopoverDescription>
+      <PopoverTitle>Title</PopoverTitle>
+      <PopoverDescription>Positioned against the input, not the control.</PopoverDescription>
     </PopoverContent>
   </PopoverPositioner>
 </Popover>
 ```
 
-### Modal, trapping focus
+**Модальный поповер.** `modal` (по умолчанию `false`) включает захват фокуса, блокировку скролла,
+отключение взаимодействия со страницей вокруг и скрытие остального контента от скринридера — та же
+семантика, что у диалога.
 
 ```tsx
 <Popover modal>
-  <PopoverTrigger>Click Me</PopoverTrigger>
+  <PopoverControl>Click Me</PopoverControl>
   <PopoverPositioner>
     <PopoverContent>
       <PopoverCloseTrigger>✕</PopoverCloseTrigger>
@@ -173,55 +189,40 @@ import {
 </Popover>
 ```
 
-### Anchored to a different element than the trigger
+**Общий поповер на несколько контролов.** `value` у контрола различает, какой из них открыл общий
+поповер — тот же приём, что у диалога.
 
 ```tsx
-import { PopoverAnchor } from "@omnifield/probe-web-ui";
-
-<Popover>
-  <div>
-    <PopoverTrigger>Click Me</PopoverTrigger>
-    <PopoverAnchor>
-      <input placeholder="Type here..." />
-    </PopoverAnchor>
-  </div>
+<Popover onTriggerValueChange={(details) => setActiveItemId(details.value)}>
+  <For each={items}>{(item) => <PopoverControl value={item.id}>{item.label}</PopoverControl>}</For>
   <PopoverPositioner>
     <PopoverContent>
-      <PopoverTitle>Title</PopoverTitle>
-      <PopoverDescription>Positioned against the input, not the button.</PopoverDescription>
+      <PopoverTitle>{activeItem()?.label}</PopoverTitle>
+      <PopoverDescription>{activeItem()?.detail}</PopoverDescription>
     </PopoverContent>
   </PopoverPositioner>
 </Popover>
 ```
 
-### Capping content size to the viewport
+**Ограничение размера панели вьюпортом.** `--available-height`/`--available-width` у `positioner`
+— измеренное место до края вьюпорта, читается напрямую в CSS.
 
 ```tsx
-<PopoverPositioner>
-  <PopoverContent style={{ "max-height": "calc(var(--available-height) - 100px)" }}>
-    {/* long content */}
-  </PopoverContent>
-</PopoverPositioner>
+<PopoverContent style={{ "max-height": "calc(var(--available-height) - 100px)" }}>
+  {/* длинный контент */}
+</PopoverContent>
 ```
 
-## Styling hooks
+Кит нигде не использует `Portal` — в отличие от собственных примеров Ark, который портирует каждый
+`Positioner`, ни один компонент этого кита `Portal` не реэкспортирует и не требует.
 
-`trigger`/`indicator`/`content` all carry the open/closed pair (see `packages/skin`); `trigger`
-additionally carries `data-current` in a multi-trigger popover. `positioner`'s four CSS variables
-(`--reference-width`/`-height`, `--available-width`/`-height`) are the same floating-panel-sizing
-mechanism the select's/date-picker's/menu's own positioner exposes — `--available-height` in
-particular is meant to be read directly in a `max-height` rule, not just observed. `content` also
-picks up `data-nested`/`data-has-nested` when popovers stack, the same device the dialog's own
-nesting uses.
+## Доступность
 
-## Accessibility
+Поповер следует паттерну «плавающая панель с управлением фокусом», той же семье, что и диалог.
 
-Popover follows a floating-panel-with-focus-management pattern, same family as the dialog.
-
-| Key | What it does |
-|---|---|
-| `Space` / `Enter` | Opens or closes the popover, when focus is on the trigger |
-| `Tab` | Moves focus to the next focusable element inside content; past the last one, or if content has none, focus moves on past the trigger |
-| `Shift + Tab` | Moves focus to the previous focusable element inside content, or back to the trigger if content has none |
-| `Esc` | Closes the popover and moves focus to the trigger |
-<!-- user:end -->
+| Клавиша            | Действие                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `Space` / `Enter`  | Открывает/закрывает поповер, когда фокус на контроле                            |
+| `Tab`               | Переносит фокус на следующий фокусируемый элемент внутри `content`; после последнего — дальше за контрол |
+| `Shift + Tab`       | Переносит фокус на предыдущий фокусируемый элемент внутри `content`, либо назад на контрол |
+| `Esc`               | Закрывает поповер и переносит фокус на контрол                                   |

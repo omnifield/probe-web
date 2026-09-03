@@ -5,11 +5,17 @@ import {
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
 import { traceLife } from "../../shared/utils/trace.js";
+import { anatomyParts } from "../entity/anatomy.js";
 
-export type PopoverIndicatorProps = ArkIndicatorProps;
+export type PopoverControlIndicatorProps = ArkIndicatorProps;
 
-export function PopoverIndicator(props: PopoverIndicatorProps) {
-  traceLife("ui.popover-indicator");
+export function PopoverControlIndicator(props: PopoverControlIndicatorProps) {
+  traceLife("ui.popover-control-indicator");
 
-  return <ArkIndicator {...dropAddress(props)} />;
+  return (
+    <ArkIndicator
+      {...dropAddress(props)}
+      {...anatomyParts.controlIndicator.attrs}
+    />
+  );
 }

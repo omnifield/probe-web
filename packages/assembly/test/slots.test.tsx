@@ -72,11 +72,15 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(tree: AssemblyTree, slots: Parameters<typeof RenderTree>[0]["slots"]) {
+function mount(
+  tree: AssemblyTree,
+  slots: Parameters<typeof RenderTree>[0]["slots"],
+  registry: Registry = REGISTRY,
+) {
   const host = document.createElement("div");
   document.body.append(host);
   dispose = render(
-    () => <RenderTree registry={REGISTRY} tree={tree} data={{ variant: "s1" }} slots={slots} />,
+    () => <RenderTree registry={registry} tree={tree} data={{ variant: "s1" }} slots={slots} />,
     host,
   );
   return host;
@@ -139,5 +143,58 @@ describe("RenderTree slots (PWEB-174/176) — контент узла сверх
 
     const wrapper = host.querySelector('[data-testid="wrapper"][data-static="literal"]')!;
     expect(wrapper.textContent).toBe("declared");
+  });
+});
+
+/**
+ * Компонент, который читает `props.children` ДВАЖДЫ — тем же приёмом, каким владелец узла может
+ * законно использовать содержимое в двух местах разметки (не выдумка пробы: ровно так `.children`
+ * читается больше одного раза за коммит в реальном дереве, разбор — заявка, откуда этот тест).
+ */
+const DoubleReader = (props: { children?: unknown }) => (
+  <div data-testid="wrapper">
+    <div data-testid="first">{props.children as never}</div>
+    <div data-testid="second">{props.children as never}</div>
+  </div>
+);
+
+const DOUBLE_READ_REGISTRY: Registry = createRegistry({
+  components: {
+    widget: {
+      passport: {
+        component: "widget",
+        genus: "component",
+        anatomy: { keys: () => ["root", "content"] },
+        root: "root",
+        parts: [{ name: "root" }, { name: "content" }],
+      },
+      parts: { root: Wrapper, content: DoubleReader },
+    },
+  },
+  admits: () => true,
+});
+
+describe("contentOf() — createMemo, а не пересборка на каждое чтение .children", () => {
+  it("узел, читающий свои дети дважды, не зовёт entry.render дважды", () => {
+    let calls = 0;
+    const host = mount(
+      treeWith([]),
+      {
+        "widget.content": {
+          render: () => {
+            calls += 1;
+            return <span data-testid="slot">SLOT</span>;
+          },
+        },
+      },
+      DOUBLE_READ_REGISTRY,
+    );
+
+    // Мемо отдаёт ОДНУ и ту же ссылку на JSX/DOM-узел обоим чтениям — Solid не клонирует узел,
+    // он переставляет его во второе место (DOM-узел физически один, второе чтение "переносит"
+    // его туда). В разметке от слота остаётся один `<span>`, а не два — это не регрессия теста,
+    // а следствие того, что кэш держит ОДИН результат, а не пересобирает его на каждое чтение.
+    expect(host.querySelectorAll('[data-testid="slot"]')).toHaveLength(1);
+    expect(calls).toBe(1);
   });
 });

@@ -26,7 +26,7 @@ export const passport = definePassport({
     { name: "arrowTip", states: [] },
     { name: "anchor", states: [] },
     {
-      name: "trigger",
+      name: "control",
       states: [
         open,
         closed,
@@ -34,7 +34,7 @@ export const passport = definePassport({
         ...buttonPseudos,
       ],
     },
-    { name: "indicator", states: [open, closed] },
+    { name: "controlIndicator", states: [open, closed] },
     {
       name: "positioner",
       states: [],

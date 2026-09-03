@@ -13,6 +13,7 @@ export const basic: PassportAssembly<PopoverPart, string, Data> = {
   tree: {
     node: "positioner",
     children: [
+      { node: "arrow", children: [{ node: "arrowTip" }] },
       {
         node: "content",
         children: [
@@ -21,7 +22,6 @@ export const basic: PassportAssembly<PopoverPart, string, Data> = {
           { node: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
         ],
       },
-      { node: "arrow", children: [{ node: "arrowTip" }] },
     ],
   },
 };

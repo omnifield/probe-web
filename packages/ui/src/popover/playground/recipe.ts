@@ -15,7 +15,7 @@ const buttonStates = {
 
 export const recipe: SlotRecipe = {
   base: {
-    trigger: {
+    control: {
       props: {
         display: "inline-flex",
         alignItems: "center",
@@ -38,7 +38,7 @@ export const recipe: SlotRecipe = {
         current: { props: { background: "var(--accent-3)" } },
       },
     },
-    indicator: {
+    controlIndicator: {
       props: {
         display: "inline-flex",
         transition: "transform var(--motion-fast) var(--ease-out)",

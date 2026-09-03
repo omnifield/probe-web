@@ -317,43 +317,6 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
    * НЕ перекрывает, и проп `children` узла просочился бы обратно — то есть прежняя форма
    * продолжила бы работать в точности там, где детей нет.
    */
-  const contentOf = () => {
-    const current = node();
-    if (!current) return null;
-
-    const declared =
-      current.children.length === 0 ? null : (
-        <For each={(node()?.children ?? []) as readonly NodeId[]}>
-          {(childId) => (
-            <RenderNode
-              nodeId={childId}
-              tree={props.tree}
-              registry={props.registry}
-              fallback={props.fallback}
-              errorFallback={props.errorFallback}
-              editOverlay={props.editOverlay}
-              data={props.data}
-              dispatch={props.dispatch}
-              slots={props.slots}
-            />
-          )}
-        </For>
-      );
-
-    // Слот встаёт по адресу УЗЛА (`current.type`), не по роду содержимого — содержимое (текст)
-    // адреса не несёт вовсе, слот на него не бывает. Проверяется НЕЗАВИСИМО от того, есть ли у
-    // узла объявленные дети (`itemContent` со `слотом` может быть объявлен пустым — `children:
-    // []` — и всё равно принять контент сверху; ранний выход по пустым детям здесь снят нарочно).
-    const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
-    if (!entry) return declared;
-
-    const rendered = entry.render(ownProps());
-    const placement = entry.placement ?? "replace";
-    if (placement === "before") return <>{rendered}{declared}</>;
-    if (placement === "after") return <>{declared}{rendered}</>;
-    return rendered;
-  };
-
   /**
    * Значение узла содержимого — читается через функцию, поэтому правка подписи доезжает живой.
    *
@@ -505,6 +468,58 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
 
     return { ...current.props, ...resolvedBind(current.bind), ...dispatchHandlers(), ...props.rootProps };
   };
+
+  /**
+   * Объявленные дети узла плюс слот (`SlotEntry`), собранные ОДИН раз за пересчёт — `createMemo`,
+   * а не обычная функция.
+   *
+   * `rendered()` читает `contentOf()` из геттера `children` в двух местах (`plainProps`/
+   * `decoratedProps`), и в разных путях Solid геттер `children` читается больше одного раза за
+   * коммит. Без мемо каждое такое чтение звало `entry.render(ownProps())` заново — слот
+   * (`ComponentPreview` и подобные) собирался с нуля на каждое лишнее чтение, а не на реальное
+   * изменение данных.
+   *
+   * Определена ПОСЛЕ `ownProps`: `createMemo` считает тело сразу при создании, а обычная функция —
+   * только при вызове. Останься `contentOf` (в виде мемо) до объявления `ownProps`, обращение к
+   * `ownProps()` внутри тела мемо упёрлось бы в temporal dead zone — `ReferenceError`, а не
+   * отложенное чтение, как было у прежней, невызванной сразу функции.
+   */
+  const contentOf = createMemo(() => {
+    const current = node();
+    if (!current) return null;
+
+    const declared =
+      current.children.length === 0 ? null : (
+        <For each={(node()?.children ?? []) as readonly NodeId[]}>
+          {(childId) => (
+            <RenderNode
+              nodeId={childId}
+              tree={props.tree}
+              registry={props.registry}
+              fallback={props.fallback}
+              errorFallback={props.errorFallback}
+              editOverlay={props.editOverlay}
+              data={props.data}
+              dispatch={props.dispatch}
+              slots={props.slots}
+            />
+          )}
+        </For>
+      );
+
+    // Слот встаёт по адресу УЗЛА (`current.type`), не по роду содержимого — содержимое (текст)
+    // адреса не несёт вовсе, слот на него не бывает. Проверяется НЕЗАВИСИМО от того, есть ли у
+    // узла объявленные дети (`itemContent` со `слотом` может быть объявлен пустым — `children:
+    // []` — и всё равно принять контент сверху; ранний выход по пустым детям здесь снят нарочно).
+    const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
+    if (!entry) return declared;
+
+    const rendered = entry.render(ownProps());
+    const placement = entry.placement ?? "replace";
+    if (placement === "before") return <>{rendered}{declared}</>;
+    if (placement === "after") return <>{declared}{rendered}</>;
+    return rendered;
+  });
 
   /**
    * Data fed into a component reference's own behavior (`PWEB-169`): its literal `props` plus

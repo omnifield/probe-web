@@ -1,7 +1,7 @@
 export { Popover, type PopoverProps } from "./root.js";
 export { PopoverAnchor, type PopoverAnchorProps } from "./anchor.js";
-export { PopoverTrigger, type PopoverTriggerProps } from "./trigger.js";
-export { PopoverIndicator, type PopoverIndicatorProps } from "./indicator.js";
+export { PopoverControl, type PopoverControlProps } from "./control.js";
+export { PopoverControlIndicator, type PopoverControlIndicatorProps } from "./indicator.js";
 export { PopoverPositioner, type PopoverPositionerProps } from "./positioner.js";
 export { PopoverArrow, type PopoverArrowProps } from "./arrow/index.js";
 export { PopoverArrowTip, type PopoverArrowTipProps } from "./arrow/tip.js";
@@ -14,8 +14,8 @@ import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";
 import { Popover } from "./root.js";
 import { PopoverAnchor } from "./anchor.js";
-import { PopoverTrigger } from "./trigger.js";
-import { PopoverIndicator } from "./indicator.js";
+import { PopoverControl } from "./control.js";
+import { PopoverControlIndicator } from "./indicator.js";
 import { PopoverPositioner } from "./positioner.js";
 import { PopoverArrow } from "./arrow/index.js";
 import { PopoverArrowTip } from "./arrow/tip.js";
@@ -30,8 +30,8 @@ export const kit = defineKitComponent(
     arrow: PopoverArrow,
     arrowTip: PopoverArrowTip,
     anchor: PopoverAnchor,
-    trigger: PopoverTrigger,
-    indicator: PopoverIndicator,
+    control: PopoverControl,
+    controlIndicator: PopoverControlIndicator,
     positioner: PopoverPositioner,
     content: PopoverContent,
     title: PopoverTitle,
