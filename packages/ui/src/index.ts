@@ -44,6 +44,7 @@ export * from "./splitter/index.js";
 export * from "./surface/index.js";
 export * from "./switch/index.js";
 export * from "./table/index.js";
+export * from "./tabs/index.js";
 export * from "./timer/index.js";
 export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";

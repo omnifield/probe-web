@@ -7,6 +7,7 @@ export const recipe: SlotRecipe = {
   base: {
     root: {
       props: { display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+      states: { focus: { props: { outline: "none" } } },
     },
     list: {
       props: {
@@ -16,7 +17,7 @@ export const recipe: SlotRecipe = {
         gap: "var(--space-1)",
         borderBlockEnd: "var(--border-width-1) solid var(--neutral-6)",
       },
-      states: { focus: {} },
+      states: { focus: { props: { outline: "none" } } },
     },
     trigger: {
       props: {
@@ -49,8 +50,8 @@ export const recipe: SlotRecipe = {
           },
         },
         active: { props: { color: "var(--neutral-12)" } },
-        disabled: { props: { color: "var(--neutral-8)", cursor: "not-allowed" } },
-        focus: {},
+        disabled: { props: { opacity: "0.6", cursor: "not-allowed" } },
+        focus: { props: { zIndex: "2" } },
       },
     },
     content: {
@@ -60,7 +61,7 @@ export const recipe: SlotRecipe = {
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
       },
-      states: { selected: {} },
+      states: { selected: { props: { display: "block" } } },
     },
     indicator: {
       props: {
