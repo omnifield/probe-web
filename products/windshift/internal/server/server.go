@@ -1667,6 +1667,7 @@ func (s *Server) initialize() error {
 			TimerService:           timerService,
 			CommentService:         commentService,
 			ItemDeletionService:    itemHandler.ItemDeletionApplicationService(),
+			ItemCreationService:    itemHandler.ItemCreationService(),
 			PageApplicationService: pageHandler.PageApplicationService(),
 			PageDiagramService:     pageDiagramService,
 			ActionService:          s.actionService,

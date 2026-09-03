@@ -41,6 +41,12 @@ type Env struct {
 	// MCP receives the instance shared with cookie and REST v1; chat embeddings
 	// may leave it nil and tools construct a side-effect-light fallback.
 	ItemDeletionService *services.ItemDeletionApplicationService
+	// ItemCreationService is the shared user-facing item creation pipeline
+	// (validation + creation + item_created event emission). Tools must go
+	// through this rather than the low-level services.CreateItem so
+	// MCP-created items participate in notifications and action automations
+	// exactly like interactive/API-created ones.
+	ItemCreationService *services.ItemCreationService
 	// PageApplicationService is the shared permission-aware page mutation
 	// pipeline. MCP receives the production instance used by both HTTP
 	// surfaces; chat embeddings may use the nil-safe fallback in pages.go.

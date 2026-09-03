@@ -38,14 +38,25 @@ import type { ComponentPassport, Form } from "@omnifield/probe-web-skin/model";
 import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
 import { PRESET_KIND, type PresetRecord, type PresetsClient } from "@omnifield/probe-web-skin/presets";
 
+import type { KitComponent } from "./kit-form.js";
 import { IO as KIT_IO } from "./io.js";
 import { editorInfoOf as kitEditorInfoOf, passportOf as kitPassportOf, PASSPORTS } from "./passport.js";
 
-/** Форма ОДНОГО поставщика кита — паспорт, срез редактора, паспорта формы. */
+/**
+ * Форма ОДНОГО поставщика кита — паспорт, срез редактора, паспорта формы.
+ *
+ * `kitOf` — НЕОБЯЗАТЕЛЬНОЕ четвёртое поле: `createComponentInfo` (данные, без Solid) его не
+ * требует, а `kitComponentRenderer` (`component-registry.ts`, `PWEB-220`) требует — карту частей
+ * (`KitComponent.parts`) без неё не собрать. Тип — только ТИП (`KitComponent` из `./kit-form.js`
+ * не несёт solid-js ни строкой, см. его же шапку), поэтому объявить поле здесь безопасно для
+ * инварианта «этот файл не тянет Solid» — тянет его РЕАЛЬНОЕ значение `KIT`, которое сюда не
+ * заходит.
+ */
 interface ComponentProviderFields {
   readonly passportOf: (component: string) => ComponentPassport | undefined;
   readonly editorInfoOf: (component: string) => PassportEditorInfo | undefined;
   readonly io: IoRegistry;
+  readonly kitOf?: (component: string) => KitComponent | undefined;
 }
 
 /**
@@ -117,6 +128,7 @@ export function mergeComponentProviders(...providers: readonly ComponentProvider
     components: [...ownerOf.keys()],
     passportOf: (component) => ownerOf.get(component)?.passportOf(component),
     editorInfoOf: (component) => ownerOf.get(component)?.editorInfoOf(component),
+    kitOf: (component) => ownerOf.get(component)?.kitOf?.(component),
     io: {
       get: (component) => ownerOf.get(component)?.io.get(component),
       has: (component) => ownerOf.get(component)?.io.has(component) ?? false,

@@ -26,10 +26,20 @@ export interface KitBarrelOptions {
   readonly templatesDir: string;
 }
 
-/** `.tsx` if a component's implementation and part map share one file, else the older `.ts` split. Both are legal — read the disk, don't call either stale. */
-function kitFileOf(entry: EntryContext): "kit.tsx" | "kit.ts" | undefined {
+type KitFile = "kit.tsx" | "kit.ts" | "index.tsx" | "index.ts";
+
+/**
+ * Where a component's part map (`export const kit = defineKitComponent(...)`) lives. Two legal
+ * shapes, both read from disk, neither stale: the older standalone `components/kit.ts(x)`, or the
+ * current new-flow shape where the real barrel (`components/index.ts(x)`) carries the map inline
+ * alongside the part components themselves (no second file) — the shape `table`/`grid` and every
+ * component migrated off `kit.tsx` now use.
+ */
+function kitFileOf(entry: EntryContext): KitFile | undefined {
   if (entry.has("components/kit.tsx")) return "kit.tsx";
   if (entry.has("components/kit.ts")) return "kit.ts";
+  if (entry.has("components/index.tsx")) return "index.tsx";
+  if (entry.has("components/index.ts")) return "index.ts";
   return undefined;
 }
 
@@ -61,7 +71,7 @@ function passportPlugin(options: KitBarrelOptions): AggregatePlugin<PassportItem
 
 interface KitItem {
   readonly name: string;
-  readonly kitFile: "kit.tsx" | "kit.ts" | undefined;
+  readonly kitFile: KitFile | undefined;
   readonly kitIdentifier: string;
   readonly kitModule: string | undefined;
 }
@@ -73,11 +83,13 @@ function kitPlugin(options: KitBarrelOptions): AggregatePlugin<KitItem> {
     collect: (entries) =>
       entries.map((entry) => {
         const kitFile = kitFileOf(entry);
+        const kitModule =
+          kitFile && `${entry.name}/components/${kitFile.replace(/\.tsx$/, ".jsx").replace(/\.ts$/, ".js")}`;
         return {
           name: entry.name,
           kitFile,
           kitIdentifier: identifierFromEntryName(entry.name, "Kit"),
-          kitModule: kitFile && `${entry.name}/components/${kitFile === "kit.tsx" ? "kit.jsx" : "kit.js"}`,
+          kitModule,
         };
       }),
     // Объявил анатомию — обязан назвать, чем её части рисуются. Компонент без карты уехал бы в

@@ -25,6 +25,11 @@
     "./component-info": {
       "types": "./dist/component-info.d.ts",
       "default": "./dist/component-info.js"
+    },
+    "./component-registry": {
+      "solid": "./dist/component-registry.jsx",
+      "types": "./dist/component-registry.d.ts",
+      "default": "./dist/component-registry.js"
     }
   },
   "files": [
@@ -88,6 +93,7 @@
     }
   },
   "dependencies": {
+    "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-io": "workspace:*",
     "@omnifield/probe-web-skin": "workspace:*",
     "@tanstack/solid-table": "^9.1.2",
@@ -121,7 +127,6 @@
   "devDependencies": {
     "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-build": "workspace:*",
     "@omnifield/probe-web-lint": "workspace:*",
     "@probe-web/generators": "workspace:*",

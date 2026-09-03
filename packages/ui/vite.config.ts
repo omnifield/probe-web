@@ -1,10 +1,12 @@
 // Сборка поставки — фабрика из зоны `build` (`defineLibraryConfig`, `PROBEWEB-4`).
 //
-// Четыре входа: корневой несёт JSX и обязан уехать двумя ветками (`solid` — непреобразованный
-// JSX, `default` — разобранный `vite-plugin-solid`), остальные подпути — данные, ветка одна
-// (`./passport`/`./io` — паспорта кита и формы компонентов; `./component-info` — сборка обоих
-// плюс службы раздачи в одну запись, `PWEB-217`): потребителю нужны схемы и функции, не
-// JSX/Solid/`@kobalte/core`).
+// Пять входов, ДВЕ ветки. `solid: true` — там, где на выходе настоящие Solid-компоненты и нужны
+// обе ветки (`solid` — непреобразованный JSX, `default` — разобранный `vite-plugin-solid`):
+// корневой (`index`) и `./component-registry` (`PWEB-220` — карта частей кита несёт реальные
+// компоненты, `Registry`/`instanceOf` без неё не собрать). Остальные подпути — данные, ветка
+// одна (`./passport`/`./io` — паспорта кита и формы компонентов; `./component-info` — сборка
+// обоих плюс службы раздачи в одну запись, `PWEB-217`): потребителю нужны схемы и функции, не
+// JSX/Solid/`@kobalte/core`.
 import { defineLibraryConfig } from "@omnifield/probe-web-build/vite";
 
 export default defineLibraryConfig({
@@ -13,5 +15,6 @@ export default defineLibraryConfig({
     { name: "passport", source: "src/passport.ts" },
     { name: "io", source: "src/io.ts" },
     { name: "component-info", source: "src/component-info.ts" },
+    { name: "component-registry", source: "src/component-registry.ts", solid: true },
   ],
 });

@@ -26,6 +26,7 @@ export * from "./button/index.js";
 export * from "./carousel/index.js";
 export * from "./checkbox/index.js";
 export * from "./date-picker/index.js";
+export * from "./diagram/index.js";
 export * from "./dialog/index.js";
 export * from "./drawer/index.js";
 export * from "./field/index.js";
@@ -50,7 +51,7 @@ export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";
 export * from "./tree-view/index.js";
 export * from "./workspace/index.js";
-export * from "./shared/utils/collection.js";
+
 // Карта частей вместе с паспортами (`PWEB-84`) и форма самой карты (`kit-form.js`, `export *`
 // внутри `kit.js` уже её несёт).
 export * from "./kit.js";
