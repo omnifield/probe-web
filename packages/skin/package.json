@@ -21,6 +21,10 @@
     "./editor": {
       "types": "./dist/editor.d.ts",
       "default": "./dist/editor.js"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "default": "./dist/presets.js"
     }
   },
   "files": [
@@ -40,6 +44,7 @@
     "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
+    "@omnifield/probe-web-runtime": "^0.1.0",
     "@omnifield/probe-web-style": "^0.1.0",
     "postcss": "^8.5.14",
     "postcss-nested": "^7.0.2"
@@ -64,6 +69,9 @@
     "vitest": "^4.1.10"
   },
   "peerDependenciesMeta": {
+    "@omnifield/probe-web-runtime": {
+      "optional": true
+    },
     "postcss": {
       "optional": true
     },

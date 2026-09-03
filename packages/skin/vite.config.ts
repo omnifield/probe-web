@@ -12,5 +12,6 @@ export default defineLibraryConfig({
     { name: "model", source: "src/model.ts" },
     { name: "flat", source: "src/flat.ts" },
     { name: "editor", source: "src/editor.ts" },
+    { name: "presets", source: "src/presets.ts" },
   ],
 });

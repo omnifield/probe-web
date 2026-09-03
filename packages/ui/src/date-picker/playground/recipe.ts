@@ -1,12 +1,3 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// `positioner` reads `--available-width`/`--available-height` (its OWN measured variables,
-// `../entity/passport.ts`), the same select-first pattern the popover's own template names —
-// a rule reads a variable only on the part the passport says carries it.
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
@@ -42,8 +33,6 @@ const iconButtonStates = {
 const controlLook = {
   boxSizing: "border-box",
   minBlockSize: "var(--control-height-md)",
-  // `control-padding-inline` (`space-4`) — набивка md-контрола, `packages/style/src/dimension.ts`.
-  // Была `space-3` (пара с `control-height-sm`, не с `-md`) — разъезд найден и починен PWEB-198.
   paddingInline: "var(--space-4)",
   borderWidth: "var(--border-width-1)",
   borderStyle: "solid",
@@ -60,36 +49,54 @@ export const recipe: SlotRecipe = {
   base: {
     root: {
       props: { position: "relative", display: "inline-flex", flexDirection: "column", gap: "var(--space-1)" },
-      states: { disabled: { props: { opacity: "0.6" } } },
+      states: {
+        open: { props: { opacity: "1" } },
+        closed: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { opacity: "1" } },
+        empty: { props: { opacity: "1" } },
+      },
     },
     label: {
       props: { fontSize: "var(--font-size-md)", fontWeight: "var(--weight-medium)", color: "var(--neutral-12)" },
+      states: {
+        open: { props: { opacity: "1" } },
+        closed: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { opacity: "1" } },
+      },
     },
     control: {
       props: { display: "flex", alignItems: "center", gap: "var(--space-1)" },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        empty: { props: { minBlockSize: "var(--control-height-md)" } },
+      },
     },
-    // `input` declares no hover/focus-visible of its own (`../entity/passport.ts`) — only
-    // invalid/disabled/readonly/required, all pseudo but "invalid" (a data mark).
     input: {
       props: controlProps(),
       states: {
+        open: { props: { borderColor: "var(--accent-8)" } },
+        closed: { props: { borderColor: "var(--neutral-7)" } },
+        empty: { props: { color: "var(--neutral-11)" } },
         invalid: { props: { borderColor: "var(--danger-9)" } },
-        disabled: { props: { background: "var(--neutral-3)", color: "var(--neutral-9)", cursor: "not-allowed" } },
+        disabled: { props: { background: "var(--neutral-3)", color: "var(--neutral-11)", cursor: "not-allowed" } },
         readonly: { props: { background: "var(--neutral-2)" } },
-        required: { props: {} },
+        required: { props: { fontWeight: "var(--weight-medium)" } },
       },
     },
-    // No `disabled` on `clearTrigger` (`../entity/passport.ts`: "no disabled concept in the
-    // connector at all") — the kit hides it entirely instead while nothing is selected.
     clearTrigger: {
       props: iconButton,
       states: { hover: iconButtonStates.hover, active: iconButtonStates.active, "focus-visible": iconButtonStates["focus-visible"] },
     },
-    // `trigger` declares only open/closed/empty/disabled (`../entity/passport.ts`) — no
-    // hover/active/focus-visible, unlike every other real button in this passport.
     trigger: {
       props: iconButton,
-      states: { disabled: iconButtonStates.disabled },
+      states: {
+        open: { props: { opacity: "1" } },
+        closed: { props: { opacity: "1" } },
+        empty: { props: { opacity: "0.8" } },
+        disabled: iconButtonStates.disabled,
+      },
     },
     content: {
       props: {
@@ -104,6 +111,11 @@ export const recipe: SlotRecipe = {
         borderRadius: "var(--radius-lg)",
         boxShadow: "0 4px 16px oklch(0% 0 0 / 0.16)",
       },
+      states: {
+        open: { props: { display: "flex" } },
+        closed: { props: { pointerEvents: "none" } },
+        inline: { props: { boxShadow: "none" } },
+      },
     },
     positioner: {
       props: {
@@ -113,17 +125,25 @@ export const recipe: SlotRecipe = {
     },
     view: {
       props: { display: "flex", flexDirection: "column", gap: "var(--space-2)" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+      },
     },
     viewControl: {
       props: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+      },
     },
     viewTrigger: {
       props: {
         display: "inline-flex",
         alignItems: "center",
         gap: "var(--space-1)",
-        // `compact-padding-inline` (`space-3`) — пара с `control-height-sm`. Была `space-2` —
-        // разъезд найден тестом `test/space-roles.test.ts`, починен PWEB-198.
         paddingInline: "var(--space-3)",
         minBlockSize: "var(--control-height-sm)",
         borderWidth: "0",
@@ -136,21 +156,36 @@ export const recipe: SlotRecipe = {
         transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
-      // `viewTrigger` declares only the view axis plus `disabled` (`../entity/passport.ts`) — no
-      // hover/focus-visible.
       states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
         disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
       },
     },
-    rangeText: { props: {} },
-    // `prevTrigger`/`nextTrigger` declare ONLY `disabled` (`../entity/passport.ts`) — no
-    // hover/active/focus-visible, unlike `clearTrigger`'s own full pseudo trio.
+    rangeText: { props: { fontWeight: "var(--weight-medium)" } },
     prevTrigger: { props: iconButton, states: { disabled: iconButtonStates.disabled } },
     nextTrigger: { props: iconButton, states: { disabled: iconButtonStates.disabled } },
     monthSelect: { props: controlSmall(), states: { disabled: { props: { opacity: "0.5" } } } },
     yearSelect: { props: controlSmall(), states: { disabled: { props: { opacity: "0.5" } } } },
-    table: { props: { borderCollapse: "collapse" } },
-    tableHead: { props: {} },
+    table: {
+      props: { borderCollapse: "collapse" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
+    },
+    tableHead: {
+      props: { display: "table-header-group" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
+    },
     tableHeader: {
       props: {
         padding: "var(--space-1)",
@@ -159,10 +194,40 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-11)",
         textAlign: "center",
       },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
     },
-    tableBody: { props: {} },
-    tableRow: { props: {} },
-    tableCell: { props: { padding: "2px", textAlign: "center" } },
+    tableBody: {
+      props: { display: "table-row-group" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
+    },
+    tableRow: {
+      props: { display: "table-row" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
+    },
+    tableCell: {
+      props: { padding: "2px", textAlign: "center" },
+      states: {
+        day: { props: { opacity: "1" } },
+        month: { props: { opacity: "1" } },
+        year: { props: { opacity: "1" } },
+        selected: { props: { fontWeight: "var(--weight-medium)" } },
+      },
+    },
     tableCellTrigger: {
       props: {
         display: "inline-flex",
@@ -182,10 +247,24 @@ export const recipe: SlotRecipe = {
       states: {
         today: { props: { borderWidth: "var(--border-width-1)", borderStyle: "solid", borderColor: "var(--accent-8)" } },
         weekend: { props: { color: "var(--neutral-11)" } },
-        "outside-range": { props: { color: "var(--neutral-8)" } },
-        unavailable: { props: { color: "var(--neutral-7)", cursor: "not-allowed" } },
+        "outside-range": { props: { color: "var(--neutral-11)" } },
+        unavailable: { props: { color: "var(--neutral-11)", cursor: "not-allowed" } },
         "in-range": { props: { background: "var(--accent-3)", borderRadius: "0" } },
         "in-hover-range": { props: { background: "var(--accent-2)", borderRadius: "0" } },
+        "hover-range-start": {
+          props: {
+            background: "var(--accent-2)",
+            borderStartStartRadius: "var(--radius-full)",
+            borderEndStartRadius: "var(--radius-full)",
+          },
+        },
+        "hover-range-end": {
+          props: {
+            background: "var(--accent-2)",
+            borderStartEndRadius: "var(--radius-full)",
+            borderEndEndRadius: "var(--radius-full)",
+          },
+        },
         "range-start": {
           props: {
             background: "var(--accent-9)",
@@ -212,6 +291,11 @@ export const recipe: SlotRecipe = {
           },
         },
         disabled: { props: { opacity: "0.4", cursor: "not-allowed" } },
+        day: { props: { borderRadius: "var(--radius-full)" } },
+        month: { props: { borderRadius: "var(--radius-md)", inlineSize: "4rem" } },
+        year: { props: { borderRadius: "var(--radius-md)", inlineSize: "4rem" } },
+        selectable: { props: { cursor: "pointer" } },
+        focus: { props: { outline: "none" } },
       },
     },
     presetTrigger: {
@@ -252,8 +336,6 @@ function controlProps() {
 
 /** `monthSelect`/`yearSelect`'s look: the same control base, smaller — they sit inline in `viewControl`. */
 function controlSmall() {
-  // `compact-padding-inline` (`space-3`) — пара с `control-height-sm`. Была `space-2` — разъезд
-  // найден и починен PWEB-198.
   return { ...controlLook, minBlockSize: "var(--control-height-sm)", paddingInline: "var(--space-3)", fontSize: "var(--font-size-sm)" };
 }
 

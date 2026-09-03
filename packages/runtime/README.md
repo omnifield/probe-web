@@ -11,9 +11,10 @@
 
 ```ts
 import {
-  mount,           // поднять приложение в #root
-  makeSkinSwitch,  // надеть скин и половину, снять, восстановить запомненное
-  checkStyleOrder, // приехал ли базовый CSS под надетым скином
+  mount,               // поднять приложение в #root
+  makeSkinSwitch,      // надеть скин и половину, снять, восстановить запомненное
+  createSkinConnection, // то же самое, но worn — Solid-сигнал, а не функция по запросу
+  checkStyleOrder,     // приехал ли базовый CSS под надетым скином
 } from "@omnifield/probe-web-runtime";
 ```
 
@@ -254,6 +255,40 @@ const source = {
 **Механика необязательна.** Приложение, подключившее файл скина само и поставившее `data-skin`,
 выглядит так же — это гейт зоны, а не пожелание. И **без скина приложение работает**: голый
 кит с адресными атрибутами — законное состояние продукта, а не отказ.
+
+### Solid-примитив: `createSkinConnection`
+
+`SkinSwitch.worn()` — обычная функция, читает атрибут по запросу и сама за собой не следит.
+Solid-продукту, которому нужно показать «во что одета страница» живьём, `createSkinConnection`
+отдаёт то же самое, что `makeSkinSwitch`, но `worn` — сигнал:
+
+```tsx
+import { createSkinConnection } from "@omnifield/probe-web-runtime";
+
+function App() {
+  const skin = createSkinConnection(source, { fallback: { skin: "brutal", mode: "light" } });
+
+  onMount(() => void skin.restore()); // boot по-прежнему зовёт продукт — сигнал досинхронизировать не нужно
+
+  return (
+    <button onClick={() => skin.setMode(skin.worn()?.mode === "dark" ? "light" : "dark")}>
+      {skin.worn()?.mode ?? "без скина"}
+    </button>
+  );
+}
+```
+
+- `worn` обновляется сам после `wear()`/`takeOff()`/`restore()` — досинхронизировать руками
+  нечего;
+- `setMode(mode)` — сменить половину надетого, не таская наружу текущее имя скина;
+- `dispose()` наружу не отдаётся: примитив сам вешает его на `onCleanup()`. **Зовите
+  `createSkinConnection` внутри компонента или `createRoot()`** — без владельца Solid `onCleanup`
+  не запомнит, кого звать при размонтировании.
+
+**Чего примитив не решает:** горячую замену модуля потребителя. `import.meta.hot.dispose()`
+всегда про ТЕКУЩИЙ модуль — библиотека не может повесить его за модуль, который её зовёт.
+`onCleanup()` закрывает уборку по владению Solid; закрывает ли этого достаточно для конкретного
+HMR-сценария продукта — проверяется в нём самом, руками.
 
 ## Perf-трейсы
 
