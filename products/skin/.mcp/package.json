@@ -17,6 +17,7 @@
     "@omnifield/probe-web-io": "workspace:*",
     "@omnifield/probe-web-skin": "workspace:*",
     "@omnifield/probe-web-ui": "workspace:*",
+    "zocker": "^3.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

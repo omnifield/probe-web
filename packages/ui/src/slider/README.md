@@ -1,82 +1,253 @@
-# Slider
+# 🎚️ Slider
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | TODO |
-| label | TODO |
-| valueText | TODO |
-| track | TODO |
-| range | TODO |
-| control | TODO |
-| thumb | TODO |
-| markerGroup | TODO |
-| marker | TODO |
-| draggingIndicator | TODO |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | TODO |
-| root | invalid | [data-invalid] | TODO |
-| root | dragging | [data-dragging] | TODO |
-| root | focus | [data-focus] | TODO |
-| label | disabled | [data-disabled] | TODO |
-| label | invalid | [data-invalid] | TODO |
-| label | dragging | [data-dragging] | TODO |
-| label | focus | [data-focus] | TODO |
-| valueText | disabled | [data-disabled] | TODO |
-| valueText | invalid | [data-invalid] | TODO |
-| valueText | focus | [data-focus] | TODO |
-| track | disabled | [data-disabled] | TODO |
-| track | invalid | [data-invalid] | TODO |
-| track | dragging | [data-dragging] | TODO |
-| track | focus | [data-focus] | TODO |
-| range | disabled | [data-disabled] | TODO |
-| range | invalid | [data-invalid] | TODO |
-| range | dragging | [data-dragging] | TODO |
-| range | focus | [data-focus] | TODO |
-| control | disabled | [data-disabled] | TODO |
-| control | invalid | [data-invalid] | TODO |
-| control | dragging | [data-dragging] | TODO |
-| control | focus | [data-focus] | TODO |
-| thumb | disabled | [data-disabled] | TODO |
-| thumb | focus | [data-focus] | TODO |
-| thumb | dragging | [data-dragging] | TODO |
-| thumb | hover | :hover | TODO |
-| thumb | active | :active | TODO |
-| markerGroup | — | — | — |
-| marker | disabled | [data-disabled] | TODO |
-| marker | under-value | [data-state="under-value"] | TODO |
-| marker | at-value | [data-state="at-value"] | TODO |
-| marker | over-value | [data-state="over-value"] | TODO |
-| draggingIndicator | open | [data-state="open"] | TODO |
-| draggingIndicator | closed | [data-state="closed"] | TODO |
+```
+root
+├─ label 🏷️
+├─ valueText
+└─ control
+   ├─ track
+   │  └─ range
+   ├─ thumb[]
+   │  └─ draggingIndicator
+   └─ markerGroup
+      └─ marker[]
+```
 
-## Settings
+| часть                | значение                                                        | принимает внутри | рисуется                  |
+| ---------------------- | -------------------------------------------------------------------- | -------------------- | ------------------------------ |
+| ⬜ `root`             | слайдер целиком — держит значение(я), min/max/step и ориентацию      | `label`, `valueText`, `control` | `Slider`           |
+| 🏷️ `label`           | собственная подпись — клик по ней фокусирует первый бегунок          | текст                 | `SliderLabel`             |
+| `valueText`           | текущее значение текстом — сам текст кладёт потребитель               | текст                 | `SliderValueText`         |
+| `control`             | область для перетаскивания — клик в любом месте двигает ближайший бегунок | `track`, `thumb`, `markerGroup`, `draggingIndicator` | `SliderControl` |
+| ➖ `track`            | дорожка на всю длину — оборачивает закрашенную часть                  | `range`               | `SliderTrack`              |
+| ▬ `range`             | закрашенная часть дорожки — от точки отсчёта до значения(й)           | —                      | `SliderRange`              |
+| ⚪ `thumb`            | один перетаскиваемый бегунок — настоящий фокусируемый узел (`role="slider"`) | —              | `SliderThumb`              |
+| 📁 `markerGroup`      | оборачивает все деления шкалы — декоративная, вне доступности          | `marker`               | `SliderMarkerGroup`        |
+| `marker`              | одно деление шкалы вдоль дорожки — своего графика не несёт             | текст                  | `SliderMarker`             |
+| `draggingIndicator`   | подсказка-указатель, следующая за перетаскиваемым бегунком             | текст                  | `SliderDraggingIndicator`  |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | TODO | `horizontal` | [data-orientation] |
+> [!NOTE]
+> `thumb`/`marker` — каждый ОДНА часть анатомии, рисуемая НЕСКОЛЬКО раз: один `thumb` на значение
+> в range-слайдере (`index` обязателен), один `marker` на деление шкалы (`value` обязателен) — та
+> же форма, что уже несёт `trigger` табов. Настоящий `<input type="text" hidden>` (`SliderHiddenInput`,
+> один на бегунок, только для участия в форме) своего адреса не несёт — та же находка, что у
+> скрытого ввода чекбокса. **В отличие от чекбокса/radio-group, кит НЕ кладёт его сам** — по
+> примеру Ark потребитель ставит `<SliderHiddenInput/>` внутри `<SliderThumb>` руками (см.
+> «Использование»).
 
-## CSS Variables
+<h2 id="состояния">🎛️ Состояния</h2>
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| root | `--slider-thumb-width` | kit | TODO |
-| root | `--slider-thumb-height` | kit | TODO |
-| root | `--slider-thumb-transform` | kit | TODO |
-| root | `--slider-range-start` | kit | TODO |
-| root | `--slider-range-end` | kit | TODO |
-| marker | `--translate-x` | kit | TODO |
-| marker | `--translate-y` | kit | TODO |
+|      | часть                                          | состояние      | метка                  | значение                                                   |
+| ---- | ------------------------------------------------ | --------------- | -------------------------- | ----------------------------------------------------------------- |
+| 🚫   | root, label, valueText, track, range, control    | disabled        | `[data-disabled]`           | (слайдер) отключён — тянуть нельзя                                 |
+| ⚠️   | root, label, valueText, track, range, control    | invalid         | `[data-invalid]`            | невалиден по правилам валидации формы                              |
+| 🖐️   | root, label, track, range, control               | dragging        | `[data-dragging]`           | идёт перетаскивание — какой-то бегунок тянут прямо сейчас           |
+| 🎯   | root, label, valueText, track, range, control    | focus           | `[data-focus]`              | какой-то бегунок в фокусе                                          |
+| 🚫   | thumb                                            | disabled        | `[data-disabled]`           | этот бегунок отключён                                              |
+| 🎯   | thumb                                            | focus           | `[data-focus]`              | фокус именно на этом бегунке                                       |
+| 🖐️   | thumb                                            | dragging        | `[data-dragging]`           | именно этот бегунок тянут прямо сейчас                              |
+| 🖱️   | thumb                                            | hover           | `:hover`                     | указатель наведён на этот бегунок                                   |
+| 👆   | thumb                                            | active          | `:active`                    | этот бегунок нажат и удерживается                                   |
+| 🚫   | marker                                           | disabled        | `[data-disabled]`           | слайдер отключён                                                    |
+| ⬇️   | marker                                           | under-value     | `[data-state="under-value"]` | деление лежит ниже текущего значения                                |
+| 🎯   | marker                                           | at-value        | `[data-state="at-value"]`   | деление совпадает с текущим значением                                |
+| ⬆️   | marker                                           | over-value      | `[data-state="over-value"]` | деление лежит выше текущего значения                                |
+| 👁️   | draggingIndicator                                | open            | `[data-state="open"]`       | бегунок, за которым он следит, сейчас тянут                          |
+| 🙈   | draggingIndicator                                | closed          | `[data-state="closed"]`     | ничего не тянут                                                     |
 
-## Notes
+> [!NOTE]
+> `dragging`/`focus` — ГРУППОВЫЕ на `root`/`label`/`track`/`range`/`control` (истинны, когда ЛЮБОЙ
+> бегунок тянут/в фокусе), но УЗКИЕ на самом `thumb` (истинны только для ИМЕННО ЭТОГО бегунка) —
+> одни и те же имена состояний и метки, разное УСЛОВИЕ по части, не разный адрес.
+>
+> `thumb` — настоящий фокусируемый узел (`tabIndex`/`onFocus`/`onBlur` свои), указатель НИКТО не
+> перехватывает в JS — `hover`/`active` честные псевдоклассы, как у обычной кнопки. `data-focus`
+> всё равно объявлен рядом (не заменён `:focus-visible`) — он отвечает на более узкий вопрос: «это
+> именно ТОТ бегунок, что в фокусе», не просто «на этом узле фокус».
+>
+> `marker`'s `data-state` — честный факт о ПОЗИЦИИ (сравнение своего `value` с текущим значением
+> слайдера), не о взаимодействии: деление остаётся `under-value`/`at-value`/`over-value` независимо
+> от того, идёт ли перетаскивание.
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения                | по умолчанию | означает                                       |
+| ------------- | ------------------------ | -------------- | --------------------------------------------------- |
+| `orientation` | `horizontal`/`vertical`  | `horizontal`   | вдоль какой оси тянется слайдер — влияет на навигацию с клавиатуры |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "label": "string", "defaultValue": [0] }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Слайдер ничего не диспатчит через сборку — перетаскивание и клавиатура ведёт настоящая машина
+состояний Ark сама, не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root · bind: defaultValue
+  label     · text: {label}
+  valueText · text: {defaultValue}
+  control
+    track
+      range
+    thumb · index: 0
+```
+
+> [!NOTE]
+> `valueText`'s текст в сборке — СНИМОК стартового значения (`{defaultValue}`), не живая привязка:
+> в реальном использовании его текст читает `api().value` реактивно (см. «Использование»), а
+> статичное дерево сборки не может выразить «читать внутреннее состояние компонента» — тот же
+> класс ограничения, что у тоста, только не блокирующий: сам слайдер (дорожка, закраска,
+> перетаскивание бегунка) работает полностью настоящей машиной состояний, страдает только текст
+> этой одной части. `markerGroup`/`marker`/`draggingIndicator` в сборку не входят — необязательные
+> части, `skinGaps` их всё равно проверяет через рецепт напрямую, не через дерево.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!NOTE]
+> Позиционирование `thumb`/`range`/`marker`/`draggingIndicator` НАСТОЯЩИЙ Ark задаёт инлайн-стилем
+> целиком сам (`slider.style.mjs`: `position`/`transform`/`insetInlineStart`/`translate`, все от
+> `--slider-thumb-offset-N`/`--slider-range-start`/`-end`/`--translate-x`/`-y`) — рецепту здесь
+> нечего решать, только СТИЛЬ поверх уже выставленной позиции (цвет, размер, тень). Единственное
+> реальное исключение — `thumb`'s собственные `width`/`height`: слайдер их ИЗМЕРЯЕТ (пишет обратно
+> в `--slider-thumb-width`/`-height` на `root`), значит рецепт обязан дать бегунку настоящий
+> фиксированный размер, а не читать переменную — иначе измерять нечего.
+
+`--slider-thumb-offset-${index}` — семья переменных с ИМЕНЕМ, зависящим от индекса бегунка (по
+одной на каждый), которую модель `PassportVariable` (одно объявление — одно фиксированное имя) в
+принципе не может назвать. Реальное ограничение модели, не молчаливо обойдено: `thumb`'s инлайн-
+стиль читает её напрямую, паспорт эту переменную просто не перечисляет — скин-автору она и не
+нужна, `thumb` уже позиционирован без его участия.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` кладите сами внутри `SliderThumb` — в отличие от чекбокса, слайдер его не подставляет.
+
+```tsx
+<Slider defaultValue={[40]}>
+  <SliderLabel>Громкость</SliderLabel>
+  <SliderValueText />
+  <SliderControl>
+    <SliderTrack>
+      <SliderRange />
+    </SliderTrack>
+    <SliderThumb index={0}>
+      <SliderHiddenInput />
+    </SliderThumb>
+  </SliderControl>
+</Slider>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = { label: "Громкость", defaultValue: [40] };
+const tree = instanceOf("slider", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Диапазон — два бегунка.**
+
+```tsx
+<Slider defaultValue={[30, 60]}>
+  <SliderLabel>Цена</SliderLabel>
+  <SliderControl>
+    <SliderTrack>
+      <SliderRange />
+    </SliderTrack>
+    <SliderThumb index={0}>
+      <SliderHiddenInput />
+    </SliderThumb>
+    <SliderThumb index={1}>
+      <SliderHiddenInput />
+    </SliderThumb>
+  </SliderControl>
+</Slider>
+```
+
+**Живой текст значения.** `SliderValueText` не рисует текст сам — берите его из `useSliderContext()`
+(читает контекст, который уже установил ближайший `<Slider>`, а не заводит новый).
+
+```tsx
+import { useSliderContext } from "@ark-ui/solid/slider";
+
+function VolumeValueText() {
+  const slider = useSliderContext();
+  return <SliderValueText>{slider().value.join(" – ")}</SliderValueText>;
+}
+```
+
+**Деления шкалы.**
+
+```tsx
+<SliderMarkerGroup>
+  {[0, 25, 50, 75, 100].map((value) => (
+    <SliderMarker value={value}>{value}</SliderMarker>
+  ))}
+</SliderMarkerGroup>
+```
+
+**Подсказка при перетаскивании.**
+
+```tsx
+<SliderThumb index={0}>
+  <SliderDraggingIndicator>{/* значение */}</SliderDraggingIndicator>
+  <SliderHiddenInput />
+</SliderThumb>
+```
+
+**Вертикальный, свой диапазон и шаг.**
+
+```tsx
+<Slider orientation="vertical" min={-10} max={10} step={0.5} defaultValue={[5]}>
+  <SliderControl>
+    <SliderTrack>
+      <SliderRange />
+    </SliderTrack>
+    <SliderThumb index={0}>
+      <SliderHiddenInput />
+    </SliderThumb>
+  </SliderControl>
+</Slider>
+```
+
+## Доступность
+
+Слайдер следует паттерну WAI-ARIA [Slider](https://www.w3.org/WAI/ARIA/apg/patterns/slider/).
+
+| Клавиша                        | Действие                                    |
+| -------------------------------- | -------------------------------------------------- |
+| `ArrowRight` / `ArrowUp`         | Увеличивает значение на `step`                      |
+| `ArrowLeft` / `ArrowDown`        | Уменьшает значение на `step`                        |
+| `PageUp` / `Shift + ArrowUp`     | Увеличивает значение на `largeStep`                  |
+| `PageDown` / `Shift + ArrowDown` | Уменьшает значение на `largeStep`                    |
+| `Home` / `End`                   | Ставит значение в минимум / максимум                 |

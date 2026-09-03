@@ -10,7 +10,6 @@ export { z } from "zod";
 
 export { identityCodec, renameKeysCodec } from "./codecs.js";
 export { compatibleItems } from "./compatible.js";
-export { exampleOf, type ExampleLeafGenerator, type JsonSchemaNode } from "./example.js";
 export {
   applyFieldRules,
   collectFieldRuleReport,

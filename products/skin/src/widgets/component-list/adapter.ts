@@ -6,14 +6,16 @@
 // будет универсальная меха, и она поедет из фреймворка чуть позже, пока сделай у себя». Здесь —
 // не универсальный механизм, а конкретная, ручная форма под ЭТИ данные.
 //
-// ТРИ УРОВНЯ (постановка user, 2026-09-02): раздел кита → ветка; компонент раздела → тоже ветка
-// (раскрывашка), а не лист; сборки компонента → листья внутри него. Клик по ветке — раскрытие/
+// УРОВНИ (постановка user, 2026-09-02, сборки уточнены 2026-09-03): раздел кита → ветка всегда.
+// Компонент раздела — ветвится по числу его сборок: БОЛЬШЕ ОДНОЙ — сам ветка (раскрывашка),
+// сборки — листья внутри; РОВНО ОДНА (обычно `base`, других у компонента и нет) — сборку
+// показывать отдельным уровнем незачем, компонент сам и есть лист. Клик по ветке — раскрытие/
 // закрытие, движок дерева умеет сам, дальше это не касается. Клик по листу — отдельная тема
 // (`component-list.tsx`).
 //
-// ID ЛИСТА СОСТАВНОЙ (`компонент/сборка`) — имя сборки само по себе не уникально (`base` есть
-// почти у каждого компонента), а Ark строит дерево по `id`: одинаковые id на разных компонентах
-// схлопнулись бы в один узел.
+// ID ЛИСТА СОСТАВНОЙ (`компонент/сборка`) ВСЕГДА, даже когда сборка одна и в дереве отдельным
+// узлом не видна: `component-list.tsx` разбирает id листа по `/`, чтобы узнать, какую сборку
+// открывать, — вторая форма id для «свёрнутого» случая завела бы вторую ветку разбора там.
 
 import type { ComponentGroup } from "../../entities/component/model/store.js";
 import { editorInfoOf } from "../../entities/component/model/providers.js";
@@ -26,26 +28,36 @@ export interface TreeItemData {
   readonly children?: readonly TreeItemData[];
 }
 
-/** Сборки компонента → листья. Компонент без единой объявленной сборки — пустой список, не сбой. */
-function assembliesToTreeItems(component: string): readonly TreeItemData[] {
+/**
+ * Компонент раздела → узел дерева. Больше одной сборки — ветка, сборки под ней — листья. Не
+ * больше одной (одна объявленная, либо ни одной — `instanceOf` в этом случае сам берёт образец
+ * из анатомии, `entities/component/model/instance.ts`) — сборку отдельным уровнем не показываем,
+ * лист — сам компонент.
+ */
+function componentToTreeItem(component: string): TreeItemData {
   const assemblies = editorInfoOf(component)?.assemblies ?? [];
-  return assemblies.map((assembly) => ({
-    id: `${component}/${assembly.name}`,
-    label: assembly.name,
-  }));
+
+  if (assemblies.length > 1) {
+    return {
+      id: component,
+      label: component,
+      children: assemblies.map((assembly) => ({
+        id: `${component}/${assembly.name}`,
+        label: assembly.name,
+      })),
+    };
+  }
+
+  return { id: `${component}/${assemblies[0]?.name ?? "base"}`, label: component };
 }
 
-/** Раздел кита → ветка, компонент раздела → ветка, сборка компонента → лист внутри неё. */
+/** Раздел кита → ветка, компонент раздела → узел по числу его сборок (`componentToTreeItem`). */
 export function groupsToTreeItems(groups: readonly ComponentGroup[]): { readonly items: readonly TreeItemData[] } {
   return {
     items: groups.map((section) => ({
       id: section.group,
       label: section.title,
-      children: section.components.map((component) => ({
-        id: component,
-        label: component,
-        children: assembliesToTreeItems(component),
-      })),
+      children: section.components.map(componentToTreeItem),
     })),
   };
 }

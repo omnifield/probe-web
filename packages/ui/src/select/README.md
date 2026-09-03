@@ -1,225 +1,277 @@
-# Select
+# 🔽 Select
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the select as a whole — label, control, and the floating dropdown together |
-| label | the select's label |
-| control | wraps the trigger and its indicators — the visible box the trigger sits in |
-| valueText | shows the selected value(s), or the placeholder when none is chosen |
-| trigger | the button that opens and closes the dropdown |
-| clearTrigger | button that clears the current selection |
-| indicator | open/closed indicator — an arrow placed by the consumer |
-| positioner | positions the floating dropdown relative to the trigger |
-| content | the floating dropdown itself — items live here, grouped or not |
-| list | an inner listbox region inside the content — an optional alternative to nesting items straight in it |
-| itemGroup | groups related items under one label |
-| itemGroupLabel | label of an item group |
-| item | one selectable option |
-| itemText | an item's visible label |
-| itemIndicator | selected-item indicator — a checkmark placed by the consumer |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | invalid | [data-invalid] | the select is invalid by the form's rules |
-| root | readonly | [data-readonly] | a value is visible but cannot be changed |
-| label | disabled | [data-disabled] | the select is disabled |
-| label | invalid | [data-invalid] | the select is invalid by the form's rules |
-| label | readonly | [data-readonly] | a value is visible but cannot be changed |
-| label | required | [data-required] | the form will demand a value on submit |
-| control | open | [data-state="open"] | the dropdown is open |
-| control | closed | [data-state="closed"] | the dropdown is closed |
-| control | focus | [data-focus] | focus is on the trigger (mirrored here — the control itself cannot be focused) |
-| control | disabled | [data-disabled] | the select is disabled |
-| control | invalid | [data-invalid] | the select is invalid by the form's rules |
-| valueText | disabled | [data-disabled] | the select is disabled |
-| valueText | invalid | [data-invalid] | the select is invalid by the form's rules |
-| valueText | focus | [data-focus] | focus is on the trigger (mirrored here, same as on the control) |
-| trigger | open | [data-state="open"] | the dropdown is open |
-| trigger | closed | [data-state="closed"] | the dropdown is closed |
-| trigger | disabled | [data-disabled] | the select is disabled — the trigger does not respond |
-| trigger | invalid | [data-invalid] | the select is invalid by the form's rules |
-| trigger | readonly | [data-readonly] | a value is visible but cannot be changed |
-| trigger | placeholder | [data-placeholder-shown] | no value is chosen yet — the placeholder text is showing |
-| trigger | hover | :hover | pointer is over the trigger |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | the trigger is being held down |
-| clearTrigger | invalid | [data-invalid] | the select is invalid by the form's rules |
-| clearTrigger | disabled | :disabled | the select is disabled — clicking it does nothing |
-| clearTrigger | hover | :hover | pointer is over the button |
-| clearTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| clearTrigger | active | :active | the button is being held down |
-| indicator | open | [data-state="open"] | the dropdown is open |
-| indicator | closed | [data-state="closed"] | the dropdown is closed |
-| indicator | disabled | [data-disabled] | the select is disabled |
-| indicator | invalid | [data-invalid] | the select is invalid by the form's rules |
-| indicator | readonly | [data-readonly] | a value is visible but cannot be changed |
-| positioner | — | — | — |
-| content | open | [data-state="open"] | the dropdown is open |
-| content | closed | [data-state="closed"] | the dropdown is closed |
-| list | — | — | — |
-| itemGroup | disabled | [data-disabled] | the select is disabled |
-| itemGroupLabel | — | — | — |
-| item | checked | [data-state="checked"] | the item is selected |
-| item | unchecked | [data-state="unchecked"] | the item is not selected |
-| item | highlighted | [data-highlighted] | the item is highlighted — keyboard or pointer moved to it, not yet chosen |
-| item | disabled | [data-disabled] | the item cannot be selected |
-| itemText | checked | [data-state="checked"] | the item is selected |
-| itemText | unchecked | [data-state="unchecked"] | the item is not selected |
-| itemText | highlighted | [data-highlighted] | the item is highlighted — keyboard or pointer moved to it, not yet chosen |
-| itemText | disabled | [data-disabled] | the item cannot be selected |
-| itemIndicator | checked | [data-state="checked"] | the item is selected |
-| itemIndicator | unchecked | [data-state="unchecked"] | the item is not selected |
+```
+root
+├─ label 🏷️
+├─ control
+│  ├─ trigger
+│  │  └─ valueText
+│  ├─ clearTrigger ✕
+│  └─ indicator
+└─ positioner
+   └─ content 📃
+      ├─ list
+      ├─ itemGroup 📁
+      │  ├─ itemGroupLabel 🏷️
+      │  └─ item[]
+      │     ├─ itemText
+      │     └─ itemIndicator ✓
+      └─ item[] (напрямую, без группы)
+```
 
-## Settings
+| часть              | значение                                                                 | принимает внутри                                  | рисуется                     |
+| ------------------- | -------------------------------------------------------------------------| --------------------------------------------------- | ----------------------------- |
+| 🔽 `root`           | селект целиком — подпись, контрол и плавающий список вместе              | `label`, `control`, `positioner`                    | `Select`                      |
+| 🏷️ `label`          | собственная подпись селекта                                              | текст                                                | `SelectLabel`                 |
+| `control`           | оборачивает триггер и его индикаторы — видимая рамка, в которой сидит триггер | `trigger`, `clearTrigger`, `indicator`         | `SelectControl`               |
+| `trigger`           | кнопка, открывающая и закрывающая список                                 | `valueText`                                          | `SelectTrigger`               |
+| `valueText`         | показывает выбранное значение(я), либо плейсхолдер, если ничего не выбрано | —                                                  | `SelectValueText`             |
+| ✕ `clearTrigger`    | кнопка, сбрасывающая текущий выбор                                       | текст, иконка                                        | `SelectClearTrigger`          |
+| `indicator`         | индикатор открыт/закрыт — стрелку кладёт потребитель                     | текст, иконка                                        | `SelectIndicator`             |
+| `positioner`        | позиционирует плавающий список относительно триггера                     | `content`                                            | `SelectPositioner`            |
+| 📃 `content`        | сам плавающий список — здесь живут пункты, сгруппированные или нет       | `list`, `itemGroup`, `item`                          | `SelectContent`               |
+| `list`              | внутренняя область списка внутри `content` — необязательная альтернатива вложению пунктов прямо в него | `itemGroup`, `item`          | `SelectList`                  |
+| 📁 `itemGroup`      | группирует связанные пункты под одной подписью                           | `itemGroupLabel`, `item`                             | `SelectItemGroup`             |
+| 🏷️ `itemGroupLabel` | подпись группы пунктов                                                   | текст                                                | `SelectItemGroupLabel`        |
+| `item`              | один выбираемый пункт                                                    | `itemText`, `itemIndicator`                          | `SelectItem`                  |
+| `itemText`          | видимая подпись пункта                                                   | текст                                                | `SelectItemText`              |
+| ✓ `itemIndicator`   | указатель выбранного пункта — галочку кладёт потребитель                 | текст, иконка                                        | `SelectItemIndicator`         |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| multiple | whether several items can be selected at once | `false` | — |
+`hiddenSelect` (нативный `<select>` для форм и autofill) рисуется, но у него нет адреса в
+паспорте — рисовать его снаружи схемы, ключа в паспортной карте кита для него нет.
 
-## CSS Variables
+> [!NOTE]
+> `positioner` порталится в `document.body` (`Portal` из `solid-js/web`) — без этого более поздний,
+> ничем с ним не связанный сосед где-то ещё на реальной странице молча перехватывал каждый клик
+> (найдено вживую, `PWEB-` 2026-08-30). Единственный компонент-файл этого набора с комментарием в
+> коде — сам факт нетривиален, сохранён как есть.
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| positioner | `--reference-width` | kit | measured width of the trigger — lets the dropdown match it |
-| positioner | `--reference-height` | kit | measured height of the trigger |
-| positioner | `--available-width` | kit | room left to the nearest viewport edge, widthwise |
-| positioner | `--available-height` | kit | room left to the nearest viewport edge, heightwise — caps a long dropdown |
+<h2 id="состояния">🎛️ Состояния</h2>
 
-## Notes
+|      | часть                             | состояние        | метка                            | значение                                                    |
+| ---- | ----------------------------------- | ------------------ | ----------------------------------- | -------------------------------------------------------------- |
+| ❌   | root                                 | invalid            | `[data-invalid]`                    | селект невалиден по правилам валидации формы                   |
+| 🔒   | root                                 | readonly           | `[data-readonly]`                   | значение видно, выбрать другое нельзя                           |
+| 🚫   | label, valueText                     | disabled           | `[data-disabled]`                   | селект отключён                                                 |
+| ❌   | label, valueText                     | invalid            | `[data-invalid]`                    | селект невалиден по правилам валидации формы                   |
+| 🔒   | label                                 | readonly           | `[data-readonly]`                   | значение видно, выбрать другое нельзя                           |
+| ❗   | label                                 | required           | `[data-required]`                   | выбор обязателен для отправки формы                            |
+| 🔓   | control, trigger, indicator          | open               | `[data-state="open"]`               | список открыт                                                   |
+| 🔐   | control, trigger, indicator          | closed             | `[data-state="closed"]`             | список закрыт                                                   |
+| 🎯   | control, valueText                   | focus               | `[data-focus]`                      | фокус на триггере, зеркалится сюда — сам `control` фокус принять не может |
+| 🚫   | control, trigger, indicator          | disabled           | `[data-disabled]`                   | селект отключён                                                 |
+| ❌   | control, trigger, indicator          | invalid            | `[data-invalid]`                    | селект невалиден по правилам валидации формы                   |
+| 🔒   | trigger, indicator                   | readonly           | `[data-readonly]`                   | значение видно, выбрать другое нельзя                           |
+| ⬜   | trigger                              | placeholder        | `[data-placeholder-shown]`          | значение ещё не выбрано — показан текст плейсхолдера            |
+| 👆   | trigger, clearTrigger                | hover              | `:hover`                            | указатель наведён                                                |
+| ⌨️   | trigger, clearTrigger                | focus-visible      | `:focus-visible`                    | фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум |
+| 👇   | trigger, clearTrigger                | active             | `:active`                           | элемент нажат и удерживается                                    |
+| ❌   | clearTrigger                         | invalid            | `[data-invalid]`                    | селект невалиден по правилам валидации формы                   |
+| 🚫   | clearTrigger                         | disabled           | `:disabled`                         | кнопка отключена — клик ничего не делает                        |
+| 🔓   | content                              | open               | `[data-state="open"]`               | список открыт                                                   |
+| 🔐   | content                              | closed             | `[data-state="closed"]`             | список закрыт                                                   |
+| 🚫   | itemGroup                            | disabled           | `[data-disabled]`                   | селект отключён                                                 |
+| ✅   | item, itemText                       | checked            | `[data-state="checked"]`            | пункт выбран                                                     |
+| ⬜   | item, itemText                       | unchecked          | `[data-state="unchecked"]`          | пункт не выбран                                                  |
+| 🎯   | item, itemText                       | highlighted        | `[data-highlighted]`                | пункт подсвечен — клавиатура или указатель перешли на него, но ещё не выбрали |
+| 🚫   | item, itemText                       | disabled           | `[data-disabled]`                   | пункт нельзя выбрать                                             |
+| ✅   | itemIndicator                        | checked            | `[data-state="checked"]`            | пункт выбран                                                     |
+| ⬜   | itemIndicator                        | unchecked          | `[data-state="unchecked"]`          | пункт не выбран                                                  |
 
-<!-- user:start -->
-Select is a floating dropdown over a data-driven collection of items — the kit's first component
-that is both composite and floating at once. Fifteen parts, the largest anatomy in the kit; it
-shares its item-collection shape with the listbox (its nearest sibling, no floating layer) and its
-floating-layer mechanics with the popover.
+`positioner`, `list`, `itemGroupLabel` состояний не несут вовсе.
 
-### Composition
+> [!NOTE]
+> `disabled` на `clearTrigger` — выбор в пользу нативного атрибута (`:disabled`), не атрибута
+> данных: коннектор кладёт настоящий `disabled` на эту кнопку, `data-disabled` нет. Остальным
+> состояниям селекта, где коннектор кладёт атрибут данных (`control`, `trigger`, `indicator`,
+> `itemGroup`, `item`, `itemText`), объявлен именно он — паспорт следует тому, что реально положено
+> на узел, а не подгоняет форму под соседей.
+
+> [!NOTE]
+> `open`/`closed` на `content` — БЕЗУСЛОВНОЕ `data-state`, в отличие от `accordion`'s содержимого,
+> которое несёт `[hidden]` вместо `data-state` в закрытом состоянии. У селекта коннектор кладёт
+> `data-state="open"|"closed"` на `content` всегда, независимо от того, смонтирован ли узел, — не
+> находка-отклонение, реальное структурное отличие между двумя компонентами, проверено по
+> коннектору `@zag-js/select`.
+
+> [!NOTE]
+> `focus` на `control`/`valueText` — зеркальное состояние. Фокус физически стоит на `trigger`
+> (единственный реально фокусируемый узел в этой ветке), но коннектор дублирует `data-focus` на
+> `control` и `valueText` тоже — тот же приём зеркалирования состояния, что уже применён на других
+> компонентах этого набора, где визуально родственные части должны реагировать на фокус ребёнка
+> вместе.
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка  | значения | по умолчанию | означает                                    |
+| ---------- | -------- | ------------- | -------------------------------------------- |
+| `multiple` | флаг     | `false`       | можно ли выбрать сразу несколько пунктов      |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "label": "string",
+  "placeholder": "string?",
+  "items": [{ "value": "string", "label": "string" }]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```json
+{ "value": ["string"] }
+```
+
+Ключи выбранных пунктов как есть, тем же приёмом, что и у `listbox` — селект не решает, что они
+значат.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+Подпись, триггер с текстом значения и список пунктов — всё из данных.
+
+```
+root · bind: items
+  label 🏷️ · text: {label}
+  control
+    trigger
+      valueText · bind: placeholder
+    indicator
+  positioner
+    content 📃
+      item[] · repeat: /items · bind: item · on: click → select
+        itemText · text: {label}
+        itemIndicator ✓
+```
+
+`repeat: { path: "/items" }` на `item` называет только раскладку — «здесь список, сколько бы
+пунктов данные ни принесли», не количество; `bind: { item: "" }` пустым путём передаёт весь текущий
+элемент повтора целиком (`scopedPath`, тот же приём, что у `listbox`'s `basic`). Клик по пункту
+диспатчит `"select"` с всем пунктом как `payload` (снова пустой путь) — тот же путь, что слушает
+`item-list.tsx` компонента.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт можно одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, `checkSkin` чист, CSS реально генерируется). В
+продакшене не участвует.
+
+`valueText` использует `ancestors` — реагирует на состояние `placeholder` СВОЕГО РОДИТЕЛЯ,
+`trigger`, а не собственное: пока выбор не сделан, текст плейсхолдера красится приглушённым тоном
+через ту же цепочку.
+
+`content` не задаёт `display` в закрытом состоянии — как и у `listbox`, не хочет спорить с
+собственным механизмом скрытия, который коннектор уже решает через `[hidden]`; `itemIndicator`
+следует тому же правилу для своего `unchecked`, используя `pointerEvents: "none"` вместо `display`.
+
+> [!WARNING]
+> `itemIndicator`'s `color` изначально был поставлен заливочным токеном (`--accent-9`) на свойство
+> `color` — `step-purpose-mismatch`, `skinGaps` не пропустил бы, но `checkSkin` поймал раньше: шаги
+> 1–10 не несут гарантии контраста, `color` должен брать чернильный класс (`--accent-11`).
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Корень берёт
+плоские `items` (не готовую коллекцию) и сам строит из них настоящий `ListCollection` внутри,
+мемоизированный — тот же приём, что и у `listbox`'а.
 
 ```tsx
-import {
-  Select,
-  SelectLabel,
-  SelectControl,
-  SelectTrigger,
-  SelectValueText,
-  SelectClearTrigger,
-  SelectIndicator,
-  SelectPositioner,
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-  SelectItemIndicator,
-  SelectHiddenSelect,
-} from "@omnifield/probe-web-ui";
-
-<Select items={[{ value: "apple", label: "Apple" }, { value: "banana", label: "Banana" }]}>
-  <SelectLabel>Fruit</SelectLabel>
+<Select items={[{ value: "us", label: "United States" }]}>
+  <SelectLabel>Страна</SelectLabel>
   <SelectControl>
     <SelectTrigger>
-      <SelectValueText placeholder="Pick a fruit" />
+      <SelectValueText placeholder="Выберите страну" />
     </SelectTrigger>
-    <SelectClearTrigger>×</SelectClearTrigger>
+    <SelectClearTrigger>✕</SelectClearTrigger>
     <SelectIndicator>▾</SelectIndicator>
   </SelectControl>
   <SelectPositioner>
     <SelectContent>
-      <SelectItem item={{ value: "apple", label: "Apple" }}>
-        <SelectItemText>Apple</SelectItemText>
+      <SelectItem item={{ value: "us", label: "United States" }}>
+        <SelectItemText>United States</SelectItemText>
         <SelectItemIndicator>✓</SelectItemIndicator>
       </SelectItem>
     </SelectContent>
   </SelectPositioner>
-  <SelectHiddenSelect />
 </Select>
 ```
 
-`Select` takes plain `items` (`{ value, label }[]`), not a `collection` — it builds the real Ark
-`ListCollection` internally, memoized, the same device the listbox uses. `SelectHiddenSelect`
-renders the real, visually hidden native `<select>` that carries form submission, autofill, and
-`change` — Ark never addresses it (no `data-scope`/`data-part`), so it isn't stylable through the
-passport, same as the checkbox's own hidden input.
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
 
-### `list` — real, but undocumented upstream
+```tsx
+const data = {
+  label: "Страна",
+  placeholder: "Выберите страну",
+  items: [{ value: "us", label: "США" }],
+};
+const tree = instanceOf("select", {}, "basic", data);
 
-`list` is a genuine anatomy part (Ark ships it, `SelectList` exists as an export) but is absent
-from `ark-ui.com`'s own usage example and prose — checked directly against the source, not assumed
-missing because unused. It's an optional inner listbox region: items can nest straight inside
-`content` (as in the example above) or inside `content` → `list` when a consumer wants a separate
-scroll region from the content's own chrome. The kit declares it honestly either way — taking an
-anatomy piecemeal, dropping parts nobody has used yet, is exactly the discipline the accordion and
-checkbox already avoid.
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
 
-### States worth calling out
+**Группы пунктов.**
 
-- **`data-state` is unconditional**, unlike the accordion's `item`: `control`/`trigger`/
-  `indicator`/`content` always carry either `data-state="open"` or `data-state="closed"` — never
-  absent — because the connector writes it that way regardless of animation. That's a real
-  difference from the accordion's `itemContent`, whose `open` mark can vanish entirely.
-- **Focus is mirrored as data.** Real DOM focus lands on `trigger` (a genuine `<button>`, hence its
-  native `:hover`/`:focus-visible`/`:active`), but `control` and `valueText` — siblings that can
-  never receive focus themselves — get `data-focus` mirrored onto them, so a rule can still say
-  "the control while its trigger is focused." Same device as the checkbox's hidden input.
-- **`disabled` picks the data mark over the native one wherever both exist.** `trigger` carries a
-  real `disabled` attribute AND `data-disabled` — the data mark is the one declared, matching the
-  button's own passport. `clearTrigger` gets ONLY the native `disabled` (the connector never writes
-  `data-disabled` on it), so its passport declares `:disabled` honestly instead of inventing a data
-  mark that never appears.
-- Three marks the upstream docs mention but the connector does not actually back up were left out
-  on purpose: `data-highlighted` on `itemIndicator`, `data-placement`/`data-side` (floating-ui
-  outcomes, not an author-chosen value), and `data-activedescendant` (ARIA wiring, not a look).
+```tsx
+<SelectContent>
+  <SelectItemGroup>
+    <SelectItemGroupLabel>Северная Америка</SelectItemGroupLabel>
+    <SelectItem item={{ value: "us", label: "United States" }}>
+      <SelectItemText>United States</SelectItemText>
+      <SelectItemIndicator>✓</SelectItemIndicator>
+    </SelectItem>
+  </SelectItemGroup>
+</SelectContent>
+```
 
-### Reference: assembly example
+**Множественный выбор.** `multiple` — клик добавляет пункт к выбору, не заменяет его; `valueText`
+показывает выбранные значения через запятую.
 
-`playground/assemblies.ts` has one worked `RenderTree` example (`basic`) showing label, trigger
-value, and items all driven by data — no hardcoded item list, unlike this component's very first
-pass (which baked a hand-built collection and a literal `fruits` array into the assembly and was
-corrected out). Most consumers should reach for the plain JSX composition above; the tree format is
-a secondary reference for realistic data shapes.
+```tsx
+<Select items={days} multiple>
+  <SelectLabel>Выберите дни</SelectLabel>
+  <SelectControl>
+    <SelectTrigger>
+      <SelectValueText placeholder="Ничего не выбрано" />
+    </SelectTrigger>
+  </SelectControl>
+  <SelectPositioner>
+    <SelectContent>
+      <For each={days}>
+        {(item) => (
+          <SelectItem item={item}>
+            <SelectItemText>{item.label}</SelectItemText>
+            <SelectItemIndicator>✓</SelectItemIndicator>
+          </SelectItem>
+        )}
+      </For>
+    </SelectContent>
+  </SelectPositioner>
+</Select>
+```
 
-## Assembly & skin notes
+## Доступность
 
-This component cost real debugging time on two separate, unrelated fronts — both are closed now,
-but the pattern behind each is worth knowing before touching this component again.
-
-- **No `selfAssembly`.** Referencing `select` from someone else's assembly (bare `{ node: "select"
-  }`) gives you the root and nothing else — you must author the whole compound tree yourself
-  (`content`/`item`/`itemText`/`itemIndicator`, and `listbox`/`itemGroup` if you need them),
-  mirroring this component's own `playground/assemblies.ts`. There is no shortcut like the
-  button's.
-- **Non-root parts of a `select` reference are addressed with a dot**: `select.content`,
-  `select.item`, `select.itemText` — a bare `content` resolves nowhere (it isn't in the *owning*
-  assembly's own anatomy) and silently renders no children at all, no error. Same rule for
-  referencing any other composite component's non-root parts.
-- **Catching a pick goes through `on.click` + `dispatch`, never `onValueChange` as a root prop.**
-  `onValueChange` is a real Ark callback, but nothing in the assembly/`RenderTree` pipeline ever
-  reads a literal prop named that way and calls it — passing it via `instanceOf`'s `rootProps` is
-  silently inert. The working path: put `on: { click: { event: { name: "...", context: { payload:
-  { path: "" } } } } }` on the `item` node (composes fine with Ark's own click handling, proven
-  live) and listen for that event via `RenderTree`'s `dispatch`, the same path
-  `widgets/component-list/component-list.tsx` already uses for `listbox`.
-- **`content`'s recipe must never set `display` unconditionally in `base`.** Zag marks the closed
-  state with the native `hidden` attribute (`select.connect.mjs`'s `getContentProps`) — a
-  user-agent-stylesheet rule, the lowest priority CSS has. ANY author rule that sets `display` on
-  the same node, regardless of selector specificity, beats it outright. The panel then stays
-  visually on screen even though Zag has genuinely closed it and stopped listening for interaction
-  on it (found live: hover stopped responding, the panel never visually closed, yet the value kept
-  changing on click — Zag's own state was correct the whole time). Fix: scope `display` to
-  `states.open` only, so CLOSED gets no author `display` rule at all and `[hidden]` wins normally.
-- **`control` needs `display: flex; width: 100%`, not `inline-flex`.** An `inline-flex` box
-  shrink-wraps to its content, and a long, `white-space: nowrap` label (`valueText`) then grows the
-  box past whatever container it sits in instead of the box clamping the text. `trigger` and
-  `valueText` also need `min-width: 0` — a flex item's automatic minimum width is its content's
-  full, unbroken size unless something opts out of that default, and it wins over `flex: 1`/
-  `overflow: hidden` otherwise.
-- **A controlled `value` needs binding to real data, not `defaultValue`.** If more than one
-  instance of this component exists at once (e.g. one per repeated row) and you want exactly one
-  of them to reflect an outside fact (which one matches the current route, say), bind `value` to a
-  data field computed from that fact. Left uncontrolled, every instance keeps its own independent
-  Zag state — more than one can show "checked" at once, and none survive a reload.
-<!-- user:end -->
+Селект следует паттерну WAI-ARIA [Listbox](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)
+(как выпадающий комбо-бокс). Стрелки вверх/вниз двигают подсветку и открывают список, если он
+закрыт; `Space`/`Enter` выбирает подсвеченный пункт и закрывает список (кроме `multiple`, где он
+остаётся открыт); `Escape` закрывает без выбора; `typeahead` прыгает к пункту по вводу текста.
+`loopFocus` решает, оборачивается ли навигация с последнего пункта на первый.

@@ -1,72 +1,216 @@
-# Segment Group
+# 🎚️ Segment Group
 
-**Group:** inputs · **Genus:** component · **Footprint:** compact
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole segmented control — the track and every choice in it |
-| label | the set's own label — describes the whole group, not any one choice |
-| item | one segment — a clickable slot; click anywhere on it to select |
-| itemText | this segment's own label text |
-| itemControl | this segment's own visible surface — what the sliding indicator sizes itself against |
-| indicator | the single sliding pill — sits behind whichever segment is currently chosen |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole group is disabled — no item can be chosen |
-| root | invalid | [data-invalid] | the enclosing form rejected the value |
-| root | required | [data-required] | the form will demand a choice on submit |
-| label | disabled | [data-disabled] | the whole group is disabled — no item can be chosen |
-| label | invalid | [data-invalid] | the enclosing form rejected the value |
-| label | required | [data-required] | the form will demand a choice on submit |
-| item | checked | [data-state="checked"] | this is the chosen item |
-| item | unchecked | [data-state="unchecked"] | not the chosen item |
-| item | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| item | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| item | invalid | [data-invalid] | the enclosing form rejected the value |
-| item | hover | [data-hover] | pointer is over this item |
-| item | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| item | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemText | checked | [data-state="checked"] | this is the chosen item |
-| itemText | unchecked | [data-state="unchecked"] | not the chosen item |
-| itemText | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| itemText | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| itemText | invalid | [data-invalid] | the enclosing form rejected the value |
-| itemText | hover | [data-hover] | pointer is over this item |
-| itemText | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| itemText | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemControl | checked | [data-state="checked"] | this is the chosen item |
-| itemControl | unchecked | [data-state="unchecked"] | not the chosen item |
-| itemControl | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| itemControl | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| itemControl | invalid | [data-invalid] | the enclosing form rejected the value |
-| itemControl | hover | [data-hover] | pointer is over this item |
-| itemControl | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| itemControl | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemControl | active | [data-active] | this segment is being pressed |
-| indicator | disabled | [data-disabled] | the whole group is disabled |
+```
+root
+├─ label 🏷️
+├─ indicator ▬
+└─ item[] 🎚️
+   ├─ itemControl ▭
+   └─ itemText
+```
 
-## Settings
+| часть            | значение                                                          | принимает внутри                              | рисуется                       |
+| ------------------ | -------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------- |
+| 🎚️ `root`         | переключатель целиком — оборачивает подпись, скользящую пилюлю и каждый сегмент | `label`, `item`, `indicator`          | `SegmentGroup`           |
+| 🏷️ `label`        | собственная подпись набора — описывает весь набор, не один сегмент  | текст                                                | `SegmentGroupLabel`      |
+| 🎚️ `item`         | один сегмент — кликабельная область целиком, клик в любом месте выбирает его | `itemControl`, `itemText`             | `SegmentGroupItem`       |
+| ▭ `itemControl`   | видимая поверхность сегмента — то, под что подстраивается размер скользящей пилюли | —                                     | `SegmentGroupItemControl` |
+| `itemText`        | видимая подпись сегмента                                             | текст                                                | `SegmentGroupItemText`   |
+| ▬ `indicator`     | единая скользящая пилюля выбранного сегмента — кит сам измеряет и позиционирует её, своего графика не несёт | — | `SegmentGroupIndicator`  |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which way the segments lay out — also drives keyboard navigation (arrow keys) | `vertical` | [data-orientation] |
+> [!NOTE]
+> НЕ отдельная машина — это машина набора радио-кнопок (`@zag-js/radio-group`), переименованная.
+> Собственная `@ark-ui/solid`'s `segment-group.anatomy.ts` буквально делает `import { anatomy }
+> from "@zag-js/radio-group"; anatomy.rename("segment-group")` (проверено в собранном чанке), и на
+> уровень глубже: `use-segment-group.ts` берёт `* as segmentGroup from "@zag-js/radio-group"` и
+> вызывает ЕГО СОБСТВЕННЫЕ `machine`/`connect` напрямую. Отдельного пакета `@zag-js/segment-group`
+> не существует вовсе (проверено — отсутствует в `node_modules`). `.rename(...)` меняет только
+> значение `data-scope`, который кладёт `.build()` (`"radio-group"` → `"segment-group"`), набор
+> частей остаётся ровно тем же — шестью, идентичным `radio-group`'у ([[radio-group]]).
+>
+> Настоящее исключение из общего правила «анатомия всегда напрямую из `@zag-js/<x>/anatomy`»
+> (третье после карусели и поля) — здесь она берётся из ЧУЖОГО пакета и переименовывается, а не
+> из своего собственного.
 
-## CSS Variables
+> [!NOTE]
+> Каждый `item` несёт своё собственное скрытое `<input type="radio">` сам, тем же приёмом, что и
+> `radio-group`'s собственный `item`: постановка user, 2026-09-01 (README «`extras` — проверка по
+> всему киту: кейса не нашлось ни одного») — `hiddenInput` не тянет данные из сборки, только
+> контекст, который уже поднял тот же `item`, поэтому в карту кита не входит и своего адреса в
+> паспорте не несёт. `SegmentGroupItemHiddenInput` при этом остаётся экспортированным отдельно —
+> нужен при ручной композиции с `asChild`, тот же случай, что у `radio-group`.
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| indicator | `--left` | kit | measured horizontal position of the chosen segment |
-| indicator | `--top` | kit | measured vertical position of the chosen segment |
-| indicator | `--width` | kit | measured width of the chosen segment |
-| indicator | `--height` | kit | measured height of the chosen segment |
+<h2 id="состояния">🎛️ Состояния</h2>
 
-## Notes
+|      | состояние      | метка                    | где                              | значение                                          |
+| ---- | --------------- | -------------------------- | ------------------------------------ | ---------------------------------------------------- |
+| 🚫   | disabled        | `[data-disabled]`            | root, label, item, itemText, itemControl, indicator | нельзя выбрать                       |
+| ⚠️   | invalid         | `[data-invalid]`             | root, label, item, itemText, itemControl | невалиден по правилам валидации формы            |
+| ❗   | required        | `[data-required]`            | root, label                          | выбор обязателен для отправки формы                  |
+| ✅   | checked         | `[data-state="checked"]`     | item, itemText, itemControl          | этот сегмент выбран                                   |
+| ⬜   | unchecked       | `[data-state="unchecked"]`   | item, itemText, itemControl          | этот сегмент не выбран                                |
+| 🔒   | readonly        | `[data-readonly]`            | item, itemText, itemControl          | значение видно, выбрать другое нельзя                 |
+| 🖱️   | hover           | `[data-hover]`               | item, itemText, itemControl          | указатель наведён на этот сегмент                     |
+| 👆   | active          | `[data-active]`              | itemControl                          | этот сегмент нажат указателем                         |
+| 🎯   | focus           | `[data-focus]`               | item, itemText, itemControl          | фокус стоит на скрытом вводе этого сегмента           |
+| ⌨️   | focus-visible   | `[data-focus-visible]`       | item, itemText, itemControl          | фокус пришёл с клавиатуры                             |
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+`indicator` несёт только групповой `disabled`, своего `data-state` у него нет — один общий узел на
+весь набор, не про один сегмент.
+
+> [!NOTE]
+> Каждая метка ниже — собственная marка `radio-group`'а ([[radio-group]]), не переоткрыта отдельно:
+> `../entity/anatomy.ts` устанавливает, что переключатель ЕСТЬ машина набора радио-кнопок,
+> переименованная — второго `.connect.mjs`, от которого она могла бы разойтись, не существует.
+> `root`/`label` несут ГРУППОВЫЕ факты, `item`/`itemText`/`itemControl` — факты каждого сегмента
+> отдельно. `focus`/`focus-visible` — атрибуты, не псевдоклассы: настоящий DOM-фокус лежит на
+> скрытом `<input>` каждого сегмента, Zag зеркалит результат данными. `active` — только на
+> `itemControl`.
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения                | по умолчанию | означает                                                          |
+| ------------- | ------------------------ | -------------- | ------------------------------------------------------------------ |
+| `orientation` | `vertical`/`horizontal`  | `vertical`     | как расположены сегменты — от этого зависит навигация с клавиатуры |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "label": "string",
+  "items": [{ "value": "string", "label": "string" }]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Набор ничего не диспатчит через сборку — выбор ведёт скрытый `<input>` каждого сегмента сам, это
+не событие наружу схемы (тот же приём, что и у `radio-group`).
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  label 🏷️ · text: {label}
+  indicator ▬
+  item[] 🎚️        · repeat: /items · bind: value
+    itemControl ▭
+    itemText          · text: {label}
+```
+
+> [!NOTE]
+> `indicator` стоит ПЕРЕД `item`ами в дереве — не порядок ради порядка. Более поздние соседи в DOM
+> перекрывают более ранних; сегменты должны сидеть визуально ПОВЕРХ скользящей пилюли по одному
+> лишь порядку в разметке, без `z-index`. Тот же порядок несёт собственный пример использования
+> Ark (`ark-ui.com/docs/components/segment-group`).
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+Та же машина, что у `radio-group` ([[radio-group]]), но НАМЕРЕННО другой внешний вид: трек со
+скользящей пилюлью (визуальная семья `toggle-group`'а), а не ряд отдельных кружков. `indicator`
+заполняет измеренный бокс ВЫБРАННОГО сегмента целиком (`--left`/`--top`/`--width`/`--height`) — в
+отличие от маленькой центрированной точки `radio-group`'а, здесь пилюля и есть весь фон сегмента,
+тот же приём «индикатор как поверхность выбора», что уже использует вариант `pills` у `tabs`.
+
+`orientation: "vertical"` меняет `root`'s `flexDirection`/`alignItems` — раскладка самого сегмента
+от оси не зависит.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` класть не нужно — каждый `SegmentGroupItem` несёт его сам.
+
+```tsx
+<SegmentGroup defaultValue="list">
+  <SegmentGroupLabel>Вид</SegmentGroupLabel>
+  <SegmentGroupIndicator />
+  <SegmentGroupItem value="list">
+    <SegmentGroupItemControl />
+    <SegmentGroupItemText>Список</SegmentGroupItemText>
+  </SegmentGroupItem>
+  <SegmentGroupItem value="grid">
+    <SegmentGroupItemControl />
+    <SegmentGroupItemText>Плитка</SegmentGroupItemText>
+  </SegmentGroupItem>
+</SegmentGroup>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам `SegmentGroupItem` — сборке о нём знать не нужно.
+
+```tsx
+const data = {
+  label: "Вид",
+  items: [
+    { value: "list", label: "Список" },
+    { value: "grid", label: "Плитка" },
+    { value: "board", label: "Доска" },
+  ],
+};
+const tree = instanceOf("segment-group", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Ручная композиция с `asChild`.** `SegmentGroupItem` по умолчанию рисует `<label>` сам; при
+`asChild` разметку даёт потребитель, но скрытый ввод приходится класть руками —
+`SegmentGroupItemHiddenInput` ради этого и остаётся публичным.
+
+```tsx
+import { SegmentGroupItemHiddenInput } from "@omnifield/probe-web-ui";
+
+<SegmentGroupItem value="grid" asChild>
+  <label>
+    <SegmentGroupItemHiddenInput />
+    <SegmentGroupItemText>
+      <SegmentGroupItemControl />
+      Плитка
+    </SegmentGroupItemText>
+  </label>
+</SegmentGroupItem>
+```
+
+**Настоящее участие в форме.** `name` делает набор настоящим полем формы — `FormData` подхватывает
+выбранное значение как родной `<input type="radio">`.
+
+```tsx
+<form onSubmit={handleSubmit}>
+  <SegmentGroup name="view" defaultValue="list">
+    <SegmentGroupLabel>Вид</SegmentGroupLabel>
+    <SegmentGroupIndicator />
+    <SegmentGroupItem value="list">
+      <SegmentGroupItemControl />
+      <SegmentGroupItemText>Список</SegmentGroupItemText>
+    </SegmentGroupItem>
+  </SegmentGroup>
+  <button type="submit">Отправить</button>
+</form>
+```
+
+## Доступность
+
+Переключатель следует паттерну WAI-ARIA [Radio Group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)
+— та же машина, тот же паттерн. Стрелки вдоль оси `orientation` двигают выбор между сегментами,
+`Tab` заходит в набор и выходит из него одним прыжком (roving tabindex — фокус стоит только на
+выбранном сегменте).

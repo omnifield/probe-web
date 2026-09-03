@@ -1,12 +1,9 @@
-// EDITOR-ONLY setting prose for the segment group — read by `./index.ts`'s `defineEditorInfo`
-// call. Same shape, name, mark, and default as the radio group's own (same machine, `PWEB-134`).
-
 export const settings = {
   orientation: {
-    means: "which way the segments lay out — also drives keyboard navigation (arrow keys)",
+    means: "как расположены сегменты: в столбец или в строку — от этого зависит навигация с клавиатуры",
     options: {
-      horizontal: { means: "segments in a row" },
-      vertical: { means: "segments in a column — the default" },
+      vertical: { means: "в столбец — по умолчанию" },
+      horizontal: { means: "в строку" },
     },
   },
 };

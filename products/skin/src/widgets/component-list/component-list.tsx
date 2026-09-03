@@ -57,7 +57,7 @@ export function ComponentList(props: { variant?: string }) {
   };
 
   return (
-    <Surface>
+    <Surface data-variant="filled">
       <RenderTree
         tree={tree()}
         registry={REGISTRY}

@@ -16,7 +16,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@faker-js/faker": "^10.6.0",
     "@omnifield/probe-web-assembly": "workspace:*",
     "@omnifield/probe-web-io": "workspace:*",
     "@omnifield/probe-web-query": "workspace:*",
@@ -28,7 +27,8 @@
     "@omnifield/probe-web-ui": "workspace:*",
     "@probe-web/diagrams": "workspace:*",
     "@tanstack/solid-router": "^1.170.30",
-    "solid-js": "^1.9.14"
+    "solid-js": "^1.9.14",
+    "zocker": "^3.0.0"
   },
   "devDependencies": {
     "@omnifield/probe-web-build": "workspace:*",
