@@ -3,16 +3,17 @@
 // подключаем ровно затем, чтобы было чем управлять (`createSkinConnection`,
 // `@omnifield/probe-web-runtime`, PWEB-213).
 //
-// ИСТОЧНИК ПОКА ЛОКАЛЬНЫЙ (`SOURCE`, один `SKIN` с `recipes: {}`) — служба пресетов уже держит
-// настоящий наряд (`omnifield`), но подключение к ней — отдельный шаг, следующий за этим (сперва
-// сам переключатель на компонентах кита, запрос — потом). `SOURCE.names()` уже читается через
-// `createResource`, не литералом, — `Select` не придётся переделывать, когда имён станет больше
-// одного.
-import { withPassports, type Skin } from "@omnifield/probe-web-skin";
+// ИСТОЧНИК — НАСТОЯЩАЯ СЛУЖБА РАЗДАЧИ (`createPresetsSkinSource`, `@omnifield/probe-web-skin/
+// presets`, PWEB-215): продукт отдаёт адрес и паспорта СВОЕГО кита, HTTP/разбор/сборку/
+// порождение CSS фабрика берёт на себя целиком. `SOURCE.names()` уже читается через
+// `createResource` — список не литерал, `Select` не придётся переделывать, когда нарядов в
+// службе станет больше одного.
 import {
-  createSkinConnection,
-  type SkinSource,
-} from "@omnifield/probe-web-runtime";
+  createPresetsSkinSource,
+  PresetsDown,
+  PresetsRefused,
+} from "@omnifield/probe-web-skin/presets";
+import { createSkinConnection } from "@omnifield/probe-web-runtime";
 import { passportOf } from "@omnifield/probe-web-ui/passport";
 import {
   Select,
@@ -31,23 +32,23 @@ import {
   Toggle,
   ToggleIndicator,
 } from "@omnifield/probe-web-ui";
-import { createMemo, createResource, For, onMount } from "solid-js";
+import { createMemo, createResource, For, onMount, Show } from "solid-js";
 
-const { generateSkinCss } = withPassports(passportOf);
+/** Адрес службы раздачи — задаётся снаружи, умолчание — служба на этой машине. */
+const PRESETS_URL =
+  (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
 
-/** Единственный локальный скин продукта. Наполняется по одному компоненту вслед за китом. */
-const SKIN: Skin = {
-  name: "skin",
-  recipes: {},
-};
+/** Наряд, который надеваем на первом заходе, если запомненного нет — единственный сегодня в службе. */
+const DEFAULT_SKIN = "omnifield";
 
-const SOURCE: SkinSource = {
-  names: () => [SKIN.name],
-  css: (name) => {
-    if (name !== SKIN.name) throw new Error(`[skin] скина «${name}» здесь нет — надевать нечего`);
-    return generateSkinCss(SKIN);
-  },
-};
+const SOURCE = createPresetsSkinSource({ url: PRESETS_URL, lookup: passportOf });
+
+/** Причина отказа — короткой строкой человеку, не в отладчик. */
+function reasonOf(cause: unknown): string {
+  if (cause instanceof PresetsDown) return `${cause.message} · служба раздачи не отвечает`;
+  if (cause instanceof PresetsRefused) return cause.message;
+  return cause instanceof Error ? cause.message : String(cause);
+}
 
 interface SkinItem {
   readonly value: string;
@@ -55,23 +56,34 @@ interface SkinItem {
 }
 
 export function ThemeSwitch() {
-  const skin = createSkinConnection(SOURCE, { fallback: { skin: SKIN.name, mode: "light" } });
-
-  onMount(() => void skin.restore());
+  const skin = createSkinConnection(SOURCE, { fallback: { skin: DEFAULT_SKIN, mode: "light" } });
 
   const [names] = createResource(() => SOURCE.names());
   const items = createMemo((): SkinItem[] => (names() ?? []).map((name) => ({ value: name, label: name })));
 
+  onMount(() => {
+    skin.restore().catch((cause: unknown) => console.debug("скин не надет", cause));
+  });
+
   const dark = createMemo(() => skin.worn()?.mode === "dark");
+
+  const trouble = (): string | null => {
+    if (names.error !== undefined) return reasonOf(names.error);
+    return names() !== undefined && names()!.length === 0 ? "Нарядов в службе нет" : null;
+  };
 
   return (
     <div style={{ display: "flex", "align-items": "center", gap: "var(--space-3)" }}>
+      <Show when={trouble()}>{(said) => <span>{said()}</span>}</Show>
+
       <Select
         items={items()}
         value={skin.worn() ? [skin.worn()!.name] : []}
         onValueChange={(details) => {
           const name = details.value[0];
-          if (name !== undefined) void skin.wear(name);
+          if (name !== undefined) {
+            void skin.wear(name).catch((cause: unknown) => console.debug("скин не надет", cause));
+          }
         }}
       >
         <SelectLabel>Скин</SelectLabel>

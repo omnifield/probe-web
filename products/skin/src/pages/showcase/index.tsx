@@ -1,14 +1,21 @@
-// Витрина компонента — показывает один выбранный компонент (сборка из параметра маршрута) через
-// `ComponentPreview`.
-//
-// БЕЗ ВАРИАНТОВ ПОКА: прежняя версия оборачивала показ в аккордеон по именам вариаций НАДЕТОГО
-// наряда (`entities/outfit`'s `variantsOf`) — без наряда (сущность снята) вариант всегда один,
-// оборачивать не во что. Вернётся вместе с пересборкой `entities/outfit`.
-import { ComponentPreview } from "#/widgets/component-preview/component-preview.jsx";
+import { useLocation } from "@omnifield/probe-web-router";
+import { createEffect } from "solid-js";
 
-export function ComponentShowcasePage(props: {
-  component: string;
-  assembly?: string;
-}) {
-  return <ComponentPreview component={props.component} assembly={props.assembly} />;
+import { editorInfoOf, passportOf } from "#/entities/component/model/providers.js";
+import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
+
+export function ShowcasePage(props: { component: string; assembly?: string }) {
+  const location = useLocation();
+
+  createEffect(() => {
+    console.log({
+      location: location(),
+      component: props.component,
+      assembly: props.assembly,
+      passport: passportOf(props.component),
+      editorInfo: editorInfoOf(props.component),
+    });
+  });
+
+  return <Renderer component={props.component} assembly={props.assembly} />;
 }

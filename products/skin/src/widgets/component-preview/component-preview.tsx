@@ -1,13 +1,10 @@
-// ПРЕВЬЮ КОМПОНЕНТА — отдельный виджет: рисует один экземпляр компонента (сборка + вариант)
-// через настоящую механику (`instanceOf`/`RenderTree`), не как попало внутри страницы.
-//
-// БЕЗ НАПОЛНЕНИЯ ДАННЫМИ ПОКА: `entities/preview` (общий стор «чем наполнен показ») снят вместе
-// со старой заготовкой-панелью — новая, на `zocker`, ещё не построена. Показ без данных —
-// законное рабочее состояние (`RenderTree`'s `data` необязателен), не заглушка.
-import { RenderTree } from "@omnifield/probe-web-assembly";
+// ПРЕВЬЮ КОМПОНЕНТА — composeит слот витрины (`entities/showcase/ui/slot`) и рендерер
+// (`entities/component/ui/renderer`): слот — место показа, рендерер — чем в нём рисуют. Ни один
+// из двух друг про друга не знает, знает только этот виджет.
+import type { DispatchedEvent } from "@omnifield/probe-web-assembly";
 
-import { instanceOf } from "#/entities/component/model/instance.js";
-import { REGISTRY } from "#/entities/component/model/registry.js";
+import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
+import { Slot } from "#/entities/showcase/ui/slot/slot.jsx";
 
 export function ComponentPreview(props: {
   component: string;
@@ -15,13 +12,20 @@ export function ComponentPreview(props: {
   assembly?: string;
   /** Вариант скина (`data-variant`) — не задан, показывается без него. */
   variant?: string;
+  /** Данные для узлов-биндингов и повтора. Не заданы — показ без данных, законное состояние. */
+  data?: unknown;
+  /** Куда уходят события показанного компонента (клик и подобное). Не задан — некому сказать. */
+  dispatch?: (event: DispatchedEvent) => void;
 }) {
-  const tree = () =>
-    instanceOf(
-      props.component,
-      props.variant === undefined ? {} : { "data-variant": props.variant },
-      props.assembly,
-    );
-
-  return <RenderTree tree={tree()} registry={REGISTRY} />;
+  return (
+    <Slot>
+      <Renderer
+        component={props.component}
+        assembly={props.assembly}
+        variant={props.variant}
+        data={props.data}
+        dispatch={props.dispatch}
+      />
+    </Slot>
+  );
 }

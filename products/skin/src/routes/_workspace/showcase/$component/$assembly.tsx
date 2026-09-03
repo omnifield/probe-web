@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router";
 
-import { ComponentShowcasePage } from "../../../../pages/showcase/index.jsx";
+import { ShowcasePage } from "../../../../pages/showcase/index.jsx";
 
 export const Route = createFileRoute("/_workspace/showcase/$component/$assembly")({
   component: () => {
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_workspace/showcase/$component/$assembly"
     // дальше `params()` — простой аксессор.
     const params = Route.useParams();
     return (
-      <ComponentShowcasePage
+      <ShowcasePage
         component={params().component}
         assembly={params().assembly}
       />
