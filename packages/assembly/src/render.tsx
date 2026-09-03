@@ -179,6 +179,18 @@ export interface RenderTreeProps {
    * в дереве детей как раньше, ни одного лишнего узла, ни одной регрессии.
    */
   slots?: Readonly<Record<string, SlotEntry>>;
+  /**
+   * Динамическое состояние показа для КОРНЯ дерева — то же самое соображение, что уже привело
+   * `data`/`dispatch` сюда, а не в узел: то, что решает потребитель кликом/адресом (какой элемент
+   * сейчас активен, что сейчас открыто), это состояние ПОКАЗА, а не часть объявления структуры.
+   *
+   * Не задано — корень рисуется как раньше, ничего не примешано. Задано — доезжает до живых
+   * пропов корневого компонента геттером, дерево (`tree`) при этом не читается и не трогается:
+   * смена значения не проходит ни через `instanceOf`, ни через `updateNode`, только через
+   * обычную реактивность пропа. Только корень — рекурсивным детям не передаётся, это не режим
+   * вроде `data`, а адресовано ровно одному, конкретному компоненту.
+   */
+  rootProps?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -243,6 +255,9 @@ interface RenderNodeProps {
   data?: unknown;
   dispatch?: (event: DispatchedEvent) => void;
   slots?: Readonly<Record<string, SlotEntry>>;
+  /** Только у корневого вызова (`RenderTree`) — см. `RenderTreeProps.rootProps`. Рекурсивные
+   *  вызовы для детей (`contentOf` ниже) его не передают дальше намеренно. */
+  rootProps?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -488,7 +503,7 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     const current = node();
     if (!current || isContent(current)) return {};
 
-    return { ...current.props, ...resolvedBind(current.bind), ...dispatchHandlers() };
+    return { ...current.props, ...resolvedBind(current.bind), ...dispatchHandlers(), ...props.rootProps };
   };
 
   /**
@@ -776,6 +791,7 @@ export const RenderTree: Component<RenderTreeProps> = (props) => {
       data={props.data}
       dispatch={props.dispatch}
       slots={props.slots}
+      rootProps={props.rootProps}
     />
   );
 

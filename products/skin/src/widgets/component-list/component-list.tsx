@@ -1,4 +1,4 @@
-import { Surface, ScrollArea } from "@omnifield/probe-web-ui";
+import { Surface } from "@omnifield/probe-web-ui";
 import {
   RenderTree,
   type DispatchedEvent,
@@ -27,6 +27,9 @@ export function ComponentList(props: { variant?: string }) {
       : undefined;
   });
 
+  // Структура — только от каталога кита (`data()`). `activeValue` сюда не идёт: он не влияет на
+  // то, ЧТО собрано, только на то, что сейчас подсвечено — иначе каждый клик пересобирал бы
+  // дерево целиком (см. `rootProps` у `RenderTree` ниже).
   const tree = createMemo(() =>
     instanceOf(
       "tree-view",
@@ -35,7 +38,6 @@ export function ComponentList(props: { variant?: string }) {
         items: data().items,
         selectionMode: "single",
         defaultExpandedValue: data().items.map((item) => item.id),
-        activeValue: activeValue(),
       },
       "base",
       data(),
@@ -61,6 +63,7 @@ export function ComponentList(props: { variant?: string }) {
         registry={REGISTRY}
         data={data()}
         dispatch={onDispatch}
+        rootProps={{ activeValue: activeValue() }}
       />
     </Surface>
   );
