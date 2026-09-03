@@ -77,8 +77,10 @@ export function TreeRoot(props: TreeRootProps) {
     }),
   );
 
+  const activeValue = createMemo(() => local.activeValue);
+
   return (
-    <TreeActiveContext.Provider value={() => local.activeValue}>
+    <TreeActiveContext.Provider value={activeValue}>
       <ArkRoot {...dropAddress(rest)} collection={collection()}>
         <ArkTree>{local.children}</ArkTree>
       </ArkRoot>

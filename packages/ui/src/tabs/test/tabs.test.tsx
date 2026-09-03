@@ -80,7 +80,10 @@ describe('tabs "basic" — triggers and panels from data, one panel visible at a
 
     const [, billing] = [...host.querySelectorAll('[data-scope="tabs"][data-part="trigger"]')] as HTMLButtonElement[];
     billing.click();
-    await Promise.resolve();
+    // Один микротаск хватает на выбор триггера, но не на видимость панели — синхронизация
+    // индикатора идёт через макротаск (jsdom не несёт `requestAnimationFrame`, Zag падает на
+    // `setTimeout`-фолбэк), проверено вживую отдельным диагностическим прогоном.
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(billing.getAttribute("data-selected")).not.toBeNull();
 

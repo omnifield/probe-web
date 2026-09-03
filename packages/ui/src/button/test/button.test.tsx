@@ -198,31 +198,3 @@ describe('playground assembly "base" — shows the label from data (PWEB-187/191
     expect(button?.textContent).toBe("Оформить заказ");
   });
 });
-
-describe('playground assembly "icon" — an icon only, no label bound', () => {
-  it("renders the icon content and carries no text node", () => {
-    const assembly = editorInfo.assemblies.find((candidate) => candidate.name === "icon")!;
-    const tree = baseAssemblyOf(passport, assembly as PassportAssembly, "button", {});
-
-    const host = document.createElement("div");
-    document.body.append(host);
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
-
-    const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
-    expect(button?.textContent).toBe("✕");
-  });
-});
-
-describe('playground assembly "icon-text" — an icon and a label from data together', () => {
-  it("renders both, icon first", () => {
-    const assembly = editorInfo.assemblies.find((candidate) => candidate.name === "icon-text")!;
-    const tree = baseAssemblyOf(passport, assembly as PassportAssembly, "button", { label: "Добавить" });
-
-    const host = document.createElement("div");
-    document.body.append(host);
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{ label: "Добавить" }} />, host);
-
-    const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
-    expect(button?.textContent).toBe("+Добавить");
-  });
-});

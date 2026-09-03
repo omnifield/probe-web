@@ -1,16 +1,17 @@
-// Корневой маршрут витрины (`PWEB-173`, итерация 1).
-//
-// СВОЕЙ РАСКЛАДКИ ЗДЕСЬ НЕТ И НЕ БУДЕТ — она в `pages/index.tsx`, прямым JSX поверх
-// `Workspace` (`PWEB-161`). Корень маршрута — чистый `Outlet`, ни навигации, ни хрома: тот же
-// довод, что и раньше у `app.tsx` («второго слоя вида рядом с китом не заводим»), распространённый
-// на роутер — он не первый автор разметки, он точка входа.
-import { createRootRoute, Outlet } from "@omnifield/probe-web-router";
+// Корневой маршрут витрины — раскладка (`WorkspaceLayout`, `pages/index.tsx`) стоит здесь же,
+// без обёрточного pathless-слоя: `pages/` не несёт слова «workspace» ни в одном имени
+// (`index.tsx`/`lab/index.tsx`/`showcase/index.tsx`), `routes/` теперь зеркалит это один в один —
+// `__root.tsx` и есть тот самый верх, как `pages/index.tsx`. `WorkspaceLayout` сам несёт свой
+// `<Outlet/>` внутри (`WorkspaceMain`) — здесь его НЕ оборачивают, детей у него нет.
+import { createRootRoute } from "@omnifield/probe-web-router";
 import { TanStackRouterDevtools } from "@omnifield/probe-web-router/devtools";
+
+import { WorkspaceLayout } from "../pages/index.jsx";
 
 export const Route = createRootRoute({
   component: () => (
     <>
-      <Outlet />
+      <WorkspaceLayout />
       {import.meta.env.DEV && <TanStackRouterDevtools />}
     </>
   ),

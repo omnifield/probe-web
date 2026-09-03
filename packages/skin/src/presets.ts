@@ -5,4 +5,13 @@
 // точки входа делит не тема, а то, что из-за них едет в бандл потребителя. Тому, кому нужна
 // только модель или только печать CSS, сетевой провод не должен доставаться бесплатно.
 
-export { createPresetsSkinSource, PresetsDown, PresetsRefused, type PresetsSkinSourceOptions } from "./presets/source.js";
+export { createPresetsSkinSource, type PresetsSkinSourceOptions } from "./presets/source.js";
+export {
+  createPresetsClient,
+  PRESET_KIND,
+  type PresetKind,
+  type PresetRecord,
+  type PresetsClient,
+  type PresetsClientOptions,
+} from "./presets/client.js";
+export { PresetsDown, PresetsRefused } from "./presets/wire.js";

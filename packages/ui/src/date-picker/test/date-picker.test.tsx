@@ -65,7 +65,10 @@ describe('date picker "basic" — one week of days from the assembly, label from
     expect(cells.map((cell) => cell.textContent)).toEqual(["24", "25", "26", "27", "28", "29", "30"]);
   });
 
-  it("marks the 25th selected and the 27th today, per the assembly's own defaultValue", () => {
+  it("marks the 25th selected, per the assembly's own defaultValue", () => {
+    // `data-today` не проверяется здесь — вычисляется Zag от РЕАЛЬНОГО системного времени, а
+    // неделя сборки (24–30 августа 2026) зафиксирована; совпадение было верно только пока часы
+    // стояли внутри неё, и неизбежно разъедется снова — не то, что стоит запирать тестом.
     const data = { label: "Дата" };
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
     const tree = baseAssemblyOf(datePickerPassport, assembly as PassportAssembly, "date-picker", data);
@@ -78,8 +81,5 @@ describe('date picker "basic" — one week of days from the assembly, label from
     const cells = [...host.querySelectorAll('[data-scope="date-picker"][data-part="table-cell-trigger"]')];
     const selected = cells.find((cell) => cell.getAttribute("data-selected") !== null);
     expect(selected?.textContent).toBe("25");
-
-    const today = cells.find((cell) => cell.getAttribute("data-today") !== null);
-    expect(today?.textContent).toBe("27");
   });
 });

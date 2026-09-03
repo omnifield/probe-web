@@ -4,9 +4,8 @@ import type { SkinSource } from "@omnifield/probe-web-runtime";
 
 import type { PassportLookup } from "../address/index.js";
 import { withPassports } from "../generate/index.js";
-import { listOutfitNames, PresetsRefused, readOutfit, readParts } from "./wire.js";
-
-export { PresetsDown, PresetsRefused } from "./wire.js";
+import { createPresetsClient, PRESET_KIND } from "./client.js";
+import { PresetsRefused } from "./wire.js";
 
 /** Чем заводится источник. Ровно два своих: адрес службы и паспорта СВОЕГО кита. */
 export interface PresetsSkinSourceOptions {
@@ -23,7 +22,8 @@ export interface PresetsSkinSourceOptions {
  * который просто скармливается в `createSkinConnection`/`makeSkinSwitch` как есть.
  *
  * Один и тот же контракт службы (не продуктовое знание) кормит любое число приложений — у каждого
- * СВОЙ вызов со своим `url` и своим `lookup`, общего состояния между ними нет.
+ * СВОЙ вызов со своим `url` и своим `lookup`, общего состояния между ними нет. Читает через
+ * {@link createPresetsClient} — тот же клиент, которым читают и пишут все четыре вида записей.
  *
  * @throws {PresetsDown} службы нет по названному адресу
  * @throws {PresetsRefused} служба ответила и отказала, либо у наряда изъяны (`OutfitRefused` из
@@ -31,17 +31,28 @@ export interface PresetsSkinSourceOptions {
  */
 export function createPresetsSkinSource(options: PresetsSkinSourceOptions): SkinSource {
   const { url, lookup } = options;
+  const client = createPresetsClient({ url });
   const { assemble, generateSkinCss } = withPassports(lookup);
 
   return {
-    names: () => listOutfitNames(url),
+    names: async () => (await client.list(PRESET_KIND.outfit)).map((record) => record.name),
     css: async (name) => {
-      const outfit = await readOutfit(url, name);
+      const outfit = await client.get(PRESET_KIND.outfit, name);
       if (outfit === undefined) {
         throw new PresetsRefused(`наряда «${name}» в службе раздачи нет — надевать нечего`);
       }
 
-      return generateSkinCss(assemble(outfit, await readParts(url)).skin);
+      const [palettes, forms] = await Promise.all([
+        client.list(PRESET_KIND.palette),
+        client.list(PRESET_KIND.form),
+      ]);
+
+      return generateSkinCss(
+        assemble(outfit.state, {
+          palettes: palettes.map((record) => record.state),
+          forms: forms.map((record) => record.state),
+        }).skin,
+      );
     },
   };
 }

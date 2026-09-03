@@ -101,6 +101,9 @@ export const recipe: SlotRecipe = {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           },
         },
+        // Структурные, не визуальные — content не несёт своего вида (см. заметку выше).
+        disabled: { props: { pointerEvents: "none" } },
+        focus: { props: { outline: "none" } },
       },
     },
   },
