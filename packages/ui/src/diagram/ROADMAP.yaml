@@ -82,14 +82,18 @@ categories:
 
       - id: axis
         type: feature
+        status: Done
         priority: Critical
         milestone: basis
         size: S
         name: Ось
         description: |
           Означает: линия + тики + подписи вдоль шкалы, x (снизу) или y (слева) — та же форма,
-          что уже была в референсе products/diagrams (взять оттуда, не изобретать заново).
+          что была в референсе products/diagrams, портирована почти без изменений.
           Реализация: d3-scale считает тики/позиции, рисуем сами.
+          Примечание: своей анатомии под ориентацию не заводит — x/y реальные per-node состояния
+          на ОДНОЙ части axis (data-orientation), не settings и не две разные части: один root
+          рутинно несёт обе оси разом, каждая со своим направлением.
 
       - id: grid-lines
         type: feature

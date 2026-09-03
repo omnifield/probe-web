@@ -525,6 +525,23 @@ func (as *ActionService) matchesTrigger(action *models.Action, event *models.Act
 
 	switch event.EventType {
 	case models.ActionTriggerStatusTransition:
+		// Unlike item_created/item_updated, the status_transition payload
+		// (see EventCoordinator.EmitStatusChanged) never carries item_type_id
+		// — it only knows about the status change — so the filter can't be
+		// read off event.NewValues like the other trigger types do. Look the
+		// item's current type up directly; this previously wasn't checked at
+		// all, so a status_transition action scoped to one item type fired
+		// for every type sharing that status ID.
+		if config.ItemTypeID != nil {
+			raw, err := as.itemRepo.GetAllowedColumnValue(event.ItemID, "item_type_id")
+			if err != nil {
+				return false
+			}
+			itemTypeID := utils.InterfaceToIntPtr(raw)
+			if itemTypeID == nil || *itemTypeID != *config.ItemTypeID {
+				return false
+			}
+		}
 		if config.FromStatusID != nil {
 			oldStatusID := utils.InterfaceToIntPtr(event.OldValues["status_id"])
 			if oldStatusID == nil || *oldStatusID != *config.FromStatusID {

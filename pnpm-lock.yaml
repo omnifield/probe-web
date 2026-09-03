@@ -614,6 +614,9 @@ importers:
       '@zag-js/tree-view':
         specifier: ^1.43.1
         version: 1.43.1
+      d3-scale:
+        specifier: ^4.0.2
+        version: 4.0.2
     devDependencies:
       '@ark-ui/solid':
         specifier: ^5.38.2
@@ -630,6 +633,9 @@ importers:
       '@probe-web/generators':
         specifier: workspace:*
         version: link:../../products/generators
+      '@types/d3-scale':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3

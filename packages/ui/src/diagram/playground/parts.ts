@@ -8,6 +8,25 @@ export const parts: Readonly<Record<DiagramPart, PassportPartEditorInfo<DiagramP
   root: {
     means: "TODO",
     states: {},
+    accepts: [
+      { kind: "component", name: "axis" },
+      { kind: "component", name: "grid" },
+    ],
+  },
+  axis: {
+    means: "TODO",
+    states: {
+      x: { means: "TODO" },
+      y: { means: "TODO" },
+    },
+    accepts: [],
+  },
+  grid: {
+    means: "TODO",
+    states: {
+      x: { means: "TODO" },
+      y: { means: "TODO" },
+    },
     accepts: [],
   },
 };
