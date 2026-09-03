@@ -1,4 +1,4 @@
-// ХРАНИЛИЩЕ ВИДА — разговор со службой (`PWEB-13`, `PWEB-78`).
+// ХРАНИЛИЩЕ ВИДА — разговор со службой (`PWEB-13`, `PWEB-78`), ЧТЕНИЕ.
 //
 // ## Три записи вида, а не одна
 //
@@ -9,11 +9,15 @@
 // Ярлыки наши: понимание формата принадлежит владельцу вида, то есть нам. Служба хранит
 // непрозрачные куски и одинаково безразлична ко всем им.
 //
-// ## Сборка — четвёртый ярлык, но не часть вида
+// ## Только чтение — писать сюда сегодня некому
 //
-// `KINDS.assembly` хранит `ComponentAssembly` (`@omnifield/probe-web-skin/model`) — сборку
-// компонента, отложенную человеком в редакторе скина, а не палитру/форму/наряд. Служба всё равно
-// одна и та же: ярлык у неё непрозрачен, четвёртый добавляется тем же приёмом, что и первые три.
+// Воркспейс сегодня показывает вид (`SkinSwitcher` надевает, `ComponentPreview` рисует), но не
+// редактирует его — прежний редактор скина (`SettingsPanel`/черновик) снят вместе со старым
+// рантаймом витрины (`PWEB-173`, 2026-08-29). Пишущая половина (`save`/`replace`/`remove`,
+// сохранённые сборки) и четвёртый ярлык (`assembly`) были её частью и без неё не читаются
+// ниоткуда — убраны вместе с ней; появится редактор — вернутся тем же приёмом, каким `packages/
+// skin` уже сохраняет и читает `assembly`-записи через MCP (`.mcp/src/store.js`), эта служба
+// прекрасно переживает второго писателя.
 //
 // ## Скинов в коде зоны нет
 //
@@ -26,7 +30,7 @@
 // поэтому и называются разно: пустая служба ждёт первого наряда, отсутствие службы — её подъёма.
 // Слепи их в одно «ничего нет» — человек пойдёт чинить не то.
 
-import type { ComponentAssembly, Form, Outfit, Palette } from "@omnifield/probe-web-skin/model";
+import type { Form, Outfit, Palette } from "@omnifield/probe-web-skin/model";
 
 /**
  * Адрес службы.
@@ -43,7 +47,6 @@ export const KINDS = {
   palette: "palette",
   form: "form",
   outfit: "outfit",
-  assembly: "assembly",
 } as const;
 
 /** Команда, которой поднимают службу. Человеку нужен адрес и команда, а не текст ошибки движка. */
@@ -175,85 +178,4 @@ export async function readOutfit(name: string): Promise<Outfit | undefined> {
   const record = (await listOutfits()).find((item) => item.name === name);
 
   return record === undefined ? undefined : readState<Outfit>(record.id);
-}
-
-/**
- * Сохранённые сборки: то, что человек собрал в редакторе скина и отложил в службу.
- *
- * Ровно тот же перечень, что и у нарядов, — записи без содержимого. Кодовые сборки кита
- * (`editorInfo.assemblies`) сюда не попадают: их этот перечень не знает и не обязан, служба несёт
- * только сохранённое.
- */
-export async function listAssemblies(): Promise<StoreRecord[]> {
-  return listOf(KINDS.assembly);
-}
-
-/** Сохранённая сборка по имени, либо `undefined` — если такой в службе нет. */
-export async function readAssembly(name: string): Promise<ComponentAssembly | undefined> {
-  const record = (await listAssemblies()).find((item) => item.name === name);
-
-  return record === undefined ? undefined : readState<ComponentAssembly>(record.id);
-}
-
-/**
- * Кладёт запись в службу.
- *
- * Имя для машины — имя самой записи: им её зовут наряд и источник. Уникальность держит служба, и
- * отказ на занятое имя приходит оттуда: только она видит все записи разом.
- *
- * @param kind ярлык вида
- * @param record запись целиком; у неё обязано быть поле `name`
- * @param label имя для человека; не названо — берётся машинное
- */
-export async function save<Запись extends { name: string }>(
-  kind: string,
-  record: Запись,
-  label?: string,
-): Promise<StoreRecord> {
-  const response = await ask(BASE, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ label: label ?? record.name, name: record.name, kind, state: record }),
-  });
-
-  const body = (await response.json()) as WireRecord;
-
-  return { id: text(body.id), label: text(body.label), name: text(body.name) };
-}
-
-/**
- * Кладёт запись ВМЕСТО прежней с тем же именем.
- *
- * Правок служба не знает: она принимает запись целиком и отдаёт ей новый идентификатор. Значит
- * «сохранить исправленную форму» — это два шага, снять и положить, и делать их обязан кто-то
- * один. Оставь мы их редактору — второй потребитель службы написал бы свою пару, и однажды
- * порядок шагов у них разошёлся бы.
- *
- * Порядок именно такой: сперва снять, потом положить. Обратный оставил бы в службе две записи
- * одного имени, и какая из них уедет в наряд, решал бы порядок перечня.
- *
- * @param kind ярлык вида записи
- * @param record запись — её имя и есть ключ замены
- * @param label человеческая подпись
- */
-export async function replace<Запись extends { name: string }>(
-  kind: string,
-  record: Запись,
-  label?: string,
-): Promise<StoreRecord> {
-  const прежние = await listOf(kind);
-  const занятое = прежние.find((кандидат) => кандидат.name === record.name);
-
-  if (занятое) await remove(занятое.id);
-
-  return save(kind, record, label);
-}
-
-/**
- * Убирает запись из службы. Она уходит у ВСЕХ — предупреждение об этом на стороне зовущего.
- *
- * @param id идентификатор записи
- */
-export async function remove(id: string): Promise<void> {
-  await ask(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

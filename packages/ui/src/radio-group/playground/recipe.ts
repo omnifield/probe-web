@@ -1,16 +1,3 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// Six parts, two state dictionaries (`../entity/passport.ts`). The control+ring look is the
-// checkbox's own nearest sibling (`checkbox/playground/recipe.ts`); the sliding-dot mechanics are
-// the tabs' own (`--left`/`--top`/`--width`/`--height`), CONFIRMED against Ark's own documented
-// anatomy (`ark-ui` MCP, 2026-08-26) to be a single indicator anchored to `root`, not one embedded
-// per item — hence `root` carries `position: relative` and `indicator` is sized/positioned as a
-// small dot centered over whichever item's circle is currently measured, not the tabs' own
-// full-width bar.
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const ringTransition = "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
@@ -28,6 +15,8 @@ export const recipe: SlotRecipe = {
       },
       states: {
         disabled: { props: { opacity: "0.5" } },
+        invalid: { props: { opacity: "1" } },
+        required: { props: { opacity: "1" } },
       },
     },
     label: {
@@ -38,6 +27,8 @@ export const recipe: SlotRecipe = {
       },
       states: {
         disabled: { props: { color: "var(--neutral-11)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        required: { props: { fontWeight: "var(--weight-medium)" } },
       },
     },
     item: {
@@ -48,7 +39,30 @@ export const recipe: SlotRecipe = {
         cursor: "pointer",
       },
       states: {
+        checked: { props: { cursor: "pointer" } },
+        unchecked: { props: { cursor: "pointer" } },
         disabled: { props: { cursor: "not-allowed" } },
+        readonly: { props: { cursor: "default" } },
+        invalid: { props: { cursor: "pointer" } },
+        hover: { props: { cursor: "pointer" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": { props: { outline: "none" } },
+      },
+    },
+    itemText: {
+      props: {
+        fontSize: "var(--font-size-md)",
+        color: "var(--neutral-12)",
+      },
+      states: {
+        checked: { props: { fontWeight: "var(--weight-medium)" } },
+        unchecked: { props: { fontWeight: "var(--weight-normal)" } },
+        disabled: { props: { color: "var(--neutral-11)" } },
+        readonly: { props: { color: "var(--neutral-12)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        hover: { props: { textDecoration: "underline" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": { props: { textDecoration: "underline" } },
       },
     },
     itemControl: {
@@ -68,7 +82,10 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { borderColor: "var(--accent-9)" } },
+        unchecked: { props: { borderColor: "var(--neutral-7)" } },
         hover: { props: { borderColor: "var(--accent-8)" } },
+        active: { props: { transform: "scale(0.92)" } },
+        focus: { props: { outline: "none" } },
         "focus-visible": {
           props: {
             outline: "var(--border-width-2) solid var(--accent-8)",
@@ -77,20 +94,9 @@ export const recipe: SlotRecipe = {
         },
         invalid: { props: { borderColor: "var(--danger-9)" } },
         disabled: { props: { borderColor: "var(--neutral-6)", background: "var(--neutral-3)" } },
+        readonly: { props: { cursor: "default" } },
       },
     },
-    itemText: {
-      props: {
-        fontSize: "var(--font-size-md)",
-        color: "var(--neutral-12)",
-      },
-      states: {
-        disabled: { props: { color: "var(--neutral-11)" } },
-      },
-    },
-    // A small dot centered over whichever item's ring is currently measured — NOT the tabs' own
-    // full-box bar: `--width`/`--height` here are the RING's size, and the dot only needs to sit
-    // in its middle, not fill it.
     indicator: {
       props: {
         position: "absolute",
@@ -118,5 +124,4 @@ export const recipe: SlotRecipe = {
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "radio-group-sample", component: "radio-group", recipe };

@@ -1,16 +1,9 @@
-// TEMPLATE — structure prepared, prose NOT written here.
-//
-// EDITOR-ONLY setting prose for tabs — read by `./index.ts`'s `defineEditorInfo` call. Same
-// physical shape as the accordion's own `playground/settings.ts`: `orientation` is the one name
-// from the closed `SETTINGS` vocabulary that intersects tabs' own props (`../entity/passport.ts`)
-// — same name, same mark (`data-orientation`) as the accordion's.
-
 export const settings = {
   orientation: {
-    means: "which way the tabs lay out — drives keyboard navigation (arrow keys) and aria, not just the look",
+    means: "как расположены табы — влияет на навигацию с клавиатуры и aria, не только на вид",
     options: {
-      horizontal: { means: "tabs in a row, panel below" },
-      vertical: { means: "tabs in a column, panel beside them" },
+      horizontal: { means: "табы в ряд, панель под ними — по умолчанию" },
+      vertical: { means: "табы в столбец, панель рядом" },
     },
   },
 };

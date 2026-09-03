@@ -24,11 +24,9 @@ import { withPassports } from "@omnifield/probe-web-skin";
 import type { SkinSource } from "@omnifield/probe-web-runtime";
 
 import { passportOf } from "../../component/model/providers.js";
-import { draftLook, DRAFT_NAME } from "./draft.js";
 import { listOutfits, readOutfit, readParts, StoreRefused } from "../api/store.js";
 import { wornSkin } from "./worn.js";
 
-export { type Draft, DRAFT_NAME, draftLook, held, hold } from "./draft.js";
 export { setWornSkin, wornSkin } from "./worn.js";
 export {
   EMPTY_HINT,
@@ -37,9 +35,6 @@ export {
   listOutfits,
   readOutfit,
   readParts,
-  remove,
-  replace,
-  save,
   SERVICE_HINT,
   StoreDown,
   StoreRefused,
@@ -122,15 +117,5 @@ export async function variantsByComponent(): Promise<Readonly<Record<string, rea
  */
 export const SKIN_SOURCE: SkinSource = {
   names: async () => (await listOutfits()).map((item) => item.name),
-
-  css: async (name) =>
-    generateSkinCss(
-      // ЧЕРНОВИК ЕДЕТ ТЕМ ЖЕ ПУТЁМ, что сохранённый наряд, и это единственная развилка на всём
-      // пути. Второй путь до узла — стиль поверх разметки — адресовал бы узел вместо
-      // координаты, и правка выглядела бы иначе, чем то, что сохранится.
-      (name === DRAFT_NAME ? await draftLook() : await assembleOutfit(name)).skin,
-    ),
-
-  // Черновика в перечне НЕТ намеренно: он не выбирается списком, он надевается редактором на
-  // время правки. Покажи мы его среди нарядов — человек надел бы чужую незаконченную работу.
+  css: async (name) => generateSkinCss((await assembleOutfit(name)).skin),
 };

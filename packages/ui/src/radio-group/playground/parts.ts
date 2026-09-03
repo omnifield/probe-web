@@ -1,85 +1,68 @@
-// EDITOR-ONLY per-part taxonomy for the radio group — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`): one
-// file, exhaustive over the anatomy, `accepts`/state KEYS true to the real Ark composition.
-//
-// `root`'s `accepts` (root wraps label + item + indicator, indicator a direct sibling of the
-// items, not nested in any one `itemControl`) matches Ark's own documented anatomy exactly
-// (`ark-ui.com/docs/components/radio-group`, checked via the `ark-ui` MCP, 2026-08-26) — the
-// template's guess needed no correction here, unlike the carousel's own `autoplayTrigger`.
-
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import type { passport } from "../entity/passport.js";
 
 type RadioGroupPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// `root`/`label` share the GROUP's own three states; `item`/`itemText`/`itemControl` share the
-// PER-ITEM eight, `itemControl` alone adding `active` — mirrors `../entity/passport.ts`'s own
-// `groupStates`/`itemStates` split.
-const groupStateMeans = {
-  disabled: { means: "the whole group is disabled — no item can be chosen" },
-  invalid: { means: "the enclosing form rejected the value" },
-  required: { means: "the form will demand a choice on submit" },
+const groupMeans = {
+  disabled: { means: "набор отключён — выбрать нельзя" },
+  invalid: { means: "набор невалиден по правилам валидации формы" },
+  required: { means: "выбор обязателен для отправки формы" },
 } satisfies PassportPartEditorInfo<RadioGroupPart>["states"];
 
-const itemStateMeans = {
-  checked: { means: "this is the chosen item" },
-  unchecked: { means: "not the chosen item" },
-  disabled: { means: "this item cannot be chosen — its own flag, or the whole group's" },
-  readonly: { means: "the value is visible but nothing can be chosen" },
-  invalid: { means: "the enclosing form rejected the value" },
-  hover: { means: "pointer is over this item" },
-  focus: { means: "keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
+const itemMeans = {
+  checked: { means: "этот пункт выбран" },
+  unchecked: { means: "этот пункт не выбран" },
+  disabled: { means: "этот пункт нельзя выбрать — свой отказ или отключён весь набор" },
+  readonly: { means: "значение видно, выбрать другое нельзя" },
+  invalid: { means: "набор невалиден по правилам валидации формы" },
+  hover: { means: "указатель наведён на этот пункт" },
+  focus: { means: "фокус стоит на скрытом вводе этого пункта" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — здесь нужна обводка" },
 } satisfies PassportPartEditorInfo<RadioGroupPart>["states"];
 
 export const parts: Readonly<Record<RadioGroupPart, PassportPartEditorInfo<RadioGroupPart>>> = {
   root: {
-    means: "the whole set — the group of choices where exactly one can be picked",
-    states: groupStateMeans,
+    means: "набор радио-кнопок целиком — оборачивает подпись, скользящий указатель и каждый пункт",
+    states: groupMeans,
     accepts: [
       { kind: "component", name: "label" },
-      { kind: "component", name: "item" },
       { kind: "component", name: "indicator" },
+      { kind: "component", name: "item" },
     ],
   },
   label: {
-    means: "the set's own label — describes the whole group, not any one choice",
-    states: groupStateMeans,
+    means: "собственная подпись набора",
+    states: groupMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   item: {
-    means: "one choice — a clickable row; click anywhere on it to select",
-    states: itemStateMeans,
+    means: "один пункт выбора — узел `<label>`, клик по нему выбирает его",
+    states: itemMeans,
     accepts: [
       { kind: "component", name: "itemControl" },
       { kind: "component", name: "itemText" },
-      // The real hidden `<input type="radio">` (`PWEB-152`) — no address of its own, but the
-      // node the real `onChange` lives on; without it a preview looks right and never selects.
-      { kind: "component", name: "hiddenInput" },
     ],
   },
   itemText: {
-    means: "this item's own label text",
-    states: itemStateMeans,
+    means: "видимая подпись пункта",
+    states: itemMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   itemControl: {
-    means: "the visible circle — what the sliding indicator centers itself on top of when this item is chosen",
-    states: { ...itemStateMeans, active: { means: "this item's circle is being pressed" } },
-    // Occupied — a plain ring, no consumer content in Ark's own documented usage.
-    accepts: [],
+    means: "видимый кружок пункта — заполняется, когда пункт выбран",
+    states: { ...itemMeans, active: { means: "этот пункт нажат указателем" } },
+    accepts: [{ kind: "content", genus: "icon" }, { kind: "component" }],
   },
   indicator: {
-    means: "the single sliding dot — jumps to sit over whichever item is currently checked",
-    states: { disabled: { means: "the whole group is disabled" } },
+    means: "единый скользящий указатель выбранного пункта — кит сам измеряет и позиционирует его, своего графика не несёт",
+    states: { disabled: { means: "набор отключён" } },
     variables: {
-      "--left": { means: "measured horizontal position of the checked item's circle" },
-      "--top": { means: "measured vertical position of the checked item's circle" },
-      "--width": { means: "measured width of the checked item's circle" },
-      "--height": { means: "measured height of the checked item's circle" },
+      "--left": { means: "измеренное горизонтальное положение выбранного пункта" },
+      "--top": { means: "измеренное вертикальное положение выбранного пункта" },
+      "--width": { means: "измеренная ширина выбранного пункта" },
+      "--height": { means: "измеренная высота выбранного пункта" },
     },
-    // Occupied — a pure positioning box, no consumer content.
     accepts: [],
   },
 };

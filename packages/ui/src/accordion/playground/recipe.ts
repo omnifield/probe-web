@@ -81,6 +81,9 @@ export const recipe: SlotRecipe = {
       },
     },
     content: {
+      // Без своего `transition`: Арк в эталонном примере тоже держит `content` без него — на
+      // одном узле рядом с keyframe-анимацией высоты (`--height` перемеряется у Zag на лету,
+      // `@zag-js/collapsible`) параллельный transition цвета — лишняя причина дёрганого закрытия.
       props: {
         paddingInline: "var(--space-4)",
         paddingBlock: "var(--space-3)",
@@ -90,8 +93,6 @@ export const recipe: SlotRecipe = {
         lineHeight: "var(--leading-relaxed)",
         overflow: "hidden",
         boxSizing: "border-box",
-        transition,
-        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
         open: {

@@ -1,37 +1,156 @@
-# Toggle Group
+# 🔘 Toggle Group
 
-**Group:** inputs · **Genus:** component · **Footprint:** compact
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole row (or column) of buttons |
-| item | one button — press it to toggle on/off |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole set is disabled — no item can be pressed |
-| root | focus | [data-focus] | some item in this set is focused |
-| item | on | [data-state="on"] | this button is pressed |
-| item | off | [data-state="off"] | this button is not pressed |
-| item | disabled | [data-disabled] | this button cannot be pressed — its own flag, or the whole group's |
-| item | focus | [data-focus] | the roving-tabindex machine considers this item the focused one |
-| item | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| item | hover | :hover | pointer is over this button |
-| item | active | :active | this button is being held down |
+```
+root
+└─ item[] 🔘
+```
 
-## Settings
+| часть      | значение                                    | принимает внутри | рисуется          |
+| ----------- | ---------------------------------------------- | -------------------- | --------------------- |
+| ⬛ `root`  | весь ряд (или столбец) кнопок                  | `item`               | `ToggleGroup`      |
+| 🔘 `item`  | одна кнопка — нажатие переключает её вкл/выкл  | текст, иконку        | `ToggleGroupItem`  |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which way the buttons lay out — also drives keyboard navigation (arrow keys) | `horizontal` | [data-orientation] |
-| multiple | whether several buttons can stay pressed at once, instead of just one | `false` | — |
+> [!NOTE]
+> Всего две части — самая маленькая анатомия в ките после тумблера. Ни скрытого ввода, ни
+> отдельной подписи или индикатора: каждый `item` САМ настоящая `<button type="button">`
+> (`getItemProps`, `toggle-group.connect.mjs`), не подпись, оборачивающая кнопку.
 
-## Notes
+<h2 id="состояния">🎛️ Состояния</h2>
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+|      | состояние      | метка                 | где           | значение                                                      |
+| ---- | --------------- | ------------------------ | ---------------- | ------------------------------------------------------------------ |
+| 🚫   | disabled        | `[data-disabled]`        | root, item       | нельзя нажать — свой флаг у пункта, либо отключён весь набор       |
+| 🎯   | focus           | `[data-focus]`           | root, item       | какая-то кнопка в фокусе роуминг-таб-индекса                       |
+| ✅   | on              | `[data-state="on"]`      | item             | эта кнопка нажата                                                   |
+| ⬜   | off             | `[data-state="off"]`     | item             | эта кнопка не нажата                                                 |
+| ⌨️   | focus-visible   | `:focus-visible`         | item             | фокус пришёл с клавиатуры — при клике мышью это было бы шумом        |
+| 🖱️   | hover           | `:hover`                 | item             | указатель наведён на кнопку                                          |
+| 👆   | active          | `:active`                | item             | кнопка нажата и удерживается                                         |
+
+> [!NOTE]
+> `item` — настоящая `<button>`: `hover`/`focus-visible`/`active` — честные псевдоклассы, `getItemProps`
+> не трогает указатель в JS вовсе (в отличие от чекбокса/свитча). `data-focus` — РЕАЛЬНЫЕ данные, не
+> псевдокласс: движку роуминг-таб-индекса нужен собственный факт «какой пункт сейчас в фокусе»
+> (`context.get("focusedId")`), которого голый `:focus` не выразил бы (он сработал бы и на самом
+> контейнере при первом табе внутрь). `root`'s `data-focus` — АГРЕГАТ («какой-то пункт набора в
+> фокусе»), не буквальное попадание фокуса на сам корень — тот же приём, что у `list`/`root` табов.
+> Валидации формы нет вовсе (`invalid`/`required`/`readOnly`) — `@zag-js/toggle-group` не участвует в
+> форме, это честное отсутствие, не недосмотр.
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения                | по умолчанию | означает                                                    |
+| ------------- | ------------------------ | -------------- | ------------------------------------------------------------ |
+| `orientation` | `horizontal`/`vertical`  | `horizontal`   | как расположены кнопки — от этого зависит навигация с клавиатуры |
+| `multiple`    | вкл/выкл                 | выкл           | можно ли держать нажатыми сразу несколько кнопок              |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "items": [{ "value": "string", "label": "string" }] }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Набор ничего не диспатчит через сборку — нажатие ведёт настоящая машина состояний Ark сама, не
+событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  item[] 🔘 · repeat: /items · bind: value
+    text: {label}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+Сегментированный контрол: `root` — подложенная дорожка, `item` — таблетка, получающая свой фон и
+тень только когда `on` — тот же повседневный вид, что и у нативного macOS-контрола или у большинства
+компонентных библиотек. `disabled` красит не через `color` (все свободные ступени неоновой шкалы
+1–10 — класс «заливка», не «краска»: `checkSkin` реально ловит это, `--neutral-8`/`--neutral-9` в
+качестве текста были ошибкой, поймано этим самым тестом), а через `opacity` вместе с `cursor:
+not-allowed` — состояние остаётся настоящим, просто не через несуществующий ступень-класс.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<ToggleGroup defaultValue={["bold"]} multiple>
+  <ToggleGroupItem value="bold">B</ToggleGroupItem>
+  <ToggleGroupItem value="italic">I</ToggleGroupItem>
+  <ToggleGroupItem value="underline">U</ToggleGroupItem>
+</ToggleGroup>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = {
+  items: [
+    { value: "left", label: "Слева" },
+    { value: "center", label: "По центру" },
+    { value: "right", label: "Справа" },
+  ],
+};
+const tree = instanceOf("toggle-group", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Несколько нажатых сразу.** `multiple` (по умолчанию выкл) снимает ограничение «только один
+пункт нажат» — без него набор ведёт себя как радио-группа с возможностью снять выбор.
+
+```tsx
+<ToggleGroup defaultValue={["bold", "underline"]} multiple>
+  <ToggleGroupItem value="bold">B</ToggleGroupItem>
+  <ToggleGroupItem value="italic">I</ToggleGroupItem>
+  <ToggleGroupItem value="underline">U</ToggleGroupItem>
+</ToggleGroup>
+```
+
+**Отключённый.**
+
+```tsx
+<ToggleGroup disabled defaultValue={["left"]}>
+  <ToggleGroupItem value="left">Слева</ToggleGroupItem>
+  <ToggleGroupItem value="right">Справа</ToggleGroupItem>
+</ToggleGroup>
+```
+
+## Доступность
+
+Набор следует паттерну WAI-ARIA [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/) с
+роуминг-таб-индексом — фокус табом попадает на нажатый (или первый) пункт, дальше по набору
+двигают стрелки, не таб.
+
+| Клавиша                          | Действие                                     |
+| ---------------------------------- | ------------------------------------------------- |
+| `Tab`                              | Переносит фокус на нажатый пункт (или первый)     |
+| `Space` / `Enter`                  | Переключает пункт вкл/выкл                        |
+| `ArrowRight` / `ArrowDown`         | Переносит фокус на следующий пункт                |
+| `ArrowLeft` / `ArrowUp`            | Переносит фокус на предыдущий пункт               |
+| `Home` / `End`                     | Переносит фокус на первый / последний пункт        |

@@ -18,10 +18,18 @@ import { variantsOf, wornSkin } from "#/entities/outfit/model/index.js";
 import { previewStore } from "#/entities/preview/model/store.js";
 import { ComponentPreview } from "#/widgets/component-preview/component-preview.jsx";
 
-export function ComponentShowcasePage(props: { component: string; assembly?: string }) {
+export function ComponentShowcasePage(props: {
+  component: string;
+  assembly?: string;
+}) {
   // Панель данных (`WorkspaceRightbar`) живёт ВНЕ `Outlet` — до параметра маршрута ей не
   // дотянуться иначе, чем через общий стор (`entities/preview`).
-  createEffect(() => previewStore.trigger.shown({ component: props.component, assembly: props.assembly }));
+  createEffect(() =>
+    previewStore.trigger.shown({
+      component: props.component,
+      assembly: props.assembly,
+    }),
+  );
 
   // Источник несёт И компонент, И имя надетого наряда: `variantsOf` читает надетое изнутри, а
   // `createResource` не подписывается на сигналы, прочитанные ВНУТРИ функции-получателя — не

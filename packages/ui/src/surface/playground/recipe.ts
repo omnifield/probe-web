@@ -5,7 +5,7 @@ export const recipe: SlotRecipe = {
     root: {
       props: {
         display: "block",
-        padding: "var(--space-4)",
+        padding: "var(--space-1)",
         borderRadius: "var(--radius-lg)",
         background: "var(--neutral-1)",
         color: "var(--neutral-12)",

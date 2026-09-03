@@ -1,74 +1,90 @@
-# Toggle
+# 🔲 Toggle
 
-**Group:** other · **Genus:** component · **Footprint:** compact
+🏷️ other · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the toggle as a whole — a single `<button aria-pressed>`, wraps `indicator` |
-| indicator | the glyph shown inside the button — an icon, a checkmark, whatever the consumer puts inside it |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | on | [data-state="on"] | the toggle is pressed |
-| root | off | [data-state="off"] | the toggle is not pressed |
-| root | pressed | [data-pressed] | the toggle is pressed — the same fact as `on`, encoded as presence rather than a two-valued attribute |
-| root | disabled | [data-disabled] | the toggle is disabled — it cannot be pressed |
-| indicator | on | [data-state="on"] | the toggle is pressed |
-| indicator | off | [data-state="off"] | the toggle is not pressed |
-| indicator | pressed | [data-pressed] | the toggle is pressed — the same fact as `on`, encoded as presence rather than a two-valued attribute |
-| indicator | disabled | [data-disabled] | the toggle is disabled — it cannot be pressed |
-
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Toggle is a single two-state button — one node a person presses to switch something on or off, with
-no separate "value" of its own beyond that boolean. It's the smallest Ark-provided component after
-the avatar: two parts, no settings.
-
-**Not the same component as the kit's older, Kobalte-backed `toggle.tsx` primitive** — same English
-word, unrelated modules; this one is the Ark-provided `root`/`indicator` pair described here.
-
-## Features
-
-- **Controlled or uncontrolled** — `pressed` + `onPressedChange` for controlled use, `defaultPressed`
-  for uncontrolled.
-- **The same on/off fact carried three different ways at once** — native `aria-pressed` (for
-  assistive tech), the two-valued `data-state` (`"on"`/`"off"`), and the presence-only
-  `data-pressed`. All three are real and independently declared, not one derived from another.
-- **`indicator` carries the identical marks independently** — not inherited visually from `root`; a
-  skin styling the glyph directly has its own address for the same on/off/disabled facts.
-- **A dedicated fallback for the "off" glyph** — `ToggleIndicator`'s `fallback` prop renders content
-  for the unpressed state, while its children render the pressed state; there's no need to branch on
-  `data-state` yourself just to swap the glyph.
-- **No settings at all** — declared as a fact: the toggle accepts none of the kit's closed settings
-  vocabulary.
-
-## Anatomy
-
-```tsx
-import { Toggle, ToggleIndicator } from "@omnifield/probe-web-ui";
-
-<Toggle>
-  <ToggleIndicator fallback={/* content shown while OFF */}>
-    {/* content shown while ON */}
-  </ToggleIndicator>
-</Toggle>
+```
+root 🔲
+└─ indicator ★
 ```
 
-## Examples
+| часть          | значение                                                        | принимает внутри     | рисуется          |
+| --------------- | -------------------------------------------------------------------- | ------------------------ | --------------------- |
+| 🔲 `root`      | тумблер целиком — один `<button aria-pressed>`, оборачивает `indicator` | `indicator`            | `Toggle`           |
+| ★ `indicator`  | глиф внутри кнопки — иконку или галочку кладёт потребитель            | текст, иконку            | `ToggleIndicator`  |
 
-### Basic, uncontrolled
+> [!NOTE]
+> Не тот же компонент, что старый, Kobalte-based `toggle.tsx` (плоский примитив, тоже
+> экспортируется из `../../index.ts`) — то же английское слово, разные модули, разные анатомии.
+> Этот — Ark-овая пара `root`/`indicator`, описанная здесь.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | состояние      | метка                 | где               | значение                                                     |
+| ---- | --------------- | ------------------------ | -------------------- | ----------------------------------------------------------------- |
+| 🔛   | on              | `[data-state="on"]`      | root, indicator     | тумблер нажат                                                      |
+| ⭕   | off             | `[data-state="off"]`     | root, indicator     | тумблер не нажат                                                   |
+| 📌   | pressed         | `[data-pressed]`         | root, indicator     | тот же факт, что `on`, но кодируется наличием атрибута, а не значением |
+| 🚫   | disabled        | `[data-disabled]`        | root, indicator     | нельзя нажать                                                      |
+| 🖱️   | hover           | `:hover`                 | root                 | указатель наведён на кнопку                                        |
+| ⌨️   | focus-visible   | `:focus-visible`         | root                 | фокус пришёл с клавиатуры — при клике мышью это было бы шумом      |
+| 👆   | active          | `:active`                | root                 | кнопка нажата и удерживается                                       |
+
+> [!NOTE]
+> Один и тот же факт «нажат» несётся ТРЁМЯ способами разом на `root`: нативный `aria-pressed` (для
+> ассистивных технологий, не для стилей), двузначный `data-state`, и презенс-энкодинг `data-pressed`
+> — все три объявлены как реальные, ни один не выведен из другого. `indicator` несёт идентичные
+> `on`/`off`/`pressed`/`disabled` НЕЗАВИСИМО, не унаследованно визуально от `root` — сверено чтением
+> `toggle.connect.mjs` бок о бок (`getIndicatorProps` повторяет те же метки дословно, кроме
+> `aria-pressed` — она нужна только интерактивному `root`). `hover`/`focus-visible`/`active` —
+> только на `root`: это настоящие браузерные псевдоклассы кнопки, `indicator` — декоративный глиф
+> внутри, не отдельная интерактивная поверхность.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "glyph": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Тумблер ничего не диспатчит через сборку — нажатие ведёт настоящая машина состояний Ark сама, не
+событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root 🔲 · props: defaultPressed
+  indicator ★ · text: {glyph}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+`on`/`pressed` красят `root` в акцентный фон ОДИНАКОВО (тот же факт, две метки) — рецепт не
+пытается их различить визуально, только структурно закрывает оба слота. `indicator` реагирует
+приглушением непрожатого состояния (`opacity: 0.7`), не пряча узел — фолбэк-графика (`fallback`
+пропа `ToggleIndicator`) решает, ЧТО показать в каждом состоянии, рецепт красит уже показанное.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Toggle defaultPressed>
@@ -76,7 +92,18 @@ import { Toggle, ToggleIndicator } from "@omnifield/probe-web-ui";
 </Toggle>
 ```
 
-### Controlled, with a different glyph per state
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = { glyph: "★" };
+const tree = instanceOf("toggle", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Разный глиф на каждое состояние.** `ToggleIndicator`'s `fallback` рисует контент для
+НЕнажатого состояния, дети — для нажатого; переключать `data-state` руками не нужно.
 
 ```tsx
 import { createSignal } from "solid-js";
@@ -90,7 +117,7 @@ const [pressed, setPressed] = createSignal(false);
 </Toggle>
 ```
 
-### Disabled
+**Отключённый.**
 
 ```tsx
 <Toggle disabled defaultPressed>
@@ -98,23 +125,12 @@ const [pressed, setPressed] = createSignal(false);
 </Toggle>
 ```
 
-## Styling hooks
+## Доступность
 
-`root` and `indicator` both expose the identical set of marks (see `packages/skin`): `data-state`
-(`"on"`/`"off"`), the presence-only `data-pressed`, and `data-disabled`. Since two of those —
-`data-state` and `data-pressed` — encode the exact same fact in different shapes, a skin picks
-whichever reads more naturally for the rule at hand (a two-valued attribute selector, or a bare
-presence check) rather than being forced into one. `root` additionally carries the native
-`aria-pressed`, which exists for assistive tech, not styling — a skin has no reason to select on it
-when `data-state`/`data-pressed` already carry the same fact as real marks.
+Тумблер следует паттерну WAI-ARIA [Button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) с
+нажатым состоянием (`aria-pressed`) — та же семантика, что у нативной кнопки-тумблера.
 
-## Accessibility
-
-Toggle follows the WAI-ARIA [Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) with
-a pressed state (`aria-pressed`), the same pattern a native toggle button follows.
-
-| Key | What it does |
-|---|---|
-| `Space` / `Enter` | Toggles the pressed state |
-| `Tab` | Moves focus onto or off of the toggle |
-<!-- user:end -->
+| Клавиша            | Действие                      |
+| ------------------- | ---------------------------------- |
+| `Space` / `Enter`  | Переключает нажатое состояние     |
+| `Tab`               | Переносит фокус на тумблер и с него |

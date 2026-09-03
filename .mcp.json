@@ -19,6 +19,10 @@
       "command": "npx",
       "args": ["-y", "@ark-ui/mcp"]
     },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--executablePath", "/usr/bin/chromium", "--chromeArg=--no-sandbox"]
+    },
     "skin": {
       "command": "node",
       "args": ["products/skin/.mcp/src/server.js"]

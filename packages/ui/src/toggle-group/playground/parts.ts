@@ -1,6 +1,3 @@
-// EDITOR-ONLY per-part taxonomy for the toggle group — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`).
-
 import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
 import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import type { passport } from "../entity/passport.js";
@@ -9,23 +6,23 @@ type ToggleGroupPart = typeof passport extends ComponentPassport<infer Part> ? P
 
 export const parts: Readonly<Record<ToggleGroupPart, PassportPartEditorInfo<ToggleGroupPart>>> = {
   root: {
-    means: "the whole row (or column) of buttons",
+    means: "весь ряд (или столбец) кнопок",
     states: {
-      disabled: { means: "the whole set is disabled — no item can be pressed" },
-      focus: { means: "some item in this set is focused" },
+      disabled: { means: "весь набор отключён — ни одну кнопку нельзя нажать" },
+      focus: { means: "какая-то кнопка в наборе в фокусе" },
     },
     accepts: [{ kind: "component", name: "item" }],
   },
   item: {
-    means: "one button — press it to toggle on/off",
+    means: "одна кнопка — нажатие переключает её вкл/выкл",
     states: {
-      on: { means: "this button is pressed" },
-      off: { means: "this button is not pressed" },
-      disabled: { means: "this button cannot be pressed — its own flag, or the whole group's" },
-      focus: { means: "the roving-tabindex machine considers this item the focused one" },
-      "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-      hover: { means: "pointer is over this button" },
-      active: { means: "this button is being held down" },
+      on: { means: "эта кнопка нажата" },
+      off: { means: "эта кнопка не нажата" },
+      disabled: { means: "эту кнопку нельзя нажать — свой флаг или отключён весь набор" },
+      focus: { means: "машина считает эту кнопку текущей в роуминг-фокусе" },
+      "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+      hover: { means: "указатель наведён на кнопку" },
+      active: { means: "кнопка нажата и удерживается" },
     },
     accepts: [
       { kind: "content", genus: "text" },

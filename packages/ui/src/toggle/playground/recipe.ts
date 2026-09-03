@@ -1,24 +1,54 @@
-// TEMPLATE — structure prepared, no look written here.
-//
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts`. Same physical shape as
-// every other component's `playground/recipe.ts` (`PWEB-127`): the file exists even before it
-// holds a look.
-//
-// Two parts, tied with avatar's for the smallest state surface in the kit (`../entity/
-// passport.ts`) — both parts carry the identical four-state set. Left EMPTY for whoever fills the
-// playground zone next; the toggle group's own `item` (a button that flips a boolean-ish fact on
-// click) is the nearest sibling for the mechanics, though the toggle's own root is a single
-// standalone control, not one of a set.
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+
+const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
 export const recipe: SlotRecipe = {
   base: {
-    root: { props: {} },
-    indicator: { props: {} },
+    root: {
+      props: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minBlockSize: "var(--control-height-md)",
+        minInlineSize: "var(--control-height-md)",
+        borderWidth: "0",
+        borderRadius: "var(--radius-md)",
+        background: "var(--neutral-3)",
+        color: "var(--neutral-12)",
+        fontSize: "var(--font-size-md)",
+        cursor: "pointer",
+        transition,
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+      },
+      states: {
+        on: { props: { background: "var(--accent-9)", color: "var(--accent-contrast)" } },
+        off: { props: { background: "var(--neutral-3)", color: "var(--neutral-12)" } },
+        pressed: { props: { background: "var(--accent-9)", color: "var(--accent-contrast)" } },
+        disabled: { props: { cursor: "not-allowed", opacity: "0.5" } },
+        hover: { props: { background: "var(--neutral-4)" } },
+        active: { props: { transform: "scale(0.94)" } },
+        "focus-visible": {
+          props: {
+            outline: "var(--border-width-2) solid var(--accent-8)",
+            outlineOffset: "var(--border-width-2)",
+          },
+        },
+      },
+    },
+    indicator: {
+      props: {
+        display: "inline-flex",
+        fontSize: "var(--font-size-md)",
+        lineHeight: "1",
+      },
+      states: {
+        on: { props: { opacity: "1" } },
+        off: { props: { opacity: "0.7" } },
+        pressed: { props: { opacity: "1" } },
+        disabled: { props: { opacity: "0.6" } },
+      },
+    },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "toggle-sample", component: "toggle", recipe };
