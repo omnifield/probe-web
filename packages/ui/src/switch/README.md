@@ -1,68 +1,140 @@
-# Switch
+# 🔀 Switch
 
-**Group:** inputs · **Genus:** component · **Footprint:** compact
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole switch — a label wrapping the track and its own text |
-| control | the track — the visible background the thumb slides across |
-| thumb | the moving indicator — slides to one end of the track or the other |
-| label | the switch's own text |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | checked | [data-state="checked"] | the switch is on |
-| root | unchecked | [data-state="unchecked"] | the switch is off |
-| root | disabled | [data-disabled] | the switch cannot be toggled |
-| root | readonly | [data-readonly] | the value is visible, toggling it is not possible |
-| root | invalid | [data-invalid] | the enclosing form rejected the value |
-| root | required | [data-required] | the form will demand a value on submit |
-| root | hover | [data-hover] | pointer is over the switch (tracked by the machine, not the browser — the root is a label, not natively hoverable as a control) |
-| root | active | [data-active] | the switch is being pressed |
-| root | focus | [data-focus] | keyboard or pointer focus is on the hidden input — mirrored here since none of the visible parts can receive focus themselves |
-| root | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| control | checked | [data-state="checked"] | the switch is on |
-| control | unchecked | [data-state="unchecked"] | the switch is off |
-| control | disabled | [data-disabled] | the switch cannot be toggled |
-| control | readonly | [data-readonly] | the value is visible, toggling it is not possible |
-| control | invalid | [data-invalid] | the enclosing form rejected the value |
-| control | required | [data-required] | the form will demand a value on submit |
-| control | hover | [data-hover] | pointer is over the switch (tracked by the machine, not the browser — the root is a label, not natively hoverable as a control) |
-| control | active | [data-active] | the switch is being pressed |
-| control | focus | [data-focus] | keyboard or pointer focus is on the hidden input — mirrored here since none of the visible parts can receive focus themselves |
-| control | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| thumb | checked | [data-state="checked"] | the switch is on |
-| thumb | unchecked | [data-state="unchecked"] | the switch is off |
-| thumb | disabled | [data-disabled] | the switch cannot be toggled |
-| thumb | readonly | [data-readonly] | the value is visible, toggling it is not possible |
-| thumb | invalid | [data-invalid] | the enclosing form rejected the value |
-| thumb | required | [data-required] | the form will demand a value on submit |
-| thumb | hover | [data-hover] | pointer is over the switch (tracked by the machine, not the browser — the root is a label, not natively hoverable as a control) |
-| thumb | active | [data-active] | the switch is being pressed |
-| thumb | focus | [data-focus] | keyboard or pointer focus is on the hidden input — mirrored here since none of the visible parts can receive focus themselves |
-| thumb | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| label | checked | [data-state="checked"] | the switch is on |
-| label | unchecked | [data-state="unchecked"] | the switch is off |
-| label | disabled | [data-disabled] | the switch cannot be toggled |
-| label | readonly | [data-readonly] | the value is visible, toggling it is not possible |
-| label | invalid | [data-invalid] | the enclosing form rejected the value |
-| label | required | [data-required] | the form will demand a value on submit |
-| label | hover | [data-hover] | pointer is over the switch (tracked by the machine, not the browser — the root is a label, not natively hoverable as a control) |
-| label | active | [data-active] | the switch is being pressed |
-| label | focus | [data-focus] | keyboard or pointer focus is on the hidden input — mirrored here since none of the visible parts can receive focus themselves |
-| label | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
+```
+root
+├─ control 🛤️
+│  └─ thumb ⚪
+└─ label 🏷️
+```
 
-## Settings
+| часть        | значение                                                          | принимает внутри                | рисуется        |
+| ------------ | -------------------------------------------------------------------- | ----------------------------------- | ------------------- |
+| 🔀 `root`    | переключатель целиком — узел `<label>`, клик по нему переключает | `control`, `label`, любой компонент | `Switch`         |
+| 🛤️ `control` | дорожка — видимая подложка, по которой скользит указатель          | `thumb`                             | `SwitchControl`  |
+| ⚪ `thumb`   | подвижный указатель — скользит к одному концу дорожки или другому  | —                                    | `SwitchThumb`    |
+| 🏷️ `label`   | собственный текст переключателя                                    | текст                               | `SwitchLabel`    |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+> [!NOTE]
+> Настоящий `<input type="checkbox">` смонтирован всегда — кладёт его сам корень `Switch`,
+> потребителю добавлять его не нужно и нельзя: своего адреса он не несёт, в карту кита не входит и
+> наружу из кита не экспортируется вовсе. Это `extras` (см. корневой README кита) — технический
+> узел ради фокуса, формы и скринридера, не строительный кубик схемы.
 
-## Notes
+<h2 id="состояния">🎛️ Состояния</h2>
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+|      | состояние       | метка                    | значение                                                                 |
+| ---- | ---------------- | -------------------------- | ------------------------------------------------------------------------ |
+| ✅   | checked          | `[data-state="checked"]`     | переключатель включён                                                    |
+| ⬜   | unchecked        | `[data-state="unchecked"]`   | переключатель выключен                                                   |
+| 🚫   | disabled         | `[data-disabled]`            | переключатель нельзя переключить                                        |
+| 🔒   | readonly         | `[data-readonly]`            | значение видно, переключить нельзя                                       |
+| ⚠️   | invalid          | `[data-invalid]`             | невалиден по правилам валидации формы                                    |
+| ❗   | required         | `[data-required]`            | обязателен для отправки формы                                            |
+| 🖱️   | hover            | `[data-hover]`               | указатель наведён                                                        |
+| 👆   | active           | `[data-active]`              | нажат указателем                                                         |
+| 🎯   | focus            | `[data-focus]`               | фокус стоит на переключателе                                             |
+| ⌨️   | focus-visible    | `[data-focus-visible]`       | фокус пришёл с клавиатуры                                                |
+
+Все десять состояний — **атрибуты, не псевдоклассы**, и это находка, не выбор кита, ровно та же,
+что уже сделана для чекбокса. Реальный фокус лежит на скрытом `<input>`, а не на видимых узлах, а
+`root` — `<label>`, не наводимый нативно контрол; браузерные `:hover`/`:focus`/`:active` на этих
+узлах просто не сработают — машина следит за указателем и фокусом сама и кладёт результат данными.
+Десять состояний повторяются **одинаково на всех четырёх частях** — `getRootProps`/
+`getControlProps`/`getThumbProps`/`getLabelProps` спредят один и тот же объект атрибутов: у
+переключателя нет части, которая «владеет» состоянием больше других.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "label": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Переключатель ничего не диспатчит через сборку — переключение ведёт скрытый `<input>` сам, это не
+событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root · checked
+  control 🛤️
+    thumb ⚪
+  label 🏷️ · text: {label}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!WARNING]
+> `thumb`'s положение — трек-и-указатель: указатель СКОЛЬЗИТ (`transform: translateX`, а не
+> перекладывается новым блоком) между двумя концами дорожки. Расстояние хода — арифметика, не
+> измерение: в отличие от собственных указателей табов/радио-группы, у переключателя ровно два
+> фиксированных положения, и кит не измеряет переменную ни под одно из них (`entity/passport.ts`
+> не объявляет такой). Внутренняя ширина дорожки (2.5rem снаружи минус 2×0.125rem отступа =
+> 2.25rem) минус ширина указателя (1.25rem) оставляет ровно 1rem хода.
+
+Десять состояний на четырёх частях означают сорок слотов — большинство визуально нейтральны (не у
+каждой части есть что показать на каждое состояние), но `skinGaps` требует адресовать все: пустое
+правило не засчитывается (`declares(style.props)` требует хотя бы одно настоящее CSS-свойство),
+поэтому нейтральные случаи оформлены явными, но безобидными правилами (например, `root`'s
+`checked`/`unchecked`/`invalid`/`required` — тот же `cursor: "pointer"`, что уже в базе, просто
+явно; `thumb`'s `focus`/`invalid`/`required` — та же тень, что уже в базе).
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` класть не нужно — корень несёт его сам.
+
+```tsx
+<Switch>
+  <SwitchControl>
+    <SwitchThumb />
+  </SwitchControl>
+  <SwitchLabel>Уведомления</SwitchLabel>
+</Switch>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам корень — сборке о нём знать не нужно.
+
+```tsx
+const data = { label: "Уведомления" };
+const tree = instanceOf("switch", { defaultChecked: true }, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Настоящее участие в форме.** `name`/`value` делают переключатель настоящим полем формы —
+`FormData` подхватывает его как родной `<input type="checkbox">`.
+
+```tsx
+<form onSubmit={handleSubmit}>
+  <Switch name="notifications" value="on">
+    <SwitchControl>
+      <SwitchThumb />
+    </SwitchControl>
+    <SwitchLabel>Уведомления</SwitchLabel>
+  </Switch>
+  <button type="submit">Сохранить</button>
+</form>
+```

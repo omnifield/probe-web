@@ -1,147 +1,170 @@
-# Menu
+# 📋 Menu
 
-**Group:** overlays · **Genus:** component · **Footprint:** compact
+🏷️ overlays · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| arrow | wraps `arrowTip` — positioned by the kit, no graphic of its own |
-| arrowTip | the visible triangle inside `arrow` — a skin draws its shape, typically a rotated square |
-| positioner | positions `content` against whichever trigger opened it — a pure wrapper, no look of its own |
-| content | the floating panel — holds real keyboard focus for every item at once |
-| indicator | a small marker on `trigger` for whether the menu is open — no graphic of its own |
-| trigger | opens the menu |
-| triggerItem | a submenu's own trigger, rendered as an item of its parent menu |
-| contextTrigger | wraps an element so right-click (or long-press) opens the menu at the pointer |
-| separator | a visual/semantic divider between groups of items |
-| itemGroup | wraps a labeled cluster of items |
-| itemGroupLabel | the group's own heading |
-| item | one action — plain, or checkbox/radio-shaped (data-type tells which) |
-| itemIndicator | a checkmark/dot slot inside a checkbox/radio item — hidden by the kit while unchecked |
-| itemText | an item's own label text |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| arrow | — | — | — |
-| arrowTip | — | — | — |
-| positioner | — | — | — |
-| content | open | [data-state="open"] | the menu is showing |
-| content | closed | [data-state="closed"] | the menu is hidden |
-| indicator | open | [data-state="open"] | the menu is showing |
-| indicator | closed | [data-state="closed"] | the menu is hidden |
-| trigger | open | [data-state="open"] | the menu is showing |
-| trigger | closed | [data-state="closed"] | the menu is hidden |
-| trigger | current | [data-current] | this is the trigger that opened the menu (multi-trigger menus only) |
-| trigger | hover | :hover | pointer is over this button |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | this button is being held down |
-| triggerItem | open | [data-state="open"] | the menu is showing |
-| triggerItem | closed | [data-state="closed"] | the menu is hidden |
-| triggerItem | disabled | [data-disabled] | this item (and the submenu it opens) cannot be chosen |
-| triggerItem | highlighted | [data-highlighted] | the current keyboard/pointer target |
-| contextTrigger | open | [data-state="open"] | the menu is showing |
-| contextTrigger | closed | [data-state="closed"] | the menu is hidden |
-| contextTrigger | current | [data-current] | this is the trigger that opened the menu (multi-trigger menus only) |
-| separator | — | — | — |
-| itemGroup | — | — | — |
-| itemGroupLabel | — | — | — |
-| item | disabled | [data-disabled] | this item cannot be chosen |
-| item | highlighted | [data-highlighted] | the current keyboard/pointer target — a virtual fact, not real DOM focus |
-| item | checked | [data-state="checked"] | this checkbox/radio item is checked |
-| item | unchecked | [data-state="unchecked"] | this checkbox/radio item is not checked |
-| item | radio | [data-type="radio"] | this is a radio-shaped item — one of a mutually exclusive set |
-| item | checkbox | [data-type="checkbox"] | this is a checkbox-shaped item — independently toggleable |
-| itemIndicator | disabled | [data-disabled] | this item cannot be chosen |
-| itemIndicator | highlighted | [data-highlighted] | the current keyboard/pointer target — a virtual fact, not real DOM focus |
-| itemIndicator | checked | [data-state="checked"] | this checkbox/radio item is checked |
-| itemIndicator | unchecked | [data-state="unchecked"] | this checkbox/radio item is not checked |
-| itemText | disabled | [data-disabled] | this item cannot be chosen |
-| itemText | highlighted | [data-highlighted] | the current keyboard/pointer target — a virtual fact, not real DOM focus |
-| itemText | checked | [data-state="checked"] | this checkbox/radio item is checked |
-| itemText | unchecked | [data-state="unchecked"] | this checkbox/radio item is not checked |
+```
+(trigger 🔘 / contextTrigger)
+positioner
+└─ content 📋
+   ├─ arrow ▲
+   │  └─ arrowTip
+   ├─ itemGroup 📁
+   │  ├─ itemGroupLabel 🏷️
+   │  └─ item[]
+   │     ├─ itemIndicator ✓
+   │     └─ itemText
+   ├─ item[] (напрямую, без группы)
+   └─ separator ─
+```
 
-## Settings
+| часть              | значение                                                                | принимает внутри                        | рисуется                    |
+| ------------------- | ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------- |
+| 🔘 `trigger`       | открывает меню                                                         | текст, иконка                                 | `MenuTrigger`            |
+| `triggerItem`      | собственный триггер подменю, отрисованный как пункт родительского меню | текст, иконка                                 | `MenuTriggerItem`        |
+| `contextTrigger`   | оборачивает элемент так, что правый клик открывает меню у указателя     | текст, любой компонент                        | `MenuContextTrigger`     |
+| `positioner`       | позиционирует `content` относительно триггера — чистая обёртка          | `content`                                     | `MenuPositioner`         |
+| 📋 `content`       | плавающая панель — держит настоящий фокус клавиатуры разом за все пункты | `arrow`, `item`, `itemGroup`, `separator`   | `MenuContent`            |
+| ▲ `arrow`          | оборачивает `arrowTip` — кит сам ставит позицию                        | `arrowTip`                                    | `MenuArrow`              |
+| `arrowTip`         | видимый треугольник внутри `arrow`                                     | —                                              | `MenuArrowTip`           |
+| `indicator`        | небольшая метка на `trigger` о том, открыто ли меню                     | —                                              | `MenuIndicator`          |
+| ─ `separator`      | визуальный/смысловой разделитель между группами пунктов                 | —                                              | `MenuSeparator`          |
+| 📁 `itemGroup`     | оборачивает подписанную группу пунктов                                  | `itemGroupLabel`, `item`                       | `MenuItemGroup`          |
+| 🏷️ `itemGroupLabel`| собственный заголовок группы                                            | текст                                          | `MenuItemGroupLabel`     |
+| `item`             | одно действие — обычное, либо в форме чекбокса/радио                     | `itemIndicator`, `itemText`, текст, иконка       | `MenuItem`               |
+| ✓ `itemIndicator`  | слот галочки/точки внутри чекбоксного/радио-пункта                       | иконка                                         | `MenuItemIndicator`      |
+| `itemText`         | собственная подпись пункта                                              | текст                                          | `MenuItemText`           |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+> [!NOTE]
+> Корня как узла нет вовсе — `Menu` не рендерит DOM (та же ситуация, что у `Dialog`/`Popover`/
+> `Drawer`), `trigger`/`contextTrigger` — настоящие DOM-соседи `positioner`, а не его предки или
+> потомки. Паспорт называет корнем именно `positioner` — заместитель, не недосмотр.
 
-## CSS Variables
+> [!NOTE]
+> `MenuCheckboxItem`/`MenuRadioItem`/`MenuRadioItemGroup` — три отдельных настоящих компонента (со
+> своими `checked`/`value`/`onCheckedChange`), но НОВЫХ частей анатомии они не заводят: рисуются
+> адресами `item`/`itemGroup`, различаются меткой `data-type` (`"checkbox"`/`"radio"`), не
+> собственной частью. Карта кита их поэтому не содержит отдельными записями — `item`/`itemGroup`
+> уже названы один раз, вторая запись под ту же координату не сказала бы ничего нового.
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| positioner | `--reference-width` | kit | measured width of the trigger the menu is positioned against |
-| positioner | `--reference-height` | kit | measured height of the trigger the menu is positioned against |
-| positioner | `--available-width` | kit | space left before the panel would hit the viewport edge |
-| positioner | `--available-height` | kit | space left before the panel would hit the viewport edge |
+> [!NOTE]
+> `item` несёт ТРИ формы одним адресом — обычную, чекбоксную и радио. Обычный `MenuItem` кладёт
+> только `disabled`/`highlighted`. `MenuCheckboxItem`/`MenuRadioItem` сначала спредят те же самые
+> два атрибута, потом добавляют поверх `data-type` и `data-state` — реальные метки, но присутствуют
+> ТОЛЬКО у опционных пунктов, та же форма «иногда отсутствует, не всегда `false`», что уже несут
+> собственные view-специфичные метки датапикера. `itemIndicator`/`itemText` отражают те же самые
+> `checked`/`unchecked`/`disabled`/`highlighted`, но `data-type` не несут вовсе — эта метка
+> появляется только на `item`.
 
-## Notes
+<h2 id="состояния">🎛️ Состояния</h2>
 
-<!-- user:start -->
-## Overview
+|      | часть                                            | состояние       | метка                       | значение                                                    |
+| ---- | -------------------------------------------------- | ---------------- | ------------------------------ | ----------------------------------------------------------------- |
+| 👁️   | content, indicator, trigger, triggerItem, contextTrigger | open       | `[data-state="open"]`          | меню показано                                                    |
+| 🙈   | content, indicator, trigger, triggerItem, contextTrigger | closed     | `[data-state="closed"]`        | меню скрыто                                                      |
+| 📍   | trigger, contextTrigger                             | current         | `[data-current]`               | это тот триггер, что открыл меню (только меню с несколькими триггерами) |
+| 🖱️   | trigger                                            | hover           | `:hover`                        | указатель наведён на кнопку                                       |
+| ⌨️   | trigger                                            | focus-visible   | `:focus-visible`                | фокус пришёл с клавиатуры                                         |
+| 👆   | trigger                                            | active          | `:active`                       | кнопка нажата и удерживается                                      |
+| 🚫   | triggerItem, item, itemIndicator, itemText          | disabled        | `[data-disabled]`               | пункт (и подменю, которое он открывает) нельзя выбрать             |
+| 🎯   | triggerItem, item, itemIndicator, itemText          | highlighted     | `[data-highlighted]`            | текущая цель клавиатуры/указателя — виртуальный факт               |
+| ✅   | item, itemIndicator, itemText                       | checked         | `[data-state="checked"]`        | чекбоксный/радио-пункт отмечен                                     |
+| ⬜   | item, itemIndicator, itemText                       | unchecked       | `[data-state="unchecked"]`      | чекбоксный/радио-пункт не отмечен                                  |
+| 🔘   | item                                                | radio           | `[data-type="radio"]`           | это радио-пункт — один из взаимоисключающего набора                |
+| ☑️   | item                                                | checkbox        | `[data-type="checkbox"]`        | это чекбоксный пункт — переключается независимо                    |
 
-Menu is a floating list of actions that opens from a button, a right-click, or a long-press —
-plain items, checkbox items, radio items, submenus, and groups, all sharing one floating panel.
-Fourteen parts; like the dialog and popover, the root itself renders no DOM node.
+`arrow`/`arrowTip`/`positioner`/`separator`/`itemGroup`/`itemGroupLabel` состояний не несут вовсе.
 
-## Features
+> [!NOTE]
+> Пункты никогда не фокусируемы по отдельности — определяющий факт, а не недосмотр. Коннектор
+> ставит `tabIndex: 0` и `aria-activedescendant` на сам `content`, ни один `item`/`itemIndicator`/
+> `itemText`/`triggerItem` собственного `tabIndex` не получает нигде. «Текущий пункт» — виртуальный
+> факт (`data-highlighted`), не настоящий DOM-фокус. Поэтому ни `:focus-visible`, ни `:hover` не
+> объявлены ни на одной части семейства пункта: `onPointerMove`/`onPointerLeave` на `item` сами
+> вычисляют `data-highlighted` (тот же приём слежки через JS вместо нативного псевдокласса, что уже
+> стоит на корне/контроле/индикаторе чекбокса) — нативный `:hover` был бы либо избыточен с
+> `data-highlighted`, либо прямо неверен (подсветку можно поставить и клавиатурой, без указателя
+> над пунктом вовсе). `:active`/`data-active` тоже нет — коннектор нигде не отслеживает нажатое
+> состояние ни для одной части, проверено как отсутствие, не как упущение.
 
-- **The root is pure context** — same shape as `Dialog`/`Popover`/`Drawer`: `trigger`/
-  `contextTrigger` are real DOM siblings of `positioner`, not its ancestors or descendants.
-- **Three ways to open it** — `trigger` (click), `contextTrigger` (wraps an element so right-click,
-  or a ~700ms long-press on touch/pen, opens the menu at the pointer), or a submenu's own
-  `triggerItem`, rendered as an item of its parent menu.
-- **Checkbox and radio items reuse `item`'s own address** — `MenuCheckboxItem`/`MenuRadioItem`/
-  `MenuRadioItemGroup` are real, separate components (with their own `checked`/`value`/
-  `onCheckedChange` props), but they don't introduce new anatomy parts: they draw with `item`'s and
-  `itemGroup`'s addresses, distinguished by `data-type` (`"checkbox"`/`"radio"`), not by a part of
-  their own.
-- **Highlight is virtual, not real DOM focus** — `item`'s `highlighted` state tracks the current
-  keyboard/pointer target without moving actual focus off `content`, which holds real focus for
-  every item at once; a skin styling "the highlighted item" selects `data-highlighted`, never
-  `:focus`.
-- **Nested submenus** — render another `Menu` inside an item's place and open it with
-  `MenuTriggerItem` instead of `MenuTrigger`; `content` picks up `data-nested`/`data-has-nested`
-  when menus stack.
-- **Typeahead is on by default** — `typeahead` (default `true`) jumps to an item by typing its
-  text; `valueText` on an item overrides what typeahead matches when the rendered text isn't the
-  right match target.
-- **Multiple triggers, one menu** — same device as the dialog/drawer: a `trigger`'s `value`
-  distinguishes which one opened a shared menu, and only that trigger carries `data-current`; the
-  menu repositions to whichever trigger was activated.
-- **Custom `id` on an item breaks internal lookups** — Ark autogenerates item ids for its own
-  `getElementById` bookkeeping; passing a custom `id` prop to `item` overrides that and breaks it —
-  don't set one.
-- **Links render via `asChild` on the item itself, not inside it** — wrap the item, don't nest an
-  `<a>` as a child, so the link receives the item's own ARIA attributes and keyboard handling.
-- **This kit doesn't use a `Portal` anywhere** — unlike Ark's own docs, which portal every
-  `Positioner`, no component in this kit re-exports or requires one.
+> [!NOTE]
+> `triggerItem` — собственный триггер ПОДМЕНЮ, несущий факты сразу ДВУХ меню. Он сливает
+> `disabled`/`highlighted` РОДИТЕЛЬСКОГО меню (этот узел — один из пунктов родителя) с
+> `open`/`closed` ДОЧЕРНЕГО подменю (это тот триггер, что его открывает). Рисуется как обычный
+> `<div>`, не настоящей `<button>` — но раз пункты в принципе не фокусируемы по отдельности, это не
+> стоит ему ни одного псевдокласса: они не были бы объявлены и на кнопочной версии.
 
-## Anatomy
+<h2 id="io">🔌 IO</h2>
+
+У меню нет входа/выхода — состав пунктов и текст на них структурные, не данные: меню собирается
+руками (JSX-композицией или сборкой), а не заполняется по JSON-схеме, та же категория, что у
+диалога/поповера.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+Плавающее меню само по себе: подписанная группа, разделитель, отмеченный пункт.
+
+```
+positioner
+  content 📋
+    arrow ▲
+      arrowTip
+    itemGroup 📁
+      itemGroupLabel 🏷️ · text: "Файл"
+      item · value: "rename" · text: "Переименовать"
+      item · value: "delete" · text: "Удалить"
+    separator ─
+    item · value: "notify"
+      itemIndicator ✓ · icon: "✓"
+      itemText · text: "Уведомления"
+```
+
+Дерево может отрисовать только обычный `MenuItem` (`components/index.ts`'s карта держит один
+компонент на адрес; `MenuCheckboxItem`/`MenuRadioItem` делят координату `item`, но по имени
+недоступны из сборки отдельно) — последний пункт кладёт `itemIndicator`+`itemText` только ради
+структуры/CSS, настоящих меток `checked`/`data-type`, которые нёс бы подлинный `MenuCheckboxItem`,
+он не несёт — та же граница «демо доказывает структуру, не каждую рантайм-метку», что уже принята
+для непроверенного `outside-range` карусели.
+
+`providerProps: { defaultOpen: true }` — монтирование `positioner` нуждается в невидимом контексте
+`Menu` вокруг себя (провайдер кита, `components/index.ts`); `defaultOpen` делает плавающую половину
+видимой без настоящего клика по `trigger`, которого эта сборка не содержит вовсе.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!NOTE]
+> `highlighted` несёт тот вид, который в другом месте нёс бы hover/focus-visible — пункты не
+> фокусируемы по отдельности, `data-highlighted` единственный виртуальный факт «текущий пункт», и
+> отдельных правил hover/focus-visible ни на одной части семейства пункта нет.
+
+`positioner`'s четыре переменные (`--reference-width`/`-height`, `--available-width`/`-height`) —
+тот же механизм попапа, что у поповера/селекта/датапикера (`@zag-js/popper`, тот же
+`getPlacementStyles`).
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
-import {
-  Menu,
-  MenuTrigger,
-  MenuIndicator,
-  MenuPositioner,
-  MenuContent,
-  MenuArrow,
-  MenuArrowTip,
-  MenuItemGroup,
-  MenuItemGroupLabel,
-  MenuItem,
-  MenuItemText,
-  MenuItemIndicator,
-  MenuSeparator,
-} from "@omnifield/probe-web-ui";
-
 <Menu>
   <MenuTrigger>
-    {/* text or icon */}
-    <MenuIndicator>{/* icon, reflects open/closed */}</MenuIndicator>
+    Файл
+    <MenuIndicator>▾</MenuIndicator>
   </MenuTrigger>
   <MenuPositioner>
     <MenuContent>
@@ -149,40 +172,29 @@ import {
         <MenuArrowTip />
       </MenuArrow>
       <MenuItemGroup>
-        <MenuItemGroupLabel>{/* text */}</MenuItemGroupLabel>
-        <MenuItem value="rename">{/* text */}</MenuItem>
+        <MenuItemGroupLabel>Действия</MenuItemGroupLabel>
+        <MenuItem value="rename">Переименовать</MenuItem>
       </MenuItemGroup>
       <MenuSeparator />
       <MenuItem value="notify">
-        <MenuItemIndicator>{/* icon */}</MenuItemIndicator>
-        <MenuItemText>{/* text */}</MenuItemText>
+        <MenuItemIndicator>✓</MenuItemIndicator>
+        <MenuItemText>Уведомления</MenuItemText>
       </MenuItem>
     </MenuContent>
   </MenuPositioner>
 </Menu>
 ```
 
-## Examples
-
-### Basic
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
 
 ```tsx
-<Menu>
-  <MenuTrigger>
-    File
-    <MenuIndicator>▾</MenuIndicator>
-  </MenuTrigger>
-  <MenuPositioner>
-    <MenuContent>
-      <MenuItem value="new-file">New File</MenuItem>
-      <MenuItem value="open">Open…</MenuItem>
-      <MenuItem value="save">Save</MenuItem>
-    </MenuContent>
-  </MenuPositioner>
-</Menu>
+const tree = instanceOf("menu", { defaultOpen: true }, "basic", {});
+
+<RenderTree tree={tree} registry={registry} data={{}} />;
 ```
 
-### Checkbox items
+**Чекбоксные пункты.**
 
 ```tsx
 import { createSignal } from "solid-js";
@@ -191,23 +203,19 @@ import { MenuCheckboxItem } from "@omnifield/probe-web-ui";
 const [showToolbar, setShowToolbar] = createSignal(true);
 
 <Menu>
-  <MenuTrigger>View</MenuTrigger>
+  <MenuTrigger>Вид</MenuTrigger>
   <MenuPositioner>
     <MenuContent>
-      <MenuCheckboxItem
-        value="toolbar"
-        checked={showToolbar()}
-        onCheckedChange={setShowToolbar}
-      >
+      <MenuCheckboxItem value="toolbar" checked={showToolbar()} onCheckedChange={setShowToolbar}>
         <MenuItemIndicator>✓</MenuItemIndicator>
-        <MenuItemText>Show Toolbar</MenuItemText>
+        <MenuItemText>Показывать панель инструментов</MenuItemText>
       </MenuCheckboxItem>
     </MenuContent>
   </MenuPositioner>
 </Menu>
 ```
 
-### Radio items
+**Радио-пункты.**
 
 ```tsx
 import { createSignal } from "solid-js";
@@ -216,18 +224,18 @@ import { MenuRadioItemGroup, MenuRadioItem } from "@omnifield/probe-web-ui";
 const [sortBy, setSortBy] = createSignal("date");
 
 <Menu>
-  <MenuTrigger>Sort</MenuTrigger>
+  <MenuTrigger>Сортировка</MenuTrigger>
   <MenuPositioner>
     <MenuContent>
       <MenuRadioItemGroup value={sortBy()} onValueChange={(details) => setSortBy(details.value)}>
-        <MenuItemGroupLabel>Sort By</MenuItemGroupLabel>
+        <MenuItemGroupLabel>Сортировать по</MenuItemGroupLabel>
         <MenuRadioItem value="name">
           <MenuItemIndicator>✓</MenuItemIndicator>
-          <MenuItemText>Name</MenuItemText>
+          <MenuItemText>Имени</MenuItemText>
         </MenuRadioItem>
         <MenuRadioItem value="date">
           <MenuItemIndicator>✓</MenuItemIndicator>
-          <MenuItemText>Date Modified</MenuItemText>
+          <MenuItemText>Дате изменения</MenuItemText>
         </MenuRadioItem>
       </MenuRadioItemGroup>
     </MenuContent>
@@ -235,39 +243,40 @@ const [sortBy, setSortBy] = createSignal("date");
 </Menu>
 ```
 
-### Context menu
+**Контекстное меню.**
 
 ```tsx
 import { MenuContextTrigger } from "@omnifield/probe-web-ui";
 
 <Menu>
-  <MenuContextTrigger>Right click here</MenuContextTrigger>
+  <MenuContextTrigger>Кликните правой кнопкой здесь</MenuContextTrigger>
   <MenuPositioner>
     <MenuContent>
-      <MenuItem value="cut">Cut</MenuItem>
-      <MenuItem value="copy">Copy</MenuItem>
-      <MenuItem value="paste">Paste</MenuItem>
+      <MenuItem value="cut">Вырезать</MenuItem>
+      <MenuItem value="copy">Копировать</MenuItem>
+      <MenuItem value="paste">Вставить</MenuItem>
     </MenuContent>
   </MenuPositioner>
 </Menu>
 ```
 
-### A submenu
+**Подменю.** Вложенный `Menu` открывается `MenuTriggerItem` вместо `MenuTrigger`; `content`
+получает `data-nested`/`data-has-nested`, когда меню стоят стопкой.
 
 ```tsx
 import { MenuTriggerItem } from "@omnifield/probe-web-ui";
 
 <Menu>
-  <MenuTrigger>File</MenuTrigger>
+  <MenuTrigger>Файл</MenuTrigger>
   <MenuPositioner>
     <MenuContent>
-      <MenuItem value="new">New File</MenuItem>
+      <MenuItem value="new">Новый файл</MenuItem>
       <Menu>
-        <MenuTriggerItem>Share</MenuTriggerItem>
+        <MenuTriggerItem>Поделиться</MenuTriggerItem>
         <MenuPositioner>
           <MenuContent>
-            <MenuItem value="email">Email</MenuItem>
-            <MenuItem value="message">Message</MenuItem>
+            <MenuItem value="email">По почте</MenuItem>
+            <MenuItem value="message">Сообщением</MenuItem>
           </MenuContent>
         </MenuPositioner>
       </Menu>
@@ -276,24 +285,33 @@ import { MenuTriggerItem } from "@omnifield/probe-web-ui";
 </Menu>
 ```
 
-## Styling hooks
+**Один пункт — три способа открыть.** `trigger` (клик), `contextTrigger` (оборачивает элемент так,
+что правый клик — или ~700 мс долгое нажатие на тач/пере — открывает меню у указателя), либо
+собственный `triggerItem` подменю. `typeahead` включён по умолчанию — прыгает к пункту по вводу
+текста; `valueText` на пункте переопределяет, что сверяет typeahead, когда отрисованный текст не
+годится в качестве цели сравнения. Несколько триггеров на одно меню — `value` триггера называет,
+какой именно открыл общее меню, и только он несёт `data-current`; меню перепозиционируется к тому
+триггеру, что был активирован.
 
-`content`/`indicator`/`trigger`/`triggerItem`/`contextTrigger` all carry the open/closed pair (see
-`packages/skin`); `item`/`itemIndicator`/`itemText` share `disabled`/`highlighted`/`checked`/
-`unchecked`, plus `item` alone carries `data-type` (`"radio"`/`"checkbox"`) for the item shapes that
-have one. `positioner`'s four CSS variables (`--reference-width`/`-height`,
-`--available-width`/`-height`) are the same floating-panel-sizing mechanism the popover/select/date-
-picker expose. Remember `highlighted` tracks a virtual keyboard/pointer target, not real DOM
-focus — style it instead of `:focus` for the "current item" look.
+> [!WARNING]
+> Свой `id` на `item` ломает внутренний поиск — Ark сам генерирует id пунктов для собственной
+> книги учёта `getElementById`; проп `id`, переданный вручную, перебивает это и ломает механизм —
+> не ставить.
 
-## Accessibility
+> [!WARNING]
+> Ссылки рендерятся через `asChild` на самом пункте, а не вложенным `<a>` внутри него — иначе
+> ссылка не получит собственных ARIA-атрибутов и клавиатурной обработки пункта.
 
-Menu follows the WAI-ARIA [Menu/Menu bar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/).
+Кит нигде не использует `Portal` — в отличие от собственных примеров Ark, который портирует каждый
+`Positioner`, ни один компонент этого кита `Portal` не реэкспортирует и не требует.
 
-| Key | What it does |
+## Доступность
+
+Меню следует паттерну WAI-ARIA [Menu/Menu bar](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/).
+
+| Клавиша | Действие |
 |---|---|
-| `Space` / `Enter` | Activates/selects the highlighted item |
-| `ArrowDown` / `ArrowUp` | Highlights the next / previous item |
-| `ArrowRight` / `ArrowLeft` | On the trigger, opens or closes a submenu (direction depends on reading direction) |
-| `Esc` | Closes the menu and moves focus to the trigger |
-<!-- user:end -->
+| `Space` / `Enter` | Активирует/выбирает подсвеченный пункт |
+| `ArrowDown` / `ArrowUp` | Подсвечивает следующий / предыдущий пункт |
+| `ArrowRight` / `ArrowLeft` | На триггере — открывает или закрывает подменю (направление зависит от направления письма) |
+| `Esc` | Закрывает меню и переносит фокус на триггер |

@@ -10,7 +10,7 @@ import { passport as accordionPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as accordionEditorInfo } from "../playground/index.js";
 
-import { kit as listboxKit } from "../../listbox/components/kit.jsx";
+import { kit as listboxKit } from "../../listbox/components/index.js";
 import { passport as listboxPassport } from "../../listbox/entity/passport.js";
 import { editorInfo as listboxEditorInfo } from "../../listbox/playground/index.js";
 

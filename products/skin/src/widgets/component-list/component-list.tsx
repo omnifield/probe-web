@@ -1,4 +1,4 @@
-import { Surface } from "@omnifield/probe-web-ui";
+import { Surface, ScrollArea } from "@omnifield/probe-web-ui";
 import {
   RenderTree,
   type DispatchedEvent,
@@ -16,14 +16,15 @@ export function ComponentList(props: { variant?: string }) {
   const navigate = useNavigate();
   const groups = useComponentGroups();
   const data = createMemo(() => groupsToTreeItems(groups()));
-
-  // Дерево само не знает, какой компонент сейчас показан — это решает адрес. Айди листа тот же,
-  // что кладёт `adapter.ts` (`компонент/сборка`), нет `$assembly` в адресе (пока на разделе или
-  // на компоненте без сборки) — подсвечивать нечего, дерево работает своей внутренней логикой.
-  const params = useParams({ strict: false, select: (p) => ({ component: p.component, assembly: p.assembly }) });
+  const params = useParams({
+    strict: false,
+    select: (p) => ({ component: p.component, assembly: p.assembly }),
+  });
   const activeValue = createMemo(() => {
     const { component, assembly } = params();
-    return component !== undefined && assembly !== undefined ? `${component}/${assembly}` : undefined;
+    return component !== undefined && assembly !== undefined
+      ? `${component}/${assembly}`
+      : undefined;
   });
 
   const tree = createMemo(() =>

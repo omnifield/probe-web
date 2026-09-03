@@ -1,155 +1,236 @@
-# Listbox
+# 📃 Listbox
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+🏷️ iteration · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the listbox as a whole — label, filter input, and the item list together |
-| label | the listbox's own label |
-| input | optional filter/search text field — narrows which items show |
-| content | wraps the items — the scrollable/navigable region, always in the document |
-| item | one selectable option |
-| itemText | an item's visible label |
-| itemIndicator | selected-item indicator — a checkmark placed by the consumer |
-| itemGroup | groups related items under one label |
-| itemGroupLabel | label of an item group |
-| valueText | shows the selected value(s) as a comma-separated string, or the placeholder |
-| empty | shown only while the collection is empty |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole listbox is disabled |
-| label | disabled | [data-disabled] | the whole listbox is disabled |
-| input | disabled | [data-disabled] | the whole listbox is disabled |
-| content | empty | [data-empty] | there are no items to show |
-| item | checked | [data-state="checked"] | this item is selected |
-| item | unchecked | [data-state="unchecked"] | this item is not selected |
-| item | highlighted | [data-highlighted] | keyboard or pointer moved to this item, not yet chosen |
-| item | disabled | [data-disabled] | the whole listbox is disabled |
-| itemText | checked | [data-state="checked"] | this item is selected |
-| itemText | unchecked | [data-state="unchecked"] | this item is not selected |
-| itemText | highlighted | [data-highlighted] | keyboard or pointer moved to this item, not yet chosen |
-| itemText | disabled | [data-disabled] | the whole listbox is disabled |
-| itemIndicator | checked | [data-state="checked"] | this item is selected |
-| itemIndicator | unchecked | [data-state="unchecked"] | this item is not selected |
-| itemGroup | disabled | [data-disabled] | the whole listbox is disabled |
-| itemGroup | empty | [data-empty] | this group has no items |
-| itemGroupLabel | — | — | — |
-| valueText | disabled | [data-disabled] | the whole listbox is disabled |
-| empty | — | — | — |
+```
+root
+├─ label 🏷️
+├─ input 🔍
+├─ content 📃
+│  ├─ itemGroup 📁
+│  │  ├─ itemGroupLabel 🏷️
+│  │  └─ item[]
+│  │     ├─ itemText
+│  │     └─ itemIndicator ✓
+│  ├─ item[] (напрямую, без группы)
+│  └─ empty
+└─ valueText
+```
 
-## Settings
+| часть              | значение                                                                | принимает внутри                        | рисуется                    |
+| ------------------- | ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------- |
+| 📃 `root`          | лист целиком — подпись, поле фильтра и список пунктов вместе            | `label`, `input`, `content`, `valueText`      | `Listbox`               |
+| 🏷️ `label`         | собственная подпись листа                                              | текст                                         | `ListboxLabel`          |
+| 🔍 `input`         | необязательное поле фильтра/поиска — сужает, какие пункты показаны      | —                                              | `ListboxInput`          |
+| 📃 `content`       | оборачивает пункты — прокручиваемая, навигируемая область, всегда в разметке | `itemGroup`, `item`, `empty`             | `ListboxContent`        |
+| 📁 `itemGroup`     | группирует связанные пункты под одной подписью                          | `itemGroupLabel`, `item`                      | `ListboxItemGroup`      |
+| 🏷️ `itemGroupLabel`| подпись группы пунктов                                                  | текст                                          | `ListboxItemGroupLabel` |
+| `item`             | один выбираемый пункт                                                  | `itemText`, `itemIndicator`                    | `ListboxItem`           |
+| `itemText`         | видимая подпись пункта                                                  | текст                                          | `ListboxItemText`       |
+| ✓ `itemIndicator`  | указатель выбранного пункта — галочку кладёт потребитель                | иконка                                         | `ListboxItemIndicator`  |
+| `valueText`        | показывает выбранное значение(я) строкой через запятую, либо плейсхолдер | —                                             | `ListboxValueText`      |
+| `empty`            | показан, только пока набор пуст                                         | текст                                          | `ListboxEmpty`          |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which axis items are laid out on and navigated with the keyboard | `vertical` | [data-orientation] |
+> [!NOTE]
+> Третье настоящее исключение из «анатомия всегда берётся из `@zag-js/<x>/anatomy`» (первые два —
+> у карусели и у поля). Голая `@zag-js/listbox/anatomy` объявляет только десять частей — Ark-овский
+> Solid-слой достраивает `empty` поверх неё (`.extendWith("empty")`), и `ListboxEmpty` реально
+> кладёт адрес этой части на узел. Значит анатомия берётся из пакетного барреля
+> `@ark-ui/solid/anatomy`, а не из голого `@zag-js/listbox/anatomy` (там `empty` бы не было) и не
+> из адресного подпути `@ark-ui/solid/listbox/anatomy` (тот несёт `.jsx`-файл и валит паспортного
+> читателя без Solid, `packages/assembly`).
 
-## Notes
+> [!NOTE]
+> Нет ни одного `open`/`closed` — определяющее структурное отличие от `select`, не недосмотр
+> паспорта. У листа нет плавающего слоя: `content` всегда в документе, всегда интерактивен, и
+> коннектор ни разу не пишет `data-state` на `content`, `root` или где-либо ещё, кроме собственного
+> состояния выбора пункта.
 
-<!-- user:start -->
-## Overview
+<h2 id="состояния">🎛️ Состояния</h2>
 
-Listbox is a selectable list of options, single or multiple, over a data-driven item collection —
-the select's nearest sibling in the kit, sharing the same collection/item/itemText/itemIndicator/
-itemGroup shape, but with no floating layer of its own: every part stays in the document all the
-time, there's no trigger to open or close, no `data-state="open"|"closed"` anywhere in its anatomy.
+|      | часть                              | состояние       | метка                         | значение                                             |
+| ---- | ----------------------------------- | ---------------- | ------------------------------- | --------------------------------------------------------- |
+| 🚫   | root, label, input, valueText       | disabled         | `[data-disabled]`               | весь лист отключён                                         |
+| ⬜   | content, itemGroup                  | empty            | `[data-empty]`                  | показывать нечего / в группе нет пунктов                   |
+| 🚫   | itemGroup                           | disabled         | `[data-disabled]`               | весь лист отключён                                         |
+| ✅   | item, itemText                      | checked          | `[data-state="checked"]`        | этот пункт выбран                                          |
+| ⬜   | item, itemText                      | unchecked        | `[data-state="unchecked"]`      | этот пункт не выбран                                       |
+| 🎯   | item, itemText                      | highlighted      | `[data-highlighted]`            | клавиатура или указатель перешли на пункт, ещё не выбрали   |
+| 🚫   | item, itemText                      | disabled         | `[data-disabled]`               | весь лист отключён                                         |
+| ✅   | itemIndicator                       | checked          | `[data-state="checked"]`        | этот пункт выбран                                          |
+| ⬜   | itemIndicator                       | unchecked        | `[data-state="unchecked"]`      | этот пункт не выбран                                       |
 
-## Features
+`itemGroupLabel` и `empty` состояний не несут вовсе — подпись группы ничего не отражает сама по
+себе, а присутствие `empty` в документе уже и есть весь факт, который эта часть несёт.
 
-- **Takes plain `items`, not a live collection** — unlike Ark's own `Root`, which requires a real
-  `ListCollection` instance, this kit's `Listbox` takes `items` (plain data, the exact shape an
-  assembly can `bind` to a JSON path) and builds the collection internally, memoized so identity
-  stays stable across unrelated re-renders.
-- **Three selection modes** — `selectionMode`: `"single"` (default), `"multiple"` (click toggles,
-  no modifier needed), or `"extended"` (multi-select via `Cmd`/`Ctrl`, the file-manager-style
-  interaction).
-- **Grouped or flat items** — `content` accepts `itemGroup`s (each with its own `itemGroupLabel`)
-  or plain `item`s directly, or a mix; grouping is purely presentational, selection works the same
-  either way.
-- **Horizontal or vertical** — `orientation` (the kit's one real setting for this component) flips
-  the layout axis and which arrow keys navigate it.
-- **A real, addressed filter input** — `input` isn't part of Ark's own basic example, but it's a
-  real anatomy part meant for the filtering scenario: pair it with `useListCollection`'s `filter`
-  function (from `@ark-ui/solid/collection`) to narrow `collection.items` as the consumer types.
-  `keyboardPriority` controls whether the input's own text-editing keys or listbox navigation wins
-  on a conflict.
-- **`empty` mounts only when there's nothing to show** — Ark itself gates it
-  (`<Show when={collection.size === 0}>`); the kit adds no second gate, useful together with a
-  filter input that can narrow the list to zero matches.
-- **Highlight is tracked independently of selection** — `highlightedValue`/`onHighlightChange`
-  (controlled) or `defaultHighlightedValue` track which item has keyboard/pointer focus, separate
-  from which is actually `checked`; `item`'s own `highlightOnHover` opts a mounted item into
-  highlighting on hover, not just keyboard movement.
-- **`itemIndicator` is hidden, not removed, while unchecked** — same device as the select's own
-  item indicator: the consumer places the checkmark, the kit hides the node via native `hidden`
-  rather than unmounting it.
-- **Empty selection can be disallowed** — `deselectable` (when `false`) keeps at least one item
-  selected at all times, refusing to let the last selection be cleared.
+> [!NOTE]
+> Выбранность пункта несёт ДВЕ избыточные метки в самом коннекторе — `data-selected` (только
+> присутствует) и `data-state="checked"|"unchecked"` (всегда одно из двух) за один и тот же факт.
+> Объявлены была бы двойная зацепка за одну правду без способа узнать по паспорту, что они не
+> могут разойтись. Паспорт объявляет только `data-state` — тот же общий атрибут словаря Zag, что
+> несёт собственный пункт `select`'а, и тот же, что несёт `itemText`.
 
-## Anatomy
+> [!NOTE]
+> `disabled` на `input` — выбор в пользу атрибута данных, а не нативного: коннектор кладёт ОБА,
+> настоящий `disabled` и `data-disabled`, за одну и ту же связь. Паспорт `select`'а уже решил эту
+> форму для своего `trigger` — объявляется атрибут данных, когда коннектор реально его кладёт;
+> нативный-only остаётся только тем частям, которым больше взять неоткуда (`label`/`valueText`
+> вообще не кладут нативный `disabled`, выбирать не из чего).
+
+> [!NOTE]
+> `itemIndicator` несёт МЕНЬШЕ состояний, чем `item`/`itemText`, — намеренно. Коннектор кладёт
+> на него только `data-state` (плюс `hidden`, не адрес вида, то же исключение, что у собственного
+> индикатора `select`'а и `accordion`'а) — `highlighted` и `disabled` реальны, но это состояния
+> ПУНКТА, на индикатор они никогда не спредятся. Объявить их здесь значило бы адресовать метку,
+> которая на узле не появится ни разу.
+
+> [!NOTE]
+> Две метки коннектор кладёт, но паспорт их не объявляет — намеренно. `data-value` на `item`
+> исключён тем же приёмом, что и у `select`'а: он называет, КАКОЙ это пункт, а не как он выглядит.
+> `data-layout` (`"grid" | "list"`, на `content` и `item`) исключён тем же приёмом, что и
+> `data-placement`/`data-side` у `select`'а: реальный атрибут, но решает его вид коллекции, которую
+> собрал потребитель (`createListCollection` против `createGridCollection`), а не вкус автора
+> скина для этого компонента, — сеточная раскладка, когда она есть, структурный факт о данных, не
+> вариация. Находка для архитектора, если сеточным листам понадобится своя ось вида, не решение,
+> принятое здесь молча.
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения              | по умолчанию | означает                                                     |
+| ------------- | ---------------------- | -------------- | ------------------------------------------------------------ |
+| `orientation` | `vertical`/`horizontal` | `vertical`     | по какой оси стоят пункты и как их листает клавиатура        |
+
+> [!NOTE]
+> `orientation` — реальная настройка из закрытого словаря, та же ось, что уже несёт `accordion`, но
+> НЕ достаёт до каждой части: метка приходит на `root`/`content`/`item`/`itemGroup`, но не на
+> `label`/`input`/`itemText`/`itemIndicator`/`itemGroupLabel`/`valueText`/`empty` — проверено по
+> исходнику, не принято симметричным по аналогии с гармошкой.
+
+> [!NOTE]
+> `selectionMode` (`"single" | "multiple" | "extended"`) реален (`ListboxProps`), но не ложится в
+> закрытый словарь настроек: имя `multiple` там значит простой булев переключатель (собственная
+> настройка `select`'а), а натягивать на него трёхзначный выбор значило бы выдать `extended` либо
+> за «вкл», либо за «выкл». Находка для архитектора (записи `SETTINGS` для закрытого ВЫБОРА, не
+> флага, пока не существует), не решение, принятое здесь молча. `disabled` исключён тем же приёмом,
+> что у `select`'а — уже объявлен состоянием выше.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "label": "string", "items": [{ "value": "string", "label": "string" }] }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```json
+{ "value": ["string"] }
+```
+
+Ключи выбранных пунктов как есть — лист не решает, что они значат, так же как кнопка не решает,
+что лежит в её `payload`.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+Подпись и список пунктов, оба из данных, показывает столько пунктов, сколько пришло.
+
+```
+root · bind: items
+  label 🏷️ · text: {label}
+  content 📃
+    item[] · repeat: /items · bind: item
+      itemText · text: {label}
+      itemIndicator ✓ · icon: "✓"
+```
+
+Скелет чист от данных — ни одной буквальной строки, ни `.map()` по локальному массиву: `repeat`
+называет только «здесь список, сколько бы пунктов данные ни принесли» (раскладка, не данные),
+`item`'s `bind: { item: "" }` — пустой путь значит «весь текущий элемент повтора целиком»
+(`packages/skin`, `scopedPath`, тот же приём, что `accordion`'s `action-list` использует для
+`payload: ""`) — передаёт `ListboxItem` тот же объект, что лежит в `Listbox`'s `items` по этому
+индексу, ровно то, что ждёт проп `item`. Галочка `itemIndicator`'а — буквальный символ
+(`{ genus: "icon", value: "✓" }`), тот же приём, что уже использует чекбоксный пункт `menu`'а: это
+раскладка, не данные — каждый лист метит выбранный пункт одинаково, ни один датасет не выбирает
+для него другой символ построчно.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+База держится близко к формам `select`'а на общих частях (`content`'s рамка, `item`'s
+hover/highlighted/checked/disabled) — лист читается как открытое навсегда содержимое выпадашки
+`select`'а, без триггера. `itemIndicator` прячется, пока не выбран, тем же приёмом, что и у
+`select`'а: нативный `hidden`, `display` включается только для `checked` — безусловный `display` в
+базе показал бы все галочки сразу.
+
+Две вариации, `comfortable` (умолчание) и `compact` — не цветовая ось, как у кнопки
+(`primary`/`quiet`/`danger`): определяющий компромисс листа — плотность, не значимость: сколько
+строк влезает до прокрутки, единственное, по чему судят обычный список.
+
+> [!WARNING]
+> Выбранный пункт метится ЦВЕТОМ ТЕКСТА, не заливкой всей строки (найдено вживую, 2026-08-30 — во
+> взаправдашней композиции сплошная заливка строки читалась как нестилизованная белая плашка).
+> Выбранная строка метит себя так же, как ссылка или активная вкладка — собственным цветом, а не
+> закраской подложки под собой.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Корень берёт
+плоские `items` (не готовую коллекцию) и сам строит из них настоящий `ListCollection` внутри,
+мемоизированный — идентичность стабильна между перерисовками, которые `items` не затрагивают.
+`items` может прийти `undefined` на границе системы, которую `tsc` не видит насквозь (`bind:
+{ items: "/items" }` по пути, которого данные ещё не принесли) — корень тогда строит пустой список,
+а не падает: измерено вживую, `createListCollection({ items: undefined })` бросает `TypeError:
+options.items is not iterable`.
 
 ```tsx
-import {
-  Listbox,
-  ListboxLabel,
-  ListboxInput,
-  ListboxContent,
-  ListboxItemGroup,
-  ListboxItemGroupLabel,
-  ListboxItem,
-  ListboxItemText,
-  ListboxItemIndicator,
-  ListboxValueText,
-  ListboxEmpty,
-} from "@omnifield/probe-web-ui";
-
 <Listbox items={[{ value: "us", label: "United States" }]}>
-  <ListboxLabel>{/* text */}</ListboxLabel>
-  <ListboxInput />
+  <ListboxLabel>Страна</ListboxLabel>
   <ListboxContent>
-    {/* either itemGroup(s), or item(s) directly */}
     <ListboxItemGroup>
-      <ListboxItemGroupLabel>{/* text */}</ListboxItemGroupLabel>
+      <ListboxItemGroupLabel>Северная Америка</ListboxItemGroupLabel>
       <ListboxItem item={{ value: "us", label: "United States" }}>
-        <ListboxItemText>{/* text */}</ListboxItemText>
-        <ListboxItemIndicator>{/* icon */}</ListboxItemIndicator>
+        <ListboxItemText>United States</ListboxItemText>
+        <ListboxItemIndicator>✓</ListboxItemIndicator>
       </ListboxItem>
     </ListboxItemGroup>
-    <ListboxEmpty>{/* text, shown only when there's nothing to show */}</ListboxEmpty>
   </ListboxContent>
-  <ListboxValueText placeholder="Nothing selected" />
+  <ListboxValueText placeholder="Ничего не выбрано" />
 </Listbox>
 ```
 
-## Examples
-
-### Basic, single selection
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
 
 ```tsx
-<Listbox items={countries}>
-  <ListboxLabel>Select Country</ListboxLabel>
-  <ListboxContent>
-    <For each={countries}>
-      {(item) => (
-        <ListboxItem item={item}>
-          <ListboxItemText>{item.label}</ListboxItemText>
-          <ListboxItemIndicator>✓</ListboxItemIndicator>
-        </ListboxItem>
-      )}
-    </For>
-  </ListboxContent>
-</Listbox>
+const data = { label: "Страна", items: [{ value: "us", label: "США" }] };
+const tree = instanceOf("listbox", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
 ```
 
-### Multiple selection
+**Множественный выбор.** `selectionMode="multiple"` — клик переключает без модификатора;
+`"extended"` — выбор через `Cmd`/`Ctrl`, интерфейс в духе файлового менеджера.
 
 ```tsx
 <Listbox items={days} selectionMode="multiple">
-  <ListboxLabel>Select Days</ListboxLabel>
+  <ListboxLabel>Выберите дни</ListboxLabel>
   <ListboxContent>
     <For each={days}>
       {(item) => (
@@ -163,31 +244,11 @@ import {
 </Listbox>
 ```
 
-### Grouped items
-
-```tsx
-<Listbox items={cities}>
-  <ListboxLabel>Select City</ListboxLabel>
-  <ListboxContent>
-    <For each={groupedByRegion}>
-      {([region, items]) => (
-        <ListboxItemGroup>
-          <ListboxItemGroupLabel>{region}</ListboxItemGroupLabel>
-          <For each={items}>
-            {(item) => (
-              <ListboxItem item={item}>
-                <ListboxItemText>{item.label}</ListboxItemText>
-              </ListboxItem>
-            )}
-          </For>
-        </ListboxItemGroup>
-      )}
-    </For>
-  </ListboxContent>
-</Listbox>
-```
-
-### Filterable
+**Фильтрация.** `input` — не часть базового примера Ark, но настоящая, адресованная часть под
+сценарий фильтрации: связывается с функцией `filter` из `useListCollection`
+(`@ark-ui/solid/collection`), которая сужает `collection.items`, пока потребитель печатает.
+`keyboardPriority` решает, чьи клавиши побеждают при конфликте — редактирования текста в поле или
+навигации по листу.
 
 ```tsx
 import { useListCollection } from "@ark-ui/solid/collection";
@@ -198,8 +259,8 @@ const { collection, filter } = useListCollection({
 });
 
 <Listbox items={collection().items}>
-  <ListboxLabel>Select Framework</ListboxLabel>
-  <ListboxInput placeholder="Search…" onInput={(event) => filter(event.currentTarget.value)} />
+  <ListboxLabel>Выберите фреймворк</ListboxLabel>
+  <ListboxInput placeholder="Поиск…" onInput={(event) => filter(event.currentTarget.value)} />
   <ListboxContent>
     <For each={collection().items}>
       {(item) => (
@@ -208,79 +269,42 @@ const { collection, filter } = useListCollection({
         </ListboxItem>
       )}
     </For>
-    <ListboxEmpty>No frameworks found</ListboxEmpty>
+    <ListboxEmpty>Ничего не найдено</ListboxEmpty>
   </ListboxContent>
 </Listbox>
 ```
 
-### Showing the selection as text
+`empty` монтируется, только пока набор пуст — Ark сам ставит гейт (`<Show when={collection.size
+=== 0}>`), кит второго гейта не добавляет; пригождается вместе с полем фильтра, которое может
+сузить список до нуля совпадений.
 
-```tsx
-<Listbox items={colors} selectionMode="multiple" defaultValue={["red", "blue"]}>
-  <ListboxLabel>
-    Colors: <ListboxValueText />
-  </ListboxLabel>
-  <ListboxContent>
-    <For each={colors}>
-      {(item) => (
-        <ListboxItem item={item}>
-          <ListboxItemText>{item.label}</ListboxItemText>
-          <ListboxItemIndicator>✓</ListboxItemIndicator>
-        </ListboxItem>
-      )}
-    </For>
-  </ListboxContent>
-</Listbox>
+**Композиция в чужую сборку.** У листа нет `selfAssembly` — голая ссылка `{ node: "listbox" }`
+откуда-то ещё даёт только корень и ничего внутри: весь составной поддерево (`content`/`item`/
+`itemText`/`itemIndicator`, плюс `itemGroup`/`itemGroupLabel` при надобности) авторится руками,
+как в собственной `playground/assemblies.ts` этого компонента. Части НЕ-корня чужой сборки
+адресуются через точку — `listbox.content`, `listbox.item`, `listbox.itemText`; голый `content` в
+адресе ВЛАДЕЮЩЕЙ сборки резолвится в никуда и молча не рисует детей, без ошибки. Живой пример — в
+`accordion`'s `action-list`, которая кладёт ровно один `listbox` на раздел:
+
+```
+content 📂
+  listbox           · bind: items, value
+    listbox.content
+      listbox.item[] · repeat: items · bind: item · on: click → select
+        listbox.itemText
+        listbox.itemIndicator
 ```
 
-## Styling hooks
+Родное событие клика по `item` спокойно уживается со своим `on: click` в чужой сборке — оба летят
+с одного и того же клика (собственный `action-list` диспатчит событие `"select"`, несущее весь
+пункт как `payload` через пустой путь `path: ""`, пока выбор Ark идёт своим чередом в этом же
+клике).
 
-`item`/`itemText`/`itemIndicator` all share `checked`/`unchecked`/`highlighted`/`disabled` (see
-`packages/skin`) — highlighted and checked are independent: an item can be highlighted (keyboard
-focus) without being checked, or checked without currently being highlighted. `content`/`itemGroup`
-both carry `empty` for when there's nothing to render. Unlike the select, nothing here ever carries
-an open/closed pair — there's no floating layer to open.
+## Доступность
 
-## Accessibility
-
-Listbox follows the WAI-ARIA [Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
-Ark's own documentation doesn't publish an explicit keyboard table for it, but real, grounded
-behavior includes: arrow-key navigation along the `orientation` axis moves the highlight,
-`Space`/`Enter` selects the highlighted item, `typeahead` (opt-in) jumps to an item by typing its
-text, and — unless `disallowSelectAll` is set — `Cmd`/`Ctrl`+`A` selects every item at once in
-`multiple`/`extended` mode. `loopFocus` controls whether navigating past the last item wraps back
-to the first.
-
-## Assembly & skin notes
-
-Concrete things that cost real time to find on this component's nearest sibling (`select`) —
-listed here because the same traps apply to `listbox` for the same reasons, even though none of
-them has actually bitten this component yet.
-
-- **No `selfAssembly`.** A bare `{ node: "listbox" }` reference from elsewhere gets you the root
-  and nothing else — the whole compound tree (`content`/`item`/`itemText`/`itemIndicator`, plus
-  `itemGroup`/`itemGroupLabel` if needed) has to be authored by hand, mirroring this component's
-  own `playground/assemblies.ts`. Proven working composed inside `accordion`'s `action-list.ts`.
-- **Non-root parts of a reference are addressed with a dot**: `listbox.content`, `listbox.item`,
-  `listbox.itemText` — a bare `content` resolves nowhere in the OWNING assembly's own anatomy and
-  silently renders no children, no error (found live composing this exact component into
-  `accordion`'s `itemContent`).
-- **`item`'s own native click composes fine with an assembly's `on.click`** — both fire from the
-  same click (proven live: `accordion`'s `action-list.ts` dispatches a `"select"` event carrying
-  the whole item as `payload` via the empty-path marker, `path: ""`, while Ark's own selection
-  still happens normally in the same click).
-- **No floating layer, no `Portal`, no open/closed pair anywhere** — unlike `select`, there is
-  nothing here that Zag hides with the native `hidden` attribute, so the `display`-vs-`[hidden]`
-  conflict that broke `select`'s `content` cannot happen to this component's own parts the same
-  way. `itemIndicator` still uses `hidden` for its unchecked case (the kit sets it, not Zag) — the
-  shipped recipe already scopes `display` to `states.checked` only; don't set an unconditional
-  `display` on it if the recipe ever changes, for the same reason `select`'s `content` couldn't.
-- **A repeated, per-instance controlled `value` needs binding to real data, not `defaultValue`, if
-  more than one instance exists and only one should reflect an outside fact.** See `accordion`'s
-  own notes — its `action-list.ts` composes exactly one `listbox` per section this way.
-- **Known open gap (as of 2026-08-31, PWEB-211):** `playground/parts.ts` still annotates `parts`
-  with the wide `Record<ListboxPart, PassportPartEditorInfo<ListboxPart>>` form rather than `as
-  const`. A typo in a state name there will NOT be caught by `tsc` — only by `defineEditorInfo`'s
-  runtime check, one step later than on `accordion`/`select`/`button`, where this was already
-  fixed. Same fix applies here; just not done yet.
-<!-- user:end -->
+Лист следует паттерну WAI-ARIA [Listbox](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). Явной
+таблицы клавиш Ark не публикует, но задокументированное поведение: стрелки вдоль оси `orientation`
+двигают подсветку, `Space`/`Enter` выбирает подсвеченный пункт, `typeahead` (по подключению)
+прыгает к пункту по вводу текста, а `Cmd`/`Ctrl`+`A` выбирает все пункты разом в режиме
+`multiple`/`extended` — если только не выставлен `disallowSelectAll`. `loopFocus` решает, оборачивается
+ли навигация с последнего пункта на первый.

@@ -1,12 +1,3 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// `highlighted` carries the look hover/focus-visible would elsewhere (`../entity/passport.ts`'s
-// own file header: items are never individually focusable, `data-highlighted` is the one virtual
-// "current item" fact) — no separate hover/focus-visible rules exist on any item-family part.
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
@@ -39,6 +30,10 @@ const itemLook = {
 const itemStates = {
   highlighted: { props: { background: "var(--accent-9)", color: "var(--accent-contrast)" } },
   disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
+  checked: { props: { background: "var(--accent-3)" } },
+  unchecked: { props: { background: "transparent" } },
+  radio: { props: { cursor: "pointer" } },
+  checkbox: { props: { cursor: "pointer" } },
 } as const;
 
 export const recipe: SlotRecipe = {
@@ -59,20 +54,40 @@ export const recipe: SlotRecipe = {
         transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
-      states: { ...buttonStates, open: { props: { background: "var(--neutral-4)" } } },
+      states: {
+        ...buttonStates,
+        open: { props: { background: "var(--neutral-4)" } },
+        closed: { props: { background: "var(--neutral-3)" } },
+        current: { props: { background: "var(--neutral-4)" } },
+      },
     },
     triggerItem: {
       props: { ...itemLook, justifyContent: "space-between" },
-      states: itemStates,
+      states: {
+        highlighted: itemStates.highlighted,
+        disabled: itemStates.disabled,
+        open: { props: { background: "var(--accent-3)" } },
+        closed: { props: { background: "transparent" } },
+      },
     },
-    contextTrigger: { props: {} },
+    contextTrigger: {
+      props: { display: "contents" },
+      states: {
+        open: { props: { cursor: "context-menu" } },
+        closed: { props: { cursor: "default" } },
+        current: { props: { cursor: "context-menu" } },
+      },
+    },
     indicator: {
       props: {
         display: "inline-flex",
         transition: "transform var(--motion-fast) var(--ease-out)",
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
-      states: { open: { props: { transform: "rotate(180deg)" } } },
+      states: {
+        open: { props: { transform: "rotate(180deg)" } },
+        closed: { props: { transform: "rotate(0deg)" } },
+      },
     },
     positioner: {
       props: {
@@ -94,8 +109,12 @@ export const recipe: SlotRecipe = {
         borderRadius: "var(--radius-lg)",
         boxShadow: "0 4px 16px oklch(0% 0 0 / 0.16)",
       },
+      states: {
+        open: { props: { opacity: "1" } },
+        closed: { props: { opacity: "0" } },
+      },
     },
-    arrow: { props: {} },
+    arrow: { props: { position: "absolute" } },
     arrowTip: { props: { background: "var(--neutral-1)" } },
     separator: {
       props: {
@@ -121,20 +140,24 @@ export const recipe: SlotRecipe = {
       states: itemStates,
     },
     itemIndicator: {
-      props: {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        inlineSize: "1rem",
-        flexShrink: "0",
+      props: { display: "inline-flex", alignItems: "center", justifyContent: "center", inlineSize: "1rem", flexShrink: "0", color: "var(--accent-11)" },
+      states: {
+        checked: { props: { display: "inline-flex" } },
+        unchecked: { props: { display: "none" } },
+        highlighted: { props: { color: "var(--accent-contrast)" } },
+        disabled: { props: { opacity: "0.6" } },
       },
     },
     itemText: {
       props: { flex: "1" },
-      states: itemStates,
+      states: {
+        highlighted: itemStates.highlighted,
+        disabled: itemStates.disabled,
+        checked: { props: { fontWeight: "var(--weight-medium)" } },
+        unchecked: { props: { fontWeight: "var(--weight-normal)" } },
+      },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "menu-sample", component: "menu", recipe };

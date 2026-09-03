@@ -1,28 +1,20 @@
-// Live proof for `playground/assemblies.ts`'s "basic" — through the real mechanism
-// (`baseAssemblyOf`/`RenderTree` on a real registry), not a type-level claim. Same shape as
-// `button.test.tsx`'s own "playground assembly \"base\"" case: the assembly carries no content,
-// `data` supplies the label and the items here, in the test — the same place button's own
-// `{ label: "Оформить заказ" }` lives.
-//
-// `await Promise.resolve()` after `.click()` — measured, not copied from the button's own test:
-// `ITEM.CLICK`'s actions (`listbox.machine.js`) update the Zag store synchronously, but the Solid
-// adapter's own subscription (`@zag-js/solid`) flushes the resulting `data-state` re-render on a
-// microtask, not inline with the DOM click handler. The button's own test never hit this because
-// it only checks the plain callback array `dispatch()` fills synchronously, never a Zag-owned
-// attribute.
-
 import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
 import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
+import type { PassportAssembly, PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
+import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit } from "./components/kit.jsx";
-import { passport } from "./entity/passport.js";
-import { assemblies } from "./playground/assemblies.js";
-import { editorInfo } from "./playground/index.js";
+import { kit as listboxKit } from "../components/index.js";
+import { passport as listboxPassport } from "../entity/passport.js";
+import { assemblies } from "../playground/assemblies/index.js";
+import { editorInfo as listboxEditorInfo } from "../playground/index.js";
 
-const readableListbox: ReadableComponent = {
-  passport: {
+function readable<Part extends string, Data = unknown>(
+  passport: ComponentPassport<Part>,
+  editorInfo: PassportEditorInfo<Part, string, Data>,
+): ReadableComponent["passport"] {
+  return {
     component: passport.component,
     genus: editorInfo.genus,
     anatomy: passport.anatomy,
@@ -31,13 +23,14 @@ const readableListbox: ReadableComponent = {
       name: part.name,
       accepts: editorInfo.parts[part.name]?.accepts,
     })),
-    selfAssembly: (passport as any).selfAssembly,
-  },
-  parts: kit.parts,
-};
+    selfAssembly: passport.selfAssembly as any,
+  };
+}
 
 const REGISTRY: Registry = createRegistry({
-  components: { listbox: readableListbox },
+  components: {
+    listbox: { passport: readable(listboxPassport, listboxEditorInfo), parts: listboxKit.parts },
+  },
   admits,
 });
 
@@ -51,7 +44,7 @@ afterEach(() => {
 
 function mount(data: unknown) {
   const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-  const tree = baseAssemblyOf(passport, assembly, "listbox", data);
+  const tree = baseAssemblyOf(listboxPassport, assembly as PassportAssembly, "listbox", data);
 
   const host = document.createElement("div");
   document.body.append(host);
@@ -96,10 +89,6 @@ describe('listbox "basic" — skeleton filled from data, nothing hardcoded in th
   });
 
   it("does not crash when `/items` has not arrived yet — an empty list, not a `TypeError`", () => {
-    // Measured live in the running app (products/skin): `bind: { items: "/items" }` resolves to
-    // `undefined` before the data panel's data lands, and `createListCollection({ items: undefined })`
-    // throws `TypeError: options.items is not iterable` — a real transient state a JSON path
-    // miss produces, not a hypothetical.
     const host = mount({ label: "Страна" });
 
     expect(host.querySelectorAll('[data-scope="listbox"][data-part="item"]')).toHaveLength(0);

@@ -1,19 +1,8 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// Track-and-thumb: the thumb SLIDES (`transform: translateX`, not a repositioned box) between the
-// track's two ends. The travel distance is arithmetic, not measured — unlike the tabs'/radio
-// group's own indicators, the switch has exactly two fixed positions, and no kit-measured
-// variable exists for either one (`../entity/passport.ts` declares none): track inner width
-// (2.5rem outer − 2×0.125rem padding = 2.25rem) minus thumb width (1.25rem) leaves exactly 1rem
-// to travel.
-
 import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
 
+const rootTransition = "background-color var(--motion-fast) var(--ease-out)";
 const trackTransition = "background-color var(--motion-fast) var(--ease-out)";
-const thumbTransition = "transform var(--motion-fast) var(--ease-out)";
+const thumbTransition = "transform var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out)";
 
 export const recipe: SlotRecipe = {
   base: {
@@ -22,10 +11,27 @@ export const recipe: SlotRecipe = {
         display: "inline-flex",
         alignItems: "center",
         gap: "var(--space-2)",
+        borderRadius: "var(--radius-md)",
         cursor: "pointer",
+        transition: rootTransition,
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
+        checked: { props: { cursor: "pointer" } },
+        unchecked: { props: { cursor: "pointer" } },
         disabled: { props: { cursor: "not-allowed", opacity: "0.5" } },
+        readonly: { props: { cursor: "default" } },
+        invalid: { props: { cursor: "pointer" } },
+        required: { props: { cursor: "pointer" } },
+        hover: { props: { background: "var(--neutral-2)" } },
+        active: { props: { background: "var(--neutral-3)" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": {
+          props: {
+            outline: "var(--border-width-2) solid var(--accent-8)",
+            outlineOffset: "var(--space-1)",
+          },
+        },
       },
     },
     control: {
@@ -43,7 +49,10 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { background: "var(--accent-9)" } },
+        unchecked: { props: { background: "var(--neutral-6)" } },
         hover: { props: { background: "var(--neutral-7)" } },
+        active: { props: { transform: "scale(0.96)" } },
+        focus: { props: { outline: "none" } },
         "focus-visible": {
           props: {
             outline: "var(--border-width-2) solid var(--accent-8)",
@@ -51,7 +60,9 @@ export const recipe: SlotRecipe = {
           },
         },
         invalid: { props: { background: "var(--danger-9)" } },
+        required: { props: { background: "var(--neutral-6)" } },
         disabled: { props: { background: "var(--neutral-4)" } },
+        readonly: { props: { cursor: "default" } },
       },
     },
     thumb: {
@@ -66,6 +77,15 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { transform: "translateX(1rem)" } },
+        unchecked: { props: { transform: "translateX(0)" } },
+        hover: { props: { boxShadow: "0 1px 3px oklch(0% 0 0 / 0.3)" } },
+        active: { props: { boxShadow: "0 1px 1px oklch(0% 0 0 / 0.2)" } },
+        focus: { props: { boxShadow: "0 1px 2px oklch(0% 0 0 / 0.24)" } },
+        "focus-visible": { props: { boxShadow: "0 1px 2px oklch(0% 0 0 / 0.24)" } },
+        invalid: { props: { boxShadow: "0 1px 2px oklch(0% 0 0 / 0.24)" } },
+        required: { props: { boxShadow: "0 1px 2px oklch(0% 0 0 / 0.24)" } },
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { opacity: "0.8" } },
       },
     },
     label: {
@@ -74,11 +94,19 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-12)",
       },
       states: {
+        checked: { props: { fontWeight: "var(--weight-medium)" } },
+        unchecked: { props: { fontWeight: "var(--weight-normal)" } },
         disabled: { props: { color: "var(--neutral-11)" } },
+        readonly: { props: { color: "var(--neutral-12)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        required: { props: { fontWeight: "var(--weight-medium)" } },
+        hover: { props: { textDecoration: "underline" } },
+        active: { props: { opacity: "0.85" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": { props: { textDecoration: "underline" } },
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "switch-sample", component: "switch", recipe };
