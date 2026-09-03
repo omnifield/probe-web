@@ -470,56 +470,76 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
   };
 
   /**
-   * Объявленные дети узла плюс слот (`SlotEntry`), собранные ОДИН раз за пересчёт — `createMemo`,
-   * а не обычная функция.
+   * Объявленные дети узла плюс слот (`SlotEntry`) — считаются ОДИН раз за пересчёт, а не на
+   * каждое чтение `.children` (`rendered()` читает `contentOf()` из геттера `children` в двух
+   * местах, `plainProps`/`decoratedProps`, а разные потребители читают проп `children` больше
+   * одного раза за коммит — без кэша каждое лишнее чтение звало `entry.render(ownProps())`
+   * заново, и слот вроде `ComponentPreview` пересобирался с нуля не на изменение данных, а на
+   * лишнее чтение).
    *
-   * `rendered()` читает `contentOf()` из геттера `children` в двух местах (`plainProps`/
-   * `decoratedProps`), и в разных путях Solid геттер `children` читается больше одного раза за
-   * коммит. Без мемо каждое такое чтение звало `entry.render(ownProps())` заново — слот
-   * (`ComponentPreview` и подобные) собирался с нуля на каждое лишнее чтение, а не на реальное
-   * изменение данных.
+   * `createMemo`, но НЕ созданный сразу здесь: `createMemo` считает тело в момент СОЗДАНИЯ, а не
+   * первого чтения. Дети узла (`<For>` ниже) — это ВЛОЖЕННЫЕ `<RenderNode>`, и создай их прямо
+   * тут — они бы возникли ДО того, как узел вообще собран (`assembled()`) и вызван `Comp`. Для
+   * составных компонентов вроде `tree-view` это ломает контекст в буквальном смысле: `TreeItem`
+   * ставит `<ArkNodeProvider>` вокруг СВОИХ `children`, и `TreeControl`/`TreeControlIndicator`
+   * внутри читают этот контекст, — а мемо, посчитанный на шаг раньше, создавал бы их узлом ВЫШЕ
+   * провайдера, который их и должен был обернуть (`useTreeViewNodeContext returned undefined`,
+   * найдено user на живом дереве). У прежней обычной функции этой беды не было именно потому, что
+   * она не запускалась, пока её не позвал сам `TreeItem` — ужé ВНУТРИ своего провайдера; кэш
+   * обязан сохранить этот же момент первого вызова, а не сдвинуть его на момент объявления узла.
    *
-   * Определена ПОСЛЕ `ownProps`: `createMemo` считает тело сразу при создании, а обычная функция —
-   * только при вызове. Останься `contentOf` (в виде мемо) до объявления `ownProps`, обращение к
-   * `ownProps()` внутри тела мемо упёрлось бы в temporal dead zone — `ReferenceError`, а не
-   * отложенное чтение, как было у прежней, невызванной сразу функции.
+   * Поэтому память заводится ЛЕНИВО: `createMemo` создаётся при ПЕРВОМ вызове `contentOf()`, тем
+   * самым в ТОЧНО ТОМ ЖЕ месте реактивного дерева, где раньше считала обычная функция, — только
+   * повторные вызовы (второе и далее чтение `.children` в том же цикле) читают уже готовое
+   * значение, не пересобирая слот.
+   *
+   * Объявлена ПОСЛЕ `ownProps`: тело мемо читает `ownProps()`, а `createMemo` (при первом вызове)
+   * посчитает его сразу — окажись объявление раньше, чтение упёрлось бы в temporal dead zone
+   * («Cannot access 'ownProps' before initialization»).
    */
-  const contentOf = createMemo(() => {
-    const current = node();
-    if (!current) return null;
+  const contentCache: { memo?: () => JSX.Element | null } = {};
+  const contentOf = (): JSX.Element | null => {
+    if (!contentCache.memo) {
+      contentCache.memo = createMemo(() => {
+        const current = node();
+        if (!current) return null;
 
-    const declared =
-      current.children.length === 0 ? null : (
-        <For each={(node()?.children ?? []) as readonly NodeId[]}>
-          {(childId) => (
-            <RenderNode
-              nodeId={childId}
-              tree={props.tree}
-              registry={props.registry}
-              fallback={props.fallback}
-              errorFallback={props.errorFallback}
-              editOverlay={props.editOverlay}
-              data={props.data}
-              dispatch={props.dispatch}
-              slots={props.slots}
-            />
-          )}
-        </For>
-      );
+        const declared =
+          current.children.length === 0 ? null : (
+            <For each={(node()?.children ?? []) as readonly NodeId[]}>
+              {(childId) => (
+                <RenderNode
+                  nodeId={childId}
+                  tree={props.tree}
+                  registry={props.registry}
+                  fallback={props.fallback}
+                  errorFallback={props.errorFallback}
+                  editOverlay={props.editOverlay}
+                  data={props.data}
+                  dispatch={props.dispatch}
+                  slots={props.slots}
+                />
+              )}
+            </For>
+          );
 
-    // Слот встаёт по адресу УЗЛА (`current.type`), не по роду содержимого — содержимое (текст)
-    // адреса не несёт вовсе, слот на него не бывает. Проверяется НЕЗАВИСИМО от того, есть ли у
-    // узла объявленные дети (`itemContent` со `слотом` может быть объявлен пустым — `children:
-    // []` — и всё равно принять контент сверху; ранний выход по пустым детям здесь снят нарочно).
-    const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
-    if (!entry) return declared;
+        // Слот встаёт по адресу УЗЛА (`current.type`), не по роду содержимого — содержимое
+        // (текст) адреса не несёт вовсе, слот на него не бывает. Проверяется НЕЗАВИСИМО от того,
+        // есть ли у узла объявленные дети (`itemContent` со `слотом` может быть объявлен пустым —
+        // `children: []` — и всё равно принять контент сверху; ранний выход по пустым детям здесь
+        // снят нарочно).
+        const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
+        if (!entry) return declared;
 
-    const rendered = entry.render(ownProps());
-    const placement = entry.placement ?? "replace";
-    if (placement === "before") return <>{rendered}{declared}</>;
-    if (placement === "after") return <>{declared}{rendered}</>;
-    return rendered;
-  });
+        const rendered = entry.render(ownProps());
+        const placement = entry.placement ?? "replace";
+        if (placement === "before") return <>{rendered}{declared}</>;
+        if (placement === "after") return <>{declared}{rendered}</>;
+        return rendered;
+      });
+    }
+    return contentCache.memo();
+  };
 
   /**
    * Data fed into a component reference's own behavior (`PWEB-169`): its literal `props` plus

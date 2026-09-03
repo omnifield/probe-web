@@ -6,6 +6,7 @@
 // (тем же приёмом, что `packages/ui/src/button/button.test.tsx`'s синтетические узлы-ссылки),
 // не через `baseAssemblyOf` — сборке слот не нужен, только вход `RenderTree.slots`.
 
+import { createContext, useContext } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -174,7 +175,7 @@ const DOUBLE_READ_REGISTRY: Registry = createRegistry({
   admits: () => true,
 });
 
-describe("contentOf() — createMemo, а не пересборка на каждое чтение .children", () => {
+describe("contentOf() — ленивый мемо, а не пересборка на каждое чтение .children", () => {
   it("узел, читающий свои дети дважды, не зовёт entry.render дважды", () => {
     let calls = 0;
     const host = mount(
@@ -196,5 +197,72 @@ describe("contentOf() — createMemo, а не пересборка на кажд
     // а следствие того, что кэш держит ОДИН результат, а не пересобирает его на каждое чтение.
     expect(host.querySelectorAll('[data-testid="slot"]')).toHaveLength(1);
     expect(calls).toBe(1);
+  });
+});
+
+/**
+ * Контекст, поставленный компонентом-предком ВОКРУГ своих `children` (тем же приёмом, что
+ * `TreeViewNodeProvider` у `tree-view`: `<Ctx.Provider>{props.children}</Ctx.Provider>`), должен
+ * достаться вложенному узлу.
+ *
+ * Это ловит РЕГРЕССИЮ, найденную user на живом дереве после первого черновика: обычный
+ * `createMemo` считает тело СРАЗУ при создании — то есть создаёт вложенные `<RenderNode>` детей
+ * ДО того, как предок вообще вызван и успел поставить свой `<Ctx.Provider>`. Дети оказывались на
+ * узел выше провайдера, контекст читался как `undefined`
+ * (`useTreeViewNodeContext returned undefined`). Считать вызовы `entry.render` (тест выше) этого
+ * не поймает — там нет компонента, зависящего от МЕСТА в дереве владельцев, а не только от факта
+ * кэширования.
+ */
+const NodeCtx = createContext<string>();
+
+const CtxProvider = (props: { children?: unknown }) => (
+  <NodeCtx.Provider value="from-provider">
+    <div data-testid="wrapper">{props.children as never}</div>
+  </NodeCtx.Provider>
+);
+
+const CtxConsumer = () => <span data-testid="consumer">{useContext(NodeCtx) ?? "MISSING"}</span>;
+
+const CTX_REGISTRY: Registry = createRegistry({
+  components: {
+    provider: {
+      passport: {
+        component: "provider",
+        genus: "component",
+        anatomy: { keys: () => ["root"] },
+        root: "root",
+        parts: [{ name: "root" }],
+      },
+      parts: { root: CtxProvider },
+    },
+    consumer: {
+      passport: {
+        component: "consumer",
+        genus: "component",
+        anatomy: { keys: () => ["root"] },
+        root: "root",
+        parts: [{ name: "root" }],
+      },
+      parts: { root: CtxConsumer },
+    },
+  },
+  admits: () => true,
+});
+
+const CTX_TREE: AssemblyTree = {
+  components: {
+    root: "root",
+    nodes: {
+      root: { id: "root", type: "provider", parentId: null, children: ["child"] },
+      child: { id: "child", type: "consumer", parentId: "root", children: [] },
+    },
+  },
+};
+
+describe("contentOf() — дети собираются в момент чтения предком, а не раньше", () => {
+  it("контекст предка, поставленный вокруг своих children, виден вложенному узлу", () => {
+    const host = mount(CTX_TREE, undefined, CTX_REGISTRY);
+
+    expect(host.querySelector('[data-testid="consumer"]')?.textContent).toBe("from-provider");
   });
 });
