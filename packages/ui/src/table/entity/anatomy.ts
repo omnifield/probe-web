@@ -7,9 +7,11 @@ export const anatomy = createAnatomy("table").parts(
   "headRow",
   "headerCell",
   "headerSortTrigger",
+  "headerSelectTrigger",
   "body",
   "row",
   "cell",
+  "rowSelectTrigger",
 );
 
 export const anatomyParts = anatomy.build();

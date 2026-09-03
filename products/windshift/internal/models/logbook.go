@@ -331,12 +331,34 @@ type LogbookTriggerConfig struct {
 	MimeTypes    []string `json:"mime_types,omitempty"`    // MIME type patterns (supports wildcards like "image/*")
 }
 
-// CreateItemNodeConfig configures a create_item logbook action node
+// CreateItemNodeConfig configures a create_item node. Shared across the
+// three action engines that offer it (logbook, asset, and the main
+// workspace actions engine) — each executor reads only the fields its
+// domain needs, so new optional fields added for one engine are silently
+// ignored by the others rather than requiring per-engine config types.
 type CreateItemNodeConfig struct {
 	WorkspaceID int    `json:"workspace_id"`
 	ItemTypeID  int    `json:"item_type_id"`
-	Title       string `json:"title"`       // Template string: {{doc.title}}, etc.
+	Title       string `json:"title"`       // Template string: {{doc.title}}, {{item.title}}, etc.
 	Description string `json:"description"` // Template string
+
+	// ParentID sets a fixed parent for the new item's hierarchy slot.
+	// Workspace-engine only; logbook/asset executors ignore it. Takes
+	// precedence over ParentFromCurrentItem when both are set.
+	ParentID *int `json:"parent_id,omitempty"`
+	// ParentFromCurrentItem parents the new item under whatever item is in
+	// execution context (the trigger item, or the current iteration item
+	// inside a related_items loop) — the common "spawn a child of the item
+	// that just fired this action" case. Workspace-engine only.
+	ParentFromCurrentItem bool `json:"parent_from_current_item,omitempty"`
+	// StatusID and PriorityID set the new item's initial status/priority.
+	// Nil uses each field's workspace default. Workspace-engine only.
+	StatusID   *int `json:"status_id,omitempty"`
+	PriorityID *int `json:"priority_id,omitempty"`
+	// OutputField, if set, stores the new item's ID in ctx.Variables under
+	// this name so a downstream node (typically add_link) can reference it.
+	// Workspace-engine only.
+	OutputField string `json:"output_field,omitempty"`
 }
 
 // AssociateCustomerNodeConfig configures an associate_customer logbook action node

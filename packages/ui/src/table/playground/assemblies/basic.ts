@@ -20,7 +20,7 @@ export const basic: PassportAssembly<TablePart> = {
         { name: "Борис", role: "Инженер", age: 34 },
         { name: "Вера", role: "Менеджер", age: 41 },
       ],
-      defaultSorting: { columnId: "name", desc: false },
+      defaultSorting: [{ columnId: "name", desc: false }],
     },
   },
 };

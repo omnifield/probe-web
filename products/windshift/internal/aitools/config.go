@@ -27,7 +27,7 @@ type createCustomFieldArgs struct {
 	FieldType    string `json:"field_type" jsonschema:"One of: text, textarea, number, date, select, multiselect, boolean"`
 	Description  string `json:"description,omitempty" jsonschema:"Optional description"`
 	Required     bool   `json:"required,omitempty" jsonschema:"Whether the field must be filled in"`
-	Options      string `json:"options,omitempty" jsonschema:"JSON options; select/multiselect only, e.g. {\"items\":[{\"id\":1,\"label\":\"A\"}],\"nextId\":2}"`
+	Options      string `json:"options,omitempty" jsonschema:"JSON options; select/multiselect only, e.g. {\"items\":[{\"id\":1,\"label\":\"A\"}],\"next_id\":2}"`
 	DisplayOrder int    `json:"display_order,omitempty" jsonschema:"Display order among fields"`
 }
 

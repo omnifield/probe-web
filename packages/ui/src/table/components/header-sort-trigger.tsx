@@ -23,7 +23,12 @@ export function TableHeaderSortTrigger<TData extends RowData>(
     return sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none";
   };
 
-  const [, rest] = splitProps(props, ["header"]);
+  const sortIndex = (): string | undefined => {
+    const index = props.header.column.getSortIndex();
+    return index < 0 ? undefined : String(index + 1);
+  };
+
+  const [local, rest] = splitProps(props, ["header", "style"]);
 
   return (
     <button
@@ -33,6 +38,7 @@ export function TableHeaderSortTrigger<TData extends RowData>(
       data-state={state()}
       onClick={(event) => props.header.column.getToggleSortingHandler()?.(event)}
       {...anatomyParts.headerSortTrigger.attrs}
+      style={{ ...(typeof local.style === "object" ? local.style : undefined), "--sort-index": sortIndex() }}
     />
   );
 }

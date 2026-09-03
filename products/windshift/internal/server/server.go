@@ -964,6 +964,15 @@ func (s *Server) initialize() error {
 	itemHandler.SetEventCoordinator(eventCoordinator)
 	s.actionService.SetItemUpdateApplicationService(itemHandler.ItemUpdateApplicationService())
 	s.assetActionService.SetItemCreationService(itemHandler.ItemCreationService())
+	s.actionService.RegisterNodeExecutor(
+		services.NewCreateItemNodeExecutor(itemHandler.ItemCreationService(), permService, s.actionService),
+	)
+	s.actionService.RegisterNodeExecutor(
+		services.NewCreatePageNodeExecutor(pageHandler.PageApplicationService(), s.actionService),
+	)
+	s.actionService.RegisterNodeExecutor(
+		services.NewAddLinkNodeExecutor(itemLinkHandler.LinkService(), s.actionService),
+	)
 	commentHandler.SetWebhookSender(webhookSender)
 
 	// Item live-update stream (WI-484): register the in-memory SSE hub as the

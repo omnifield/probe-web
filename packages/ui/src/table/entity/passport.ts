@@ -19,6 +19,24 @@ const none = {
 
 const sortStates: readonly PassportState[] = [ascending, descending, none];
 
+const checkedPseudo = { name: "checked", mark: { kind: "pseudo", name: ":checked" } } as const satisfies PassportState;
+const disabledPseudo = { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } } as const satisfies PassportState;
+const hoverPseudo = { name: "hover", mark: { kind: "pseudo", name: ":hover" } } as const satisfies PassportState;
+const focusVisiblePseudo = { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } } as const satisfies PassportState;
+const activePseudo = { name: "active", mark: { kind: "pseudo", name: ":active" } } as const satisfies PassportState;
+
+const checkboxPseudos: readonly PassportState[] = [
+  checkedPseudo,
+  disabledPseudo,
+  hoverPseudo,
+  focusVisiblePseudo,
+  activePseudo,
+];
+
+const pinnedStart = { name: "pinned-start", mark: { kind: "attribute", name: "data-pinned", value: "start" } } as const satisfies PassportState;
+const pinnedEnd = { name: "pinned-end", mark: { kind: "attribute", name: "data-pinned", value: "end" } } as const satisfies PassportState;
+const pinnedStates: readonly PassportState[] = [pinnedStart, pinnedEnd];
+
 export const passport = definePassport({
   anatomy,
   root: "root",
@@ -27,20 +45,29 @@ export const passport = definePassport({
     { name: "caption", states: [] },
     { name: "head", states: [] },
     { name: "headRow", states: [] },
-    { name: "headerCell", states: sortStates },
+    { name: "headerCell", states: [...sortStates, ...pinnedStates] },
     {
       name: "headerSortTrigger",
       states: [
         ...sortStates,
-        { name: "disabled", mark: { kind: "pseudo", name: ":disabled" } },
-        { name: "hover", mark: { kind: "pseudo", name: ":hover" } },
-        { name: "focus-visible", mark: { kind: "pseudo", name: ":focus-visible" } },
-        { name: "active", mark: { kind: "pseudo", name: ":active" } },
+        disabledPseudo,
+        hoverPseudo,
+        focusVisiblePseudo,
+        activePseudo,
+      ],
+      variables: [{ name: "--sort-index", setBy: "kit" }],
+    },
+    {
+      name: "headerSelectTrigger",
+      states: [
+        ...checkboxPseudos,
+        { name: "indeterminate", mark: { kind: "pseudo", name: ":indeterminate" } },
       ],
     },
     { name: "body", states: [] },
-    { name: "row", states: [] },
-    { name: "cell", states: [] },
+    { name: "row", states: [{ name: "selected", mark: { kind: "attribute", name: "data-selected" } }] },
+    { name: "cell", states: pinnedStates },
+    { name: "rowSelectTrigger", states: checkboxPseudos },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },

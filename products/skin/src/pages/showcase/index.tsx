@@ -1,16 +1,13 @@
 import { createEffect } from "solid-js";
 
-import { componentInfo } from "#/entities/component/model/info.js";
+import { useComponentInfo } from "#/entities/component/model/store.js";
 import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
 
 export function ShowcasePage(props: { component: string; assembly?: string }) {
-  createEffect(() => {
-    const component = props.component;
-    const assembly = props.assembly;
+  const info = useComponentInfo(() => props.component);
 
-    void componentInfo(component).then((info) => {
-      console.log({ assembly, ...info });
-    });
+  createEffect(() => {
+    console.log({ assembly: props.assembly, ...info() });
   });
 
   return <Renderer component={props.component} assembly={props.assembly} />;

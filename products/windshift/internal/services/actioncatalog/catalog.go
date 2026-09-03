@@ -295,6 +295,30 @@ func Build() (*Catalog, error) {
 	}); err != nil {
 		return nil, err
 	}
+	if err := registerNode[models.CreateItemNodeConfig](c, nodeSpec{
+		Type:        models.ActionNodeCreateItem,
+		Label:       "Create item",
+		Description: "Create a new work item — optionally as a child of the current execution-context item — through the same pipeline as interactive/API creation.",
+		Category:    CategoryMutation,
+	}); err != nil {
+		return nil, err
+	}
+	if err := registerNode[models.CreatePageNodeConfig](c, nodeSpec{
+		Type:        models.ActionNodeCreatePage,
+		Label:       "Create page",
+		Description: "Create a wiki page, optionally nested under an existing page, through the same pipeline as interactive/API creation.",
+		Category:    CategoryMutation,
+	}); err != nil {
+		return nil, err
+	}
+	if err := registerNode[models.AddLinkNodeConfig](c, nodeSpec{
+		Type:        models.ActionNodeAddLink,
+		Label:       "Add link",
+		Description: "Link two items — typically a freshly created_item and the current execution-context item — through the same pipeline as interactive/API linking.",
+		Category:    CategoryMutation,
+	}); err != nil {
+		return nil, err
+	}
 
 	// Drift detector: every ActionNodeType constant must be registered.
 	// AllActionNodeTypes is the authoritative list (kept next to the
@@ -443,6 +467,9 @@ var AllActionNodeTypes = []models.ActionNodeType{
 	models.ActionNodeTransitionItem,
 	models.ActionNodeRelatedItems,
 	models.ActionNodeCreateMilestone,
+	models.ActionNodeCreateItem,
+	models.ActionNodeCreatePage,
+	models.ActionNodeAddLink,
 }
 
 // AllActionTriggerTypes is the trigger counterpart of AllActionNodeTypes.
