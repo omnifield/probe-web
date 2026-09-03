@@ -1,50 +1,194 @@
-# Table
+# 🗂️ Table
 
-**Group:** — · **Genus:** component · **Footprint:** wide
+🏷️ other · 🧬 component · 📐 wide · 📦 `@omnifield/probe-web-ui`
 
-## Anatomy
+Первый по-настоящему СВОЙ составной компонент кита (после кнопки) — Ark UI таблицу не даёт вовсе,
+ни готовую, ни headless. Всё, вплоть до анатомии, объявлено нами; движок под сортировкой строк —
+`@tanstack/solid-table`, тот же самый, market-vetted, на котором уже стоит собственный (гораздо
+больший, продуктовый) `DataTable` из `products/tables`.
 
-| part | meaning |
-|---|---|
-| root | the whole table |
-| caption | the table's own caption — describes what the table holds |
-| head | wraps the header row(s) |
-| headRow | one row of column headers |
-| headerCell | one column's header — carries the sorted look for that column, whether or not it holds a button |
-| headerSortTrigger | the button that toggles this column's sort — a real button, separate from its cell so a non-sortable column can simply omit it |
-| body | wraps the data rows |
-| row | one data row — v1 has no per-row look (no selection, no pinning) |
-| cell | one cell — content is the consumer's, same as every other kit part |
+## 🧭 Навигация
 
-## States
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| caption | — | — | — |
-| head | — | — | — |
-| headRow | — | — | — |
-| headerCell | ascending | [data-state="ascending"] | this column is the one currently sorted, low to high |
-| headerCell | descending | [data-state="descending"] | this column is the one currently sorted, high to low |
-| headerCell | none | [data-state="none"] | this column can sort, but isn't the one sorted right now |
-| headerSortTrigger | ascending | [data-state="ascending"] | this column is the one currently sorted, low to high |
-| headerSortTrigger | descending | [data-state="descending"] | this column is the one currently sorted, high to low |
-| headerSortTrigger | none | [data-state="none"] | this column can sort, but isn't the one sorted right now |
-| headerSortTrigger | disabled | :disabled | this column cannot sort — no button behavior, just the native disabled look |
-| headerSortTrigger | hover | :hover | pointer is over this button |
-| headerSortTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| headerSortTrigger | active | :active | this button is being held down |
-| body | — | — | — |
-| row | — | — | — |
-| cell | — | — | — |
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-## Settings
+```
+root
+├─ caption
+├─ head
+│  └─ headRow
+│     └─ headerCell[]
+│        └─ headerSortTrigger
+└─ body
+   └─ row[]
+      └─ cell[]
+```
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+| часть                 | значение                                                                 | принимает внутри                | рисуется                    |
+| ----------------------- | ----------------------------------------------------------------------------- | -------------------------------- | ----------------------------- |
+| 🗂️ `root`             | таблица целиком                                                              | `caption`, `head`, `body`        | `TableRoot`           |
+| `caption`             | собственная подпись таблицы — что она показывает                             | текст                             | `TableCaption`        |
+| `head`                | оборачивает строку(и) заголовков                                             | `headRow`                         | `TableHead`           |
+| `headRow`             | одна строка заголовков колонок                                               | `headerCell`                      | `TableHeadRow`        |
+| `headerCell`          | заголовок одной колонки — несёт вид сортировки для неё, есть кнопка внутри или нет | `headerSortTrigger`, текст  | `TableHeaderCell`     |
+| `headerSortTrigger`   | кнопка, переключающая сортировку этой колонки                                | текст, иконка                     | `TableHeaderSortTrigger` |
+| `body`                | оборачивает строки данных                                                    | `row`                             | `TableBody`           |
+| `row`                 | одна строка данных                                                           | `cell`                            | `TableRow`            |
+| `cell`                | одна ячейка — содержимое даёт потребитель                                    | текст, иконка, любой компонент    | `TableCell`           |
 
-## Notes
+> [!NOTE]
+> `headerCell` и `headerSortTrigger` — НАМЕРЕННО две разные части, не одна. Тот же разрез, что
+> аккордеон проводит между `item` (носитель состояния) и `trigger` (то, по чему кликают).
+> `aria-sort` принадлежит самому `<th>` по роли WAI-ARIA `columnheader`, а не кнопке внутри него;
+> клик и его hover/active/focus-visible вид принадлежат настоящей `<button>`, которой `<th>` не
+> является и не должна притворяться. Раздельные части позволяют скину адресовать «вид
+> отсортированного заголовка» и «вид нажатой кнопки сортировки» независимо, и позволяют колонке,
+> которая не сортируется, просто не нести `headerSortTrigger` — сама ячейка при этом никогда не
+> выглядит ложно интерактивной.
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+> [!NOTE]
+> `row`/`cell` не несут собственной идентичности (нет выбора, нет закрепления, нет клавиатурной
+> roving-навигации между ячейками) — согласованный объём v1 (26.08.2026): только сортировка. Выбор
+> строк, ресайз/закрепление/группировка колонок, пагинация — предметы продуктового `DataTable` из
+> `products/tables`; этот примитив кита сознательно меньше, та же сдержанность «не строить вперёд
+> спроса», которую собственная анатомия `grid`'а называет для своей `cell`.
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+|      | часть                              | состояние     | метка                       | значение                                                    |
+| ---- | ------------------------------------- | --------------- | ------------------------------- | ------------------------------------------------------------- |
+| ⬆️   | headerCell, headerSortTrigger        | ascending       | `[data-state="ascending"]`      | эта колонка сейчас отсортирована по возрастанию                |
+| ⬇️   | headerCell, headerSortTrigger        | descending      | `[data-state="descending"]`     | эта колонка сейчас отсортирована по убыванию                   |
+| ➖   | headerCell, headerSortTrigger        | none            | `[data-state="none"]`           | колонка умеет сортироваться, но сейчас не она отсортирована    |
+| 🚫   | headerSortTrigger                    | disabled        | `:disabled`                     | колонка не умеет сортироваться — нативный вид, без поведения кнопки |
+| 👆🎯 | headerSortTrigger                    | hover / focus-visible / active | `:hover` / `:focus-visible` / `:active` | обычное поведение кнопки, JS-перехвата указателя нет |
+
+`root`/`caption`/`head`/`headRow`/`body`/`row`/`cell` — шесть из девяти частей, состояний не несут
+вовсе: чистая структура (проверяемое заявление, не заглушка «пока не собрались»).
+
+> [!NOTE]
+> `ascending`/`descending`/`none` на `data-state` — общий трёхзначный атрибут на ДВУХ частях, тот
+> же приём, что уже несёт `checked`/`unchecked`/`indeterminate` чекбокса для одного общего
+> атрибута с более чем двумя значениями. Метка на `headerCell` ОПУЩЕНА ЦЕЛИКОМ (не выставлена в
+> `"none"`), когда колонка не умеет сортироваться, — зеркалит `aria-sort`, который роль WAI-ARIA
+> `columnheader` разрешает только колонкам, которые реально это умеют. Заявлять `data-state="none"`
+> на каждой колонке, сортируемой или нет, означало бы утверждать возможность, которой нет.
+
+> [!NOTE]
+> `hover`/`active`/`focus-visible` у `headerSortTrigger` — настоящие псевдоклассы, JS-трекинга
+> указателя в компоненте нет вовсе, тот же довод, что у обычной кнопки и у пункта `toggle-group`.
+> `disabled` — нативный атрибут элемента (`header.column.getCanSort()` лживо), так что `:disabled`
+> — честная метка, браузер даёт её бесплатно, та же категория, что `:hover`/`:active` здесь.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root · props: columns, data, defaultSorting
+```
+
+Одна голая ссылка на `root`, без детей: собственная СТАНДАРТНАЯ структура корня (без переданного
+`children`-рендер-пропа) строит `head`+`body` сама из `columns`/`data` — та же живая `table`,
+которую получил бы рукописный рендер-проп, сортировка кликом работает по-настоящему. Остальные
+восемь частей остаются настоящими, адресуемыми (скин стилизует `headerCell`/`cell`/… как любую
+другую часть), просто им не нужно быть буквальными узлами именно в ЭТОЙ сборке: корень растит их
+сам во время рендера.
+
+> [!NOTE]
+> `children` У КОРНЯ — НЕОБЯЗАТЕЛЬНЫЙ, и это не сокращение пути, а второй настоящий вызывающий.
+> Превьюер дерева сборки (`packages/assembly/src/render.tsx`) передаёт `children` каждого узла уже
+> ГОТОВЫМ поддеревом, единообразно, для любого компонента кита — функцию-рендер-проп этим путём
+> передать нельзя. Сборка, которая хочет показать таблицу по-настоящему, тем же способом, которым
+> она показывает живой `Accordion`/`Tabs`, не может дать функцию. Поэтому пропуск `children` рисует
+> СТАНДАРТНУЮ структуру, построенную из той же живой `table`, что получил бы рукописный рендер-проп
+> — сортировка в ней по-настоящему живая, не статичный мокап. Рукописному потребителю, которому
+> нужно собственное содержимое ячейки, `children` всё равно доступен и даёт полный контроль.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, `checkSkin` чист, CSS реально генерируется). В
+продакшене не участвует.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — рукописный рендер-проп, полный контроль над содержимым ячеек.
+
+```tsx
+<TableRoot columns={columns} data={people} defaultSorting={{ columnId: "name", desc: false }}>
+  {(table) => (
+    <>
+      <TableHead>
+        <For each={table.getHeaderGroups()}>
+          {(group) => (
+            <TableHeadRow>
+              <For each={group.headers}>
+                {(header) => (
+                  <TableHeaderCell header={header}>
+                    <TableHeaderSortTrigger header={header}>
+                      {String(header.column.columnDef.header)}
+                    </TableHeaderSortTrigger>
+                  </TableHeaderCell>
+                )}
+              </For>
+            </TableHeadRow>
+          )}
+        </For>
+      </TableHead>
+      <TableBody>
+        <For each={table.getRowModel().rows}>
+          {(row) => (
+            <TableRow>
+              <For each={row.getAllCells()}>
+                {(cell) => <TableCell>{String(cell.getValue())}</TableCell>}
+              </For>
+            </TableRow>
+          )}
+        </For>
+      </TableBody>
+    </>
+  )}
+</TableRoot>
+```
+
+Или — стандартная структура (тот же результат, что и рукописный пример выше, минус собственное
+содержимое ячейки):
+
+```tsx
+<TableRoot columns={columns} data={people} defaultSorting={{ columnId: "name", desc: false }} />
+```
+
+**Рендер через движок** — та же композиция (стандартная структура), но по схеме (сборка `basic`),
+которую рисует `RenderTree`.
+
+```tsx
+const tree = instanceOf("table", {}, "basic", {});
+
+<RenderTree tree={tree} registry={registry} data={{}} />;
+```
+
+**Управляемая сортировка.** `sorting`/`onSortingChange` берут сортировку под внешний контроль —
+`defaultSorting` тогда игнорируется.
+
+```tsx
+const [sorting, setSorting] = createSignal<TableSort | null>(null);
+
+<TableRoot columns={columns} data={people} sorting={sorting()} onSortingChange={setSorting} />;
+```
+
+> [!NOTE]
+> `TanStack` v9 — стор-бэкед, не обёрнут в Solid `Accessor`: чтение `table.getRowModel()` внутри
+> JSX уже участвует в точечной реактивности Solid без лишних `()` — собственный doc-комментарий
+> `createTable` называет это прямо.
+
+## Доступность
+
+`headerCell` несёт `aria-sort` по роли WAI-ARIA `columnheader` для тех колонок, что умеют
+сортироваться — экранный читалка объявляет текущее направление сортировки колонки без
+дополнительной разметки.

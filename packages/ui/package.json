@@ -21,6 +21,10 @@
     "./io": {
       "types": "./dist/io.d.ts",
       "default": "./dist/io.js"
+    },
+    "./component-info": {
+      "types": "./dist/component-info.d.ts",
+      "default": "./dist/component-info.js"
     }
   },
   "files": [

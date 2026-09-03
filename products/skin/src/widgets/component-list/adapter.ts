@@ -18,7 +18,7 @@
 // открывать, — вторая форма id для «свёрнутого» случая завела бы вторую ветку разбора там.
 
 import type { ComponentGroup } from "../../entities/component/model/store.js";
-import { editorInfoOf } from "../../entities/component/model/providers.js";
+import { editorInfoOf } from "@omnifield/probe-web-ui/passport";
 
 /** Один узел дерева — форма `TreeItem` (`packages/ui/src/tree-view/entity/io.ts`): id/label/
  * необязательные дети. */

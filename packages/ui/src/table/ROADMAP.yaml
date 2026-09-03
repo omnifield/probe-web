@@ -1,0 +1,385 @@
+# Дорожная карта механик таблицы — черновой обзор для роадмап-обсуждения (2026-09-03).
+#
+# Свободная форма, не окончательная схема: цена — грубая прикидка порядка величины
+# (S/M/L), не оценка в часах. Пойдёт основой для генератора тасок позже — поля стараются
+# быть последовательными по каждой записи, чтобы это было реалистично распарсить.
+#
+# Статус v1 (уже сделано, эталонировано): сетка + сортировка одной колонкой.
+# `packages/ui/src/table/` — README.md несёт устройство того, что уже есть.
+
+tags:
+  # Словарь тегов — как в обычном тасктрекере. У каждой записи (done/categories/log) есть
+  # `type` из этого списка.
+  - feature      # возможность таблицы, которую можно построить
+  - bug          # известный дефект, требует починки
+  - discussion   # открытая тема, обсуждается, решения ещё нет
+  - plan         # решение/план, уже согласовано
+  - question     # конкретный нерешённый вопрос, отложен на потом, не забыт
+
+statuses:
+  # Словарь статусов для записей типа `feature` — меняем по ходу работы, как в обычном
+  # тасктрекере. `log`-записи (`plan`/`question`/`discussion`) статуса не несут — они не
+  # задача, а решение/тема.
+  - todo          # ещё не начато
+  - in-progress   # делаем
+  - testing       # написано, гоняем тесты/проверяем вживую
+  - done          # готово, доведено до эталона
+
+priorities:
+  # Словарь приоритета — как у tags/statuses, словами, не номером. Порядок в списке ниже И
+  # ЕСТЬ порядок срочности (сверху вниз, от ближайшего к самому дальнему).
+  - next          # берём прямо сейчас/следующим
+  - soon          # вскоре после next
+  - later         # попозже, не горит
+  - eventually    # когда-нибудь, осознанно в самом конце
+
+# Заходы — на что группируем фичи, чтобы не распыляться (2026-09-03). Каждая фича несёт
+# `pass: <id>`, ссылаясь на один из заходов ниже. Внутри одного захода фичи делаем вместе:
+# общая механика/анатомия/движок, либо одна без другой не имеет смысла (`bulk-actions` без
+# `row-selection`, `faceted-values` без `column-filter`). Порядок самих заходов в списке —
+# тоже порядок исполнения внутри одного `priority`.
+passes:
+  - id: base-power
+    priority: next
+    name: Базовая мощь
+    items: [multi-sort, row-selection, column-visibility, column-pinning, pagination]
+    why: >
+      Всё дёшево (S), минимум нового слоя анатомии, TanStack почти всё даёт готовым.
+      Закрывает «таблица уже взрослая»: сортировка по нескольким колонкам, выбор строк,
+      гибкость и постраничность.
+
+  - id: filters
+    priority: next
+    name: Фильтры
+    items: [global-filter, column-filter, faceted-values]
+    why: >
+      Одна подсистема TanStack (filtering). `faceted-values` без `column-filter` смысла не
+      имеет — это его питание для выпадающих списков. Вместе с `base-power` закрывает «самый
+      частый минимум» дэшборда.
+
+  - id: row-hierarchy
+    priority: soon
+    name: Иерархия и особые строки
+    items: [grouping, expanding, row-pinning, bulk-actions]
+    why: >
+      `grouping`/`expanding` делят одну механику дерева строк у TanStack (`subRows`).
+      `bulk-actions` без `row-selection` (заход `base-power`) не имеет смысла — тулбар не
+      над чем показывать. `row-pinning` — тоже «особая строка», логично рядом.
+
+  - id: export
+    priority: soon
+    name: Экспорт / буфер
+    items: [export-csv, export-excel, clipboard-copy]
+    why: >
+      Отдельная подсистема, ни от чего не зависит (кроме мягкой связи с `row-selection` —
+      «экспортировать только выбранное»). Стоит раньше структуры колонок и
+      клавиатуры/редактирования — экспорт обычно просят раньше, чем полировку колонок.
+
+  - id: column-structure
+    priority: later
+    name: Структура колонок
+    items: [column-resizing, column-reordering, column-groups]
+    why: "Все про drag/layout заголовков — общая механика указателя."
+
+  - id: keyboard-editing
+    priority: later
+    name: Клавиатура и редактирование
+    items: [keyboard-navigation, inline-editing]
+    why: >
+      Редактирование без клавиатурной навигации по ячейкам получится слабым (Enter/Tab/Escape
+      нужны сразу) — делаем вместе, `keyboard-navigation` первой половиной.
+
+  - id: virtualization
+    priority: eventually
+    name: Виртуализация
+    items: [virtualization]
+    why: >
+      User (2026-09-03): самый низкий приоритет НАРОЧНО. Технически меняет ВСЁ
+      рендер-строк сразу — чем позже встраивать, тем меньше слоёв фич придётся сверять с
+      ней задним числом (остальные заходы успеют устаканить форму строки первыми).
+
+done:
+  - id: grid
+    type: feature
+    status: done
+    name: Голая сетка
+    means: root/caption/head/headRow/headerCell/body/row/cell — без интерактивности вовсе
+    price: done
+
+  - id: sorting
+    type: feature
+    status: done
+    name: Сортировка (одна колонка)
+    means: клик по заголовку переключает возрастание/убывание, стрелка в заголовке
+    engine: "@tanstack/solid-table (rowSortingFeature) — логика бесплатно, обвязка своя"
+    price: done
+
+categories:
+  - category: Строки и данные
+    items:
+      - id: pagination
+        type: feature
+        status: todo
+        pass: base-power
+        name: Пагинация (клиентская)
+        means: постраничный просмотр, TanStack сам считает страницы
+        engine: "@tanstack/solid-table — состояние готово, рисуем кнопки/номер страницы"
+        price: S
+        note: серверная пагинация (manualPagination) — отдельная история, завязана на весь стек данных, не только компонент
+
+      - id: grouping
+        type: feature
+        status: todo
+        pass: row-hierarchy
+        name: Группировка + агрегация
+        means: сворачиваемые группы строк, сводные строки (сумма/среднее/count/min/max)
+        engine: "@tanstack/solid-table (groupingFeature) — логика группировки есть, агрегаторы и UI сворачивания наши"
+        price: M
+
+      - id: expanding
+        type: feature
+        status: todo
+        pass: row-hierarchy
+        name: Раскрытие строк / вложенные данные
+        means: детализация строки, tree data — та же идея, что раскрытие в аккордеоне, но на уровне строки таблицы
+        engine: "@tanstack/solid-table (expandingFeature) — состояние есть, анатомия под sub-row наша"
+        price: M
+
+      - id: virtualization
+        type: feature
+        status: todo
+        pass: virtualization
+        name: Виртуализация
+        means: рисовать только видимые строки — без этого дэшборд с тысячами строк тормозит
+        engine: "@tanstack/solid-virtual — ВТОРАЯ библиотека, не входит в solid-table"
+        price: L
+        note: обвязка со скроллом (какая часть анатомии скроллится) — отдельное архитектурное решение, ближе к scroll-area, чем к сортировке
+
+  - category: Колонки
+    items:
+      - id: column-visibility
+        type: feature
+        status: todo
+        pass: base-power
+        name: Видимость колонок
+        means: показать/скрыть колонку
+        engine: "@tanstack/solid-table — состояние готово, рисуем переключатель"
+        price: S
+
+      - id: column-pinning
+        type: feature
+        status: todo
+        pass: base-power
+        name: Закрепление колонок
+        means: sticky left/right, ключевые колонки не уезжают при горизонтальном скролле
+        engine: "@tanstack/solid-table (columnPinningFeature) — состояние готово, CSS-часть наша"
+        price: S
+
+      - id: column-resizing
+        type: feature
+        status: todo
+        pass: column-structure
+        name: Ресайз колонок
+        means: тянешь границу заголовка — колонка меняет ширину
+        engine: "@tanstack/solid-table (columnSizingFeature) — состояние ширины есть, сам drag-хендл и его поведение наше"
+        price: M
+
+      - id: column-reordering
+        type: feature
+        status: todo
+        pass: column-structure
+        name: Порядок колонок (drag-n-drop)
+        means: перетащить заголовок, чтобы поменять порядок колонок местами
+        engine: "TanStack сам DnD не даёт — нужен отдельный drag-механизм"
+        price: L
+
+      - id: column-groups
+        type: feature
+        status: todo
+        pass: column-structure
+        name: Многоуровневые заголовки
+        means: "«шапка над шапкой» — группа колонок под одним общим заголовком"
+        engine: "@tanstack/solid-table поддерживает нативно (groupColumns), анатомия усложняется — ещё один уровень headRow"
+        price: M
+
+  - category: Фильтры
+    items:
+      - id: global-filter
+        type: feature
+        status: todo
+        pass: filters
+        name: Глобальный поиск
+        means: одно текстовое поле фильтрует все строки сразу
+        engine: "@tanstack/solid-table (globalFilterFeature) — TanStack фильтрует сам"
+        price: S
+
+      - id: column-filter
+        type: feature
+        status: todo
+        pass: filters
+        name: Фильтр по колонке
+        means: "текст / select / диапазон / дата — по одному мини-компоненту на тип"
+        engine: "@tanstack/solid-table (columnFilteringFeature) — логика фильтрации есть, UI по типу наш, это уже несколько частей анатомии"
+        price: M
+
+      - id: faceted-values
+        type: feature
+        status: todo
+        pass: filters
+        name: Faceted-значения
+        means: список уникальных значений колонки с count — для построения выпадающего фильтра
+        engine: "@tanstack/solid-table считает facets сам, рисуем список"
+        price: S
+
+  - category: Выбор и действия
+    items:
+      - id: row-selection
+        type: feature
+        status: todo
+        pass: base-power
+        name: Выбор строк
+        means: одиночный/множественный, чекбокс-колонка, чекбокс «выбрать всё» в заголовке
+        engine: "@tanstack/solid-table (rowSelectionFeature) — состояние готово"
+        price: S
+
+      - id: row-pinning
+        type: feature
+        status: todo
+        pass: row-hierarchy
+        name: Закрепление строк
+        means: важные строки закреплены сверху/снизу независимо от сортировки/фильтров
+        engine: "@tanstack/solid-table (rowPinningFeature) — состояние есть, поведение при сортировке/фильтрах наше"
+        price: M
+
+      - id: bulk-actions
+        type: feature
+        status: todo
+        pass: row-hierarchy
+        name: Массовые действия
+        means: тулбар над выбранными строками — не часть таблицы самой, а сборка вокруг неё
+        engine: "состав деталей типовой (surface + кнопки), таблица только отдаёт выбранные id"
+        price: M
+
+  - category: Навигация
+    items:
+      - id: keyboard-navigation
+        type: feature
+        status: todo
+        pass: keyboard-editing
+        name: Клавиатурная навигация по ячейкам
+        means: "стрелки двигают фокус между ячейками, как в Excel/Google Sheets"
+        engine: "TanStack тут не помогает вовсе — вся roving-tabindex-механика наша"
+        price: L
+
+      - id: multi-sort
+        type: feature
+        status: todo
+        pass: base-power
+        name: Мультиколоночная сортировка
+        means: сортировка сразу по нескольким колонкам, с приоритетом (1️⃣2️⃣3️⃣ значки в заголовках)
+        engine: "@tanstack/solid-table — уже почти готово (сейчас enableMultiSort: false), включить и добавить индикатор приоритета"
+        price: S
+        note: самый дешёвый следующий шаг — довесок к тому, что уже есть
+
+  - category: Редактирование
+    items:
+      - id: inline-editing
+        type: feature
+        status: todo
+        pass: keyboard-editing
+        name: Инлайн-редактирование ячеек
+        means: клик по ячейке → редактор на месте, коммит/отмена, валидация
+        engine: "TanStack редакторов не даёт — своя архитектура: тип колонки → тип редактора"
+        price: L
+
+  - category: Экспорт / буфер
+    items:
+      - id: export-csv
+        type: feature
+        status: todo
+        pass: export
+        name: Экспорт CSV
+        means: выгрузка текущих (или всех) строк в CSV
+        engine: "простой формат, пишется без сторонних библиотек"
+        price: M
+
+      - id: export-excel
+        type: feature
+        status: todo
+        pass: export
+        name: Экспорт Excel
+        means: выгрузка в .xlsx с форматированием
+        engine: "нужна сторонняя библиотека (SheetJS и подобные)"
+        price: L
+
+      - id: clipboard-copy
+        type: feature
+        status: todo
+        pass: export
+        name: Копирование выделения в буфер
+        means: "Excel-style выделение диапазона ячеек + Ctrl+C"
+        engine: "TanStack не участвует вовсе — своя логика выделения диапазона и сериализации"
+        price: L
+
+# Журнал архитектурных решений и открытых вопросов — по мере обсуждения роадмапа.
+log:
+  - id: features-are-props-not-settings
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Включение конкретной фичи в реальном использовании — обычный проп `TableRoot`
+      (enableRowSelection/enableGrouping/enableColumnPinning и т.п., по образцу самого
+      TanStack), НЕ `settings` паспорта. Проверено в исходниках TanStack v9: `enableXxx` —
+      настоящая runtime-опция (булево или предикат на строку), не то, что печётся в тип при
+      сборке. В закрытый словарь `settings` это не ложится — та же категория, что
+      `selectionMode` у date-picker (реальный проп, но не одно из трёх закрытых имён).
+
+  - id: one-maximal-features-bag
+    type: plan
+    date: 2026-09-03
+    summary: >
+      `tableFeatures({...})` — печётся в ТИП инстанса один раз при сборке компонента (не
+      per-instance). Решение: собрать его СРАЗУ максимальным (все фичи, которые вообще
+      планируем поддержать), а не заводить несколько вариантов `TableRoot` под разные
+      наборы фич. Один паспорт, один корень — не расходится с остальным китом.
+
+  - id: assemblies-are-showcases-not-gates
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Сборки (`playground/assemblies/`) — витрины/примеры для редактора и документации,
+      НЕ механизм включения фичи для потребителя. 3-4 сборки по уровням («голая сетка» →
+      «сортировка+выбор» → «дэшборд-комбо») — годная демонстрация возможностей паспорта,
+      тот же приём, что уже применён у остальных компонентов кита («basic» = минимальный
+      рабочий пример). Реальный потребитель решает пропы на своём `<TableRoot>` сам, сборка
+      не решает это за него.
+
+  - id: bundle-weight-of-maximal-root
+    type: question
+    date: 2026-09-03
+    summary: >
+      Один максимальный `TableRoot` тянет код ВСЕХ фич в бандл даже для мест, где нужна
+      только сетка+сортировка — TanStack не тришейкает это на уровне `tableFeatures()`.
+      User: сейчас это не проблема — таблицы разного уровня прокачки живут в разных местах
+      ПРИЛОЖЕНИЯ, но сам апп в любом случае везде тащит максималку целиком, сценария «этому
+      приложению нужна только примитивная таблица» не бывает. Решение принято (тащим всё),
+      но оставляю вопросом на будущее — если появится реально бандл-чувствительный сценарий
+      (например, встраиваемый виджет за пределами обычного аппа), стоит вернуться и
+      пересмотреть на отдельные варианты корня.
+
+  - id: passes-and-priority
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Фичи сгруппированы в 7 заходов (`passes`, поле `pass` на каждой фиче) — что логично
+      делать одним куском: общая механика/анатомия/движок TanStack, либо одна фича без
+      другой бессмысленна. Приоритет — словами (`priorities`: next/soon/later/eventually),
+      не номером, тем же приёмом, что `tags`/`statuses`. Виртуализация — `eventually`,
+      осознанно последней: она меняет весь рендер строк, и чем позже встраивать, тем меньше
+      слоёв фич придётся сверять с ней задним числом.
+
+# Собственная прикидка по цене (не оценка в часах, порядок величины):
+#   S — TanStack даёt логику почти бесплатно, нужен только слой anatomy+passport+wiring
+#       (та же форма, что уже сделана для сортировки)
+#   M — логику TanStack даёт частично, доделываем сами (UI, дополнительные части анатомии)
+#   L — нужна вторая библиотека ИЛИ заметный собственный движок (TanStack не помогает вовсе)

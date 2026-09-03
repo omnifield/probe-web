@@ -15,7 +15,8 @@ import { createStore, useSelector } from "@omnifield/probe-web-store";
 import { knownComponents } from "@omnifield/probe-web-assembly";
 import { GROUPS, groupOf } from "@omnifield/probe-web-ui/passport";
 
-import { editorInfoOf } from "./providers.js";
+import { editorInfoOf } from "@omnifield/probe-web-ui/passport";
+
 import { REGISTRY } from "./registry.js";
 
 /** Адреса компонентов, которые витрина знает. Перечень приходит ИЗ РЕЕСТРА, своего нет. */

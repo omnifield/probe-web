@@ -1,18 +1,15 @@
 import { createEffect } from "solid-js";
 
-import {
-  editorInfoOf,
-  passportOf,
-} from "#/entities/component/model/providers.js";
+import { componentInfo } from "#/entities/component/model/info.js";
 import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
 
 export function ShowcasePage(props: { component: string; assembly?: string }) {
   createEffect(() => {
-    console.log({
-      component: props.component,
-      assembly: props.assembly,
-      passport: passportOf(props.component),
-      editorInfo: editorInfoOf(props.component),
+    const component = props.component;
+    const assembly = props.assembly;
+
+    void componentInfo(component).then((info) => {
+      console.log({ assembly, ...info });
     });
   });
 
