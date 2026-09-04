@@ -57,7 +57,7 @@ export function App(props: { skin: SkinSwitch }) {
   return (
     <div class="ewc-placeholder">
       <h1>ewc</h1>
-      <p>skins come from the same presets service as products/skin — nothing local here</p>
+      <p>skins come from the same presets service as apps/skin — nothing local here</p>
 
       <Show when={refusal()}>{(said) => <p class="ewc-trouble">{said()}</p>}</Show>
 

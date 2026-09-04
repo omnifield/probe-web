@@ -25,7 +25,7 @@
     },
     "skin": {
       "command": "node",
-      "args": ["products/skin/.mcp/src/server.js"]
+      "args": ["apps/skin/.mcp/src/server.js"]
     }
   }
 }

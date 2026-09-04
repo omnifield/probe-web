@@ -2,7 +2,7 @@
 // данные/сборка/запись целиком в `@web-core/generators/plugins/kit` (`GEN-9`): это — реальный
 // готовый плагин, не движок, не логика ЭТОГО файла. Здесь остаются только пути: где `src`, где
 // `templates/barrel/*.hbs` (текст самих барелей — CSS-по-аналогии, свой на кит, не общий).
-// Прогоняется через `node ../../products/generators/dist/cli.js ./generate.config.ts`.
+// Прогоняется через `node ../../packages/generators/dist/cli.js ./generate.config.ts`.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

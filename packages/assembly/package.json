@@ -12,7 +12,7 @@
       "default": "./dist/index.js"
     },
     "./model": {
-      "types": "./dist/model.d.ts",
+      "types": "./dist/model/index.d.ts",
       "default": "./dist/model.js"
     }
   },

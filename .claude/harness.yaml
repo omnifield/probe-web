@@ -6,10 +6,10 @@
 #
 # Здесь ТОЛЬКО две вещи: зоны (границы правки) и пины моделей. Ни адресов служб, ни ключей
 # трекера — тем, чего нет, обвес больше не распоряжается.
-apiVersion: omnifield.dev/v1
+apiVersion: web-core.dev/v1
 kind: harness
 
-product: probe-web
+product: web-core
 
 # Число архитекторов (main-сессий).
 architects: 1
@@ -65,13 +65,13 @@ zones:
     paths: [products/studio, canons/studio]
     description: витрина первой волны — что умеет производство
   presets:
-    paths: [products/presets]
+    paths: [backend/presets]
     description: хранилище пресетов — кладёт и отдаёт JSON, формата фильтра НЕ понимает
   map:
     paths: [products/map, canons/map]
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера
   skin:
-    paths: [products/skin, canons/ui-skin]
+    paths: [apps/skin, canons/ui-skin]
     description: "производство оформлений для безголового кита — своя логика, кит остаётся голым. У продукта СВОЙ архитектор: заявки сюда приходят от него, а не ставятся ему."
   chat:
     paths: [products/chat, canons/chat]

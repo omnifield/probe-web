@@ -2,7 +2,7 @@
 // `createComponentInfo`/`kitComponentProvider` (`PWEB-217`–`219`): продукт зовёт готовое, не
 // собирает `Registry`/`instanceOf` заново на каждый следующий заход.
 //
-// Найдено user при разборе `products/skin/src/entities/component/model/registry.ts`+`instance.ts`
+// Найдено user при разборе `apps/skin/src/entities/component/model/registry.ts`+`instance.ts`
 // (пересобраны без `providers.ts` на этой же волне): «если для RenderTree нужны instance и
 // registry, получается что это базовый флоу, а не индивидуально для скин-витрины» — оба файла
 // продукта делали ровно то же самое: `readable(component)` (паспорт+карта частей+срез редактора

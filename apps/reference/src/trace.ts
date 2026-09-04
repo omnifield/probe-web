@@ -3,8 +3,8 @@
 // красоты — включив три флага сразу, видно ОДНУ ленту от `mount()` до примитива, а не три
 // разных формата, которые глазом не сводятся.
 
-/** Глобальный тумблер трейсов: `globalThis.__PROBE_WEB_REFERENCE_TRACE__ = true`. */
-const FLAG = "__PROBE_WEB_REFERENCE_TRACE__";
+/** Глобальный тумблер трейсов: `globalThis.__WEB_CORE_REFERENCE_TRACE__ = true`. */
+const FLAG = "__WEB_CORE_REFERENCE_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -31,6 +31,6 @@ export function trace(label: string): () => void {
   const started = performance.now();
   return () => {
     const ms = performance.now() - started;
-    console.debug(`[probe-web-reference] ${label} — ${ms.toFixed(2)}ms`);
+    console.debug(`[web-core-reference] ${label} — ${ms.toFixed(2)}ms`);
   };
 }

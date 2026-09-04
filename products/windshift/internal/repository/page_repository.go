@@ -508,11 +508,16 @@ func (r *PageRepository) SearchByKeyword(workspaceID int, query string, limit in
 }
 
 // pageDisplayOrderClause orders siblings alphabetically by title, except for
-// the fixed set of standardized component-doc section names — those always
-// sort in this canonical reading order ahead of everything else. Pages with
-// any other title (component root pages like "Table"/"Accordion", or
-// arbitrary pages) fall through to plain alphabetical, unaffected by this
-// list.
+// the fixed set of standardized doc section names — those always sort in
+// this canonical reading order. Component sections (Анатомия..Рецепт) sort
+// first, ahead of any arbitrary title (component root pages like
+// "Table"/"Accordion", package-doc sections like "Структура"/"Команды", or
+// any other page) which falls into the middle, alphabetical band. "FAQ" is
+// pinned last (above the alphabetical band, not into it) so it still reads
+// as the final section on pages whose other sections aren't in this list at
+// all — e.g. a package-doc root's "Структура"/"Зависимости"/etc, which have
+// no fixed slot of their own and would otherwise sort alphabetically ahead
+// of "FAQ"'s old fixed rank 8.
 const pageDisplayOrderClause = `
 		CASE title
 			WHEN 'Анатомия' THEN 1
@@ -522,8 +527,8 @@ const pageDisplayOrderClause = `
 			WHEN 'IO' THEN 5
 			WHEN 'Сборки' THEN 6
 			WHEN 'Рецепт' THEN 7
-			WHEN 'FAQ' THEN 8
-			ELSE 999
+			WHEN 'FAQ' THEN 999
+			ELSE 500
 		END ASC,
 		title ASC,
 		id ASC`

@@ -6,6 +6,6 @@ import { defineLibraryConfig } from "@web-core/build/vite";
 export default defineLibraryConfig({
   entries: [
     { name: "index", source: "src/index.ts", solid: true },
-    { name: "model", source: "src/model.ts" },
+    { name: "model", source: "src/model/index.ts" },
   ],
 });

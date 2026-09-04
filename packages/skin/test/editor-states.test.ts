@@ -220,7 +220,7 @@ describe("StatesOf/ValuesOf wired into the editor slice, on accordion's real str
     });
 
     // Same registry shape `editorInfoOf` uses across the kit (`packages/ui/src/passport.ts`,
-    // `products/skin`, `products/diagrams`) — a real, fully-typed value must fit in it.
+    // `apps/skin`, `products/diagrams`) — a real, fully-typed value must fit in it.
     function editorInfoOf(): import("../src/passport/editor/index.js").PassportEditorInfo | undefined {
       return editorInfo;
     }

@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
-    "generate": "node ../../products/generators/dist/cli.js generators/generate.config.ts",
+    "generate": "node ../../packages/generators/dist/cli.js generators/generate.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"

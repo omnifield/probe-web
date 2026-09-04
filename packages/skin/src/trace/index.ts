@@ -1,6 +1,6 @@
 // Design notes: ./README.md
 
-const FLAG = "__PROBE_WEB_SKIN_TRACE__";
+const FLAG = "__WEB_CORE_SKIN_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -14,11 +14,11 @@ export function trace(label: string): () => void {
   const started = performance.now();
   return () => {
     const ms = performance.now() - started;
-    console.debug(`[probe-web-skin] ${label} — ${ms.toFixed(2)}ms`);
+    console.debug(`[web-core-skin] ${label} — ${ms.toFixed(2)}ms`);
   };
 }
 
 export function note(message: string): void {
   if (!enabled()) return;
-  console.debug(`[probe-web-skin] ${message}`);
+  console.debug(`[web-core-skin] ${message}`);
 }

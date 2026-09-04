@@ -99,12 +99,7 @@ describe("PWEB-214 — где рвётся owner-цепочка", () => {
     const host = mount(() =>
       createComponent(Provider, {
         get children() {
-          return createComponent(Dynamic, {
-            component: "div" as unknown as never,
-            get children() {
-              return createComponent(Reader, {});
-            },
-          });
+          return <Dynamic component="div">{createComponent(Reader, {})}</Dynamic>;
         },
       }),
     );

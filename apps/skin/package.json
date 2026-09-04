@@ -1,0 +1,42 @@
+{
+  "name": "@web-core/skin-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Зона skin: витрина компонентов и содержимое скинов. Механика — во фреймворке (packages/skin, packages/assembly); здесь то, что показываем и чем одеваем.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort --host 0.0.0.0",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@web-core/assembly": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/query": "workspace:*",
+    "@web-core/router": "workspace:*",
+    "@web-core/runtime": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/store": "workspace:*",
+    "@web-core/style": "workspace:*",
+    "@web-core/ui": "workspace:*",
+    "@tanstack/solid-router": "^1.170.30",
+    "solid-js": "^1.9.14",
+    "zocker": "^3.0.0"
+  },
+  "devDependencies": {
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

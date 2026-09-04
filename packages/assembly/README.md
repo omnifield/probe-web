@@ -40,7 +40,7 @@ JSON `"button"` и `"Купить"` неразличимы по типу, и т�
 чём.
 
 Что механика умеет **сейчас** — всё нижеперечисленное СДЕЛАНО и подтверждено живым `RenderTree`
-(не заглушкой), полный сквозной путь проверен на настоящем `<App/>` продукта `products/skin`:
+(не заглушкой), полный сквозной путь проверен на настоящем `<App/>` продукта `apps/skin`:
 
 | Умеет | Как | Тип/функция | Тикет |
 |---|---|---|---|
@@ -56,7 +56,7 @@ JSON `"button"` и `"Купить"` неразличимы по типу, и т�
 
 Живой доказательный путь для всего перечисленного — аккордеон и кнопка
 (`packages/ui/src/accordion/playground/{assemblies,data}.ts`, `.../button/playground/{assemblies,data}.ts`)
-плюс `products/skin`'s `pages/showcase/model/{browse,console}.ts` — витрина показывает паспорт
+плюс `apps/skin`'s `pages/showcase/model/{browse,console}.ts` — витрина показывает паспорт
 компонента живьём до консоли событий; `ref` дополнительно доказан прямой проверкой развёрнутого
 дерева (один шаблон, две площадки, два разных настоящих узла). Ссылка на `app/shell.ts` снята
 2026-08-28 — файл переехал и стал обычным JSX (`PWEB-161`/`162`, `pages/workspace/layout.tsx`),
@@ -66,10 +66,10 @@ JSON `"button"` и `"Купить"` неразличимы по типу, и т�
 Ссылка на общий компонент и recursive self-assembly доказаны отдельно, не только в показе:
 `packages/ui/src/button/button.test.tsx` (собственная сборка кнопки и разворот голой ссылки на
 неё), `packages/ui/src/accordion/accordion.test.tsx` (кнопка внутри раздела аккордеона), и —
-важно — `products/skin/src/entities/catalog/model/registry.test.tsx` через РЕАЛЬНЫЙ реестр
+важно — `apps/skin/src/entities/catalog/model/registry.test.tsx` через РЕАЛЬНЫЙ реестр
 витрины, не хендролленный тестовый: механика была доказана раньше, а реальный адаптер продукта
 (`readable()`, `registry.ts`) не копировал `selfAssembly` в `ReadablePassport` и ломал ссылку
-именно там (найдено user на живой витрине 2026-08-28, `products/skin` — не эта зона, но именно
+именно там (найдено user на живой витрине 2026-08-28, `apps/skin` — не эта зона, но именно
 она держит проверку сквозного пути).
 
 **Исправлено (`PWEB-166`/`172`, 2026-08-28), было здесь «известным изъяном»: `genus: "component"`
@@ -204,7 +204,7 @@ const registry = createRegistry({
 не несёт, ниже отдельным пунктом); живая проверка идёт транзитивно, через тесты пакетов, что
 реально зовут `RenderTree`/`baseAssemblyOf` на настоящих компонентах —
 `packages/ui/src/button/button.test.tsx`, `packages/ui/src/accordion/accordion.test.tsx`,
-`products/skin/src/entities/catalog/model/registry.test.tsx`.
+`apps/skin/src/entities/catalog/model/registry.test.tsx`.
 
 **Адрес узла — через точку, и у каждой части он ОДИН.** `button` и `button.root` указывают на
 одно место: узел компонента и есть его корневая часть, и `readAddress` приводит обе записи к
@@ -571,7 +571,7 @@ A2UI (Google) — стандарт формата, не библиотека: р
 Замеры включает потребитель, а не сборка:
 
 ```js
-globalThis.__PROBE_WEB_ASSEMBLY_TRACE__ = true;
+globalThis.__WEB_CORE_ASSEMBLY_TRACE__ = true;
 ```
 
 Пишутся сборка каждого узла, неразрешённые адреса и изъяны целостности (каждый — один раз).

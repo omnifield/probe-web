@@ -7,7 +7,7 @@ export class SkinRefused extends Error {
 
   constructor(what: string, flaws: readonly SkinFlaw[]) {
     super(
-      `[probe-web-skin] ${what} was refused: ${flaws.length} flaw(s).\n` +
+      `[web-core-skin] ${what} was refused: ${flaws.length} flaw(s).\n` +
         flaws.map((flaw) => `  • ${flaw.name} — ${flaw.where}: ${flaw.means}`).join("\n"),
     );
     this.name = "SkinRefused";

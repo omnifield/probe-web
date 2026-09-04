@@ -2,7 +2,7 @@
 //
 // Кому отрисовка не нужна, берёт подпуть `./model`: он тот же самый, но без Solid.
 
-export * from "./model.js";
+export * from "./model/index.js";
 
 export type {
   EditOverlayProps,
@@ -11,5 +11,5 @@ export type {
   RenderTreeProps,
   SlotEntry,
   SlotPlacement,
-} from "./render.jsx";
-export { RenderTree } from "./render.jsx";
+} from "./render/index.jsx";
+export { RenderTree } from "./render/index.jsx";

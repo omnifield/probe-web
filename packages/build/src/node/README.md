@@ -1,6 +1,6 @@
 # 🖥️ node
 
-📦 `@web-core/build/tsconfig-node` · `probe-web-node`
+📦 `@web-core/build/tsconfig-node` · `web-core-node`
 
 TS-раннер и tsconfig-профиль для серверов без Vite (MCP-серверы, локальные службы). Правило
 репозитория: дев-пространство — TypeScript, компилированный JS — крайний случай, и его место в
@@ -9,7 +9,7 @@ TS-раннер и tsconfig-профиль для серверов без Vite (
 получилось: серверы в репозитории написаны на JS не потому, что кто-то выбрал JS, а потому, что
 для TS-сервера не было готового пути.
 
-<h2 id="раннер">🚀 Раннер — probe-web-node</h2>
+<h2 id="раннер">🚀 Раннер — web-core-node</h2>
 
 Бинарник пакета, тонкая обёртка над `tsx` (`src/node/bin.mjs`, одна строка). Потребитель не
 знает, что внутри — как и с Vite, раннер и его версия решаются здесь, а не в замороженном
@@ -19,8 +19,8 @@ TS-раннер и tsconfig-профиль для серверов без Vite (
 // package.json серверного потребителя
 {
   "scripts": {
-    "start": "probe-web-node src/server.ts",
-    "dev": "probe-web-node watch src/server.ts",
+    "start": "web-core-node src/server.ts",
+    "dev": "web-core-node watch src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

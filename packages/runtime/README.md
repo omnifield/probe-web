@@ -41,7 +41,7 @@ import {
 **падает с внятным сообщением**, а не рисует молча в пустоту:
 
 ```
-[probe-web-runtime] mount(): в документе нет элемента #root.
+[web-core-runtime] mount(): в документе нет элемента #root.
 Точку монтирования рантайм ищет сам — добавь в index.html <div id="root"></div>.
 ```
 
@@ -110,7 +110,7 @@ import {
 import { BASE_MARKER } from "@web-core/style";   // { property, value }
 
 checkStyleOrder({ marker: BASE_MARKER });
-// [probe-web-runtime] порядок подключения нарушен: скин «twitter» надет, а базового CSS
+// [web-core-runtime] порядок подключения нарушен: скин «twitter» надет, а базового CSS
 // нет — на корне box-sizing обязан быть «border-box», а он равен «content-box». …
 ```
 
@@ -295,8 +295,8 @@ HMR-сценария продукта — проверяется в нём са�
 Молчат по умолчанию, включаются явным глобальным флагом:
 
 ```js
-globalThis.__PROBE_WEB_RUNTIME_TRACE__ = true;
-// [probe-web-runtime] mount — 1.83ms
+globalThis.__WEB_CORE_RUNTIME_TRACE__ = true;
+// [web-core-runtime] mount — 1.83ms
 ```
 
 Автоопределения по dev-режиму сборщика нет намеренно: пакет приезжает потребителю

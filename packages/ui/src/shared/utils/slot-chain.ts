@@ -2,7 +2,7 @@ import { splitProps } from "solid-js";
 
 import { ADDRESS } from "./address.js";
 
-const SLOT_AWARE = Symbol.for("probe-web-ui.slot-aware");
+const SLOT_AWARE = Symbol.for("web-core-ui.slot-aware");
 
 export interface SlotChainProps {
   __slot?: string;

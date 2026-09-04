@@ -60,7 +60,7 @@ export function mount(root: () => JSX.Element): void {
   const host = document.getElementById(ROOT_ID);
   if (!host) {
     throw new Error(
-      `[probe-web-runtime] mount(): в документе нет элемента #${ROOT_ID}. ` +
+      `[web-core-runtime] mount(): в документе нет элемента #${ROOT_ID}. ` +
         `Точку монтирования рантайм ищет сам — добавь в index.html <div id="${ROOT_ID}"></div>.`,
     );
   }
@@ -176,7 +176,7 @@ export function checkStyleOrder(options: StyleOrderOptions): StyleOrderReport {
   // зелёным ровно тот случай, ради которого проверка заведена.
   if (marker.property.trim() === "" || marker.value.trim() === "") {
     throw new Error(
-      "[probe-web-runtime] checkStyleOrder(): маркер — ПАРА, свойство и его значение, и " +
+      "[web-core-runtime] checkStyleOrder(): маркер — ПАРА, свойство и его значение, и " +
         `здесь пуста одна из половин (свойство «${marker.property}», значение ` +
         `«${marker.value}»). Свойство без ожидаемого значения — проверка, которая врёт ` +
         "зелёным: обычное свойство объявлено всегда, и «оно нашлось» истинно без нашего листа.",
@@ -196,7 +196,7 @@ export function checkStyleOrder(options: StyleOrderOptions): StyleOrderReport {
   // поломка. Кричать на него значило бы объявить оформление обязательным.
   const message =
     status === "missing-base"
-      ? `[probe-web-runtime] порядок подключения нарушен: скин «${skin}» надет, ` +
+      ? `[web-core-runtime] порядок подключения нарушен: скин «${skin}» надет, ` +
         `а базового CSS нет — на корне ${marker.property} обязан быть «${marker.value}», ` +
         `а он ${seen === "" ? "не объявлен вовсе" : `равен «${seen}»`}. Производные посчитаны ` +
         "от умолчаний, и вид будет «почти правильным» — это хуже явной поломки. Порядок " +
@@ -360,7 +360,7 @@ export interface SkinSwitch {
 function checkedName(name: string): string {
   if (name.trim() === "") {
     throw new Error(
-      "[probe-web-runtime] wear(): имя скина пусто. " +
+      "[web-core-runtime] wear(): имя скина пусто. " +
         "Снять скин — это takeOff(), а не надевание пустого имени.",
     );
   }
@@ -497,7 +497,7 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
 // собой. Solid-потребителю (пакет уже несёт `solid-js` как `peerDependencies`) этого мало —
 // без сигнала каждый такой продукт заводит свой `createSignal`, руками зовёт `restore()` на
 // монтаже, руками же досинхронизирует сигнал после каждого `wear()`/`takeOff()`. Один и тот же
-// ручной код так собирался дважды подряд на одном продукте (`products/skin`, независимо друг
+// ручной код так собирался дважды подряд на одном продукте (`apps/skin`, независимо друг
 // от друга) — сюда переезжает то, что оба раза писали заново.
 // ────────────────────────────────────────────────────────────────────────────────────────────
 

@@ -6,8 +6,8 @@
 // зависеть от соседа (`PROBEWEB-4`). Понадобится третья копия — это разговор с
 // architect про внутренний общий пакет, а не про импорт наискосок.
 
-/** Глобальный тумблер трейсов: `globalThis.__PROBE_WEB_STYLE_TRACE__ = true`. */
-const FLAG = "__PROBE_WEB_STYLE_TRACE__";
+/** Глобальный тумблер трейсов: `globalThis.__WEB_CORE_STYLE_TRACE__ = true`. */
+const FLAG = "__WEB_CORE_STYLE_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -38,6 +38,6 @@ export function trace(label: string): () => void {
   const started = performance.now();
   return () => {
     const ms = performance.now() - started;
-    console.debug(`[probe-web-style] ${label} — ${ms.toFixed(2)}ms`);
+    console.debug(`[web-core-style] ${label} — ${ms.toFixed(2)}ms`);
   };
 }

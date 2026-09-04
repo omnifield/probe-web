@@ -15,15 +15,15 @@ categories:
           `extends`, как фронтенд наследует `/tsconfig`.
           Реализация: `src/node/base.json`, общая база с фронтенд-профилем — `src/shared/tsconfig.json`.
 
-      - id: probe-web-node-runner
+      - id: web-core-node-runner
         type: feature
         status: Done
         priority: High
         milestone: null
-        name: Бинарник probe-web-node
+        name: Бинарник web-core-node
         description: |
-          Означает: сервер запускается `.ts`-файлом напрямую (`probe-web-node src/server.ts`,
-          `probe-web-node watch ...`), без ручного шага компиляции и без выбора раннера
+          Означает: сервер запускается `.ts`-файлом напрямую (`web-core-node src/server.ts`,
+          `web-core-node watch ...`), без ручного шага компиляции и без выбора раннера
           потребителем.
           Реализация: тонкая обёртка над `tsx/cli` (`src/node/bin.mjs`), доступна потребителю
           через `pnpm`-симлинк `bin` прямой зависимости.
@@ -37,7 +37,7 @@ categories:
         milestone: null
         name: Перевести существующие серверы на TS
         description: |
-          Означает: `products/presets` и `products/skin/.mcp` — оба написаны руками на JS,
+          Означает: `backend/presets` и `apps/skin/.mcp` — оба написаны руками на JS,
           потому что до этой темы для TS-сервера не было готового пути. Миграция — не в зоне
           `build`, а в зоне каждого сервера отдельно (см. log).
 
@@ -46,8 +46,8 @@ log:
     type: plan
     date: 2026-09-04
     summary: >
-      Раннер и профиль появились в ответ на то, что серверы в репозитории (`products/presets`,
-      `products/skin/.mcp`) написаны на чистом JS — не по выбору, а потому что серверного
+      Раннер и профиль появились в ответ на то, что серверы в репозитории (`backend/presets`,
+      `apps/skin/.mcp`) написаны на чистом JS — не по выбору, а потому что серверного
       TS-пути не существовало. Сама миграция этих серверов на TS — задача владельцев тех зон,
       не `build`: зона `build` только даёт инструмент.
 

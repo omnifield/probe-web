@@ -29,7 +29,7 @@ pnpm lint        # пресет `@web-core/lint` + `tsc --noEmit`
 | `src/app.tsx` | единственный экран: форма «заявка» на всей цепочке |
 | `src/skin.ts` | СКИН страницы: семя скруглений, имена для оформления, рецепт кнопки |
 | `src/app.css` | раскладка ПОТРЕБИТЕЛЯ: только `data-slot` и ИМЕНА СКИНА, без цвета |
-| `src/trace.ts` | perf-канал приложения, флаг `__PROBE_WEB_REFERENCE_TRACE__` |
+| `src/trace.ts` | perf-канал приложения, флаг `__WEB_CORE_REFERENCE_TRACE__` |
 | `vite.config.ts` · `vitest.config.ts` · `tsconfig.json` | три строки: взять оснастку из зоны `build` |
 
 Экран намеренно один. Полигон, выросший в приложение, перестаёт быть полигоном: за ним

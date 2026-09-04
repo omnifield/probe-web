@@ -22,7 +22,7 @@
   `vite`/`http-proxy` уже умеют.
 
 Всё это снесено. `apps/panel` — три строки `vite.config.ts`, как у любого другого приложения в
-репозитории (см. `apps/reference/vite.config.ts`, `products/skin/vite.config.ts`), находится Nx
+репозитории (см. `apps/reference/vite.config.ts`, `apps/skin/vite.config.ts`), находится Nx
 по тому же признаку (скрипт `dev` в `package.json`), поднимается той же командой из корня —
 `pnpm run dev`.
 

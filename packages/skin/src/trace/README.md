@@ -11,7 +11,7 @@ assembly · text assembly · nested unwrap), not overall frame time. Nested unwr
 measurement on purpose: it's a FOREIGN step (`postcss-nested`, `../flatten/`), and its cost needs to
 be seen apart from ours.
 
-`FLAG` — trace toggle: `globalThis.__PROBE_WEB_SKIN_TRACE__ = true`.
+`FLAG` — trace toggle: `globalThis.__WEB_CORE_SKIN_TRACE__ = true`.
 
 `trace` — opens a measurement. Returns the closing function — it's the one that prints the line. A
 disabled trace returns an empty closer without touching the clock: a measurement on EVERY recipe

@@ -21,7 +21,7 @@ interface DevState {
 /** Дев-плагин: соседи по воркспейсу видны исходниками и не пребандлятся. См. README.md «Дев-цикл». */
 function workspaceSourcePlugin(state: DevState): Plugin {
   return {
-    name: "probe-web-build:workspace-source",
+    name: "web-core-build:workspace-source",
     apply: "serve",
     config(config) {
       const done = trace("workspaceSourcePlugin.config");
@@ -52,7 +52,7 @@ function generatedCssPlugin(state: DevState): Plugin {
   let server: ViteDevServer | undefined;
 
   return {
-    name: "probe-web-build:generated-css",
+    name: "web-core-build:generated-css",
     apply: "serve",
     enforce: "pre", // до разрешения по exports — иначе Vite уходит за файлом в dist
 
@@ -171,7 +171,7 @@ export function defineLibraryConfig(options: DefineLibraryConfigOptions): UserCo
       solid(),
       solidEntries.length > 0
         ? {
-            name: "probe-web-build:library-raw-jsx",
+            name: "web-core-build:library-raw-jsx",
             apply: "build",
             async closeBundle() {
               await buildRawJsxBranch(process.cwd(), solidEntries);

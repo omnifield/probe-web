@@ -1,6 +1,6 @@
 import { createUniqueId, onCleanup } from "solid-js";
 
-const FLAG = "__PROBE_WEB_UI_TRACE__";
+const FLAG = "__WEB_CORE_UI_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -13,10 +13,10 @@ export function traceLife(node: string): void {
 
   const id = createUniqueId();
   const started = performance.now();
-  console.debug(`[probe-web-ui] ${node} mount — ${id}`);
+  console.debug(`[web-core-ui] ${node} mount — ${id}`);
 
   onCleanup(() => {
     const ms = performance.now() - started;
-    console.debug(`[probe-web-ui] ${node} dispose — ${id}, жил ${ms.toFixed(2)}ms`);
+    console.debug(`[web-core-ui] ${node} dispose — ${id}, жил ${ms.toFixed(2)}ms`);
   });
 }

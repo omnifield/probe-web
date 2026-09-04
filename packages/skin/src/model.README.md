@@ -16,7 +16,7 @@ Neither of these entries pulls in postcss — that lives behind a third one, `fl
 `vite.config.ts` (`{ name: "model", source: "src/model.ts" }`) and mirrored by `package.json`'s
 `exports["./model"]`. `tsc`'s declaration emission mirrors the source tree literally — a
 `src/model/index.ts` would emit `dist/model/index.d.ts`, not the `dist/model.d.ts` the manifest
-promises, breaking every consumer's types. Verified by trying it: `packages/ui` and `products/skin`
+promises, breaking every consumer's types. Verified by trying it: `packages/ui` and `apps/skin`
 both went red. Everything else in this package is a folder; these four (`index.ts`, `model.ts`,
 `editor.ts`, `flat.ts`) can't be, for this one mechanical reason.
 

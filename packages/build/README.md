@@ -46,7 +46,7 @@ src/
 ├─ tsconfig/            📐 /tsconfig — фронтенд-профиль типов
 │  ├─ base.json
 │  └─ README.md · FAQ.md · ROADMAP.yaml
-└─ node/                🖥️ /tsconfig-node + probe-web-node — сервер без Vite
+└─ node/                🖥️ /tsconfig-node + web-core-node — сервер без Vite
    ├─ base.json
    ├─ bin.mjs
    └─ README.md · FAQ.md · ROADMAP.yaml
@@ -72,7 +72,7 @@ src/
 <h2 id="зависимости">📦 Зависимости</h2>
 
 `vite-plugin-solid` и `tsx` — обычные зависимости: без первого не собрать `/vite`-конфиг, без
-второго не работает `probe-web-node`, и потребитель ни про то, ни про другое знать не должен —
+второго не работает `web-core-node`, и потребитель ни про то, ни про другое знать не должен —
 версия обоих решается здесь, а не у потребителя (`tsx` доезжает до серверного потребителя через
 `pnpm`-симлинк `bin`, не как его собственная зависимость).
 
@@ -84,7 +84,7 @@ src/
 Perf-логгеры (`src/shared/trace.ts`) молчат по умолчанию; включает глобальный флаг:
 
 ```js
-globalThis.__PROBE_WEB_BUILD_TRACE__ = true;
+globalThis.__WEB_CORE_BUILD_TRACE__ = true;
 ```
 
 <h2 id="команды">▶️ Команды</h2>

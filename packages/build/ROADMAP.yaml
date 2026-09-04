@@ -37,7 +37,7 @@ categories:
         name: node — TS-раннер и профиль для серверов без Vite
         description: |
           Означает: у зоны появился путь для серверного TS помимо Vite — до этого серверы
-          (`products/presets`, `products/skin/.mcp`) писали JS руками, потому что альтернативы
+          (`backend/presets`, `apps/skin/.mcp`) писали JS руками, потому что альтернативы
           не было.
           Подробности — src/node/ROADMAP.yaml.
 
@@ -61,7 +61,7 @@ categories:
         status: Backlog
         priority: Medium
         milestone: null
-        name: Перевести products/presets и products/skin/.mcp на TS
+        name: Перевести backend/presets и apps/skin/.mcp на TS
         description: |
           Означает: инструмент (тема `node`) готов, серверы ещё не переведены — это задача
           владельцев тех зон, не `build`.
@@ -71,7 +71,7 @@ log:
     type: plan
     date: 2026-09-04
     summary: >
-      `/tsconfig`, `/tsconfig-node` и bin `probe-web-node` переехали с прямой ссылки на `src/`
+      `/tsconfig`, `/tsconfig-node` и bin `web-core-node` переехали с прямой ссылки на `src/`
       на `dist/` (копируются туда шагом сборки). Причина — npm/pnpm ВСЕГДА включает `README.md`
       любой директории, участвующей в `files`, независимо от `!`-негейшенов: пока конфиги
       отдавались прямо из `src/tsconfig/`+`src/node/`+`src/shared/`, в тарбол утекали доки этих
@@ -100,6 +100,6 @@ log:
     type: plan
     date: 2026-09-04
     summary: >
-      Добавлена тема `node` (`/tsconfig-node` + бинарник `probe-web-node`) — ответ на то, что
+      Добавлена тема `node` (`/tsconfig-node` + бинарник `web-core-node`) — ответ на то, что
       серверы в репозитории писали JS руками не по выбору, а из-за отсутствия TS-пути. Разбор
       решения (`bundler`, не `nodeNext`) — src/node/ROADMAP.yaml.

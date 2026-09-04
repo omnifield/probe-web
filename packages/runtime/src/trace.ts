@@ -2,8 +2,8 @@
 // объявлено. Поверхность зоны — ровно одна точка (`PROBEWEB-4`), а каждый экспорт, который
 // позовёт скелет, замерзает навсегда: `main.tsx` у потребителя класса `placed-once`.
 
-/** Глобальный тумблер трейсов: `globalThis.__PROBE_WEB_RUNTIME_TRACE__ = true`. */
-const FLAG = "__PROBE_WEB_RUNTIME_TRACE__";
+/** Глобальный тумблер трейсов: `globalThis.__WEB_CORE_RUNTIME_TRACE__ = true`. */
+const FLAG = "__WEB_CORE_RUNTIME_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -32,6 +32,6 @@ export function trace(label: string): () => void {
   const started = performance.now();
   return () => {
     const ms = performance.now() - started;
-    console.debug(`[probe-web-runtime] ${label} — ${ms.toFixed(2)}ms`);
+    console.debug(`[web-core-runtime] ${label} — ${ms.toFixed(2)}ms`);
   };
 }

@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "bin": {
-    "probe-web-node": "./dist/node/bin.mjs"
+    "web-core-node": "./dist/node/bin.mjs"
   },
   "exports": {
     "./vite": {
