@@ -1,8 +1,10 @@
 # 🖼️ Avatar
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ other · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
-Изображение человека или сущности — с заглушкой на случай, если картинки нет или она не
+Изображение человека или сущности 🖼️ — с заглушкой на случай, если картинки нет или она не
 загрузилась: инициалы, иконка, что угодно, что положит потребитель. Заглушка и картинка сами
 решают, кто из них сейчас виден — переключение по статусу загрузки, не то, что выбирает вручную
 использующий компонент.
@@ -24,6 +26,41 @@ root
 | 🖼️ `root`    | аватар целиком — оборачивает картинку и её заглушку                              | только `image`, `fallback` | `Avatar`          |
 | 🖼️ `image`   | картинка — настоящий `<img>`, остаётся в разметке даже скрытым, чтобы load/error всё равно сработали | ничего              | `AvatarImage`     |
 | 🔤 `fallback` | показывается, пока картинка не загрузилась (или её нет) — инициалы, иконка, что положит потребитель | текст, иконку       | `AvatarFallback`  |
+
+<h2 id="использование">🚀 Использование</h2>
+
+Собрать аватар можно вручную JSX-разметкой или по готовой схеме через движок; отдельно — как
+узнать снаружи, что показалось: картинка или заглушка. 🔍
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<Avatar>
+  <AvatarFallback>JD</AvatarFallback>
+  <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
+</Avatar>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует `RenderTree`.
+
+```tsx
+const data = { src: "/jane-doe.jpg", alt: "Jane Doe", fallback: "JD" };
+const tree = instanceOf("avatar", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Наблюдение за статусом загрузки** — `onStatusChange` на корне сообщает тот же переход
+`loaded`/`error`, что двигает `image`/`fallback`, для того, кому нужно знать об этом снаружи.
+
+```tsx
+const [status, setStatus] = createSignal<"loaded" | "error">();
+
+<Avatar onStatusChange={(details) => setStatus(details.status)}>
+  <AvatarFallback>JD</AvatarFallback>
+  <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
+</Avatar>;
+```
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -87,38 +124,3 @@ root
 > `hidden` у `image`/`fallback` адресован явно (`display: "none"`), не пустым правилом — `skinGaps`
 > не засчитывает состояние, за которым не стоит ни одного реального CSS-свойства, даже если
 > визуально скрытие и так уже выполняет нативный `[hidden]`.
-
-<h2 id="использование">🚀 Использование</h2>
-
-Собрать аватар можно вручную JSX-разметкой или по готовой схеме через движок; отдельно — как
-узнать снаружи, что показалось: картинка или заглушка.
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
-
-```tsx
-<Avatar>
-  <AvatarFallback>JD</AvatarFallback>
-  <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
-</Avatar>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует `RenderTree`.
-
-```tsx
-const data = { src: "/jane-doe.jpg", alt: "Jane Doe", fallback: "JD" };
-const tree = instanceOf("avatar", {}, "basic", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Наблюдение за статусом загрузки** — `onStatusChange` на корне сообщает тот же переход
-`loaded`/`error`, что двигает `image`/`fallback`, для того, кому нужно знать об этом снаружи.
-
-```tsx
-const [status, setStatus] = createSignal<"loaded" | "error">();
-
-<Avatar onStatusChange={(details) => setStatus(details.status)}>
-  <AvatarFallback>JD</AvatarFallback>
-  <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
-</Avatar>;
-```

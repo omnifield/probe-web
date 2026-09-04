@@ -6,7 +6,16 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as sliderKit } from "../components/index.js";
+import {
+  Slider,
+  SliderControl,
+  SliderMarker,
+  SliderMarkerGroup,
+  SliderRange,
+  SliderThumb,
+  SliderTrack,
+  kit as sliderKit,
+} from "../components/index.js";
 import { passport as sliderPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as sliderEditorInfo } from "../playground/index.js";
@@ -76,5 +85,64 @@ describe('slider "basic" — label and starting value from data, one thumb', () 
     await Promise.resolve();
 
     expect(thumb.getAttribute("aria-valuenow")).toBe("41");
+  });
+});
+
+describe("markers — data-state is the marker's own position relative to the current value", () => {
+  it("real value under/at/over each marker's own value, not interaction", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Slider defaultValue={[40]}>
+          <SliderControl>
+            <SliderTrack>
+              <SliderRange />
+            </SliderTrack>
+            <SliderThumb index={0} />
+          </SliderControl>
+          <SliderMarkerGroup>
+            <SliderMarker value={25}>25</SliderMarker>
+            <SliderMarker value={40}>40</SliderMarker>
+            <SliderMarker value={75}>75</SliderMarker>
+          </SliderMarkerGroup>
+        </Slider>
+      ),
+      host,
+    );
+
+    const markers = [...host.querySelectorAll('[data-scope="slider"][data-part="marker"]')];
+    expect(markers.map((marker) => marker.getAttribute("data-state"))).toEqual([
+      "under-value",
+      "at-value",
+      "over-value",
+    ]);
+  });
+});
+
+describe("range — two thumbs, each with its own independent value", () => {
+  it("mounts one thumb per index, each with its own aria-valuenow", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Slider defaultValue={[30, 60]}>
+          <SliderControl>
+            <SliderTrack>
+              <SliderRange />
+            </SliderTrack>
+            <SliderThumb index={0} />
+            <SliderThumb index={1} />
+          </SliderControl>
+        </Slider>
+      ),
+      host,
+    );
+
+    const thumbs = [...host.querySelectorAll('[data-scope="slider"][data-part="thumb"]')];
+    expect(thumbs).toHaveLength(2);
+    expect(thumbs.map((thumb) => thumb.getAttribute("aria-valuenow"))).toEqual(["30", "60"]);
   });
 });

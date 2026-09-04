@@ -1,7 +1,7 @@
 // ТЕМА — подключение скина продукта, выбор наряда по имени (`Select`) и переключатель половины
 // (`Toggle`, светлая/тёмная) — в одном компоненте: одно не имеет смысла без другого, скин
 // подключаем ровно затем, чтобы было чем управлять (`createSkinConnection`,
-// `@web-core/runtime`, PWEB-213).
+// `@web-core/skin/solid`, PWEB-213, переехала из `@web-core/runtime` — PWEB-221).
 //
 // ИСТОЧНИК — НАСТОЯЩАЯ СЛУЖБА РАЗДАЧИ (`createPresetsSkinSource`, `@web-core/skin/
 // presets`, PWEB-215): продукт отдаёт адрес и паспорта СВОЕГО кита, HTTP/разбор/сборку/
@@ -13,7 +13,7 @@ import {
   PresetsDown,
   PresetsRefused,
 } from "@web-core/skin/presets";
-import { createSkinConnection } from "@web-core/runtime";
+import { createSkinConnection } from "@web-core/skin/solid";
 import { passportOf } from "@web-core/ui/passport";
 import {
   Select,

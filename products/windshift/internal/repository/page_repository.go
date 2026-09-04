@@ -517,17 +517,30 @@ func (r *PageRepository) SearchByKeyword(workspaceID int, query string, limit in
 // as the final section on pages whose other sections aren't in this list at
 // all — e.g. a package-doc root's "Структура"/"Зависимости"/etc, which have
 // no fixed slot of their own and would otherwise sort alphabetically ahead
-// of "FAQ"'s old fixed rank 8.
+// of "FAQ"'s old fixed rank 8. Each slot matches both the bare title and an
+// emoji-prefixed variant ("Анатомия" / "🧩 Анатомия") — section titles carry
+// an icon prefix by convention, but older pages synced before that
+// convention still have bare titles and must keep sorting correctly too.
 const pageDisplayOrderClause = `
 		CASE title
+			WHEN 'Главное' THEN 0
+			WHEN '🏠 Главное' THEN 0
 			WHEN 'Анатомия' THEN 1
+			WHEN '🧩 Анатомия' THEN 1
 			WHEN 'Использование' THEN 2
+			WHEN '🚀 Использование' THEN 2
 			WHEN 'Настройки' THEN 3
+			WHEN '🎚️ Настройки' THEN 3
 			WHEN 'Состояния' THEN 4
+			WHEN '🎛️ Состояния' THEN 4
 			WHEN 'IO' THEN 5
+			WHEN '🔌 IO' THEN 5
 			WHEN 'Сборки' THEN 6
+			WHEN '🏗️ Сборки' THEN 6
 			WHEN 'Рецепт' THEN 7
+			WHEN '🎨 Рецепт' THEN 7
 			WHEN 'FAQ' THEN 999
+			WHEN '❓ FAQ' THEN 999
 			ELSE 500
 		END ASC,
 		title ASC,

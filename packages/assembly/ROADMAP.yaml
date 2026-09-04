@@ -11,7 +11,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "Содержимое — второй род узла, не проп `children` (PWEB-83)"
+        name: "Содержимое — второй род узла, не проп `children`"
         description: |
           Означает: подпись/значок — узел дерева наравне с частью (`{genus, value}`), лежит в
           общем списке детей, сосуществует и упорядочивается с частями. Прежний проп `children`
@@ -23,7 +23,7 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Своя часть и чужая ссылка — одно поле узла (PWEB-166/172)"
+        name: "Своя часть и чужая ссылка — одно поле узла"
         description: |
           Означает: `{ node: "button" }` ссылается на общий реестр тем же полем, что называет
           свою часть анатомии — «своё или чужое» решает сравнение с анатомией владельца, не
@@ -58,7 +58,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "Реестр из пар поставщика, не карты потребителя (PWEB-85)"
+        name: "Реестр из пар поставщика, не карты потребителя"
         description: |
           Означает: пара (паспорт+части) отдаёт поставщик кита, checkRegistry называет
           расхождение с анатомией значением (part-uncharted/part-not-callable/part-astray).
@@ -69,7 +69,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "Правило допуска (`admits`) — вход, не собственность механики (PWEB-24)"
+        name: "Правило допуска (`admits`) — вход, не собственность механики"
         description: |
           Означает: allowedInside/canAdmit/canContain читают правило, поданное третьим входом
           createRegistry — механика не хранит своего перечня допустимых вложений.
@@ -114,7 +114,7 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Невидимый провайдер вокруг компонента без DOM-корня (PWEB-153)"
+        name: "Невидимый провайдер вокруг компонента без DOM-корня"
         description: |
           Означает: поповер/меню — корневая часть не рисует свой узел, состояние даёт контекст,
           который раздаёт `KitComponent.provider`; RenderTree сам оборачивает корень.
@@ -124,7 +124,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "`{path}` вместо литерала — содержимое и пропы (PWEB-156)"
+        name: "`{path}` вместо литерала — содержимое и пропы"
         description: |
           Означает: DynamicValue = string | {path}, форма A2UI урезана до литерала и пути.
           `bind` — ОТДЕЛЬНОЕ поле от `props`, не смешано со значением.
@@ -134,7 +134,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "`on` — одна точка входа для событий узла (PWEB-157)"
+        name: "`on` — одна точка входа для событий узла"
         description: |
           Означает: DispatchAction резолвит context из DynamicValue до отправки — наружу
           уходит готовый JSON, не сырой DOM Event.
@@ -144,7 +144,7 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Повтор узла по длине массива данных (PWEB-170/171)"
+        name: "Повтор узла по длине массива данных"
         description: |
           Означает: `repeat?: DataBinding` на узле — N разделов из реальных данных, не
           фиксированное число в дереве. Разворачивается ДО RenderTree, в baseAssemblyOf.
@@ -154,7 +154,7 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Именованный кусок дерева, объявленный раз, использованный много (PWEB-160)"
+        name: "Именованный кусок дерева, объявленный раз, использованный много"
         description: |
           Означает: `{ ref: "имя" }` — на разворотке свои настоящие узлы на КАЖДОЙ площадке, не
           общий граф-узел с двумя родителями (RenderTree обходит дерево, не граф).
@@ -164,7 +164,7 @@ categories:
         status: Done
         priority: High
         milestone: null
-        name: "Ссылка вызывает своё поведение компонента, не флат-переопределение (PWEB-167/168/169/172)"
+        name: "Ссылка вызывает своё поведение компонента, не флат-переопределение"
         description: |
           Означает: ComponentPassport.selfAssembly — узкое дерево поведения, growSelfAssembly
           резолвит его рекурсивным вызовом той же механики, данные = props+bind узла-ссылки.
@@ -174,7 +174,7 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Слот живого контента на месте узла (PWEB-174/176)"
+        name: "Слот живого контента на месте узла"
         description: |
           Означает: `slots?: Record<адрес, SlotEntry>` — узел резолвится как обычно, слот
           меняет только источник СОДЕРЖИМОГО, никогда не подменяет сам узел.
@@ -278,18 +278,18 @@ categories:
           ROADMAP.yaml — Done-пункты с описанием, log — датированный журнал решений.
 
 log:
-  - id: pweb-214-stale-dist-not-render-bug
+  - id: stale-dist-not-render-bug
     type: plan
     date: 2026-09-04
     summary: >
-      Заявка PWEB-214 («RenderTree роняет вложенные части ContextError») подтверждена как ложная
-      тревога от устаревшей dist/-сборки, не баг механики. Минимальный репро (голый
+      Сообщение о том, что RenderTree роняет вложенные части ContextError, подтверждено как
+      ложная тревога от устаревшей dist/-сборки, не баг механики. Минимальный репро (голый
       createComponent, <For>, <ErrorBoundary>, их сочетание буква-в-букву как в RenderNode,
       <Dynamic> в форме ark.div, полный RenderTree/registry с настоящим createContext на двух
       уровнях) — все сценарии проходят внутри самого пакета. Тот же тест через packages/ui падал
       — потому что packages/ui резолвил @web-core/assembly в СВОЮ dist/, собранную до фикса
-      contentOf (0e95eaa). Прямой `npx vitest run` внутри пакета обходит граф пересборки Nx
-      (test.dependsOn: ["build", "^build"]). Разбор целиком — FAQ.md.
+      contentOf, делающего пересчёт детей узла ленивым. Прямой `npx vitest run` внутри пакета
+      обходит граф пересборки Nx (test.dependsOn: ["build", "^build"]). Разбор целиком — FAQ.md.
 
   - id: model-kernel-engine-naming-iteration
     type: plan

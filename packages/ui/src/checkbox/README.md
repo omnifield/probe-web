@@ -1,8 +1,10 @@
 # ☑️ Checkbox
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ inputs · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
-Отметка «да/нет», с третьим — «отчасти» — для случая, когда чекбокс суммирует несколько дочерних
+Отметка «да/нет» ☑️, с третьим — «отчасти» — для случая, когда чекбокс суммирует несколько дочерних
 отметок сразу. Настоящее поле формы: участвует в отправке формы как родной `<input>`, доступен с
 клавиатуры и экранным читалкам без дополнительной настройки.
 
@@ -30,6 +32,62 @@ root
 > потребителю добавлять его не нужно и нельзя: своего адреса он не несёт, в карту кита не входит и
 > наружу из кита не экспортируется вовсе. Это `extras` (см. корневой README кита): технический узел
 > ради фокуса, формы и скринридера, не строительный кубик схемы.
+
+<h2 id="использование">🚀 Использование</h2>
+
+Собрать чекбокс можно вручную или по схеме; отдельно — как показать состояние «отчасти» и как
+сделать чекбокс настоящим полем формы. 📝
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` класть не нужно — корень несёт его сам.
+
+```tsx
+<Checkbox>
+  <CheckboxControl>
+    <CheckboxIndicator>✓</CheckboxIndicator>
+  </CheckboxControl>
+  <CheckboxLabel>Согласен с условиями</CheckboxLabel>
+</Checkbox>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам корень — сборке о нём знать не нужно.
+
+```tsx
+const data = { label: "Согласен с условиями" };
+const tree = instanceOf("checkbox", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Третье состояние — «отчасти».** `CheckboxIndicator` берёт свой проп `indeterminate` — можно
+смонтировать два указателя, и каждый рисуется только для своего состояния (галочка и черта — разная
+графика).
+
+```tsx
+<Checkbox checked="indeterminate">
+  <CheckboxControl>
+    <CheckboxIndicator>✓</CheckboxIndicator>
+    <CheckboxIndicator indeterminate>–</CheckboxIndicator>
+  </CheckboxControl>
+  <CheckboxLabel>Выбрать всё</CheckboxLabel>
+</Checkbox>
+```
+
+**Настоящее участие в форме.** `name`/`value` делают чекбокс настоящим полем формы — `FormData`
+подхватывает его как родной `<input type="checkbox">`.
+
+```tsx
+<form onSubmit={handleSubmit}>
+  <Checkbox name="terms" value="accepted">
+    <CheckboxControl>
+      <CheckboxIndicator>✓</CheckboxIndicator>
+    </CheckboxControl>
+    <CheckboxLabel>Согласен с условиями</CheckboxLabel>
+  </Checkbox>
+  <button type="submit">Отправить</button>
+</form>
+```
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -105,59 +163,3 @@ root
 настоящее CSS-свойство), поэтому нейтральные случаи оформлены явными, но безобидными правилами
 (например, `root`'s `checked`/`unchecked`/`indeterminate` — тот же `cursor: "pointer"`, что уже в
 базе, просто явно).
-
-<h2 id="использование">🚀 Использование</h2>
-
-Собрать чекбокс можно вручную или по схеме; отдельно — как показать состояние «отчасти» и как
-сделать чекбокс настоящим полем формы.
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
-`<input>` класть не нужно — корень несёт его сам.
-
-```tsx
-<Checkbox>
-  <CheckboxControl>
-    <CheckboxIndicator>✓</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>Согласен с условиями</CheckboxLabel>
-</Checkbox>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
-`RenderTree`. Скрытый ввод кладёт сам корень — сборке о нём знать не нужно.
-
-```tsx
-const data = { label: "Согласен с условиями" };
-const tree = instanceOf("checkbox", {}, "basic", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Третье состояние — «отчасти».** `CheckboxIndicator` берёт свой проп `indeterminate` — можно
-смонтировать два указателя, и каждый рисуется только для своего состояния (галочка и черта — разная
-графика).
-
-```tsx
-<Checkbox checked="indeterminate">
-  <CheckboxControl>
-    <CheckboxIndicator>✓</CheckboxIndicator>
-    <CheckboxIndicator indeterminate>–</CheckboxIndicator>
-  </CheckboxControl>
-  <CheckboxLabel>Выбрать всё</CheckboxLabel>
-</Checkbox>
-```
-
-**Настоящее участие в форме.** `name`/`value` делают чекбокс настоящим полем формы — `FormData`
-подхватывает его как родной `<input type="checkbox">`.
-
-```tsx
-<form onSubmit={handleSubmit}>
-  <Checkbox name="terms" value="accepted">
-    <CheckboxControl>
-      <CheckboxIndicator>✓</CheckboxIndicator>
-    </CheckboxControl>
-    <CheckboxLabel>Согласен с условиями</CheckboxLabel>
-  </Checkbox>
-  <button type="submit">Отправить</button>
-</form>
-```

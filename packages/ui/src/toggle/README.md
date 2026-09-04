@@ -1,8 +1,10 @@
 # 🔲 Toggle
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ other · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
-Кнопка с двумя устойчивыми состояниями — нажата или нет, как физический тумблер. Одна кнопка сама
+Кнопка с двумя устойчивыми состояниями 🔛 — нажата или нет, как физический тумблер. Одна кнопка сама
 по себе, не пара («вкл»/«выкл» одним нажатием одного и того же места) — для набора взаимоисключающих
 кнопок есть `toggle-group`.
 
@@ -20,6 +22,51 @@ root 🔲
 | --------------- | -------------------------------------------------------------------- | ------------------------ | --------------------- |
 | 🔲 `root`      | тумблер целиком — один `<button aria-pressed>`, оборачивает `indicator` | `indicator`            | `Toggle`           |
 | ★ `indicator`  | глиф внутри кнопки — иконку или галочку кладёт потребитель            | текст, иконку            | `ToggleIndicator`  |
+
+<h2 id="использование">🚀 Использование</h2>
+
+Собрать тумблер можно вручную, по схеме, с разным глифом на каждое состояние или отключённым. 🔀
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<Toggle defaultPressed>
+  <ToggleIndicator>★</ToggleIndicator>
+</Toggle>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = { glyph: "★" };
+const tree = instanceOf("toggle", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Разный глиф на каждое состояние.** `ToggleIndicator`'s `fallback` рисует контент для
+НЕнажатого состояния, дети — для нажатого; переключать `data-state` руками не нужно.
+
+```tsx
+import { createSignal } from "solid-js";
+
+const [pressed, setPressed] = createSignal(false);
+
+<Toggle pressed={pressed()} onPressedChange={setPressed}>
+  <ToggleIndicator fallback={<HeartOutlineIcon />}>
+    <HeartFilledIcon />
+  </ToggleIndicator>
+</Toggle>
+```
+
+**Отключённый.**
+
+```tsx
+<Toggle disabled defaultPressed>
+  <ToggleIndicator>★</ToggleIndicator>
+</Toggle>
+```
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -81,55 +128,10 @@ root 🔲 · props: defaultPressed
 приглушается, когда тумблер не нажат, а не прячется — какую именно картинку показать в каждом
 состоянии, решает не рецепт, а `fallback` на самом индикаторе.
 
-<h2 id="использование">🚀 Использование</h2>
-
-Собрать тумблер можно вручную, по схеме, с разным глифом на каждое состояние или отключённым.
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
-
-```tsx
-<Toggle defaultPressed>
-  <ToggleIndicator>★</ToggleIndicator>
-</Toggle>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
-`RenderTree`.
-
-```tsx
-const data = { glyph: "★" };
-const tree = instanceOf("toggle", {}, "basic", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Разный глиф на каждое состояние.** `ToggleIndicator`'s `fallback` рисует контент для
-НЕнажатого состояния, дети — для нажатого; переключать `data-state` руками не нужно.
-
-```tsx
-import { createSignal } from "solid-js";
-
-const [pressed, setPressed] = createSignal(false);
-
-<Toggle pressed={pressed()} onPressedChange={setPressed}>
-  <ToggleIndicator fallback={<HeartOutlineIcon />}>
-    <HeartFilledIcon />
-  </ToggleIndicator>
-</Toggle>
-```
-
-**Отключённый.**
-
-```tsx
-<Toggle disabled defaultPressed>
-  <ToggleIndicator>★</ToggleIndicator>
-</Toggle>
-```
-
-## Доступность
+<h2 id="доступность">♿ Доступность</h2>
 
 Тумблер следует паттерну WAI-ARIA [Button](https://www.w3.org/WAI/ARIA/apg/patterns/button/) с
-нажатым состоянием (`aria-pressed`) — та же семантика, что у нативной кнопки-тумблера.
+нажатым состоянием (`aria-pressed`) — та же семантика, что у нативной кнопки-тумблера. ⌨️
 
 | Клавиша            | Действие                      |
 | ------------------- | ---------------------------------- |

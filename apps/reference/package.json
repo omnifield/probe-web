@@ -18,7 +18,6 @@
     "@web-core/runtime": "workspace:*",
     "@web-core/skin": "workspace:*",
     "@web-core/style": "workspace:*",
-    "@web-core/style-tools": "workspace:*",
     "@web-core/ui": "workspace:*",
     "solid-js": "^1.9.14"
   },

@@ -1,6 +1,6 @@
 // Design notes: ../README.md#presets
 
-import type { SkinSource } from "@web-core/runtime";
+import type { SkinSource } from "../wear/switch.js";
 
 import type { PassportLookup } from "../address/index.js";
 import { withPassports } from "../generate/index.js";

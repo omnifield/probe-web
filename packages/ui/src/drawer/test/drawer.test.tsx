@@ -6,7 +6,16 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { Drawer, kit as drawerKit } from "../components/index.js";
+import {
+  Drawer,
+  DrawerBackdrop,
+  DrawerCloseTrigger,
+  DrawerContent,
+  DrawerPositioner,
+  DrawerTitle,
+  DrawerTrigger,
+  kit as drawerKit,
+} from "../components/index.js";
 import { passport as drawerPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as drawerEditorInfo } from "../playground/index.js";
@@ -78,5 +87,40 @@ describe('drawer "basic" — the floating half, open by default via providerProp
 
     const closeTrigger = host.querySelector('[data-scope="drawer"][data-part="close-trigger"]');
     expect(closeTrigger?.textContent).toBe("✕");
+  });
+});
+
+describe("multiple triggers sharing one drawer", () => {
+  it("marks the clicked trigger current and opens the shared drawer", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Drawer swipeDirection="end">
+          <DrawerTrigger value="alice">Alice</DrawerTrigger>
+          <DrawerTrigger value="bob">Bob</DrawerTrigger>
+          <DrawerBackdrop />
+          <DrawerPositioner>
+            <DrawerContent>
+              <DrawerTitle>Edit</DrawerTitle>
+              <DrawerCloseTrigger>✕</DrawerCloseTrigger>
+            </DrawerContent>
+          </DrawerPositioner>
+        </Drawer>
+      ),
+      host,
+    );
+
+    const triggers = host.querySelectorAll('[data-scope="drawer"][data-part="trigger"]');
+    (triggers[1] as HTMLElement).click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(triggers[1].getAttribute("data-current")).toBe("");
+    expect(triggers[0].getAttribute("data-current")).toBeNull();
+    expect(host.querySelector('[data-scope="drawer"][data-part="content"]')?.getAttribute("data-state")).toBe(
+      "open",
+    );
   });
 });

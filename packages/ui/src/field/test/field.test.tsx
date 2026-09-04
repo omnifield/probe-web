@@ -6,7 +6,14 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as fieldKit } from "../components/index.js";
+import {
+  Field,
+  FieldErrorText,
+  FieldInput,
+  FieldLabel,
+  FieldRequiredIndicator,
+  kit as fieldKit,
+} from "../components/index.js";
 import { passport as fieldPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as fieldEditorInfo } from "../playground/index.js";
@@ -67,5 +74,51 @@ describe('field "basic" — required and invalid, both from data', () => {
 
     expect(host.querySelector('[data-scope="field"][data-part="helper-text"]')?.textContent).toBe("Как в документе");
     expect(host.querySelector('[data-scope="field"][data-part="error-text"]')?.textContent).toBe("Поле обязательно");
+  });
+});
+
+describe("errorText/requiredIndicator — absent from the DOM entirely, not hidden by CSS", () => {
+  it("a plain, valid, non-required field mounts neither node at all", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Field>
+          <FieldLabel>
+            Имя
+            <FieldRequiredIndicator />
+          </FieldLabel>
+          <FieldInput />
+          <FieldErrorText>Ошибка</FieldErrorText>
+        </Field>
+      ),
+      host,
+    );
+
+    expect(host.querySelector('[data-scope="field"][data-part="required-indicator"]')).toBeNull();
+    expect(host.querySelector('[data-scope="field"][data-part="error-text"]')).toBeNull();
+  });
+
+  it("required + invalid mounts both nodes for real", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Field required invalid>
+          <FieldLabel>
+            Имя
+            <FieldRequiredIndicator />
+          </FieldLabel>
+          <FieldInput />
+          <FieldErrorText>Ошибка</FieldErrorText>
+        </Field>
+      ),
+      host,
+    );
+
+    expect(host.querySelector('[data-scope="field"][data-part="required-indicator"]')).not.toBeNull();
+    expect(host.querySelector('[data-scope="field"][data-part="error-text"]')).not.toBeNull();
   });
 });

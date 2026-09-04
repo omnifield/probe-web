@@ -1,23 +1,15 @@
 # 🪗 Accordion
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-Раскрывающийся блок — используйте, если нужно спрятать часть контента и показывать её только по
+Раскрывающийся блок 📂 — используйте, если нужно спрятать часть контента и показывать её только по
 запросу. Разделов может быть сколько угодно, каждый раскрывается и прячется по клику на свой
 заголовок; раскрыт может быть один раздел или сразу несколько. Внутрь любого раздела можно
 положить что угодно — от простого текста до сложных компонентов со своей логикой. Между
-заголовками работает клавиатурная навигация стрелками и вся нужная разметка для экранных
+заголовками работает клавиатурная навигация стрелками ⌨️ и вся нужная разметка для экранных
 читалок — без дополнительной настройки.
-
-## 🧭 Навигация
-
-- 🧩 [Анатомия](#анатомия)
-- 🎛️ [Состояния](#состояния)
-- 🎚️ [Настройки](#настройки)
-- 🔌 [IO](#io)
-- 🏗️ [Сборки](#сборки)
-- 🎨 [Рецепт](#рецепт)
-- 🚀 [Использование](#использование)
 
 <h2 id="анатомия">🧩 Анатомия</h2>
 
@@ -41,6 +33,71 @@ root
 | ▶️ `control`          | кнопка раздела — раскрывает и закрывает его           | текст, иконку, `controlIndicator` | `AccordionControl`          |
 | 🔽 `controlIndicator` | индикатор раскрытия — стрелку кладёт потребитель      | текст, иконку, любой компонент    | `AccordionControlIndicator` |
 | 📂 `content`          | содержимое раздела — область, которая раскрывается    | текст, иконку, любой компонент    | `AccordionContent`          |
+
+<h2 id="использование">🚀 Использование</h2>
+
+Собрать аккордеон можно тремя способами: вручную обычной JSX-разметкой, по готовой схеме через
+движок, или тем и другим сразу — взять схему, но подменить одно место в ней живым компонентом
+из кода. 🧩
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<Accordion>
+  <AccordionItem value="shipping">
+    <h3>
+      <AccordionControl>
+        Shipping
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
+    </h3>
+    <AccordionContent>Courier and pickup</AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
+
+```tsx
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Рендер через движок с передачей компонента в нужный слот** — то же дерево движка, но узел
+`content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
+
+```tsx
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  slots={{ "accordion.content": { render: () => <div>CONTENT</div> } }}
+/>;
+```
+
+**Управляемое раскрытие** — какие секции раскрыты, решает внешнее состояние, не сам аккордеон:
+пригодится, если это нужно синхронизировать с чем-то ещё, например с адресом страницы. 🔗
+
+```tsx
+const [value, setValue] = createSignal<string[]>(["shipping"]);
+
+<Accordion value={value()} onValueChange={(details) => setValue(details.value)}>
+  <AccordionItem value="shipping">
+    <h3>
+      <AccordionControl>
+        Shipping
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
+    </h3>
+    <AccordionContent>Courier and pickup</AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -149,7 +206,7 @@ root
 
 Секция раскрывается и закрывается плавно — анимацией по высоте, а не рывком (было скрыто/стало
 видно). Своих именованных видов у аккордеона нет: единственное, что меняет его вид целиком —
-настройка `orientation`, вертикальная или горизонтальная гармошка.
+настройка `orientation`, вертикальная или горизонтальная гармошка. 🎬
 
 > [!WARNING]
 > Раскрытие `content` — не гарантированная отметка: если раздел раскрыт БЕЗ анимации,
@@ -168,68 +225,3 @@ shrink-block-size: blockSize var(--height) → 0
 В горизонтальной ориентации то же самое происходит по ширине, не по высоте — включается той же
 настройкой `orientation`, отдельного вида на это заводить не нужно. То же самое движение раскрытия
 использует дерево (tree-view) для своих веток — не переизобретено заново под аккордеон.
-
-<h2 id="использование">🚀 Использование</h2>
-
-Собрать аккордеон можно тремя способами: вручную обычной JSX-разметкой, по готовой схеме через
-движок, или тем и другим сразу — взять схему, но подменить одно место в ней живым компонентом
-из кода.
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
-
-```tsx
-<Accordion>
-  <AccordionItem value="shipping">
-    <h3>
-      <AccordionControl>
-        Shipping
-        <AccordionControlIndicator>▾</AccordionControlIndicator>
-      </AccordionControl>
-    </h3>
-    <AccordionContent>Courier and pickup</AccordionContent>
-  </AccordionItem>
-</Accordion>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
-
-```tsx
-const data = { sections: [{ id: "shipping", title: "Shipping" }] };
-const tree = instanceOf("accordion", {}, "base", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Рендер через движок с передачей компонента в нужный слот** — то же дерево движка, но узел
-`content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
-
-```tsx
-const data = { sections: [{ id: "shipping", title: "Shipping" }] };
-const tree = instanceOf("accordion", {}, "base", data);
-
-<RenderTree
-  tree={tree}
-  registry={registry}
-  data={data}
-  slots={{ "accordion.content": { render: () => <div>CONTENT</div> } }}
-/>;
-```
-
-**Управляемое раскрытие** — какие секции раскрыты, решает внешнее состояние, не сам аккордеон:
-пригодится, если это нужно синхронизировать с чем-то ещё, например с адресом страницы.
-
-```tsx
-const [value, setValue] = createSignal<string[]>(["shipping"]);
-
-<Accordion value={value()} onValueChange={(details) => setValue(details.value)}>
-  <AccordionItem value="shipping">
-    <h3>
-      <AccordionControl>
-        Shipping
-        <AccordionControlIndicator>▾</AccordionControlIndicator>
-      </AccordionControl>
-    </h3>
-    <AccordionContent>Courier and pickup</AccordionContent>
-  </AccordionItem>
-</Accordion>
-```

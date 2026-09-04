@@ -1,7 +1,7 @@
 {
   "name": "@web-core/skin",
   "version": "0.0.0",
-  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, and CSS generation (PWEB-4). The mechanic is a framework; the actual dressing lives in the product.",
+  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, CSS generation, and wearing it (switch/connection, PWEB-221) — a framework, not a product's own dressing.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -25,6 +25,14 @@
     "./presets": {
       "types": "./dist/presets.d.ts",
       "default": "./dist/presets.js"
+    },
+    "./wear": {
+      "types": "./dist/wear.d.ts",
+      "default": "./dist/wear.js"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "default": "./dist/solid.js"
     }
   },
   "files": [
@@ -44,17 +52,16 @@
     "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
-    "@web-core/runtime": "^0.1.0",
     "@web-core/style": "^0.1.0",
     "postcss": "^8.5.14",
-    "postcss-nested": "^7.0.2"
+    "postcss-nested": "^7.0.2",
+    "solid-js": "^1.9.14"
   },
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
-    "@web-core/runtime": "workspace:*",
     "@web-core/style": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
@@ -69,13 +76,13 @@
     "vitest": "^4.1.10"
   },
   "peerDependenciesMeta": {
-    "@web-core/runtime": {
-      "optional": true
-    },
     "postcss": {
       "optional": true
     },
     "postcss-nested": {
+      "optional": true
+    },
+    "solid-js": {
       "optional": true
     }
   }

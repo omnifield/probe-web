@@ -2,6 +2,7 @@ import { createRegistry, type ReadableComponent, type Registry } from "@web-core
 import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly } from "@web-core/skin/editor";
+import { For } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -9,7 +10,18 @@ if (typeof Element.prototype.scrollTo !== "function") {
   Element.prototype.scrollTo = () => {};
 }
 
-import { kit } from "../components/index.js";
+import {
+  Select,
+  SelectContent,
+  SelectControl,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectPositioner,
+  SelectTrigger,
+  SelectValueText,
+  kit,
+} from "../components/index.js";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo } from "../playground/index.js";
@@ -176,5 +188,55 @@ describe('select "basic" — skeleton filled from data, nothing hardcoded in the
         context: { payload: { value: "banana", label: "Банан" } },
       }),
     ]);
+  });
+});
+
+describe("multiple — clicks accumulate instead of replacing, list stays open", () => {
+  it("real clicks on two items keep both selected and the list open", async () => {
+    const items = [
+      { value: "mon", label: "Пн" },
+      { value: "tue", label: "Вт" },
+      { value: "wed", label: "Ср" },
+    ];
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Select items={items} multiple>
+          <SelectControl>
+            <SelectTrigger>
+              <SelectValueText placeholder="Ничего не выбрано" />
+            </SelectTrigger>
+          </SelectControl>
+          <SelectPositioner>
+            <SelectContent>
+              <For each={items}>
+                {(item) => (
+                  <SelectItem item={item}>
+                    <SelectItemText>{item.label}</SelectItemText>
+                    <SelectItemIndicator>✓</SelectItemIndicator>
+                  </SelectItem>
+                )}
+              </For>
+            </SelectContent>
+          </SelectPositioner>
+        </Select>
+      ),
+      host,
+    );
+
+    const trigger = host.querySelector('[data-scope="select"][data-part="trigger"]') as HTMLElement;
+    trigger.click();
+    await Promise.resolve();
+
+    const options = [...document.querySelectorAll('[data-scope="select"][data-part="item"]')] as HTMLElement[];
+    options[0]!.click();
+    await Promise.resolve();
+    options[1]!.click();
+    await Promise.resolve();
+
+    expect(trigger.getAttribute("data-state")).toBe("open");
+    expect(host.querySelector('[data-scope="select"][data-part="value-text"]')?.textContent).toBe("Пн, Вт");
   });
 });

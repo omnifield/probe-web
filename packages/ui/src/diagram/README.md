@@ -1,8 +1,10 @@
 # 📊 Diagram
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ other · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
-Диаграмма — координатная система и одна или несколько серий данных поверх неё: линия, область с
+Диаграмма 📈 — координатная система и одна или несколько серий данных поверх неё: линия, область с
 заливкой, столбцы, точки. Оси и фоновая сетка настоящие, считаются по реальным данным, не рисуются
 как декорация. Разные виды графиков — это одна и та же диаграмма, просто собранная из разных
 частей: линия становится столбчатой заменой одной части на другую, не отдельным компонентом.
@@ -97,6 +99,75 @@ root
 > декларативное дерево, а голый эскиз анатомии (без объявленной сборки) не называет пропов вовсе.
 > Без `scale` часть рисует свой настоящий адрес (`<g data-part="axis">`), пустой внутри — не падает.
 
+<h2 id="использование">🚀 Использование</h2>
+
+Шкалы всегда считает тот, кто собирает график, и передаёт готовыми — сама диаграмма шкалу не
+хранит и не пересчитывает. Дальше — координатная система, и на неё уже кладутся серии одна за
+другой. 📐
+
+```tsx
+import { scaleLinear } from "d3-scale";
+
+const x = scaleLinear().domain([0, 100]).range([40, 320]);
+const y = scaleLinear().domain([0, 50]).range([210, 10]);
+
+<DiagramRoot width={360} height={240}>
+  <DiagramGrid scale={x} orientation="x" from={10} to={210} />
+  <DiagramGrid scale={y} orientation="y" from={40} to={320} />
+  <DiagramAxis scale={x} orientation="x" offset={210} />
+  <DiagramAxis scale={y} orientation="y" offset={40} />
+</DiagramRoot>;
+```
+
+`grid`'s `from`/`to` — край диапазона ДРУГОЙ (перпендикулярной) шкалы, не своей собственной: x-сетка
+(вертикальные линии) тянется по всей высоте — диапазону y-шкалы, и наоборот.
+
+Первая настоящая серия — линия:
+
+```tsx
+const data = [
+  { day: 0, temperature: 12 },
+  { day: 1, temperature: 15 },
+  { day: 2, temperature: 14 },
+];
+
+<DiagramRoot width={360} height={240}>
+  <DiagramLine data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
+  <DiagramAxis scale={x} orientation="x" offset={210} />
+  <DiagramAxis scale={y} orientation="y" offset={40} />
+</DiagramRoot>;
+```
+
+Вторая серия — та же линия, но с заливкой:
+
+```tsx
+<DiagramArea data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
+```
+
+Столбцы — другая (категориальная) `xScale`:
+
+```tsx
+import { scaleBand } from "d3-scale";
+
+const quarters = [
+  { quarter: "Q1", revenue: 120 },
+  { quarter: "Q2", revenue: 190 },
+];
+const category = scaleBand<string>().domain(["Q1", "Q2"]).range([40, 320]).padding(0.2);
+
+<DiagramBar data={quarters} xScale={category} yScale={y} x={(d) => d.quarter} y={(d) => d.revenue} />;
+```
+
+Точки/scatter — тот же принцип, что `line`, без соединения между точками, необязательный `radius`
+(по умолчанию `3`):
+
+```tsx
+<DiagramPoint data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} radius={4} />
+```
+
+Веха `cartesian-series` этим закрыта целиком. Радиальные серии (пирог/радар/спидометр, веха
+`radial`) пока не построены (`ROADMAP.yaml`). 🚧
+
 <h2 id="состояния">🎛️ Состояния</h2>
 
 Пока состояние у диаграммы одно на всех — на какую сторону смотрят тики: горизонтально (нижняя
@@ -188,72 +259,3 @@ root · props: width, height
 (четверть непрозрачности) специально — она ориентир, не то, на что должен упасть взгляд в первую
 очередь. Все серии (линия, область, столбцы, точки) выкрашены одним и тем же цветом — заливка
 области полупрозрачная, а не сплошная, чтобы сетка под ней оставалась видна.
-
-<h2 id="использование">🚀 Использование</h2>
-
-Шкалы всегда считает тот, кто собирает график, и передаёт готовыми — сама диаграмма шкалу не
-хранит и не пересчитывает. Дальше — координатная система, и на неё уже кладутся серии одна за
-другой.
-
-```tsx
-import { scaleLinear } from "d3-scale";
-
-const x = scaleLinear().domain([0, 100]).range([40, 320]);
-const y = scaleLinear().domain([0, 50]).range([210, 10]);
-
-<DiagramRoot width={360} height={240}>
-  <DiagramGrid scale={x} orientation="x" from={10} to={210} />
-  <DiagramGrid scale={y} orientation="y" from={40} to={320} />
-  <DiagramAxis scale={x} orientation="x" offset={210} />
-  <DiagramAxis scale={y} orientation="y" offset={40} />
-</DiagramRoot>;
-```
-
-`grid`'s `from`/`to` — край диапазона ДРУГОЙ (перпендикулярной) шкалы, не своей собственной: x-сетка
-(вертикальные линии) тянется по всей высоте — диапазону y-шкалы, и наоборот.
-
-Первая настоящая серия — линия:
-
-```tsx
-const data = [
-  { day: 0, temperature: 12 },
-  { day: 1, temperature: 15 },
-  { day: 2, temperature: 14 },
-];
-
-<DiagramRoot width={360} height={240}>
-  <DiagramLine data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
-  <DiagramAxis scale={x} orientation="x" offset={210} />
-  <DiagramAxis scale={y} orientation="y" offset={40} />
-</DiagramRoot>;
-```
-
-Вторая серия — та же линия, но с заливкой:
-
-```tsx
-<DiagramArea data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
-```
-
-Столбцы — другая (категориальная) `xScale`:
-
-```tsx
-import { scaleBand } from "d3-scale";
-
-const quarters = [
-  { quarter: "Q1", revenue: 120 },
-  { quarter: "Q2", revenue: 190 },
-];
-const category = scaleBand<string>().domain(["Q1", "Q2"]).range([40, 320]).padding(0.2);
-
-<DiagramBar data={quarters} xScale={category} yScale={y} x={(d) => d.quarter} y={(d) => d.revenue} />;
-```
-
-Точки/scatter — тот же принцип, что `line`, без соединения между точками, необязательный `radius`
-(по умолчанию `3`):
-
-```tsx
-<DiagramPoint data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} radius={4} />
-```
-
-Веха `cartesian-series` этим закрыта целиком. Радиальные серии (пирог/радар/спидометр, веха
-`radial`) пока не построены (`ROADMAP.yaml`).

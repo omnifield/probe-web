@@ -1,7 +1,7 @@
 {
   "name": "@web-core/style",
-  "version": "0.1.0",
-  "description": "Набор значений web-core: токен-контракт, шкалы, роли, дефолтная пара тем. Один из поставщиков значений, а не фундамент; инструменты стилизации — отдельная поставка (PWEB-3).",
+  "version": "0.2.0",
+  "description": "Движок стилей web-core: набор значений (токен-контракт, шкалы, роли, порождение CSS) как ядро без фреймворка, плюс Solid-обвес (cn, createStyle, cva) отдельным подпутём. Ядро — один из поставщиков значений, а не фундамент (PWEB-3).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -14,7 +14,11 @@
       "types": "./dist/css/generate.d.ts",
       "default": "./dist/css/generate.js"
     },
-    "./base.css": "./dist/css/base.css"
+    "./base.css": "./dist/css/base.css",
+    "./solid": {
+      "types": "./dist/solid/index.d.ts",
+      "default": "./dist/solid/index.js"
+    }
   },
   "files": [
     "dist",
@@ -26,12 +30,29 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/build-css.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "pnpm run typecheck",
+    "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vitest": "^4.1.10"

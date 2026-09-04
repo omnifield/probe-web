@@ -1,0 +1,149 @@
+# Дорожная карта @web-core/style — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/store (categories → items, log → журнал решений); без milestones — у пакета
+# нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Ядро — значения
+    items:
+      - id: values-core
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Токен-контракт, шкалы, роли, оси и их границы
+        description: |
+          Означает: buildScale/buildAlphaScale/buildChartScale/buildScrim, AXES/axisOf,
+          DERIVED_SCALES/SPACE_ROLES/LAYERS, разбор и модель цвета (OKLCH), гейт контраста
+          (contrastRatio/AA_TEXT/AA_NON_TEXT). Framework-free, живёт в src/engine/.
+
+      - id: css-generate
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Порождение CSS по требованию — /generate, /base.css
+        description: |
+          Означает: baseCss() — чистая функция в src/css/generate.ts, ручная часть листа
+          строкой в src/css/written.ts (RESET_PROOF). Зовётся одинаково сборочным сценарием,
+          дев-сервером зоны build и тестами. В листе — только сброс (box-sizing, margin,
+          appearance: none на кнопках), ни одного кастом-свойства.
+
+  - category: Solid-обвес
+    items:
+      - id: style-tools-merge
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "@web-core/style-tools слит в @web-core/style, подпуть /solid"
+        description: |
+          Означает: cn/createStyle/реэкспорт cva переехали из самостоятельного пакета
+          @web-core/style-tools в src/solid/ этого пакета, подпуть ./solid в exports.
+          solid-js — peerDependenciesMeta.optional, class-variance-authority/clsx/
+          tailwind-merge — обычные dependencies. Разрез зависимостей в обе стороны пуст
+          (engine/ не импортирует solid/, наоборот тоже). Разбор — FAQ.md.
+
+      - id: engine-css-solid-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/index.ts (поверхность) + engine/ + css/ + solid/"
+        description: |
+          Означает: по образцу packages/store (engine/ + machine/ + addons/ на одном уровне).
+          src/values.ts переехал в src/engine/index.ts без смены роли (перечень поверхности).
+          src/index.ts — один export * from "./engine/index.js".
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок"
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md). Второй пакет на этом шаблоне после
+          packages/store.
+
+      - id: faq-roadmap
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение для этого пакета
+        description: |
+          Означает: вся содержательная аргументация из прежнего 938-строчного README (WCAG-
+          выводы, история инвариантов base.css, устройство осей, слияние с обвесом) перенесена
+          сюда Q&A-форматом, а не потеряна при сжатии README до шаблона.
+
+  - category: Не сделано
+    items:
+      - id: test-gate-rewrite
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: Мутационно проверенный гейт зоны не переписан после снятия старого набора
+        description: |
+          Означает: ~20 файлов тестов (axes/dimension/scale/color-*/base-css/marker/mode/pack/
+          types/entries/generate) сняты коммитом f807343 (2026-08-26) вместе с тестовыми
+          наборами всего packages/*, «не регрессия для тихого восстановления». Данные и
+          функции, которые они проверяли, не менялись; проверок на новой раскладке
+          (engine/css/solid) сегодня нет. Восстанавливать — на паттерне сквозных проверок
+          (по образцу checkRegistry/kit.test.tsx у packages/assembly), не покомпонентным
+          повтором. До восстановления README/FAQ не заявляют «держит проба X» для
+          отсутствующих файлов — это и была уборка 2026-09-04.
+
+log:
+  - id: style-tools-merge-decision
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Пользователь: "давай объедени их в один пакет, но экспорты сделай разные [...] сам
+      движок это ядро, тот что у нас сейчас в основе, а тулзы для солида — обвес движка, если
+      в будущем понадобится реакт — положим рядом, как второй обвес". Решение: @web-core/style
+      и @web-core/style-tools слиты в один пакет; корень "." остаётся framework-free (ядро),
+      Solid-специфика — подпуть "./solid". Названо по фреймворку, а не по роли ("/solid", не
+      "/tools"), чтобы второй обвес (React) не потребовал переименования первого. Раскладка
+      src/ — по образцу packages/store (engine/ + machine/-аналог), только вместо machine/ —
+      css/ (порождение стилей, framework-free) и solid/ (обвес, framework peer optional).
+
+  - id: style-tools-tests-recovered-from-history
+    type: plan
+    date: 2026-09-04
+    summary: >
+      test/cn.test.ts и test/create-style.test.ts у бывшего @web-core/style-tools не
+      существовали на диске на момент слияния (сняты тем же коммитом от 2026-08-26, что и
+      остальной гейт style) — но существовали в git-истории раньше этого коммита. Тексты тестов
+      извлечены из истории и перенесены в test/solid/ дословно (два
+      места переименованы под новые пути импорта), а не написаны заново — форма и покрытие
+      прежнего пакета сохранены, а не изобретены.
+
+  - id: lint-first-run-found-real-issues
+    type: plan
+    date: 2026-09-04
+    summary: >
+      У style-tools скрипт "lint" был "pnpm run typecheck" — ESLint не гонялся никогда. При
+      слиянии стиль подключён к общему пресету @web-core/lint (eslint . && typecheck, по
+      образцу store), и первый прогон нашёл два реальных срабатывания solid/reactivity: в
+      src/solid/create-style.ts createMemo(...) возвращался из функции без промежуточной
+      переменной (правило не может проследить, что результат — реактивный аксессор, а не
+      застывшее значение) — исправлено присваиванием в cls перед return; во втором случае
+      параметр рукописной вариант-функции в тесте назывался props, и правило приняло его за
+      JSX-пропы вне отслеживаемой области — переименован в opts. Оба — реальные несоответствия
+      канону, не подавлены eslint-disable.
+
+  - id: reference-app-consumer-updated
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Единственный реальный потребитель @web-core/style-tools в дереве — apps/reference
+      (src/app.tsx, package.json, test/gate.test.ts, все три — гейт цепочки сборки).
+      Обновлены на @web-core/style/solid; зависимость @web-core/style-tools
+      снята из манифеста. gate.test.ts, стерегущий разрез "значения и инструменты — две
+      разные поставки", переименован и переформулирован под "один пакет, разные
+      подпути" — утверждения о пустом разрезе в обе стороны не изменились по существу, только
+      форма поставки, которую они проверяют.

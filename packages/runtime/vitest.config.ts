@@ -5,11 +5,11 @@ import { defineConfig } from "vitest/config";
 //   • mount — браузерный: JSDOM + JSX-трансформ + условия разрешения `development`/`browser`.
 //     Без условий `solid-js/web` отдаёт СЕРВЕРНУЮ сборку и `render()` падает
 //     «Client-only API called on the server side» (норма доки, фонд `solid-docs-testing`).
-//   • skin — надевание скина и проверка порядка: тот же JSDOM, но БЕЗ Solid и без JSX-трансформа.
-//     Отсутствие плагина здесь несущее, а не экономия: механика обязана работать без Solid —
-//     скелет зовёт её до монтирования, — и проба, поднимающая Solid, доказывала бы обратное.
 //   • surface — сборочный: тут запускается `pnpm pack` и читается тарбол, браузерные
 //     условия здесь только мешали бы.
+//
+// Третий проект (`skin`) СНЯТ (`PWEB-221`): надевание скина и проверка порядка переехали в
+// `@web-core/skin` (`./wear`, `./solid`) — их пробы, если появятся, живут там же, не здесь.
 //
 // `vite-plugin-solid` стоит в devDependencies и НЕ едет потребителю: build-инструмент в
 // зависимостях рантайма — тот самый дефект, ради которого зона отделена (PROBEWEB-4).
@@ -26,13 +26,6 @@ export default defineConfig({
           name: "mount",
           environment: "jsdom",
           include: ["test/mount.test.tsx"],
-        },
-      },
-      {
-        test: {
-          name: "skin",
-          environment: "jsdom",
-          include: ["test/skin-switch.test.ts", "test/style-order.test.ts"],
         },
       },
       {

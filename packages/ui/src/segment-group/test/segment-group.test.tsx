@@ -6,7 +6,13 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as segmentGroupKit } from "../components/index.js";
+import {
+  SegmentGroup,
+  SegmentGroupItem,
+  SegmentGroupItemControl,
+  SegmentGroupItemText,
+  kit as segmentGroupKit,
+} from "../components/index.js";
 import { passport as segmentGroupPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as segmentGroupEditorInfo } from "../playground/index.js";
@@ -101,5 +107,32 @@ describe('segment group "basic" — label and items from data, one choice at a t
 
     expect(firstItem!.getAttribute("data-state")).toBe("unchecked");
     expect(secondItem!.getAttribute("data-state")).toBe("checked");
+  });
+});
+
+describe("per-item disabled — overrides the group, not just a group-wide flag", () => {
+  it("marks only the disabled item, siblings stay enabled", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <SegmentGroup defaultValue="list">
+          <SegmentGroupItem value="list">
+            <SegmentGroupItemControl />
+            <SegmentGroupItemText>Список</SegmentGroupItemText>
+          </SegmentGroupItem>
+          <SegmentGroupItem value="grid" disabled>
+            <SegmentGroupItemControl />
+            <SegmentGroupItemText>Плитка</SegmentGroupItemText>
+          </SegmentGroupItem>
+        </SegmentGroup>
+      ),
+      host,
+    );
+
+    const items = host.querySelectorAll('[data-scope="segment-group"][data-part="item"]');
+    expect(items[0]!.getAttribute("data-disabled")).toBeNull();
+    expect(items[1]!.getAttribute("data-disabled")).toBe("");
   });
 });

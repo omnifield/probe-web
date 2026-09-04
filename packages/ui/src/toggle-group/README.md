@@ -1,10 +1,12 @@
 # 🔘 Toggle Group
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ inputs · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
-Ряд кнопок-переключателей, работающих вместе как один набор — по умолчанию как радио-группа (нажат
-всегда один), с настройкой держащий сразу несколько нажатыми. Пример — панель форматирования текста
-(жирный/курсив/подчёркнутый) или переключатель выравнивания.
+Ряд кнопок-переключателей 🔘, работающих вместе как один набор — по умолчанию как радио-группа
+(нажат всегда один), с настройкой держащий сразу несколько нажатыми. Пример — панель форматирования
+текста (жирный/курсив/подчёркнутый) или переключатель выравнивания.
 
 <h2 id="анатомия">🧩 Анатомия</h2>
 
@@ -24,6 +26,68 @@ root
 > [!NOTE]
 > Всего две части — самая маленькая анатомия в ките после тумблера: ни скрытого ввода, ни
 > отдельной подписи или индикатора не нужно, кнопке хватает самой себя.
+
+<h2 id="использование">🚀 Использование</h2>
+
+Собрать набор можно вручную или по схеме; отдельно — режим с несколькими нажатыми сразу и
+отключённый набор целиком. 🔀
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<ToggleGroup defaultValue={["bold"]} multiple>
+  <ToggleGroupItem value="bold">B</ToggleGroupItem>
+  <ToggleGroupItem value="italic">I</ToggleGroupItem>
+  <ToggleGroupItem value="underline">U</ToggleGroupItem>
+</ToggleGroup>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = {
+  items: [
+    { value: "left", label: "Слева" },
+    { value: "center", label: "По центру" },
+    { value: "right", label: "Справа" },
+  ],
+};
+const tree = instanceOf("toggle-group", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Несколько нажатых сразу.** `multiple` (по умолчанию выкл) снимает ограничение «только один
+пункт нажат» — без него набор ведёт себя как радио-группа с возможностью снять выбор.
+
+```tsx
+<ToggleGroup defaultValue={["bold", "underline"]} multiple>
+  <ToggleGroupItem value="bold">B</ToggleGroupItem>
+  <ToggleGroupItem value="italic">I</ToggleGroupItem>
+  <ToggleGroupItem value="underline">U</ToggleGroupItem>
+</ToggleGroup>
+```
+
+**Всегда ровно один нажат — настоящая радио-группа.** По умолчанию единственный нажатый пункт
+можно снять повторным кликом, оставшись совсем без выбора. `deselectable={false}` это запрещает —
+клик по уже нажатому пункту больше ничего не делает, набор ведёт себя как радио-кнопки.
+
+```tsx
+<ToggleGroup defaultValue={["left"]} deselectable={false}>
+  <ToggleGroupItem value="left">Слева</ToggleGroupItem>
+  <ToggleGroupItem value="right">Справа</ToggleGroupItem>
+</ToggleGroup>
+```
+
+**Отключённый.**
+
+```tsx
+<ToggleGroup disabled defaultValue={["left"]}>
+  <ToggleGroupItem value="left">Слева</ToggleGroupItem>
+  <ToggleGroupItem value="right">Справа</ToggleGroupItem>
+</ToggleGroup>
+```
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -93,75 +157,13 @@ root
 заметную тень — тот же повседневный вид, что у переключателя вида в macOS. Отключённое состояние
 красится приглушением (`opacity`), не сменой цвета текста — из свободных ступеней шкалы годятся
 только «краски» (для текста), а не «заливки» (для фона); использовать заливку для текста —
-реальная, пойманная проверкой ошибка, не гипотетическая.
+реальная, пойманная проверкой ошибка, не гипотетическая. 🎨
 
-<h2 id="использование">🚀 Использование</h2>
-
-Собрать набор можно вручную или по схеме; отдельно — режим с несколькими нажатыми сразу и
-отключённый набор целиком.
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
-
-```tsx
-<ToggleGroup defaultValue={["bold"]} multiple>
-  <ToggleGroupItem value="bold">B</ToggleGroupItem>
-  <ToggleGroupItem value="italic">I</ToggleGroupItem>
-  <ToggleGroupItem value="underline">U</ToggleGroupItem>
-</ToggleGroup>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
-`RenderTree`.
-
-```tsx
-const data = {
-  items: [
-    { value: "left", label: "Слева" },
-    { value: "center", label: "По центру" },
-    { value: "right", label: "Справа" },
-  ],
-};
-const tree = instanceOf("toggle-group", {}, "basic", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Несколько нажатых сразу.** `multiple` (по умолчанию выкл) снимает ограничение «только один
-пункт нажат» — без него набор ведёт себя как радио-группа с возможностью снять выбор.
-
-```tsx
-<ToggleGroup defaultValue={["bold", "underline"]} multiple>
-  <ToggleGroupItem value="bold">B</ToggleGroupItem>
-  <ToggleGroupItem value="italic">I</ToggleGroupItem>
-  <ToggleGroupItem value="underline">U</ToggleGroupItem>
-</ToggleGroup>
-```
-
-**Всегда ровно один нажат — настоящая радио-группа.** По умолчанию единственный нажатый пункт
-можно снять повторным кликом, оставшись совсем без выбора. `deselectable={false}` это запрещает —
-клик по уже нажатому пункту больше ничего не делает, набор ведёт себя как радио-кнопки.
-
-```tsx
-<ToggleGroup defaultValue={["left"]} deselectable={false}>
-  <ToggleGroupItem value="left">Слева</ToggleGroupItem>
-  <ToggleGroupItem value="right">Справа</ToggleGroupItem>
-</ToggleGroup>
-```
-
-**Отключённый.**
-
-```tsx
-<ToggleGroup disabled defaultValue={["left"]}>
-  <ToggleGroupItem value="left">Слева</ToggleGroupItem>
-  <ToggleGroupItem value="right">Справа</ToggleGroupItem>
-</ToggleGroup>
-```
-
-## Доступность
+<h2 id="доступность">♿ Доступность</h2>
 
 Набор следует паттерну WAI-ARIA [Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/) с
 роуминг-таб-индексом — фокус табом попадает на нажатый (или первый) пункт, дальше по набору
-двигают стрелки, не таб.
+двигают стрелки, не таб. ⌨️
 
 | Клавиша                          | Действие                                     |
 | ---------------------------------- | ------------------------------------------------- |

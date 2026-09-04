@@ -2,7 +2,9 @@
 // не в exports манифеста. Разбор — README.md/FAQ.md пакета.
 
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+
+import type { Plugin, UserConfig } from "vite";
 
 import { trace } from "../shared/trace.js";
 
@@ -36,6 +38,11 @@ export interface GeneratedCss {
   generator: string;
   exportName: string;
   root: string;
+}
+
+/** Разбор дерева, общий на этот и на `generated-css.ts` — считается один раз в хуке `config`. */
+export interface DevState {
+  generated: GeneratedCss[];
 }
 
 function readJson(file: string): unknown {
@@ -204,4 +211,28 @@ export function findWorkspaceSources(projectRoot: string): WorkspaceSources {
   result.roots.sort();
   done();
   return result;
+}
+
+/** Дев-плагин: соседи по воркспейсу видны исходниками и не пребандлятся. См. README.md «Дев-цикл». */
+export function workspaceSourcePlugin(state: DevState): Plugin {
+  return {
+    name: "web-core-build:workspace-source",
+    apply: "serve",
+    config(config) {
+      const done = trace("workspaceSourcePlugin.config");
+      const projectRoot = resolve(config.root ?? process.cwd());
+      const { names, roots, aliases, generated } = findWorkspaceSources(projectRoot);
+      done();
+
+      state.generated = generated;
+      if (names.length === 0) return undefined;
+
+      return {
+        resolve: { alias: aliases },
+        optimizeDeps: { exclude: names },
+        // Корень приложения первым — заданный список ОТМЕНЯЕТ умолчание Vite (см. FAQ.md).
+        server: { fs: { allow: [projectRoot, ...roots] } },
+      } satisfies UserConfig;
+    },
+  };
 }
