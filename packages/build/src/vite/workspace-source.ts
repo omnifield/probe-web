@@ -1,5 +1,5 @@
 // Соседи по воркспейсу видны через исходники, а не через вчерашнюю сборку. ВНУТРЕННЕЕ —
-// не в exports манифеста. Разбор — README.md/FAQ.md рядом (src/vite/).
+// не в exports манифеста. Разбор — README.md/FAQ.md пакета.
 
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";

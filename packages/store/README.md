@@ -1,42 +1,56 @@
-# @web-core/store
+# ⚙️ web-core Store
 
-Стейт web-core поверх семьи **XState** — `@xstate/store` (плоское событийное хранилище,
-zustand-по-духу) и, отдельным опциональным слоем, `xstate` целиком (явные стейт-машины).
-Приложение импортирует ровно этот пакет — никогда `@xstate/store`/`@xstate/store-solid`/
-`xstate`/`@xstate/solid` напрямую, — той же причиной, что и `@web-core/router`:
-единый путь резолва даёт единый экземпляр модуля.
+🏷️ state · 🧬 engine · 📦 `@web-core/store`
 
-## Почему XState-семья, а не буквальный Zustand
+Стейт web-core поверх XState-семьи — используйте, если нужно глобальное реактивное хранилище вне
+дерева компонентов (без Provider) или явную стейт-машину с guards/вложенными состояниями/
+акторами. `@xstate/store` даёт плоский zustand-по-духу слой (`createStore`, атомы), `xstate` —
+опциональный слой полных машин поверх него же, одной согласованной семьёй, а не склейкой двух
+разных вендоров. Значение, посчитанное синхронно или полученное асинхронно по ключу из службы,
+читается одним и тем же приёмом (`createResourceAtom`) — выбирать между разными техниками под
+sync/async не нужно.
 
-У Zustand нет официальных Solid-биндингов вообще — его хуки завязаны на React
-(`use-sync-external-store`), а Solid своей тонкозернистой реактивностью решает ровно ту задачу,
-под которую в React звали Zustand: локальный компонентный стейт Zustand не нужен, `createSignal`
-справляется сам. Взять «vanilla»-часть Zustand и написать Solid-обвязку самим — тот же объём
-работы, что уже сделан и поддерживается апстримом в `@xstate/store` + `@xstate/store-solid`:
-событийное хранилище один-в-один по духу («store с `context`, события меняют его»), плюс
-официальный `useSelector`, плюс бесплатно достаётся вторая половина — совместимый слой полных
-стейт-машин от той же команды (Stately), если плоского стора перестанет хватать. Это и есть
-комбинация «XState + Zustand», о которой шла речь — но одной согласованной семьёй вместо склейки
-два вендора, один из которых Solid не поддерживает вовсе.
+## 🧭 Навигация
 
-## Два подпути — два слоя, не альтернативы друг другу
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-- **`.`** — плоское хранилище, «Zustand-слой»: `createStore`, атомы (`createAtom`,
-  `createAsyncAtom`, `createReducerAtom`), хуки `useSelector`/`useStore`/`useAtom`/`useAtomState`.
-  Обязательный peer — только `solid-js`.
-- **`./machine`** — стейт-машины целиком: весь `xstate` (`createMachine`, `setup`, `assign`,
-  `fromPromise`, guards, акторы, …) плюс хуки `useMachine`/`useActor`/`useActorRef`/`fromActorRef`
-  из `@xstate/solid`. **Опциональный** peer (`xstate`, `@xstate/solid`) — приложение, которому
-  хватает плоского стора, эти два пакета не ставит вовсе.
-- **`./persist`, `./undo`, `./reset`, `./validate`** — аддоны `@xstate/store` (`.with(...)`),
-  подпутями по той же причине, что у `router`: `@xstate/store` — НАША зависимость, без реэкспорта
-  её подпути недостижимы строгим pnpm.
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-## Слой `.`: плоское хранилище
+У движка нет DOM-узлов — «часть» здесь означает подпуть поставки, а «адрес» — импорт-спецификатор,
+которым эта часть достаётся. Плоское хранилище живёт в корне, стейт-машины и каждый аддон —
+отдельным подпутём: приложение импортирует ровно то, что реально использует, и ничего сверх.
+
+| Часть | Адрес | Экспортирует |
+|---|---|---|
+| Плоское хранилище | `@web-core/store` | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
+| Стейт-машины | `@web-core/store/machine` | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef` |
+| Persist-аддон | `@web-core/store/persist` | `persist`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage` |
+| Undo/redo-аддон | `@web-core/store/undo` | `undoRedo` |
+| Reset-аддон | `@web-core/store/reset` | `reset` |
+| Validate-аддон | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError` |
+
+Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
+`@xstate/store-solid` + `createResourceAtom` + переопределение `createAsyncAtom`),
+`src/engine/resource.ts` (реализация `createResourceAtom`). Имя `createAsyncAtom` в поверхности
+присутствует, но локально переопределено — сигнатура `() => never`, вызов всегда бросает.
+
+<h2 id="использование">🚀 Использование</h2>
+
+Шесть сценариев покрывают всё, чем реально пишется код с этим движком: глобальный стор с
+событиями, точечный атом (писуемый или вычисляемый из другого), одно значение — синхронное или
+асинхронное по ключу, — явная стейт-машина и подключение аддона поверх стора.
+
+**Плоское хранилище:**
 
 ```ts
-// src/counter-store.ts
-import { createStore } from "@web-core/store";
+import { createStore, useSelector } from "@web-core/store";
 
 export const counterStore = createStore({
   context: { count: 0 },
@@ -47,34 +61,29 @@ export const counterStore = createStore({
 ```
 
 ```tsx
-// где угодно в дереве компонентов — без Provider, стор живёт вне дерева
-import { useSelector } from "@web-core/store";
-
 import { counterStore } from "./counter-store.js";
 
 function Counter() {
-  // useSelector отдаёт АКСЕССОР — вызывать как функцию, как useParams/useSearch у router.
   const count = useSelector(counterStore, (state) => state.context.count);
-  return (
-    <button onClick={() => counterStore.trigger.inc({ by: 1 })}>
-      {count()}
-    </button>
-  );
+  return <button onClick={() => counterStore.trigger.inc({ by: 1 })}>{count()}</button>;
 }
 ```
 
-`store.trigger.inc({ by: 1 })` — сахар над `store.send({ type: "inc", by: 1 })`, оба варианта
-равноценны. `store.can.inc()` проверяет допустимость события без отправки, `store.getSnapshot()`
-читает разово.
+**Атомы:**
 
-## `createResourceAtom`: один флоу для «посчитанное или полученное значение»
+```ts
+import { createAtom, useAtom } from "@web-core/store";
 
-Один и тот же приём для ОБОИХ случаев: значение вычислено синхронно (из другого атома/функции)
-или получено асинхронно, по ключу, из службы. Потребитель не выбирает разные примитивы в
-зависимости от того, есть тут `await` или нет, — форма состояния одна: `{ status: "pending" }` /
-`{ status: "done", data }` / `{ status: "error", error }`.
+const idAtom = createAtom(1);                       // writable
+const doubledAtom = createAtom(() => idAtom.get() * 2); // computed, read-only
 
-**Без ключа** — фетчер вызывается один раз, при создании атома:
+function View() {
+  const doubled = useAtom(doubledAtom);
+  return <p>{doubled()}</p>;
+}
+```
+
+**`createResourceAtom` — без ключа:**
 
 ```ts
 import { createResourceAtom } from "@web-core/store";
@@ -82,62 +91,32 @@ import { createResourceAtom } from "@web-core/store";
 export const componentsAtom = createResourceAtom(() => listComponents());
 ```
 
-**С ключом** — первым аргументом Solid-аксессор (обычный `() => T`, тот же контракт, что у
-`useParams`/`useSearch` из `@web-core/router` или у самой обычной `createSignal`);
-фетчер перевызывается каждый раз, когда меняется его значение (совпадает по духу с
-`createResource(source, fetcher)` из `solid-js`, но отдаёт тот же по форме атом, что и
-`createAtom`/`createResourceAtom` без ключа — `.get()`/`useAtom`/`useSelector`, один и тот же
-способ чтения везде). Источник ключа — ЛЮБОЙ Solid-аксессор, включая `useParams()` роутера;
-единственное, что важно: `source` должен быть настоящим Solid-сигналом (или производным от него),
-а не `.get()` другого атома `@xstate/store` напрямую — это две разные реактивные системы, и вторая
-сюда не протягивается (см. довод ниже, почему `createAsyncAtom` вообще не годится для этого):
+**`createResourceAtom` — с ключом:**
 
 ```ts
-import { createResourceAtom } from "@web-core/store";
+import { createResourceAtom, useAtom } from "@web-core/store";
 import { createSignal } from "solid-js";
 
-import { componentInfo } from "./info.js"; // (id: string) => Promise<ComponentInfo>
-
 export const [selectedComponentId, setSelectedComponentId] = createSignal<string>();
-
 export const componentInfoAtom = createResourceAtom(selectedComponentId, (id) => componentInfo(id));
-```
 
-```tsx
-import { useAtom } from "@web-core/store";
-
-function ComponentInfoPanel() {
+function Panel() {
   const info = useAtom(componentInfoAtom);
   return (
     <p>
       {(() => {
-        const state = info(); // читать один раз — узкий тип на каждой ветке ниже
-        if (state.status === "pending") return "Загрузка…";
-        if (state.status === "error") return "Ошибка";
-        return state.data.name;
+        const state = info();
+        return state.status === "done" ? state.data.name : state.status;
       })()}
     </p>
   );
 }
 ```
 
-**Почему не `createAsyncAtom` из `@xstate/store`.** Он выглядит подходящим примитивом того же
-пакета, но реально сломан для ровно этого кейса: он отслеживает `.get()` других атомов, вызванный
-внутри геттера, ТОЛЬКО пока асинхронный запрос ещё не завершился (синхронная часть, `pending`).
-В момент резолва промиса он обновляет значение в обход геттера — и его внутренний `purgeDeps`
-считает все ранее отслеженные атомы недостигнутыми в этом проходе и отвязывает их. Итог: атом,
-один раз получивший значение, больше не реагирует на смену входа, которым сам же был запущен —
-подтверждено прямым прогоном на голом `@xstate/store@4.2.3`, без Solid (см. `src/resource.ts`).
-Поэтому `createAsyncAtom` в этом пакете не реэкспортируется — импорт с апстримной сигнатурой не
-пройдёт тайпчек, вызов — бросит. `createResourceAtom` устроен иначе: `source` — обычный
-Solid-аксессор, пересчёт ведёт Solid-эффект (не автотрекинг `@xstate/store`), сам ресурс-атом
-только пишется через `.set()` — отслеживать нечему, ломаться на резолве нечему.
+**Стейт-машины:**
 
-## Слой `./machine`: явные стейт-машины
-
-```tsx
-import { createMachine } from "@web-core/store/machine";
-import { useMachine } from "@web-core/store/machine";
+```ts
+import { createMachine, useMachine } from "@web-core/store/machine";
 
 const toggleMachine = createMachine({
   id: "toggle",
@@ -150,19 +129,11 @@ const toggleMachine = createMachine({
 
 function Toggle() {
   const [state, send] = useMachine(toggleMachine);
-  // ВАЖНО: `state` здесь НЕ аксессор — реактивный solid-стор (createStore из solid-js/store),
-  // читается путём свойства: `state.value`, `state.context.x`. В отличие от useSelector выше и
-  // от useParams/useSearch в router, звать его как функцию НЕ НАДО — это устройство самого
-  // @xstate/solid (deep-clone снапшота в solid-стор при каждом обновлении), не наша обёртка.
   return <button onClick={() => send({ type: "TOGGLE" })}>{state.value as string}</button>;
 }
 ```
 
-Когда нужен just актор без встроенного рендер-цикла компонента (например, стор живёт вне
-дерева) — `useActorRef`/`fromActorRef`, тот же принцип: `fromActorRef` отдаёт аксессор,
-`useActor`/`useMachine` — уже развёрнутый стор.
-
-## Аддоны
+**Аддоны:**
 
 ```ts
 import { createStore } from "@web-core/store";
@@ -171,19 +142,123 @@ import { persist } from "@web-core/store/persist";
 export const settingsStore = createStore({
   context: { theme: "light" },
   on: { setTheme: (ctx, e: { theme: string }) => ({ theme: e.theme }) },
-}).with(persist({ storage: localStorage, key: "settings" }));
+}).with(persist({ name: "settings" }));
 ```
 
-`./undo` → `store.trigger.undo()`/`.redo()`. `./reset` → `store.trigger.reset()`. `./validate` →
-рантайм-проверка событий/контекста по `schemas` конфига.
+<h2 id="настройки">🎚️ Настройки</h2>
 
-## Ловушка для тех, кто пишет тесты поверх `./machine`
+У движка нет одной сущности с общим списком настроек, как у компонента, — опции у каждого
+конструктора свои: атомы сравнивают значения, `createStore` валидирует схемой, каждый аддон
+настраивает свою сторону (стратегию хранения, глубину истории, что откатывать сбросом, что
+проверять рантаймом). Таблица ниже — все именованные опции по функциям, к которым они относятся.
 
-`@xstate/solid` публикует dual-пакет по конвенции бандлеров — ключ `module` в `exports`,
-отдельно от `import`. Vitest-конфиг, который явно перечисляет `resolve.conditions` (как этот
-пакет — see `vitest.config.ts`) и забывает включить туда `"module"`, уводит резолв на CJS-ветку
-со своим собственным `require("solid-js")` — вторая копия Solid, разорванный владелец,
-реактивность внутри `@xstate/solid` тихо не подписывается (без единой ошибки — просто
-компонент не обновляется). Замерено 2026-08-28. Настоящим приложениям это не грозит:
-`defineConfig()` зоны `build` условия резолва не трогает вовсе, и дефолт Vite (`module` в нём
-уже есть) отрабатывает сам.
+| Настройка | Где | Тип | По умолчанию |
+|---|---|---|---|
+| `compare` | `createAtom`/`createResourceAtom`/`createReducerAtom`, `options` | `(prev: T, next: T) => boolean` | `Object.is` |
+| `schemas` | `createStore`, `definition.schemas` | `{context?, events?, emitted?}` (Standard Schema) | — |
+| `strategy` | `persist`, `options.strategy` | `"snapshot" \| "event"` | `"snapshot"` |
+| `name` | `persist`, `options.name` | `string` | обязательное |
+| `storage` | `persist`, `options.storage` | `StateStorage` | `localStorage` |
+| `version` | `persist`, `options.version` | `string \| number` | `0` |
+| `throttle` | `persist`, `options.throttle` | `number` (мс) | `0` |
+| `skipHydration` | `persist`, `options.skipHydration` | `boolean` | `false` |
+| `filter`/`pick`/`migrate`/`merge` | `persist` (`strategy: "snapshot"`) | функции | — |
+| `maxEvents` | `persist` (`strategy: "event"`) | `number` | `Infinity` |
+| `strategy` | `undoRedo`, `options.strategy` | `"event" \| "snapshot"` | `"event"` |
+| `historyLimit` | `undoRedo` (`strategy: "snapshot"`) | `number` | `Infinity` |
+| `getTransactionId`/`skipEvent`/`compare`/`restore` | `undoRedo` | функции | — |
+| `to` | `reset`, `options.to` | `(initial, current) => TContext` | полный сброс к initial |
+| `context`/`events`/`emitted` | `validateSchemas`, `options` | `boolean` | — |
+| `unknownEvents`/`unknownEmitted` | `validateSchemas`, `options` | `"throw" \| "ignore"` | — |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+Каждая часть поверхности сообщает о себе меткой `status` (или `reason` у отказа валидации) —
+атом о загрузке значения, стор о жизненном цикле перехода, машина о текущем узле. Ни одно из
+этих состояний не придумано этим пакетом: все взяты как есть из типов `@xstate/store`/`xstate`,
+кроме `ResourceState` — он свой, но по той же форме `{status,data,error}`, что и у апстрима.
+
+| Состояние | Метка | Где |
+|---|---|---|
+| Атом ждёт ответа | `status: "pending"` | `ResourceState`, `createResourceAtom` |
+| Атом получил значение | `status: "done"`, поле `data` | `ResourceState` |
+| Атом получил ошибку | `status: "error"`, поле `error` | `ResourceState` |
+| Стор активен | `status: "active"` | `StoreSnapshot`, `store.getSnapshot()` |
+| Стор завершён | `status: "done"`, поле `output` | `StoreSnapshot` |
+| Стор упал | `status: "error"`, поле `error` | `StoreSnapshot` |
+| Стор остановлен | `status: "stopped"` | `StoreSnapshot` |
+| Машина в состоянии | `state.value` (строка либо объект для вложенных/параллельных) | `useMachine`, `@web-core/store/machine` |
+| Отказ валидации | `reason`: `"invalidContext" \| "invalidEvent" \| "invalidEmitted" \| "unknownEvent" \| "unknownEmitted" \| "asyncValidationUnsupported"` | `StoreValidationError`, `@web-core/store/validate` |
+
+<h2 id="io">🔌 IO</h2>
+
+Вход и выход у каждого конструктора — своя форма: одни принимают конфиг с описанием событий,
+другие голое значение или геттер, третьи — фетчер, с ключом или без. Общее у всех через `.` —
+событие в стор уходит через `send`/`trigger`, текущее значение читается через `get`/аксессор,
+одним и тем же способом независимо от того, что конкретно создано.
+
+<h3>📥 Вход</h3>
+
+| Конструктор | Принимает |
+|---|---|
+| `createStore(definition)` | `{ context: TContext, on: { [event]: (context, event, enq) => TContext \| void }, schemas? }`. `enq` несёт `trigger`, `send`, `emit`, `effect(fn)` |
+| `createAtom` | значение `T` (writable) либо геттер `(prev?: T) => T` (computed, read-only), второй параметр — `AtomOptions<T>` |
+| `createResourceAtom` без ключа | `(fetcher: (info: { signal }) => Data \| Promise<Data>, options?)` |
+| `createResourceAtom` с ключом | `(source: Accessor<Key>, fetcher: (key, info: { signal }) => Data \| Promise<Data>, options?)` |
+| `store.send` | `{ type, ...payload }` |
+| `store.trigger.<type>` | `payload` |
+| `store.can.<type>` | `payload` |
+
+<h3>📤 Выход</h3>
+
+| Источник | Отдаёт |
+|---|---|
+| `store.getSnapshot()` / `store.get()` | `StoreSnapshot<TContext> = { status, context, output, error }` |
+| `atom.get()` | `T` напрямую |
+| `useAtom` / `useSelector` | аксессор `() => T` |
+| `createResourceAtom` | `ResourceState<Data, Err> = { status: "pending" } \| { status: "done", data } \| { status: "error", error }` |
+| `store.can.<type>` | `boolean` |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+Показаны только композиции, реально прогнанные рендером в тестах, — не теоретические примеры
+использования. Каждая строка ниже — это конкретный тест, который её доказывает; композиция
+аддонов друг с другом (`.with().with()`) тестом сегодня не покрыта — это документация в разделе
+«Рецепт», а не доказанная сборка.
+
+| Сборка | Что доказывает | Файл |
+|---|---|---|
+| `createStore` + `useSelector` | реальный рендер, `count()` меняется по `store.trigger.inc()` | `test/store.test.tsx` |
+| `createMachine` + `useMachine` | реальный рендер, переход `TOGGLE` меняет `state.value` | `test/store.test.tsx` |
+| `createResourceAtom` без ключа | `status: "done"` сразу, без промежуточного `pending` | `test/resource.test.tsx` |
+| `createResourceAtom` с ключом | реагирует на смену ключа ПОСЛЕ резолва предыдущего запроса | `test/resource.test.tsx` |
+| `createResourceAtom` с ключом, гонка | устаревший ответ игнорируется, если ключ сменился до его резолва | `test/resource.test.tsx` |
+| `createResourceAtom` + `useAtom` | реальный рендер компонента, `pending` → `done` по смене ключа | `test/resource.test.tsx` |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Съёмный слой этого движка — аддоны `@xstate/store`: не встроены в `createStore` заранее, а
+подключаются явным `.with(...)` и комбинируются цепочкой — без вызова стор их не несёт вовсе.
+
+```ts
+import { createStore } from "@web-core/store";
+import { persist } from "@web-core/store/persist";
+import { undoRedo } from "@web-core/store/undo";
+import { reset } from "@web-core/store/reset";
+
+const store = createStore({
+  context: { count: 0 },
+  on: { inc: (ctx) => ({ count: ctx.count + 1 }) },
+})
+  .with(persist({ name: "counter" }))
+  .with(undoRedo())
+  .with(reset());
+
+store.trigger.inc();
+store.trigger.undo();  // добавлено undoRedo
+store.trigger.reset(); // добавлено reset
+```
+
+`persist` добавляет гидратацию из storage при создании стора (если не `skipHydration`). `undoRedo`
+добавляет события `undo`/`redo`. `reset` добавляет событие `reset`. `validateSchemas` не добавляет
+событий — оборачивает переходы рантайм-проверкой по `schemas` из `createStore`.

@@ -1,11 +1,11 @@
-// Точка поверхности `/vitest` (`PROBEWEB-4`). Разбор — README.md/FAQ.md рядом.
+// Точка поверхности `/vitest`. Разбор — README.md/FAQ.md пакета.
 import type { ViteUserConfig as UserConfig } from "vitest/config";
 import solid from "vite-plugin-solid";
 
 import { trace } from "../shared/trace.js";
 
 /**
- * Пресет vitest для тестов на web-core. Разбор каждого поля — README.md рядом.
+ * Пресет vitest для тестов на web-core. Разбор каждого поля — README.md пакета.
  *
  * @returns конфиг для `export default` в `vitest.config.ts` потребителя
  */

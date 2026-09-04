@@ -1,0 +1,186 @@
+# Дорожная карта @web-core/store — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build и packages/ui/src/table (categories → items, log → журнал решений); без
+# milestones — у пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Плоское хранилище
+    items:
+      - id: flat-store
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createStore/createAtom/createReducerAtom + солид-хуки
+        description: |
+          Означает: единая точка резолва @xstate/store + @xstate/store-solid — createStore,
+          createAtom, createAtomConfig, createReducerAtom, useSelector, useStore, useAtom,
+          useAtomState. Приложение не импортирует @xstate/store*/@xstate/solid напрямую.
+
+  - category: Стейт-машины
+    items:
+      - id: machine-layer
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Подпуть ./machine — полноценный xstate
+        description: |
+          Означает: createMachine/setup/assign/fromPromise/guards/акторы + useMachine/useActor/
+          useActorRef/fromActorRef. xstate и @xstate/solid — опциональные peer, не подмешаны в
+          корневой `.`.
+
+  - category: Аддоны
+    items:
+      - id: addons-subpaths
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: ./persist, ./undo, ./reset, ./validate
+        description: |
+          Означает: реэкспорт @xstate/store/{persist,undo,reset,validate} отдельными подпутями —
+          @xstate/store НАША зависимость, без реэкспорта её подпути недостижимы строгим pnpm.
+
+  - category: Ресурс — синхронно и асинхронно
+    items:
+      - id: create-async-atom-broken
+        type: bug
+        status: Done
+        priority: Critical
+        milestone: null
+        name: "createAsyncAtom из @xstate/store теряет зависимости после первого резолва"
+        description: |
+          Означает: подтверждено прогоном на голом @xstate/store@4.2.3 без Solid — атом,
+          получивший значение хотя бы раз, больше не реагирует на смену входа, которым сам же
+          был инициирован. Не реэкспортируется — локальный export function createAsyncAtom():
+          never перекрывает звёздочный реэкспорт (именованный экспорт побеждает у ES-модулей при
+          коллизии имён), вызов по апстримной сигнатуре падает на тайпчеке. Разбор — FAQ.md.
+
+      - id: create-resource-atom
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: null
+        name: createResourceAtom — один флоу для sync и async
+        description: |
+          Означает: createResourceAtom(fetcher) без ключа и createResourceAtom(source, fetcher)
+          с ключом (Solid-аксессор) отдают один и тот же {status,data,error}. Реактивность на
+          Solid createEffect, не на автотрекинге @xstate/store. Race-guard (AbortController,
+          runId) на смену ключа до резолва предыдущего запроса. 4 теста в
+          test/resource.test.tsx.
+
+  - category: Структура пакета
+    items:
+      - id: theme-per-subpath
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/ по темам вместо плоского списка файлов"
+        description: |
+          Означает: каждый экспортируемый подпуть — своя папка (по образцу packages/build).
+          Промежуточный шаг — folder-per-subpath один в один с exports, включая `.` → src/flat/
+          — заменён следующим пунктом.
+
+      - id: engine-machine-addons-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/index.ts (поверхность) + engine/ + machine/ + addons/"
+        description: |
+          Означает: src/index.ts — один export * from "./engine/index.js", вся логика (реэкспорт
+          @xstate/store-solid, createResourceAtom, заглушка createAsyncAtom) — в src/engine/.
+          По образцу packages/assembly (index.ts как "поверхность пакета"), но без объединения с
+          machine/ — машина остаётся независимым подпутём, не подмешивается в корень.
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок" — первый пилот
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md). IO разделён на явные Вход/Выход по
+          запросу после первого прохода одним списком.
+
+      - id: faq-roadmap
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (движок ресурсов / структура пакета / аддоны /
+          стейт-машины), каждый ответ со ссылкой на проверку. ROADMAP.yaml — по образцу
+          packages/ui/src/table (не по составу полей, по ведению: Done-пункты сразу с описанием,
+          log — датированный журнал решений).
+
+  - category: Не сделано
+    items:
+      - id: addons-composition-untested
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: Композиция аддонов (.with().with()) не проверена тестом
+        description: |
+          Означает: пример из README (persist+undoRedo+reset цепочкой) — документация, не проба.
+          test/ сегодня проверяет createStore/createMachine/createResourceAtom по отдельности,
+          не совмещённые через .with().
+
+log:
+  - id: create-async-atom-confirmed-broken
+    type: plan
+    date: 2026-09-04
+    summary: >
+      createAsyncAtom из @xstate/store отслеживает .get() других атомов только в синхронной
+      части геттера (пока запрос pending). В момент резолва промиса updateAsyncAtom вызывает
+      atom._update(readyValue) — готовым значением, не геттером, — и purgeDeps считает все ранее
+      слинкованные атомы недостигнутыми в этом проходе, отвязывает их. Итог: атом, получивший
+      значение хотя бы раз, теряет реакцию на дальнейшую смену входа. Проверено изолированным
+      прогоном на dist/xstate-store.js без Solid: infoAtom.deps после резолва — undefined,
+      idAtom.set() больше не помечает потребителя dirty. Решение — не чинить примитив апстрима
+      (внешняя зависимость), а заменить его собственным createResourceAtom и заблокировать
+      реэкспорт сломанного имени на уровне типов, а не только предупреждением в доке.
+
+  - id: resource-atom-solid-effect-not-autotrack
+    type: plan
+    date: 2026-09-04
+    summary: >
+      createResourceAtom реагирует на смену ключа через Solid createEffect(() => source()), не
+      через автотрекинг @xstate/store — ту же систему, что сломана у createAsyncAtom. Сам
+      ресурс-атом — обычный писуемый createAtom, обновляется только .set() изнутри эффекта.
+      Компромисс: source обязан быть настоящим Solid-сигналом (или производным), .get() другого
+      атома @xstate/store сюда не протягивается — это две разные реактивные системы, моста между
+      ними нет.
+
+  - id: engine-folder-not-kernel
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Реструктуризация src/ прошла в два захода. Первый — folder-per-subpath один в один с
+      exports (включая `.` → src/flat/), отклонён user: шесть папок одного уровня без точки
+      входа читались как россыпь функций, разложенная по директориям, не движок. Второй заход —
+      по образцу packages/assembly (kernel/ + тонкий index.ts), но не взят дословно: у assembly
+      kernel/ — плоский мешок из 9 файлов без под-группировки (та же болезнь на уровень глубже),
+      слово kernel там означает конкретно «без фреймворка» (./model — без Solid), а корневой
+      слой store Solid-хуки как раз несёт — назвать его kernel было бы неточно. Названо engine/.
+      machine/ остался независимым подпутём, не подмешан в корень (в отличие от assembly, где
+      render всегда едет с kernel в `.`) — про это явно написано в src/index.ts.
+
+  - id: readme-engine-template-first-pilot
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Store — первый пакет, заполнивший общий шаблон README "движок" (Анатомия/Использование/
+      Настройки/Состояния/IO/Сборки/Рецепт), заведённый user поверх шаблона "компонент" из
+      packages/ui. Наблюдения по шаблону, переданные user: "Анатомия" у движка без DOM — за
+      "адрес" части взят сам импорт-спецификатор подпути; "Настройки" у движка — опции
+      конструкторов по функциям (persist/undoRedo/reset/validateSchemas получили каждый свою
+      группу строк в одной таблице), не переключатели одной сущности, как у компонента. IO по
+      запросу разделён на явные Вход/Выход после первого прохода одним списком.

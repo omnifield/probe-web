@@ -7,28 +7,28 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/flat/index.d.ts",
-      "default": "./dist/flat/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./machine": {
       "types": "./dist/machine/index.d.ts",
       "default": "./dist/machine/index.js"
     },
     "./persist": {
-      "types": "./dist/persist/index.d.ts",
-      "default": "./dist/persist/index.js"
+      "types": "./dist/addons/persist.d.ts",
+      "default": "./dist/addons/persist.js"
     },
     "./undo": {
-      "types": "./dist/undo/index.d.ts",
-      "default": "./dist/undo/index.js"
+      "types": "./dist/addons/undo.d.ts",
+      "default": "./dist/addons/undo.js"
     },
     "./reset": {
-      "types": "./dist/reset/index.d.ts",
-      "default": "./dist/reset/index.js"
+      "types": "./dist/addons/reset.d.ts",
+      "default": "./dist/addons/reset.js"
     },
     "./validate": {
-      "types": "./dist/validate/index.d.ts",
-      "default": "./dist/validate/index.js"
+      "types": "./dist/addons/validate.d.ts",
+      "default": "./dist/addons/validate.js"
     }
   },
   "files": [

@@ -1,3 +1,3 @@
 #!/usr/bin/env node
-// Бинарник `web-core-node`. Разбор — README.md рядом.
+// Бинарник `web-core-node`. Разбор — README.md пакета.
 import "tsx/cli";

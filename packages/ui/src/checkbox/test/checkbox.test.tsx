@@ -1,11 +1,12 @@
-import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { createRegistry, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as checkboxKit } from "../components/index.js";
+import { Checkbox, CheckboxControl, CheckboxIndicator, CheckboxLabel, kit as checkboxKit } from "../components/index.js";
 import { passport as checkboxPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as checkboxEditorInfo } from "../playground/index.js";
@@ -82,5 +83,63 @@ describe('checkbox "basic" — label from data, real toggle on click', () => {
     const indicator = host.querySelector('[data-scope="checkbox"][data-part="indicator"]');
     expect(indicator?.hasAttribute("hidden")).toBe(false);
     expect(indicator?.textContent).toBe("✓");
+  });
+});
+
+describe("indeterminate — two indicators, each shown only for its own state", () => {
+  it("shows only the indeterminate-marked indicator, hides the checked one", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Checkbox checked="indeterminate">
+          <CheckboxControl>
+            <CheckboxIndicator>✓</CheckboxIndicator>
+            <CheckboxIndicator indeterminate>–</CheckboxIndicator>
+          </CheckboxControl>
+          <CheckboxLabel>Выбрать всё</CheckboxLabel>
+        </Checkbox>
+      ),
+      host,
+    );
+
+    const indicators = [...host.querySelectorAll('[data-scope="checkbox"][data-part="indicator"]')];
+    expect(indicators).toHaveLength(2);
+    expect(indicators[0]?.hasAttribute("hidden")).toBe(true);
+    expect(indicators[1]?.hasAttribute("hidden")).toBe(false);
+    expect(indicators[1]?.textContent).toBe("–");
+
+    const root = host.querySelector('[data-scope="checkbox"][data-part="root"]');
+    expect(root?.getAttribute("data-state")).toBe("indeterminate");
+  });
+});
+
+describe("real form field — name/value make it a native checkbox for FormData", () => {
+  it("carries the checked value into FormData under its own name, nothing when unchecked", () => {
+    let form!: HTMLFormElement;
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <form ref={form}>
+          <Checkbox name="terms" value="accepted" checked>
+            <CheckboxControl>
+              <CheckboxIndicator>✓</CheckboxIndicator>
+            </CheckboxControl>
+            <CheckboxLabel>Согласен с условиями</CheckboxLabel>
+          </Checkbox>
+        </form>
+      ),
+      host,
+    );
+
+    expect(new FormData(form).get("terms")).toBe("accepted");
+
+    const root = host.querySelector('[data-scope="checkbox"][data-part="root"]') as HTMLLabelElement;
+    root.click();
+
+    expect(new FormData(form).get("terms")).toBeNull();
   });
 });

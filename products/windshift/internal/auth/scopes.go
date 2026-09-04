@@ -139,6 +139,13 @@ const (
 	// custom-fields rather than a new non-admin resource family.
 	ScopeAdminChannelsWrite     = "admin:channels:write"
 	ScopeAdminRequestTypesWrite = "admin:request-types:write"
+
+	// admin:workspaces:delete grants API tokens the same permanent-deletion
+	// capability the cookie-session admin UI has (DELETE /workspaces/{id}) —
+	// deletes the workspace row and lets the DB cascade clean up everything
+	// scoped to it (items, pages, roles, ...). Irreversible, so it stays in
+	// the admin bucket rather than living under a general workspaces:* family.
+	ScopeAdminWorkspacesDelete = "admin:workspaces:delete"
 )
 
 // ScopeInfo describes one entry in the token scope catalog. Every surface that
@@ -236,6 +243,7 @@ var scopeCatalog = []ScopeInfo{
 	{Scope: ScopeAdminCustomFieldsWrite, Resource: "admin:custom-fields", ResourceLabel: "Custom fields (admin)", Action: "write", Label: "Manage custom fields", Description: "Create custom field definitions shared across every workspace.", Admin: true},
 	{Scope: ScopeAdminChannelsWrite, Resource: "admin:channels", ResourceLabel: "Channels (admin)", Action: "write", Label: "Manage channels", Description: "Create channels (portals, forms, webhooks) and connect them to workspaces.", Admin: true},
 	{Scope: ScopeAdminRequestTypesWrite, Resource: "admin:request-types", ResourceLabel: "Request types (admin)", Action: "write", Label: "Manage request types", Description: "Create intake request types on a channel and route them to a workspace item type.", Admin: true},
+	{Scope: ScopeAdminWorkspacesDelete, Resource: "admin:workspaces", ResourceLabel: "Workspaces (admin)", Action: "delete", Label: "Delete workspaces", Description: "Permanently delete a workspace and everything scoped to it. Cannot be undone.", Admin: true},
 }
 
 // ScopeCatalog returns a copy of the scope catalog in presentation order.

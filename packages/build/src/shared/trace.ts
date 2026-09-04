@@ -1,4 +1,4 @@
-// Perf-трейсы зоны build. ВНУТРЕННЕЕ — не в exports манифеста. Разбор — src/shared/README.md.
+// Perf-трейсы зоны build. ВНУТРЕННЕЕ — не в exports манифеста.
 
 /** Глобальный тумблер: `globalThis.__WEB_CORE_BUILD_TRACE__ = true`. */
 const FLAG = "__WEB_CORE_BUILD_TRACE__";

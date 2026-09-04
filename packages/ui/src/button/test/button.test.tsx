@@ -1,11 +1,11 @@
 import {
   createRegistry,
-  RenderTree,
   type AssemblyTree,
   type ReadableComponent,
   type Registry,
   type SelfAssembly,
 } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly } from "@web-core/skin/editor";
 import { render } from "solid-js/web";

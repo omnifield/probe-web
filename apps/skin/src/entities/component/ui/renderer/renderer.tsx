@@ -1,4 +1,5 @@
-import { RenderTree, type DispatchedEvent } from "@web-core/assembly";
+import type { DispatchedEvent } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
 import { kitComponentRenderer } from "@web-core/ui/component-registry";
 import { createMemo } from "solid-js";
 

@@ -7,13 +7,13 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "solid": "./dist/index.jsx",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./model": {
-      "types": "./dist/model/index.d.ts",
-      "default": "./dist/model.js"
+    "./render": {
+      "solid": "./dist/render.jsx",
+      "types": "./dist/render/index.d.ts",
+      "default": "./dist/render.js"
     }
   },
   "files": [
@@ -34,6 +34,11 @@
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
+  },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@web-core/build": "workspace:*",

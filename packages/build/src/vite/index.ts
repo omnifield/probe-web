@@ -1,4 +1,4 @@
-// Точка поверхности `/vite` (`PROBEWEB-4`). Разбор — README.md/FAQ.md рядом.
+// Точка поверхности `/vite`. Разбор — README.md/FAQ.md пакета.
 import { isAbsolute, resolve, sep } from "node:path";
 
 import {

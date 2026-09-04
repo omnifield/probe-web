@@ -9,7 +9,8 @@ import { createContext, createEffect, ErrorBoundary, For, useContext, type JSX }
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createRegistry, RenderTree, type AssemblyTree, type Registry } from "../src/index.js";
+import { createRegistry, type AssemblyTree, type Registry } from "../src/index.js";
+import { RenderTree } from "../src/render/index.jsx";
 
 const Ctx = createContext<string>();
 

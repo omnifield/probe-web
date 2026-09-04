@@ -12,10 +12,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   createRegistry,
-  RenderTree,
   type AssemblyTree,
   type Registry,
 } from "../src/index.js";
+import { RenderTree } from "../src/render/index.jsx";
 
 /**
  * Компонент-обёртка: рисует то, что ему передали содержимым, плюс метку в `data-testid` — по

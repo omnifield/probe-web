@@ -1,0 +1,329 @@
+# Дорожная карта @web-core/assembly — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build и packages/store (categories → items, log → журнал решений); без
+# milestones — у пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Дерево и содержимое
+    items:
+      - id: content-as-node
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Содержимое — второй род узла, не проп `children` (PWEB-83)"
+        description: |
+          Означает: подпись/значок — узел дерева наравне с частью (`{genus, value}`), лежит в
+          общем списке детей, сосуществует и упорядочивается с частями. Прежний проп `children`
+          содержимым больше не считается — расхождение называет checkTree (content-in-props).
+          Разбор — FAQ.md.
+
+      - id: node-addressing-unified
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Своя часть и чужая ссылка — одно поле узла (PWEB-166/172)"
+        description: |
+          Означает: `{ node: "button" }` ссылается на общий реестр тем же полем, что называет
+          свою часть анатомии — «своё или чужое» решает сравнение с анатомией владельца, не
+          форма узла. genus:"component" как род содержимого снят (была дохлая ветка).
+
+  - category: Правки и целостность
+    items:
+      - id: pure-edits
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: insertNode/removeNode/moveNode/updateNode — отказ значением
+        description: |
+          Означает: EditResult = {ok:true, tree} | {ok:false, refusal, means} — недопустимая
+          правка не бросает исключение, редактор объясняет причину человеку по имени отказа.
+
+      - id: integrity-check
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: checkTree — все изъяны сразу, не по одному
+        description: |
+          Означает: root-missing/child-missing/orphaned/cycle/child-shared/content-in-props… —
+          значение проверки, не консольное предупреждение (раньше терялось между прогонами).
+
+  - category: Реестр и вложенность
+    items:
+      - id: registry-supplier-pairs
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Реестр из пар поставщика, не карты потребителя (PWEB-85)"
+        description: |
+          Означает: пара (паспорт+части) отдаёт поставщик кита, checkRegistry называет
+          расхождение с анатомией значением (part-uncharted/part-not-callable/part-astray).
+          Рекурсивная карта компонентов прежнего разрешателя снята вместе с этим.
+
+      - id: nesting-rule-external
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Правило допуска (`admits`) — вход, не собственность механики (PWEB-24)"
+        description: |
+          Означает: allowedInside/canAdmit/canContain читают правило, поданное третьим входом
+          createRegistry — механика не хранит своего перечня допустимых вложений.
+
+      - id: nesting-reverse-lookup
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: possibleOwnersOf/ownersAdmitting — обратный ход тем же правилом
+        description: |
+          Означает: скин перечисляет «предка» по адресу правила тем же правилом допуска, что и
+          прямой ход — второе правило развело бы «допустимо»/«возможный предок» молча.
+
+  - category: Композиция
+    items:
+      - id: composed-into
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`composedInto` — узел как триггер/содержимое чужого составного компонента"
+        description: |
+          Означает: кнопка бывает триггером попапа/меню — адрес узла не меняется, композицию
+          собирает механизм кита (проп `as`), не своя ветка отрисовки.
+
+  - category: Отрисовка
+    items:
+      - id: render-tree-core
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: RenderTree/RenderNode — один вызов в редакторе и у потребителя
+        description: |
+          Означает: дерево — данные, второго способа превратить их в вид нет. createComponent
+          напрямую (не Dynamic), граница ошибок на каждом узле, явный запасной вид на
+          неразрешённый адрес. Перенесено из egor6-66/capsuleTech вместе с причинами.
+
+      - id: invisible-provider
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Невидимый провайдер вокруг компонента без DOM-корня (PWEB-153)"
+        description: |
+          Означает: поповер/меню — корневая часть не рисует свой узел, состояние даёт контекст,
+          который раздаёт `KitComponent.provider`; RenderTree сам оборачивает корень.
+
+      - id: data-binding
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`{path}` вместо литерала — содержимое и пропы (PWEB-156)"
+        description: |
+          Означает: DynamicValue = string | {path}, форма A2UI урезана до литерала и пути.
+          `bind` — ОТДЕЛЬНОЕ поле от `props`, не смешано со значением.
+
+      - id: dispatch-events
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`on` — одна точка входа для событий узла (PWEB-157)"
+        description: |
+          Означает: DispatchAction резолвит context из DynamicValue до отправки — наружу
+          уходит готовый JSON, не сырой DOM Event.
+
+      - id: repeat-node
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Повтор узла по длине массива данных (PWEB-170/171)"
+        description: |
+          Означает: `repeat?: DataBinding` на узле — N разделов из реальных данных, не
+          фиксированное число в дереве. Разворачивается ДО RenderTree, в baseAssemblyOf.
+
+      - id: named-ref
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Именованный кусок дерева, объявленный раз, использованный много (PWEB-160)"
+        description: |
+          Означает: `{ ref: "имя" }` — на разворотке свои настоящие узлы на КАЖДОЙ площадке, не
+          общий граф-узел с двумя родителями (RenderTree обходит дерево, не граф).
+
+      - id: self-assembly-behavior
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Ссылка вызывает своё поведение компонента, не флат-переопределение (PWEB-167/168/169/172)"
+        description: |
+          Означает: ComponentPassport.selfAssembly — узкое дерево поведения, growSelfAssembly
+          резолвит его рекурсивным вызовом той же механики, данные = props+bind узла-ссылки.
+
+      - id: slots
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Слот живого контента на месте узла (PWEB-174/176)"
+        description: |
+          Означает: `slots?: Record<адрес, SlotEntry>` — узел резолвится как обычно, слот
+          меняет только источник СОДЕРЖИМОГО, никогда не подменяет сам узел.
+
+      - id: root-props
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`rootProps` — динамическое состояние показа корня, дерево не трогает"
+        description: |
+          Означает: смена (какой элемент активен) доезжает до живого пропа корня геттером — не
+          через instanceOf/updateNode, ребёнок не пересобирается на каждый клик.
+
+  - category: Не сделано
+    items:
+      - id: two-way-binding
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: Двусторонний биндинг инпутов
+        description: |
+          Означает: форма выбрана из словаря A2UI (`ResolvedBinding<T>`/`WritableBinding<T>`),
+          не реализовано — ложится на Solid-сигналы почти один в один, когда понадобится.
+
+      - id: function-call-action
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: Вызов клиентской функции по имени (`functionCall`)
+        description: |
+          Означает: второй вариант union'а `Action` из A2UI, сейчас `on` умеет только `event`.
+
+      - id: streaming-tree-updates
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: Потоковые обновления дерева/данных отдельными сообщениями
+        description: |
+          Означает: сегодня сборка — TS-код в бандле, не сетевая запись. Станет задачей, когда
+          сборки станут серверными записями — слать их надо инкрементально (A2UI
+          updateComponents/updateDataModel), не заменой всего дерева разом.
+
+  - category: Структура пакета
+    items:
+      - id: model-render-shared-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/ по темам: model/ + render/ + shared/ вместо плоского списка файлов"
+        description: |
+          Означает: 13 файлов плоского src/ разложены по границе двух подпутей поставки — та,
+          что уже была объявлена в package.json exports, стала видна в дереве файлов.
+
+      - id: engine-not-model
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "model/ переименован в engine/ — общее имя с @web-core/store"
+        description: |
+          Означает: слово `model` недооценивало содержимое (там и алгоритмы — правки,
+          целостность, вложенность, реестр, не только данные). `engine` — по образцу store
+          (корневой слой store тоже назван engine/), общий термин для «движков» репозитория.
+          Разбор — FAQ.md.
+
+      - id: render-not-merged-into-root
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "render/ — отдельный подпуть ./render, не довесок в `.`"
+        description: |
+          Означает: package.json exports — `.` (engine, без Solid) + `./render` (RenderTree,
+          solid-js — опциональный peer). По образцу store's `.`/`./machine`. Задело ~30
+          потребителей в packages/ui/apps/skin — RenderTree теперь отдельным импортом.
+
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок" — по образцу store
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md).
+
+      - id: faq-roadmap-filled
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (структура пакета / дерево и содержимое /
+          правки и целостность / реестр и вложенность / отрисовка и Solid / A2UI / перенос).
+          ROADMAP.yaml — Done-пункты с описанием, log — датированный журнал решений.
+
+log:
+  - id: pweb-214-stale-dist-not-render-bug
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Заявка PWEB-214 («RenderTree роняет вложенные части ContextError») подтверждена как ложная
+      тревога от устаревшей dist/-сборки, не баг механики. Минимальный репро (голый
+      createComponent, <For>, <ErrorBoundary>, их сочетание буква-в-букву как в RenderNode,
+      <Dynamic> в форме ark.div, полный RenderTree/registry с настоящим createContext на двух
+      уровнях) — все сценарии проходят внутри самого пакета. Тот же тест через packages/ui падал
+      — потому что packages/ui резолвил @web-core/assembly в СВОЮ dist/, собранную до фикса
+      contentOf (0e95eaa). Прямой `npx vitest run` внутри пакета обходит граф пересборки Nx
+      (test.dependsOn: ["build", "^build"]). Разбор целиком — FAQ.md.
+
+  - id: model-kernel-engine-naming-iteration
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Переименование прошло в два захода. Первый — src/model/ (по имени публичного подпути
+      ./model, который эта папка и обслуживала). Второй, после независимого design-review
+      (архитектор сравнивался с packages/store, у которого уже был готовый паттерн) — model/ →
+      engine/, по прямому указанию user: «движок пусть называется одинаково». kernel/ как
+      промежуточное имя не прижилось — рассмотрено и отклонено в пользу engine/ ДО того, как
+      user увидел результат, тем же доводом, что и в FAQ.md store: kernel означал бы конкретно
+      «без фреймворка», а это не единственное, чем является эта папка.
+
+  - id: root-render-split-from-store-comparison
+    type: plan
+    date: 2026-09-04
+    summary: >
+      packages/store's src/engine/index.ts несёт прямой комментарий: «в отличие от того, как
+      ./assembly вливает своё render в корень» — явная критика прежнего экспорта этого пакета
+      (`.` = model+render вместе, solid-js обязательный peer безусловно). После user'ского
+      вердикта «делай как стор» разрезано по факту: `.` = engine (без Solid), `./render` —
+      отдельный подпуть, solid-js стал peerDependenciesMeta.optional. Задело ~30 файлов-
+      потребителей (packages/ui/apps/skin) — каждый получил вторую строку импорта для
+      RenderTree.
+
+  - id: readme-engine-template-second-pilot
+    type: plan
+    date: 2026-09-04
+    summary: >
+      packages/store — первый пакет, заполнивший общий шаблон README "движок"
+      (Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт); user сравнил с
+      независимо предложенной архитектором версией (model/render/shared по мотивам
+      microkernel/unified.js/ProseMirror) и выбрал store как образец для всех "движков"
+      репозитория. packages/assembly — второй пакет, заполнивший тот же шаблон: анатомия по
+      группам возможностей (не по файлам), состояния — четыре именованных перечня отказов
+      (TreeFlawName/EditRefusal/NestingRefusal/RegistryFlawName), рецепт — комбинация
+      независимых пропов RenderTree (без .with()-цепочки, которой у этого пакета нет).

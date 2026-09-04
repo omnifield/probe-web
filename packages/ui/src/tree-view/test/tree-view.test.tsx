@@ -1,4 +1,5 @@
-import { createRegistry, RenderTree, updateNode, type AssemblyTree, type DispatchedEvent, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { createRegistry, updateNode, type AssemblyTree, type DispatchedEvent, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";

@@ -1,45 +1,192 @@
-# Дорожная карта зоны build — формат тот же, что у packages/ui (см. её ROADMAP.yaml, шапка).
-# Единственный источник правды: статус проставляется рядом с работой. Пункты по конкретной теме
-# — в её собственном src/<тема>/ROADMAP.yaml; здесь — то, что касается зоны целиком.
+# Дорожная карта @web-core/build — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/store (categories → items, log → журнал решений); без milestones — у пакета
+# нет освоенной поставки с датами релиза, только сделанное и открытое.
 
 categories:
-  - category: Темы
+  - category: Конфиг приложения
     items:
-      - id: vite-theme
+      - id: define-config
         type: feature
         status: Done
         priority: High
         milestone: null
-        name: vite — конфиг приложения и библиотеки
-        description: Подробности — src/vite/ROADMAP.yaml.
-
-      - id: vitest-theme
-        type: feature
-        status: Done
-        priority: Medium
-        milestone: null
-        name: vitest — пресет тест-раннера
-        description: Подробности — src/vitest/ROADMAP.yaml.
-
-      - id: tsconfig-theme
-        type: feature
-        status: Done
-        priority: Medium
-        milestone: null
-        name: tsconfig — фронтенд-профиль типов
-        description: Подробности — src/tsconfig/ROADMAP.yaml.
-
-      - id: node-theme
-        type: feature
-        status: Done
-        priority: High
-        milestone: null
-        name: node — TS-раннер и профиль для серверов без Vite
+        name: defineConfig() — конфиг приложения
         description: |
-          Означает: у зоны появился путь для серверного TS помимо Vite — до этого серверы
-          (`backend/presets`, `apps/skin/.mcp`) писали JS руками, потому что альтернативы
-          не было.
-          Подробности — src/node/ROADMAP.yaml.
+          Означает: `vite.config.ts` потребителя — три строки, версия Vite и `vite-plugin-solid`
+          решаются здесь.
+
+      - id: dev-source-alias
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Соседи по воркспейсу видны исходниками
+        description: |
+          Означает: правка исходника соседа доезжает до браузера без пересборки — дев-сервер
+          не отдаёт вчерашний `dist`.
+          Реализация: алиас, посчитанный машинно по признаку симлинка из `node_modules`, не
+          список имён — см. FAQ.md.
+
+      - id: generated-css-on-request
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: CSS соседа порождается на запрос
+        description: |
+          Означает: `dist/css/*.css` прошлой сборки не показывается приложению — ни на свежем
+          клоне (где его нет вовсе), ни устаревшим после правки перечня в коде соседа.
+          Реализация: способность соседа читается с его `exports` (подпуть `./generate`),
+          порождатель грузится через `ssrLoadModule`, `hotUpdate` достраивает связь.
+
+      - id: host-true
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: server.host — все интерфейсы
+        description: |
+          Означает: дев-сервер в контейнере виден и с хоста, и пульту, проверяющему живость по
+          `127.0.0.1` — `localhost` резолвится в `::1` и до контейнера не доходит.
+
+  - category: Конфиг библиотеки
+    items:
+      - id: define-library-config
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: defineLibraryConfig() — конфиг библиотеки
+        description: |
+          Означает: `ui`/`skin`/`assembly` и подобные зоны не носят собственный
+          `scripts/build.mjs` поверх esbuild — один держатель вместо трёх копий, которые
+          разошлись бы незамеченными.
+
+      - id: raw-jsx-branch
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Ветка solid (сырой JSX) поверх Vite
+        description: |
+          Означает: вход с `solid: true` уезжает двумя ветками — `dist/<name>.js` (Vite,
+          разобранный JSX) и `dist/<name>.jsx` (esbuild, сырой JSX для условия `solid`).
+          Реализация: esbuild `jsx: "preserve"` в `closeBundle`, потому что `oxc.jsx: "preserve"`
+          в library mode Vite 8 не работает вовсе — см. FAQ.md.
+
+      - id: prepare-lifecycle
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: prepare — оснастка собирается на установке
+        description: |
+          Означает: свежий клон поднимается `pnpm install`-ом без отдельной команды сборки
+          оснастки. Единственная зона репозитория с этим скриптом — остальные пакеты видны
+          через исходники алиасом, и собирать их на установке значило бы вернуть ровно ту
+          вчерашнюю сборку, от которой уходит вся тема.
+
+  - category: vitest
+    items:
+      - id: solid-jsx-transform
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: JSX-трансформ в раннере
+        description: |
+          Означает: `vite-plugin-solid` в `plugins` — тест Solid-компонента разбирается так же,
+          как в реальном приложении.
+
+      - id: resolve-conditions
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: resolve.conditions development+browser
+        description: |
+          Означает: `solid-js/web` резолвится в клиентскую ветку (иначе `render()` падает), и
+          условие `solid` дотягивает зависимости, отдающие непреобразованный JSX.
+
+      - id: jsdom-environment
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: jsdom-окружение
+        description: |
+          Означает: `test.environment: "jsdom"` — есть документ, в который рендерить. `jsdom` —
+          необязательный peer, не тянется тем, кто пресет не зовёт.
+
+      - id: deps-inline-by-extension
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Транзитивные JSX-зависимости не внешнятся
+        description: |
+          Означает: тест на компоненте кита не падает `Unknown file extension ".jsx"`, даже
+          когда JSX-зависимость (`@kobalte/core` и т.п.) приезжает транзитивно, а не объявлена
+          у потребителя напрямую.
+          Реализация: `test.server.deps.inline: [/\.[jt]sx(\?|$)/]` — правило по расширению
+          файла, не по списку имён пакетов.
+
+  - category: TS для серверов
+    items:
+      - id: tsconfig-node-profile
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: /tsconfig-node — профиль без DOM/JSX
+        description: |
+          Означает: серверный потребитель наследует базу без браузерных допущений одной строкой
+          `extends`, как фронтенд наследует `/tsconfig`.
+          Реализация: `src/node/base.json`, общая база с фронтенд-профилем — `src/shared/tsconfig.json`.
+
+      - id: web-core-node-runner
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Бинарник web-core-node
+        description: |
+          Означает: сервер запускается `.ts`-файлом напрямую (`web-core-node src/server.ts`,
+          `web-core-node watch ...`), без ручного шага компиляции и без выбора раннера
+          потребителем.
+          Реализация: тонкая обёртка над `tsx/cli` (`src/node/bin.mjs`), доступна потребителю
+          через `pnpm`-симлинк `bin` прямой зависимости.
+
+  - category: Поставка
+    items:
+      - id: json-configs-ship-via-dist
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Конфиги и бинарник едут через dist
+        description: |
+          Означает: тарбол не тащит внутренние `README.md`/`FAQ.md`/`ROADMAP.yaml` — npm/pnpm
+          всегда включает `README.md` любой директории, участвующей в `files`, и это не
+          отключается негейшенами. `/tsconfig`, `/tsconfig-node` и бинарник копируются в `dist/`
+          сборочным шагом, `files` манифеста — снова `["dist", "README.md"]`, как у остальных
+          пакетов кита.
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок"
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md), по образцу `packages/store`. Заменил
+          прежний заход с отдельной триадой README/FAQ/ROADMAP на каждый подпуть (`src/vite/`,
+          `src/vitest/`, `src/tsconfig/`, `src/node/`) — у движка одна тройка на весь пакет,
+          подпути внутри неё строки таблицы, не отдельные документы.
 
   - category: Не сделано
     items:
@@ -52,9 +199,9 @@ categories:
         description: |
           Означает: раньше зона проверялась настоящей сборкой тестового приложения, реальными
           HTTP-запросами к дев-серверу и разбором тарбола `pnpm pack` — сейчас `test/` в
-          репозитории нет вовсе (снесён вместе с `tools/dev-nav`, PWEB-124, попутно). Сейчас
-          зона проверена только вручную (build/typecheck/смок-тесты) в рамках текущей правки,
-          не автоматическим прогоном. См. FAQ.md.
+          репозитории нет вовсе (снесён вместе с `tools/dev-nav` попутно). Сейчас зона проверена
+          только вручную (build/typecheck/смок-тесты) в рамках текущей правки, не автоматическим
+          прогоном. См. FAQ.md.
 
       - id: migrate-existing-js-servers
         type: feature
@@ -63,10 +210,21 @@ categories:
         milestone: null
         name: Перевести backend/presets и apps/skin/.mcp на TS
         description: |
-          Означает: инструмент (тема `node`) готов, серверы ещё не переведены — это задача
+          Означает: инструмент (профиль + раннер) готов, серверы ещё не переведены — это задача
           владельцев тех зон, не `build`.
 
 log:
+  - id: docs-collapsed-to-single-triad
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Репозиторий формализовал единый шаблон доки сущности (корневой README.md, раздел «Как это
+      оформляется в доке»): одна тройка README/FAQ/ROADMAP.yaml на пакет, фиксированный порядок
+      разделов (Анатомия→Использование→Настройки→Состояния→IO→Сборки→Рецепт), эталон для
+      genus:engine — `packages/store`. Прежний заход (отдельная тройка докой на каждый подпуть
+      `src/vite/`, `src/vitest/`, `src/tsconfig/`, `src/node/`) собран в одну тройку в корне;
+      код в этих папках не тронут — правка только докой.
+
   - id: json-configs-ship-via-dist
     type: plan
     date: 2026-09-04
@@ -75,18 +233,7 @@ log:
       на `dist/` (копируются туда шагом сборки). Причина — npm/pnpm ВСЕГДА включает `README.md`
       любой директории, участвующей в `files`, независимо от `!`-негейшенов: пока конфиги
       отдавались прямо из `src/tsconfig/`+`src/node/`+`src/shared/`, в тарбол утекали доки этих
-      тем. Через `dist/` (там документов нет) поставка снова чистая — только код и конфиг,
-      `files` вернулся к `["dist", "README.md"]`, как у `packages/ui`.
-
-  - id: docs-restructure
-    type: plan
-    date: 2026-09-04
-    summary: >
-      Зона переведена на структуру packages/ui: код разложен по темам (`src/vite`, `src/vitest`,
-      `src/tsconfig`, `src/node`, `src/shared`), у каждой темы своя триада README/FAQ/ROADMAP.yaml,
-      объёмная проза вынесена из комментариев кода в доки — в коде остались короткие пометки.
-      Скелет (заголовки, формат FAQ, схема ROADMAP.yaml) взят у ui один в один; содержание —
-      своё, под домен зоны (конфиги, не визуальные компоненты).
+      тем. Через `dist/` (там документов нет) поставка снова чистая — только код и конфиг.
 
   - id: js-source-extensions-removed
     type: plan
@@ -100,6 +247,15 @@ log:
     type: plan
     date: 2026-09-04
     summary: >
-      Добавлена тема `node` (`/tsconfig-node` + бинарник `web-core-node`) — ответ на то, что
-      серверы в репозитории писали JS руками не по выбору, а из-за отсутствия TS-пути. Разбор
-      решения (`bundler`, не `nodeNext`) — src/node/ROADMAP.yaml.
+      Добавлены `/tsconfig-node` и бинарник `web-core-node` — ответ на то, что серверы в
+      репозитории (`backend/presets`, `apps/skin/.mcp`) писали JS руками не по выбору, а из-за
+      отсутствия TS-пути. `moduleResolution: "bundler"`, не `nodeNext` — см. FAQ.md.
+
+  - id: tracker-references-removed
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Убраны все ссылки на тикеты внешнего трекера (были в README/FAQ/ROADMAP и в комментариях
+      кода) — по новому правилу репозитория: трекер меняется, тикеты закрываются и
+      переименовываются, а причина решения должна пониматься из текста самой доки, ни разу не
+      открыв трекер.

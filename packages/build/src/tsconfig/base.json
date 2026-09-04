@@ -1,5 +1,5 @@
 {
-  "//": "Точка `/tsconfig` — фронтенд-профиль. Разбор — README.md/FAQ.md рядом (src/tsconfig/).",
+  "//": "Точка `/tsconfig` — фронтенд-профиль. Разбор — README.md/FAQ.md пакета.",
   "extends": "../shared/tsconfig.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM", "DOM.Iterable"],

@@ -3,7 +3,7 @@
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createStore, useSelector } from "../src/flat/index.js";
+import { createStore, useSelector } from "../src/index.js";
 import { createMachine, useMachine } from "../src/machine/index.js";
 
 let dispose: (() => void) | undefined;

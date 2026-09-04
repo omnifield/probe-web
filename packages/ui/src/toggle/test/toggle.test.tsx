@@ -1,11 +1,13 @@
-import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { createRegistry, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
+import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as toggleKit } from "../components/index.js";
+import { Toggle, ToggleIndicator, kit as toggleKit } from "../components/index.js";
 import { passport as togglePassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as toggleEditorInfo } from "../playground/index.js";
@@ -75,5 +77,30 @@ describe('toggle "basic" — starts pressed via a static prop, real click flips 
     await Promise.resolve();
 
     expect(root.getAttribute("data-state")).toBe("off");
+  });
+});
+
+describe("ToggleIndicator — fallback shows for the unpressed state, children for pressed", () => {
+  it("real click flips fallback content to children content", async () => {
+    const [pressed, setPressed] = createSignal(false);
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Toggle pressed={pressed()} onPressedChange={setPressed}>
+          <ToggleIndicator fallback="outline">filled</ToggleIndicator>
+        </Toggle>
+      ),
+      host,
+    );
+
+    const indicator = host.querySelector('[data-scope="toggle"][data-part="indicator"]');
+    expect(indicator?.textContent).toBe("outline");
+
+    (host.querySelector("button") as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(indicator?.textContent).toBe("filled");
   });
 });

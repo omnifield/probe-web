@@ -1,15 +1,10 @@
-// Регрессия на баг апстрима, разобранный в `src/flat/resource.ts`: `createAsyncAtom` из
-// `@xstate/store` перестаёт реагировать на смену входа после первого резолва (проверено прямым
-// прогоном на голом пакете, без Solid, 2026-09-04). Эти тесты держат ОБА кейса заявки —
-// синхронный (`componentsAtom`) и асинхронный по ключу (`componentInfo`) — одним и тем же
-// приёмом (`createResourceAtom`), включая повторную смену ключа, которую апстримный примитив
-// проваливал.
+// Регрессия на баг апстрима createAsyncAtom, см. FAQ.md.
 import { render } from "solid-js/web";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createResourceAtom } from "../src/flat/resource.js";
-import { useAtom } from "../src/flat/index.js";
+import { createResourceAtom } from "../src/engine/resource.js";
+import { useAtom } from "../src/index.js";
 
 let dispose: (() => void) | undefined;
 
