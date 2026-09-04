@@ -6,8 +6,8 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "probe-web-node src/server.ts",
+    "dev": "probe-web-node watch src/server.ts",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck"
@@ -21,6 +21,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@omnifield/probe-web-build": "workspace:*",
     "@types/node": "^24.10.1",
     "typescript": "^7.0.2"
   }

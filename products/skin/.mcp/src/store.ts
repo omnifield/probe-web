@@ -8,17 +8,15 @@
 // (`palette`/`form`/`outfit`/`assembly`) здесь не перечень «известных», а просто строка,
 // которую передаёт вызывающая ручка: сама служба ярлык не толкует, и эта зона тоже не должна.
 
+import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+
 const BASE = process.env["SKIN_MCP_PRESETS_URL"] ?? "http://127.0.0.1:8787/api/presets";
 
 export class StoreRefused extends Error {}
 export class StoreDown extends Error {}
 
-/**
- * @param {string} url
- * @param {RequestInit} [init]
- */
-async function ask(url, init) {
-  let response;
+async function ask(url: string, init?: RequestInit): Promise<Response> {
+  let response: Response;
 
   try {
     response = await fetch(url, init);
@@ -38,46 +36,35 @@ async function ask(url, init) {
 
 export const SERVICE_HINT = "pnpm --filter @probe-web/presets start";
 
-/**
- * @typedef {{id:string,label:string,name?:string,kind?:string,savedAt:string}} StoreRecord
- * @typedef {StoreRecord & {state: unknown}} StoreEntry
- */
+export interface StoreRecord {
+  readonly id: string;
+  readonly label: string;
+  readonly name?: string;
+  readonly kind?: string;
+  readonly savedAt: string;
+}
 
-/**
- * @param {string} kind
- * @returns {Promise<StoreRecord[]>}
- */
-export async function list(kind) {
+export interface StoreEntry extends StoreRecord {
+  readonly state: unknown;
+}
+
+export async function list(kind: string): Promise<StoreRecord[]> {
   const response = await ask(`${BASE}?kind=${encodeURIComponent(kind)}`);
-  const body = /** @type {{items: StoreRecord[]}} */ (await response.json());
+  const body = (await response.json()) as { items: StoreRecord[] };
   return body.items;
 }
 
-/**
- * @param {string} id
- * @returns {Promise<StoreEntry>}
- */
-export async function read(id) {
+export async function read(id: string): Promise<StoreEntry> {
   const response = await ask(`${BASE}/${encodeURIComponent(id)}`);
-  return /** @type {StoreEntry} */ (await response.json());
+  return (await response.json()) as StoreEntry;
 }
 
-/**
- * @param {string} kind
- * @param {string} name
- */
-export async function findByName(kind, name) {
+export async function findByName(kind: string, name: string): Promise<StoreRecord | undefined> {
   const items = await list(kind);
   return items.find((item) => item.name === name);
 }
 
-/**
- * @param {string} kind
- * @param {string} name
- * @param {unknown} state
- * @param {string} [label]
- */
-export async function save(kind, name, state, label) {
+export async function save(kind: string, name: string, state: unknown, label?: string) {
   const response = await ask(BASE, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -86,8 +73,7 @@ export async function save(kind, name, state, label) {
   return await response.json();
 }
 
-/** @param {string} id */
-export async function remove(id) {
+export async function remove(id: string): Promise<void> {
   await ask(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
@@ -95,13 +81,8 @@ export async function remove(id) {
  * Кладёт запись ВМЕСТО прежней с тем же именем — снять, потом положить, тем же порядком, что и
  * браузерный клиент (`replace`, `products/skin/src/entities/outfit/api/store.ts`): обратный
  * порядок оставил бы в службе две записи одного имени.
- *
- * @param {string} kind
- * @param {string} name
- * @param {unknown} state
- * @param {string} [label]
  */
-export async function replace(kind, name, state, label) {
+export async function replace(kind: string, name: string, state: unknown, label?: string) {
   const existing = await findByName(kind, name);
   if (existing) await remove(existing.id);
   return await save(kind, name, state, label);
@@ -110,11 +91,8 @@ export async function replace(kind, name, state, label) {
 /**
  * Все записи одного вида, СОДЕРЖИМЫМ (`state`, не конвертом) — как `readParts` браузерного
  * клиента, но для любого `kind`.
- *
- * @param {string} kind
- * @returns {Promise<unknown[]>}
  */
-export async function readAllOf(kind) {
+export async function readAllOf(kind: string): Promise<unknown[]> {
   const items = await list(kind);
   const entries = await Promise.all(items.map((item) => read(item.id)));
   return entries.map((entry) => entry.state);
@@ -123,14 +101,11 @@ export async function readAllOf(kind) {
 /**
  * Типизированные обёртки поверх `readAllOf` — служба содержимого не проверяет, а мы, зная свой
  * `kind`, вправе назвать себе тип на границе. Одно место каста на весь пакет, а не по вызову.
- *
- * @returns {Promise<import("@omnifield/probe-web-skin/model").Palette[]>}
  */
-export async function readPalettes() {
-  return /** @type {import("@omnifield/probe-web-skin/model").Palette[]} */ (await readAllOf("palette"));
+export async function readPalettes(): Promise<Palette[]> {
+  return (await readAllOf("palette")) as Palette[];
 }
 
-/** @returns {Promise<import("@omnifield/probe-web-skin/model").Form[]>} */
-export async function readForms() {
-  return /** @type {import("@omnifield/probe-web-skin/model").Form[]} */ (await readAllOf("form"));
+export async function readForms(): Promise<Form[]> {
+  return (await readAllOf("form")) as Form[];
 }

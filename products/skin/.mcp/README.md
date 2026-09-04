@@ -14,12 +14,12 @@
 
 | файл | что делает |
 |---|---|
-| `src/kit.js` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP; плюс `exampleDataFor` — пример по io-схеме через `packages/io`'s `exampleOf`, для проверки данных сборки |
-| `src/mechanics.js` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@omnifield/probe-web-skin/editor`, раньше были заперты внутри `defineEditorInfo` |
-| `src/store.js` | разговор со службой пресетов (`8787`) — Node-версия клиента `products/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
-| `src/validate.js` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
-| `src/tools.js` | регистрация десяти ручек |
-| `src/server.js` | точка входа, stdio-транспорт |
+| `src/kit.ts` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP; плюс `exampleDataFor` — пример по io-схеме через `packages/io`'s `exampleOf`, для проверки данных сборки |
+| `src/mechanics.ts` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@omnifield/probe-web-skin/editor`, раньше были заперты внутри `defineEditorInfo` |
+| `src/store.ts` | разговор со службой пресетов (`8787`) — Node-версия клиента `products/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
+| `src/validate.ts` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
+| `src/tools.ts` | регистрация десяти ручек |
+| `src/server.ts` | точка входа, stdio-транспорт |
 
 ## Ручки
 

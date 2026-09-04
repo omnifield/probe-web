@@ -1,0 +1,61 @@
+# Дорожная карта TS-раннера для серверов — формат тот же, что у остальных тем зоны (см.
+# src/vite/ROADMAP.yaml, шапка). Единственный источник правды: статус проставляется рядом с работой.
+
+categories:
+  - category: Основа
+    items:
+      - id: tsconfig-node-profile
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: /tsconfig-node — профиль без DOM/JSX
+        description: |
+          Означает: серверный потребитель наследует базу без браузерных допущений одной строкой
+          `extends`, как фронтенд наследует `/tsconfig`.
+          Реализация: `src/node/base.json`, общая база с фронтенд-профилем — `src/shared/tsconfig.json`.
+
+      - id: probe-web-node-runner
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Бинарник probe-web-node
+        description: |
+          Означает: сервер запускается `.ts`-файлом напрямую (`probe-web-node src/server.ts`,
+          `probe-web-node watch ...`), без ручного шага компиляции и без выбора раннера
+          потребителем.
+          Реализация: тонкая обёртка над `tsx/cli` (`src/node/bin.mjs`), доступна потребителю
+          через `pnpm`-симлинк `bin` прямой зависимости.
+
+  - category: Не сделано
+    items:
+      - id: migrate-existing-js-servers
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Перевести существующие серверы на TS
+        description: |
+          Означает: `products/presets` и `products/skin/.mcp` — оба написаны руками на JS,
+          потому что до этой темы для TS-сервера не было готового пути. Миграция — не в зоне
+          `build`, а в зоне каждого сервера отдельно (см. log).
+
+log:
+  - id: build-package-not-migration
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Раннер и профиль появились в ответ на то, что серверы в репозитории (`products/presets`,
+      `products/skin/.mcp`) написаны на чистом JS — не по выбору, а потому что серверного
+      TS-пути не существовало. Сама миграция этих серверов на TS — задача владельцев тех зон,
+      не `build`: зона `build` только даёт инструмент.
+
+  - id: bundler-not-nodenext
+    type: plan
+    date: 2026-09-04
+    summary: >
+      `moduleResolution` профиля — `bundler`, не `nodeNext`: `nodeNext` заставил бы писать
+      `import "./foo.js"` при исходнике `foo.ts` — JS-расширение в TS-импорте, ровно то, что
+      правило «дев-пространство — TS-only» запрещает. `tsx` резолвит как esbuild/Vite, `bundler`
+      проверяет по тем же правилам, по которым раннер реально исполняет.

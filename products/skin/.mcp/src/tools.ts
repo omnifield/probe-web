@@ -1,23 +1,22 @@
-// РЕГИСТРАЦИЯ РУЧЕК — тонкий слой поверх kit.js/mechanics.js/store.js/validate.js. Здесь нет
+// РЕГИСТРАЦИЯ РУЧЕК — тонкий слой поверх kit.ts/mechanics.ts/store.ts/validate.ts. Здесь нет
 // проверок содержимого: палитра/форма/наряд/сборка приходят СВОБОДНОЙ формой (`z.looseObject`),
 // потому что содержимое проверяет механика (`checkOutfit`/`checkSkin`/`checkAssembly`), а не эта
 // граница протокола — второй, более узкий контракт здесь молча разошёлся бы с настоящим.
 
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getPassport, listComponents } from "./kit.js";
-import { skin, checkAssembly, skinGaps } from "./mechanics.js";
+import { getPassport, listComponents } from "./kit";
+import { skin, checkAssembly, skinGaps } from "./mechanics";
 import { OutfitRefused, SkinRefused } from "@omnifield/probe-web-skin";
-import * as store from "./store.js";
-import { checkForm, checkPalette } from "./validate.js";
+import * as store from "./store";
+import { checkForm, checkPalette } from "./validate";
 
 const KIND = z.enum(["palette", "form", "outfit", "assembly"]);
 const looseRecord = z.looseObject({ name: z.string() });
 
-/** @param {unknown} value */
-const json = (value) => ({ content: [{ type: /** @type {const} */ ("text"), text: JSON.stringify(value, null, 2) }] });
+const json = (value: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] });
 
-/** @param {import("@modelcontextprotocol/sdk/server/mcp.js").McpServer} server */
-export function registerTools(server) {
+export function registerTools(server: McpServer) {
   server.registerTool(
     "list_components",
     {
@@ -55,7 +54,7 @@ export function registerTools(server) {
       inputSchema: { kind: KIND.optional().describe("ярлык вида; не назван — отдаются все четыре") },
     },
     async ({ kind }) => {
-      const kinds = kind ? [kind] : ["palette", "form", "outfit", "assembly"];
+      const kinds = kind ? [kind] : (["palette", "form", "outfit", "assembly"] as const);
       const byKind = Object.fromEntries(await Promise.all(kinds.map(async (k) => [k, await store.list(k)])));
       return json(byKind);
     },
@@ -88,7 +87,7 @@ export function registerTools(server) {
         "безусловно), тем же путём, каким проверяется настоящий наряд.",
       inputSchema: { palette: looseRecord.describe("Palette целиком, включая name") },
     },
-    async ({ palette }) => json(await checkPalette(/** @type {never} */ (palette))),
+    async ({ palette }) => json(await checkPalette(palette as never)),
   );
 
   server.registerTool(
@@ -105,7 +104,7 @@ export function registerTools(server) {
         paletteName: z.string().optional(),
       },
     },
-    async ({ form, paletteName }) => json(await checkForm(/** @type {never} */ (form), paletteName)),
+    async ({ form, paletteName }) => json(await checkForm(form as never, paletteName)),
   );
 
   server.registerTool(
@@ -136,7 +135,7 @@ export function registerTools(server) {
     async ({ outfit }) => {
       const palettes = await store.readPalettes();
       const forms = await store.readForms();
-      const flaws = skin.checkOutfit(/** @type {never} */ (outfit), { palettes, forms });
+      const flaws = skin.checkOutfit(outfit as never, { palettes, forms });
       return json({ ok: flaws.length === 0, flaws });
     },
   );
@@ -157,7 +156,7 @@ export function registerTools(server) {
       const parts = { palettes, forms };
 
       try {
-        const assembled = skin.assemble(/** @type {never} */ (outfit), parts);
+        const assembled = skin.assemble(outfit as never, parts);
         const css = skin.generateSkinCss(assembled.skin);
         const gaps = skinGaps(assembled.skin);
         return json({ ok: true, report: assembled.report, gaps, css });
@@ -187,19 +186,19 @@ export function registerTools(server) {
     },
     async ({ kind, state, label, paletteName }) => {
       if (kind === "palette") {
-        const result = await checkPalette(/** @type {never} */ (state));
+        const result = await checkPalette(state as never);
         if (!result.ok) return json(result);
       } else if (kind === "form") {
-        const result = await checkForm(/** @type {never} */ (state), paletteName);
+        const result = await checkForm(state as never, paletteName);
         if (!result.ok) return json(result);
       } else if (kind === "outfit") {
         const palettes = await store.readPalettes();
         const forms = await store.readForms();
-        const flaws = skin.checkOutfit(/** @type {never} */ (state), { palettes, forms });
+        const flaws = skin.checkOutfit(state as never, { palettes, forms });
         if (flaws.length > 0) return json({ ok: false, flaws });
       } else if (kind === "assembly") {
-        const component = /** @type {{component?: unknown}} */ (state)["component"];
-        const assembly = /** @type {{assembly?: unknown}} */ (state)["assembly"];
+        const component = (state as { component?: unknown })["component"];
+        const assembly = (state as { assembly?: unknown })["assembly"];
         if (typeof component !== "string" || !assembly) {
           return json({ ok: false, error: 'assembly state needs "component" (string) and "assembly" (PassportAssembly)' });
         }

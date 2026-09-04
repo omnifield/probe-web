@@ -130,6 +130,15 @@ const (
 	// read-only by design — see the "Configuration resources" block above).
 	ScopeAdminItemTypesWrite    = "admin:item-types:write"
 	ScopeAdminCustomFieldsWrite = "admin:custom-fields:write"
+
+	// admin:channels:write / admin:request-types:write grant API tokens the
+	// same channel + intake-form authoring the cookie-session admin UI has
+	// (POST /channels, /channels/{id}/request-types...) — channels route
+	// submissions into workspaces and request types are per-channel intake
+	// forms, so both stay in the admin bucket alongside item-types/
+	// custom-fields rather than a new non-admin resource family.
+	ScopeAdminChannelsWrite     = "admin:channels:write"
+	ScopeAdminRequestTypesWrite = "admin:request-types:write"
 )
 
 // ScopeInfo describes one entry in the token scope catalog. Every surface that
@@ -225,6 +234,8 @@ var scopeCatalog = []ScopeInfo{
 	{Scope: ScopeAdminAPITokensWrite, Resource: "admin:api-tokens", ResourceLabel: "API tokens (admin)", Action: "write", Label: "Revoke all API tokens", Description: "Revoke API tokens belonging to any user.", Admin: true},
 	{Scope: ScopeAdminItemTypesWrite, Resource: "admin:item-types", ResourceLabel: "Item types (admin)", Action: "write", Label: "Manage item types", Description: "Create item types shared across every workspace.", Admin: true},
 	{Scope: ScopeAdminCustomFieldsWrite, Resource: "admin:custom-fields", ResourceLabel: "Custom fields (admin)", Action: "write", Label: "Manage custom fields", Description: "Create custom field definitions shared across every workspace.", Admin: true},
+	{Scope: ScopeAdminChannelsWrite, Resource: "admin:channels", ResourceLabel: "Channels (admin)", Action: "write", Label: "Manage channels", Description: "Create channels (portals, forms, webhooks) and connect them to workspaces.", Admin: true},
+	{Scope: ScopeAdminRequestTypesWrite, Resource: "admin:request-types", ResourceLabel: "Request types (admin)", Action: "write", Label: "Manage request types", Description: "Create intake request types on a channel and route them to a workspace item type.", Admin: true},
 }
 
 // ScopeCatalog returns a copy of the scope catalog in presentation order.

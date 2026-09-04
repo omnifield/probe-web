@@ -1,0 +1,8 @@
+{
+  "//": "Точка `/tsconfig-node`. Разбор — README.md/FAQ.md рядом (src/node/).",
+  "extends": "../shared/tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": ["node"]
+  }
+}

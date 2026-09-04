@@ -1,0 +1,32 @@
+# Дорожная карта фронтенд tsconfig-профиля — формат тот же, что у остальных тем зоны (см.
+# src/vite/ROADMAP.yaml, шапка). Единственный источник правды: статус проставляется рядом с работой.
+#
+# ТОНКАЯ ОБЁРТКА над `tsc`, как node/tsconfig-node: весь состав профиля — стандартные поля
+# компилятора, проброшенные один в один. Фичового бэклога нет, пункты ниже — документация того,
+# что реально есть.
+
+categories:
+  - category: Основа
+    items:
+      - id: jsx-import-source-frozen
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: jsxImportSource — одна точка правды
+        description: |
+          Означает: смена `jsxImportSource` (например, при миграции на Solid 2.0) — правка
+          одной строки здесь, а не замороженного `tsconfig.json` в каждом продукте.
+
+      - id: shared-strict-rules
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Строгие проверки — общие с /tsconfig-node
+        description: |
+          Означает: `strict`/`noUnusedLocals`/`verbatimModuleSyntax` и т.д. заданы один раз
+          (`src/shared/tsconfig.json`) и не могут разойтись между фронтенд- и серверным
+          профилем по недосмотру.
+
+log: []

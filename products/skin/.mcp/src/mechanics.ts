@@ -3,9 +3,14 @@
 // ходить к тому же источнику, иначе они способны разойтись тихо.
 
 import { passportLookup, withPassports } from "@omnifield/probe-web-skin";
-import { checkAssembly as checkAssemblyRaw, checkAssemblyData as checkAssemblyDataRaw, admits } from "@omnifield/probe-web-skin/editor";
+import {
+  checkAssembly as checkAssemblyRaw,
+  checkAssemblyData as checkAssemblyDataRaw,
+  admits,
+} from "@omnifield/probe-web-skin/editor";
 import { skinGaps as skinGapsRaw } from "@omnifield/probe-web-skin";
-import { allEditorInfos, allPassports, editorInfoOf, exampleDataFor, passportOf } from "./kit.js";
+import type { Skin } from "@omnifield/probe-web-skin/model";
+import { allEditorInfos, allPassports, editorInfoOf, exampleDataFor, passportOf } from "./kit";
 
 const lookup = passportLookup(allPassports());
 const bound = withPassports(lookup);
@@ -29,11 +34,8 @@ export { admits };
  *
  * `checkAssembly` (структурная половина) по устройству механики БРОСАЕТ на первом же нарушении —
  * MCP-ручке исключение через границу протокола отдавать не с руки, здесь оно ловится.
- *
- * @param {string} component
- * @param {unknown} assembly
  */
-export function checkAssembly(component, assembly) {
+export function checkAssembly(component: string, assembly: unknown) {
   const passport = passportOf(component);
   const editor = editorInfoOf(component);
 
@@ -41,7 +43,7 @@ export function checkAssembly(component, assembly) {
   if (!editor) return { ok: false, error: `unknown component "${component}" — no editor info in the kit` };
 
   try {
-    checkAssemblyRaw(component, passport, editor.parts, /** @type {never} */ (assembly));
+    checkAssemblyRaw(component, passport, editor.parts, assembly as never);
   } catch (cause) {
     return { ok: false, error: cause instanceof Error ? cause.message : String(cause) };
   }
@@ -51,11 +53,10 @@ export function checkAssembly(component, assembly) {
     return { ok: true, dataCheck: "skipped — component has no entity/io.ts, nothing to check bind/repeat.path against" };
   }
 
-  const dataFlaws = checkAssemblyDataRaw(component, /** @type {never} */ (assembly), example);
+  const dataFlaws = checkAssemblyDataRaw(component, assembly as never, example);
   return { ok: dataFlaws.length === 0, dataCheck: "checked against an io-schema example", dataFlaws };
 }
 
-/** @param {import("@omnifield/probe-web-skin/model").Skin} skinRecord */
-export function skinGaps(skinRecord) {
+export function skinGaps(skinRecord: Skin) {
   return skinGapsRaw(skinRecord, allPassports(), allEditorInfos());
 }

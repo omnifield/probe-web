@@ -18,10 +18,8 @@ import { zocker } from "zocker";
  * «нашлось ли что-то», не «то ли это значение») — `zocker` строит валидный по схеме экземпляр
  * целиком сам (объекты/массивы/`enum`/юнионы/regex), тем же движком, каким продукт строит
  * заготовки для показа: один способ прочитать io-схему, не два разных.
- *
- * @param {string} component
  */
-export function exampleDataFor(component) {
+export function exampleDataFor(component: string): unknown {
   const input = IO[component]?.input;
   return input ? zocker(input).generate() : undefined;
 }
@@ -48,10 +46,8 @@ export function listComponents() {
  *
  * `anatomy` — функции (`AnatomyPart`, Zag), не данные: возвращается только `anatomyKeys`,
  * тот же список имён частей, что и `passport.anatomy.keys()`.
- *
- * @param {string} component
  */
-export function getPassport(component) {
+export function getPassport(component: string) {
   const passport = PASSPORTS[component];
   if (!passport) return undefined;
 
@@ -86,12 +82,10 @@ export function allEditorInfos() {
   return Object.values(EDITOR_INFOS);
 }
 
-/** @param {string} component */
-export function passportOf(component) {
+export function passportOf(component: string) {
   return PASSPORTS[component];
 }
 
-/** @param {string} component */
-export function editorInfoOf(component) {
+export function editorInfoOf(component: string) {
   return EDITOR_INFOS[component];
 }

@@ -1,31 +1,34 @@
 {
   "name": "@omnifield/probe-web-build",
   "version": "0.1.0",
-  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig и пресет vitest за тремя подпутями (PROBEWEB-4).",
+  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig, пресет vitest и TS-раннер для серверов (PROBEWEB-4, PWEB-node).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
+  "bin": {
+    "probe-web-node": "./dist/node/bin.mjs"
+  },
   "exports": {
     "./vite": {
-      "types": "./dist/vite.d.ts",
-      "default": "./dist/vite.js"
+      "types": "./dist/vite/index.d.ts",
+      "default": "./dist/vite/index.js"
     },
     "./vitest": {
-      "types": "./dist/vitest.d.ts",
-      "default": "./dist/vitest.js"
+      "types": "./dist/vitest/index.d.ts",
+      "default": "./dist/vitest/index.js"
     },
-    "./tsconfig": "./tsconfig.base.json"
+    "./tsconfig": "./dist/tsconfig/base.json",
+    "./tsconfig-node": "./dist/node/base.json"
   },
   "files": [
     "dist",
-    "tsconfig.base.json",
     "README.md"
   ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/tsconfig dist/node && cp src/tsconfig/base.json dist/tsconfig/base.json && cp src/node/base.json dist/node/base.json && cp src/node/bin.mjs dist/node/bin.mjs && chmod +x dist/node/bin.mjs && cp src/shared/tsconfig.json dist/shared/tsconfig.json",
     "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
@@ -33,6 +36,7 @@
   },
   "dependencies": {
     "esbuild": "^0.27.7",
+    "tsx": "^4.23.13",
     "vite-plugin-solid": "^2.11.14"
   },
   "peerDependencies": {

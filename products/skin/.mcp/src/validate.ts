@@ -12,11 +12,11 @@
 // Между ними стоит `assemble`, который и сам механикой не пропустит наряд с флавами первого рода
 // дальше (`OutfitRefused`) — значит второй проход стоит делать, только когда первый чист.
 
-import { skin } from "./mechanics.js";
-import { readForms, readPalettes } from "./store.js";
+import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+import { skin } from "./mechanics";
+import { readPalettes } from "./store";
 
-/** @param {import("@omnifield/probe-web-skin/model").Palette} palette */
-export async function checkPalette(palette) {
+export async function checkPalette(palette: Palette) {
   const palettes = await readPalettes();
   const parts = { palettes: [...palettes.filter((p) => p.name !== palette.name), palette], forms: [] };
   const outfit = { name: "__mcp_check__", palette: palette.name, forms: [] };
@@ -26,12 +26,11 @@ export async function checkPalette(palette) {
 }
 
 /**
- * @param {import("@omnifield/probe-web-skin/model").Form} form
- * @param {string} [paletteName] палитра, на роли которой проверяются ссылки формы; не назвали —
- *   берётся первая из службы. Ни одной в службе — реф-проверка ролей невозможна, флав об этом
- *   называется явно, а не молчаливо пропускается.
+ * @param paletteName палитра, на роли которой проверяются ссылки формы; не назвали — берётся
+ *   первая из службы. Ни одной в службе — реф-проверка ролей невозможна, флав об этом называется
+ *   явно, а не молчаливо пропускается.
  */
-export async function checkForm(form, paletteName) {
+export async function checkForm(form: Form, paletteName?: string) {
   const palettes = await readPalettes();
   const palette = paletteName ? palettes.find((p) => p.name === paletteName) : palettes[0];
 
