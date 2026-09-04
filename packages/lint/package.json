@@ -1,5 +1,5 @@
 {
-  "name": "@omnifield/probe-web-lint",
+  "name": "@web-core/lint",
   "version": "0.1.0",
   "description": "Пресет ESLint поверх eslint-plugin-solid: канон Solid, выраженный машиной (PROBEWEB-4).",
   "license": "UNLICENSED",

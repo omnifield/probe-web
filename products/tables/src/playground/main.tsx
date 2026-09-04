@@ -1,7 +1,7 @@
 // Точка входа площадки. Базовый CSS, тема, раскладка стенда, затем `mount` из зоны `runtime`.
 //
 // ОДЕЖДЫ СЕЙЧАС НЕТ, и это состояние названо, а не скрыто. Прежнее поколение оформления снято
-// целиком (`PWEB-31`): подпутей `@probe-web/skin/*.css` больше не существует. Новый скин
+// целиком (`PWEB-31`): подпутей `@web-core/skin/*.css` больше не существует. Новый скин
 // пишется данными и приедет другим путём — записью в хранилище, а не импортом файла.
 //
 // Значит стенд сейчас показывает ГОЛЫЕ компоненты с адресными атрибутами. Для безголовой зоны
@@ -14,11 +14,11 @@
 //
 // Последняя строка — раскладка САМОГО стенда: сетка окна, сайдбар кейсов, шапка. Это утварь
 // площадки, а не компоненты зоны, и одевать её некому.
-import "@omnifield/probe-web-style/base.css";
-import "@omnifield/probe-web-style/themes.css";
+import "@web-core/style/base.css";
+import "@web-core/style/themes.css";
 import "./playground.css";
 
-import { mount } from "@omnifield/probe-web-runtime";
+import { mount } from "@web-core/runtime";
 
 import { App } from "./app.jsx";
 

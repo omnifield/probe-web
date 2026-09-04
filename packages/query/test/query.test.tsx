@@ -20,7 +20,7 @@ function mountWithClient(code: () => unknown): HTMLElement {
   return host;
 }
 
-describe("@omnifield/probe-web-query", () => {
+describe("@web-core/query", () => {
   it("createQuery отдаёт реактивный результат (без вызова как функции)", async () => {
     const fetchTodo = vi.fn().mockResolvedValue({ title: "hi" });
 

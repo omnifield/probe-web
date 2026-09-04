@@ -1,7 +1,7 @@
-# @omnifield/probe-web-query
+# @web-core/query
 
-Данные из сети probe-web поверх `@tanstack/solid-query` — самый распространённый выбор для
-Solid сегодня (та же семья, что и `@omnifield/probe-web-router`; версии `solid-query` и
+Данные из сети web-core поверх `@tanstack/solid-query` — самый распространённый выбор для
+Solid сегодня (та же семья, что и `@web-core/router`; версии `solid-query` и
 `solid-router` идут в одном темпе выпуска у TanStack). Приложение импортирует ровно этот
 пакет — никогда `@tanstack/solid-query` напрямую, — той же причиной, что у `router`/`store`:
 единый путь резолва даёт единый `QueryClientContext` на всё приложение.
@@ -19,19 +19,19 @@ Solid сегодня (та же семья, что и `@omnifield/probe-web-rout
 ```jsonc
 // package.json приложения
 "dependencies": {
-  "@omnifield/probe-web-query": "workspace:*"
+  "@web-core/query": "workspace:*"
 }
 ```
 
 `@tanstack/solid-query` — НЕ peer: приложение никогда не импортирует его напрямую (в отличие
-от `@omnifield/probe-web-router`, тут нет порождённого кода со своим hardcoded-импортом
-вендора), значит прятать версию целиком безопасно — как у `@omnifield/probe-web-store`.
+от `@web-core/router`, тут нет порождённого кода со своим hardcoded-импортом
+вендора), значит прятать версию целиком безопасно — как у `@web-core/store`.
 
 ```tsx
 // src/main.tsx
-import { mount } from "@omnifield/probe-web-runtime";
-import { QueryClient, QueryClientProvider } from "@omnifield/probe-web-query";
-import { RouterProvider } from "@omnifield/probe-web-router";
+import { mount } from "@web-core/runtime";
+import { QueryClient, QueryClientProvider } from "@web-core/query";
+import { RouterProvider } from "@web-core/router";
 
 import { router } from "./router.js";
 
@@ -79,27 +79,27 @@ return (
 Хуки существуют в двух написаниях: `useQuery`/`useMutation`/`useInfiniteQuery`/`useQueries`
 (общее для всех фреймворков TanStack) и `createQuery`/`createMutation`/`createInfiniteQuery`/
 `createQueries` — буквальные алиасы (`typeof useQuery`), под solid-конвенцию `create*`, которой
-в probe-web держатся `createSignal`/`createStore`/`createMachine`. Используйте `create*` —
+в web-core держатся `createSignal`/`createStore`/`createMachine`. Используйте `create*` —
 примеры здесь и далее на нём.
 
 ## Devtools
 
 ```tsx
-import { SolidQueryDevtools } from "@omnifield/probe-web-query/devtools";
+import { SolidQueryDevtools } from "@web-core/query/devtools";
 
 {import.meta.env.DEV && <SolidQueryDevtools />}
 ```
 
 ## Пара с роутером: данные грузятся ДО рендера маршрута
 
-`@omnifield/probe-web-router` кладёт `queryClient` в контекст роутера через
+`@web-core/router` кладёт `queryClient` в контекст роутера через
 `createRootRouteWithContext`, и `loader` маршрута тянет данные заранее — тогда переход не
 показывает пустой экран, ожидая `createQuery` уже ПОСЛЕ монтирования:
 
 ```ts
 // src/router.ts
-import { createRootRouteWithContext, createRouter, defaultRouterOptions } from "@omnifield/probe-web-router";
-import type { QueryClient } from "@omnifield/probe-web-query";
+import { createRootRouteWithContext, createRouter, defaultRouterOptions } from "@web-core/router";
+import type { QueryClient } from "@web-core/query";
 
 export function createAppRouteTree(queryClient: QueryClient) {
   const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({ /* … */ });
@@ -110,7 +110,7 @@ export function createAppRouteTree(queryClient: QueryClient) {
 
 ```tsx
 // src/routes/todos/$todoId.tsx
-import { createFileRoute } from "@omnifield/probe-web-router";
+import { createFileRoute } from "@web-core/router";
 
 import { todoQuery } from "../../queries/todo.js";
 
@@ -129,8 +129,8 @@ export const Route = createFileRoute("/todos/$todoId")({
 ## Сохранение кэша между перезагрузками
 
 ```ts
-import { QueryClient } from "@omnifield/probe-web-query";
-import { createSyncStoragePersister, persistQueryClient } from "@omnifield/probe-web-query/persist";
+import { QueryClient } from "@web-core/query";
+import { createSyncStoragePersister, persistQueryClient } from "@web-core/query/persist";
 
 const queryClient = new QueryClient();
 persistQueryClient({

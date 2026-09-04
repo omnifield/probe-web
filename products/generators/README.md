@@ -1,4 +1,4 @@
-# @probe-web/generators
+# @web-core/generators
 
 Generation tooling: what stamps something out in this repository, or keeps
 something in sync with the disk, rather than the stamping itself. Started by
@@ -40,7 +40,7 @@ A product's whole generator becomes one TypeScript file:
 
 ```ts
 // generators.config.ts
-import { defineConfig, hasFile } from "@probe-web/generators/engine";
+import { defineConfig, hasFile } from "@web-core/generators/engine";
 
 export default defineConfig({
   rootDir: "src",
@@ -65,7 +65,7 @@ back (tests, a wrapper script) instead of a process exit code.
   (`packages/ui/src/accordion/entity/passport.ts`), not just a fixture
   (`GEN-3`). `importModule` — fixed two gaps reported from `packages/ui`'s
   README pilot (2026-08-31): a transitive CommonJS dependency with no
-  `exports` map (`fast-json-patch` under `@omnifield/probe-web-io`) failed
+  `exports` map (`fast-json-patch` under `@web-core/io`) failed
   to import, and a `.tsx` file with real Solid JSX failed to parse. Fixed
   by switching to `createServer()` + `server.ssrLoadModule()` (the path a
   real `vite dev` uses) and giving `importModule` a second, optional

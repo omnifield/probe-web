@@ -1,6 +1,6 @@
 {
   "//": [
-    "This package's own config, does not extend `@omnifield/probe-web-build/tsconfig` — that",
+    "This package's own config, does not extend `@web-core/build/tsconfig` — that",
     "base carries `jsxImportSource: solid-js` and DOM libs for Vite apps, and this zone has",
     "neither JSX nor a browser: plain Node, same reasoning as `packages/io/tsconfig.json`."
   ],

@@ -15,7 +15,7 @@
 | файл | что делает |
 |---|---|
 | `src/kit.ts` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP; плюс `exampleDataFor` — пример по io-схеме через `packages/io`'s `exampleOf`, для проверки данных сборки |
-| `src/mechanics.ts` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@omnifield/probe-web-skin/editor`, раньше были заперты внутри `defineEditorInfo` |
+| `src/mechanics.ts` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@web-core/skin/editor`, раньше были заперты внутри `defineEditorInfo` |
 | `src/store.ts` | разговор со службой пресетов (`8787`) — Node-версия клиента `products/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
 | `src/validate.ts` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
 | `src/tools.ts` | регистрация десяти ручек |
@@ -33,11 +33,11 @@
 ## Запуск
 
 ```sh
-pnpm --filter @probe-web/skin-mcp start   # stdio-сервер
-pnpm --filter @probe-web/skin-mcp typecheck
+pnpm --filter @web-core/skin-mcp start   # stdio-сервер
+pnpm --filter @web-core/skin-mcp typecheck
 ```
 
-Нужна живая служба пресетов (`pnpm --filter @probe-web/presets start`, порт `8787`) — без неё
+Нужна живая служба пресетов (`pnpm --filter @web-core/presets start`, порт `8787`) — без неё
 ручки хранения отвечают `StoreDown`. Адрес переопределяется `SKIN_MCP_PRESETS_URL`.
 
 ## Дыра, найденная живым тестом — `checkAssembly` не читает `bind`/`props`/`on` вообще
@@ -57,8 +57,8 @@ pnpm --filter @probe-web/skin-mcp typecheck
 
 ## Побочная находка — почин `packages/io`
 
-`get_passport` тянет io-схему компонента через `@omnifield/probe-web-ui/io`, а та — саму
-`@omnifield/probe-web-io`. Под настоящим (не бандлерным) Node ESM это падало:
+`get_passport` тянет io-схему компонента через `@web-core/ui/io`, а та — саму
+`@web-core/io`. Под настоящим (не бандлерным) Node ESM это падало:
 `packages/io/src/paths.ts` брала `getValueByPointer` именованным импортом из `fast-json-patch`, а
 библиотека кладёт это имя в `exports` ДИНАМИКОЙ (`Object.assign(exports, core)`) — статический
 анализ Node (`cjs-module-lexer`) такое не видит, и именованный импорт падает

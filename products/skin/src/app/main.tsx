@@ -17,14 +17,14 @@
 // маршрут (`routes/__root.tsx`), `app/app.tsx` снят как избыточный слой между ними (его работу —
 // строить `browse`/`wearing`/консоль и рисовать `WorkspaceLayout` — делает `routes/
 // _workspace.tsx`). `QueryClientProvider` стоит СНАРУЖИ `RouterProvider`, как и показывает README
-// `@omnifield/probe-web-query` — данных по сети витрина сегодня не тянет ни одной, клиент заведён
+// `@web-core/query` — данных по сети витрина сегодня не тянет ни одной, клиент заведён
 // как стандартный скелет, на будущее.
 
-import "@omnifield/probe-web-style/base.css";
+import "@web-core/style/base.css";
 
-import { mount } from "@omnifield/probe-web-runtime";
-import { QueryClient, QueryClientProvider } from "@omnifield/probe-web-query";
-import { RouterProvider } from "@omnifield/probe-web-router";
+import { mount } from "@web-core/runtime";
+import { QueryClient, QueryClientProvider } from "@web-core/query";
+import { RouterProvider } from "@web-core/router";
 
 import { router } from "../router.js";
 

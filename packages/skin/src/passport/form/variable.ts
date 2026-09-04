@@ -1,6 +1,6 @@
 // Design notes: ./README.md#variable
 
-import type { StepPurposeClass } from "@omnifield/probe-web-style";
+import type { StepPurposeClass } from "@web-core/style";
 
 export interface PassportVariable {
   readonly name: string;

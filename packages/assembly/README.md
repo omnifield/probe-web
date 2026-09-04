@@ -1,4 +1,4 @@
-# @omnifield/probe-web-assembly
+# @web-core/assembly
 
 Механика сборки: то, чем из объявленных компонентов собирают дерево, правят его и рисуют по
 данным. **Одна на два применения** — редактор скинов работает в границах компонента,
@@ -163,8 +163,8 @@ A2UI шлёт структуру и данные раздельными ПОТО
 рисуется каждая его часть; отдаёт её тот, кто компоненты поставляет:
 
 ```ts
-import { kitOf } from "@omnifield/probe-web-ui";
-import { admits } from "@omnifield/probe-web-ui/passport";
+import { kitOf } from "@web-core/ui";
+import { admits } from "@web-core/ui/passport";
 
 const registry = createRegistry({
   components: {

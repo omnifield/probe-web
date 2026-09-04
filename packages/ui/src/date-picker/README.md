@@ -1,6 +1,6 @@
 # 📅 Date Picker
 
-🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 Самый крупный компонент кита — 25 частей в анатомии, `tableCellTrigger` несёт больше состояний,
 чем любая другая часть кита когда-либо несла (двадцать).

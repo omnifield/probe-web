@@ -1,6 +1,6 @@
 // Design notes: ./README.md#scales
 
-import { DENSITY_TOKEN, DERIVED_SCALES, type DerivedScale } from "@omnifield/probe-web-style";
+import { DENSITY_TOKEN, DERIVED_SCALES, type DerivedScale } from "@web-core/style";
 import type { SkinVariables } from "../recipe/index.js";
 
 export const BY_SEED = new Map<string, DerivedScale>(DERIVED_SCALES.map((scale) => [scale.seed, scale]));

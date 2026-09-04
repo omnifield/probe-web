@@ -25,7 +25,7 @@ regenerated in full as before.
    placeholder with whatever was actually there.
 
 ```ts
-import { mergeMarkedRegions } from "@probe-web/generators/preserve";
+import { mergeMarkedRegions } from "@web-core/generators/preserve";
 import { existsSync, readFileSync } from "node:fs";
 
 const markers = { start: "<!-- user:start -->", end: "<!-- user:end -->" };

@@ -29,7 +29,7 @@ import { createServer, mergeConfig, type InlineConfig } from "vite";
  * something this generic tool bakes in — it stays framework/package
  * agnostic on purpose (see the module README). Two known uses: a module
  * transitively importing a CommonJS package with no `exports` map (e.g.
- * `fast-json-patch` under `@omnifield/probe-web-io`) needs
+ * `fast-json-patch` under `@web-core/io`) needs
  * `{ ssr: { noExternal: ["that-package"] } }`; a `.tsx` file with real
  * Solid JSX needs `{ plugins: [solid()] }` (`vite-plugin-solid`, not a
  * dependency of this package). Merged with this function's own required

@@ -1,6 +1,6 @@
 // Design notes: ./README.md#value
 
-import { DENSITY_TOKEN, GRID_STEP, type DerivedScale, type DerivedStep } from "@omnifield/probe-web-style";
+import { DENSITY_TOKEN, GRID_STEP, type DerivedScale, type DerivedStep } from "@web-core/style";
 import { fluidExpression, isFluid } from "../fluid/index.js";
 import type { Skin } from "../recipe/index.js";
 import { trace } from "../trace/index.js";

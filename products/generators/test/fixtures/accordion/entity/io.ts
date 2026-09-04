@@ -1,6 +1,6 @@
 // Input/output form passport for the accordion (`packages/io`).
 
-import { z } from "@omnifield/probe-web-io";
+import { z } from "@web-core/io";
 
 const item = z.object({ id: z.string(), title: z.string() });
 

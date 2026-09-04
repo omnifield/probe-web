@@ -1,6 +1,6 @@
 // Design notes: ./README.md
 
-import { AA_NON_TEXT, AA_TEXT, contrastRatio, type Oklch } from "@omnifield/probe-web-style";
+import { AA_NON_TEXT, AA_TEXT, contrastRatio, type Oklch } from "@web-core/style";
 import { passportLookup } from "../address/index.js";
 import type { ComponentPassport } from "../passport/form/index.js";
 import { skinRules } from "../rules/index.js";

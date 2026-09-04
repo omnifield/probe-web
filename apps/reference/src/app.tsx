@@ -15,7 +15,7 @@
 // Из набора значений сюда не приезжает НИЧЕГО (`PWEB-52`): контроллер темы отсюда ушёл вместе
 // с переключателем режима — режим стал половиной скина, а скина у эталона нет. Значения зона
 // по-прежнему объявляет в манифесте: оттуда приезжает базовый слой CSS (`src/main.tsx`).
-import { createStyle, cva } from "@omnifield/probe-web-style-tools";
+import { createStyle, cva } from "@web-core/style-tools";
 import {
   Button,
   Field,
@@ -38,7 +38,7 @@ import {
   Spinner,
   Textarea,
   Toggle,
-} from "@omnifield/probe-web-ui";
+} from "@web-core/ui";
 import { createMemo, createSignal, Show } from "solid-js";
 
 import { trace } from "./trace";
@@ -143,7 +143,7 @@ export function App(props: AppProps) {
   return (
     <Slot as="main" class="app">
       <header class="app__head">
-        <h1>probe-web reference</h1>
+        <h1>web-core reference</h1>
         {/* Переключатель держит признак ЗАЯВКИ, а не режим документа (`PWEB-52`). Режим
             принадлежит скину, скина у эталона нет — переключать было бы нечего, и ручка,
             которая заведомо ничего не делает, гейтом быть перестаёт. Шов при этом остался

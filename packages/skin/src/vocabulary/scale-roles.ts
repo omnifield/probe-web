@@ -1,6 +1,6 @@
 // Design notes: ./README.md#scale-roles
 
-import { SCALE_STEPS, STEP_PURPOSE_CLASS, type ScaleKey, type StepPurposeClass } from "@omnifield/probe-web-style";
+import { SCALE_STEPS, STEP_PURPOSE_CLASS, type ScaleKey, type StepPurposeClass } from "@web-core/style";
 
 export const SCALE_ROLES: readonly string[] = ["accent", "neutral", "danger", "success", "warning"];
 

@@ -1,6 +1,6 @@
 // Design notes: ./README.md#home
 
-import type { StepPurposeClass } from "@omnifield/probe-web-style";
+import type { StepPurposeClass } from "@web-core/style";
 import type { PassportLookup } from "../address/index.js";
 import type { ComponentPassport } from "../passport/form/index.js";
 

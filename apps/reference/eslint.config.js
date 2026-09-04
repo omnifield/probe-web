@@ -1,9 +1,9 @@
-// Канон Solid, выраженный машиной, — пресет зоны `lint` (`@omnifield/probe-web-lint`).
+// Канон Solid, выраженный машиной, — пресет зоны `lint` (`@web-core/lint`).
 //
 // Приложение подключает его как ПОТРЕБИТЕЛЬ: одной строкой и без правки правил. Если
 // потребителю приходится глушить правило пресета, чтобы написать обычное приложение, — это
 // находка про пресет, а не повод завести здесь `rules`.
-import { defineConfig } from "@omnifield/probe-web-lint";
+import { defineConfig } from "@web-core/lint";
 
 export default [
   {

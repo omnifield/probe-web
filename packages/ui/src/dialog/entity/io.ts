@@ -1,4 +1,4 @@
-import { z } from "@omnifield/probe-web-io";
+import { z } from "@web-core/io";
 
 export const input = z.object({ title: z.string(), description: z.string() });
 

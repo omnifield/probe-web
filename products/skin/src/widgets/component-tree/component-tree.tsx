@@ -1,6 +1,6 @@
-import type { DispatchedEvent } from "@omnifield/probe-web-assembly";
-import { useNavigate, useParams } from "@omnifield/probe-web-router";
-import { useAtom } from "@omnifield/probe-web-store";
+import type { DispatchedEvent } from "@web-core/assembly";
+import { useNavigate, useParams } from "@web-core/router";
+import { useAtom } from "@web-core/store";
 import { createMemo } from "solid-js";
 
 import { componentTreeAtom } from "#/entities/component/model/store.js";

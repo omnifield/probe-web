@@ -3,8 +3,8 @@
 // (`index.tsx`/`lab/index.tsx`/`showcase/index.tsx`), `routes/` теперь зеркалит это один в один —
 // `__root.tsx` и есть тот самый верх, как `pages/index.tsx`. `WorkspaceLayout` сам несёт свой
 // `<Outlet/>` внутри (`WorkspaceMain`) — здесь его НЕ оборачивают, детей у него нет.
-import { createRootRoute } from "@omnifield/probe-web-router";
-import { TanStackRouterDevtools } from "@omnifield/probe-web-router/devtools";
+import { createRootRoute } from "@web-core/router";
+import { TanStackRouterDevtools } from "@web-core/router/devtools";
 
 import { WorkspaceLayout } from "../pages/index.jsx";
 

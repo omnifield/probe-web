@@ -33,10 +33,10 @@
 // со списком всех столкнувшихся имён, а не молчаливый приоритет одного над другим (то же
 // поведение, что было в снесённом `providers.ts`).
 
-import { createIoRegistry, type IoEntry, type IoRegistry } from "@omnifield/probe-web-io";
-import type { ComponentPassport, Form } from "@omnifield/probe-web-skin/model";
-import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
-import { PRESET_KIND, type PresetRecord, type PresetsClient } from "@omnifield/probe-web-skin/presets";
+import { createIoRegistry, type IoEntry, type IoRegistry } from "@web-core/io";
+import type { ComponentPassport, Form } from "@web-core/skin/model";
+import type { PassportEditorInfo } from "@web-core/skin/editor";
+import { PRESET_KIND, type PresetRecord, type PresetsClient } from "@web-core/skin/presets";
 
 import type { KitComponent } from "./kit-form.js";
 import { IO as KIT_IO } from "./io.js";
@@ -152,7 +152,7 @@ export function mergeComponentProviders(...providers: readonly ComponentProvider
 
 /** Источники, из которых складывается запись. Не названо — берётся у {@link kitComponentProvider}. */
 export interface ComponentInfoSources extends Partial<ComponentProviderFields> {
-  /** Клиент службы раздачи (`createPresetsClient()`, `@omnifield/probe-web-skin/presets`). */
+  /** Клиент службы раздачи (`createPresetsClient()`, `@web-core/skin/presets`). */
   readonly presets: PresetsClient;
 }
 

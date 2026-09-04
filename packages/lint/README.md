@@ -1,4 +1,4 @@
-# @omnifield/probe-web-lint
+# @web-core/lint
 
 Пресет ESLint поверх [`eslint-plugin-solid`][plugin]: **канон Solid, выраженный машиной**.
 
@@ -12,13 +12,13 @@
 ## Одна точка наружу
 
 ```ts
-import { defineConfig } from "@omnifield/probe-web-lint";
+import { defineConfig } from "@web-core/lint";
 ```
 
 Весь `eslint.config.js` потребителя:
 
 ```js
-import { defineConfig } from "@omnifield/probe-web-lint";
+import { defineConfig } from "@web-core/lint";
 
 export default defineConfig();
 ```
@@ -27,7 +27,7 @@ export default defineConfig();
 конфиг спредом и может вырасти в новые секции, не меняя вызов:
 
 ```js
-import { defineConfig } from "@omnifield/probe-web-lint";
+import { defineConfig } from "@web-core/lint";
 
 export default [
   { ignores: ["dist/**"] },
@@ -206,7 +206,7 @@ Node напрямую — Vite в этой цепочке нет вовсе, п�
 собранного `dist` команда падает не диагностикой, а отказом резолвера:
 
 ```
-ERR_MODULE_NOT_FOUND  @omnifield/probe-web-lint/dist/index.js
+ERR_MODULE_NOT_FOUND  @web-core/lint/dist/index.js
 ```
 
 Инструмент, которым проверяют, не может проверяться собой во время собственной загрузки —

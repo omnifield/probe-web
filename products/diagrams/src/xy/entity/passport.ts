@@ -21,7 +21,7 @@
 // whole component). Declared as two named states, `x`/`y`, mutually exclusive by construction
 // (`XyAxis`'s own `orientation` prop is required, not optional).
 
-import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
+import { defineSettings, definePassport, type PassportState } from "@web-core/skin/model";
 // TYPE ONLY: `import type` is erased at build time entirely. Needed only so the setting keys are
 // checked against the component's real props.
 import type { XyProps } from "../components/index.jsx";

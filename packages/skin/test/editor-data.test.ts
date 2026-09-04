@@ -66,7 +66,7 @@ describe("defineEditorInfo threads a real Data through, no widening needed (PWEB
     // Stand-in for `playground/index.ts`'s call — same shape every component in the kit already
     // uses (nothing explicit): Part/Registry/Data all inferred.
     const editorInfo = defineEditorInfo(passport, {
-      package: "@omnifield/probe-web-ui",
+      package: "@web-core/ui",
       genus: "component",
       variantAxis: { means: "proof" },
       parts: {

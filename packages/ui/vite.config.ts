@@ -7,7 +7,7 @@
 // одна (`./passport`/`./io` — паспорта кита и формы компонентов; `./component-info` — сборка
 // обоих плюс службы раздачи в одну запись, `PWEB-217`): потребителю нужны схемы и функции, не
 // JSX/Solid/`@kobalte/core`.
-import { defineLibraryConfig } from "@omnifield/probe-web-build/vite";
+import { defineLibraryConfig } from "@web-core/build/vite";
 
 export default defineLibraryConfig({
   entries: [

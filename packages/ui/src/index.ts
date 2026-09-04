@@ -1,4 +1,4 @@
-// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@probe-web/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Поверхность зоны `ui` — примитивы поверх `@ark-ui/solid`/`@kobalte/core`.
 //
@@ -19,7 +19,7 @@
 // реэкспортируется: два входа к одним данным означали бы два обещания вместо одного.
 //
 // Стилей отсюда не едет НИЧЕГО: у зоны нет CSS-артефакта, потому что нет и стилей по умолчанию.
-// Оформление приезжает из `@omnifield/probe-web-style` и пишется потребителем.
+// Оформление приезжает из `@web-core/style` и пишется потребителем.
 export * from "./accordion/index.js";
 export * from "./avatar/index.js";
 export * from "./button/index.js";

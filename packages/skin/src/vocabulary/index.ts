@@ -1,6 +1,6 @@
 // Design notes: ./README.md
 
-import { DENSITY_TOKEN, DERIVED_SCALES, DERIVED_TOKENS } from "@omnifield/probe-web-style";
+import { DENSITY_TOKEN, DERIVED_SCALES, DERIVED_TOKENS } from "@web-core/style";
 import type { Role } from "./role.js";
 import { ROWS } from "./rows.js";
 import { SCALE_ROLES, STEPS } from "./scale-roles.js";

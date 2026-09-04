@@ -9,10 +9,10 @@
 // Сравниваем не текст файлов, а РЕЗУЛЬТАТ: конфиг приложения обязан совпасть с тем, что
 // отдаёт зона `build`. Текстовая сверка ломалась бы от каждого комментария.
 
-import { defineConfig } from "@omnifield/probe-web-build/vite";
-import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
-import * as values from "@omnifield/probe-web-style";
-import * as tools from "@omnifield/probe-web-style-tools";
+import { defineConfig } from "@web-core/build/vite";
+import { defineTestConfig } from "@web-core/build/vitest";
+import * as values from "@web-core/style";
+import * as tools from "@web-core/style-tools";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,7 +67,7 @@ describe("оснастка приложения ничего не добавля
     // Точка 3 поверхности проверяется прогоном `tsc`, а не тестом: типы — не рантайм. Здесь
     // стережётся другое — что проверять `tsc` будет НАСТРОЙКАМИ ЗОНЫ, а не местными.
     const raw: unknown = JSON.parse(readFileSync(join(ROOT, "tsconfig.json"), "utf8"));
-    expect(raw).toMatchObject({ extends: "@omnifield/probe-web-build/tsconfig" });
+    expect(raw).toMatchObject({ extends: "@web-core/build/tsconfig" });
     expect(raw).not.toHaveProperty("compilerOptions");
   });
 });
@@ -88,8 +88,8 @@ describe("значения и инструменты — две разные п�
   it("в манифесте зоны объявлены обе, и одна не приезжает следом за другой", () => {
     const dependencies = manifest().dependencies ?? {};
 
-    expect(dependencies).toHaveProperty("@omnifield/probe-web-style");
-    expect(dependencies).toHaveProperty("@omnifield/probe-web-style-tools");
+    expect(dependencies).toHaveProperty("@web-core/style");
+    expect(dependencies).toHaveProperty("@web-core/style-tools");
   });
 
   it("набор значений инструментов не отдаёт", () => {

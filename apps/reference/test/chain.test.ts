@@ -14,7 +14,7 @@ import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BASE_MARKER } from "@omnifield/probe-web-style";
+import { BASE_MARKER } from "@web-core/style";
 import { JSDOM } from "jsdom";
 import { beforeAll, describe, expect, it } from "vitest";
 

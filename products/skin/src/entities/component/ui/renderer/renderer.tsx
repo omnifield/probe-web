@@ -1,5 +1,5 @@
-import { RenderTree, type DispatchedEvent } from "@omnifield/probe-web-assembly";
-import { kitComponentRenderer } from "@omnifield/probe-web-ui/component-registry";
+import { RenderTree, type DispatchedEvent } from "@web-core/assembly";
+import { kitComponentRenderer } from "@web-core/ui/component-registry";
 import { createMemo } from "solid-js";
 
 const { registry, instanceOf } = kitComponentRenderer();

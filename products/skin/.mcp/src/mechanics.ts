@@ -2,14 +2,14 @@
 // (`PWEB-94`, README «Источник паспортов называется один раз»): проверка и порождение обязаны
 // ходить к тому же источнику, иначе они способны разойтись тихо.
 
-import { passportLookup, withPassports } from "@omnifield/probe-web-skin";
+import { passportLookup, withPassports } from "@web-core/skin";
 import {
   checkAssembly as checkAssemblyRaw,
   checkAssemblyData as checkAssemblyDataRaw,
   admits,
-} from "@omnifield/probe-web-skin/editor";
-import { skinGaps as skinGapsRaw } from "@omnifield/probe-web-skin";
-import type { Skin } from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/editor";
+import { skinGaps as skinGapsRaw } from "@web-core/skin";
+import type { Skin } from "@web-core/skin/model";
 import { allEditorInfos, allPassports, editorInfoOf, exampleDataFor, passportOf } from "./kit";
 
 const lookup = passportLookup(allPassports());

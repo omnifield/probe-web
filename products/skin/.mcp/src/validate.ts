@@ -12,7 +12,7 @@
 // Между ними стоит `assemble`, который и сам механикой не пропустит наряд с флавами первого рода
 // дальше (`OutfitRefused`) — значит второй проход стоит делать, только когда первый чист.
 
-import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+import type { Form, Palette } from "@web-core/skin/model";
 import { skin } from "./mechanics";
 import { readPalettes } from "./store";
 

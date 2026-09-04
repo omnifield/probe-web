@@ -1,4 +1,4 @@
-import { createResourceAtom } from "@omnifield/probe-web-store";
+import { createResourceAtom } from "@web-core/store";
 import { createSignal } from "solid-js";
 
 import { componentInfo } from "./info.js";

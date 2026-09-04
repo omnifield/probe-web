@@ -1,6 +1,6 @@
 // Design notes: ./README.md#step-purpose
 
-import type { StepPurposeClass } from "@omnifield/probe-web-style";
+import type { StepPurposeClass } from "@web-core/style";
 import { colorStepPurpose } from "../vocabulary/scale-roles.js";
 import type { VariableHome } from "../variables/index.js";
 import { Flaws } from "./flaws.js";

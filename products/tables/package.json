@@ -1,8 +1,8 @@
 {
-  "name": "@probe-web/tables",
+  "name": "@web-core/tables",
   "version": "0.0.0",
   "private": true,
-  "description": "Зона tables: таблица с фильтрами поверх базы probe-web. Приватная — пока стоит в products/, в реестр не едет (PROBEWEB-5).",
+  "description": "Зона tables: таблица с фильтрами поверх базы web-core. Приватная — пока стоит в products/, в реестр не едет (PROBEWEB-5).",
   "license": "UNLICENSED",
   "type": "module",
   "imports": {
@@ -41,15 +41,15 @@
   },
   "dependencies": {
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-runtime": "workspace:*",
-    "@omnifield/probe-web-style": "workspace:*",
-    "@omnifield/probe-web-ui": "workspace:*",
+    "@web-core/runtime": "workspace:*",
+    "@web-core/style": "workspace:*",
+    "@web-core/ui": "workspace:*",
     "@tanstack/solid-table": "^9.1.2",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",

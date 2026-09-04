@@ -7,8 +7,8 @@ planned to move onto the same layout (GEN-9) — this module exists so a second 
 layout configures a ready plugin bundle instead of copy-pasting `packages/ui`'s.
 
 ```ts
-import { defineConfig, hasFile } from "@probe-web/generators/engine";
-import { kitBarrelPlugins } from "@probe-web/generators/plugins/kit";
+import { defineConfig, hasFile } from "@web-core/generators/engine";
+import { kitBarrelPlugins } from "@web-core/generators/plugins/kit";
 
 export default defineConfig({
   rootDir: srcDir,

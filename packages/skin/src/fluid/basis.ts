@@ -1,6 +1,6 @@
 // Design notes: ./README.md#basis
 
-import { axisOf } from "@omnifield/probe-web-style";
+import { axisOf } from "@web-core/style";
 
 export type FluidBarKind = "unexpressible" | "different-basis" | "unknown-unit";
 
@@ -9,7 +9,7 @@ export interface FluidBar {
   readonly means: string;
 }
 
-// Keys mirror the `unit` values `@omnifield/probe-web-style`'s `AXES` actually declares
+// Keys mirror the `unit` values `@web-core/style`'s `AXES` actually declares
 // (`packages/style/src/axes.ts`) — "множитель" is real external data, not a name we chose, and
 // must match verbatim or the lookup below silently misses.
 const FLUID_BASIS: Readonly<Record<string, FluidBar | "fluid">> = {

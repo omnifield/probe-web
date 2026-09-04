@@ -6,7 +6,7 @@ a product's config file is just a list of plugins — nothing a product writes n
 of that mechanics works.
 
 ```ts
-import { defineConfig, hasFile, run } from "@probe-web/generators/engine";
+import { defineConfig, hasFile, run } from "@web-core/generators/engine";
 
 const config = defineConfig({
   rootDir: "src",

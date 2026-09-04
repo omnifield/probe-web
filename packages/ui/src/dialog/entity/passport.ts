@@ -1,4 +1,4 @@
-import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
+import { defineSettings, definePassport, type PassportState } from "@web-core/skin/model";
 import type { DialogProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 

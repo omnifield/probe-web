@@ -1,6 +1,6 @@
 # Зона `tables` — таблица с фильтрами
 
-Пакет `@probe-web/tables`, **приватный**. Зона стоит в `products/` **временно** и уедет
+Пакет `@web-core/tables`, **приватный**. Зона стоит в `products/` **временно** и уедет
 отдельным продуктом; пока стоит — **не публикуется**, чтобы не занять имя, которое придётся
 бросить после переезда (контракт `PROBEWEB-5`).
 
@@ -124,12 +124,12 @@
 `src/*/index.ts` и так называет себя единственной опубликованной поверхностью:
 
 ```ts
-import { DataTable } from "@probe-web/tables/table";
-import { FilterBuilder } from "@probe-web/tables/filters";
-import { Chart } from "@probe-web/tables/chart";
+import { DataTable } from "@web-core/tables/table";
+import { FilterBuilder } from "@web-core/tables/filters";
+import { Chart } from "@web-core/tables/chart";
 ```
 
-Плюс `@probe-web/tables/slots.json` — обещание зацепок данными.
+Плюс `@web-core/tables/slots.json` — обещание зацепок данными.
 
 Корневого `.` нет **намеренно**: общий бочонок сложил бы в одно пространство имён то, что зона
 держит порознь. Фильтры уедут отдельным продуктом, и `Row`, `FieldRef`, `lookup` у них и у
@@ -150,7 +150,7 @@ import { Chart } from "@probe-web/tables/chart";
 > Добавить новое имя можно минором: тех, кто цеплялся за прежние, добавление не ломает.
 
 Перечень — [`src/slots.json`](src/slots.json), и он **едет в поставке**: подпуть
-`@probe-web/tables/slots.json`. Выписан руками: снятый с исходников подтверждал бы сам себя, и
+`@web-core/tables/slots.json`. Выписан руками: снятый с исходников подтверждал бы сам себя, и
 переименование проезжало бы молча вместе с рефакторингом. Правка в сторону удаления или
 переименования = ломающее изменение поставки, и она обязана быть решением, а не побочным
 следствием.

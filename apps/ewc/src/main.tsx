@@ -1,7 +1,7 @@
-import "@omnifield/probe-web-style/base.css";
+import "@web-core/style/base.css";
 import "./app.css";
 
-import { makeSkinSwitch, mount } from "@omnifield/probe-web-runtime";
+import { makeSkinSwitch, mount } from "@web-core/runtime";
 
 import { App } from "./app.jsx";
 import { SKIN_SOURCE } from "./skins.js";

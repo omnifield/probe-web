@@ -1,6 +1,6 @@
 # 🗔 Dialog
 
-🏷️ overlays · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ overlays · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

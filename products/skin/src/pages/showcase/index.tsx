@@ -1,4 +1,4 @@
-import { useAtom } from "@omnifield/probe-web-store";
+import { useAtom } from "@web-core/store";
 import { createEffect } from "solid-js";
 
 import { componentInfoAtom, setCurrentComponent } from "#/entities/component/model/store.js";

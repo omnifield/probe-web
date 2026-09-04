@@ -1,5 +1,5 @@
-import { Button } from "@omnifield/probe-web-ui";
-import type { SkinMode, SkinSwitch, SkinWorn } from "@omnifield/probe-web-runtime";
+import { Button } from "@web-core/ui";
+import type { SkinMode, SkinSwitch, SkinWorn } from "@web-core/runtime";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
 import { listOutfits } from "./skins.js";

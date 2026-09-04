@@ -5,6 +5,6 @@
     "would fix the gate instead of showing the break — and the gate exists precisely so a",
     "`jsxImportSource` or `strict` drifting from the `build` zone fails HERE, not at a consumer."
   ],
-  "extends": "@omnifield/probe-web-build/tsconfig",
+  "extends": "@web-core/build/tsconfig",
   "include": ["src", "vite.config.ts"]
 }

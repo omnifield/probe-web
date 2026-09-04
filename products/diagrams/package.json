@@ -1,5 +1,5 @@
 {
-  "name": "@probe-web/diagrams",
+  "name": "@web-core/diagrams",
   "version": "0.0.0",
   "private": true,
   "description": "Зона diagrams: витрина диаграмм с расширенными настройками. Свой движок расчётов (шкалы/пути), рисуют компоненты кита — тот же флоу, что у остальных зон поверх кита.",
@@ -14,7 +14,7 @@
     "приложения. Потребитель (`products/skin`, на той же базе) транспилирует сам.",
     "",
     "Два входа, форма ui: `.` — разметка (Solid/JSX) плюс карта частей; `./passport` — чистые",
-    "данные, БЕЗ Solid, тем же доводом, что у `@omnifield/probe-web-ui/passport` (читатель без",
+    "данные, БЕЗ Solid, тем же доводом, что у `@web-core/ui/passport` (читатель без",
     "Solid обязан пройти паспорт всё равно)."
   ],
   "exports": {
@@ -47,17 +47,17 @@
     }
   },
   "dependencies": {
-    "@omnifield/probe-web-assembly": "workspace:*",
-    "@omnifield/probe-web-runtime": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
-    "@omnifield/probe-web-style": "workspace:*",
-    "@omnifield/probe-web-ui": "workspace:*",
+    "@web-core/assembly": "workspace:*",
+    "@web-core/runtime": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/style": "workspace:*",
+    "@web-core/ui": "workspace:*",
     "d3-scale": "^4.0.2",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/d3-scale": "^4.0.9",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",

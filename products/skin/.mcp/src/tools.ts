@@ -7,7 +7,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getPassport, listComponents } from "./kit";
 import { skin, checkAssembly, skinGaps } from "./mechanics";
-import { OutfitRefused, SkinRefused } from "@omnifield/probe-web-skin";
+import { OutfitRefused, SkinRefused } from "@web-core/skin";
 import * as store from "./store";
 import { checkForm, checkPalette } from "./validate";
 

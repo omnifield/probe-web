@@ -56,7 +56,7 @@ const passport = definePassport({
 describe("StatesOf/ValuesOf wired into the editor slice, on accordion's real stress case (PWEB-207 follow-up)", () => {
   it("defineEditorInfo accepts different states per part with zero explicit type arguments", () => {
     const editorInfo = defineEditorInfo(passport, {
-      package: "@omnifield/probe-web-ui",
+      package: "@web-core/ui",
       genus: "component",
       variantAxis: { means: "proof" },
       parts: {

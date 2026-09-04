@@ -2,7 +2,7 @@
 // два перечня, собираемых обходом папок компонентов, отдельным шагом до typecheck/сборки.
 //
 // ОТЛИЧИЕ ОТ КИТА: `defineKitComponent`/`KitComponent`/`kitOf` здесь не свои — берутся готовыми
-// из `@omnifield/probe-web-ui` (тот же геттер частей подходит любому паспорту, hand-authored он
+// из `@web-core/ui` (тот же геттер частей подходит любому паспорту, hand-authored он
 // или Ark-овый, — прецедент: кит уже так строит `table`, у которого тоже нет поставщика анатомии
 // извне). Второй копии `kit-form.ts` в этом продукте нет и не будет.
 
@@ -57,7 +57,7 @@ function renderPassportEntry(folders) {
 //
 // Перечень паспортов собирается обходом папок \`src/*\`: компонент объявляет себя в своей папке
 // (\`entity/passport.ts\`) и попадает в поставку самим фактом объявления. Тот же приём, что у
-// \`@omnifield/probe-web-ui/passport\` — форма паспорта общая для любого поставщика компонентов.
+// \`@web-core/ui/passport\` — форма паспорта общая для любого поставщика компонентов.
 
 export type {
   ComponentPassport,
@@ -77,7 +77,7 @@ export type {
   PassportVariantAxis,
   SkinAncestor,
   SkinCoordinate,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 export {
   addressesView,
   coordinateOf,
@@ -87,7 +87,7 @@ export {
   partOf,
   SETTINGS,
   settingApplies,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 export type {
   BaseAssemblyContent,
   BaseAssemblyElement,
@@ -108,7 +108,7 @@ export type {
   PassportSettingOptionEditorInfo,
   PassportStateEditorInfo,
   PassportVariableEditorInfo,
-} from "@omnifield/probe-web-skin/editor";
+} from "@web-core/skin/editor";
 export {
   admits,
   baseAssemblyOf,
@@ -117,9 +117,9 @@ export {
   groupOf,
   isAssemblyContent,
   isContentNode,
-} from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
+} from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
+import type { PassportEditorInfo } from "@web-core/skin/editor";
 ${imports}
 
 /**
@@ -167,11 +167,11 @@ function renderKitEntry(folders) {
   return `// ПОРОЖДЁН СБОРКОЙ (\`scripts/generate.mjs\`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Перечень компонентов продукта собирается тем же обходом папок, что и перечень паспортов.
-// \`defineKitComponent\`/\`KitComponent\`/\`kitOf\` НЕ свои — реэкспорт из \`@omnifield/probe-web-ui\`
+// \`defineKitComponent\`/\`KitComponent\`/\`kitOf\` НЕ свои — реэкспорт из \`@web-core/ui\`
 // (\`scripts/generate.mjs\`, шапка): та же карта части-в-компонент годится любому паспорту.
 
-export { defineKitComponent, type KitComponent, type PartComponent } from "@omnifield/probe-web-ui";
-import type { KitComponent } from "@omnifield/probe-web-ui";
+export { defineKitComponent, type KitComponent, type PartComponent } from "@web-core/ui";
+import type { KitComponent } from "@web-core/ui";
 ${imports}
 
 /**

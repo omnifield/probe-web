@@ -1,6 +1,6 @@
 // Design notes: ./README.md#parse
 
-import { tryParseColor, type Oklch, type ParsedColor } from "@omnifield/probe-web-style";
+import { tryParseColor, type Oklch, type ParsedColor } from "@web-core/style";
 
 const DEPTH = 16;
 

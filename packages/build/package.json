@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-build",
+  "name": "@web-core/build",
   "version": "0.1.0",
-  "description": "Оснастка сборки probe-web: фабрика конфига Vite, базовый tsconfig, пресет vitest и TS-раннер для серверов (PROBEWEB-4, PWEB-node).",
+  "description": "Оснастка сборки web-core: фабрика конфига Vite, базовый tsconfig, пресет vitest и TS-раннер для серверов (PROBEWEB-4, PWEB-node).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,

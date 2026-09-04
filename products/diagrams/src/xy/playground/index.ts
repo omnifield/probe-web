@@ -15,13 +15,13 @@
 // a coordinate system needs real screen space, the same bracket the kit's own table/tree-view/
 // splitter footprint already claims.
 
-import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
+import { defineEditorInfo } from "@web-core/skin/editor";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "./assemblies.js";
 import { parts } from "./parts.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
-  package: "@probe-web/diagrams",
+  package: "@web-core/diagrams",
   genus: "component",
   footprint: "wide",
   variantAxis: {

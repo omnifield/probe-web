@@ -1,4 +1,4 @@
-// What leaves this product outward. Same split as `@omnifield/probe-web-ui`: MARKUP (this entry)
+// What leaves this product outward. Same split as `@web-core/ui`: MARKUP (this entry)
 // for direct use, PASSPORT (`./passport`) as pure data — a reader without Solid must still be
 // able to walk it, the same reason the kit keeps its own two entries apart.
 

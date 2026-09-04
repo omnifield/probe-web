@@ -14,7 +14,7 @@
 // поле ввода и переводится в дерево при разборе. Поэтому удаление условия больше не сдвигает
 // смысл сохранённой формулы молча (`TABLES-4`, раздел B).
 
-import { Button, Field, Input } from "@omnifield/probe-web-ui";
+import { Button, Field, Input } from "@web-core/ui";
 
 import { Choice, Tick } from "../../ui/choice.jsx";
 import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";

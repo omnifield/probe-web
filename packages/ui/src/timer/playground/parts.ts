@@ -8,8 +8,8 @@
 // `../components/index.tsx`: `root` wraps `area`(one `item` per time unit, `separator`s between
 // them) + `control`(one `actionTrigger` per action)) is real.
 
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 // TYPE ONLY — see `assemblies.ts` for why: `typeof passport` needs the binding's TYPE, not the
 // module's side effects.
 import type { passport } from "../entity/passport.js";

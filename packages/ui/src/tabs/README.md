@@ -1,6 +1,6 @@
 # 📑 Tabs
 
-🏷️ other · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ other · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

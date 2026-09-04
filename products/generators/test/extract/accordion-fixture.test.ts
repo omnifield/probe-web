@@ -26,7 +26,7 @@ describe("importModule against a real component (copied accordion/entity, not sy
     expect(Object.keys(passport.settings)).toEqual(["orientation", "multiple", "collapsible"]);
   });
 
-  // `fast-json-patch` (under @omnifield/probe-web-io's `paths.ts`) is CommonJS with no `exports`
+  // `fast-json-patch` (under @web-core/io's `paths.ts`) is CommonJS with no `exports`
   // map — plain Node's ESM interop, and this tool's default headless mode, both fail to find its
   // named exports (see extract/README's "Second argument" section). `ssr.noExternal` fixes it:
   // proof this is a caller-suppliable escape hatch, not a packages/io bug.

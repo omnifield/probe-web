@@ -2,7 +2,7 @@
 //
 // ## Почему здесь тип, а не импорт формы
 //
-// Форма паспорта живёт в ките (`@omnifield/probe-web-ui`, `passport-form.ts`), и дом у неё
+// Форма паспорта живёт в ките (`@web-core/ui`, `passport-form.ts`), и дом у неё
 // сегодня там потому, что там выписан первый паспорт. Механика сборки паспорт только ЧИТАЕТ —
 // и зависеть в поставке на кит она не вправе: зависимость в поставку это cross-zone решение
 // architect, а не правка владельца зоны. (Кит сам называет нейтральный дом формы открытым
@@ -50,7 +50,7 @@ import type {
   PassportAdmission,
   PassportComponentGenus,
   PassportGenus,
-} from "@omnifield/probe-web-skin/editor";
+} from "@web-core/skin/editor";
 
 import type { SelfAssembly } from "./self-assembly.js";
 

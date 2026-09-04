@@ -39,7 +39,7 @@ import {
   SelectPortal,
   SelectTrigger,
   SelectValue,
-} from "@omnifield/probe-web-ui";
+} from "@web-core/ui";
 import { Show } from "solid-js";
 
 /** Строка списка: что уедет в состояние и что увидит человек. */

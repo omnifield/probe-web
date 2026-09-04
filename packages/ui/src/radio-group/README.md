@@ -1,6 +1,6 @@
 # 🔘 Radio Group
 
-🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 
@@ -161,7 +161,7 @@ const tree = instanceOf("radio-group", {}, "basic", data);
 `RadioGroupItemHiddenInput` ради этого и остаётся публичным.
 
 ```tsx
-import { RadioGroupItemHiddenInput } from "@omnifield/probe-web-ui";
+import { RadioGroupItemHiddenInput } from "@web-core/ui";
 
 <RadioGroupItem value="express" asChild>
   <label>

@@ -1,6 +1,6 @@
 // Design notes: ./README.md#build
 
-import { buildAlphaScale, buildChartScale, buildScale, buildScrim, tryParseColor } from "@omnifield/probe-web-style";
+import { buildAlphaScale, buildChartScale, buildScale, buildScrim, tryParseColor } from "@web-core/style";
 import type { SeededScale, SkinVariables } from "../recipe/index.js";
 import { declared } from "./declare.js";
 import type { SkinHalf, SkinValue } from "./types.js";

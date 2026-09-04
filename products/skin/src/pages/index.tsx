@@ -5,8 +5,8 @@ import {
   WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
-} from "@omnifield/probe-web-ui";
-import { Outlet } from "@omnifield/probe-web-router";
+} from "@web-core/ui";
+import { Outlet } from "@web-core/router";
 
 import { ComponentTree } from "#/widgets/component-tree/component-tree.jsx";
 import { Header } from "#/widgets/header/header.jsx";

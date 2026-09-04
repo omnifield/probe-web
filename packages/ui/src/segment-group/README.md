@@ -1,6 +1,6 @@
 # 🎚️ Segment Group
 
-🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 
@@ -178,7 +178,7 @@ const tree = instanceOf("segment-group", {}, "basic", data);
 `SegmentGroupItemHiddenInput` ради этого и остаётся публичным.
 
 ```tsx
-import { SegmentGroupItemHiddenInput } from "@omnifield/probe-web-ui";
+import { SegmentGroupItemHiddenInput } from "@web-core/ui";
 
 <SegmentGroupItem value="grid" asChild>
   <label>

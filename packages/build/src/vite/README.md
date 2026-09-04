@@ -1,8 +1,8 @@
 # ⚡ vite
 
-📦 `@omnifield/probe-web-build/vite`
+📦 `@web-core/build/vite`
 
-Фабрика конфига Vite для probe-web — и для приложения, и для библиотеки. `vite.config.ts`
+Фабрика конфига Vite для web-core — и для приложения, и для библиотеки. `vite.config.ts`
 потребителя едет классом `placed-once`: положен один раз и больше никогда не обновится.
 Оставить его содержательным значило бы заморозить версию Vite, набор плагинов и настройки
 сборки — то есть ровно то, что обязано двигаться. Поэтому конфиг целиком прячется сюда, а у
@@ -21,7 +21,7 @@
 
 ```ts
 // vite.config.ts потребителя
-import { defineConfig } from "@omnifield/probe-web-build/vite";
+import { defineConfig } from "@web-core/build/vite";
 export default defineConfig();
 ```
 
@@ -85,7 +85,7 @@ esbuild — почти дословным повтором, который ни�
 
 ```ts
 // vite.config.ts потребителя-библиотеки
-import { defineLibraryConfig } from "@omnifield/probe-web-build/vite";
+import { defineLibraryConfig } from "@web-core/build/vite";
 export default defineLibraryConfig({
   entries: [{ name: "index", source: "src/index.ts", solid: true }],
 });
@@ -103,7 +103,7 @@ export default defineLibraryConfig({
 
 <h2 id="prepare">🔧 prepare — оснастка собирается на установке</h2>
 
-Конфиг приложения сам импортирует `@omnifield/probe-web-build/vite`, и его Vite грузит ДО того,
+Конфиг приложения сам импортирует `@web-core/build/vite`, и его Vite грузит ДО того,
 как плагин из этого конфига может что-то подменить. Алиасом это не лечится в принципе:
 инструмент, которым собирают, не может собираться собой же во время собственной загрузки.
 

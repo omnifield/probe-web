@@ -1,6 +1,6 @@
 # 🖥️ node
 
-📦 `@omnifield/probe-web-build/tsconfig-node` · `probe-web-node`
+📦 `@web-core/build/tsconfig-node` · `probe-web-node`
 
 TS-раннер и tsconfig-профиль для серверов без Vite (MCP-серверы, локальные службы). Правило
 репозитория: дев-пространство — TypeScript, компилированный JS — крайний случай, и его место в
@@ -27,7 +27,7 @@ TS-раннер и tsconfig-профиль для серверов без Vite (
 ```
 
 Бинарник потребитель получает через `pnpm`-симлинк `bin` прямой зависимости — как только он сам
-зависит от `@omnifield/probe-web-build`, `tsx` тащить в свои зависимости не нужно: `tsx` —
+зависит от `@web-core/build`, `tsx` тащить в свои зависимости не нужно: `tsx` —
 обычная зависимость самого `build`, а `bin`-скрипт резолвит модули относительно СВОЕГО файла, не
 относительно потребителя.
 
@@ -39,7 +39,7 @@ TS-раннер и tsconfig-профиль для серверов без Vite (
 ```jsonc
 // tsconfig.json серверного потребителя
 {
-  "extends": "@omnifield/probe-web-build/tsconfig-node",
+  "extends": "@web-core/build/tsconfig-node",
   "include": ["src"]
 }
 ```

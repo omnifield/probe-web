@@ -1,6 +1,6 @@
 # 🔘 Button
 
-🏷️ actions · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ actions · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 Обычная кликабельная кнопка — подпись, необязательная иконка, три вида (`primary`/`quiet`/
 `danger`). Единственный компонент кита без составного дерева — один узел, ему нечего адресовать

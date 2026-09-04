@@ -1,6 +1,6 @@
 # 🖥️ Workspace
 
-🏷️ layout · 🧬 component · 📐 wide · 📦 `@omnifield/probe-web-ui`
+🏷️ layout · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

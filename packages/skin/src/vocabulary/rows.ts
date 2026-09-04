@@ -1,6 +1,6 @@
 // Design notes: ./README.md#rows
 
-import { FIXED_TOKENS } from "@omnifield/probe-web-style";
+import { FIXED_TOKENS } from "@web-core/style";
 
 export const ROWS: readonly string[] = [
   ...FIXED_TOKENS.map((token) => token.name).filter((name) => name !== "control-target-min"),

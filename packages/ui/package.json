@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-ui",
+  "name": "@web-core/ui",
   "version": "0.1.0",
-  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
+  "description": "Примитивы web-core поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -68,7 +68,7 @@
     "повторён намеренно: значение из `nx.json` не дополняется, а заменяется целиком.",
     "",
     "`generate` сам обзавёлся `dependsOn: [\"^build\"]` (PWEB-205, 2026-08-30 → GEN-9, 2026-09-01):",
-    "обход/запись/CLI-точка входа — в `@probe-web/generators` (`plugin`+`cli.ts`), и шаг читает",
+    "обход/запись/CLI-точка входа — в `@web-core/generators` (`plugin`+`cli.ts`), и шаг читает",
     "его `dist`, а не только свой исходник — `^production` в `inputs` по той же причине: правка",
     "движка обязана расценить кеш этого шага устаревшим, а без `^production` смена чужого пакета",
     "осталась бы невидимой."
@@ -93,9 +93,9 @@
     }
   },
   "dependencies": {
-    "@omnifield/probe-web-assembly": "workspace:*",
-    "@omnifield/probe-web-io": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
+    "@web-core/assembly": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/skin": "workspace:*",
     "@tanstack/solid-table": "^9.1.2",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
@@ -129,9 +129,9 @@
   "devDependencies": {
     "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
-    "@probe-web/generators": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@web-core/generators": "workspace:*",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.2.0",
     "@types/node": "^24.10.1",

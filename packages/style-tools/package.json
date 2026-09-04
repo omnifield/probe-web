@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-style-tools",
+  "name": "@web-core/style-tools",
   "version": "0.0.0",
-  "description": "Инструменты стилизации probe-web: cn, createStyle, реэкспорт cva. Самостоятельная необязательная поставка — набора значений не знает (PWEB-3).",
+  "description": "Инструменты стилизации web-core: cn, createStyle, реэкспорт cva. Самостоятельная необязательная поставка — набора значений не знает (PWEB-3).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,

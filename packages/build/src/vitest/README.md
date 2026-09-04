@@ -1,14 +1,14 @@
 # 🧪 vitest
 
-📦 `@omnifield/probe-web-build/vitest`
+📦 `@web-core/build/vitest`
 
-Пресет тест-раннера для Solid-компонентов probe-web. `vitest.config.ts` потребителя едет
+Пресет тест-раннера для Solid-компонентов web-core. `vitest.config.ts` потребителя едет
 классом `placed-once` — кладут один раз и больше не трогают, — поэтому в нём остаются три
 строки, а содержимое живёт здесь и меняется выпуском зоны.
 
 ```ts
 // vitest.config.ts потребителя
-import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
+import { defineTestConfig } from "@web-core/build/vitest";
 export default defineTestConfig();
 ```
 
@@ -60,6 +60,6 @@ export default defineTestConfig();
 
 ```ts
 // vitest.config.ts
-import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
+import { defineTestConfig } from "@web-core/build/vitest";
 export default defineTestConfig();
 ```

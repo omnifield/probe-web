@@ -8,7 +8,7 @@
 // (`palette`/`form`/`outfit`/`assembly`) здесь не перечень «известных», а просто строка,
 // которую передаёт вызывающая ручка: сама служба ярлык не толкует, и эта зона тоже не должна.
 
-import type { Form, Palette } from "@omnifield/probe-web-skin/model";
+import type { Form, Palette } from "@web-core/skin/model";
 
 const BASE = process.env["SKIN_MCP_PRESETS_URL"] ?? "http://127.0.0.1:8787/api/presets";
 
@@ -34,7 +34,7 @@ async function ask(url: string, init?: RequestInit): Promise<Response> {
   throw new StoreDown(`служба ответила ${response.status}`);
 }
 
-export const SERVICE_HINT = "pnpm --filter @probe-web/presets start";
+export const SERVICE_HINT = "pnpm --filter @web-core/presets start";
 
 export interface StoreRecord {
   readonly id: string;

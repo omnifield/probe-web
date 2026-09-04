@@ -24,7 +24,7 @@ export interface Remembered {
  * Приложению, которому нужен свой ключ (несколько наших приложений на одном origin), его
  * называют аргументом.
  */
-export const DEFAULT_STORAGE_KEY = "probe-web:skin";
+export const DEFAULT_STORAGE_KEY = "web-core:skin";
 
 /**
  * `localStorage`, если он вообще есть и доступен.

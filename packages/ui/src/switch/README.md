@@ -1,6 +1,6 @@
 # 🔀 Switch
 
-🏷️ inputs · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ inputs · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

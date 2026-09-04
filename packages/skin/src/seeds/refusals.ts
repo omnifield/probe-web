@@ -1,6 +1,6 @@
 // Design notes: ./README.md#refusals
 
-import { tryParseColor, type ColorRefusal } from "@omnifield/probe-web-style";
+import { tryParseColor, type ColorRefusal } from "@web-core/style";
 import type { SkinVariables } from "../recipe/index.js";
 import { declared } from "./declare.js";
 

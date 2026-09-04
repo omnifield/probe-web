@@ -1,6 +1,6 @@
 // Design notes: ./README.md#types
 
-import type { ColorRefusal } from "@omnifield/probe-web-style";
+import type { ColorRefusal } from "@web-core/style";
 import type { RuleCoordinate } from "../rules/index.js";
 import type { SkinHalf } from "../seeds/index.js";
 

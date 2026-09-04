@@ -33,9 +33,9 @@
 // написании и `defineKitComponent` на исполнении. Второе не дублирует первое: поставщик вправе
 // приехать сборкой без TypeScript, и тогда между «забыл часть» и молча неодетым узлом у
 // потребителя не стоит ничего. Ровно этим же доводом закрыт перечень групп в форме паспорта
-// (`@omnifield/probe-web-skin/model`, `PWEB-110`).
+// (`@web-core/skin/model`, `PWEB-110`).
 
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { ComponentPassport } from "@web-core/skin/model";
 
 /**
  * Компонент, которым рисуется часть.

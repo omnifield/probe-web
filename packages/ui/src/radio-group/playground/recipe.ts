@@ -1,4 +1,4 @@
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const ringTransition = "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 const dotTransition = "left var(--motion-normal) var(--ease-out), top var(--motion-normal) var(--ease-out)";

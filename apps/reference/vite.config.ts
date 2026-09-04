@@ -4,6 +4,6 @@
 // проверяется ровно тогда, когда приложение собирается ИМ, а не своим. Допишешь сюда плагин —
 // приложение перестанет быть гейтом и станет витриной, которая соберётся при любом состоянии
 // зоны `build`.
-import { defineConfig } from "@omnifield/probe-web-build/vite";
+import { defineConfig } from "@web-core/build/vite";
 
 export default defineConfig();

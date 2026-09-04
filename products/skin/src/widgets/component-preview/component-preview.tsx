@@ -1,7 +1,7 @@
 // ПРЕВЬЮ КОМПОНЕНТА — composeит слот витрины (`entities/showcase/ui/slot`) и рендерер
 // (`entities/component/ui/renderer`): слот — место показа, рендерер — чем в нём рисуют. Ни один
 // из двух друг про друга не знает, знает только этот виджет.
-import type { DispatchedEvent } from "@omnifield/probe-web-assembly";
+import type { DispatchedEvent } from "@web-core/assembly";
 
 import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
 import { Slot } from "#/entities/showcase/ui/slot/slot.jsx";

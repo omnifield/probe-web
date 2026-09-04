@@ -1,6 +1,6 @@
-# @omnifield/probe-web-router
+# @web-core/router
 
-Роутинг probe-web поверх `@tanstack/solid-router`. Приложение импортирует ровно этот пакет —
+Роутинг web-core поверх `@tanstack/solid-router`. Приложение импортирует ровно этот пакет —
 никогда `@tanstack/solid-router` напрямую, — чтобы `RouterProvider`/хуки во всех файлах ловили
 один и тот же модуль-синглтон, а не две копии из-за двух разных спецификаторов импорта.
 
@@ -21,13 +21,13 @@
 ```jsonc
 // package.json приложения
 "dependencies": {
-  "@omnifield/probe-web-router": "workspace:*",
+  "@web-core/router": "workspace:*",
   "@tanstack/solid-router": "^1.170.30" // тот же peer, что просит пакет — версию держит приложение
 }
 ```
 
 `@tanstack/solid-router` — **peer**, не транзитивная зависимость: сгенерированный
-`routeTree.gen.ts` пишет `import { createFileRoute } from "@omnifield/probe-web-router"` сам
+`routeTree.gen.ts` пишет `import { createFileRoute } from "@web-core/router"` сам
 (см. `routeImportPath`/шаблон ниже), но резолвится это через строгий pnpm только если пакет
 стоит и у приложения тоже.
 
@@ -40,8 +40,8 @@
 
 ```ts
 // vite.config.ts
-import { defineConfig } from "@omnifield/probe-web-build/vite";
-import { tanstackRouterVitePlugin } from "@omnifield/probe-web-router/vite";
+import { defineConfig } from "@web-core/build/vite";
+import { tanstackRouterVitePlugin } from "@web-core/router/vite";
 
 const config = defineConfig();
 
@@ -57,14 +57,14 @@ export default {
 ## Вайринг: `src/router.ts`
 
 ```ts
-import { createRouter, defaultRouterOptions } from "@omnifield/probe-web-router";
+import { createRouter, defaultRouterOptions } from "@web-core/router";
 
 import { routeTree } from "../routeTree.gen.js";
 
 export const router = createRouter({ ...defaultRouterOptions, routeTree });
 
 // ОБЯЗАТЕЛЬНО — без этого блока пропадает типобезопасность навигации по всему приложению.
-declare module "@omnifield/probe-web-router" {
+declare module "@web-core/router" {
   interface Register {
     router: typeof router;
   }
@@ -79,14 +79,14 @@ declare module "@omnifield/probe-web-router" {
 
 ## Вайринг: `src/main.tsx`
 
-Замороженная точка монтирования не меняется (`@omnifield/probe-web-runtime`, `PROBEWEB-4`) —
+Замороженная точка монтирования не меняется (`@web-core/runtime`, `PROBEWEB-4`) —
 роутер просто становится корневым компонентом:
 
 ```tsx
-import "@omnifield/probe-web-style/base.css";
+import "@web-core/style/base.css";
 
-import { mount } from "@omnifield/probe-web-runtime";
-import { RouterProvider } from "@omnifield/probe-web-router";
+import { mount } from "@web-core/runtime";
+import { RouterProvider } from "@web-core/router";
 
 import { router } from "./router.js";
 
@@ -108,8 +108,8 @@ src/routes/
 
 ```tsx
 // src/routes/__root.tsx
-import { createRootRoute, Link, Outlet } from "@omnifield/probe-web-router";
-import { TanStackRouterDevtools } from "@omnifield/probe-web-router/devtools";
+import { createRootRoute, Link, Outlet } from "@web-core/router";
+import { TanStackRouterDevtools } from "@web-core/router/devtools";
 
 export const Route = createRootRoute({
   component: () => (
@@ -130,7 +130,7 @@ export const Route = createRootRoute({
 
 ```tsx
 // src/routes/posts/$postId.tsx — параметр, загрузка данных, доступ к ним
-import { createFileRoute } from "@omnifield/probe-web-router";
+import { createFileRoute } from "@web-core/router";
 
 export const Route = createFileRoute("/posts/$postId")({
   loader: ({ params }) => fetchPost(params.postId),

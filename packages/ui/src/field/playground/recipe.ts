@@ -1,4 +1,4 @@
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const controlTransition = "border-color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out)";
 

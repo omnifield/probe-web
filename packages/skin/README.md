@@ -1,6 +1,6 @@
-# 🎨 probe-web Skin
+# 🎨 web-core Skin
 
-📦 `@omnifield/probe-web-skin`
+📦 `@web-core/skin`
 
 Механика скина: модель, сборка рецепта по частям, адресация из анатомии и порождение CSS.
 
@@ -64,7 +64,7 @@
 
 | подпуть | что отдаёт | что тянет |
 |---|---|---|
-| `.` | модель, **срез рантайма формы паспорта**, значения, проверки, покрытие, **читаемость**, порождение (вложенная форма) | `@zag-js/anatomy` — настоящая зависимость; `@omnifield/probe-web-style` — одноранговая |
+| `.` | модель, **срез рантайма формы паспорта**, значения, проверки, покрытие, **читаемость**, порождение (вложенная форма) | `@zag-js/anatomy` — настоящая зависимость; `@web-core/style` — одноранговая |
 | `./model` | то же, но без порождения и без читаемости | то же |
 | `./flat` | `flattenCss` — разворот вложенного в плоский | postcss — **необязательная одноранговая** |
 | `./editor` | **срез редактора** формы паспорта: `means`, род, группа, правило вложенности, сборки (`PWEB-115`) | ничего чужого — ни анатомии, ни постпроцессора |
@@ -88,7 +88,7 @@
 
 Набор значений приехал и в `./model`: значения скина объявляются **семенами**, а строит их та же
 механика, что строит их для набора, — своего построения заводить нельзя. Берётся **корневой вход**
-`@omnifield/probe-web-style`. Был узкий (`/values`): пока корень той зоны объявлял Solid
+`@web-core/style`. Был узкий (`/values`): пока корень той зоны объявлял Solid
 одноранговым, модель без отрисовки тянула реактивность транзитивно, и подпуть был единственным
 способом её не тянуть. Реактивной части там больше нет, Solid зоне не нужен вовсе, и держать
 вторую дверь к одному коду незачем (`PWEB-57`). Рёбра каждого входа пришпилены пробой поверхности
@@ -115,7 +115,7 @@
 поставщика, а что оказалось особенностью кита.** Второе в переезд не идёт.
 
 Проверено по всей форме построчно. Особенность кита — ровно две вещи, и обе остались в
-`@omnifield/probe-web-ui/passport`:
+`@web-core/ui/passport`:
 
 - **`PASSPORTS`** — реестр: какие компоненты есть у ЭТОГО кита;
 - **`passportOf`** — читатель реестра.
@@ -124,7 +124,7 @@
 переехало целиком, включая базовую сборку и мост «живой узел → координата скина»: оба общие для
 любого поставщика ровно в той же мере, что и сама форма.
 
-**Публичный вход не изменился снаружи.** `@omnifield/probe-web-ui/passport` отдаёт те же имена,
+**Публичный вход не изменился снаружи.** `@web-core/ui/passport` отдаёт те же имена,
 что и раньше, — теперь реэкспортом отсюда. Держится это не обещанием, а жёстким требованием
 задачи: `packages/assembly` трогает паспорт только через этот вход, и почувствовать переезд он не
 должен был вовсе.
@@ -259,8 +259,8 @@ selfAssembly`, `PWEB-167`–`169`), а не переопределяет его 
 на поверхности нет вовсе:
 
 ```ts
-import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { withPassports } from "@omnifield/probe-web-skin";
+import { passportOf } from "@web-core/ui/passport";
+import { withPassports } from "@web-core/skin";
 
 const { assemble, checkOutfit, generateSkinCss } = withPassports(passportOf);
 
@@ -304,8 +304,8 @@ const css = generateSkinCss(skin);                  // второму довод
 `PassportLookup` (`PWEB-95`):
 
 ```ts
-import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
-import { passportLookup, withPassports } from "@omnifield/probe-web-skin";
+import { PASSPORTS } from "@web-core/ui/passport";
+import { passportLookup, withPassports } from "@web-core/skin";
 
 const { assemble, generateSkinCss } = withPassports(passportLookup(Object.values(PASSPORTS)));
 ```
@@ -322,8 +322,8 @@ Available с 11 июня 2026, охват 94,1 % (сверено 2026-08-20 по
 там главным весом при том, что разворачивать для браузера нечего.
 
 ```ts
-import { withPassports } from "@omnifield/probe-web-skin";
-import { flattenCss } from "@omnifield/probe-web-skin/flat";
+import { withPassports } from "@web-core/skin";
+import { flattenCss } from "@web-core/skin/flat";
 
 const { generateSkinCss } = withPassports(passportOf);
 
@@ -881,8 +881,8 @@ recipe: {
 Словарь известных имён приходит **снаружи**:
 
 ```ts
-import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { SCALE_TOKENS } from "@omnifield/probe-web-style";
+import { passportOf } from "@web-core/ui/passport";
+import { SCALE_TOKENS } from "@web-core/style";
 
 const { generateSkinCss } = withPassports(passportOf);
 const css = generateSkinCss(skin, { tokens: SCALE_TOKENS });
@@ -929,7 +929,7 @@ const css = generateSkinCss(skin, { tokens: SCALE_TOKENS });
 третье — и три ответа на один вопрос разойдутся.
 
 ```ts
-import { PASSPORTS } from "@omnifield/probe-web-ui/passport";
+import { PASSPORTS } from "@web-core/ui/passport";
 
 const gaps = skinGaps(skin, Object.values(PASSPORTS));
 // [{ kind: "state", component: "button", part: "root", state: "pressed", means: "…" }, …]

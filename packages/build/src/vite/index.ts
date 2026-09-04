@@ -103,7 +103,7 @@ export interface DefineConfigOptions {
   readonly plugins?: readonly Plugin[];
 }
 
-/** Готовый конфиг Vite для приложения на probe-web. */
+/** Готовый конфиг Vite для приложения на web-core. */
 export function defineConfig(options: DefineConfigOptions = {}): UserConfig {
   const done = trace("defineConfig");
 
@@ -162,7 +162,7 @@ async function buildRawJsxBranch(root: string, entries: readonly LibraryEntry[])
   }
 }
 
-/** Готовый конфиг Vite для сборки библиотеки probe-web (library mode). Разбор — README.md. */
+/** Готовый конфиг Vite для сборки библиотеки web-core (library mode). Разбор — README.md. */
 export function defineLibraryConfig(options: DefineLibraryConfigOptions): UserConfig {
   const solidEntries = options.entries.filter((entry) => entry.solid);
 

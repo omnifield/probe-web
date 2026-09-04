@@ -1,7 +1,7 @@
 // A component's OWN behavior (`PWEB-167`/`PWEB-169`) — how it assembles itself from props, as
 // opposed to the tree a reference from someone else's assembly declares FOR it.
 //
-// Deliberately its own narrow declaration, not an import of `@omnifield/probe-web-skin`'s
+// Deliberately its own narrow declaration, not an import of `@web-core/skin`'s
 // `PassportAssemblyElement`/`PassportAssemblyContent`: the mechanic never depends on the skin
 // package at runtime (only as a dev-only, type-only reference — see `passport-read.ts`'s header
 // for why), and a self-assembly tree is read here at RENDER time, in real application code, not

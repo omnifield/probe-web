@@ -1,6 +1,6 @@
-# @omnifield/probe-web-runtime
+# @web-core/runtime
 
-Рантайм probe-web: **`mount()`, контракт `#root` и механика подключения скина** — то, что
+Рантайм web-core: **`mount()`, контракт `#root` и механика подключения скина** — то, что
 зовёт скелет приложения у потребителя. Первая из четырёх замороженных точек выпуска (контракт
 зон — `PROBEWEB-4`).
 
@@ -15,7 +15,7 @@ import {
   makeSkinSwitch,      // надеть скин и половину, снять, восстановить запомненное
   createSkinConnection, // то же самое, но worn — Solid-сигнал, а не функция по запросу
   checkStyleOrder,     // приехал ли базовый CSS под надетым скином
-} from "@omnifield/probe-web-runtime";
+} from "@web-core/runtime";
 ```
 
 Подпуть у пакета **один**: механика едет именованными экспортами той же точки, отдельного
@@ -107,7 +107,7 @@ import {
 **Маркер — ПАРА: свойство и значение**, а не имя.
 
 ```ts
-import { BASE_MARKER } from "@omnifield/probe-web-style";   // { property, value }
+import { BASE_MARKER } from "@web-core/style";   // { property, value }
 
 checkStyleOrder({ marker: BASE_MARKER });
 // [probe-web-runtime] порядок подключения нарушен: скин «twitter» надет, а базового CSS
@@ -135,7 +135,7 @@ checkStyleOrder({ marker: BASE_MARKER });
 вовсе» и «свойство занято чужим значением», а это разные поломки.
 
 **Хотя бы одна проба зоны ходит настоящей парой** — той самой, что получит скелет
-(`@omnifield/probe-web-style` в пробных зависимостях; в поставку он не едет). Пока все пробы
+(`@web-core/style` в пробных зависимостях; в поставку он не едет). Пока все пробы
 ходили собственным маркером, переезд настоящего прошёл мимо них: они остались зелёными, а
 вызов в скелете сломался.
 
@@ -263,7 +263,7 @@ Solid-продукту, которому нужно показать «во чт
 отдаёт то же самое, что `makeSkinSwitch`, но `worn` — сигнал:
 
 ```tsx
-import { createSkinConnection } from "@omnifield/probe-web-runtime";
+import { createSkinConnection } from "@web-core/runtime";
 
 function App() {
   const skin = createSkinConnection(source, { fallback: { skin: "brutal", mode: "light" } });
@@ -308,7 +308,7 @@ globalThis.__PROBE_WEB_RUNTIME_TRACE__ = true;
 `solid-js` — **peer-зависимость**: две копии Solid в дереве ломают реактивность.
 
 ```
-pnpm add @omnifield/probe-web-runtime solid-js
+pnpm add @web-core/runtime solid-js
 ```
 
 ESM-only, `"type": "module"`, `sideEffects: false`, в тарбол едет только `dist` и эта дока.

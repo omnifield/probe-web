@@ -5,7 +5,7 @@ import solid from "vite-plugin-solid";
 import { trace } from "../shared/trace.js";
 
 /**
- * Пресет vitest для тестов на probe-web. Разбор каждого поля — README.md рядом.
+ * Пресет vitest для тестов на web-core. Разбор каждого поля — README.md рядом.
  *
  * @returns конфиг для `export default` в `vitest.config.ts` потребителя
  */

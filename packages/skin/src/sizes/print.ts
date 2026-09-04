@@ -1,6 +1,6 @@
 // Design notes: ./README.md#print
 
-import { ROUND_SUPPORT_TEST } from "@omnifield/probe-web-style";
+import { ROUND_SUPPORT_TEST } from "@web-core/style";
 import type { Skin } from "../recipe/index.js";
 import { declaredScales } from "./scales.js";
 import { snappedValue, sizeValues } from "./value.js";

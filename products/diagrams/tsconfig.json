@@ -5,6 +5,6 @@
     "оснастки не заводить (PROBEWEB-5). Понадобилась настройка, которой база не даёт —",
     "это находка про базу, и она идёт заявкой к architect, а не правкой сюда."
   ],
-  "extends": "@omnifield/probe-web-build/tsconfig",
+  "extends": "@web-core/build/tsconfig",
   "include": ["src", "test", "vite.config.ts"]
 }

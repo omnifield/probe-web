@@ -18,14 +18,14 @@
 // — a layout primitive that needs real screen space to show two or more resizable panes at once,
 // the same bracket the tree view's/table's/carousel's own footprint already claims.
 
-import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
+import { defineEditorInfo } from "@web-core/skin/editor";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "./assemblies.js";
 import { parts } from "./parts.js";
 import { settings } from "./settings.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
-  package: "@omnifield/probe-web-ui",
+  package: "@web-core/ui",
   genus: "component",
   footprint: "wide",
   variantAxis: {

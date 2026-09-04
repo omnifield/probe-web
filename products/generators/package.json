@@ -1,5 +1,5 @@
 {
-  "name": "@probe-web/generators",
+  "name": "@web-core/generators",
   "version": "0.0.0",
   "private": true,
   "description": "Generation tooling: a vite/webpack-shaped runner (defineConfig + plugins) plus a CLI to run it. Component scaffolding, barrel sync in place of the ad-hoc packages/ui/scripts/generate.mjs, is only one consumer; test-data generation (faker) and other template-driven text generation are meant to land alongside it over time as their own plugins. Nothing in the repository is required to depend on this package — each zone opts in.",
@@ -44,8 +44,8 @@
     "vite": "^8.2.1"
   },
   "devDependencies": {
-    "@omnifield/probe-web-io": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/skin": "workspace:*",
     "@types/node": "^24.10.1",
     "@zag-js/accordion": "^1.43.1",
     "typescript": "^7.0.2",

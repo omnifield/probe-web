@@ -1,6 +1,6 @@
 # 🪗 Accordion
 
-🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 Раскрывающийся блок — используйте, если нужно спрятать часть контента и показывать её только по
 запросу. Разделов может быть сколько угодно, каждый раскрывается и прячется по клику на свой

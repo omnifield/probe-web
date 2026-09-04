@@ -1,7 +1,7 @@
-import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
-import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
-import type { PassportAssembly, PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { admits, baseAssemblyOf } from "@web-core/skin/editor";
+import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";

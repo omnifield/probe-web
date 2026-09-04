@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // main-session-marker.mjs — SessionStart hook: ДОПИСЫВАЕТ session_id в marker ТОЛЬКО для scope 'main'.
 //
-// user запускает каждую сессию с `OMNIFIELD_SCOPE=<scope>` в окружении — это единственный вход
+// user запускает каждую сессию с `WEBCORE_SCOPE=<scope>` в окружении — это единственный вход
 // роли (лаунчер-скрипта нет: `devbox-session.sh` снят, девбокс поднимает спека Dev Containers).
 // Destructive git ops по канону — только scope 'main' (architect). Любой другой scope
-// (owner-*) НЕ должен трогать marker. Пишется ТОЛЬКО если OMNIFIELD_SCOPE === 'main'.
+// (owner-*) НЕ должен трогать marker. Пишется ТОЛЬКО если WEBCORE_SCOPE === 'main'.
 //
 // Marker — МНОЖЕСТВО id (по строке на сессию), не одна строка: резюм сессии выдаёт
 // НОВЫЙ session_id (SessionStart на resume дописывает его), а параллельные main-сессии
@@ -35,7 +35,7 @@ function main() {
     return;
   }
 
-  const scope = process.env.OMNIFIELD_SCOPE;
+  const scope = process.env.WEBCORE_SCOPE;
   if (scope !== "main") {
     silent();
     return;

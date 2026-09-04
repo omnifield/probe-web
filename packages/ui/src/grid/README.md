@@ -1,6 +1,6 @@
 # 🔳 Grid
 
-🏷️ layout · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ layout · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

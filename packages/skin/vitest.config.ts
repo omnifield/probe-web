@@ -11,7 +11,7 @@ import { defineConfig } from "vitest/config";
 //     branch — UNtransformed JSX, and we apply the transform ourselves (the same decision and the
 //     same reason as the `ui`, `runtime`, and `assembly` zones).
 //
-// The `@omnifield/probe-web-build/vitest` preset is NOT wired in here: dependency direction
+// The `@web-core/build/vitest` preset is NOT wired in here: dependency direction
 // between zones is one-way (`PROBEWEB-4`), and the preset isn't for the package's own tests.
 
 export default defineConfig({

@@ -1,5 +1,5 @@
-import { passportLookup, skinGaps, withPassports } from "@omnifield/probe-web-skin";
-import type { Outfit, Palette } from "@omnifield/probe-web-skin/model";
+import { passportLookup, skinGaps, withPassports } from "@web-core/skin";
+import type { Outfit, Palette } from "@web-core/skin/model";
 import { describe, expect, it } from "vitest";
 
 import { passport } from "../entity/passport.js";

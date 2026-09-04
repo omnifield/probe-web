@@ -39,7 +39,7 @@ export function baseCss(): string {
   const done = trace("baseCss");
 
   const css = [
-    `/* @omnifield/probe-web-style — БАЗОВЫЙ СЛОЙ, подпуть \`@omnifield/probe-web-style/base.css\`.
+    `/* @web-core/style — БАЗОВЫЙ СЛОЙ, подпуть \`@web-core/style/base.css\`.
 
    ТОЛЬКО СБРОС (\`PWEB-66\`). Ни одного кастом-свойства, ни одного значения, ни одного
    запасного варианта. Базовый слой снимает решения браузера и своих не вносит.

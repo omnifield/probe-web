@@ -1,4 +1,4 @@
-import { z } from "@omnifield/probe-web-io";
+import { z } from "@web-core/io";
 
 const slide = z.object({ label: z.string() });
 

@@ -5,9 +5,9 @@ import {
   type ReadableComponent,
   type Registry,
   type SelfAssembly,
-} from "@omnifield/probe-web-assembly";
-import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
-import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
+} from "@web-core/assembly";
+import { admits, baseAssemblyOf } from "@web-core/skin/editor";
+import type { PassportAssembly } from "@web-core/skin/editor";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 

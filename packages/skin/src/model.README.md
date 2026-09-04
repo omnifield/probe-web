@@ -24,7 +24,7 @@ both went red. Everything else in this package is a folder; these four (`index.t
 
 Physically moved here: it's shared by any component provider, not a privilege of one particular
 kit. Rationale for the criterion, and what did NOT move (`PASSPORTS`, `passportOf` — THIS kit's
-registry and registry reader, stayed in `@omnifield/probe-web-ui/passport`) — in
+registry and registry reader, stayed in `@web-core/ui/passport`) — in
 `passport/form/README.md`.
 
 Exported through the same subpath as always: a registry holder (a kit, a product package with its

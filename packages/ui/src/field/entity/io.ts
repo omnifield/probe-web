@@ -1,4 +1,4 @@
-import { z } from "@omnifield/probe-web-io";
+import { z } from "@web-core/io";
 import { fields } from "../../shared/data/fields.js";
 
 export const input = z.object({

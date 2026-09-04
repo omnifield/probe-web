@@ -1,6 +1,6 @@
 # 🌳 Tree View
 
-🏷️ iteration · 🧬 component · 📐 wide · 📦 `@omnifield/probe-web-ui`
+🏷️ iteration · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

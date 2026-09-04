@@ -1,7 +1,7 @@
 # Theme switch
 
 Подключение скина продукта, выбор наряда по имени и переключатель половины (светлая/тёмная) — в
-одном компоненте. Поверх `createSkinConnection` (`@omnifield/probe-web-runtime`, PWEB-213), на
+одном компоненте. Поверх `createSkinConnection` (`@web-core/runtime`, PWEB-213), на
 компонентах кита — `Select` для выбора скина, `Toggle` для половины.
 
 ## Зачем одним компонентом

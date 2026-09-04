@@ -1,15 +1,15 @@
 # 📐 tsconfig
 
-📦 `@omnifield/probe-web-build/tsconfig`
+📦 `@web-core/build/tsconfig`
 
-Базовая настройка TypeScript для фронтенд-приложений probe-web. `tsconfig.json` потребителя
+Базовая настройка TypeScript для фронтенд-приложений web-core. `tsconfig.json` потребителя
 едет классом `placed-once` — кладут один раз и больше не трогают, — поэтому в нём остаются
 только `extends` и `include`, а содержание живёт здесь и меняется выпуском зоны.
 
 ```jsonc
 // tsconfig.json потребителя
 {
-  "extends": "@omnifield/probe-web-build/tsconfig",
+  "extends": "@web-core/build/tsconfig",
   "include": ["src", "vite.config.ts"]
 }
 ```

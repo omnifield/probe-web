@@ -1,12 +1,12 @@
-// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@probe-web/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Перечень паспортов собирается обходом папок `src/*`: компонент объявляет себя в своей папке
 // (`entity/passport.ts`) и попадает в поставку самим фактом объявления.
 //
-// ФОРМА ПАСПОРТА (`PWEB-110`, `PWEB-111`) переехала в `@omnifield/probe-web-skin` — она общая
+// ФОРМА ПАСПОРТА (`PWEB-110`, `PWEB-111`) переехала в `@web-core/skin` — она общая
 // для любого поставщика компонентов, а не привилегия этого кита. Реэкспорт ниже ПОИМЁННЫЙ, а не
 // `export *`: подпути несут и чужое (рецепты, палитру, словарь скина), а
-// `@omnifield/probe-web-ui/passport` обязан остаться тем же набором имён, что был до переезда
+// `@web-core/ui/passport` обязан остаться тем же набором имён, что был до переезда
 // (жёсткое условие `PWEB-110`/`PWEB-111` — `packages/assembly` ходит сюда и не вправе
 // почувствовать перенос).
 //
@@ -38,7 +38,7 @@ export type {
   PassportVariantAxis,
   SkinAncestor,
   SkinCoordinate,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 export {
   addressesView,
   coordinateOf,
@@ -48,9 +48,9 @@ export {
   partOf,
   SETTINGS,
   settingApplies,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 // Срез РЕДАКТОРА — `means`, род, группа, правило вложенности, сборки. Не рантайм кита, но
-// `@omnifield/probe-web-ui/passport` держал их всегда одним входом, и держит дальше (см. шапку).
+// `@web-core/ui/passport` держал их всегда одним входом, и держит дальше (см. шапку).
 export type {
   BaseAssemblyContent,
   BaseAssemblyElement,
@@ -76,7 +76,7 @@ export type {
   PassportSettingOptionEditorInfo,
   PassportStateEditorInfo,
   PassportVariableEditorInfo,
-} from "@omnifield/probe-web-skin/editor";
+} from "@web-core/skin/editor";
 export {
   admits,
   baseAssemblyOf,
@@ -89,12 +89,12 @@ export {
   isContentNode,
   isDataBinding,
   resolveDataBinding,
-} from "@omnifield/probe-web-skin/editor";
+} from "@web-core/skin/editor";
 // Реэкспорт (`export ... from`) не заводит локальное имя — `ComponentPassport`/`PassportEditorInfo`
 // ниже нужны САМ файлу, для `PASSPORTS`/`passportOf`/`EDITOR_INFOS`/`editorInfoOf`, и берутся
 // отдельным `import type`.
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-import type { PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
+import type { PassportEditorInfo } from "@web-core/skin/editor";
 {{#each items}}
 import { passport as {{passportIdentifier}} } from "./{{passportModule}}";
 import { editorInfo as {{editorInfoIdentifier}} } from "./{{editorInfoModule}}";

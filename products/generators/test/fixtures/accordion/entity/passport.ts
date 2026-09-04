@@ -54,7 +54,7 @@
 // half the mechanism declared and the other half unsaid.
 //
 // So the state IS DECLARED, and the mark's unreliability is named machine-readably — the
-// `absentWhen` field (the form — `@omnifield/probe-web-skin/model`, `PWEB-110`). A reader working
+// `absentWhen` field (the form — `@web-core/skin/model`, `PWEB-110`). A reader working
 // for the LOOK drops such states itself (`addressesView`, and through it `coordinateOf`); a reader
 // working for MOTION reads them together with the circumstance. The passport's former silence
 // decided this for both readers at once and was indistinguishable from "the provider did not look".
@@ -63,7 +63,7 @@ import {
   defineSettings,
   definePassport,
   type PassportState,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid and no Ark. Needed only so the setting keys are checked
 // against the component's real props, not an idea of them.

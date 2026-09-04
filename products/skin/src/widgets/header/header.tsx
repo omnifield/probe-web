@@ -6,7 +6,7 @@ import { ThemeSwitch } from "#/shared/ui/theme-switch/index.jsx";
 export function Header() {
   return (
     <>
-      <h1>probe-web — витрина</h1>
+      <h1>web-core — витрина</h1>
       <ThemeSwitch />
     </>
   );

@@ -1,6 +1,6 @@
 # 💬 Popover
 
-🏷️ overlays · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ overlays · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 
@@ -154,7 +154,7 @@ const tree = instanceOf("popover", {}, "basic", data);
 элемента, а не самого контрола.
 
 ```tsx
-import { PopoverAnchor } from "@omnifield/probe-web-ui";
+import { PopoverAnchor } from "@web-core/ui";
 
 <Popover>
   <div>

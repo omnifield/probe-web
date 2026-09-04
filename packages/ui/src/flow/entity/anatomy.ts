@@ -1,4 +1,4 @@
-import { createAnatomy } from "@omnifield/probe-web-skin/model";
+import { createAnatomy } from "@web-core/skin/model";
 
 export const anatomy = createAnatomy("flow").parts("root", "item");
 

@@ -14,26 +14,26 @@ importers:
 
   apps/ewc:
     dependencies:
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/node':
@@ -48,17 +48,17 @@ importers:
 
   apps/panel:
     dependencies:
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/node':
@@ -76,29 +76,29 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
-      '@omnifield/probe-web-style-tools':
+      '@web-core/style-tools':
         specifier: workspace:*
         version: link:../../packages/style-tools
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/jsdom':
@@ -129,16 +129,16 @@ importers:
         specifier: ^3.1.1
         version: 3.1.1
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../skin
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../ui
       '@types/node':
@@ -259,10 +259,10 @@ importers:
         specifier: ^5.102.8
         version: 5.102.8(@tanstack/solid-query@5.102.8(solid-js@1.9.14))(solid-js@1.9.14)
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
       '@types/node':
@@ -299,10 +299,10 @@ importers:
         specifier: ^1.167.1
         version: 1.167.1(@tanstack/router-core@1.171.27)(@tanstack/solid-router@1.170.30(solid-js@1.9.14))(csstype@3.2.3)(solid-js@1.9.14)
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
       '@tanstack/solid-router':
@@ -335,7 +335,7 @@ importers:
 
   packages/runtime:
     devDependencies:
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../style
       '@types/node':
@@ -372,16 +372,16 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../style
       '@types/jsdom':
@@ -420,10 +420,10 @@ importers:
 
   packages/starter:
     devDependencies:
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../style
       '@types/ejs':
@@ -454,10 +454,10 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0(solid-js@1.9.14)
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
       '@types/node':
@@ -542,13 +542,13 @@ importers:
 
   packages/ui:
     dependencies:
-      '@omnifield/probe-web-assembly':
+      '@web-core/assembly':
         specifier: workspace:*
         version: link:../assembly
-      '@omnifield/probe-web-io':
+      '@web-core/io':
         specifier: workspace:*
         version: link:../io
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../skin
       '@tanstack/solid-table':
@@ -630,13 +630,13 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../lint
-      '@probe-web/generators':
+      '@web-core/generators':
         specifier: workspace:*
         version: link:../../products/generators
       '@types/d3-scale':
@@ -675,19 +675,19 @@ importers:
 
   products/diagrams:
     dependencies:
-      '@omnifield/probe-web-assembly':
+      '@web-core/assembly':
         specifier: workspace:*
         version: link:../../packages/assembly
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       d3-scale:
@@ -697,10 +697,10 @@ importers:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/d3-scale':
@@ -734,10 +734,10 @@ importers:
         specifier: ^8.2.1
         version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
     devDependencies:
-      '@omnifield/probe-web-io':
+      '@web-core/io':
         specifier: workspace:*
         version: link:../../packages/io
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
       '@types/node':
@@ -764,34 +764,34 @@ importers:
 
   products/skin:
     dependencies:
-      '@omnifield/probe-web-assembly':
+      '@web-core/assembly':
         specifier: workspace:*
         version: link:../../packages/assembly
-      '@omnifield/probe-web-io':
+      '@web-core/io':
         specifier: workspace:*
         version: link:../../packages/io
-      '@omnifield/probe-web-query':
+      '@web-core/query':
         specifier: workspace:*
         version: link:../../packages/query
-      '@omnifield/probe-web-router':
+      '@web-core/router':
         specifier: workspace:*
         version: link:../../packages/router
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
-      '@omnifield/probe-web-store':
+      '@web-core/store':
         specifier: workspace:*
         version: link:../../packages/store
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@probe-web/diagrams':
+      '@web-core/diagrams':
         specifier: workspace:*
         version: link:../diagrams
       '@tanstack/solid-router':
@@ -804,10 +804,10 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(zod@4.4.3)
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/node':
@@ -834,13 +834,13 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
         version: 1.30.0(supports-color@7.2.0)(zod@4.4.3)
-      '@omnifield/probe-web-io':
+      '@web-core/io':
         specifier: workspace:*
         version: link:../../../packages/io
-      '@omnifield/probe-web-skin':
+      '@web-core/skin':
         specifier: workspace:*
         version: link:../../../packages/skin
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../../packages/ui
       zocker:
@@ -850,7 +850,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../../packages/build
       '@types/node':
@@ -865,13 +865,13 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@omnifield/probe-web-runtime':
+      '@web-core/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@omnifield/probe-web-style':
+      '@web-core/style':
         specifier: workspace:*
         version: link:../../packages/style
-      '@omnifield/probe-web-ui':
+      '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/solid-table':
@@ -881,10 +881,10 @@ importers:
         specifier: ^1.9.14
         version: 1.9.14
     devDependencies:
-      '@omnifield/probe-web-build':
+      '@web-core/build':
         specifier: workspace:*
         version: link:../../packages/build
-      '@omnifield/probe-web-lint':
+      '@web-core/lint':
         specifier: workspace:*
         version: link:../../packages/lint
       '@types/node':

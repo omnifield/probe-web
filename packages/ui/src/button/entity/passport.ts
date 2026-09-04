@@ -1,7 +1,7 @@
 import {
   defineSettings,
   definePassport,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 import type { ButtonProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 

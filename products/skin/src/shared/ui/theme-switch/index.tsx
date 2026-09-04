@@ -1,9 +1,9 @@
 // ТЕМА — подключение скина продукта, выбор наряда по имени (`Select`) и переключатель половины
 // (`Toggle`, светлая/тёмная) — в одном компоненте: одно не имеет смысла без другого, скин
 // подключаем ровно затем, чтобы было чем управлять (`createSkinConnection`,
-// `@omnifield/probe-web-runtime`, PWEB-213).
+// `@web-core/runtime`, PWEB-213).
 //
-// ИСТОЧНИК — НАСТОЯЩАЯ СЛУЖБА РАЗДАЧИ (`createPresetsSkinSource`, `@omnifield/probe-web-skin/
+// ИСТОЧНИК — НАСТОЯЩАЯ СЛУЖБА РАЗДАЧИ (`createPresetsSkinSource`, `@web-core/skin/
 // presets`, PWEB-215): продукт отдаёт адрес и паспорта СВОЕГО кита, HTTP/разбор/сборку/
 // порождение CSS фабрика берёт на себя целиком. `SOURCE.names()` уже читается через
 // `createResource` — список не литерал, `Select` не придётся переделывать, когда нарядов в
@@ -12,9 +12,9 @@ import {
   createPresetsSkinSource,
   PresetsDown,
   PresetsRefused,
-} from "@omnifield/probe-web-skin/presets";
-import { createSkinConnection } from "@omnifield/probe-web-runtime";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
+} from "@web-core/skin/presets";
+import { createSkinConnection } from "@web-core/runtime";
+import { passportOf } from "@web-core/ui/passport";
 import {
   Select,
   SelectClearTrigger,
@@ -31,7 +31,7 @@ import {
   SelectValueText,
   Toggle,
   ToggleIndicator,
-} from "@omnifield/probe-web-ui";
+} from "@web-core/ui";
 import { createMemo, createResource, For, onMount, Show } from "solid-js";
 
 /** Адрес службы раздачи — задаётся снаружи, умолчание — служба на этой машине. */

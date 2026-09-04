@@ -4,7 +4,7 @@
 // `@zag-js/*` chart package exists, and Ark UI's own component list has no "chart"/"diagram"
 // entry — checked 2026-08-26, `mcp__ark-ui__list_components`). Declared with the SAME function
 // every ready-made Ark anatomy in the kit uses — `createAnatomy` — re-exported through
-// `@omnifield/probe-web-skin/model`, framework/machine-agnostic on its own.
+// `@web-core/skin/model`, framework/machine-agnostic on its own.
 //
 // THIS FILE HOLDS PARTS AND ADDRESSES ONLY — nothing else, the same split as every anatomy file
 // in the kit. The fuller runtime contract — per-part STATES — lives one level up, in
@@ -21,7 +21,7 @@
 // grows incrementally instead because each series layer is independently useful and independently
 // verified.
 
-import { createAnatomy } from "@omnifield/probe-web-skin/model";
+import { createAnatomy } from "@web-core/skin/model";
 
 /** Parts of the xy family so far: the coordinate system alone, no series layer yet. */
 export const anatomy = createAnatomy("xy").parts("root", "axis");

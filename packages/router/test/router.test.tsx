@@ -50,7 +50,7 @@ function buildRouter(initialPath: string) {
   });
 }
 
-describe("@omnifield/probe-web-router", () => {
+describe("@web-core/router", () => {
   it("реэкспорт держит дефолты и рендерит дерево маршрутов", async () => {
     expect(defaultRouterOptions.defaultPreload).toBe("intent");
 

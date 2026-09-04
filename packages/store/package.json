@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-store",
+  "name": "@web-core/store",
   "version": "0.1.0",
-  "description": "Стейт probe-web поверх семьи XState: @xstate/store как zustand-подобное глобальное хранилище, xstate как опциональный слой полноценных стейт-машин (PROBEWEB-4).",
+  "description": "Стейт web-core поверх семьи XState: @xstate/store как zustand-подобное глобальное хранилище, xstate как опциональный слой полноценных стейт-машин (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -62,8 +62,8 @@
     }
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
     "@xstate/solid": "^2.0.0",
     "eslint": "^10.8.1",

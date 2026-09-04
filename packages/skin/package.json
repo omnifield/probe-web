@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-skin",
+  "name": "@web-core/skin",
   "version": "0.0.0",
-  "description": "probe-web skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, and CSS generation (PWEB-4). The mechanic is a framework; the actual dressing lives in the product.",
+  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, and CSS generation (PWEB-4). The mechanic is a framework; the actual dressing lives in the product.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -44,18 +44,18 @@
     "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
-    "@omnifield/probe-web-runtime": "^0.1.0",
-    "@omnifield/probe-web-style": "^0.1.0",
+    "@web-core/runtime": "^0.1.0",
+    "@web-core/style": "^0.1.0",
     "postcss": "^8.5.14",
     "postcss-nested": "^7.0.2"
   },
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
-    "@omnifield/probe-web-runtime": "workspace:*",
-    "@omnifield/probe-web-style": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@web-core/runtime": "workspace:*",
+    "@web-core/style": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
@@ -69,7 +69,7 @@
     "vitest": "^4.1.10"
   },
   "peerDependenciesMeta": {
-    "@omnifield/probe-web-runtime": {
+    "@web-core/runtime": {
       "optional": true
     },
     "postcss": {

@@ -1,6 +1,6 @@
 import { parseDate } from "@ark-ui/solid/date-picker";
-import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportAssembly } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 
 import type { Data } from "../../entity/io.js";
 import { passport } from "../../entity/passport.js";

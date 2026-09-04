@@ -8,9 +8,9 @@
 // снимает браузерные умолчания. Цвет приходит со скином — или не приходит вовсе, и тогда кит
 // голый.
 
-import "@omnifield/probe-web-style/base.css";
+import "@web-core/style/base.css";
 
-import { mount } from "@omnifield/probe-web-runtime";
+import { mount } from "@web-core/runtime";
 
 import { App } from "./app.jsx";
 

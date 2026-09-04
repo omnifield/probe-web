@@ -25,7 +25,7 @@ relative specifier written with a `.js` extension pointing at a sibling
 step.
 
 ```ts
-import { importModule } from "@probe-web/generators/extract";
+import { importModule } from "@web-core/generators/extract";
 
 const { passport } = await importModule<typeof import("./entity/passport.js")>(
   "/absolute/path/to/entity/passport.ts",
@@ -43,7 +43,7 @@ far:
 
 - **A transitive CommonJS dependency with no `exports` map** fails with
   "named export not found", the same way plain Node's ESM interop would —
-  `fast-json-patch` under `@omnifield/probe-web-io` is one. Fix:
+  `fast-json-patch` under `@web-core/io` is one. Fix:
   `{ ssr: { noExternal: ["fast-json-patch"] } }`.
 - **A `.tsx` file with real Solid JSX** fails to parse — the bare tool
   knows nothing about JSX presets. Fix: `{ plugins: [solid()] }`

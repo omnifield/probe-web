@@ -1,6 +1,6 @@
 // Design notes: ./README.md#refusals
 
-import { DENSITY_TOKEN } from "@omnifield/probe-web-style";
+import { DENSITY_TOKEN } from "@web-core/style";
 import { fluidRefusals, isFluid } from "../fluid/index.js";
 import type { SkinVariables } from "../recipe/index.js";
 import { BY_SEED, declaredScales, SIZE_SEEDS } from "./scales.js";

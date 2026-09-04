@@ -2,7 +2,7 @@ import {
   defineSettings,
   definePassport,
   type PassportState,
-} from "@omnifield/probe-web-skin/model";
+} from "@web-core/skin/model";
 import type { SelectProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 

@@ -1,6 +1,6 @@
 // Design notes: ./README.md#read
 
-import type { Oklch } from "@omnifield/probe-web-style";
+import type { Oklch } from "@web-core/style";
 import { colourOf, resolve } from "./parse.js";
 import type { UnreckonableReason } from "./types.js";
 

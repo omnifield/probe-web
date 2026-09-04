@@ -1,6 +1,6 @@
 // Design notes: ./README.md#refusals
 
-import { AXES, axisOf } from "@omnifield/probe-web-style";
+import { AXES, axisOf } from "@web-core/style";
 import { barOf } from "./basis.js";
 import { measure } from "./measure.js";
 import type { FluidSeed } from "./seed.js";
@@ -85,7 +85,7 @@ export function fluidRefusals(name: string, seed: FluidSeed): readonly FluidRefu
     );
   }
 
-  // "норма" mirrors `@omnifield/probe-web-style`'s `AxisBound.kind` verbatim (external data, not
+  // "норма" mirrors `@web-core/style`'s `AxisBound.kind` verbatim (external data, not
   // a name we chose) — same reason as `basis.ts`'s "множитель" key.
   const floor = AXES.find((axis) => axis.token === name)?.floor;
   if (floor?.kind === "норма" && floor.value !== null && low.amount < floor.value) {

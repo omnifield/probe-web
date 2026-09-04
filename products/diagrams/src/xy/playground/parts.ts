@@ -12,8 +12,8 @@
 // WHAT IS A PLACEHOLDER: every `means: "TODO"` — human-facing prose, left for whoever fills the
 // playground zone next.
 
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type XyPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;

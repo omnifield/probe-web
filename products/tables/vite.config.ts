@@ -5,6 +5,6 @@
 // разрешается в `::1`, а пульт (`tools/dev-nav`) и проверяет живость, и проксирует по
 // `127.0.0.1` — зона показывалась мёртвой, будучи поднятой. Заодно 0.0.0.0 открывает её по
 // адресу контейнера, как у соседей по products/.
-import { defineConfig } from "@omnifield/probe-web-build/vite";
+import { defineConfig } from "@web-core/build/vite";
 
 export default defineConfig();

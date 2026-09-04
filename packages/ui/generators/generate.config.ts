@@ -1,13 +1,13 @@
 // Четыре агрегирующих входа кита (`src/passport.ts`, `src/kit.ts`, `src/io.ts`, `src/index.ts`) —
-// данные/сборка/запись целиком в `@probe-web/generators/plugins/kit` (`GEN-9`): это — реальный
+// данные/сборка/запись целиком в `@web-core/generators/plugins/kit` (`GEN-9`): это — реальный
 // готовый плагин, не движок, не логика ЭТОГО файла. Здесь остаются только пути: где `src`, где
 // `templates/barrel/*.hbs` (текст самих барелей — CSS-по-аналогии, свой на кит, не общий).
 // Прогоняется через `node ../../products/generators/dist/cli.js ./generate.config.ts`.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { defineConfig, hasFile } from "@probe-web/generators/engine";
-import { kitBarrelPlugins } from "@probe-web/generators/plugins/kit";
+import { defineConfig, hasFile } from "@web-core/generators/engine";
+import { kitBarrelPlugins } from "@web-core/generators/plugins/kit";
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(thisDir, "..", "src");

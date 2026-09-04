@@ -34,7 +34,7 @@ import {
   type ReadablePart,
   type Registry,
   type SelfAssembly,
-} from "@omnifield/probe-web-assembly";
+} from "@web-core/assembly";
 
 import { admits, baseAssemblyOf } from "./passport.js";
 import { kitComponentProvider, type ComponentProvider } from "./component-info.js";

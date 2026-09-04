@@ -1,4 +1,4 @@
-// Единственная точка входа в «лёгкий» слой стейта probe-web (PROBEWEB-4): приложение не
+// Единственная точка входа в «лёгкий» слой стейта web-core (PROBEWEB-4): приложение не
 // импортирует `@xstate/store`/`@xstate/store-solid` напрямую — по той же причине, что и у
 // `router`, — единый путь резолва даёт единый экземпляр модуля.
 //
@@ -11,7 +11,7 @@
 //
 // Это и есть «zustand для Solid»: `createStore({ context, on })` — глобальное реактивное
 // хранилище, `useSelector(store, (s) => s.context.x)` — точечная подписка, отдаёт АКСЕССОР
-// (`x()`, не `x`) — то же устройство, что у `useParams`/`useSearch` в `@omnifield/probe-web-router`.
+// (`x()`, не `x`) — то же устройство, что у `useParams`/`useSearch` в `@web-core/router`.
 //
 // Для явных стейт-машин (guards, вложенные состояния, акторы) — соседний подпуть `./machine`,
 // он опциональный (`xstate`/`@xstate/solid` — опциональные peer, ставятся отдельно).
@@ -33,6 +33,6 @@ export type { ResourceFetcherInfo, ResourceState } from "./resource.js";
 export function createAsyncAtom(): never {
   throw new Error(
     "createAsyncAtom не работает с реактивными зависимостями (см. комментарий в " +
-      "@omnifield/probe-web-store/src/index.ts) — используйте createResourceAtom из этого пакета",
+      "@web-core/store/src/index.ts) — используйте createResourceAtom из этого пакета",
   );
 }

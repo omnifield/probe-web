@@ -1,4 +1,4 @@
-// Канон Solid, выраженный машиной, — пресет зоны `lint` (`@omnifield/probe-web-lint`).
+// Канон Solid, выраженный машиной, — пресет зоны `lint` (`@web-core/lint`).
 //
 // Механике сборки эта проверка нужна не меньше, чем киту: вся отрисовка здесь — работа с
 // пропами через геттеры, и именно там реактивность теряется молча. `solid/no-destructure` и
@@ -7,7 +7,7 @@
 //
 // Пресет подключён воркспейсом (`workspace:*`) и стоит в devDependencies — в поставку не едет.
 
-import { defineConfig } from "@omnifield/probe-web-lint";
+import { defineConfig } from "@web-core/lint";
 
 export default [
   {

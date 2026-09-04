@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-runtime",
+  "name": "@web-core/runtime",
   "version": "0.1.0",
-  "description": "Рантайм probe-web: mount() и контракт #root — то, что зовёт скелет у потребителя (PROBEWEB-4).",
+  "description": "Рантайм web-core: mount() и контракт #root — то, что зовёт скелет у потребителя (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -28,7 +28,7 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-style": "workspace:*",
+    "@web-core/style": "workspace:*",
     "@types/node": "^24.10.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

@@ -1,6 +1,6 @@
 # 🎠 Carousel
 
-🏷️ disclosure · 🧬 component · 📐 wide · 📦 `@omnifield/probe-web-ui`
+🏷️ disclosure · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

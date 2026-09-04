@@ -51,8 +51,8 @@ minus the source argument on each one. `assemble` throws `OutfitRefused` on a fl
 `withPassports` binds the model mechanic to a passport source:
 
 ```ts
-import { passportOf } from "@omnifield/probe-web-ui/passport";
-import { withPassports } from "@omnifield/probe-web-skin/model";
+import { passportOf } from "@web-core/ui/passport";
+import { withPassports } from "@web-core/skin/model";
 
 const { assemble, checkSkin } = withPassports(passportOf);
 const { skin, report } = assemble(outfit, parts);

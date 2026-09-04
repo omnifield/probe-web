@@ -1,6 +1,6 @@
 # 🔲 Toggle
 
-🏷️ other · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ other · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

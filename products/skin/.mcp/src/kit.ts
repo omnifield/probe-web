@@ -5,9 +5,9 @@
 // готовое и складывает срез рантайма (`ComponentPassport.anatomy` — функции, не данные) в форму,
 // которую можно вернуть по MCP как JSON.
 
-import { EDITOR_INFOS, PASSPORTS } from "@omnifield/probe-web-ui/passport";
-import { IO } from "@omnifield/probe-web-ui/io";
-import { z } from "@omnifield/probe-web-io";
+import { EDITOR_INFOS, PASSPORTS } from "@web-core/ui/passport";
+import { IO } from "@web-core/ui/io";
+import { z } from "@web-core/io";
 import { zocker } from "zocker";
 
 /**

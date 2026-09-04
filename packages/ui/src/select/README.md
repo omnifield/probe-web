@@ -1,6 +1,6 @@
 # 🔽 Select
 
-🏷️ inputs · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 

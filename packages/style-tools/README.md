@@ -1,6 +1,6 @@
-# @omnifield/probe-web-style-tools
+# @web-core/style-tools
 
-**Инструменты стилизации** локации `probe-web`: комбинатор классов `cn`, реактивная обвязка
+**Инструменты стилизации** локации `web-core`: комбинатор классов `cn`, реактивная обвязка
 вариантов `createStyle` и реэкспорт `cva`.
 
 Это **самостоятельная НЕОБЯЗАТЕЛЬНАЯ поставка**. Оформление вправе взять инструменты у нас,
@@ -12,11 +12,11 @@
 
 | точка | что даёт |
 |---|---|
-| `@omnifield/probe-web-style-tools` | `cn`, `createStyle`, реэкспорт `cva` и `VariantProps` |
+| `@web-core/style-tools` | `cn`, `createStyle`, реэкспорт `cva` и `VariantProps` |
 
 Вход ровно один, подпутей нет. **CSS отсюда не едет вовсе**, и это проверяется пробой:
 инструмент работает с ИМЕНАМИ классов, а значения — предмет другой поставки
-(`@omnifield/probe-web-style`).
+(`@web-core/style`).
 
 ## Чего здесь нет и почему
 
@@ -48,7 +48,7 @@ cn("base", cond && "hidden");        // ложное выпадает
 ## `createStyle` — варианты, которые пересчитываются
 
 ```tsx
-import { createStyle, cva } from "@omnifield/probe-web-style-tools";
+import { createStyle, cva } from "@web-core/style-tools";
 
 const button = cva("inline-flex p-2", {
   variants: { size: { sm: "text-sm", lg: "text-lg p-4" } },
@@ -89,6 +89,6 @@ pnpm run test       # build + vitest (dom + node)
 | в `src/create-style.ts` убрать `splitProps` и отдать `props` в варианты целиком | `create-style.test.ts` — `class` удваивается в атрибуте |
 | в `src/create-style.ts` посчитать класс один раз, вне `createMemo` | `create-style.test.ts` — смена варианта и смена `class` перестают доезжать |
 | в `src/create-style.ts` поставить `local.class` первым аргументом `cn` | `create-style.test.ts` — проп потребителя перестаёт перебивать вариант |
-| в `src/index.ts` добавить импорт `@omnifield/probe-web-style` | `independence.test.ts` — поставка перестала быть самостоятельной |
+| в `src/index.ts` добавить импорт `@web-core/style` | `independence.test.ts` — поставка перестала быть самостоятельной |
 | в `package.json` вписать пакет значений в `devDependencies` | `independence.test.ts` — раздел `dev` считается наравне с остальными |
 | в `exports` манифеста добавить подпуть `./cn` | `types.test.ts` — вход у поставки перестал быть одним |

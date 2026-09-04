@@ -5,7 +5,7 @@
 // приложение об этой точке не знает. Ни один тип про такую связь ничего не знает — сломать
 // её можно, не уронив ни компилятор, ни линтер.
 
-import { mount } from "@omnifield/probe-web-runtime";
+import { mount } from "@web-core/runtime";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "../src/app";

@@ -4,6 +4,6 @@
     "JS+JSDoc — пути на TS-сервер без бандлера не было вовсе. Теперь есть — `probe-web-node`/",
     "`tsconfig-node`, тот же профиль, что и у любого другого server-потребителя `packages/build`."
   ],
-  "extends": "@omnifield/probe-web-build/tsconfig-node",
+  "extends": "@web-core/build/tsconfig-node",
   "include": ["src", "test"]
 }

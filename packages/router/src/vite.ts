@@ -1,6 +1,6 @@
 // Точка сборки роутинга: приложение зовёт этот подпуть из своего `vite.config.ts`, а не
 // `@tanstack/router-plugin/vite` напрямую — та же логика прятанья вендора, что у
-// `@omnifield/probe-web-build/vite` (PROBEWEB-4).
+// `@web-core/build/vite` (PROBEWEB-4).
 import { tanstackRouter, type Config } from "@tanstack/router-plugin/vite";
 import type { Plugin } from "vite";
 
@@ -21,8 +21,8 @@ export type TanstackRouterVitePluginOptions = Partial<Omit<Config, "target">>;
  * вручную:
  *
  * ```ts
- * import { defineConfig } from "@omnifield/probe-web-build/vite";
- * import { tanstackRouterVitePlugin } from "@omnifield/probe-web-router/vite";
+ * import { defineConfig } from "@web-core/build/vite";
+ * import { tanstackRouterVitePlugin } from "@web-core/router/vite";
  *
  * const config = defineConfig();
  * export default {

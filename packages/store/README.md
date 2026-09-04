@@ -1,9 +1,9 @@
-# @omnifield/probe-web-store
+# @web-core/store
 
-Стейт probe-web поверх семьи **XState** — `@xstate/store` (плоское событийное хранилище,
+Стейт web-core поверх семьи **XState** — `@xstate/store` (плоское событийное хранилище,
 zustand-по-духу) и, отдельным опциональным слоем, `xstate` целиком (явные стейт-машины).
 Приложение импортирует ровно этот пакет — никогда `@xstate/store`/`@xstate/store-solid`/
-`xstate`/`@xstate/solid` напрямую, — той же причиной, что и `@omnifield/probe-web-router`:
+`xstate`/`@xstate/solid` напрямую, — той же причиной, что и `@web-core/router`:
 единый путь резолва даёт единый экземпляр модуля.
 
 ## Почему XState-семья, а не буквальный Zustand
@@ -36,7 +36,7 @@ zustand-по-духу) и, отдельным опциональным слое�
 
 ```ts
 // src/counter-store.ts
-import { createStore } from "@omnifield/probe-web-store";
+import { createStore } from "@web-core/store";
 
 export const counterStore = createStore({
   context: { count: 0 },
@@ -48,7 +48,7 @@ export const counterStore = createStore({
 
 ```tsx
 // где угодно в дереве компонентов — без Provider, стор живёт вне дерева
-import { useSelector } from "@omnifield/probe-web-store";
+import { useSelector } from "@web-core/store";
 
 import { counterStore } from "./counter-store.js";
 
@@ -77,13 +77,13 @@ function Counter() {
 **Без ключа** — фетчер вызывается один раз, при создании атома:
 
 ```ts
-import { createResourceAtom } from "@omnifield/probe-web-store";
+import { createResourceAtom } from "@web-core/store";
 
 export const componentsAtom = createResourceAtom(() => listComponents());
 ```
 
 **С ключом** — первым аргументом Solid-аксессор (обычный `() => T`, тот же контракт, что у
-`useParams`/`useSearch` из `@omnifield/probe-web-router` или у самой обычной `createSignal`);
+`useParams`/`useSearch` из `@web-core/router` или у самой обычной `createSignal`);
 фетчер перевызывается каждый раз, когда меняется его значение (совпадает по духу с
 `createResource(source, fetcher)` из `solid-js`, но отдаёт тот же по форме атом, что и
 `createAtom`/`createResourceAtom` без ключа — `.get()`/`useAtom`/`useSelector`, один и тот же
@@ -93,7 +93,7 @@ export const componentsAtom = createResourceAtom(() => listComponents());
 сюда не протягивается (см. довод ниже, почему `createAsyncAtom` вообще не годится для этого):
 
 ```ts
-import { createResourceAtom } from "@omnifield/probe-web-store";
+import { createResourceAtom } from "@web-core/store";
 import { createSignal } from "solid-js";
 
 import { componentInfo } from "./info.js"; // (id: string) => Promise<ComponentInfo>
@@ -104,7 +104,7 @@ export const componentInfoAtom = createResourceAtom(selectedComponentId, (id) =>
 ```
 
 ```tsx
-import { useAtom } from "@omnifield/probe-web-store";
+import { useAtom } from "@web-core/store";
 
 function ComponentInfoPanel() {
   const info = useAtom(componentInfoAtom);
@@ -136,8 +136,8 @@ Solid-аксессор, пересчёт ведёт Solid-эффект (не а�
 ## Слой `./machine`: явные стейт-машины
 
 ```tsx
-import { createMachine } from "@omnifield/probe-web-store/machine";
-import { useMachine } from "@omnifield/probe-web-store/machine";
+import { createMachine } from "@web-core/store/machine";
+import { useMachine } from "@web-core/store/machine";
 
 const toggleMachine = createMachine({
   id: "toggle",
@@ -165,8 +165,8 @@ function Toggle() {
 ## Аддоны
 
 ```ts
-import { createStore } from "@omnifield/probe-web-store";
-import { persist } from "@omnifield/probe-web-store/persist";
+import { createStore } from "@web-core/store";
+import { persist } from "@web-core/store/persist";
 
 export const settingsStore = createStore({
   context: { theme: "light" },

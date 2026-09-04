@@ -1,11 +1,11 @@
-// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@probe-web/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Перечень паспортов формы собирается тем же обходом папок `src/*`, что паспорт и кит:
 // компонент, объявивший `entity/io.ts`, попадает сюда самим фактом объявления —
 // НЕОБЯЗАТЕЛЬНО, не каждый компонент несёт данные, но кто завёл, регистрировать себя отдельно
 // в продукте больше не должен (`PWEB-180` продолжение).
 
-import type { z } from "@omnifield/probe-web-io";
+import type { z } from "@web-core/io";
 {{#each items}}
 import { passport as {{passportIdentifier}} } from "./{{passportModule}}";
 import * as {{ioIdentifier}} from "./{{ioModule}}";

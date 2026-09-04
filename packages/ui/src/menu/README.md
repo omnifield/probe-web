@@ -1,6 +1,6 @@
 # 📋 Menu
 
-🏷️ overlays · 🧬 component · 📐 compact · 📦 `@omnifield/probe-web-ui`
+🏷️ overlays · 🧬 component · 📐 compact · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 
@@ -198,7 +198,7 @@ const tree = instanceOf("menu", { defaultOpen: true }, "basic", {});
 
 ```tsx
 import { createSignal } from "solid-js";
-import { MenuCheckboxItem } from "@omnifield/probe-web-ui";
+import { MenuCheckboxItem } from "@web-core/ui";
 
 const [showToolbar, setShowToolbar] = createSignal(true);
 
@@ -219,7 +219,7 @@ const [showToolbar, setShowToolbar] = createSignal(true);
 
 ```tsx
 import { createSignal } from "solid-js";
-import { MenuRadioItemGroup, MenuRadioItem } from "@omnifield/probe-web-ui";
+import { MenuRadioItemGroup, MenuRadioItem } from "@web-core/ui";
 
 const [sortBy, setSortBy] = createSignal("date");
 
@@ -246,7 +246,7 @@ const [sortBy, setSortBy] = createSignal("date");
 **Контекстное меню.**
 
 ```tsx
-import { MenuContextTrigger } from "@omnifield/probe-web-ui";
+import { MenuContextTrigger } from "@web-core/ui";
 
 <Menu>
   <MenuContextTrigger>Кликните правой кнопкой здесь</MenuContextTrigger>
@@ -264,7 +264,7 @@ import { MenuContextTrigger } from "@omnifield/probe-web-ui";
 получает `data-nested`/`data-has-nested`, когда меню стоят стопкой.
 
 ```tsx
-import { MenuTriggerItem } from "@omnifield/probe-web-ui";
+import { MenuTriggerItem } from "@web-core/ui";
 
 <Menu>
   <MenuTrigger>Файл</MenuTrigger>

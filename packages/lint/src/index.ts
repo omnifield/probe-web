@@ -81,18 +81,18 @@ export function defineConfig(options: PresetOptions = {}): Linter.Config[] {
 
   return [
     withIgnores({
-      name: "@omnifield/probe-web-lint/rules",
+      name: "@web-core/lint/rules",
       files: [...ALL_FILES],
       plugins: { solid: solid as unknown as ESLint.Plugin },
       rules: { ...rules },
     }),
     withIgnores({
-      name: "@omnifield/probe-web-lint/parser-ts",
+      name: "@web-core/lint/parser-ts",
       files: [...TS_FILES],
       languageOptions: babel(false),
     }),
     withIgnores({
-      name: "@omnifield/probe-web-lint/parser-jsx",
+      name: "@web-core/lint/parser-jsx",
       files: [...TSX_FILES],
       languageOptions: babel(true),
     }),

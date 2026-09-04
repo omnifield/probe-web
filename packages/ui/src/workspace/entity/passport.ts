@@ -1,4 +1,4 @@
-import { defineSettings, definePassport } from "@omnifield/probe-web-skin/model";
+import { defineSettings, definePassport } from "@web-core/skin/model";
 import type { WorkspaceProps } from "../components/index.js";
 import { anatomy } from "./anatomy.js";
 

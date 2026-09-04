@@ -1,4 +1,4 @@
-import { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE, type Form, type SlotRecipe } from "@omnifield/probe-web-skin/model";
+import { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE, type Form, type SlotRecipe } from "@web-core/skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 

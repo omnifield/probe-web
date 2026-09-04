@@ -1,4 +1,4 @@
-import { GROUPS, editorInfoOf, groupOf } from "@omnifield/probe-web-ui/passport";
+import { GROUPS, editorInfoOf, groupOf } from "@web-core/ui/passport";
 
 import { listComponents } from "./list.js";
 

@@ -1,4 +1,4 @@
-import { z } from "@omnifield/probe-web-io";
+import { z } from "@web-core/io";
 
 const item = z.object({ value: z.string(), label: z.string() });
 

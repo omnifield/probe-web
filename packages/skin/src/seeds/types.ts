@@ -1,6 +1,6 @@
 // Design notes: ./README.md#types
 
-import type { ScaleMode } from "@omnifield/probe-web-style";
+import type { ScaleMode } from "@web-core/style";
 
 export type SkinHalf = ScaleMode;
 

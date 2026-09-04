@@ -1,6 +1,6 @@
 # 📃 Listbox
 
-🏷️ iteration · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
+🏷️ iteration · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
 ## 🧭 Навигация
 
