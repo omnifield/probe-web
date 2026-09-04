@@ -11,7 +11,8 @@ import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit } from "../components/index.js";
+import { Button, kit } from "../components/index.js";
+import { Toggle } from "../../toggle/components/root.js";
 import { passport } from "../entity/passport.js";
 import { editorInfo } from "../playground/index.js";
 
@@ -196,5 +197,43 @@ describe('playground assembly "base" — shows the label from data (PWEB-187/191
 
     const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
     expect(button?.textContent).toBe("Оформить заказ");
+  });
+});
+
+describe("as= — rendering as a different tag keeps the button's own address (FAQ.md)", () => {
+  it("as=\"a\" carries data-scope=\"button\"/data-part=\"root\", not the anchor's own anything", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Button as="a" href="/orders">Открыть заказы</Button>, host);
+
+    const anchor = host.querySelector("a");
+    expect(anchor?.getAttribute("data-scope")).toBe("button");
+    expect(anchor?.getAttribute("data-part")).toBe("root");
+    expect(anchor?.getAttribute("href")).toBe("/orders");
+  });
+});
+
+describe("expanded/pressed — plain attributes the caller sets directly, not through as= (FAQ.md)", () => {
+  it("data-expanded/data-pressed set directly on Button keep the button's own address", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Button data-expanded="" data-pressed="">B</Button>, host);
+
+    const button = host.querySelector("button");
+    expect(button?.getAttribute("data-scope")).toBe("button");
+    expect(button?.hasAttribute("data-expanded")).toBe(true);
+    expect(button?.hasAttribute("data-pressed")).toBe(true);
+  });
+});
+
+describe("as= — a KNOWN LIMIT: targeting another kit component built on Ark loses the button's own address", () => {
+  it("as={Toggle} ends up scoped as toggle, not button — button's own skin no longer applies", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Button as={Toggle}>B</Button>, host);
+
+    const button = host.querySelector("button");
+    expect(button?.getAttribute("data-scope")).toBe("toggle");
+    expect(button?.getAttribute("data-scope")).not.toBe("button");
   });
 });

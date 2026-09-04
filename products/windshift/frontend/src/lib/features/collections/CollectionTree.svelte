@@ -65,7 +65,9 @@
   $effect(() => {
     if (!collectionStore.loading && collectionStore.items.length >= 0) {
       currentCollectionName = collectionStore.collectionName;
-      const sorted = [...collectionStore.items].sort((a, b) => a.level - b.level || a.id - b.id);
+      const sorted = [...collectionStore.items].sort(
+        (a, b) => a.level - b.level || a.title.localeCompare(b.title)
+      );
       // untrack to avoid tracking reads of allItems/expandedItems via getRootItems/hasChildren
       untrack(() => {
         allItems = sorted;

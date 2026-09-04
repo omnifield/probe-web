@@ -67,6 +67,72 @@ function Counter() {
 равноценны. `store.can.inc()` проверяет допустимость события без отправки, `store.getSnapshot()`
 читает разово.
 
+## `createResourceAtom`: один флоу для «посчитанное или полученное значение»
+
+Один и тот же приём для ОБОИХ случаев: значение вычислено синхронно (из другого атома/функции)
+или получено асинхронно, по ключу, из службы. Потребитель не выбирает разные примитивы в
+зависимости от того, есть тут `await` или нет, — форма состояния одна: `{ status: "pending" }` /
+`{ status: "done", data }` / `{ status: "error", error }`.
+
+**Без ключа** — фетчер вызывается один раз, при создании атома:
+
+```ts
+import { createResourceAtom } from "@omnifield/probe-web-store";
+
+export const componentsAtom = createResourceAtom(() => listComponents());
+```
+
+**С ключом** — первым аргументом Solid-аксессор (обычный `() => T`, тот же контракт, что у
+`useParams`/`useSearch` из `@omnifield/probe-web-router` или у самой обычной `createSignal`);
+фетчер перевызывается каждый раз, когда меняется его значение (совпадает по духу с
+`createResource(source, fetcher)` из `solid-js`, но отдаёт тот же по форме атом, что и
+`createAtom`/`createResourceAtom` без ключа — `.get()`/`useAtom`/`useSelector`, один и тот же
+способ чтения везде). Источник ключа — ЛЮБОЙ Solid-аксессор, включая `useParams()` роутера;
+единственное, что важно: `source` должен быть настоящим Solid-сигналом (или производным от него),
+а не `.get()` другого атома `@xstate/store` напрямую — это две разные реактивные системы, и вторая
+сюда не протягивается (см. довод ниже, почему `createAsyncAtom` вообще не годится для этого):
+
+```ts
+import { createResourceAtom } from "@omnifield/probe-web-store";
+import { createSignal } from "solid-js";
+
+import { componentInfo } from "./info.js"; // (id: string) => Promise<ComponentInfo>
+
+export const [selectedComponentId, setSelectedComponentId] = createSignal<string>();
+
+export const componentInfoAtom = createResourceAtom(selectedComponentId, (id) => componentInfo(id));
+```
+
+```tsx
+import { useAtom } from "@omnifield/probe-web-store";
+
+function ComponentInfoPanel() {
+  const info = useAtom(componentInfoAtom);
+  return (
+    <p>
+      {(() => {
+        const state = info(); // читать один раз — узкий тип на каждой ветке ниже
+        if (state.status === "pending") return "Загрузка…";
+        if (state.status === "error") return "Ошибка";
+        return state.data.name;
+      })()}
+    </p>
+  );
+}
+```
+
+**Почему не `createAsyncAtom` из `@xstate/store`.** Он выглядит подходящим примитивом того же
+пакета, но реально сломан для ровно этого кейса: он отслеживает `.get()` других атомов, вызванный
+внутри геттера, ТОЛЬКО пока асинхронный запрос ещё не завершился (синхронная часть, `pending`).
+В момент резолва промиса он обновляет значение в обход геттера — и его внутренний `purgeDeps`
+считает все ранее отслеженные атомы недостигнутыми в этом проходе и отвязывает их. Итог: атом,
+один раз получивший значение, больше не реагирует на смену входа, которым сам же был запущен —
+подтверждено прямым прогоном на голом `@xstate/store@4.2.3`, без Solid (см. `src/resource.ts`).
+Поэтому `createAsyncAtom` в этом пакете не реэкспортируется — импорт с апстримной сигнатурой не
+пройдёт тайпчек, вызов — бросит. `createResourceAtom` устроен иначе: `source` — обычный
+Solid-аксессор, пересчёт ведёт Solid-эффект (не автотрекинг `@xstate/store`), сам ресурс-атом
+только пишется через `.set()` — отслеживать нечему, ломаться на резолве нечему.
+
 ## Слой `./machine`: явные стейт-машины
 
 ```tsx

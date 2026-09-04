@@ -2,26 +2,14 @@
 
 🏷️ other · 🧬 component · 📐 wide · 📦 `@omnifield/probe-web-ui`
 
-Первый по-настоящему СВОЙ составной компонент кита (после кнопки) — Ark UI таблицу не даёт вовсе,
-ни готовую, ни headless. Всё, вплоть до анатомии, объявлено нами; движок под сортировкой, выбором
-строк, видимостью, закреплением колонок и фильтрацией — `@tanstack/solid-table`, тот же самый,
-market-vetted, на котором уже стоит собственный (гораздо больший, продуктовый) `DataTable` из
-`products/tables`.
-
-> [!TIP]
-> Перед тем как трогать `@tanstack/solid-table`-специфику — прочитай [`FAQ.md`](./FAQ.md): там
-> собраны конкретные грабли v9 (терминология `start`/`end`, устройство `tableFeatures`, тихие
-> фолбэки фильтров/фасетов, `indeterminate` в Solid), проверенные чтением исходников, а не догадкой.
-
-## 🧭 Навигация
-
-- 🧩 [Анатомия](#анатомия)
-- 🎛️ [Состояния](#состояния)
-- 🏗️ [Сборки](#сборки)
-- 🎨 [Рецепт](#рецепт)
-- 🚀 [Использование](#использование)
+Таблица данных: строки и колонки, сортировка по одной или нескольким колонкам, выбор строк,
+скрытие и закрепление колонок, поиск по всей таблице или по отдельной колонке.
 
 <h2 id="анатомия">🧩 Анатомия</h2>
+
+Таблица собрана из настоящих `<table>`/`<tr>`/`<th>`/`<td>` — не имитация вёрсткой поверх `<div>`.
+Заголовок колонки и кнопка сортировки в нём — разные части: заголовок остаётся заголовком, даже
+если колонка вообще не умеет сортироваться, а кнопка появляется только там, где она реально нужна.
 
 ```
 root
@@ -37,19 +25,19 @@ root
          └─ rowSelectTrigger
 ```
 
-| часть                   | значение                                                                 | принимает внутри                | рисуется                    |
-| ------------------------- | ----------------------------------------------------------------------------- | -------------------------------- | ----------------------------- |
-| 🗂️ `root`               | таблица целиком                                                              | `caption`, `head`, `body`        | `TableRoot`           |
-| `caption`               | собственная подпись таблицы — что она показывает                             | текст                             | `TableCaption`        |
-| `head`                  | оборачивает строку(и) заголовков                                             | `headRow`                         | `TableHead`           |
-| `headRow`               | одна строка заголовков колонок                                               | `headerCell`                      | `TableHeadRow`        |
-| `headerCell`            | заголовок одной колонки — несёт вид сортировки для неё, есть кнопка внутри или нет | `headerSortTrigger`, `headerSelectTrigger`, текст  | `TableHeaderCell` |
-| `headerSortTrigger`     | кнопка, переключающая сортировку этой колонки                                | текст, иконка                     | `TableHeaderSortTrigger` |
-| ☑️ `headerSelectTrigger` | чекбокс «выбрать все строки» — отмечен целиком, частично или пусто           | —                                  | `TableHeaderSelectTrigger` |
-| `body`                  | оборачивает строки данных                                                    | `row`                             | `TableBody`           |
-| `row`                   | одна строка данных — несёт выбор, если включён                               | `cell`                            | `TableRow`            |
-| `cell`                  | одна ячейка — содержимое даёт потребитель                                    | текст, иконка, любой компонент    | `TableCell`           |
-| ☑️ `rowSelectTrigger`    | чекбокс выбора одной строки                                                  | —                                  | `TableRowSelectTrigger` |
+| часть                    | значение                                                                           | принимает внутри                                  | рисуется                   |
+| ------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------- |
+| 🗂️ `root`                | таблица целиком                                                                    | `caption`, `head`, `body`                         | `TableRoot`                |
+| `caption`                | собственная подпись таблицы — что она показывает                                   | текст                                             | `TableCaption`             |
+| `head`                   | оборачивает строку(и) заголовков                                                   | `headRow`                                         | `TableHead`                |
+| `headRow`                | одна строка заголовков колонок                                                     | `headerCell`                                      | `TableHeadRow`             |
+| `headerCell`             | заголовок одной колонки — несёт вид сортировки для неё, есть кнопка внутри или нет | `headerSortTrigger`, `headerSelectTrigger`, текст | `TableHeaderCell`          |
+| `headerSortTrigger`      | кнопка, переключающая сортировку этой колонки                                      | текст, иконка                                     | `TableHeaderSortTrigger`   |
+| ☑️ `headerSelectTrigger` | чекбокс «выбрать все строки» — отмечен целиком, частично или пусто                 | —                                                 | `TableHeaderSelectTrigger` |
+| `body`                   | оборачивает строки данных                                                          | `row`                                             | `TableBody`                |
+| `row`                    | одна строка данных — несёт выбор, если включён                                     | `cell`                                            | `TableRow`                 |
+| `cell`                   | одна ячейка — содержимое даёт потребитель                                          | текст, иконка, любой компонент                    | `TableCell`                |
+| ☑️ `rowSelectTrigger`    | чекбокс выбора одной строки                                                        | —                                                 | `TableRowSelectTrigger`    |
 
 > [!NOTE]
 > `headerCell` и `headerSortTrigger` — НАМЕРЕННО две разные части, не одна. Тот же разрез, что
@@ -89,7 +77,7 @@ root
 > завязан на ресайз колонок) — `position: sticky` в рецепте ставит `insetInlineStart/End: 0`,
 > честно для РОВНО одной закреплённой колонки на сторону. Вторая закреплённая колонка на той же
 > стороне легла бы поверх первой, а не рядом. Настоящее вычисление смещения — предмет `column-
-> resizing` (следующий заход `column-structure`), не изобретается здесь заранее.
+resizing` (следующий заход `column-structure`), не изобретается здесь заранее.
 
 > [!NOTE]
 > `headerSelectTrigger`/`rowSelectTrigger` — настоящие `<input type="checkbox">`, не разметка
@@ -101,20 +89,24 @@ root
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
-|      | часть                              | состояние     | метка                       | значение                                                    |
-| ---- | ------------------------------------- | --------------- | ------------------------------- | ------------------------------------------------------------- |
-| ⬆️   | headerCell, headerSortTrigger        | ascending       | `[data-state="ascending"]`      | эта колонка сейчас отсортирована по возрастанию                |
-| ⬇️   | headerCell, headerSortTrigger        | descending      | `[data-state="descending"]`     | эта колонка сейчас отсортирована по убыванию                   |
-| ➖   | headerCell, headerSortTrigger        | none            | `[data-state="none"]`           | колонка умеет сортироваться, но сейчас не она отсортирована    |
-| 🚫   | headerSortTrigger                    | disabled        | `:disabled`                     | колонка не умеет сортироваться — нативный вид, без поведения кнопки |
-| 👆🎯 | headerSortTrigger                    | hover / focus-visible / active | `:hover` / `:focus-visible` / `:active` | обычное поведение кнопки, JS-перехвата указателя нет |
-| ☑️   | headerSelectTrigger, rowSelectTrigger | checked         | `:checked`                      | отмечен                                                          |
-| ➖   | headerSelectTrigger                  | indeterminate   | `:indeterminate`                | выбраны не все строки, но и не ноль                              |
-| 🚫   | headerSelectTrigger, rowSelectTrigger | disabled        | `:disabled`                     | этот чекбокс нельзя использовать                                  |
-| 👆🎯 | headerSelectTrigger, rowSelectTrigger | hover / focus-visible / active | `:hover` / `:focus-visible` / `:active` | нативные псевдоклассы чекбокса |
-| ✅   | row                                   | selected        | `[data-selected]`               | эта строка выбрана                                                |
-| ⏪   | headerCell, cell                      | pinned-start    | `[data-pinned="start"]`         | колонка закреплена у начала — не уезжает при горизонтальном скролле |
-| ⏩   | headerCell, cell                      | pinned-end      | `[data-pinned="end"]`           | колонка закреплена у конца — не уезжает при горизонтальном скролле |
+Состояния таблицы почти все — про заголовок: отсортирована колонка или нет и в какую сторону,
+закреплена ли она у края. У строк и ячеек забота одна — выбрана строка или нет, закреплена ли её
+ячейка у того же края, что и заголовок над ней.
+
+|      | часть                                 | состояние                      | метка                                   | значение                                                            |
+| ---- | ------------------------------------- | ------------------------------ | --------------------------------------- | ------------------------------------------------------------------- |
+| ⬆️   | headerCell, headerSortTrigger         | ascending                      | `[data-state="ascending"]`              | эта колонка сейчас отсортирована по возрастанию                     |
+| ⬇️   | headerCell, headerSortTrigger         | descending                     | `[data-state="descending"]`             | эта колонка сейчас отсортирована по убыванию                        |
+| ➖   | headerCell, headerSortTrigger         | none                           | `[data-state="none"]`                   | колонка умеет сортироваться, но сейчас не она отсортирована         |
+| 🚫   | headerSortTrigger                     | disabled                       | `:disabled`                             | колонка не умеет сортироваться — нативный вид, без поведения кнопки |
+| 👆🎯 | headerSortTrigger                     | hover / focus-visible / active | `:hover` / `:focus-visible` / `:active` | обычное поведение кнопки, JS-перехвата указателя нет                |
+| ☑️   | headerSelectTrigger, rowSelectTrigger | checked                        | `:checked`                              | отмечен                                                             |
+| ➖   | headerSelectTrigger                   | indeterminate                  | `:indeterminate`                        | выбраны не все строки, но и не ноль                                 |
+| 🚫   | headerSelectTrigger, rowSelectTrigger | disabled                       | `:disabled`                             | этот чекбокс нельзя использовать                                    |
+| 👆🎯 | headerSelectTrigger, rowSelectTrigger | hover / focus-visible / active | `:hover` / `:focus-visible` / `:active` | нативные псевдоклассы чекбокса                                      |
+| ✅   | row                                   | selected                       | `[data-selected]`                       | эта строка выбрана                                                  |
+| ⏪   | headerCell, cell                      | pinned-start                   | `[data-pinned="start"]`                 | колонка закреплена у начала — не уезжает при горизонтальном скролле |
+| ⏩   | headerCell, cell                      | pinned-end                     | `[data-pinned="end"]`                   | колонка закреплена у конца — не уезжает при горизонтальном скролле  |
 
 `root`/`caption`/`head`/`headRow`/`body` — пять из десяти частей, состояний не несут вовсе: чистая
 структура (проверяемое заявление, не заглушка «пока не собрались»).
@@ -134,6 +126,10 @@ root
 > — честная метка, браузер даёт её бесплатно, та же категория, что `:hover`/`:active` здесь.
 
 <h2 id="сборки">🏗️ Сборки</h2>
+
+Одна сборка — рабочая таблица целиком, с настоящей сортировкой кликом, без единой строчки
+собственной вёрстки. Показать составные части таблицы по отдельности отдельными примерами незачем
+— собранная и разобранная вручную таблица рисуют одну и ту же живую `table`.
 
 <h3 id="сборка-basic">🧱 basic</h3>
 
@@ -160,17 +156,26 @@ root · props: columns, data, defaultSorting
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
-Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
-настоящей скин-механикой (`skinGaps` пуст, `checkSkin` чист, CSS реально генерируется). В
-продакшене не участвует.
+Своих именованных видов у таблицы нет — только состояния. Выбранная строка подсвечена едва
+заметной заливкой, не рамкой и не жирным. Закреплённая колонка держится на месте (`position:
+sticky`) и получает собственный непрозрачный фон — иначе сквозь неё было бы видно уезжающие при
+скролле соседние колонки. Чекбоксы выбора — что в заголовке, что в строке — настоящие `<input
+type="checkbox">`, одного вида на оба места, крашены через `accentColor`, не своей картинкой.
 
 <h2 id="использование">🚀 Использование</h2>
+
+Каждая фича включается своим пропом на `TableRoot` и работает независимо от остальных — сортировку,
+выбор строк, видимость и закрепление колонок, поиск можно включать по одной или сразу все вместе.
 
 **Ручная сборка** — рукописный рендер-проп, полный контроль над содержимым ячеек. `defaultSorting`
 — массив: порядок элементов и есть приоритет сортировки, первый решает первым.
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultSorting={[{ columnId: "name", desc: false }]}>
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultSorting={[{ columnId: "name", desc: false }]}
+>
   {(table) => (
     <>
       <TableHead>
@@ -210,7 +215,11 @@ root · props: columns, data, defaultSorting
 содержимое ячейки):
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultSorting={[{ columnId: "name", desc: false }]} />
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultSorting={[{ columnId: "name", desc: false }]}
+/>
 ```
 
 **Мультисортировка.** Shift+клик по кнопке сортировки другой колонки добавляет её к активной, не
@@ -243,7 +252,12 @@ const tree = instanceOf("table", {}, "basic", {});
 ```tsx
 const [sorting, setSorting] = createSignal<readonly TableSort[]>([]);
 
-<TableRoot columns={columns} data={people} sorting={sorting()} onSortingChange={setSorting} />;
+<TableRoot
+  columns={columns}
+  data={people}
+  sorting={sorting()}
+  onSortingChange={setSorting}
+/>;
 ```
 
 > [!NOTE]
@@ -284,7 +298,11 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
 `defaultColumnVisibility`/`onColumnVisibilityChange`, ключ объекта — id колонки, `false` прячет её.
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultColumnVisibility={{ role: false }} />
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultColumnVisibility={{ role: false }}
+/>
 ```
 
 Переключатель («показать/скрыть колонку X») кит не рисует сам — та же граница, что у чекбокс-
@@ -297,7 +315,11 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
 `end` (закреплённые к концу), тем же способом, которым TanStack сам делит колонки.
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultColumnPinning={{ start: ["id"], end: [] }} />
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultColumnPinning={{ start: ["id"], end: [] }}
+/>
 ```
 
 Рукописный `children` — та же трёхгруппая раскладка, `table.getStartLeafHeaders()`/
@@ -305,16 +327,28 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
 `getCenterVisibleCells()`/`getEndVisibleCells()` для каждой строки:
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultColumnPinning={{ start: ["id"], end: [] }}>
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultColumnPinning={{ start: ["id"], end: [] }}
+>
   {(table) => (
     <>
       <TableHead>
         <TableHeadRow>
           <For each={table.getStartLeafHeaders()}>
-            {(header) => <TableHeaderCell header={header}>{String(header.column.columnDef.header)}</TableHeaderCell>}
+            {(header) => (
+              <TableHeaderCell header={header}>
+                {String(header.column.columnDef.header)}
+              </TableHeaderCell>
+            )}
           </For>
           <For each={table.getCenterLeafHeaders()}>
-            {(header) => <TableHeaderCell header={header}>{String(header.column.columnDef.header)}</TableHeaderCell>}
+            {(header) => (
+              <TableHeaderCell header={header}>
+                {String(header.column.columnDef.header)}
+              </TableHeaderCell>
+            )}
           </For>
         </TableHeadRow>
       </TableHead>
@@ -323,10 +357,14 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
           {(row) => (
             <TableRow row={row}>
               <For each={row.getStartVisibleCells()}>
-                {(cell) => <TableCell cell={cell}>{String(cell.getValue())}</TableCell>}
+                {(cell) => (
+                  <TableCell cell={cell}>{String(cell.getValue())}</TableCell>
+                )}
               </For>
               <For each={row.getCenterVisibleCells()}>
-                {(cell) => <TableCell cell={cell}>{String(cell.getValue())}</TableCell>}
+                {(cell) => (
+                  <TableCell cell={cell}>{String(cell.getValue())}</TableCell>
+                )}
               </For>
             </TableRow>
           )}
@@ -353,8 +391,16 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
 const [search, setSearch] = createSignal("");
 
 <>
-  <input value={search()} onInput={(event) => setSearch(event.currentTarget.value)} />
-  <TableRoot columns={columns} data={people} globalFilter={search()} onGlobalFilterChange={setSearch} />
+  <input
+    value={search()}
+    onInput={(event) => setSearch(event.currentTarget.value)}
+  />
+  <TableRoot
+    columns={columns}
+    data={people}
+    globalFilter={search()}
+    onGlobalFilterChange={setSearch}
+  />
 </>;
 ```
 
@@ -367,7 +413,11 @@ const [search, setSearch] = createSignal("");
 не нужно.
 
 ```tsx
-<TableRoot columns={columns} data={people} defaultColumnFilters={[{ id: "role", value: "инженер" }]} />
+<TableRoot
+  columns={columns}
+  data={people}
+  defaultColumnFilters={[{ id: "role", value: "инженер" }]}
+/>
 ```
 
 Управляемый вариант — поле рисует потребитель и обновляет через `column.setFilterValue()` или
@@ -377,19 +427,24 @@ const [search, setSearch] = createSignal("");
 const [roleFilter, setRoleFilter] = createSignal("");
 
 <>
-  <input value={roleFilter()} onInput={(event) => setRoleFilter(event.currentTarget.value)} />
+  <input
+    value={roleFilter()}
+    onInput={(event) => setRoleFilter(event.currentTarget.value)}
+  />
   <TableRoot
     columns={columns}
     data={people}
     columnFilters={roleFilter() ? [{ id: "role", value: roleFilter() }] : []}
-    onColumnFiltersChange={(next) => setRoleFilter(String(next.find((f) => f.id === "role")?.value ?? ""))}
+    onColumnFiltersChange={(next) =>
+      setRoleFilter(String(next.find((f) => f.id === "role")?.value ?? ""))
+    }
   />
 </>;
 ```
 
 **Faceted-значения.** `table.getColumn(id).getFacetedUniqueValues()` — `Map<значение, count>` по
 одной колонке, для построения списка опций выпадающего фильтра. Считает по всем строкам с учётом
-фильтров всех *остальных* колонок и глобального поиска, но не своего собственного — так список
+фильтров всех _остальных_ колонок и глобального поиска, но не своего собственного — так список
 опций не схлопывается до одного пункта, когда фильтр уже применён. Своей анатомии не заводит — как
 и фильтр по колонке, это чистый доступ к состоянию `table`-инстанса через `children`:
 
@@ -398,7 +453,11 @@ const [roleFilter, setRoleFilter] = createSignal("");
   {(table) => (
     <>
       <For each={[...table.getColumn("role")!.getFacetedUniqueValues()]}>
-        {([value, count]) => <option value={String(value)}>{String(value)} ({count})</option>}
+        {([value, count]) => (
+          <option value={String(value)}>
+            {String(value)} ({count})
+          </option>
+        )}
       </For>
       {/* остальная разметка таблицы, как в примере с закреплением колонок выше */}
     </>

@@ -1,0 +1,44 @@
+# Дорожная карта аватара — формат тот же, что у table/diagram/accordion (см. table/ROADMAP.yaml,
+# шапка). Единственный источник правды: статус проставляется рядом с работой.
+#
+# ТОНКАЯ ОБЁРТКА, как accordion (см. accordion/ROADMAP.yaml) — весь пропс-серфейс Ark проброшен
+# насквозь один в один (`AvatarProps = ArkRootProps`, проверено `mcp__ark-ui__get_component_props`,
+# 2026-09-04). Фичового бэклога нет. Пункты ниже — документация того, что реально есть.
+
+categories:
+  - category: Загрузка изображения
+    items:
+      - id: load-status
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Статус загрузки (visible/hidden между image и fallback)
+        description: |
+          Означает: пока картинка не загрузилась (или упала ошибкой) — виден fallback, image
+          скрыт (и наоборот); image остаётся в разметке скрытым всегда, чтобы load/error у него
+          сработали в любом случае.
+          Реализация: @ark-ui/solid/avatar — состояние (loading/loaded/error) целиком готовое.
+
+      - id: status-change-callback
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: onStatusChange
+        description: |
+          Означает: колбэк на корне сообщает тот же переход loaded/error, что двигает
+          image/fallback, для того, кому нужно знать об этом снаружи компонента.
+          Реализация: Ark's родной API, проброшен без обвязки.
+
+# Журнал решений — тот же формат, что у table/diagram/accordion.
+log:
+  - id: no-forward-roadmap-thin-wrapper
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Тот же довод, что у accordion (`accordion/ROADMAP.yaml`'s `no-forward-roadmap-thin-wrapper`):
+      весь пропс-серфейс Ark проброшен 1:1, аудит `mcp__ark-ui__get_component_props` (2026-09-04)
+      не нашёл ни одного пропа Ark, которого кит не даёт. Новый пункт здесь появится, только если
+      Ark сам добавит что-то новое, либо появится реальный запрос на функциональность, которой у
+      Ark нет вовсе — таких запросов на 2026-09-04 не было.

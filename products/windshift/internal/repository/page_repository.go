@@ -507,9 +507,33 @@ func (r *PageRepository) SearchByKeyword(workspaceID int, query string, limit in
 	return out, rows.Err()
 }
 
+// pageDisplayOrderClause orders siblings alphabetically by title, except for
+// the fixed set of standardized component-doc section names — those always
+// sort in this canonical reading order ahead of everything else. Pages with
+// any other title (component root pages like "Table"/"Accordion", or
+// arbitrary pages) fall through to plain alphabetical, unaffected by this
+// list.
+const pageDisplayOrderClause = `
+		CASE title
+			WHEN 'Анатомия' THEN 1
+			WHEN 'Использование' THEN 2
+			WHEN 'Настройки' THEN 3
+			WHEN 'Состояния' THEN 4
+			WHEN 'IO' THEN 5
+			WHEN 'Сборки' THEN 6
+			WHEN 'Рецепт' THEN 7
+			WHEN 'FAQ' THEN 8
+			ELSE 999
+		END ASC,
+		title ASC,
+		id ASC`
+
 // ListWorkspaceTree returns every (non-archived unless includeArchived) page
-// in a workspace, ordered by depth and then by frac_index/rank/title so
-// callers can build the tree client-side with a single query.
+// in a workspace, ordered by depth and then alphabetically by title, so
+// callers can build the tree client-side with a single query. Display order
+// is always alphabetical — frac_index/rank exist only to anchor new
+// siblings during a move (see ListChildrenTx), they no longer drive what
+// the user sees.
 func (r *PageRepository) ListWorkspaceTree(workspaceID int, includeArchived bool) ([]models.Page, error) {
 	return r.listWorkspaceTree(workspaceID, includeArchived, pageColumns, scanPage)
 }
@@ -533,11 +557,7 @@ func (r *PageRepository) listWorkspaceTree(workspaceID int, includeArchived bool
 		SELECT `+columns+`
 		FROM pages
 		WHERE `+cond+`
-		ORDER BY depth ASC,
-		         COALESCE(frac_index, '') ASC,
-		         COALESCE(rank, '') ASC,
-		         title ASC,
-		         id ASC
+		ORDER BY depth ASC, `+pageDisplayOrderClause+`
 	`, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("list workspace pages: %w", err)
@@ -556,7 +576,8 @@ func (r *PageRepository) listWorkspaceTree(workspaceID int, includeArchived bool
 }
 
 // ListChildren returns direct children of a page (or root pages when
-// parentID is nil), ordered the same way as ListWorkspaceTree.
+// parentID is nil), ordered the same way as ListWorkspaceTree (alphabetical
+// by title — see that method's doc comment).
 func (r *PageRepository) ListChildren(workspaceID int, parentID *int) ([]models.Page, error) {
 	var (
 		rows *sql.Rows
@@ -567,14 +588,14 @@ func (r *PageRepository) ListChildren(workspaceID int, parentID *int) ([]models.
 			SELECT `+pageColumns+`
 			FROM pages
 			WHERE workspace_id = ? AND parent_id IS NULL AND archived_at IS NULL
-			ORDER BY COALESCE(frac_index, '') ASC, COALESCE(rank, '') ASC, title ASC, id ASC
+			ORDER BY `+pageDisplayOrderClause+`
 		`, workspaceID)
 	} else {
 		rows, err = r.db.Query(`
 			SELECT `+pageColumns+`
 			FROM pages
 			WHERE workspace_id = ? AND parent_id = ? AND archived_at IS NULL
-			ORDER BY COALESCE(frac_index, '') ASC, COALESCE(rank, '') ASC, title ASC, id ASC
+			ORDER BY `+pageDisplayOrderClause+`
 		`, workspaceID, *parentID)
 	}
 	if err != nil {

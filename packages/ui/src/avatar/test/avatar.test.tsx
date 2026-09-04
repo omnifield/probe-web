@@ -5,7 +5,7 @@ import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as avatarKit } from "../components/index.js";
+import { Avatar, AvatarFallback, AvatarImage, kit as avatarKit } from "../components/index.js";
 import { passport as avatarPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as avatarEditorInfo } from "../playground/index.js";
@@ -62,5 +62,84 @@ describe('avatar "basic" — a real image with an initials fallback, both from d
 
     const fallback = host.querySelector('[data-scope="avatar"][data-part="fallback"]');
     expect(fallback?.textContent).toBe("JD");
+  });
+});
+
+describe("Avatar — image load/error really flips visible/hidden between image and fallback", () => {
+  it("starts with fallback visible, image hidden — nothing has loaded yet", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Avatar>
+          <AvatarFallback>JD</AvatarFallback>
+          <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
+        </Avatar>
+      ),
+      host,
+    );
+
+    const image = host.querySelector('[data-scope="avatar"][data-part="image"]') as HTMLImageElement;
+    const fallback = host.querySelector('[data-scope="avatar"][data-part="fallback"]') as HTMLElement;
+
+    expect(fallback.dataset.state).toBe("visible");
+    expect(fallback.hasAttribute("hidden")).toBe(false);
+    expect(image.dataset.state).toBe("hidden");
+    expect(image.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("a real load event flips image to visible and fallback to hidden", async () => {
+    const statuses: string[] = [];
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Avatar onStatusChange={(details) => statuses.push(details.status)}>
+          <AvatarFallback>JD</AvatarFallback>
+          <AvatarImage src="/jane-doe.jpg" alt="Jane Doe" />
+        </Avatar>
+      ),
+      host,
+    );
+
+    const image = host.querySelector('[data-scope="avatar"][data-part="image"]') as HTMLImageElement;
+    image.dispatchEvent(new Event("load"));
+    await Promise.resolve();
+
+    const fallback = host.querySelector('[data-scope="avatar"][data-part="fallback"]') as HTMLElement;
+
+    expect(statuses).toEqual(["loaded"]);
+    expect(image.dataset.state).toBe("visible");
+    expect(image.hasAttribute("hidden")).toBe(false);
+    expect(fallback.dataset.state).toBe("hidden");
+    expect(fallback.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("a real error event keeps fallback visible, image hidden", async () => {
+    const statuses: string[] = [];
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Avatar onStatusChange={(details) => statuses.push(details.status)}>
+          <AvatarFallback>JD</AvatarFallback>
+          <AvatarImage src="/broken.jpg" alt="Jane Doe" />
+        </Avatar>
+      ),
+      host,
+    );
+
+    const image = host.querySelector('[data-scope="avatar"][data-part="image"]') as HTMLImageElement;
+    image.dispatchEvent(new Event("error"));
+    await Promise.resolve();
+
+    const fallback = host.querySelector('[data-scope="avatar"][data-part="fallback"]') as HTMLElement;
+
+    expect(statuses).toEqual(["error"]);
+    expect(image.dataset.state).toBe("hidden");
+    expect(fallback.dataset.state).toBe("visible");
   });
 });
