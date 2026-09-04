@@ -11,6 +11,10 @@ export const parts: Readonly<Record<DiagramPart, PassportPartEditorInfo<DiagramP
     accepts: [
       { kind: "component", name: "axis" },
       { kind: "component", name: "grid" },
+      { kind: "component", name: "line" },
+      { kind: "component", name: "area" },
+      { kind: "component", name: "bar" },
+      { kind: "component", name: "point" },
     ],
   },
   axis: {
@@ -27,6 +31,26 @@ export const parts: Readonly<Record<DiagramPart, PassportPartEditorInfo<DiagramP
       x: { means: "TODO" },
       y: { means: "TODO" },
     },
+    accepts: [],
+  },
+  line: {
+    means: "TODO",
+    states: {},
+    accepts: [],
+  },
+  area: {
+    means: "TODO",
+    states: {},
+    accepts: [],
+  },
+  bar: {
+    means: "TODO",
+    states: {},
+    accepts: [],
+  },
+  point: {
+    means: "TODO",
+    states: {},
     accepts: [],
   },
 };

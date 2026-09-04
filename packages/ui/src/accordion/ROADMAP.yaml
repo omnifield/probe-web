@@ -1,0 +1,83 @@
+# Дорожная карта аккордеона — формат тот же, что у table/diagram (см. table/ROADMAP.yaml, шапка).
+# Этот файл — единственный источник правды: статус проставляется рядом с работой, в момент когда
+# она сделана.
+#
+# ОТЛИЧИЕ ОТ table/diagram: там кит строит анатомию/движок сам (TanStack/d3), фичи добавляются
+# волнами. Здесь — тонкая обёртка над готовым Ark-компонентом (`@ark-ui/solid/accordion`), весь
+# пропс-серфейс проброшен насквозь один в один (`AccordionProps = ArkRootProps`, проверено
+# `mcp__ark-ui__get_component_props`, 2026-09-04). Фичового бэклога нет — компонент не растёт по
+# частям, он уже полный. Пункты ниже документируют, что реально есть и откуда, не план на будущее.
+
+categories:
+  - category: Раскрытие
+    items:
+      - id: disclosure
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Раскрытие/закрытие раздела
+        description: |
+          Означает: клик по control раскрывает/закрывает свой content, одиночный или
+          множественный режим (multiple).
+          Реализация: @ark-ui/solid/accordion — состояние, клавиатура, aria целиком готовые.
+
+      - id: collapsible
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Закрытие последнего раскрытого
+        description: |
+          Означает: можно закрыть единственный раскрытый раздел, оставив гармошку полностью
+          закрытой (не нужно, если multiple уже включён — dependsOn в settings это выражает).
+          Реализация: Ark's `collapsible`, обычный проброс.
+
+      - id: orientation
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Ориентация (вертикальная/горизонтальная)
+        description: |
+          Означает: разделы сверху вниз или слева направо — влияет на клавиатурную навигацию и
+          aria, не только на CSS.
+          Реализация: Ark's `orientation`, settings паспорта пробрасывает в data-orientation.
+
+  - category: Управление состоянием
+    items:
+      - id: controlled-value
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Управляемое/неуправляемое значение
+        description: |
+          Означает: value/defaultValue/onValueChange — тот же управляемый/неуправляемый паттерн,
+          что у остальных Ark-компонентов кита.
+          Реализация: Ark's родной API, проброшен без обвязки (AccordionProps = ArkRootProps).
+
+      - id: lazy-mount
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: Отложенный монтаж / размонтирование при закрытии
+        description: |
+          Означает: lazyMount/unmountOnExit — content не существует в DOM, пока раздел не
+          раскрыт хотя бы раз (или вообще не раскрыт).
+          Реализация: Ark's родной API, проброшен без обвязки.
+
+# Журнал решений — тот же формат, что у table/diagram.
+log:
+  - id: no-forward-roadmap-thin-wrapper
+    type: plan
+    date: 2026-09-04
+    summary: >
+      В отличие от table/diagram (own-built, растут волнами фич), accordion — тонкая обёртка:
+      весь пропс-серфейс Ark проброшен один в один, аудит `mcp__ark-ui__get_component_props`
+      (2026-09-04) не нашёл ни одного пропа Ark, которого кит не даёт. Пункты этого файла —
+      документация того, что реально есть, не план того, что предстоит построить. Новый пункт
+      здесь появится, только если Ark сам добавит что-то новое в свой accordion, либо появится
+      реальный запрос на функциональность, которой у Ark нет вовсе (например, drag-переупорядочи-
+      вание разделов) — таких запросов на 2026-09-04 не было.

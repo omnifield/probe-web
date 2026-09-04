@@ -8,6 +8,7 @@ import {
 } from "@omnifield/probe-web-ui";
 import { Outlet } from "@omnifield/probe-web-router";
 
+import { ComponentTree } from "#/widgets/component-tree/component-tree.jsx";
 import { Header } from "#/widgets/header/header.jsx";
 
 export function WorkspaceLayout() {
@@ -17,7 +18,9 @@ export function WorkspaceLayout() {
       outlined
       style={{ "block-size": "100dvh" }}
     >
-      <WorkspaceSidebar />
+      <WorkspaceSidebar>
+        <ComponentTree />
+      </WorkspaceSidebar>
 
       <WorkspaceHeader
         style={{

@@ -1,5 +1,5 @@
-import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
+import { ComponentPreview } from "#/widgets/component-preview/component-preview.jsx";
 
 export function ShowcasePage(props: { component: string; assembly?: string }) {
-  return <Renderer component={props.component} assembly={props.assembly} />;
+  return <ComponentPreview component={props.component} assembly={props.assembly} />;
 }

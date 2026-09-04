@@ -28,6 +28,11 @@ type createMilestoneArgs struct {
 	CategoryID  *int   `json:"category_id,omitempty" jsonschema:"Milestone category ID"`
 }
 
+type deleteMilestoneArgs struct {
+	WorkspaceID int `json:"workspace_id" jsonschema:"Workspace the milestone belongs to. Must match the milestone's stored workspace; mismatches return 'milestone not found' to avoid leaking that a cross-workspace id exists. Global (cross-workspace) milestones cannot be deleted through this tool."`
+	MilestoneID int `json:"milestone_id" jsonschema:"ID of the milestone to delete"`
+}
+
 type listMilestonesArgs struct {
 	WorkspaceID   int    `json:"workspace_id,omitempty" jsonschema:"Filter to a specific workspace"`
 	Status        string `json:"status,omitempty" jsonschema:"Filter by status: planning, in-progress, completed, cancelled"` //nolint:misspell // British spelling matches the persisted planning status
@@ -227,6 +232,37 @@ func init() {
 			}
 			env.AuditWrite(logger.ResourceMilestone, milestone.ID, "create_milestone", milestone.Name)
 			return milestoneToDTO(milestone), nil
+		},
+	})
+
+	Register(Default, Tool[deleteMilestoneArgs]{
+		Name:        "delete_milestone",
+		Group:       CapabilityPlanningActivity,
+		Access:      AccessDestructive,
+		Risk:        RiskHigh,
+		Description: "Permanently delete a workspace milestone. Items linked to it lose the association but are not themselves deleted. Cannot be undone.",
+		Scopes:      []string{auth.ScopeItemsWrite},
+		Run: func(_ context.Context, env *Env, args deleteMilestoneArgs) (any, error) {
+			if !env.HasWorkspaceAccess(args.WorkspaceID) {
+				return map[string]string{"error": "workspace not found"}, nil
+			}
+			canEdit, err := env.PermService.HasWorkspacePermission(env.UserID, args.WorkspaceID, models.PermissionItemEdit)
+			if err != nil {
+				return nil, err
+			}
+			if !canEdit {
+				return map[string]string{"error": "workspace not found"}, nil
+			}
+			planning := services.NewPlanningService(env.DB)
+			existing, err := planning.GetMilestone(args.MilestoneID)
+			if err != nil || existing == nil || existing.WorkspaceID == nil || *existing.WorkspaceID != args.WorkspaceID {
+				return map[string]string{"error": "milestone not found"}, nil //nolint:nilerr // intentional: don't leak existence of cross-workspace/global milestones
+			}
+			if err := planning.DeleteMilestone(args.MilestoneID); err != nil {
+				return nil, err
+			}
+			env.AuditWrite(logger.ResourceMilestone, args.MilestoneID, "delete_milestone", existing.Name)
+			return map[string]any{"success": true, "id": args.MilestoneID}, nil
 		},
 	})
 

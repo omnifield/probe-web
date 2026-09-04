@@ -1,9 +1,17 @@
 export {
+  DiagramArea,
+  type DiagramAreaProps,
   DiagramAxis,
   type DiagramAxisOrientation,
   type DiagramAxisProps,
+  DiagramBar,
+  type DiagramBarProps,
   DiagramGrid,
   type DiagramGridProps,
+  DiagramLine,
+  type DiagramLineProps,
+  DiagramPoint,
+  type DiagramPointProps,
   DiagramRoot,
   type DiagramRootProps,
 } from "./components/index.js";

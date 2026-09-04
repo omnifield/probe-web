@@ -36,13 +36,56 @@
 
 ```
 root
-└─ axis[]
+├─ axis[]
+├─ grid[]
+├─ line[]
+├─ area[]
+├─ bar[]
+└─ point[]
 ```
 
 | часть      | значение                                                              | принимает внутри | рисуется      |
 | ---------- | ---------------------------------------------------------------------- | ------------------ | --------------- |
-| 🗂️ `root` | диаграмма целиком — голый `<svg>`, размер задаётся `width`/`height`   | `axis`, дальше — серии (`ROADMAP.yaml`) | `DiagramRoot` |
+| 🗂️ `root` | диаграмма целиком — голый `<svg>`, размер задаётся `width`/`height`   | `axis`, `grid`, `line`, `area`, `bar`, `point`, дальше — другие серии (`ROADMAP.yaml`) | `DiagramRoot` |
 | `axis`    | одна ось — линия домена + тики + подписи вдоль `scale`                | —                   | `DiagramAxis` |
+| `grid`    | фоновые направляющие линии, продолженные от тиков той же `scale`, что и `axis`, через всю область построения | — | `DiagramGrid` |
+| `line`    | одна серия — ломаная по значениям одного набора данных                | —                   | `DiagramLine` |
+| `area`    | та же серия, но с заливкой от значения до базовой линии `yScale`      | —                   | `DiagramArea` |
+| `bar`     | одна серия — прямоугольник на каждую категорию, ширина/положение от `ScaleBand` | —          | `DiagramBar` |
+| `point`   | одна серия — точка на каждую пару значений, без соединяющей линии     | —                   | `DiagramPoint` |
+
+> [!NOTE]
+> `bar` — ЕДИНСТВЕННАЯ серия пока, что использует категориальную `ScaleBand` (не `ScaleLinear`,
+> как `line`/`area`/`axis`/`grid`). `axis`/`grid` умеют только `ScaleLinear` (обе зовут
+> `scale.ticks(...)`, которого у `ScaleBand` нет) — подписанной категориальной оси кит пока не
+> строит вовсе, честный названный пробел (`ROADMAP.yaml`, `FAQ.md`). Сборка `bar` рисует только
+> `y`-сетку/ось — подписей по `x` нет.
+
+> [!NOTE]
+> `line`/`area`/`bar`/`point` состояний не несут — ни ховера, ни выделения (те приедут вместе с
+> `tooltip`/`legend-toggle`, `ROADMAP.yaml`). Данные и обе шкалы — явные пропы (`data`, `xScale`,
+> `yScale`, `x`/`y`-аксессоры), тот же принцип «scale не читается из контекста», что у `axis`/
+> `grid`. Аксессоры (`x`/`y`) достают СЫРОЕ значение из точки данных — сам компонент считает,
+> куда это ляжет в пикселях.
+>
+> `line`/`area` считают путь через `d3-shape`'s генератор (`xScale(x(datum))` внутри `.x(...)`).
+> `bar`/`point` генератора не используют вовсе — чистая арифметика: `bar` один `<g data-part="bar">`
+> на серию, много `<rect>` внутри (позиция/ширина от `ScaleBand`'s `bandwidth()`); `point` та же
+> форма, много `<circle>` внутри, радиус — необязательный проп `radius` (по умолчанию `3`).
+>
+> `area`'s базовая линия — `yScale.range()[0]` (нижний край диапазона y-шкалы), не отдельный
+> проп: для обычного «график с заливкой до нуля» этого достаточно, стек (несколько `area` друг на
+> друга, каждая со своей базовой линией) — предмет отдельной, ещё не построенной фичи
+> (`stacked-series`, `ROADMAP.yaml`), не изобретается здесь заранее. `line` рисует
+> `fill="none"`/`stroke="currentColor"`, `area`/`bar`/`point` — наоборот, `fill="currentColor"`
+> (`stroke="none"` у area): разные визуальные роли одного и того же семейства серий.
+
+> [!NOTE]
+> `grid` — ОТДЕЛЬНАЯ часть от `axis`, не его подмножество, хотя обе части читают одну и ту же
+> `scale` и один и тот же набор тиков. Разные обязанности: `axis` подписывает значения и рисует
+> линию домена у своего края, `grid` продолжает тики через всю область построения фоном — то же
+> разделение, что `table` проводит между `headerCell`/`headerSortTrigger` (носитель vs
+> нарисованное поведение), просто здесь обе части декоративные, без интерактивности ни у одной.
 
 > [!NOTE]
 > `axis` — ОДНА часть на обе ориентации (`x`/`y`), не две разные части. Один `root` рутинно несёт
@@ -66,8 +109,8 @@ root
 
 |    | часть | состояние | метка | значение |
 | -- | ----- | --------- | ----- | -------- |
-| ↔️ | axis | x | `[data-orientation="x"]` | тики вдоль горизонтали — нижняя ось |
-| ↕️ | axis | y | `[data-orientation="y"]` | тики вдоль вертикали — левая ось |
+| ↔️ | axis, grid | x | `[data-orientation="x"]` | тики вдоль горизонтали — нижняя ось / вертикальные линии сетки |
+| ↕️ | axis, grid | y | `[data-orientation="y"]` | тики вдоль вертикали — левая ось / горизонтальные линии сетки |
 
 `root` состояний не несёт — чистый контейнер.
 
@@ -77,12 +120,67 @@ root
 
 ```
 root · props: width, height
+├─ grid · props: scale (x), orientation="x", from, to
+├─ grid · props: scale (y), orientation="y", from, to
 ├─ axis · props: scale (x), orientation="x", offset
 └─ axis · props: scale (y), orientation="y", offset
 ```
 
-Голая система координат — одна ось x (снизу), одна ось y (слева), без единой серии на них.
-Настоящие `d3-scale`'s `scaleLinear`, не заглушки — тики и подписи реальные.
+Голая система координат — одна ось x (снизу), одна ось y (слева), фоновая сетка под ними, без
+единой серии. Настоящие `d3-scale`'s `scaleLinear`, не заглушки — тики, подписи и линии сетки
+реальные. Сетка рисуется ПЕРВОЙ (позади осей) — порядок в дереве сборки решает порядок в DOM.
+
+<h3 id="сборка-line">📈 line</h3>
+
+```
+root · props: width, height
+├─ grid · props: scale (x), orientation="x", from, to
+├─ grid · props: scale (y), orientation="y", from, to
+├─ line · props: data, xScale, yScale, x, y
+├─ axis · props: scale (x), orientation="x", offset
+└─ axis · props: scale (y), orientation="y", offset
+```
+
+Первый реально показываемый график — температура по дням недели, одна серия поверх сетки, под
+осями (`line` рисуется до `axis`, чтобы линия домена оси оставалась поверх серии на краю).
+
+<h3 id="сборка-area">🟩 area</h3>
+
+```
+root · props: width, height
+├─ grid · props: scale (x), orientation="x", from, to
+├─ grid · props: scale (y), orientation="y", from, to
+├─ area · props: data, xScale, yScale, x, y
+├─ axis · props: scale (x), orientation="x", offset
+└─ axis · props: scale (y), orientation="y", offset
+```
+
+Тот же принцип, что `line`, но заливка — посетители по дням недели.
+
+<h3 id="сборка-bar">📊 bar</h3>
+
+```
+root · props: width, height
+├─ grid · props: scale (y), orientation="y", from, to
+├─ bar · props: data, xScale (ScaleBand), yScale, x, y
+└─ axis · props: scale (y), orientation="y", offset
+```
+
+Выручка по кварталам — категориальная `x` (`ScaleBand`), без подписей категорий (см. `[!NOTE]` в
+разделе «Анатомия» — категориальную ось строить пока нечем).
+
+<h3 id="сборка-point">🔵 point</h3>
+
+```
+root · props: width, height
+├─ grid · props: scale (x), orientation="x", from, to
+├─ grid · props: scale (y), orientation="y", from, to
+├─ point · props: data, xScale, yScale, x, y
+├─ axis · props: scale (x), orientation="x", offset
+└─ axis · props: scale (y), orientation="y", offset
+```
+
+Рассеяние — результат теста по часам подготовки, без соединяющей линии.
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
@@ -98,10 +196,58 @@ const x = scaleLinear().domain([0, 100]).range([40, 320]);
 const y = scaleLinear().domain([0, 50]).range([210, 10]);
 
 <DiagramRoot width={360} height={240}>
+  <DiagramGrid scale={x} orientation="x" from={10} to={210} />
+  <DiagramGrid scale={y} orientation="y" from={40} to={320} />
   <DiagramAxis scale={x} orientation="x" offset={210} />
   <DiagramAxis scale={y} orientation="y" offset={40} />
 </DiagramRoot>;
 ```
 
-Серий пока нет (`ROADMAP.yaml`, веха `cartesian-series`) — эта система координат сама по себе ничего
-не изображает, только оси.
+`grid`'s `from`/`to` — край диапазона ДРУГОЙ (перпендикулярной) шкалы, не своей собственной: x-сетка
+(вертикальные линии) тянется по всей высоте — диапазону y-шкалы, и наоборот.
+
+Первая настоящая серия — линия:
+
+```tsx
+const data = [
+  { day: 0, temperature: 12 },
+  { day: 1, temperature: 15 },
+  { day: 2, temperature: 14 },
+];
+
+<DiagramRoot width={360} height={240}>
+  <DiagramLine data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
+  <DiagramAxis scale={x} orientation="x" offset={210} />
+  <DiagramAxis scale={y} orientation="y" offset={40} />
+</DiagramRoot>;
+```
+
+Вторая серия — та же линия, но с заливкой:
+
+```tsx
+<DiagramArea data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} />
+```
+
+Столбцы — другая (категориальная) `xScale`:
+
+```tsx
+import { scaleBand } from "d3-scale";
+
+const quarters = [
+  { quarter: "Q1", revenue: 120 },
+  { quarter: "Q2", revenue: 190 },
+];
+const category = scaleBand<string>().domain(["Q1", "Q2"]).range([40, 320]).padding(0.2);
+
+<DiagramBar data={quarters} xScale={category} yScale={y} x={(d) => d.quarter} y={(d) => d.revenue} />;
+```
+
+Точки/scatter — тот же принцип, что `line`, без соединения между точками, необязательный `radius`
+(по умолчанию `3`):
+
+```tsx
+<DiagramPoint data={data} xScale={x} yScale={y} x={(d) => d.day} y={(d) => d.temperature} radius={4} />
+```
+
+Веха `cartesian-series` этим закрыта целиком. Радиальные серии (пирог/радар/спидометр, веха
+`radial`) пока не построены (`ROADMAP.yaml`).

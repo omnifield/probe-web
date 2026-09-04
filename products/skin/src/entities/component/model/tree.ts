@@ -1,4 +1,4 @@
-import { editorInfoOf } from "@omnifield/probe-web-ui/passport";
+import { GROUPS, editorInfoOf, groupOf } from "@omnifield/probe-web-ui/passport";
 
 import { listComponents } from "./list.js";
 
@@ -22,12 +22,22 @@ function componentToTreeItem(component: string): TreeItemData {
     };
   }
 
-  return {
-    id: `${component}/${assemblies[0]?.name ?? "base"}`,
-    label: component,
-  };
+  return { id: `${component}/${assemblies[0]?.name ?? "base"}`, label: component };
 }
 
 export function treeItems(): readonly TreeItemData[] {
-  return listComponents().map(componentToTreeItem);
+  const components = listComponents();
+
+  return Object.entries(GROUPS)
+    .map(([group, title]) => ({
+      id: group,
+      label: title,
+      children: components
+        .filter((component) => {
+          const editorInfo = editorInfoOf(component);
+          return editorInfo !== undefined && groupOf(editorInfo) === group;
+        })
+        .map(componentToTreeItem),
+    }))
+    .filter((section) => section.children.length > 0);
 }

@@ -2,6 +2,13 @@
 
 🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@omnifield/probe-web-ui`
 
+Тонкая обёртка над `@ark-ui/solid/accordion` — весь пропс-серфейс Ark проброшен один в один
+(`AccordionProps = ArkRootProps`), фичового бэклога нет (`ROADMAP.yaml`).
+
+> [!TIP]
+> [`FAQ.md`](./FAQ.md) — почему `root`/`item` не несут `anatomyParts.*.attrs` вручную (Ark сам
+> эмитит совпадающий адрес), и почему `data-variant` в сборках не обязан быть покрыт `recipe.ts`.
+
 ## 🧭 Навигация
 
 - 🧩 [Анатомия](#анатомия)

@@ -17,6 +17,18 @@ export const recipe: SlotRecipe = {
         y: { props: { color: "var(--neutral-11)", opacity: "0.25" } },
       },
     },
+    line: {
+      props: { color: "var(--accent-11)", strokeWidth: "2" },
+    },
+    area: {
+      props: { color: "var(--accent-11)", opacity: "0.15" },
+    },
+    bar: {
+      props: { color: "var(--accent-11)" },
+    },
+    point: {
+      props: { color: "var(--accent-11)" },
+    },
   },
 };
 
