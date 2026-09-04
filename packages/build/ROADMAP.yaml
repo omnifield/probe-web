@@ -67,6 +67,17 @@ categories:
           владельцев тех зон, не `build`.
 
 log:
+  - id: json-configs-ship-via-dist
+    type: plan
+    date: 2026-09-04
+    summary: >
+      `/tsconfig`, `/tsconfig-node` и bin `probe-web-node` переехали с прямой ссылки на `src/`
+      на `dist/` (копируются туда шагом сборки). Причина — npm/pnpm ВСЕГДА включает `README.md`
+      любой директории, участвующей в `files`, независимо от `!`-негейшенов: пока конфиги
+      отдавались прямо из `src/tsconfig/`+`src/node/`+`src/shared/`, в тарбол утекали доки этих
+      тем. Через `dist/` (там документов нет) поставка снова чистая — только код и конфиг,
+      `files` вернулся к `["dist", "README.md"]`, как у `packages/ui`.
+
   - id: docs-restructure
     type: plan
     date: 2026-09-04
