@@ -1,5 +1,5 @@
 import { Button } from "@web-core/ui";
-import type { SkinMode, SkinSwitch, SkinWorn } from "@web-core/runtime";
+import type { SkinMode, SkinSwitch, SkinWorn } from "@web-core/skin/wear";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
 import { listOutfits } from "./skins.js";

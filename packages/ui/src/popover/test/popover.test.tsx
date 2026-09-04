@@ -6,7 +6,14 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Popover, kit as popoverKit } from "../components/index.js";
+import {
+  Popover,
+  PopoverContent,
+  PopoverControl,
+  PopoverPositioner,
+  PopoverTitle,
+  kit as popoverKit,
+} from "../components/index.js";
 import { passport as popoverPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as popoverEditorInfo } from "../playground/index.js";
@@ -67,5 +74,38 @@ describe('popover "basic" — the floating half, open by default via providerPro
 
     expect(host.querySelector('[data-scope="popover"][data-part="arrow"]')).not.toBeNull();
     expect(host.querySelector('[data-scope="popover"][data-part="arrow-tip"]')).not.toBeNull();
+  });
+});
+
+describe("multiple controls sharing one popover", () => {
+  it("marks the clicked control current and opens the shared popover", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Popover>
+          <PopoverControl value="alice">Alice</PopoverControl>
+          <PopoverControl value="bob">Bob</PopoverControl>
+          <PopoverPositioner>
+            <PopoverContent>
+              <PopoverTitle>Edit</PopoverTitle>
+            </PopoverContent>
+          </PopoverPositioner>
+        </Popover>
+      ),
+      host,
+    );
+
+    const controls = host.querySelectorAll('[data-scope="popover"][data-part="control"]');
+    (controls[1] as HTMLElement).click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(controls[1]!.getAttribute("data-current")).toBe("");
+    expect(controls[0]!.getAttribute("data-current")).toBeNull();
+    expect(host.querySelector('[data-scope="popover"][data-part="content"]')?.getAttribute("data-state")).toBe(
+      "open",
+    );
   });
 });

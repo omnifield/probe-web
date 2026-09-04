@@ -1,4 +1,3 @@
-// Смоук-проба зоны: настоящий рендер, настоящий фетч и настоящая мутация — не разбор опций.
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -25,7 +24,6 @@ describe("@web-core/query", () => {
     const fetchTodo = vi.fn().mockResolvedValue({ title: "hi" });
 
     function Todo() {
-      // Опции — ФУНКЦИЯ (реактивная), не голый объект: solid-query отслеживает её как scope.
       const query = createQuery(() => ({ queryKey: ["todo", 1], queryFn: fetchTodo }));
       return <p>{query.isPending ? "loading" : query.data?.title}</p>;
     }

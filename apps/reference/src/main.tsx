@@ -10,7 +10,7 @@ import "@web-core/style/base.css";
 // поднимется без раскладки. У потребителя это место его собственного CSS.
 import "./app.css";
 
-import { mount } from "@web-core/runtime";
+import { mount } from "@web-core/shared";
 
 import { App } from "./app";
 import { dressApp } from "./skin";

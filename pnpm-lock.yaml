@@ -14,9 +14,9 @@ importers:
 
   apps/ewc:
     dependencies:
-      '@web-core/runtime':
+      '@web-core/shared':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/shared
       '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
@@ -76,9 +76,9 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.12
         version: 0.13.13(solid-js@1.9.14)
-      '@web-core/runtime':
+      '@web-core/shared':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/shared
       '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
@@ -137,9 +137,9 @@ importers:
       '@web-core/router':
         specifier: workspace:*
         version: link:../../packages/router
-      '@web-core/runtime':
+      '@web-core/shared':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/shared
       '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
@@ -217,6 +217,9 @@ importers:
 
   packages/assembly:
     dependencies:
+      '@web-core/shared':
+        specifier: workspace:*
+        version: link:../shared
       fast-json-patch:
         specifier: ^3.1.1
         version: 3.1.1
@@ -332,6 +335,15 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
+      '@web-core/build':
+        specifier: workspace:*
+        version: link:../build
+      '@web-core/lint':
+        specifier: workspace:*
+        version: link:../lint
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1(jiti@2.7.0)(supports-color@7.2.0)
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -453,7 +465,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
 
-  packages/runtime:
+  packages/shared:
     devDependencies:
       '@types/node':
         specifier: ^24.10.1
@@ -472,13 +484,13 @@ importers:
         version: 7.0.2
       vite:
         specifier: ^8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
+        version: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       vite-plugin-solid:
         specifier: ^2.11.14
-        version: 2.11.14(solid-js@1.9.14)(supports-color@7.2.0)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
+        version: 2.11.14(solid-js@1.9.14)(supports-color@7.2.0)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       vitest:
         specifier: ^4.1.10
-        version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
+        version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
 
   packages/skin:
     dependencies:
@@ -632,6 +644,9 @@ importers:
       '@web-core/io':
         specifier: workspace:*
         version: link:../io
+      '@web-core/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@web-core/skin':
         specifier: workspace:*
         version: link:../skin
@@ -7292,6 +7307,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  vite-plugin-solid@2.11.14(solid-js@1.9.14)(supports-color@7.2.0)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)):
+    dependencies:
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@types/babel__core': 7.20.5
+      babel-preset-solid: 1.9.12(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.14)
+      merge-anything: 5.1.7
+      solid-js: 1.9.14
+      solid-refresh: 0.6.3(solid-js@1.9.14)(supports-color@7.2.0)
+      vite: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
+      vitefu: 1.1.3(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
+    transitivePeerDependencies:
+      - supports-color
+
   vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.33.0
@@ -7325,6 +7353,10 @@ snapshots:
   vitefu@1.1.3(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)):
     optionalDependencies:
       vite: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
+
+  vitefu@1.1.3(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)):
+    optionalDependencies:
+      vite: 8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
 
   vitest@4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)):
     dependencies:

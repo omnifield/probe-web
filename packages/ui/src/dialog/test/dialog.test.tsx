@@ -6,7 +6,14 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Dialog, kit as dialogKit } from "../components/index.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogPositioner,
+  DialogTitle,
+  DialogTrigger,
+  kit as dialogKit,
+} from "../components/index.js";
 import { passport as dialogPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as dialogEditorInfo } from "../playground/index.js";
@@ -64,5 +71,38 @@ describe('dialog "basic" — the floating half, open by default via providerProp
 
     const closeTrigger = host.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
     expect(closeTrigger?.textContent).toBe("✕");
+  });
+});
+
+describe("multiple triggers sharing one dialog", () => {
+  it("marks the clicked trigger current and opens the shared dialog", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Dialog>
+          <DialogTrigger value="alice">Alice</DialogTrigger>
+          <DialogTrigger value="bob">Bob</DialogTrigger>
+          <DialogPositioner>
+            <DialogContent>
+              <DialogTitle>Edit</DialogTitle>
+            </DialogContent>
+          </DialogPositioner>
+        </Dialog>
+      ),
+      host,
+    );
+
+    const triggers = host.querySelectorAll('[data-scope="dialog"][data-part="trigger"]');
+    (triggers[1] as HTMLElement).click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(triggers[1]!.getAttribute("data-current")).toBe("");
+    expect(triggers[0]!.getAttribute("data-current")).toBeNull();
+    expect(host.querySelector('[data-scope="dialog"][data-part="content"]')?.getAttribute("data-state")).toBe(
+      "open",
+    );
   });
 });

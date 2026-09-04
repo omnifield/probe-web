@@ -11,12 +11,12 @@
       "default": "./dist/index.js"
     },
     "./devtools": {
-      "types": "./dist/devtools.d.ts",
-      "default": "./dist/devtools.js"
+      "types": "./dist/devtools/index.d.ts",
+      "default": "./dist/devtools/index.js"
     },
     "./persist": {
-      "types": "./dist/persist.d.ts",
-      "default": "./dist/persist.js"
+      "types": "./dist/persist/index.d.ts",
+      "default": "./dist/persist/index.js"
     }
   },
   "files": [

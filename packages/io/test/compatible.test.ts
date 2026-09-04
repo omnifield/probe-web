@@ -1,11 +1,10 @@
-// Живая проба подбора (PWEB-189): тема из записей разной формы — на выходе только те, что
-// реально проходят схему, в исходном порядке; тема без единой подходящей — пустой перечень,
-// не отказ.
+// Живая проба подбора: тема из записей разной формы — на выходе только те, что реально проходят
+// схему, в исходном порядке; тема без единой подходящей — пустой перечень, не отказ.
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { compatibleItems } from "../src/compatible.js";
+import { compatibleItems } from "../src/index.js";
 
 const buttonInput = z.object({ label: z.string(), payload: z.unknown().optional() });
 

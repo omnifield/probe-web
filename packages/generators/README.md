@@ -1,100 +1,194 @@
-# @web-core/generators
+# 🏭 web-core generators
 
-Generation tooling: what stamps something out in this repository, or keeps
-something in sync with the disk, rather than the stamping itself. Started by
-user decision on 2026-08-30 — replace the ad-hoc
-`packages/ui/scripts/generate.mjs` with a reusable tool, and give a home to
-other generators of the same kind (test data from a template, template-driven
-text generation).
+🏷️ codegen · 🧬 engine · 📦 `@web-core/generators`
 
-## Shape
+## 🧭 Навигация
 
-- **Does not depend on Nx**, and does not require it — an Nx plugin is only
-  one consumer of the engine here, not the engine itself.
-- **Nothing depends on this directly.** It is a library of tools, opted into:
-  a zone can keep its own ad-hoc script or take a ready-made plugin from
-  here.
-- **One engine, not several parallel ones.** Earlier revisions split the
-  same "scan → collect → render → write" mechanics across `barrel` (one
-  file from all entries) and `scaffold` (one file per entry), with a third
-  layer bridging the two through an unsafe cast. Consolidated 2026-09-01
-  (user's call — the split read as three copies of the same thing, not
-  three real concerns): `engine` is now the only engine: one
-  `EntryContext`, one `AggregatePlugin`/`PerEntryPlugin` pair, one runner.
-  Renamed from `plugin` the same day (also user's call) — a folder named
-  `plugin` holding zero actual plugins, only the machinery that RUNS them,
-  read as if it were a plugin itself.
+- 🏠 [Главное](#главное)
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-## Modules
+<h2 id="главное">🏠 Главное</h2>
 
-| module | what it does |
-|---|---|
-| [`src/cli.ts`](#clits) | the actual entry point — loads a product's TypeScript config file and runs it, the way `vite`'s own CLI loads `vite.config.ts` |
-| [`src/engine/`](src/engine/README.md) | the one engine — `vite`/`webpack`-shaped: a runner owns scanning/reading/writing/zone-merging, a plugin (an `AggregatePlugin`/`PerEntryPlugin` a caller supplies) is data plus a few functions |
-| [`src/extract/`](src/extract/README.md) | read a real, executed value out of a TypeScript file (a passport, a Zod schema) instead of parsing its text |
-| [`src/preserve/`](src/preserve/README.md) | one hand-written region, bracketed by markers, survives a full-file regeneration — the engine's `zones` call this automatically, so a plugin never invokes it itself |
+⚙️ Раннер вида `vite`/`webpack` — используйте, если зона репозитория штампует файлы шаблоном
+(агрегат из папок компонентов, файл на каждую папку) и хочет сохранять ручные правки поверх
+регенерации, вместо своего скрипта на голом `node:fs`. Раннер сканирует папки, гоняет плагины
+(собрать данные → отрендерить → записать), сам сливает размеченные зоны с тем, что человек дописал
+руками — плагин ни разу не трогает диск сам. 🖥️ CLI (`web-core-generate`) грузит TS-конфиг
+ИСПОЛНЕНИЕМ (не разбором текста) и гоняет раннер — потребителю не нужно писать ни строчки обвязки
+(`fileURLToPath`/`dirname`/`await run(...)`). Первый и пока единственный настоящий потребитель —
+`packages/ui`: `generators/generate.config.ts` → `kitBarrelPlugins` → `passport.ts`/`kit.ts`/
+`io.ts`/`index.ts` кита.
 
-## `cli.ts`
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-A product's whole generator becomes one TypeScript file:
+🗺️ У движка нет DOM-узлов — «часть» здесь означает подпуть поставки, а «адрес» — импорт-спецификатор
+(или имя бинарника), которым эта часть достаётся.
+
+| Часть | Адрес | Экспортирует |
+|---|---|---|
+| Раннер и API плагина | `@web-core/generators/engine` | `defineConfig`, `run`, `hasFile`, `EntryContext`, `toEntryContext`, `AggregatePlugin`, `PerEntryPlugin`, `GeneratorPlugin`, `isAggregatePlugin`, `discoverEntries`, `writeGeneratedFiles`, `fromTemplate`, `fromEntryTemplate`, `identifierFromEntryName`, `Entry`, `GeneratedFile` |
+| Чтение TS-модуля исполнением | `@web-core/generators/extract` | `importModule` |
+| Сохранение ручных правок | `@web-core/generators/preserve` | `mergeMarkedRegions`, `MarkedRegionMarkers`, `extractMarkedRegion` |
+| Готовый плагин под «кит»-раскладку | `@web-core/generators/plugins/kit` | `kitBarrelPlugins`, `KitBarrelOptions` |
+| Точка входа | бинарник `web-core-generate` | CLI (`web-core-generate <config.ts>`); `runCli` — та же загрузка программным вызовом |
+
+📂 Внутри `@web-core/generators`: `src/engine/` расколот по концерну, не по подпутю — `runner.ts`
+(сам раннер: `defineConfig`/`run`), `context.ts` (`EntryContext` — фильтр/чтение/импорт без
+`node:fs` в руках плагина), `types.ts` (`AggregatePlugin`/`PerEntryPlugin`/`Entry`/
+`GeneratedFile`), `scan.ts`/`write.ts` (скан папок / запись на диск), `template.ts`
+(Handlebars-обёртка), `identifier.ts` (`kebab-case` → `camelCase`), `predicates.ts` (`hasFile`).
+`src/extract/module.ts` и `src/preserve/regions.ts` — однофайловые, `src/plugins/kit/barrels.ts` —
+единственный сегодня готовый плагин, `src/cli.ts` — точка входа без папки, как и `bin.mjs` у
+`build`.
+
+<h2 id="использование">🚀 Использование</h2>
+
+✅ Продукту с «кит»-раскладкой (`entity/passport.ts`+`playground/index.ts`+`components/kit.ts(x)`,
+опционально `entity/io.ts`) нужен только тонкий конфиг и одна команда:
 
 ```ts
-// generators.config.ts
+// generators/generate.config.ts
 import { defineConfig, hasFile } from "@web-core/generators/engine";
+import { kitBarrelPlugins } from "@web-core/generators/plugins/kit";
 
 export default defineConfig({
-  rootDir: "src",
+  rootDir: srcDir,
   isEntry: hasFile("entity/passport.ts"),
-  plugins: [/* ... */],
+  plugins: kitBarrelPlugins({ outputDir: srcDir, templatesDir: join(thisDir, "templates", "barrel") }),
 });
 ```
 
 ```
-node .../packages/generators/dist/cli.js ./generators.config.ts
+web-core-generate generators/generate.config.ts
 ```
 
-No `fileURLToPath`/`dirname`/`await run(...)` boilerplate in the product's own script — `runCli`
-loads the config by EXECUTING it (`extract`'s `importModule`, same as everywhere else here: a
-config built by `defineConfig({...})` is a real value once it runs, not text worth parsing) and
-calls `run` on it. `runCli` is exported on its own too, for a caller that wants the written files
-back (tests, a wrapper script) instead of a process exit code.
+**Свой плагин** (не «кит»-раскладка) — просто объект нужной формы, `AggregatePlugin` (один файл
+из всех entries) или `PerEntryPlugin` (файл на каждый entry):
 
-## What's done
+```ts
+import { defineConfig, hasFile, fromTemplate } from "@web-core/generators/engine";
+import type { AggregatePlugin } from "@web-core/generators/engine";
 
-- `extract` — proven against a real component passport
-  (`packages/ui/src/accordion/entity/passport.ts`), not just a fixture
-  (`GEN-3`). `importModule` — fixed two gaps reported from `packages/ui`'s
-  README pilot (2026-08-31): a transitive CommonJS dependency with no
-  `exports` map (`fast-json-patch` under `@web-core/io`) failed
-  to import, and a `.tsx` file with real Solid JSX failed to parse. Fixed
-  by switching to `createServer()` + `server.ssrLoadModule()` (the path a
-  real `vite dev` uses) and giving `importModule` a second, optional
-  `InlineConfig` argument so a caller supplies its own fix
-  (`ssr.noExternal`, `plugins: [solid()]`) without this package baking in
-  knowledge of Solid or `packages/io` — see `src/extract/README.md`.
-- `preserve` — one hand-written region survives regeneration; unchanged
-  since it was written, still what the engine's `zones` calls underneath.
-- `engine` — the `vite`/`webpack`-shaped runner (2026-09-01, user decision:
-  a product's generator script should configure a tool, not hand-write
-  filesystem plumbing). `EntryContext` replaces every `node:fs`/
-  `node:path` call a product's own script used to make; `zones` replaces
-  a plugin author calling `preserve` by hand. First landed (as a folder
-  named `plugin`) as an additive layer on top of the (then-separate)
-  `barrel`/`scaffold` engines, calling them through an unsafe cast;
-  consolidated into its own `scan.ts`/`write.ts`/`template.ts`/
-  `identifier.ts` the same day, once the cast made the redundancy
-  obvious, then renamed `plugin` → `engine` (same day, same reason: a
-  folder called `plugin` holding zero actual plugins read as if it were
-  one) — see `src/engine/README.md`.
-- `cli.ts` — the actual entry point (2026-09-01): a product's generator
-  script is now ONE TypeScript config file plus one `node dist/cli.js
-  <config>` call, no hand-rolled `run(...)` invocation — see `## cli.ts`
-  above.
-- Not done yet: reusable plugin BUNDLES (a ready `AggregatePlugin[]` for a
-  "kit" product's passport/kit/io/index barrels, a `PerEntryPlugin` for a
-  per-component README) living in this product, for `packages/ui` (and
-  future kit-shaped products, e.g. `products/tables`'s planned migration
-  to the same `entity`/`playground`/`components` layout) to import and
-  configure rather than hand-write. `packages/ui/generators/` currently
-  hand-writes its own barrel plugins directly against the engine's types —
-  next step, once this consolidation is reviewed.
+const listPlugin: AggregatePlugin<{ name: string }> = {
+  name: "index",
+  output: join(srcDir, "index.ts"),
+  collect: (entries) => entries.map((entry) => ({ name: entry.name })),
+  render: fromTemplate(join(templatesDir, "index.ts.hbs")),
+};
+
+export default defineConfig({ rootDir: srcDir, isEntry: hasFile("marker.txt"), plugins: [listPlugin] });
+```
+
+**Чтение реального модуля** (не текста файла):
+
+```ts
+import { importModule } from "@web-core/generators/extract";
+
+const { passport } = await importModule<typeof import("./entity/passport.js")>("/abs/path/entity/passport.ts");
+```
+
+**Ручная зона, переживающая регенерацию** — не отдельный вызов, поле плагина:
+
+```ts
+{
+  // ...
+  zones: ["notes"], // <!-- gen:notes:start/end --> в шаблоне — раннер сам сольёт при перезаписи
+}
+```
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+🔧 У раннера нет одной сущности с общим списком настроек — конфиг раннера, плагин и готовый
+`kitBarrelPlugins` настраиваются каждый своим набором полей.
+
+| Настройка | Где | Тип | По умолчанию |
+|---|---|---|---|
+| `rootDir` | `defineConfig`, `config.rootDir` | `string` | обязательное |
+| `isEntry` | `defineConfig`, `config.isEntry` | `(entryPath, entryName) => boolean` | обязательное |
+| `plugins` | `defineConfig`, `config.plugins` | `GeneratorPlugin[]` | обязательное |
+| `isEntry` (плагина) | `AggregatePlugin`/`PerEntryPlugin` | `(entry: EntryContext) => boolean` | не задан — видит все entries |
+| `setup` | `AggregatePlugin`/`PerEntryPlugin` | `() => void \| Promise<void>` | не задан |
+| `zones` | `AggregatePlugin`/`PerEntryPlugin` | `readonly string[]` | не задан — регенерация без сохранения |
+| `outputDir`, `templatesDir` | `kitBarrelPlugins`, `KitBarrelOptions` | `string` | обязательные |
+| Второй аргумент | `importModule(path, config?)` | `InlineConfig` (Vite) | `{}` |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+🚦 Настоящих runtime-состояний нет — есть режимы, в которых по-разному ведёт себя раннер и его
+плагины на каждом прогоне.
+
+| Состояние | Метка | Где |
+|---|---|---|
+| Плагин пропустил entry | entry отсутствует в списке, переданном этому плагину | `runner.ts`, свой `isEntry` плагина |
+| Зоне нечего сохранять (первый прогон или маркер не найден) | остаётся плейсхолдер свежего рендера | `mergeZones` → `preserve` |
+| Зона донесла ручную правку | кусок из старого файла на диске вставлен в свежий рендер | `mergeZones` |
+| Прогон прерван, ничего не записано | исключение из `collect`/`validate` до единой записи всех файлов | `run()` |
+| Карта частей кита — `.tsx` или `.ts` | читается с диска, не выбирается заранее | `kitBarrelPlugins`, `kitFileOf` |
+| `io.ts` пуст, но существует | ни один entry не объявил `entity/io.ts` | `kitBarrelPlugins`, `ioPlugin` |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3>📥 Вход</h3>
+
+| Вызов | Принимает |
+|---|---|
+| `defineConfig(config)` | `GeneratorConfig` (`rootDir`, `isEntry`, `plugins`) |
+| `run(config)` | результат `defineConfig` |
+| `runCli(configPath)` / `web-core-generate <config>` | абсолютный или относительный путь к `.ts`-файлу с `export default defineConfig(...)` |
+| `importModule(path, config?)` | абсолютный путь к `.ts`-модулю, необязательный `InlineConfig` |
+| `mergeMarkedRegions(fresh, existing, markers)` | свежий текст, текущий текст файла (или `undefined`), пара маркеров |
+| `kitBarrelPlugins(options)` | `KitBarrelOptions` (`outputDir`, `templatesDir`) |
+
+<h3>📤 Выход</h3>
+
+| Источник | Отдаёт |
+|---|---|
+| `run` / `runCli` | `GeneratedFile[]` (`{ path, content }`) — уже записаны на диск к моменту возврата |
+| `importModule` | реальный, исполненный модуль — типизируется явно вызывающим (`importModule<T>`) |
+| `mergeMarkedRegions` | итоговая строка — свежий текст с зонами, взятыми из старого файла |
+| `kitBarrelPlugins` | `readonly AggregatePlugin[]` — четыре плагина, один общий скан |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+🧪 Показаны только прогоны, реально проверенные тестом или настоящим потребителем — не
+теоретические примеры.
+
+| Сборка | Что доказывает | Файл |
+|---|---|---|
+| `run()` с `AggregatePlugin` | скан → сбор → рендер → запись одним проходом, `validate` останавливает запись целиком | `test/engine/runner.test.ts` |
+| `run()` с `PerEntryPlugin` + `zones` | файл на каждый entry, ручная правка переживает повторный прогон | `test/engine/runner.test.ts` |
+| `runCli` | настоящий TS-конфиг грузится исполнением и гонит раннер, конфиг без `default`-экспорта — понятная ошибка | `test/cli/cli.test.ts` |
+| `kitBarrelPlugins` | `.tsx`/`.ts`-разводка карты кита, `io.ts` фильтруется по `entity/io.ts`, обе ошибки валидации не пишут ничего на диск | `test/plugins/kit/barrels.test.ts` |
+| `importModule` + шаблон против настоящего паспорта | реальный `passport.ts` (копия `accordion`) исполняется и превращается в таблицы README | `test/engine/component-readme.test.ts` |
+| Настоящий потребитель | `packages/ui` — `generate.config.ts` порождает `passport.ts`/`kit.ts`/`io.ts`/`index.ts`, кит целиком собирается и типчекается на результате | `packages/ui/generators/generate.config.ts` |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+🧩 Съёмный слой этого движка — сам плагин: раннер не носит в себе ни одного вида генерации
+заранее, любой `AggregatePlugin`/`PerEntryPlugin` подключается явным элементом массива `plugins`,
+без него раннер ничего не производит вовсе.
+
+```ts
+import { defineConfig, hasFile, fromEntryTemplate } from "@web-core/generators/engine";
+import type { PerEntryPlugin } from "@web-core/generators/engine";
+
+const readmePlugin: PerEntryPlugin<{ name: string }> = {
+  name: "readme",
+  outputFor: (entry) => entry.resolve("README.md"),
+  collect: (entry) => ({ name: entry.name }),
+  render: fromEntryTemplate(join(templatesDir, "readme.md.hbs")),
+  zones: ["notes"],
+};
+
+export default defineConfig({ rootDir: srcDir, isEntry: hasFile("entity/passport.ts"), plugins: [readmePlugin] });
+```
+
+✨ `kitBarrelPlugins` — готовый рецепт именно под «кит»-раскладку; свою — как выше, руками, теми
+же двумя формами, что и он.

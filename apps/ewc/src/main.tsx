@@ -1,7 +1,8 @@
 import "@web-core/style/base.css";
 import "./app.css";
 
-import { makeSkinSwitch, mount } from "@web-core/runtime";
+import { mount } from "@web-core/shared";
+import { makeSkinSwitch } from "@web-core/skin/wear";
 
 import { App } from "./app.jsx";
 import { SKIN_SOURCE } from "./skins.js";

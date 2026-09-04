@@ -3,6 +3,7 @@ import { sep } from "node:path";
 
 import { normalizePath, type EnvironmentModuleNode, type Plugin, type ViteDevServer } from "vite";
 
+import { trace } from "../shared/trace.js";
 import type { DevState } from "./workspace-source.js";
 
 /** Лежит ли файл внутри папки — по границе сегмента, не по префиксу строки. */

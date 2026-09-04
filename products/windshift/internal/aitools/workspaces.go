@@ -43,6 +43,8 @@ type createWorkspaceArgs struct {
 	Name                string `json:"name" jsonschema:"Workspace name"`
 	Key                 string `json:"key" jsonschema:"Short unique workspace key, used as the item key prefix (e.g. PROJ)"`
 	Description         string `json:"description,omitempty" jsonschema:"Workspace description"`
+	Icon                string `json:"icon,omitempty" jsonschema:"Lucide icon name shown on the workspace's card/sidebar (e.g. Database, GitBranch, Palette)"`
+	Color               string `json:"color,omitempty" jsonschema:"Hex color for the workspace's icon/accent (e.g. #3b82f6)"`
 	TemplateWorkspaceID *int   `json:"template_workspace_id,omitempty" jsonschema:"Source workspace ID to clone from. Must be an active, non-personal workspace marked as a template. Copies its configuration set, item templates, seed items, knowledge pages, milestones, and iterations."`
 }
 
@@ -130,6 +132,8 @@ func init() {
 			name := sanitize.ShortIdentifier.Sanitize(args.Name)
 			key := sanitize.ShortIdentifier.Sanitize(args.Key)
 			desc := sanitize.RichText.Sanitize(args.Description)
+			icon := sanitize.ShortIdentifier.Sanitize(args.Icon)
+			color := sanitize.ShortIdentifier.Sanitize(args.Color)
 			if name == "" {
 				return map[string]string{"error": "name is required"}, nil
 			}
@@ -143,6 +147,8 @@ func init() {
 				Name:                name,
 				Key:                 key,
 				Description:         desc,
+				Icon:                icon,
+				Color:               color,
 				CreatorID:           env.UserID,
 				DefaultView:         "board",
 				TemplateWorkspaceID: args.TemplateWorkspaceID,

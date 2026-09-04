@@ -1,20 +1,51 @@
-# @web-core/query
+# 🌐 web-core Query
 
-Данные из сети web-core поверх `@tanstack/solid-query` — самый распространённый выбор для
-Solid сегодня (та же семья, что и `@web-core/router`; версии `solid-query` и
-`solid-router` идут в одном темпе выпуска у TanStack). Приложение импортирует ровно этот
-пакет — никогда `@tanstack/solid-query` напрямую, — той же причиной, что у `router`/`store`:
-единый путь резолва даёт единый `QueryClientContext` на всё приложение.
+🏷️ data · 🧬 engine · 📦 `@web-core/query`
 
-Три подпутя:
+## 🧭 Навигация
 
-- `.` — весь `@tanstack/solid-query` реэкспортом (сам пакет уже реэкспортирует
-  `@tanstack/query-core` целиком — фильтровать вручную незачем, та же логика, что у `router`).
-- `./devtools` — `SolidQueryDevtools`, отдельно от `.`, чтобы не тянуться в прод случайно.
-- `./persist` — сохранение кэша между перезагрузками (`persistQueryClient` +
-  `createSyncStoragePersister` одним подпутём — на практике их всегда берут вместе).
+- 🏠 [Главное](#главное)
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-## Установка и вайринг
+<h2 id="главное">🏠 Главное</h2>
+
+⚡ Данные из сети web-core поверх `@tanstack/solid-query` — та же семья, что и
+`@web-core/router` (версии `solid-query`/`solid-router` идут в одном темпе выпуска у TanStack).
+Приложение импортирует ровно этот пакет — никогда `@tanstack/solid-query` напрямую, — той же
+причиной, что у `router`/`store`: единый путь резолва даёт единый `QueryClientContext` на всё
+приложение, а не два из-за двух копий пакета. 🔄 `@tanstack/solid-query` уже сам реэкспортирует
+`@tanstack/query-core` целиком — фильтровать вручную незачем.
+
+<h2 id="анатомия">🧩 Анатомия</h2>
+
+🗺️ У движка нет DOM-узлов — «часть» означает подпуть поставки, «адрес» — импорт-спецификатор,
+которым эта часть достаётся. Три подпути: корень — весь `@tanstack/solid-query`, `./devtools` и
+`./persist` — отдельными дверьми, чтобы приложение импортировало ровно то, что использует.
+
+| Часть          | Адрес                    | Экспортирует                                                                                                                                                                                                                    |
+| -------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Данные из сети | `@web-core/query`         | весь `@tanstack/solid-query` (`useQuery`/`createQuery`, `useMutation`/`createMutation`, `useInfiniteQuery`/`createInfiniteQuery`, `useQueries`/`createQueries`, `QueryClient`, `QueryClientProvider`, `queryOptions`, `infiniteQueryOptions`, `mutationOptions`, `useIsFetching`, `useIsMutating`, …), весь `@tanstack/query-core` реэкспортом |
+| Devtools       | `@web-core/query/devtools` | `SolidQueryDevtools`, `SolidQueryDevtoolsPanel`                                                                                                                                                                               |
+| Persist        | `@web-core/query/persist`  | `persistQueryClient`, `createSyncStoragePersister`, весь `@tanstack/query-persist-client-core` (`persistQueryClientRestore`, `persistQueryClientSave`, `persistQueryClientSubscribe`, ретрай-стратегии, `createPersister`)  |
+
+📦 Внутри `@web-core/query`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реальный
+`export * from "@tanstack/solid-query"` вместе с обоснованием полноты реэкспорта),
+`src/devtools/index.ts`, `src/persist/index.ts` — каждый подпуть в своей папке, по образцу
+`@web-core/store`'s `./machine`.
+
+<h2 id="использование">🚀 Использование</h2>
+
+✅ Вайринг клиента в приложение, запрос, мутация и devtools покрывают то, чем реально пишется код
+с этим пакетом.
+
+**Вайринг:**
 
 ```jsonc
 // package.json приложения
@@ -23,13 +54,9 @@ Solid сегодня (та же семья, что и `@web-core/router`; вер
 }
 ```
 
-`@tanstack/solid-query` — НЕ peer: приложение никогда не импортирует его напрямую (в отличие
-от `@web-core/router`, тут нет порождённого кода со своим hardcoded-импортом
-вендора), значит прятать версию целиком безопасно — как у `@web-core/store`.
-
 ```tsx
 // src/main.tsx
-import { mount } from "@web-core/runtime";
+import { mount } from "@web-core/shared";
 import { QueryClient, QueryClientProvider } from "@web-core/query";
 import { RouterProvider } from "@web-core/router";
 
@@ -44,26 +71,10 @@ mount(() => (
 ));
 ```
 
-## Две ловушки Solid-адаптера — обе меняют поведение молча, без ошибки типов
-
-**1. Опции — ФУНКЦИЯ, не голый объект.** Solid не перерендеривает компонент при смене пропа —
-внутренности `createQuery` отслеживают реактивность САМИ, и без обёртки в функцию `queryKey`
-просто не увидит смену `id()`:
+**`createQuery` — опции ФУНКЦИЕЙ, результат читается свойством (не деструктурировать):**
 
 ```tsx
-// ❌ застынет на первом значении id — React-привычка здесь не работает
-const query = createQuery({ queryKey: ["todo", id()], queryFn: () => fetchTodo(id()) });
-
-// ✅ вызывается заново при каждом отслеживаемом изменении внутри
 const query = createQuery(() => ({ queryKey: ["todo", id()], queryFn: () => fetchTodo(id()) }));
-```
-
-**2. Результат — реактивный стор, не деструктурировать.** `query.data`/`query.isPending`
-читаются свойством в реактивном скоупе (JSX, `createMemo`, …); `const { data } = query` рвёт
-подписку — деструктуризация снимает копию один раз, а не следит за изменением:
-
-```tsx
-const query = createQuery(() => ({ queryKey: ["todos"], queryFn: fetchTodos }));
 
 return (
   <Switch>
@@ -76,13 +87,17 @@ return (
 );
 ```
 
-Хуки существуют в двух написаниях: `useQuery`/`useMutation`/`useInfiniteQuery`/`useQueries`
-(общее для всех фреймворков TanStack) и `createQuery`/`createMutation`/`createInfiniteQuery`/
-`createQueries` — буквальные алиасы (`typeof useQuery`), под solid-конвенцию `create*`, которой
-в web-core держатся `createSignal`/`createStore`/`createMachine`. Используйте `create*` —
-примеры здесь и далее на нём.
+**`createMutation`:**
 
-## Devtools
+```tsx
+const mutation = createMutation(() => ({ mutationFn: saveTodo }));
+
+<button onClick={() => mutation.mutate(todo)} disabled={mutation.isPending}>
+  {mutation.isSuccess ? "saved" : "save"}
+</button>;
+```
+
+**Devtools:**
 
 ```tsx
 import { SolidQueryDevtools } from "@web-core/query/devtools";
@@ -90,11 +105,78 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 {import.meta.env.DEV && <SolidQueryDevtools />}
 ```
 
-## Пара с роутером: данные грузятся ДО рендера маршрута
+<h2 id="настройки">🎚️ Настройки</h2>
 
-`@web-core/router` кладёт `queryClient` в контекст роутера через
-`createRootRouteWithContext`, и `loader` маршрута тянет данные заранее — тогда переход не
-показывает пустой экран, ожидая `createQuery` уже ПОСЛЕ монтирования:
+🔧 У пакета нет своей сущности настроек — это опции конструкторов вендора, реэкспортированных как
+есть. Таблица — именованные опции по функциям, к которым они относятся.
+
+| Настройка                                                      | Где                                            | Тип                                     | По умолчанию                    |
+| ---------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------ | ----------------------------------- |
+| `defaultOptions.queries`/`defaultOptions.mutations`               | `new QueryClient(config)`                         | `QueryObserverOptions`/`MutationObserverOptions` | нет дефолтов вендора                |
+| `queryKey`/`queryFn`/`staleTime`/`gcTime`/`retry`/…                | `createQuery(() => options)`                      | `QueryOptions`                              | зависит от поля                     |
+| `mutationFn`/`onSuccess`/`onError`/…                               | `createMutation(() => options)`                   | `MutationOptions`                           | —                                    |
+| `initialIsOpen`                                                    | `<SolidQueryDevtools>`                            | `boolean`                                   | `false`                              |
+| `buttonPosition`                                                   | `<SolidQueryDevtools>`                            | `"top-left"\|"top-right"\|"bottom-left"\|"bottom-right"` | `"bottom-right"`     |
+| `position`                                                         | `<SolidQueryDevtools>`                            | `"top"\|"bottom"\|"left"\|"right"`          | `"bottom"`                           |
+| `errorTypes`                                                       | `<SolidQueryDevtools>`                            | `DevtoolsErrorType[]`                       | `[]`                                 |
+| `queryClient`/`persister`/`buster`                                 | `persistQueryClient(options)`                     | `PersistQueryClientOptions`                 | `buster` — `""`                      |
+| `maxAge`                                                           | `persistQueryClient` (restore-часть)              | `number` (мс)                               | 24 часа (вендор)                     |
+| `dehydrateOptions`/`hydrateOptions`                                | `persistQueryClient` (save/restore-часть)         | `DehydrateOptions`/`HydrateOptions`         | —                                    |
+| `storage`                                                          | `createSyncStoragePersister(options)`             | `Storage \| undefined \| null`              | обязательное                         |
+| `key`                                                              | `createSyncStoragePersister`                      | `string`                                    | `"REACT_QUERY_OFFLINE_CACHE"`        |
+| `throttleTime`                                                     | `createSyncStoragePersister`                      | `number` (мс)                               | `1000`                               |
+| `serialize`/`deserialize`                                          | `createSyncStoragePersister`                      | функции                                     | `JSON.stringify`/`JSON.parse`        |
+| `retry`                                                            | `createSyncStoragePersister`                      | `PersistRetryer`                            | —                                    |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+🚦 Ни одно из состояний не придумано этим пакетом — все взяты как есть из типов
+`@tanstack/query-core`.
+
+| Состояние            | Метка                                      | Где                              |
+| ---------------------- | --------------------------------------------- | ------------------------------------ |
+| Запрос ждёт/упал/готов | `status: "pending" \| "error" \| "success"`   | `QueryObserverResult`, `createQuery` |
+| Сетевая активность     | `fetchStatus: "fetching" \| "paused" \| "idle"` | `QueryObserverResult`               |
+| Флаги-геттеры          | `isPending`/`isError`/`isSuccess`/`isFetching`/`isStale`/… | `QueryObserverResult`   |
+| Мутация                | `status: "idle" \| "pending" \| "success" \| "error"` | `MutationObserverResult`, `createMutation` |
+
+<h2 id="io">🔌 IO</h2>
+
+↔️ Вход и выход у каждого конструктора — своя форма, унаследованная от вендора без изменений.
+
+### 📥 Вход
+
+| Конструктор                   | Принимает                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `createQuery(options)`            | `Accessor<UseQueryOptions>` — ФУНКЦИЯ, не голый объект (тип называется иначе, но это `Accessor`) |
+| `createMutation(options)`         | `Accessor<UseMutationOptions>`                                                                   |
+| `new QueryClient(config?)`        | `QueryClientConfig` — `{ defaultOptions?, queryCache?, mutationCache? }`                         |
+| `persistQueryClient(options)`     | `{ queryClient, persister, buster?, maxAge?, dehydrateOptions?, hydrateOptions? }`                |
+| `createSyncStoragePersister(options)` | `{ storage, key?, throttleTime?, serialize?, deserialize?, retry? }`                          |
+
+### 📤 Выход
+
+| Источник                       | Отдаёт                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `createQuery(...)`                  | `Proxy` над Solid-стором (`QueryObserverResult`) — читать свойством, не деструктурировать         |
+| `createMutation(...)`               | `MutationObserverResult` + `mutate`/`mutateAsync`                                                |
+| `persistQueryClient(...)`           | `[unsubscribe: () => void, restorePromise: Promise<void>]`                                       |
+| `createSyncStoragePersister(...)`   | `Persister` — `{ persistClient, restoreClient, removeClient }`                                    |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+🧪 Только композиции, реально прогнанные рендером в тестах — не теоретические примеры.
+
+| Сборка                                    | Что доказывает                                                    | Файл                  |
+| -------------------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
+| `QueryClientProvider` + `createQuery`         | реальный рендер, `loading` → `hi` после резолва `queryFn`, `queryFn` вызван 1 раз | `test/query.test.tsx` |
+| `QueryClientProvider` + `createMutation`      | реальный рендер, `save` → `saved` после клика и резолва `mutationFn`   | `test/query.test.tsx` |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+🧩 Данные грузятся ДО рендера маршрута: `@web-core/router` кладёт `queryClient` в контекст роутера
+через `createRootRouteWithContext`, `loader` маршрута тянет данные заранее — переход не показывает
+пустой экран, ожидая `createQuery` уже ПОСЛЕ монтирования.
 
 ```ts
 // src/router.ts
@@ -123,10 +205,10 @@ export const Route = createFileRoute("/todos/$todoId")({
 });
 ```
 
-`queryOptions(...)` (реэкспортирован из `.`) — способ описать `todoQuery(id)` один раз и
-переиспользовать её и в `loader`, и в `createQuery` компонента с сохранением типов ключа.
+`queryOptions(...)` — способ описать `todoQuery(id)` один раз и переиспользовать её и в `loader`,
+и в `createQuery` компонента с сохранением типов ключа.
 
-## Сохранение кэша между перезагрузками
+Сохранение кэша между перезагрузками добавляется отдельным подпутём, поверх того же клиента:
 
 ```ts
 import { QueryClient } from "@web-core/query";

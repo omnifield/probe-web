@@ -525,6 +525,7 @@ const pageDisplayOrderClause = `
 		CASE title
 			WHEN 'Главное' THEN 0
 			WHEN '🏠 Главное' THEN 0
+			WHEN '✨ Главное' THEN 0
 			WHEN 'Анатомия' THEN 1
 			WHEN '🧩 Анатомия' THEN 1
 			WHEN 'Использование' THEN 2

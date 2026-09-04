@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { assign, discoverPaths, lookup, pointerOf } from "../src/paths.js";
+import { discoverPaths, lookup, pointerOf } from "../src/index.js";
+import { assign } from "../src/engine/paths.js";
 
 describe("lookup", () => {
   it("находит вложенное значение по JSON Pointer", () => {

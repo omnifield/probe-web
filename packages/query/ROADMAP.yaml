@@ -1,0 +1,173 @@
+# Дорожная карта @web-core/query — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build, packages/store и packages/assembly (categories → items, log → журнал
+# решений); без milestones — у пакета нет освоенной поставки с датами релиза, только сделанное и
+# открытое.
+
+categories:
+  - category: Точка входа
+    items:
+      - id: root-reexport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`.` — полный реэкспорт `@tanstack/solid-query`"
+        description: |
+          Означает: единая точка резолва @tanstack/solid-query (+@tanstack/query-core, который
+          solid-query уже реэкспортирует целиком сам) — приложение не импортирует вендора
+          напрямую, значит один QueryClientContext на всё приложение, не два из-за двух копий
+          пакета. create*-алиасы (createQuery = useQuery и т.д.) — рекомендуемое написание под
+          конвенцию Solid, которой в web-core держатся createSignal/createStore/createMachine.
+
+  - category: Devtools
+    items:
+      - id: devtools-subpath
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Подпуть `./devtools` — SolidQueryDevtools/SolidQueryDevtoolsPanel"
+        description: |
+          Означает: отдельно от `.`, чтобы дев-инструменты не тянулись в прод случайно. Вендор
+          сам себя гасит в проде через isDev из solid-js/web (подтверждено чтением исходников),
+          но это не заменяет import.meta.env.DEV на стороне приложения — тот нужен, чтобы Vite
+          вообще не включал модуль в бандл. Разбор — FAQ.md.
+
+  - category: Persist
+    items:
+      - id: persist-subpath
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Подпуть `./persist` — persistQueryClient + createSyncStoragePersister"
+        description: |
+          Означает: два вендорских пакета (@tanstack/query-persist-client-core,
+          @tanstack/query-sync-storage-persister), которые на практике всегда берут вместе, одним
+          подпутём — по тому же доводу, что у аддонов @web-core/store. createSyncStoragePersister
+          помечен @deprecated в самом вендоре (в пользу createAsyncStoragePersister) — сохранён
+          сознательно, разбор и открытый вопрос — FAQ.md и категория «Не сделано» этого файла.
+
+  - category: Структура пакета
+    items:
+      - id: engine-thin-index
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/index.ts (тонкий) + src/engine/index.ts (логика)"
+        description: |
+          Означает: по образцу packages/store/packages/assembly — src/index.ts один
+          export * from "./engine/index.js", реэкспорт @tanstack/solid-query вместе с
+          обоснованием (полнота реэкспорта, create*-конвенция) — в src/engine/index.ts.
+
+      - id: subpath-per-folder
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "./devtools и ./persist — своя папка каждому (по образцу store's ./machine)"
+        description: |
+          Означает: src/devtools.ts → src/devtools/index.ts, src/persist.ts →
+          src/persist/index.ts. package.json exports — dist-пути на .../index.js. Devtools и
+          persist не образуют семью (в отличие от store's addons/), поэтому не сведены в общую
+          папку — каждый самостоятельный подпуть получил свою.
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок" — третий пилот (после store, assembly)
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md), плюс сохранены две ловушки
+          Solid-адаптера и пара с роутером из прежней версии README — контент не потерян,
+          переложен в форму шаблона.
+
+      - id: faq-roadmap
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (Solid-адаптер / структура пакета / devtools /
+          persist), каждый ответ проверен чтением исходников @tanstack/solid-query,
+          @tanstack/solid-query-devtools, @tanstack/query-sync-storage-persister и solid-js/web в
+          node_modules (не по памяти). ROADMAP.yaml — по образцу packages/store/packages/assembly.
+
+  - category: Не сделано
+    items:
+      - id: sync-persister-deprecated
+        type: bug
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "createSyncStoragePersister — deprecated у вендора, миграция на createAsyncStoragePersister не оценена"
+        description: |
+          Означает: @tanstack/query-sync-storage-persister@5.102.8's createSyncStoragePersister
+          несёт JSDoc @deprecated в пользу @tanstack/query-async-storage-persister — пакет этот
+          вендор не установлен нигде в репозитории. Сегодняшний ./persist построен на
+          синхронном localStorage-пути сознательно (хватает того, что реально используется), но
+          сама миграция не оценена и не спланирована. Разбор — FAQ.md.
+
+log:
+  - id: subpath-per-folder-vs-addons-family
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Реструктуризация src/ (index.ts тонкий + engine/, devtools.ts → devtools/index.ts,
+      persist.ts → persist/index.ts) прошла по прецеденту packages/store, но не дословно: у store
+      persist/undo/reset/validate сведены в один addons/ (общий смысл «аддон .with()»
+      оправдывает семью), а machine/ — самостоятельная папка. У query devtools и persist не
+      образуют семью между собой (разная природа: один — дев-инструмент, другой — сохранение
+      кэша), поэтому оба взяты по образцу machine/ — каждый своя папка, не общий каталог.
+
+  - id: accessor-type-hidden-confirmed
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Подтверждено чтением @tanstack/solid-query@5.102.8/src/queryOptions.ts:
+      UndefinedInitialDataOptions/DefinedInitialDataOptions — буквально Accessor<...> под другим
+      именем, не отдельный тип с похожей формой. useQuery сразу вызывает options() внутри
+      createMemo. Имя типа не содержит слова Accessor — источник путаницы, если разработчик решит
+      проверить тип без чтения его определения. create* (createQuery и т.д.) — не типовые алиасы,
+      а export const createQuery = useQuery, тот же объект функции в рантайме. Разбор — FAQ.md.
+
+  - id: devtools-isdev-condition-confirmed
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Подтверждено чтением solid-js/web/package.json и dist/dev.js|web.js: isDev — константа,
+      выбранная package.json exports'ом по условию `development` (true в dev.js, false в web.js).
+      @tanstack/solid-query-devtools/src/index.tsx использует эту константу, чтобы в проде
+      SolidQueryDevtools стал no-op сам по себе, без участия import.meta.env.DEV на стороне
+      приложения. Вывод: наш совет оборачивать импорт в import.meta.env.DEV — про размер бандла
+      (исключить модуль из графа импортов), не про безопасность поведения в проде (та уже дана
+      вендором). Разбор — FAQ.md.
+
+  - id: sync-storage-persister-deprecated-found
+    type: plan
+    date: 2026-09-04
+    summary: >
+      При сверке фактов для FAQ обнаружено: createSyncStoragePersister
+      (@tanstack/query-sync-storage-persister@5.102.8) несёт JSDoc @deprecated в пользу
+      createAsyncStoragePersister из отдельного пакета @tanstack/query-async-storage-persister,
+      который в репозитории не установлен. Не почищено и не заменено в рамках этой сессии —
+      только зафиксировано фактом (FAQ.md) и открытым пунктом (эта категория «Не сделано») для
+      решения отдельно, не задним числом внутри правки документации.
+
+  - id: readme-engine-template-third-pilot
+    type: plan
+    date: 2026-09-04
+    summary: >
+      query — третий пакет, заполнивший общий шаблон README "движок" (Анатомия/Использование/
+      Настройки/Состояния/IO/Сборки/Рецепт), после packages/store (первый пилот) и
+      packages/assembly (второй). Прежний README пакета (нешаблонный, с разделами "Установка и
+      вайринг"/"Две ловушки"/"Devtools"/"Пара с роутером"/"Сохранение кэша") не выброшен — его
+      контент переложен в разделы шаблона (ловушки → Использование, пара с роутером и persist →
+      Рецепт), обоснования вынесены в FAQ.md по общему правилу.

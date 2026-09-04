@@ -1,0 +1,173 @@
+# Дорожная карта @web-core/router — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build, packages/store и packages/assembly (categories → items, log — журнал
+# решений); без milestones — у пакета нет освоенной поставки с датами релиза, только сделанное и
+# открытое.
+
+categories:
+  - category: Поверхность
+    items:
+      - id: full-vendor-reexport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Полный реэкспорт `@tanstack/solid-router`, не отбор по имени"
+        description: |
+          Означает: `export * from "@tanstack/solid-router"` — единственная точка резолва,
+          приложение никогда не импортирует вендора напрямую. Разбор, почему не curated-список
+          как у ui/build — FAQ.md.
+
+      - id: default-router-options
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`defaultRouterOptions` — объект, не функция-обёртка"
+        description: |
+          Означает: `{ defaultPreload: "intent", defaultPreloadStaleTime: 0,
+          scrollRestoration: true }` для спреда в `createRouter()` у приложения. Обёртка
+          сломала бы вывод типа дерева маршрутов (`TanStack/router#1943`) — разбор в FAQ.md.
+
+      - id: devtools-subpath
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`./devtools` — отдельный подпуть от `.`"
+        description: |
+          Означает: `TanStackRouterDevtools` не просачивается в прод через случайный
+          `import * as router`; приложение оборачивает импорт в `import.meta.env.DEV` само.
+
+  - category: Vite-плагин
+    items:
+      - id: vite-plugin-order-fixed
+        type: bug
+        status: Done
+        priority: Critical
+        milestone: null
+        name: "Порядок плагинов: router ПЕРЕД vite-plugin-solid"
+        description: |
+          Означает: обратный порядок роняет `autoCodeSplitting: true` на файлах маршрутов —
+          сверено прогоном 2026-08-28. `tanstackRouterVitePlugin()` фиксирует `target: "solid"`
+          и `autoCodeSplitting: true` по умолчанию, остальное — `Config` вендора как есть.
+
+  - category: Тесты
+    items:
+      - id: smoke-render-navigate
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Смоук-проба — настоящий рендер и настоящая навигация
+        description: |
+          Означает: `test/router.test.tsx` монтирует реальный `RouterProvider` в JSDOM и проверяет
+          смену дерева по `router.navigate()` — ловит сломанный реэкспорт или разъехавшийся
+          вендор, не просто разбор опций.
+
+  - category: Структура пакета
+    items:
+      - id: index-engine-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/index.ts (поверхность) + src/engine/index.ts (содержание)"
+        description: |
+          Означает: `src/index.ts` — один `export * from "./engine/index.js"`, без единой
+          строки своей логики. Реэкспорт `@tanstack/solid-router` и `defaultRouterOptions`
+          переехали в `src/engine/index.ts` — по образцу packages/store/packages/assembly.
+          Раньше оба были смешаны в одном `src/index.ts`. Разбор — FAQ.md.
+
+      - id: vite-devtools-own-folders
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/vite.ts, src/devtools.ts → src/vite/index.ts, src/devtools/index.ts"
+        description: |
+          Означает: в корне `src/` ровно один файл — `index.ts`, как у packages/store
+          (index.ts + engine/ + machine/ + addons/) и packages/assembly (index.ts + engine/ +
+          render/ + shared/). Предыдущий проход оставил `vite.ts`/`devtools.ts` плоскими файлами
+          в корне рядом с `index.ts` — форма разошлась с образцом буквально (три файла в корне
+          вместо одного). `package.json`'s `exports["./vite"]`/`exports["./devtools"]` указывают
+          на `dist/vite/index.js`/`dist/devtools/index.js`. Разбор — FAQ.md.
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону "движок" — третий пилот
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md), по образцу packages/store (первый
+          пилот) и packages/assembly (второй пилот, доработанное размещение тегов).
+
+      - id: faq-roadmap-filled
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (поверхность / vite-плагин / дефолты роутера /
+          хуки / файловые vs код-based маршруты), каждый ответ со ссылкой на проверку.
+
+  - category: Не сделано
+    items:
+      - id: no-own-runtime-logic-to-trace
+        type: decision
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "`shared/trace.ts` (как у store/assembly) — сознательно не заведён"
+        description: |
+          Означает: у пакета нет собственной механики, которую имело бы смысл замерять перфом —
+          вся работа (дерево маршрутов, загрузка, навигация) происходит внутри
+          `@tanstack/solid-router`, не в коде этого пакета. Трасса измеряла бы вендора, а не
+          что-то своё — заводить её здесь значило бы копировать форму store/assembly без
+          содержания за ней.
+
+log:
+  - id: vite-devtools-folders-third-pass
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Второй проход (index-engine-split-second-pass) развёл поверхность/содержание для корневого
+      `.`, но оставил `vite.ts`/`devtools.ts` плоскими файлами в корне `src/` — итог: три файла в
+      корне (`index.ts`, `vite.ts`, `devtools.ts`) вместо одного, форма разошлась со
+      store/assembly буквально (там в корне `src/` только `index.ts`, любой подпуть — папка,
+      независимо от толщины). Поправлено: `vite.ts` → `vite/index.ts`, `devtools.ts` →
+      `devtools/index.ts`, `package.json` exports обновлены на `dist/<папка>/index.js`. Сборка и
+      тесты прогнаны заново, `./vite` подпуть проверен прямым импортом из `dist/`.
+
+  - id: index-engine-split-second-pass
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Первый проход документацией (readme-faq-roadmap-first-pass) оставил src/-структуру не
+      тронутой — "три файла, три подпути, разносить некуда". Разбор оказался неполным: root
+      `src/index.ts` смешивал поверхность (реэкспорт вендора) и содержание
+      (`defaultRouterOptions`) в одном файле — ровно то, что store/assembly разводят по
+      src/index.ts (пусто, только реэкспорт) + src/engine/index.ts (содержание). Поправлено:
+      реэкспорт `@tanstack/solid-router` и `defaultRouterOptions` переехали в
+      src/engine/index.ts, src/index.ts стал `export * from "./engine/index.js"`. vite.ts/
+      devtools.ts не тронуты — они и раньше были правильной формой (тонкий файл = тонкий
+      подпуть, без искусственного разведения на поверхность+engine).
+
+  - id: readme-faq-roadmap-first-pass
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Пакет приведён к общему шаблону "движок" по образцу packages/store и packages/assembly —
+      README переписан по разделам (Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт),
+      прежнее содержание (вайринг, обоснования порядка плагинов, TanStack/router#1943, разница
+      файловых/код-based маршрутов) не потеряно — прозаические "почему" перенесены в FAQ.md,
+      факты остались в README. Структура src/ (index.ts/vite.ts/devtools.ts, по одному файлу на
+      подпуть) не тронута — три файла на три подпути уже была чистой формой, разносить по папкам
+      engine/ было бы разносом ради формы, не по необходимости (в отличие от store/assembly, где
+      под одним подпутём было 8-9 файлов реальной логики). shared/trace.ts сознательно не заведён
+      — у пакета нет своей механики для замера, только реэкспорт и тонкая обёртка vite-плагина.

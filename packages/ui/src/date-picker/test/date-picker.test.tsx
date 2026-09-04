@@ -6,7 +6,7 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as datePickerKit } from "../components/index.js";
+import { DatePicker, DatePickerValueText, kit as datePickerKit } from "../components/index.js";
 import { passport as datePickerPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as datePickerEditorInfo } from "../playground/index.js";
@@ -82,5 +82,25 @@ describe('date picker "basic" — one week of days from the assembly, label from
     const cells = [...host.querySelectorAll('[data-scope="date-picker"][data-part="table-cell-trigger"]')];
     const selected = cells.find((cell) => cell.getAttribute("data-selected") !== null);
     expect(selected?.textContent).toBe("25");
+  });
+});
+
+describe("DatePickerValueText — placeholder shown when nothing is selected", () => {
+  it("renders the placeholder text, not empty", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <DatePicker>
+          <DatePickerValueText placeholder="Дата не выбрана" />
+        </DatePicker>
+      ),
+      host,
+    );
+
+    expect(host.querySelector('[data-scope="date-picker"][data-part="value-text"]')?.textContent).toBe(
+      "Дата не выбрана",
+    );
   });
 });

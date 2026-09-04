@@ -1,10 +1,10 @@
-// Живая проба L2 (PWEB-183) — тот же мотивирующий случай, что у `tables/adapter`: чужая запись
-// с несовпадающими именами/значениями → канон, с отчётом о том, что не легло.
+// Живая проба L2: чужая запись с несовпадающими именами/значениями → канон, с отчётом о том,
+// что не легло.
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { applyFieldRules, collectFieldRuleReport, fieldRulesCodec, type FieldRule } from "../src/field-rules.js";
+import { applyFieldRules, collectFieldRuleReport, fieldRulesCodec, type FieldRule } from "../src/index.js";
 
 const fields: FieldRule[] = [
   { target: "/id", from: "/code" },

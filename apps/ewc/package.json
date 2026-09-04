@@ -13,7 +13,7 @@
     "lint": "eslint . && pnpm run typecheck"
   },
   "dependencies": {
-    "@web-core/runtime": "workspace:*",
+    "@web-core/shared": "workspace:*",
     "@web-core/skin": "workspace:*",
     "@web-core/style": "workspace:*",
     "@web-core/ui": "workspace:*",

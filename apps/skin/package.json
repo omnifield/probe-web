@@ -20,7 +20,7 @@
     "@web-core/io": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/router": "workspace:*",
-    "@web-core/runtime": "workspace:*",
+    "@web-core/shared": "workspace:*",
     "@web-core/skin": "workspace:*",
     "@web-core/store": "workspace:*",
     "@web-core/style": "workspace:*",

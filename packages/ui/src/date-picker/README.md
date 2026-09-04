@@ -1,19 +1,14 @@
 # 📅 Date Picker
 
+<h2 id="главное">🏠 Главное</h2>
+
 🏷️ inputs · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-Самый крупный компонент кита — 25 частей в анатомии, `tableCellTrigger` несёт больше состояний,
-чем любая другая часть кита когда-либо несла (двадцать).
-
-## 🧭 Навигация
-
-- 🧩 [Анатомия](#анатомия)
-- 🎛️ [Состояния](#состояния)
-- 🔌 [IO](#io)
-- 🏗️ [Сборки](#сборки)
-- 🎨 [Рецепт](#рецепт)
-- 🚀 [Использование](#использование)
-- [Доступность](#доступность)
+Выбор даты через настоящий календарь 📅 — используйте вместо голого текстового поля, когда важно
+видеть дни недели и легко попасть в нужную дату кликом, а не набором цифр вручную. Одна дата,
+диапазон «от — до» или сразу несколько отдельных дат — один и тот же компонент, переключается
+пропом. Самый крупный компонент кита — 25 частей в анатомии, `tableCellTrigger` несёт больше
+состояний, чем любая другая часть кита когда-либо несла (двадцать).
 
 <h2 id="анатомия">🧩 Анатомия</h2>
 
@@ -97,6 +92,162 @@ root
 > «часть, не компонент», которое паспортная модель кита проводит везде. Оба экспортированы, но НЕ
 > входят в карту кита (`components/index.ts`) — карта кита требует ровно один компонент на ЧАСТЬ,
 > а номера недели не часть сами по себе, лишь третий способ нарисовать существующую.
+
+<h2 id="использование">🚀 Использование</h2>
+
+От одиночной даты до диапазона, множественного выбора и календаря, зафиксированного прямо в
+разметке страницы — каждый режим включается пропом на корне. 🔀
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<DatePicker>
+  <DatePickerLabel>Дата</DatePickerLabel>
+  <DatePickerControl>
+    <DatePickerInput />
+    <DatePickerTrigger>Открыть</DatePickerTrigger>
+  </DatePickerControl>
+  <DatePickerPositioner>
+    <DatePickerContent>
+      <DatePickerView view="day">
+        <DatePickerViewControl>
+          <DatePickerPrevTrigger>‹</DatePickerPrevTrigger>
+          <DatePickerViewTrigger>
+            <DatePickerRangeText />
+          </DatePickerViewTrigger>
+          <DatePickerNextTrigger>›</DatePickerNextTrigger>
+        </DatePickerViewControl>
+        <DatePickerTable>
+          <DatePickerTableHead>
+            <DatePickerTableRow>
+              <DatePickerTableHeader>Пн</DatePickerTableHeader>
+              {/* ...остальные дни недели */}
+            </DatePickerTableRow>
+          </DatePickerTableHead>
+          <DatePickerTableBody>
+            <DatePickerTableRow>
+              <DatePickerTableCell value={someDate}>
+                <DatePickerTableCellTrigger>1</DatePickerTableCellTrigger>
+              </DatePickerTableCell>
+              {/* ...остаток недели/месяца, по одному реальному DateValue на ячейку */}
+            </DatePickerTableRow>
+          </DatePickerTableBody>
+        </DatePickerTable>
+      </DatePickerView>
+    </DatePickerContent>
+  </DatePickerPositioner>
+</DatePicker>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = { label: "Дата" };
+const tree = instanceOf("date-picker", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Диапазон, с двумя полями ввода и пресетом.** `selectionMode="range"` ждёт два `DatePickerInput`,
+по одному на `index`:
+
+```tsx
+<DatePicker selectionMode="range">
+  <DatePickerLabel>Даты проживания</DatePickerLabel>
+  <DatePickerControl>
+    <DatePickerInput index={0} />
+    <DatePickerInput index={1} />
+    <DatePickerTrigger>Открыть</DatePickerTrigger>
+    <DatePickerClearTrigger>Очистить</DatePickerClearTrigger>
+  </DatePickerControl>
+  <DatePickerPresetTrigger value="last7Days">Последние 7 дней</DatePickerPresetTrigger>
+  <DatePickerPositioner>
+    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
+  </DatePickerPositioner>
+</DatePicker>
+```
+
+Ячейки внутри диапазона несут `range-start`/`range-end`/`in-range`, пока диапазон зафиксирован, и
+`in-hover-range`/`hover-range-start`/`hover-range-end`, пока указатель наводит на будущий диапазон
+до второго клика, который его фиксирует.
+
+**Несколько отдельных дат.** `selectionMode="multiple"`, опционально ограничено
+`maxSelectedDates`:
+
+```tsx
+<DatePicker selectionMode="multiple" maxSelectedDates={3}>
+  <DatePickerLabel>Заблокированные даты</DatePickerLabel>
+  <DatePickerControl>
+    <DatePickerInput />
+    <DatePickerTrigger>Открыть</DatePickerTrigger>
+    <DatePickerClearTrigger>Очистить</DatePickerClearTrigger>
+  </DatePickerControl>
+  <DatePickerPositioner>
+    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
+  </DatePickerPositioner>
+</DatePicker>
+```
+
+**Ограниченные и частично недоступные даты.** `min`/`max` жёстко ограничивают диапазон;
+`isDateUnavailable` исключает отдельные даты внутри него (здесь — выходные) — ячейки, попавшие под
+любое из правил, несут `unavailable`:
+
+```tsx
+import { parseDate } from "@ark-ui/solid/date-picker";
+
+<DatePicker
+  min={parseDate("2026-09-01")}
+  max={parseDate("2026-12-31")}
+  isDateUnavailable={(date) => date.toDate("UTC").getDay() % 6 === 0}
+>
+  <DatePickerLabel>Дата доставки</DatePickerLabel>
+  <DatePickerControl>
+    <DatePickerInput />
+    <DatePickerTrigger>Открыть</DatePickerTrigger>
+  </DatePickerControl>
+  <DatePickerPositioner>
+    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
+  </DatePickerPositioner>
+</DatePicker>
+```
+
+**Отрисован инлайн, без плавающей панели.** `inline` полностью снимает поведение попапа —
+`positioner`/`content` остаются в собственном потоке страницы, `content` несёт `data-inline` вместо
+обычной пары open/closed:
+
+```tsx
+<DatePicker inline defaultValue={[someDate]}>
+  <DatePickerPositioner>
+    <DatePickerContent>{/* та же таблица дневного вида, всегда видна */}</DatePickerContent>
+  </DatePickerPositioner>
+</DatePicker>
+```
+
+**Номера недели.** `showWeekNumbers` добавляет ведущий столбец — рисуют его
+`DatePickerWeekNumberCell`/`DatePickerWeekNumberHeaderCell`, два реальных, отдельно рисуемых
+компонента, которые делят адрес `tableCell` вместо собственного (см. заметку в анатомии).
+
+**Текст значения — плейсхолдер, разделитель, своя разметка на каждую дату.** `DatePickerValueText`
+рисует готовый текст сам (`placeholder`, пока ничего не выбрано; `separator` между несколькими
+датами), либо принимает `children` рендер-пропом — по одной готовой дате за раз, с `remove()` для
+этой конкретной даты (пригождается в `multiple`, чтобы убрать одну выбранную дату из списка не
+открывая календарь).
+
+```tsx
+<DatePickerValueText placeholder="Дата не выбрана" separator=" – " />
+
+<DatePickerValueText>
+  {(item) => (
+    <span>
+      {item.valueAsString}
+      <button onClick={item.remove}>✕</button>
+    </span>
+  )}
+</DatePickerValueText>
+```
+
+**Настоящее участие в форме.** `name` на корне делает вложенные `input`(ы) настоящим полем формы.
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -281,141 +432,7 @@ root · props: defaultOpen, defaultValue
 же приём «правило читает переменную только там, где паспорт говорит, что она лежит», что уже
 называет собственный шаблон `popover`'а.
 
-<h2 id="использование">🚀 Использование</h2>
-
-**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
-
-```tsx
-<DatePicker>
-  <DatePickerLabel>Дата</DatePickerLabel>
-  <DatePickerControl>
-    <DatePickerInput />
-    <DatePickerTrigger>Открыть</DatePickerTrigger>
-  </DatePickerControl>
-  <DatePickerPositioner>
-    <DatePickerContent>
-      <DatePickerView view="day">
-        <DatePickerViewControl>
-          <DatePickerPrevTrigger>‹</DatePickerPrevTrigger>
-          <DatePickerViewTrigger>
-            <DatePickerRangeText />
-          </DatePickerViewTrigger>
-          <DatePickerNextTrigger>›</DatePickerNextTrigger>
-        </DatePickerViewControl>
-        <DatePickerTable>
-          <DatePickerTableHead>
-            <DatePickerTableRow>
-              <DatePickerTableHeader>Пн</DatePickerTableHeader>
-              {/* ...остальные дни недели */}
-            </DatePickerTableRow>
-          </DatePickerTableHead>
-          <DatePickerTableBody>
-            <DatePickerTableRow>
-              <DatePickerTableCell value={someDate}>
-                <DatePickerTableCellTrigger>1</DatePickerTableCellTrigger>
-              </DatePickerTableCell>
-              {/* ...остаток недели/месяца, по одному реальному DateValue на ячейку */}
-            </DatePickerTableRow>
-          </DatePickerTableBody>
-        </DatePickerTable>
-      </DatePickerView>
-    </DatePickerContent>
-  </DatePickerPositioner>
-</DatePicker>
-```
-
-**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
-`RenderTree`.
-
-```tsx
-const data = { label: "Дата" };
-const tree = instanceOf("date-picker", {}, "basic", data);
-
-<RenderTree tree={tree} registry={registry} data={data} />;
-```
-
-**Диапазон, с двумя полями ввода и пресетом.** `selectionMode="range"` ждёт два `DatePickerInput`,
-по одному на `index`:
-
-```tsx
-<DatePicker selectionMode="range">
-  <DatePickerLabel>Даты проживания</DatePickerLabel>
-  <DatePickerControl>
-    <DatePickerInput index={0} />
-    <DatePickerInput index={1} />
-    <DatePickerTrigger>Открыть</DatePickerTrigger>
-    <DatePickerClearTrigger>Очистить</DatePickerClearTrigger>
-  </DatePickerControl>
-  <DatePickerPresetTrigger value="last7Days">Последние 7 дней</DatePickerPresetTrigger>
-  <DatePickerPositioner>
-    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
-  </DatePickerPositioner>
-</DatePicker>
-```
-
-Ячейки внутри диапазона несут `range-start`/`range-end`/`in-range`, пока диапазон зафиксирован, и
-`in-hover-range`/`hover-range-start`/`hover-range-end`, пока указатель наводит на будущий диапазон
-до второго клика, который его фиксирует.
-
-**Несколько отдельных дат.** `selectionMode="multiple"`, опционально ограничено
-`maxSelectedDates`:
-
-```tsx
-<DatePicker selectionMode="multiple" maxSelectedDates={3}>
-  <DatePickerLabel>Заблокированные даты</DatePickerLabel>
-  <DatePickerControl>
-    <DatePickerInput />
-    <DatePickerTrigger>Открыть</DatePickerTrigger>
-    <DatePickerClearTrigger>Очистить</DatePickerClearTrigger>
-  </DatePickerControl>
-  <DatePickerPositioner>
-    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
-  </DatePickerPositioner>
-</DatePicker>
-```
-
-**Ограниченные и частично недоступные даты.** `min`/`max` жёстко ограничивают диапазон;
-`isDateUnavailable` исключает отдельные даты внутри него (здесь — выходные) — ячейки, попавшие под
-любое из правил, несут `unavailable`:
-
-```tsx
-import { parseDate } from "@ark-ui/solid/date-picker";
-
-<DatePicker
-  min={parseDate("2026-09-01")}
-  max={parseDate("2026-12-31")}
-  isDateUnavailable={(date) => date.toDate("UTC").getDay() % 6 === 0}
->
-  <DatePickerLabel>Дата доставки</DatePickerLabel>
-  <DatePickerControl>
-    <DatePickerInput />
-    <DatePickerTrigger>Открыть</DatePickerTrigger>
-  </DatePickerControl>
-  <DatePickerPositioner>
-    <DatePickerContent>{/* та же таблица дневного вида, что выше */}</DatePickerContent>
-  </DatePickerPositioner>
-</DatePicker>
-```
-
-**Отрисован инлайн, без плавающей панели.** `inline` полностью снимает поведение попапа —
-`positioner`/`content` остаются в собственном потоке страницы, `content` несёт `data-inline` вместо
-обычной пары open/closed:
-
-```tsx
-<DatePicker inline defaultValue={[someDate]}>
-  <DatePickerPositioner>
-    <DatePickerContent>{/* та же таблица дневного вида, всегда видна */}</DatePickerContent>
-  </DatePickerPositioner>
-</DatePicker>
-```
-
-**Номера недели.** `showWeekNumbers` добавляет ведущий столбец — рисуют его
-`DatePickerWeekNumberCell`/`DatePickerWeekNumberHeaderCell`, два реальных, отдельно рисуемых
-компонента, которые делят адрес `tableCell` вместо собственного (см. заметку в анатомии).
-
-**Настоящее участие в форме.** `name` на корне делает вложенные `input`(ы) настоящим полем формы.
-
-## Доступность
+<h2 id="доступность">♿ Доступность</h2>
 
 Пикер даты следует паттерну WAI-ARIA
 [Date Picker (Dialog)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), применённому к

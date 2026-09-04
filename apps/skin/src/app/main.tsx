@@ -1,7 +1,7 @@
 // Точка входа приложения.
 //
 // Порядок тот же, что у скелета потребителя: базовый слой значений, затем `mount` из зоны
-// `runtime`.
+// `shared`.
 //
 // СВОЕГО ОФОРМЛЕНИЯ У ЗОНЫ БОЛЬШЕ НЕТ (решение user 2026-08-27): экраны собраны из настоящих
 // компонентов кита, одетых нарядом — тем же самым, который они и показывают. Второго слоя вида
@@ -22,7 +22,7 @@
 
 import "@web-core/style/base.css";
 
-import { mount } from "@web-core/runtime";
+import { mount } from "@web-core/shared";
 import { QueryClient, QueryClientProvider } from "@web-core/query";
 import { RouterProvider } from "@web-core/router";
 

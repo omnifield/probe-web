@@ -11,12 +11,12 @@
       "default": "./dist/index.js"
     },
     "./vite": {
-      "types": "./dist/vite.d.ts",
-      "default": "./dist/vite.js"
+      "types": "./dist/vite/index.d.ts",
+      "default": "./dist/vite/index.js"
     },
     "./devtools": {
-      "types": "./dist/devtools.d.ts",
-      "default": "./dist/devtools.js"
+      "types": "./dist/devtools/index.d.ts",
+      "default": "./dist/devtools/index.js"
     }
   },
   "files": [

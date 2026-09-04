@@ -2,6 +2,7 @@
 import type { Plugin, UserConfig } from "vite";
 import solid from "vite-plugin-solid";
 
+import { trace } from "../shared/trace.js";
 import { generatedCssPlugin } from "./generated-css.js";
 import type { DevState } from "./workspace-source.js";
 import { workspaceSourcePlugin } from "./workspace-source.js";
@@ -15,9 +16,11 @@ export interface DefineConfigOptions {
 
 /** Готовый конфиг Vite для приложения на web-core. */
 export function defineConfig(options: DefineConfigOptions = {}): UserConfig {
+  const done = trace("defineConfig");
+
   const state: DevState = { generated: [] };
 
-  return {
+  const config: UserConfig = {
     ...(options.base ? { base: options.base } : {}),
     plugins: [solid(), workspaceSourcePlugin(state), generatedCssPlugin(state), ...(options.plugins ?? [])],
     server: {
@@ -25,4 +28,7 @@ export function defineConfig(options: DefineConfigOptions = {}): UserConfig {
       ...(options.proxy ? { proxy: options.proxy } : {}),
     },
   };
+
+  done();
+  return config;
 }

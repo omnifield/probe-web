@@ -1,0 +1,239 @@
+# Дорожная карта @web-core/io — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build, packages/store, packages/assembly и packages/router (categories → items,
+# log — журнал решений); без milestones — у пакета нет освоенной поставки с датами релиза, только
+# сделанное и открытое.
+
+categories:
+  - category: Реестр паспортов формы
+    items:
+      - id: io-registry
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`createIoRegistry()` — регистрация и чтение паспорта по имени компонента"
+        description: |
+          Означает: `register`/`get`/`require`/`has`/`list`, явный отказ на неизвестное имя
+          (`require`) и на повторную регистрацию тем же именем (`register`) — не тихий
+          `undefined`/тихая перезапись.
+
+      - id: registry-not-zod-native
+        type: decision
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Свой реестр по строковому имени, не `z.registry()`"
+        description: |
+          Означает: проверено чтением исходника `zod@4.4.3` — `$ZodRegistry` ключуется ссылкой
+          на схему (`WeakMap`), публичного поиска по строковому `id` нет. Разбор — FAQ.md.
+
+  - category: Кодеки L0/L1
+    items:
+      - id: identity-codec
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`identityCodec()` — L0, форма источника уже совпадает с паспортом"
+        description: |
+          Означает: тривиальный `z.codec`, `decode`/`encode` — тождество, но разбор/тип/проверка
+          всё равно идут через схему.
+
+      - id: rename-keys-codec
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`renameKeysCodec()` — L1, структура та же, ключи другие"
+        description: |
+          Означает: `codec`, построенный из плоского словаря «их-ключ → наш-ключ» (приём JSON-LD
+          `@context`); `encode` строится из ТОГО ЖЕ словаря автоматически (`invert`), второй
+          словарь руками не заводится. Явный отказ на неоднозначный словарь (два чужих ключа в
+          один наш).
+
+  - category: L2 — правила полей
+    items:
+      - id: field-rules-transferred
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Перенос `products/tables/src/adapter/{model,apply,steps}.ts` — `Step`/`FieldRule`"
+        description: |
+          Означает: закрытый набор `Step` (`trim`/`date`/`dictionary`/…) и `FieldRule`
+          (путь-цель/путь-источник/цепочка шагов/`onFail`), обобщённые от `Row`/`FieldSpec`
+          таблиц до `Record<string, unknown>`. Разбор рынка (JSON-LD, R2RML, XSLT, Avro) не
+          повторяется здесь — сделан один раз в `products/tables/src/adapter/model.ts` до
+          переноса.
+
+      - id: collect-field-rule-report
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`collectFieldRuleReport()` — счётчик бед по множеству записей"
+        description: |
+          Означает: `converted`/`rejected` считаются, одинаковые беды агрегируются в один
+          `issue` с `count` и примерами, `unmapped` называет чужие поля без единого правила —
+          не молчим, а показываем «37 не легли».
+
+      - id: field-rules-codec
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`fieldRulesCodec()` — L2, обёрнутое `codec`'ом"
+        description: |
+          Означает: `decode` собирает канон по правилам и проверяет output-схемой, бракованная
+          запись — явный `throw`, не тихий `null`. `encode` СЕГОДНЯ НЕ РЕАЛИЗОВАН (throw, не
+          притворство) — обратный путь для `dictionary`/`date`/`round` неоднозначен без
+          отдельного решения. Разбор — FAQ.md.
+
+  - category: Пути (JSON Pointer)
+    items:
+      - id: fast-json-patch-adopted
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "`lookup`/`pointerOf` — через `fast-json-patch`, не своя ТРЕТЬЯ реализация RFC 6901"
+        description: |
+          Означает: раньше здесь была третья независимая ручная реализация того же алгоритма
+          (первые две — `packages/assembly`'s `resolveDataBinding`, снятый адаптер таблиц).
+          Исправлено 2026-08-29 (находка user) — взят `fast-json-patch` (8.4M скачиваний/неделю,
+          MIT, zero-dep). Тот же долг исправлен тем же способом у `packages/assembly` в этом же
+          заходе. Разбор — FAQ.md.
+
+      - id: assign-discover-paths-own
+        type: decision
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`assign` (запись) и `discoverPaths` (перечень путей) — свои, не с рынка"
+        description: |
+          Означает: RFC 6902 `add` требует существующего родителя (спецификация, не пробел
+          `fast-json-patch`) — автодостройка вложенности не закрыта рынком без веса отдельного
+          пакета. Кандидат `json-ptr` отклонён — все версии помечены `deprecated`, признак
+          отзыва пакета. Разбор — FAQ.md.
+
+  - category: Подбор и заготовки
+    items:
+      - id: compatible-items
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`compatibleItems()` — L0-фильтр по целой теме заготовок"
+        description: |
+          Означает: записи темы, которые проходят схему КАК ЕСТЬ, в исходном порядке; не
+          адаптирует и не чинит несовпавшее — это отбор среди своих заготовок (этап 1), не
+          разбор чужой формы (адаптер, этап 2/3).
+
+      - id: pack-registry
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`createPackRegistry()` — реестр заготовок по теме, без схемы"
+        description: |
+          Означает: тема — голый словарный контент, не знает и не обязана знать, для какого
+          компонента её записи когда-нибудь подойдут. Тем же приёмом отказов, что у
+          `IoRegistry`.
+
+  - category: Структура пакета
+    items:
+      - id: index-engine-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "src/index.ts (поверхность) + src/engine/*.ts (содержание)"
+        description: |
+          Означает: `src/index.ts` — один `export * from "./engine/index.js"`, без единой
+          строки своей логики. Семь файлов (`registry`/`codecs`/`field-rules`/`steps`/`paths`/
+          `compatible`/`packs`) и реэкспорт `z` переехали в `src/engine/` — по образцу
+          packages/store/packages/assembly/packages/router/packages/query. Раньше все лежали
+          плоско в корне `src/` вместе с `index.ts`. Разбор — FAQ.md.
+
+      - id: eslint-lint-zone
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: "`eslint.config.js` через `@web-core/lint`, `lint` = `eslint . && typecheck`"
+        description: |
+          Означает: пакет подключён к общему пресету ESLint зоны `lint` (`defineConfig()`), как
+          и все остальные пакеты кита — раньше `lint` был только `typecheck` без прогона eslint.
+
+  - category: Документация
+    items:
+      - id: readme-engine-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "README по общему шаблону «движок»"
+        description: |
+          Означает: Анатомия/Использование/Настройки/Состояния/IO/Сборки/Рецепт заполнены
+          фактами без обоснований (обоснования — FAQ.md), по образцу packages/store/packages/
+          assembly/packages/router/packages/query. Каждый пример «Рецепта» и «Использования»
+          прогнан по-настоящему (node на собранном `dist/`), не выведен по памяти.
+
+      - id: faq-roadmap-filled
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (поверхность / пути JSON Pointer / L2 правила
+          полей), прежнее содержание README (обоснование `fast-json-patch`, отказ от
+          `z.registry()`, `z` через пакет) перенесено сюда прозой «почему», факты остались в
+          README.
+
+  - category: Не сделано
+    items:
+      - id: l3-restructuring
+        type: feature
+        status: Open
+        priority: High
+        milestone: null
+        name: "L3 — реструктуризация формы (путь + повтор)"
+        description: |
+          Означает: следующий слой после L0 (тождество)/L1 (переименование ключей)/L2 (правила
+          полей одной записи) — работа с формой ЦЕЛИКОМ, включая повторы
+          (массивы записей внутри чужого ответа), а не значениями уже найденной одной записи.
+          Поиск «где в чужом ответе лежит массив записей» (`discoverRowSets` из снятого адаптера
+          таблиц) в L2 сознательно не перенесён — это предмет L3.
+
+      - id: field-rules-codec-encode
+        type: feature
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "`fieldRulesCodec.encode` — сознательно не реализован"
+        description: |
+          Означает: обратный путь для шагов вроде `dictionary`/`date`/`round` неоднозначен без
+          отдельного решения о том, как каждый шаг инвертируется — такое решение пока не принято,
+          не забыто. Разбор — FAQ.md.
+
+log:
+  - id: readme-faq-roadmap-engine-split
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Пакет приведён к общему шаблону "движок" по образцу packages/store, packages/assembly,
+      packages/router, packages/query — четвёртому/пятому пилоту. Структура src/ (семь файлов
+      плоско в корне вместе с index.ts) разведена на src/index.ts (поверхность, один реэкспорт) +
+      src/engine/*.ts (содержание) — тесты, которые раньше импортировали каждый файл напрямую
+      (`../src/paths.js` и т.п.), переведены на публичную поверхность (`../src/index.js`), кроме
+      `assign` — он не входит в поверхность, тест импортирует его напрямую из
+      `../src/engine/paths.js`. Добавлены `.gitignore`, `eslint.config.js` (пресет `@web-core/
+      lint`, как у всех соседних пакетов), `@web-core/build`/`@web-core/lint`/`eslint` в
+      devDependencies, `lint` теперь `eslint . && pnpm run typecheck` (раньше — только
+      typecheck). README переписан по разделам (Анатомия/Использование/Настройки/Состояния/IO/
+      Сборки/Рецепт), прежнее содержание (обоснование `fast-json-patch`, отказ от `z.registry()`,
+      `z` через пакет) перенесено в FAQ.md прозой "почему", факты остались в README. Каждый
+      пример в README прогнан по-настоящему через собранный `dist/`, не выведен по памяти.
+      Typecheck/тесты/lint/build прогнаны заново после переезда — все зелёные.

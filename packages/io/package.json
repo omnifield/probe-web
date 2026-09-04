@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "pnpm run typecheck",
+    "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
   "dependencies": {
@@ -29,7 +29,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
