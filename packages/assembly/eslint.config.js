@@ -7,7 +7,7 @@
 //
 // Пресет подключён воркспейсом (`workspace:*`) и стоит в devDependencies — в поставку не едет.
 
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   {

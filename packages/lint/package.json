@@ -1,7 +1,7 @@
 {
   "name": "@web-core/lint",
   "version": "0.1.0",
-  "description": "Пресет ESLint поверх eslint-plugin-solid: канон Solid, выраженный машиной (PROBEWEB-4).",
+  "description": "Канон Solid как машинная проверка (PROBEWEB-4): ядро — правила независимо от движка, плагин `./eslint` — сегодняшняя реализация поверх eslint-plugin-solid.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./eslint": {
+      "types": "./dist/eslint/index.d.ts",
+      "default": "./dist/eslint/index.js"
     }
   },
   "files": [
@@ -32,6 +36,11 @@
   },
   "peerDependencies": {
     "eslint": "^9.0.0 || ^10.0.0"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

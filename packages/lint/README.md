@@ -1,33 +1,59 @@
-# @web-core/lint
+# 🛡️ web-core Lint
 
-Пресет ESLint поверх [`eslint-plugin-solid`][plugin]: **канон Solid, выраженный машиной**.
+🏷️ quality · 🧬 engine · 📦 `@web-core/lint`
 
-Абзац документации говорит «так лучше». Правило линтера говорит «так нельзя, и вот
-проверка». Зона существует ради второй формы: у канона, который нельзя прогнать, нет
-способа узнать, что он перестал соблюдаться.
+## 🧭 Навигация
 
-Контракт зон целиком — `PROBEWEB-4`; он ведётся architect'ом, эта страница его не
-заменяет, а пересказывает со стороны пакета.
+- ✨ [Главное](#главное)
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-## Одна точка наружу
+<h2 id="главное">✨ Главное</h2>
 
-```ts
-import { defineConfig } from "@web-core/lint";
-```
+🛡️ Канон Solid, выраженный машиной — используйте, если зоне нужна проверка «так нельзя», а не
+абзац доки «так лучше». 🧬 Устроен тем же приёмом, что `@web-core/style`/`@web-core/trace` —
+**ядро без движка проверки** (`.`, список правил как данные: `id` + обязательность + описание,
+независимо от того, ЧЕМ это будет проверено) плюс **плагин конкретного линтера** отдельным
+подпутём (`./eslint` — сегодняшняя и пока единственная реализация). 🔮 Форма выбрана заранее ради
+следующего шага: когда встанет Biome, канон не переписывается — рядом с `./eslint` встаёт
+`./biome`, тот же список правил, другой перевод в конфиг.
 
-Весь `eslint.config.js` потребителя:
+<h2 id="анатомия">🧩 Анатомия</h2>
+
+🗺️ У движка нет DOM — «часть» здесь означает подпуть поставки, а «адрес» — импорт-спецификатор.
+
+| Часть | Адрес | Экспортирует |
+|---|---|---|
+| Канон (ядро) | `@web-core/lint` | `rules`, `canonRules`, `companionRules`, `offRules`, тип `CanonRule` |
+| ESLint-плагин | `@web-core/lint/eslint` | `defineConfig(options)`, `rules`, `canonRules`, `companionRules`, `offRules` (ESLint-запись) |
+
+📂 `src/engine/index.ts` — канон: массивы `CanonRule` (`id`, `severity: "required" \| "off"`,
+`summary`), ноль зависимостей, ни слова про ESLint. `src/index.ts` — тонкий барель
+(`export * from "./engine/index.js"`), тот же приём, что у `@web-core/trace`/`@web-core/style`.
+`src/eslint/index.ts` — единственное место пакета, которое трогает `eslint`/`eslint-plugin-solid`/
+`@babel/*`: переводит `id` канона в реальное имя правила (`solid/<id>`), собирает три секции
+flat-конфига (правила + два парсера — `.ts` и `.tsx` раздельно, см. FAQ.md).
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Плагин ESLint** — весь `eslint.config.js` потребителя:
 
 ```js
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default defineConfig();
 ```
 
-`defineConfig()` возвращает **массив** flat-конфигов — так пресет разворачивается в чужой
-конфиг спредом и может вырасти в новые секции, не меняя вызов:
+Разворачивается в чужой конфиг спредом — можно дописать своё вокруг:
 
 ```js
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   { ignores: ["dist/**"] },
@@ -42,223 +68,78 @@ export default [
 defineConfig({ ignores: ["**/legacy/**"] });
 ```
 
-Область по расширениям (`.ts`, `.mts`, `.cts`, `.tsx`, `.jsx`, `.mjsx`, `.cjsx`) —
-**часть контракта пресета, а не настройка**: на ней завязан разбор. Нужно уже — своя секция
-ниже по массиву переопределяет что угодно.
+**Канон напрямую** — своя реализация плагина (например, для будущего `./biome`) или свой
+кастомный конфиг ESLint вокруг того же канона:
 
-Рядом отдаются сами карты правил — `rules`, `canonRules`, `companionRules`, `offRules`, —
-чтобы можно было собрать свой конфиг вокруг того же канона, не переписывая его руками.
+```ts
+import { rules } from "@web-core/lint";
 
-## Что включено и почему
-
-Уровень у всего включённого один — `error`. Почему именно так — [ниже](#уровень--error-без-ручки-понизить).
-
-### Канон — четыре несущих правила
-
-Они названы в контракте зон и обязаны быть включены.
-
-| правило | что ловит | почему это дефект, а не вкус |
-|---|---|---|
-| [`solid/reactivity`][r-reactivity] | чтение реактивного (`props`, сигнал, мемо) вне отслеживаемой области | «changes will be ignored» — значение застывает на первом рендере, и это **молчаливая** поломка: ошибки нет, вид просто не обновляется |
-| [`solid/no-destructure`][r-no-destructure] | деструктуризацию `props` в списке параметров | реактивность держится на доступе через свойство (`props.foo`); деструктуризация читает значение один раз и рвёт связь с источником |
-| [`solid/no-react-deps`][r-no-react-deps] | массивы зависимостей у `createEffect`/`createMemo` | перенос привычки из React: в Solid зависимости собираются автоматически, а массив создаёт ложное впечатление, что чем-то управляешь |
-| [`solid/components-return-once`][r-components-return-once] | ранние `return` в компоненте | тело компонента исполняется **один раз**, поэтому условие обязано быть внутри JSX (`<Show />`, фрагмент), а не перед ним |
-
-### Сопутствующие — те же грабли частными случаями
-
-| правило | что ловит |
-|---|---|
-| [`solid/event-handlers`][r-event-handlers] | двусмысленные имена обработчиков (`onclick` против `onClick`): привязка на нативном элементе не реактивна, как прочие JSX-props, и имя решает, как она сработает |
-| [`solid/imports`][r-imports] | импорт не из того входа `solid-js` (`solid-js/web`, `solid-js/store`) — программа выглядит рабочей и ведёт себя иначе |
-| [`solid/jsx-no-duplicate-props`][r-jsx-no-duplicate-props] | повтор одного prop в JSX: побеждает последний, остальные теряются молча |
-| [`solid/jsx-no-undef`][r-jsx-no-undef] | необъявленный компонент в JSX; с `typescriptEnabled: true` проверку имён отдаём компилятору, за правилом остаётся то, что он не видит |
-| [`solid/jsx-uses-vars`][r-jsx-uses-vars] | не диагностика, а подпорка: помечает переменные, использованные только в JSX, как использованные — иначе `no-unused-vars` режет живые компоненты |
-| [`solid/jsx-no-script-url`][r-jsx-no-script-url] | `javascript:`-URL в JSX — исполнение строки как кода |
-| [`solid/no-innerhtml`][r-no-innerhtml] | `innerHTML` — вставку непроверенной разметки |
-| [`solid/no-react-specific-props`][r-no-react-specific-props] | `className`/`htmlFor` — React-props, помеченные устаревшими ещё в Solid v1.4.0 |
-| [`solid/prefer-for`][r-prefer-for] | `.map()` в JSX вместо `<For />`: `map` пересоздаёт узлы целиком, `For` держит их по ссылке на элемент — разница в том, что происходит с DOM |
-| [`solid/style-prop`][r-style-prop] | `style` строкой и kebab-case свойства: Solid ставит их через `style.setProperty`, форма записи меняет результат |
-| [`solid/self-closing-comp`][r-self-closing-comp] | пустой элемент без самозакрытия — единственное здесь стилистическое правило, держится `error`, потому что чинится `--fix` целиком |
-
-### Выключено осознанно
-
-Список существует, чтобы «не включено» отличалось от «не рассмотрено», и сверяется тестом:
-каждое правило плагина обязано попасть ровно в одну из трёх карт. Выпуск плагина, принёсший
-новое правило, роняет тест — и это его работа, а не помеха.
-
-| правило | почему выключено |
-|---|---|
-| `solid/no-unknown-namespaces` | пространства имён (`use:`, `prop:`, `attr:`) в TS проверяет компилятор; правило дублировало бы его и ошибалось на директивах потребителя |
-| `solid/no-array-handlers` | `onClick={[fn, arg]}` — рабочая форма Solid, а не дефект |
-| `solid/prefer-show` | `<Show />` против `&&` — обе формы каноничны, выбор за автором |
-| `solid/no-proxy-apis` | нужно только тем, кто целится в окружения без `Proxy` |
-| `solid/prefer-classlist` | `classlist` помечен устаревшим в самом Solid — правило зовёт в обратную сторону |
-
-## Известная граница: `no-destructure` видит только параметры
-
-**Правило ловит деструктуризацию `props` ТОЛЬКО в списке параметров.** Дословно из доки
-плагина: «This rule only tracks destructuring in the parameter list».
-
-```tsx
-// ловится
-function Greeting({ name }: { name: string }) {}
-
-// ЭТИМ ПРАВИЛОМ НЕ ЛОВИТСЯ
-function Greeting(props: { name: string }) {
-  const { name } = props;
+for (const rule of rules) {
+  console.log(rule.id, rule.severity, rule.summary);
 }
 ```
 
-Замер второго случая (2026-08-08, зафиксирован тестом `test/preset.test.ts`): `no-destructure`
-молчит, но срабатывает `solid/reactivity` — «The reactive variable 'props' should be used
-within JSX, a tracked scope…». То есть дыра **прикрыта соседним правилом, а не закрыта**:
-реактивность ловится, потому что деструктуризация в теле компонента это ещё и чтение вне
-отслеживаемой области. Формы, где чтение окажется внутри отслеживаемой области, пресет
-пропустит.
+<h2 id="настройки">🎚️ Настройки</h2>
 
-Граница названа здесь намеренно и подробно: **непроверяемое правило, выданное за
-проверяемое, хуже отсутствующего** — на него полагаются, а оно молчит.
+🎚️ У канона настроек нет — он данные. У ESLint-плагина одна.
 
-## Уровень — `error`, без ручки «понизить»
+| Настройка | Где | Тип | По умолчанию |
+|---|---|---|---|
+| `ignores` | `defineConfig(options)` | `readonly string[]` | не задан |
 
-Upstream-пресет плагина (`solid.configs["flat/typescript"]`, версия 0.14.5, проверено кодом
-2026-08-08) держит `reactivity`, `components-return-once`, `no-react-deps` и ещё пять правил
-на `warn`. Наш пресет поднимает всё включённое до `error`, и промежуточного уровня не
-предлагает.
+<h2 id="состояния">🎛️ Состояния</h2>
 
-Причина одна и проверяемая: **`eslint` выходит с кодом 0, пока в отчёте только `warn`.**
-Правило на `warn` не роняет ни команду, ни сборку — оно печатает текст, который со временем
-перестают читать. Канон, которому верят и который молча не работает, — это ровно то
-состояние, из которого зона выросла.
+🩺 У канона нет состояний — статичные данные. У ESLint-плагина одно ветвление: файл с JSX или
+без — от этого зависит, какой парсер применяется (см. FAQ.md, «Разбор — Babel»).
 
-Отсюда линия: **включено ⇒ `error`; правило, из-за которого не стоит ронять сборку, — не
-правило, а абзац доки, и его место в списке выключенных.** Настройки «понизить уровень» нет
-намеренно: она позволила бы тихо вернуться в исходное состояние в каждом отдельном проекте.
-Кому нужно иначе — переопределяет своей секцией ниже по массиву, и это видно в его конфиге.
-
-Решение об уровне — за architect (`PROBEWEB-4`); здесь описано то, что пресет делает
-сегодня, и почему предложено именно так.
-
-## Разбор — Babel, а не `@typescript-eslint/parser`
-
-Пресет **не зависит от TypeScript** — ни обычной зависимостью, ни peer. Разбор синтаксиса
-делает `@babel/eslint-parser`.
-
-Причина, названная рынком прямым текстом: `@typescript-eslint/parser@8.66.0` (последний
-выпуск на 2026-08-08) при старте бросает
-
-> typescript-eslint does not support TS 7.0.
-
-и предлагает держать рядом TS 6 — проверено на этом пакете 2026-08-08; продукт стоит на TS
-7.0.2. Поддержка TS 7 у них открытым вопросом (`typescript-eslint#10940`, последнее движение
-2026-07-09). Вторая копия компилятора ради линтера — подпорка, а не решение.
-
-Причина глубже версий: **линтеру здесь не нужны типы.** Ни одно правило `eslint-plugin-solid`
-не спрашивает тип у компилятора — им хватает синтаксиса. Babel разбирает TS и JSX как
-синтаксис, компилятор для этого не нужен вовсе, поэтому пресет не может сломаться от смены
-версии TypeScript. Плагин держит оба парсера: его тестовая матрица гоняет и babel, и ts
-(`PARSER=all`).
-
-Практические следствия, которые стоит знать:
-
-- **тип-зависимых правил в пресете нет и не будет** без отдельного решения: `parserOptions.project`
-  не включается, полного прогона компилятора на каждый запуск не происходит;
-- **`.ts` разбирается без плагина `jsx`** — иначе угловой каст `<string>value` (законный TS)
-  читался бы как JSX-элемент и давал ложную ошибку парсера. Поэтому секции разбора две:
-  для `.ts`-семейства и для файлов с JSX. Ложная ошибка хуже пропущенной;
-- плагины парсера перечислены явным `parserOpts.plugins`, а не пресетом
-  `@babel/preset-typescript`: `@babel/eslint-parser@8` собирает список ровно оттуда, пресеты
-  в него не разворачиваются (проверено 2026-08-08 — с пресетом файл падает уже на
-  `import { type JSX }`).
-
-## Зависимости
-
-| что | как объявлено | почему |
+| Состояние | Метка | Где |
 |---|---|---|
-| `eslint` | **peer** `^9.0.0 \|\| ^10.0.0` | команду запускает потребитель, и движок обязан быть один: две копии дают «плагин не найден» на ровном месте |
-| `eslint-plugin-solid` | обычная | его зовём мы, потребитель про него не знает |
-| `@babel/core`, `@babel/eslint-parser` | обычные | то же: разбор — наша внутренность, и подменить её выпуском мы должны без правки чужих файлов |
-| `solid-js` | **не объявлен** | норма фонда «`solid-js` в peer» относится к пакетам, которые его импортируют; пресет не выполняет код Solid и в дерево приложения не попадает вовсе |
+| Файл без JSX (`.ts`/`.mts`/`.cts`) | секция `parser-ts`, `parserOpts.plugins: ["typescript"]` | `src/eslint/index.ts` |
+| Файл с JSX (`.tsx`/`.jsx`/…) | секция `parser-jsx`, `parserOpts.plugins: ["typescript", "jsx"]` | `src/eslint/index.ts` |
+| Правило канона `severity: "off"` | ESLint-уровень `"off"` | `src/eslint/index.ts`, `toEslintRules` |
+| Правило канона `severity: "required"` | ESLint-уровень `"error"`, без промежуточного `"warn"` | `src/eslint/index.ts`, `toEslintRules` |
 
-**Известное расхождение диапазонов.** `eslint-plugin-solid@0.14.5` объявляет peer
-`eslint: ^6 || ^7 || ^8 || ^9` — десятки в списке нет, потому что выпуск плагина от
-2024-12-11 старше её. Под ESLint 10.8.1 плагин проверен и работает (весь набор правил,
-2026-08-08 — это и есть предмет тестов пакета). Менеджер пакетов на установке предупредит о
-неудовлетворённом peer; предупреждение ожидаемое, ставить ESLint 9 ради его тишины не нужно.
+<h2 id="io">🔌 IO</h2>
 
-## Разработка
+<h3>📥 Вход</h3>
 
-```sh
-pnpm install     # ставит и пакет, и проект-потребитель (рабочее пространство); собирает пресет
-pnpm run build   # tsc → dist
-pnpm run lint    # проверка типов пакета и тестов
-pnpm test        # сборка + все проверки
+| Функция | Принимает |
+|---|---|
+| `defineConfig(options?)` | `PresetOptions` (`ignores?: readonly string[]`) |
+
+<h3>📤 Выход</h3>
+
+| Источник | Отдаёт |
+|---|---|
+| `rules`/`canonRules`/`companionRules`/`offRules` (`.`) | `readonly CanonRule[]` — данные, не конфиг |
+| `rules`/`canonRules`/`companionRules`/`offRules` (`./eslint`) | `Linter.RulesRecord` — та же карта, переведённая в ESLint-запись |
+| `defineConfig()` | `Linter.Config[]` — массив flat-конфигов для `export default` в `eslint.config.js` |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+⚠️ Автоматических проб сегодня нет — `test/`, на который ссылается `vitest.config.ts`, был снесён
+коммитом `f807343` («replaced by apps/panel») вместе с тестами `packages/build`, и с тех пор не
+восстановлен ни там, ни здесь (открытый пункт `ROADMAP.yaml`, `id: rebuild-test-suite`). Ниже —
+что фактически проверено ✅ вручную в рамках этой ревизии.
+
+| Проверено | Как | Результат |
+|---|---|---|
+| Перевод канона в ESLint не потерял и не изменил ни одного правила | `defineConfig()` из собранного `dist/`, сверка с прежней плоской картой | 20 правил, те же уровни, `jsx-no-undef` с той же опцией |
+| Плагин реально ловит нарушение | `eslint` на файле с деструктурированными `props` | `solid/reactivity` — `error`, как и раньше |
+| Настоящий потребитель проходит чисто | `pnpm run lint` в `packages/ui` (главный потребитель пресета в ките) | зелёный: `eslint . && tsc --noEmit` |
+| 12 потребителей переведены на новый подпуть | `grep` по всем `eslint.config.js` кита | везде `@web-core/lint/eslint`, старого `@web-core/lint` (голого) не осталось |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+🔌 Рецепт канона — реализация конкретным движком. Сегодня один — `./eslint`; форма для второго
+(`./biome`, когда придёт время) — та же: свой файл, свой перевод `id` → правило движка, тот же
+канон из `../engine/index.js` как единственный источник правды о том, что вообще проверяется.
+
+```ts
+// эскиз будущего src/biome/index.ts — не реализовано, форма для примера
+import { rules } from "../engine/index.js";
+
+export function defineBiomeConfig() {
+  // тот же canon.rules, другой перевод id → biome.json
+}
 ```
-
-### Пресет собирается на установке
-
-У пакета объявлен жизненный цикл `prepare` (`pnpm run build`), и менеджер зовёт его для
-пакетов рабочего пространства при `pnpm install`. Поэтому на свежем клоне линт проходит
-**без отдельной команды сборки**.
-
-Причина не в удобстве. `eslint.config.js` потребителя импортирует пресет, и конфиг грузит
-Node напрямую — Vite в этой цепочке нет вовсе, подменить путь на исходники некому. Без
-собранного `dist` команда падает не диагностикой, а отказом резолвера:
-
-```
-ERR_MODULE_NOT_FOUND  @web-core/lint/dist/index.js
-```
-
-Инструмент, которым проверяют, не может проверяться собой во время собственной загрузки —
-он обязан существовать раньше. `prepare` есть только у оснастки (здесь и в пакете сборки);
-остальные пакеты видны через исходники и на установке не собираются.
-
-Замер натурный, 2026-08-19: чистый клон → `pnpm install` → `eslint` у эталона и у зоны
-примитивов проходит начисто; удалить `dist` пресета в том же клоне — тот самый отказ выше.
-
-Машинного pre-commit в репозитории нет — каденс `этап → проверка → коммит` держится на
-агенте: `build` + `lint` + `test` руками перед каждым коммитом.
-
-### Что проверяют тесты
-
-Пресет без фикстур не гарантирует ничего: «правило включено в конфиге» и «нарушение
-поймано» — разные утверждения.
-
-- `test/preset.test.ts` — **фикстуры**. `test/fixtures/violation/*` — заведомо нарушающий
-  код, каждый файл обязан дать своё правило и уровень `error`; `test/fixtures/canon/*` —
-  заведомо каноничный, обязан пройти начисто; `test/fixtures/limit/*` — названная граница
-  `no-destructure`, зафиксированная замером. Здесь же сверяется состав пресета: каждое
-  правило плагина рассмотрено, промежуточных уровней нет.
-- `test/consumer.test.ts` — **чистый проект**: отдельный `package.json`, свой
-  `eslint.config.js`, своя копия ESLint, пакет подключён установленным (`workspace:*`).
-  Зовётся CLI, а не Node-API, потому что код возврата — часть контракта: при `warn` команда
-  вышла бы с нулём.
-- `test/prepare.test.ts` — **сборка на установке**: копия зоны без `dist`, в ней зовётся
-  `prepare`, и каждая цель `exports` обязана появиться на диске. Проверяется наша часть —
-  что скрипт объявлен и что он строит пакет с нуля; «менеджер зовёт `prepare` на установке»
-  это свойство менеджера, оно замерено натурально, а не тестом.
-- `test/surface.test.ts` — `pnpm pack` и разбор тарбола перечнем: одна точка наружу, цель
-  `exports` реально лежит внутри, исходники и тесты потребителю не едут, на `typescript`
-  пакет не завязан ничем.
-
-## Версия и публикация
-
-Версию поднимает **architect при публикации**, не владелец зоны в коммите. Реестр — GitHub
-Packages (`PROBEWEB-4`).
-
-[plugin]: https://github.com/solidjs-community/eslint-plugin-solid
-[r-reactivity]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/reactivity.md
-[r-no-destructure]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-destructure.md
-[r-no-react-deps]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-react-deps.md
-[r-components-return-once]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/components-return-once.md
-[r-event-handlers]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/event-handlers.md
-[r-imports]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/imports.md
-[r-jsx-no-duplicate-props]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/jsx-no-duplicate-props.md
-[r-jsx-no-undef]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/jsx-no-undef.md
-[r-jsx-uses-vars]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/jsx-uses-vars.md
-[r-jsx-no-script-url]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/jsx-no-script-url.md
-[r-no-innerhtml]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-innerhtml.md
-[r-no-react-specific-props]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/no-react-specific-props.md
-[r-prefer-for]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/prefer-for.md
-[r-style-prop]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/style-prop.md
-[r-self-closing-comp]: https://github.com/solidjs-community/eslint-plugin-solid/blob/main/packages/eslint-plugin-solid/docs/self-closing-comp.md

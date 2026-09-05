@@ -37,9 +37,10 @@
 | Точка монтирования | `@web-core/solid/mount` | `mountApp(root)` — СОБСТВЕННОЕ добавление, не из вендора |
 
 📦 Внутри пакета: `src/index.ts` — единственный файл в корне `src/`, тонкая поверхность (один
-реэкспорт `engine/`). Каждый подпуть — своя папка: `src/engine/index.ts` (`export * from
-"solid-js"`), `src/web/index.ts` (`export * from "solid-js/web"`), `src/mount/index.ts`
-(`mountApp`) — по форме `@web-core/router` (`index.ts` + `engine/` + `vite/` + `devtools/`).
+реэкспорт `engine/`). Каждый подпуть — своя папка: `src/engine/index.ts`
+(`export * from "solid-js"`), `src/web/index.ts` (`export * from "solid-js/web"`),
+`src/mount/index.ts` (`mountApp`) — по форме `@web-core/router` (`index.ts` + `engine/` + `vite/` +
+`devtools/`).
 
 <h2 id="использование">🚀 Использование</h2>
 

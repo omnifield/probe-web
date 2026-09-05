@@ -6,7 +6,7 @@
 //
 // The preset sits in devDependencies — it does not ship.
 
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   {

@@ -1,5 +1,4 @@
-// Точка 1 замороженной поверхности — mountApp()/#root. Контракт и обоснования — README.md/FAQ.md.
-// Собственное добавление пакета, не реэкспорт solid-js — свой подпуть, не в барели `.`/`./web`.
+// см. README.md / FAQ.md
 
 import type { JSX } from "solid-js";
 import { render } from "solid-js/web";

@@ -10,7 +10,7 @@
 // опубликован, а ждать публикации ради собственной проверки значило бы её не делать. Это
 // devDependency — в поставку не едет.
 
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   {

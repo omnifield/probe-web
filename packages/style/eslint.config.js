@@ -1,4 +1,4 @@
-import { defineConfig } from "@web-core/lint";
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   {
