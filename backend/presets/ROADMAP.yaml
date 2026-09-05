@@ -1,0 +1,132 @@
+# Дорожная карта presets — источник правды по фактически сделанной работе. Формат тот же, что у
+# packages/skin/packages/store: categories → items, без milestones — у фичи нет освоенной
+# поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Хранилище
+    items:
+      - id: bbolt-transactional-store
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: bbolt вместо файла на запись
+        description: |
+          Означает: одна транзакция `Update` держит проверку пределов и саму запись атомарно —
+          ручные счётчики "занято, но не записано" (нужные файловому хранилищу для той же
+          гарантии) не нужны вовсе. Второй одновременный вызов ждёт очереди по устройству базы.
+
+      - id: opaque-state-rawmessage
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: state — json.RawMessage, байты без разбора и пересборки
+        description: |
+          Означает: `state` проходит от запроса до диска и обратно теми же байтами — без риска
+          переставить ключи или потерять точность большого числа при повторной сериализации.
+
+      - id: per-kind-limits
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Предел числа записей — на вид, а не на хранилище целиком
+        description: |
+          Означает: один вид с большим числом пресетов не отбирает лимит у остальных видов —
+          у каждого свой счётчик. Предел объёма диска остался общим (место физически одно).
+
+  - category: Имена
+    items:
+      - id: name-unique-per-kind
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Уникальность машинного имени — в пределах вида
+        description: |
+          Означает: два разных вида законно делят одно и то же имя — уникальность имеет смысл
+          там, где имя реально адресует что-то одно, а это всегда "одно в своём виде".
+
+  - category: HTTP
+    items:
+      - id: basic-crud
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: list/get/create/delete по узкому контракту
+        description: |
+          Означает: пять ручек и ни одной больше, разбор конверта не заглядывает внутрь state,
+          CORS и JSON-конверт отказа — на каждом ответе одинаково.
+
+      - id: atomic-replace
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: PUT — атомарная замена вместо клиентского delete+create
+        description: |
+          Означает: id остаётся тем же, а проверка пределов и запись происходят одной
+          транзакцией — раньше это была гонка из двух отдельных HTTP-вызовов на клиенте.
+
+      - id: healthcheck-without-curl
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: Проверка живости своим флагом (-healthcheck), не внешней тулзой в образе
+        description: |
+          Означает: alpine-образ не тащит curl/wget ради одного HTTP-запроса — бинарник умеет
+          его сам.
+
+  - category: Сборки
+    items:
+      - id: store-and-http-tests
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: 37 тестов, 2 файла, зелёные под -race
+        description: |
+          Означает: полный HTTP-контракт (каждое действие, каждый отказ своим кодом) и хранилище
+          (пределы, атомарность, opaque-проход, гонки) доказаны пробами, не только описанием.
+          Две ключевые гарантии (изоляция предела и уникальности по виду) проверены мутацией.
+
+  - category: Открытое
+    items:
+      - id: agent-channel-not-ported
+        type: feature
+        status: Open
+        priority: Low
+        milestone: null
+        name: Канал к агенту (текст → пресет) не перенесён
+        description: |
+          Означает: это была специфика одного вида (`filter`), а не часть generic-контракта
+          хранения. Понадобится — заводится отдельно, поверх того же хранилища.
+
+      - id: dockerfile-build-unverified
+        type: bug
+        status: Open
+        priority: Medium
+        milestone: null
+        name: Dockerfile написан, но сборка образа не проверена живьём
+        description: |
+          Означает: в дев-окружении нет докер-демона — многоступенчатая сборка (golang:alpine →
+          alpine) прочитана глазами и повторяет рабочий паттерн, но `docker build` не запускался.
+
+  - category: Genus
+    items:
+      - id: root-readme-genus-service
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: genus service зарегистрирован в правилах корневого README
+        description: |
+          Означает: presets — первый пилот genus `service` (симметрично `engine` — самостоятельный
+          сервис со своим бинарником/портом/сетевым контрактом, не библиотека). Первый черновик
+          называл этот genus `feature` — переименовано: `type: feature` уже занят другой осью
+          (тип пункта роадмапа), держать то же слово для genus значило бы гадать по контексту,
+          о какой оси речь. Зарегистрирован в WARNING-блоке "Правила для шаблонов" корневого
+          README и в списке пилотов — разбор переименования в FAQ.md.

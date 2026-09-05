@@ -216,9 +216,13 @@ var Catalog = []Migration{
 	},
 	{
 		Version:       "20260905_workspace_categories",
-		Name:          "Group workspaces into categories (apps/packages/features) with their own color",
+		Name:          "Group workspaces into categories (apps/packages/services) with their own color",
 		CheckSQLite:   sqliteColumnCheck("workspaces", "category_id"),
 		CheckPostgres: pgColumnCheck("workspaces", "category_id"),
+		// Renamed the seeded "features" category to "services" same-day,
+		// before this migration shipped anywhere but this dev database —
+		// reconcile instead of a second migration for a wording fix.
+		ReconcileChecksum: true,
 		SQLite: `
 			CREATE TABLE IF NOT EXISTS workspace_categories (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,7 +236,7 @@ var Catalog = []Migration{
 			INSERT OR IGNORE INTO workspace_categories (name, color, sort_order) VALUES
 			('apps', '#7c3aed', 1),
 			('packages', '#3b82f6', 2),
-			('features', '#059669', 3);
+			('services', '#059669', 3);
 			ALTER TABLE workspaces ADD COLUMN category_id INTEGER;
 			CREATE INDEX IF NOT EXISTS idx_workspaces_category_id ON workspaces(category_id);
 		`,
@@ -249,7 +253,7 @@ var Catalog = []Migration{
 			INSERT INTO workspace_categories (name, color, sort_order) VALUES
 			('apps', '#7c3aed', 1),
 			('packages', '#3b82f6', 2),
-			('features', '#059669', 3)
+			('services', '#059669', 3)
 			ON CONFLICT (name) DO NOTHING;
 			ALTER TABLE workspaces ADD COLUMN category_id INTEGER;
 			CREATE INDEX IF NOT EXISTS idx_workspaces_category_id ON workspaces(category_id);

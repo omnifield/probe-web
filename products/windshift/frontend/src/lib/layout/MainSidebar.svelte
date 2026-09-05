@@ -124,7 +124,11 @@
         const bucket = byCategoryId.get(category.id);
         if (!bucket || bucket.length === 0) continue;
         if (groupsRendered > 0) items.push({ type: 'divider' });
-        items.push({ type: 'category-label', text: category.name, color: category.color });
+        // The label dot matches the icon color of the group's own nodes
+        // (first workspace in the bucket), not the category's separately
+        // stored color — a category's color can drift from what's actually
+        // shown underneath it, and the dot should preview what's real.
+        items.push({ type: 'category-label', text: category.name, color: bucket[0]?.color || category.color });
         items.push({ type: 'group', items: bucket.map(toItem) });
         groupsRendered += 1;
       }

@@ -1,0 +1,6 @@
+{
+  "//": "Конфиг САМОГО пакета. Сервер без Vite — база из @web-core/build/tsconfig-node, не своя копия.",
+  "extends": "@web-core/build/tsconfig-node",
+  "include": ["src", "test", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}
