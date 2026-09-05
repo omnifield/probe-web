@@ -1,12 +1,4 @@
-// `checkAssembly` (`./check-assembly.ts`) walks STRUCTURE — admission, anatomy — and by its own
-// comment never reads `bind`/`props`/`on`: at the TYPE level that gap is closed by `BoundPath`
-// (`../assembly/paths.ts`), which only exists while `tsc` is looking. A sborka built by an agent
-// arrives as JSON, and JSON has no compiler over it — a typo in `bind.value`/`repeat.path` is
-// exactly as silent as an admission violation would be without `checkAssembly`, just for values
-// instead of structure. This file is that second half: it resolves every bound path against a
-// REAL data value (an example built from the component's own io schema, by the caller — this file
-// never imports `zod` or anything io-shaped; it takes whatever `data` it is handed) and reports
-// which ones resolve to nothing.
+// см. README.md / FAQ.md
 
 import { isAssemblyContent, isAssemblyRepeat, isDataBinding, resolveDataBinding, scopedPath } from "../engine/passport/assembly/index.js";
 import type { PassportAssembly, PassportAssemblyElement, PassportAssemblyNode } from "../engine/passport/assembly/index.js";

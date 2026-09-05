@@ -130,8 +130,14 @@ async function loadFallbackTranslations() {
 /**
  * Load translations for a locale
  * @param {string} localeCode - Locale code to load
+ * @param {object} [options]
+ * @param {boolean} [options.persist=true] - Save this locale as the user's
+ *   preference. Set to `false` for the transient error-fallback below — a
+ *   one-off failed chunk fetch (e.g. a dev-server restart racing a dynamic
+ *   `import()`) must not silently overwrite a saved 'ru' preference with
+ *   'en' for every future visit.
  */
-async function loadTranslations(localeCode) {
+async function loadTranslations(localeCode, { persist = true } = {}) {
   loading = true;
 
   try {
@@ -147,8 +153,9 @@ async function loadTranslations(localeCode) {
     }
     locale = localeCode;
 
-    // Persist to localStorage
-    if (typeof localStorage !== 'undefined') {
+    // Persist to localStorage — only for a deliberate resolution (saved
+    // preference, explicit setLocale), not a transient failure fallback.
+    if (persist && typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, localeCode);
     }
 
@@ -160,9 +167,10 @@ async function loadTranslations(localeCode) {
   } catch (err) {
     console.error(`Failed to load locale: ${localeCode}`, err);
 
-    // Fall back to English if loading fails
+    // Fall back to English IN MEMORY if loading fails — never persisted,
+    // so a transient fetch failure can't overwrite the saved preference.
     if (localeCode !== DEFAULT_LOCALE) {
-      await loadTranslations(DEFAULT_LOCALE);
+      await loadTranslations(DEFAULT_LOCALE, { persist: false });
     }
   } finally {
     loading = false;
