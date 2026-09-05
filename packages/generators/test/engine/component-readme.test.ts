@@ -6,15 +6,6 @@ import { importModule } from "../../src/extract/module.js";
 import { fromEntryTemplate } from "../../src/engine/template.js";
 import type { Entry } from "../../src/engine/types.js";
 
-// Proof-of-concept for GEN-5 (variant C, chosen by user): renders a component
-// README from the REAL passport of the copied accordion fixture, not
-// synthetic data. This is deliberately NOT under `src/` — the shape below
-// (part/state/mark, setting/mark/default) is UI-kit domain knowledge; this
-// engine only provides collect/render, never what a component's README
-// should contain. Calls `collect`/`render` directly, no `run()` — this test
-// is about `importModule` + `fromEntryTemplate` working together on real
-// data, not about the runner (see `test/engine/runner.test.ts` for that).
-
 interface Mark {
   readonly kind: "attribute" | "pseudo";
   readonly name: string;
@@ -119,9 +110,6 @@ describe("component README (variant C) against the real accordion fixture", () =
     expect(content).toContain('| itemContent | open | [data-state="open"] · may be absent |');
     expect(content).toContain("| collapsible | — | `false` (depends on `multiple`) |");
 
-    // Surfaced for review, not asserted line-by-line: the whole point of this
-    // test is to show a human the actual rendered output before it goes
-    // anywhere near a real component.
     console.log(content);
   });
 });

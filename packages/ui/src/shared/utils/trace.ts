@@ -1,3 +1,3 @@
-import { createLifeTracer } from "@web-core/shared/trace-life";
+import { createLifeTracer } from "@web-core/trace/solid";
 
 export const traceLife = createLifeTracer("ui");

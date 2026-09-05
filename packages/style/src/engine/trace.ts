@@ -1,17 +1,7 @@
-const FLAG = "__WEB_CORE_STYLE_TRACE__";
+// Тонкая обёртка над @web-core/trace — раньше своя копия реализации, из-за цикла зависимостей
+// при установке (`@web-core/trace` тянул `@web-core/style`, `style` зависит от `build`). Цикл
+// снят при выделении трейсера из `@web-core/shared` — см. ROADMAP.yaml зоны `trace`.
 
-type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
+import { createTracer } from "@web-core/trace";
 
-function enabled(): boolean {
-  return (globalThis as TraceGlobal)[FLAG] === true;
-}
-
-export function trace(label: string): () => void {
-  if (!enabled()) return () => {};
-
-  const started = performance.now();
-  return () => {
-    const ms = performance.now() - started;
-    console.debug(`[web-core-style] ${label} — ${ms.toFixed(2)}ms`);
-  };
-}
+export const trace = createTracer("style");

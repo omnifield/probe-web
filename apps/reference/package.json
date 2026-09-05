@@ -15,9 +15,10 @@
   },
   "dependencies": {
     "@kobalte/core": "^0.13.12",
-    "@web-core/shared": "workspace:*",
     "@web-core/skin": "workspace:*",
+    "@web-core/solid": "workspace:*",
     "@web-core/style": "workspace:*",
+    "@web-core/trace": "workspace:*",
     "@web-core/ui": "workspace:*",
     "solid-js": "^1.9.14"
   },

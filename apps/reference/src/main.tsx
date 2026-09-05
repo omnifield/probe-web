@@ -10,7 +10,7 @@ import "@web-core/style/base.css";
 // поднимется без раскладки. У потребителя это место его собственного CSS.
 import "./app.css";
 
-import { mount } from "@web-core/shared";
+import { mountApp } from "@web-core/solid/mount";
 
 import { App } from "./app";
 import { dressApp } from "./skin";
@@ -23,4 +23,4 @@ dressApp();
 
 // Точку монтирования рантайм ищет сам — `#root` из `index.html`. В сигнатуре её нет, и
 // приложение о ней не знает: знает только разметка.
-mount(() => <App />);
+mountApp(() => <App />);

@@ -3,38 +3,13 @@ import { join } from "node:path";
 import { fromTemplate, identifierFromEntryName } from "../../engine/index.js";
 import type { AggregatePlugin, EntryContext } from "../../engine/index.js";
 
-/**
- * The four barrels a "kit" product needs to stay in sync with its own
- * `src/*`: `passport.ts`, `kit.ts`, `io.ts`, `index.ts`. A "kit" here means
- * the exact layout `packages/ui` uses — one folder per component under
- * `rootDir`, each with `entity/passport.ts` (required), `playground/
- * index.ts` (required), `components/kit.ts(x)` (required), and an optional
- * `entity/io.ts`. `packages/ui` is the first product on this layout, not
- * the only one meant to be — `products/tables` is planned to move onto the
- * same `entity`/`playground`/`components` shape (GEN-9).
- *
- * What this DOESN'T own: the exact TEXT of the four generated files — that
- * stays product-specific (imports/comments/type names differ per
- * product), supplied as Handlebars templates via `templatesDir`. This
- * module owns the DATA each barrel needs, which is the same across any
- * product sharing the layout.
- */
 export interface KitBarrelOptions {
-  /** Directory the four barrels are written to — usually the caller's own `src`. */
   readonly outputDir: string;
-  /** Directory holding `passport.ts.hbs`/`kit.ts.hbs`/`io.ts.hbs`/`index.ts.hbs`. */
   readonly templatesDir: string;
 }
 
 type KitFile = "kit.tsx" | "kit.ts" | "index.tsx" | "index.ts";
 
-/**
- * Where a component's part map (`export const kit = defineKitComponent(...)`) lives. Two legal
- * shapes, both read from disk, neither stale: the older standalone `components/kit.ts(x)`, or the
- * current new-flow shape where the real barrel (`components/index.ts(x)`) carries the map inline
- * alongside the part components themselves (no second file) — the shape `table`/`grid` and every
- * component migrated off `kit.tsx` now use.
- */
 function kitFileOf(entry: EntryContext): KitFile | undefined {
   if (entry.has("components/kit.tsx")) return "kit.tsx";
   if (entry.has("components/kit.ts")) return "kit.ts";
@@ -61,7 +36,6 @@ function passportPlugin(options: KitBarrelOptions): AggregatePlugin<PassportItem
         passportModule: `${entry.name}/entity/passport.js`,
         editorInfoModule: `${entry.name}/playground/index.js`,
       })),
-    // Только этот барель проверяет "компонентов вообще нет" — остальные три делят тот же скан.
     validate: (items) => {
       if (items.length === 0) throw new Error("в `src/` нет ни одной папки компонента с анатомией — подпуть паспорта пуст");
     },
@@ -92,8 +66,6 @@ function kitPlugin(options: KitBarrelOptions): AggregatePlugin<KitItem> {
           kitModule,
         };
       }),
-    // Объявил анатомию — обязан назвать, чем её части рисуются. Компонент без карты уехал бы в
-    // поставку паспортом, который нечем отрисовать.
     validate: (items) => {
       const withoutMap = items.filter((item) => item.kitFile === undefined).map((item) => item.name);
       if (withoutMap.length > 0) throw new Error(`паспорт есть, карты нет — папки без карты частей: ${withoutMap.join(", ")}`);
@@ -134,7 +106,6 @@ function indexPlugin(options: KitBarrelOptions): AggregatePlugin<{ name: string 
   };
 }
 
-/** The four barrels, ready to drop into a `GeneratorConfig`'s `plugins`. */
 export function kitBarrelPlugins(options: KitBarrelOptions): readonly AggregatePlugin[] {
   return [passportPlugin(options), kitPlugin(options), ioPlugin(options), indexPlugin(options)];
 }

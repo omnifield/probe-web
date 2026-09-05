@@ -45,9 +45,8 @@ root
 > в range-слайдере (`index` обязателен), один `marker` на деление шкалы (`value` обязателен) — та
 > же форма, что уже несёт `trigger` табов. Настоящий `<input type="text" hidden>` (`SliderHiddenInput`,
 > один на бегунок, только для участия в форме) своего адреса не несёт — та же находка, что у
-> скрытого ввода чекбокса. **В отличие от чекбокса/radio-group, кит НЕ кладёт его сам** — по
-> примеру Ark потребитель ставит `<SliderHiddenInput/>` внутри `<SliderThumb>` руками (см.
-> «Использование»).
+> скрытого ввода чекбокса. **В отличие от чекбокса/radio-group, кит НЕ кладёт его сам** —
+> потребитель ставит `<SliderHiddenInput/>` внутри `<SliderThumb>` руками (см. «Использование»).
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -101,16 +100,24 @@ const tree = instanceOf("slider", {}, "basic", data);
 </Slider>
 ```
 
-**Живой текст значения.** `SliderValueText` не рисует текст сам — берите его из `useSliderContext()`
-(читает контекст, который уже установил ближайший `<Slider>`, а не заводит новый).
+**Живой текст значения.** `SliderValueText` не форматирует текст сам — держите значение управляемым
+(`value`/`onValueChange`) и передавайте готовую строку самим.
 
 ```tsx
-import { useSliderContext } from "@ark-ui/solid/slider";
+const [value, setValue] = createSignal([40]);
 
-function VolumeValueText() {
-  const slider = useSliderContext();
-  return <SliderValueText>{slider().value.join(" – ")}</SliderValueText>;
-}
+<Slider value={value()} onValueChange={(details) => setValue(details.value)}>
+  <SliderLabel>Громкость</SliderLabel>
+  <SliderValueText>{value().join(" – ")}</SliderValueText>
+  <SliderControl>
+    <SliderTrack>
+      <SliderRange />
+    </SliderTrack>
+    <SliderThumb index={0}>
+      <SliderHiddenInput />
+    </SliderThumb>
+  </SliderControl>
+</Slider>;
 ```
 
 **Деления шкалы.**
@@ -243,8 +250,8 @@ root · bind: defaultValue
 достаётся только внешний вид поверх готовой позиции — цвет, размер, тень, — не сама раскладка.
 
 > [!NOTE]
-> Позиционирование `thumb`/`range`/`marker`/`draggingIndicator` НАСТОЯЩИЙ Ark задаёт инлайн-стилем
-> целиком сам (`slider.style.mjs`: `position`/`transform`/`insetInlineStart`/`translate`, все от
+> Позиционирование `thumb`/`range`/`marker`/`draggingIndicator` компонент задаёт инлайн-стилем
+> целиком сам (`position`/`transform`/`insetInlineStart`/`translate`, все от
 > `--slider-thumb-offset-N`/`--slider-range-start`/`-end`/`--translate-x`/`-y`) — рецепту здесь
 > нечего решать, только СТИЛЬ поверх уже выставленной позиции (цвет, размер, тень). Единственное
 > реальное исключение — `thumb`'s собственные `width`/`height`: слайдер их ИЗМЕРЯЕТ (пишет обратно

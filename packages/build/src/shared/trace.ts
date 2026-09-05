@@ -1,26 +1,11 @@
 // Perf-трейсы зоны build. ВНУТРЕННЕЕ — не в exports манифеста.
 //
-// Своя реализация, не @web-core/shared/trace: build зависит от него весь кит, а shared сам
-// зависит (через devDependency на style) от build — общий трейсер здесь замкнул бы цикл на
-// установке (build не соберётся, пока не соберётся shared, а shared тянет style, который сам
-// не соберётся без build).
+// Тонкая обёртка над @web-core/trace, как и у остальных зон кита — раньше здесь была своя
+// копия реализации: `@web-core/trace` тянул `@web-core/style` (тестам нужен реальный CSS), а
+// `style` сам зависит от `build`, и общий трейсер замкнул бы установку в цикл. Цикл снят, когда
+// `@web-core/trace` лишился этой devDependency при выделении из `@web-core/shared` — обёртка
+// восстановлена (см. ROADMAP.yaml зоны `trace`).
 
-/** Глобальный тумблер: `globalThis.__WEB_CORE_BUILD_TRACE__ = true`. */
-const FLAG = "__WEB_CORE_BUILD_TRACE__";
+import { createTracer } from "@web-core/trace";
 
-type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
-
-function enabled(): boolean {
-  return (globalThis as TraceGlobal)[FLAG] === true;
-}
-
-/** Открывает замер участка `label`. Возвращает функцию закрытия — она пишет строку в консоль. */
-export function trace(label: string): () => void {
-  if (!enabled()) return () => {};
-
-  const started = performance.now();
-  return () => {
-    const ms = performance.now() - started;
-    console.debug(`[web-core-build] ${label} — ${ms.toFixed(2)}ms`);
-  };
-}
+export const trace = createTracer("build");

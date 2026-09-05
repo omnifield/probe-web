@@ -1,7 +1,7 @@
 {
-  "name": "@web-core/shared",
+  "name": "@web-core/solid",
   "version": "0.1.0",
-  "description": "Общее для всех зон web-core: mount()/#root и perf-трейсер, чтобы не заводить по копии на зону.",
+  "description": "Solid.js web-core: единственная точка резолва вместо вендора, плюс собственные добавления поверх (первое — mountApp()/#root).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -10,13 +10,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./trace": {
-      "types": "./dist/trace.d.ts",
-      "default": "./dist/trace.js"
+    "./web": {
+      "types": "./dist/web/index.d.ts",
+      "default": "./dist/web/index.js"
     },
-    "./trace-life": {
-      "types": "./dist/trace-life.d.ts",
-      "default": "./dist/trace-life.js"
+    "./mount": {
+      "types": "./dist/mount/index.d.ts",
+      "default": "./dist/mount/index.js"
     }
   },
   "files": [
@@ -36,13 +36,9 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@web-core/style": "workspace:*",
     "@types/node": "^24.10.1",
-    "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
-    "vite-plugin-solid": "^2.11.14",
     "vitest": "^4.1.10"
   }
 }

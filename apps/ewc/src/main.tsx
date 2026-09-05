@@ -1,7 +1,7 @@
 import "@web-core/style/base.css";
 import "./app.css";
 
-import { mount } from "@web-core/shared";
+import { mountApp } from "@web-core/solid/mount";
 import { makeSkinSwitch } from "@web-core/skin/wear";
 
 import { App } from "./app.jsx";
@@ -9,5 +9,5 @@ import { SKIN_SOURCE } from "./skins.js";
 
 const skin = makeSkinSwitch(SKIN_SOURCE);
 
-// `mount` finds `#root` itself — see `index.html`.
-mount(() => <App skin={skin} />);
+// `mountApp` finds `#root` itself — see `index.html`.
+mountApp(() => <App skin={skin} />);

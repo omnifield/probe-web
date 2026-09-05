@@ -1,7 +1,3 @@
-// Config fixture for `test/cli.test.ts` — a real `defineConfig` export, loaded by `runCli` the
-// same way a product's own `generators.config.ts` would be. `rootDir` comes from an env var the
-// test sets, not a hardcoded path: this file lives in the repo (so its imports resolve normally),
-// but the entries it scans live in a throwaway temp directory the test controls.
 import { hasFile } from "../../../src/engine/predicates.js";
 import { defineConfig } from "../../../src/engine/runner.js";
 import type { AggregatePlugin } from "../../../src/engine/types.js";

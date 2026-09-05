@@ -1,19 +1,15 @@
 {
   "//": [
-    "Конфиг САМОГО пакета: собирает исходники рантайма и типизирует его тесты.",
+    "Конфиг САМОГО пакета: собирает исходники движка и типизирует его тесты.",
     "Базы для потребителя здесь нет и не будет — её отдаёт зона `build` подпутём",
-    "`@web-core/build/tsconfig` (PROBEWEB-4)."
+    "`@web-core/build/tsconfig`."
   ],
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023"],
     "types": ["node"],
-    // JSX нужен ТЕСТАМ: тест обязан поднимать настоящее приложение, а приложение на Solid
-    // пишется на JSX. В `src` его нет — трансформ в сборку не попадает.
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

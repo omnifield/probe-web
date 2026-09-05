@@ -6,11 +6,6 @@ import { importModule } from "../../src/extract/module.js";
 
 const entityDir = join(import.meta.dirname, "..", "fixtures", "accordion", "entity");
 
-// Deliberately NOT `typeof import("../fixtures/.../passport.js")`: that would pull the fixture's
-// own type graph into THIS package's `tsc` program despite `test/fixtures` being excluded
-// (`tsconfig.json`) — an explicit type-only import reaches in regardless of `exclude`, and the
-// fixture references a type (`AccordionProps`) this package never copied in on purpose. A minimal
-// local shape, just what the test reads, keeps the fixture truly foreign.
 interface PassportModuleShape {
   readonly passport: {
     readonly parts: ReadonlyArray<{ readonly name: string }>;
@@ -26,10 +21,6 @@ describe("importModule against a real component (copied accordion/entity, not sy
     expect(Object.keys(passport.settings)).toEqual(["orientation", "multiple", "collapsible"]);
   });
 
-  // `fast-json-patch` (under @web-core/io's `paths.ts`) is CommonJS with no `exports`
-  // map — plain Node's ESM interop, and this tool's default headless mode, both fail to find its
-  // named exports (see extract/README's "Second argument" section). `ssr.noExternal` fixes it:
-  // proof this is a caller-suppliable escape hatch, not a packages/io bug.
   it("extracts the real io.ts Zod schema once the CJS dependency is marked noExternal", async () => {
     const { input } = await importModule<{ readonly input: unknown }>(join(entityDir, "io.ts"), {
       ssr: { noExternal: ["fast-json-patch"] },

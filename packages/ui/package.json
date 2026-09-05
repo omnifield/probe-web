@@ -95,8 +95,8 @@
   "dependencies": {
     "@web-core/assembly": "workspace:*",
     "@web-core/io": "workspace:*",
-    "@web-core/shared": "workspace:*",
     "@web-core/skin": "workspace:*",
+    "@web-core/trace": "workspace:*",
     "@tanstack/solid-table": "^9.1.2",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",

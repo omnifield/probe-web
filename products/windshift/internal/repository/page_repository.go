@@ -542,6 +542,16 @@ const pageDisplayOrderClause = `
 			WHEN '🎨 Рецепт' THEN 7
 			WHEN 'FAQ' THEN 999
 			WHEN '❓ FAQ' THEN 999
+			WHEN '📁 Структура' THEN 0
+			WHEN '📚 Документация' THEN 0
+			WHEN '🧠 Концепции' THEN 0
+			WHEN '📏 Правила' THEN 1
+			WHEN '🎨 Правила для шаблонов' THEN 2
+			WHEN '🗃️ Базовые понятия сущности' THEN 1
+			WHEN '🧱 Пакеты фреймворка' THEN 2
+			WHEN '🖥️ Приложения' THEN 3
+			WHEN '🚀 Продукты' THEN 4
+			WHEN '🛠️ Инструменты' THEN 5
 			ELSE 500
 		END ASC,
 		title ASC,

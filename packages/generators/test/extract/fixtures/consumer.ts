@@ -1,7 +1,3 @@
-// Deliberately imports its sibling with a `.js` extension pointing at a
-// `.ts` file — the exact convention `importModule` exists to resolve, the
-// same one plain Node cannot (see `packages/generators/README.md`,
-// `packages/ui/scripts/generate.mjs`).
 import { value } from "./value.js";
 
 export function describeFixture(): string {

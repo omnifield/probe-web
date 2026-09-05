@@ -6,7 +6,13 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as radioGroupKit } from "../components/index.js";
+import {
+  RadioGroup,
+  RadioGroupItem,
+  RadioGroupItemControl,
+  RadioGroupItemText,
+  kit as radioGroupKit,
+} from "../components/index.js";
 import { passport as radioGroupPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as radioGroupEditorInfo } from "../playground/index.js";
@@ -96,5 +102,32 @@ describe('radio group "basic" — label and items from data, one choice at a tim
 
     expect(firstItem!.getAttribute("data-state")).toBe("unchecked");
     expect(secondItem!.getAttribute("data-state")).toBe("checked");
+  });
+});
+
+describe("per-item disabled — overrides the group, not just a group-wide flag", () => {
+  it("marks only the disabled item, siblings stay enabled", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <RadioGroup defaultValue="standard">
+          <RadioGroupItem value="standard">
+            <RadioGroupItemControl />
+            <RadioGroupItemText>Standard</RadioGroupItemText>
+          </RadioGroupItem>
+          <RadioGroupItem value="express" disabled>
+            <RadioGroupItemControl />
+            <RadioGroupItemText>Express</RadioGroupItemText>
+          </RadioGroupItem>
+        </RadioGroup>
+      ),
+      host,
+    );
+
+    const items = host.querySelectorAll('[data-scope="radio-group"][data-part="item"]');
+    expect(items[0]!.getAttribute("data-disabled")).toBeNull();
+    expect(items[1]!.getAttribute("data-disabled")).toBe("");
   });
 });

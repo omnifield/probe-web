@@ -67,7 +67,7 @@ describe("kitBarrelPlugins", () => {
 
   it("io.ts only lists entries that declared entity/io.ts", async () => {
     makeComponent("accordion", { kitFile: "kit.tsx", io: true });
-    makeComponent("button", { kitFile: "kit.tsx" }); // no io
+    makeComponent("button", { kitFile: "kit.tsx" });
 
     await runConfig(rootDir);
 
@@ -89,14 +89,12 @@ describe("kitBarrelPlugins", () => {
 
     await expect(runConfig(rootDir)).rejects.toThrow("паспорт есть, карты нет — папки без карты частей: broken");
 
-    // passportPlugin ran (it's first) and would have written passport.ts had run() not aborted —
-    // the point of this assertion is that it did NOT: no partial output survives a failed run.
     expect(existsSync(join(rootDir, "passport.ts"))).toBe(false);
     expect(existsSync(join(rootDir, "kit.ts"))).toBe(false);
   });
 
   it("throws when the scanned root has no component at all", async () => {
-    mkdirSync(join(rootDir, "not-a-component"), { recursive: true }); // no entity/passport.ts
+    mkdirSync(join(rootDir, "not-a-component"), { recursive: true });
 
     await expect(runConfig(rootDir)).rejects.toThrow("в `src/` нет ни одной папки компонента с анатомией");
   });

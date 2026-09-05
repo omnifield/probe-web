@@ -30,7 +30,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@web-core/shared": "workspace:*",
+    "@web-core/trace": "workspace:*",
     "fast-json-patch": "^3.1.1"
   },
   "peerDependencies": {

@@ -1,11 +1,11 @@
-// Шов с зоной `shared` — точка 1 замороженной поверхности (`PROBEWEB-4`).
+// Шов с зоной `solid` — точка 1 замороженной поверхности (`PROBEWEB-4`).
 //
-// Здесь проверяется не `mount()` сам по себе (это предмет тестов зоны `shared`), а СВЯЗКА
+// Здесь проверяется не `mountApp()` сам по себе (это предмет тестов зоны `solid`), а СВЯЗКА
 // «разметка приложения ↔ рантайм»: `index.html` кладёт `#root`, рантайм ищет его сам, и
 // приложение об этой точке не знает. Ни один тип про такую связь ничего не знает — сломать
 // её можно, не уронив ни компилятор, ни линтер.
 
-import { mount } from "@web-core/shared";
+import { mountApp } from "@web-core/solid/mount";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "../src/app";
@@ -24,7 +24,7 @@ describe("приложение поднимается рантаймом", () =>
   it("монтируется в #root, не получая точку монтирования аргументом", () => {
     givenRoot();
 
-    mount(() => <App />);
+    mountApp(() => <App />);
 
     const app = document.querySelector("#root .app");
     expect(app).not.toBeNull();
@@ -36,6 +36,6 @@ describe("приложение поднимается рантаймом", () =>
     // остаётся зелёной, страница — пустой, и без внятного текста причину ищут в приложении.
     document.body.innerHTML = "<div id='app'></div>";
 
-    expect(() => mount(() => <App />)).toThrowError(/#root/);
+    expect(() => mountApp(() => <App />)).toThrowError(/#root/);
   });
 });

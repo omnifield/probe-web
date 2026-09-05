@@ -1,11 +1,17 @@
-// Perf-трейсы, общие для всех зон web-core. Разбор — README.md/FAQ.md пакета.
+// см. README.md / FAQ.md
 
 function flagFor(zone: string): string {
   return `__WEB_CORE_${zone.toUpperCase()}_TRACE__`;
 }
 
-function isEnabled(zone: string): boolean {
+/** Проверяет тумблер зоны — тем же ключом, что заводит `createTracer`/`createNoter`. */
+export function isEnabled(zone: string): boolean {
   return (globalThis as Record<string, unknown>)[flagFor(zone)] === true;
+}
+
+/** Переключает тумблер зоны — симметрична `isEnabled`, тот же ключ. */
+export function setEnabled(zone: string, value: boolean): void {
+  (globalThis as Record<string, unknown>)[flagFor(zone)] = value;
 }
 
 /** Заводит трейсер зоны `zone` — свой флаг `__WEB_CORE_<ZONE>_TRACE__`, свой префикс лога. */
