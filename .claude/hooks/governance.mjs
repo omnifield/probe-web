@@ -10,7 +10,7 @@
 //   - layer (scope=layer)            → своя политика: файлы не ограничиваем (узость — промптом; git=none).
 //   - scope не резолвится в зону       → DENY всё (нет boundary → аномалия, safe-by-default).
 //
-// Субагенты (BRAIN2-4) НЕ триггерят SessionStart и наследуют env OMNIFIELD_SCOPE родителя →
+// Субагенты (BRAIN2-4) НЕ триггерят SessionStart и наследуют env WEBCORE_SCOPE родителя →
 // routine-помощник owner'а виден гейту как owner-зона и режется теми же paths[] (граница не течёт).
 //
 // Контракт (Claude Code PreToolUse):
@@ -157,9 +157,9 @@ function main() {
   if (isMainSession(input)) return allow(); // architect (marker) — без ограничения
 
   const repoRoot = input.cwd || process.cwd();
-  const scope = process.env.OMNIFIELD_SCOPE;
+  const scope = process.env.WEBCORE_SCOPE;
   // Нет scope у не-main сессии — не можем определить зону → safe-by-default DENY.
-  if (!scope) return deny(`OMNIFIELD_SCOPE не задан — зона (boundary) неизвестна`);
+  if (!scope) return deny(`WEBCORE_SCOPE не задан — зона (boundary) неизвестна`);
 
   const config = loadConfig(repoRoot);
   const reason = editViolation({ scope, config, repoRoot, rawPath });

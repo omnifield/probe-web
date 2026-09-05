@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-ui",
+  "name": "@web-core/ui",
   "version": "0.1.0",
-  "description": "Примитивы probe-web поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
+  "description": "Примитивы web-core поверх @kobalte/core: 1-to-1 DOM, ноль стилей по умолчанию, свои обработчики насквозь (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -21,6 +21,15 @@
     "./io": {
       "types": "./dist/io.d.ts",
       "default": "./dist/io.js"
+    },
+    "./component-info": {
+      "types": "./dist/component-info.d.ts",
+      "default": "./dist/component-info.js"
+    },
+    "./component-registry": {
+      "solid": "./dist/component-registry.jsx",
+      "types": "./dist/component-registry.d.ts",
+      "default": "./dist/component-registry.js"
     }
   },
   "files": [
@@ -31,10 +40,8 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
-    "generate": "node generators/barrel/generate.mjs",
-    "readme": "node generators/readme/readme.mjs",
-    "prompt": "node generators/readme/prompt/prompt.mjs",
+    "build": "vite build",
+    "generate": "node ../../packages/generators/dist/cli.js generators/generate.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
@@ -42,7 +49,7 @@
   "//nx": [
     "ПОРОЖДЕНИЕ — ОТДЕЛЬНЫЙ ШАГ СО СВОИМИ ВЫХОДАМИ (`PWEB-86`).",
     "",
-    "`generators/barrel/generate.mjs` пишет `src/passport.ts` и `src/kit.ts`, и оба под `.gitignore`.",
+    "`generators/generate.config.ts` пишет `src/passport.ts` и `src/kit.ts`, и оба под `.gitignore`.",
     "Nx считает отпечаток по файлам, которые ВИДИТ, а игнорируемые он не смотрит вовсе —",
     "значит порождённое не входит ни в отпечаток, ни в восстановление. Следствие замерено:",
     "на чистом дереве `nx build` попадает в кеш, кладёт `dist` и НЕ кладёт порождённые входы;",
@@ -52,7 +59,7 @@
     "место в графе. Тогда порождённое восстанавливается кешем наравне с `dist`, а отпечаток",
     "сборки включает отпечаток порождения — потому что сборка зависит от него ЯВНО.",
     "",
-    "Входы порождения — `production` целиком, а не выборка вида `generators/barrel/generate.mjs` плюс",
+    "Входы порождения — `production` целиком, а не выборка вида `generators/generate.config.ts` плюс",
     "`src/*/*.anatomy.ts`. Выборка точнее ровно до первого файла, о котором забыли, и",
     "промах там молчит: отпечаток не сменится, старый выход восстановится. Широкий вход",
     "ошибается в сторону лишнего прогона, а прогон здесь — два обхода каталога.",
@@ -60,10 +67,11 @@
     "`dependsOn` перечислен у каждого шага, который порождённое читает, и `^build` в нём",
     "повторён намеренно: значение из `nx.json` не дополняется, а заменяется целиком.",
     "",
-    "`generate` сам обзавёлся `dependsOn: [\"^build\"]` (PWEB-205, 2026-08-30): обход и запись",
-    "переехали в `@probe-web/generators/barrel`, и шаг читает его `dist`, а не только свой",
-    "исходник — `^production` в `inputs` по той же причине: правка движка обязана расценить",
-    "кеш этого шага устаревшим, а без `^production` смена чужого пакета осталась бы невидимой."
+    "`generate` сам обзавёлся `dependsOn: [\"^build\"]` (PWEB-205, 2026-08-30 → GEN-9, 2026-09-01):",
+    "обход/запись/CLI-точка входа — в `@web-core/generators` (`plugin`+`cli.ts`), и шаг читает",
+    "его `dist`, а не только свой исходник — `^production` в `inputs` по той же причине: правка",
+    "движка обязана расценить кеш этого шага устаревшим, а без `^production` смена чужого пакета",
+    "осталась бы невидимой."
   ],
   "nx": {
     "targets": {
@@ -78,12 +86,6 @@
           "{projectRoot}/src/index.ts"
         ]
       },
-      "readme": {
-        "dependsOn": ["^build"],
-        "cache": true,
-        "inputs": ["production", "^production"],
-        "outputs": ["{projectRoot}/src/*/README.md"]
-      },
       "build": { "dependsOn": ["^build", "generate"] },
       "typecheck": { "dependsOn": ["build", "^build"] },
       "lint": { "dependsOn": ["build", "^build"] },
@@ -91,9 +93,13 @@
     }
   },
   "dependencies": {
-    "@omnifield/probe-web-io": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
+    "@web-core/assembly": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/trace": "workspace:*",
     "@tanstack/solid-table": "^9.1.2",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0",
     "@zag-js/accordion": "^1.43.1",
     "@zag-js/avatar": "^1.43.1",
     "@zag-js/date-picker": "^1.43.1",
@@ -124,10 +130,11 @@
   "devDependencies": {
     "@ark-ui/solid": "^5.38.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-assembly": "workspace:*",
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
-    "@probe-web/generators": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@web-core/generators": "workspace:*",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.2.0",
     "@types/node": "^24.10.1",
     "@zag-js/anatomy": "^1.43.1",
     "eslint": "^10.8.1",

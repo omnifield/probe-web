@@ -19,7 +19,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 ## Границы — машинные, наследуешь родителя
 - **governance-гейт режет Edit/Write вне `paths[]` родителя** — ты физически не вылезешь из
-  его зоны (наследуешь `OMNIFIELD_SCOPE`, SessionStart/marker не триггеришь). Обходить
+  его зоны (наследуешь `WEBCORE_SCOPE`, SessionStart/marker не триггеришь). Обходить
   (симлинк/относительный путь) бесполезно.
 - **git-gate** судит тебя по роли родителя: owner-родитель → commit-only; ты НЕ получаешь full
   (marker'а у тебя нет). Push/merge — не твоё.

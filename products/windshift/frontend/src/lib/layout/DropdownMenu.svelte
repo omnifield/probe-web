@@ -227,6 +227,44 @@
           <div class="border-t mx-2" style="border-color: var(--ds-border);"></div>
         {:else if itemData.type === 'text'}
           <div class="px-4 py-3 text-sm text-center italic" style="color: var(--ds-text-subtle);">{itemData.text}</div>
+        {:else if itemData.type === 'category-label'}
+          <div class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5" style="color: var(--ds-text-subtle);">
+            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: {itemData.color || 'var(--ds-text-subtle)'};"></span>
+            {itemData.text}
+          </div>
+        {:else if itemData.type === 'pinned-workspace'}
+          <!-- The one canonical "about/overview" workspace — its own block,
+               not a category-grouped item, always pinned right under search. -->
+          <svelte:element
+            this={itemData.href ? 'a' : 'button'}
+            href={itemData.href || undefined}
+            type={itemData.href ? undefined : 'button'}
+            data-menu-item
+            data-testid={itemData.testid || undefined}
+            data-id={itemData.id ?? undefined}
+            role="menuitem"
+            tabindex="0"
+            onclick={(e) => handleItemClick(itemData, e)}
+            class="flex items-center mx-2 my-2 px-3 py-2.5 text-sm rounded-lg border transition-all duration-200 cursor-pointer"
+            style="color: var(--ds-text); border-color: var(--ds-border); background-color: var(--ds-surface-raised);"
+            onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised-hovered)'}
+            onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--ds-surface-raised)'}
+          >
+            {#if itemData.avatarUrl}
+              <img src={itemData.avatarUrl} alt="Avatar" class="w-7 h-7 mr-3 rounded object-cover flex-shrink-0" />
+            {:else if itemData.icon}
+              {@const PinnedIcon = itemData.icon}
+              <div class="w-7 h-7 mr-3 rounded flex items-center justify-center flex-shrink-0" style="background-color: {itemData.iconColor || 'var(--ds-icon-subtle)'};">
+                <PinnedIcon class="w-4 h-4" style="color: white;" />
+              </div>
+            {/if}
+            <div class="flex-1 text-left min-w-0">
+              <div class="font-medium truncate">{itemData.title}</div>
+              {#if itemData.subtitle}
+                <div class="text-xs truncate" style="color: var(--ds-text-subtle);">{itemData.subtitle}</div>
+              {/if}
+            </div>
+          </svelte:element>
         {:else if itemData.type === 'search'}
           <div class="px-3 py-2 border-b" style="border-color: var(--ds-border);">
             <Input

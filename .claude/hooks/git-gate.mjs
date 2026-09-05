@@ -29,7 +29,7 @@
 //     allow, запись — ask). Marker — ЕДИНСТВЕННЫЙ источник 'full' (subagents наследуют env
 //     scope=main, но в marker их нет → не получают full). Пишет marker только
 //     main-session-marker.mjs при scope 'main'.
-//   - иначе env OMNIFIELD_SCOPE → config.git[roleOf(scope)]. Пусто/main без marker (=subagent)
+//   - иначе env WEBCORE_SCOPE → config.git[roleOf(scope)]. Пусто/main без marker (=subagent)
 //     → commit-only (gated), НЕ full.
 
 import { readFileSync } from "node:fs";
@@ -441,7 +441,7 @@ function isMainSession(input) {
 /** Уровень доступа сессии: marker→full; env-scope→config.git; subagent/пусто→commit-only. */
 export function currentAccess(input, config) {
   if (isMainSession(input)) return "full";
-  const scope = process.env.OMNIFIELD_SCOPE;
+  const scope = process.env.WEBCORE_SCOPE;
   if (!scope || scope === "main") return config?.git?.owner ?? "commit-only";
   return gitAccess(scope, config);
 }

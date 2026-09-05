@@ -1,10 +1,10 @@
-// Живая проба слоёв L0/L1 (PWEB-182): decode ЧУЖОЙ формы в канон, и encode канона ОБРАТНО в
-// чужую форму — round-trip, не только чтение в одну сторону, раз codec заявлен двусторонним.
+// Живая проба слоёв L0/L1: decode чужой формы в канон и encode обратно — round-trip, не только
+// чтение в одну сторону, раз codec заявлен двусторонним.
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { identityCodec, renameKeysCodec } from "../src/codecs.js";
+import { identityCodec, renameKeysCodec } from "../src/index.js";
 
 describe("identityCodec (L0)", () => {
   it("разбирает и отдаёт значение как есть в обе стороны", () => {

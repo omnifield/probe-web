@@ -1,5 +1,5 @@
 {
-  "name": "@omnifield/probe-web-panel",
+  "name": "@web-core/panel",
   "version": "0.0.0",
   "private": true,
   "description": "Dev panel: one place to walk through products. Ships to production too, while the repo stays one piece — this is not a dev-only tool.",
@@ -13,12 +13,12 @@
     "lint": "eslint . && pnpm run typecheck"
   },
   "dependencies": {
-    "@omnifield/probe-web-style": "workspace:*",
+    "@web-core/style": "workspace:*",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"

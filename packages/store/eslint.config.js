@@ -1,5 +1,5 @@
-// Solid's canon by machine — the `lint` zone's preset (`@omnifield/probe-web-lint`).
-import { defineConfig } from "@omnifield/probe-web-lint";
+// Solid's canon by machine — the `lint` zone's preset (`@web-core/lint`).
+import { defineConfig } from "@web-core/lint/eslint";
 
 export default [
   {

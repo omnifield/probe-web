@@ -1,169 +1,55 @@
-# Radio Group
+# 🔘 Radio Group
 
-**Group:** inputs · **Genus:** component · **Footprint:** regular
+<h2 id="главное">🏠 Главное</h2>
 
-## Anatomy
+🏷️ inputs · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-| part | meaning |
-|---|---|
-| root | the whole set — the group of choices where exactly one can be picked |
-| label | the set's own label — describes the whole group, not any one choice |
-| item | one choice — a clickable row; click anywhere on it to select |
-| itemText | this item's own label text |
-| itemControl | the visible circle — what the sliding indicator centers itself on top of when this item is chosen |
-| indicator | the single sliding dot — jumps to sit over whichever item is currently checked |
+Классический выбор одного варианта из нескольких кружками 🔘 — используйте вместо `select`, когда
+вариантов немного и все они должны быть видны сразу, без раскрытия списка: способ доставки, тариф,
+пол. Между пунктами скользит единый указатель выбора, а не переставляется галочка на каждом.
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | disabled | [data-disabled] | the whole group is disabled — no item can be chosen |
-| root | invalid | [data-invalid] | the enclosing form rejected the value |
-| root | required | [data-required] | the form will demand a choice on submit |
-| label | disabled | [data-disabled] | the whole group is disabled — no item can be chosen |
-| label | invalid | [data-invalid] | the enclosing form rejected the value |
-| label | required | [data-required] | the form will demand a choice on submit |
-| item | checked | [data-state="checked"] | this is the chosen item |
-| item | unchecked | [data-state="unchecked"] | not the chosen item |
-| item | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| item | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| item | invalid | [data-invalid] | the enclosing form rejected the value |
-| item | hover | [data-hover] | pointer is over this item |
-| item | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| item | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemText | checked | [data-state="checked"] | this is the chosen item |
-| itemText | unchecked | [data-state="unchecked"] | not the chosen item |
-| itemText | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| itemText | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| itemText | invalid | [data-invalid] | the enclosing form rejected the value |
-| itemText | hover | [data-hover] | pointer is over this item |
-| itemText | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| itemText | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemControl | checked | [data-state="checked"] | this is the chosen item |
-| itemControl | unchecked | [data-state="unchecked"] | not the chosen item |
-| itemControl | disabled | [data-disabled] | this item cannot be chosen — its own flag, or the whole group's |
-| itemControl | readonly | [data-readonly] | the value is visible but nothing can be chosen |
-| itemControl | invalid | [data-invalid] | the enclosing form rejected the value |
-| itemControl | hover | [data-hover] | pointer is over this item |
-| itemControl | focus | [data-focus] | keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible |
-| itemControl | focus-visible | [data-focus-visible] | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemControl | active | [data-active] | this item's circle is being pressed |
-| indicator | disabled | [data-disabled] | the whole group is disabled |
+Скользящий указатель — отдельная часть, а не декорация на выбранном пункте: один общий узел на
+весь набор, кит сам измеряет и позиционирует его под текущий выбор. 🧩
 
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which way the choices stack — also drives keyboard navigation (arrow keys) | `vertical` | [data-orientation] |
-
-## CSS Variables
-
-| part | variable | set by | meaning |
-|---|---|---|---|
-| indicator | `--left` | kit | measured horizontal position of the checked item's circle |
-| indicator | `--top` | kit | measured vertical position of the checked item's circle |
-| indicator | `--width` | kit | measured width of the checked item's circle |
-| indicator | `--height` | kit | measured height of the checked item's circle |
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Radio Group is a set of choices where exactly one can be picked — a single sliding indicator dot
-travels to sit over whichever item is currently checked, rather than each item drawing its own.
-
-## Features
-
-- **One indicator for the whole group, not one per item** — `indicator` is a single node that
-  measures the checked item's `itemControl` and moves itself there via four CSS variables
-  (`--left`/`--top`/`--width`/`--height`); it isn't nested inside each `item`.
-- **Controlled or uncontrolled** — `value` + `onValueChange` for controlled use, `defaultValue` for
-  uncontrolled.
-- **Horizontal or vertical** — `orientation` (the kit's one real setting for this component) flips
-  layout and which arrow keys move between items.
-- **Disabling works at two levels** — the whole group (`disabled` on the root) or one item at a
-  time (`disabled` on that `item`); either one produces the same `data-disabled` mark on the
-  affected item(s).
-- **Focus is mirrored as data** — real focus lands on each item's hidden `<input>`, invisible
-  itself; `item`/`itemText`/`itemControl` all pick up `data-focus`/`data-focus-visible` mirrored
-  onto them, the same device the select's own `control`/`valueText` use for their trigger's focus.
-- **The real hidden `<input type="radio">` carries no address** — same device as the checkbox's own
-  hidden input: without it the preview looks right but a click never actually changes the chosen
-  value, since the real `onChange` lives on that exact node, not on `item`'s own `<label>`.
-- **`itemControl` alone gets `active`** — `data-active` (the circle being pressed) is declared only
-  there, not on `item`/`itemText`, since it's specifically the visible circle being pressed, not
-  the whole row.
-
-## Anatomy
-
-```tsx
-import {
-  RadioGroup,
-  RadioGroupLabel,
-  RadioGroupItem,
-  RadioGroupItemControl,
-  RadioGroupItemText,
-  RadioGroupItemHiddenInput,
-  RadioGroupIndicator,
-} from "@omnifield/probe-web-ui";
-
-<RadioGroup>
-  <RadioGroupLabel>{/* text — describes the whole group */}</RadioGroupLabel>
-  {/* one RadioGroupItem per choice; `value` is required */}
-  <RadioGroupItem value="standard">
-    <RadioGroupItemControl />
-    <RadioGroupItemText>{/* text */}</RadioGroupItemText>
-    <RadioGroupItemHiddenInput />
-  </RadioGroupItem>
-  {/* the single sliding indicator, a sibling of the items, not nested in any one of them */}
-  <RadioGroupIndicator />
-</RadioGroup>
+```
+root
+├─ label 🏷️
+├─ indicator •
+└─ item[] 🔘
+   ├─ itemControl ⚪
+   └─ itemText
 ```
 
-## Examples
+| часть            | значение                                                    | принимает внутри              | рисуется                |
+| ------------------ | -------------------------------------------------------------- | ---------------------------------- | ---------------------------- |
+| ⚪ `root`         | набор целиком — оборачивает подпись, скользящий указатель и каждый пункт | `label`, `indicator`, `item`, любой компонент | `RadioGroup`     |
+| 🏷️ `label`       | собственная подпись набора                                    | текст                              | `RadioGroupLabel`        |
+| 🔘 `item`        | один пункт выбора — узел `<label>`, клик по нему выбирает его  | `itemControl`, `itemText`          | `RadioGroupItem`         |
+| ⚪ `itemControl` | видимый кружок пункта — заполняется, когда пункт выбран        | иконку, любой компонент            | `RadioGroupItemControl`  |
+| `itemText`       | видимая подпись пункта                                         | текст                              | `RadioGroupItemText`     |
+| • `indicator`    | единый скользящий указатель выбранного пункта — своего графика не несёт | —                          | `RadioGroupIndicator`    |
 
-### Basic, uncontrolled
+> [!NOTE]
+> Настоящий `<input type="radio">` смонтирован у КАЖДОГО пункта — кладёт его сам `RadioGroupItem`,
+> потребителю добавлять его не нужно: своего адреса он не несёт, в карту кита не входит. Это
+> `extras` (см. корневой README кита), но, в отличие от чекбокса, отдельный компонент
+> `RadioGroupItemHiddenInput` ВСЁ ЖЕ экспортируется наружу — нужен для ручной композиции с
+> `asChild` (почему — `FAQ.md`).
+>
+> `indicator` — не галочка внутри пункта, а ОДИН узел на весь набор (прямой сосед `item`, не его
+> потомок): та же механика, что и у скользящего указателя табов (`--left`/`--top`/`--width`/
+> `--height`, кит сам измеряет выбранный пункт и позиционирует индикатор поверх него). Подробнее —
+> `FAQ.md`.
 
-```tsx
-<RadioGroup defaultValue="React">
-  <RadioGroupLabel>Framework</RadioGroupLabel>
-  <For each={["React", "Solid", "Vue"]}>
-    {(framework) => (
-      <RadioGroupItem value={framework}>
-        <RadioGroupItemControl />
-        <RadioGroupItemText>{framework}</RadioGroupItemText>
-        <RadioGroupItemHiddenInput />
-      </RadioGroupItem>
-    )}
-  </For>
-  <RadioGroupIndicator />
-</RadioGroup>
-```
+<h2 id="использование">🚀 Использование</h2>
 
-### Controlled
+От ручной композиции до формы, ручной разметки пункта и отключения одного варианта — каждая часть
+подключается отдельно. 🔀
 
-```tsx
-import { createSignal } from "solid-js";
-
-const [value, setValue] = createSignal<string | null>(null);
-
-<RadioGroup value={value()} onValueChange={(details) => setValue(details.value)}>
-  <RadioGroupLabel>Framework</RadioGroupLabel>
-  <For each={["React", "Solid", "Vue"]}>
-    {(framework) => (
-      <RadioGroupItem value={framework}>
-        <RadioGroupItemControl />
-        <RadioGroupItemText>{framework}</RadioGroupItemText>
-        <RadioGroupItemHiddenInput />
-      </RadioGroupItem>
-    )}
-  </For>
-  <RadioGroupIndicator />
-</RadioGroup>
-```
-
-### One item disabled
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка. Скрытый
+`<input>` класть не нужно — каждый `RadioGroupItem` несёт его сам.
 
 ```tsx
 <RadioGroup defaultValue="standard">
@@ -171,53 +57,162 @@ const [value, setValue] = createSignal<string | null>(null);
   <RadioGroupItem value="standard">
     <RadioGroupItemControl />
     <RadioGroupItemText>Standard</RadioGroupItemText>
-    <RadioGroupItemHiddenInput />
   </RadioGroupItem>
-  <RadioGroupItem value="sameDay" disabled>
+  <RadioGroupItem value="express">
     <RadioGroupItemControl />
-    <RadioGroupItemText>Same day (currently unavailable)</RadioGroupItemText>
-    <RadioGroupItemHiddenInput />
+    <RadioGroupItemText>Express</RadioGroupItemText>
   </RadioGroupItem>
   <RadioGroupIndicator />
 </RadioGroup>
 ```
 
-### Horizontal
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`. Скрытый ввод кладёт сам `RadioGroupItem` — сборке о нём знать не нужно.
 
 ```tsx
-<RadioGroup defaultValue="standard" orientation="horizontal">
-  <RadioGroupLabel>Delivery</RadioGroupLabel>
-  <For each={["standard", "express", "pickup"]}>
-    {(value) => (
-      <RadioGroupItem value={value}>
-        <RadioGroupItemControl />
-        <RadioGroupItemText>{value}</RadioGroupItemText>
-        <RadioGroupItemHiddenInput />
-      </RadioGroupItem>
-    )}
-  </For>
-  <RadioGroupIndicator />
+const data = {
+  label: "Delivery",
+  items: [
+    { value: "standard", label: "Standard" },
+    { value: "express", label: "Express" },
+  ],
+};
+const tree = instanceOf("radio-group", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Ручная композиция с `asChild`.** `RadioGroupItem` по умолчанию рисует `<label>` сам; при
+`asChild` разметку даёт потребитель, но скрытый ввод приходится класть руками —
+`RadioGroupItemHiddenInput` ради этого и остаётся публичным.
+
+```tsx
+import { RadioGroupItemHiddenInput } from "@web-core/ui";
+
+<RadioGroupItem value="express" asChild>
+  <label>
+    <RadioGroupItemHiddenInput />
+    <RadioGroupItemText>
+      <RadioGroupItemControl />
+      Express
+    </RadioGroupItemText>
+  </label>
+</RadioGroupItem>
+```
+
+**Один пункт отключён, остальные доступны.** `disabled`/`invalid` прямо на `RadioGroupItem`
+переопределяют это ТОЛЬКО для одного пункта — набор в целом остаётся кликабельным.
+
+```tsx
+<RadioGroup defaultValue="standard">
+  <RadioGroupItem value="standard">
+    <RadioGroupItemControl />
+    <RadioGroupItemText>Standard</RadioGroupItemText>
+  </RadioGroupItem>
+  <RadioGroupItem value="express" disabled>
+    <RadioGroupItemControl />
+    <RadioGroupItemText>Express</RadioGroupItemText>
+  </RadioGroupItem>
 </RadioGroup>
 ```
 
-## Styling hooks
+**Настоящее участие в форме.** `name` делает набор настоящим полем формы — `FormData` подхватывает
+выбранное значение как родной `<input type="radio">`.
 
-`item`/`itemText`/`itemControl` all share `checked`/`unchecked`/`disabled`/`readonly`/`invalid`/
-`hover`/`focus`/`focus-visible` (see `packages/skin`); `itemControl` alone adds `active`. `indicator`
-carries only `disabled` — it has no `checked` mark of its own, since its whole job is showing
-*where* the checked item is via its four position/size variables, not carrying a checked look
-itself. Those variables (`--left`/`--top`/`--width`/`--height`) are measured off the actual checked
-`itemControl`, so `indicator`'s own size/shape in CSS should match `itemControl`'s for the dot to
-land convincingly on top of it.
+```tsx
+<form onSubmit={handleSubmit}>
+  <RadioGroup name="delivery" defaultValue="standard">
+    <RadioGroupLabel>Delivery</RadioGroupLabel>
+    <RadioGroupItem value="standard">
+      <RadioGroupItemControl />
+      <RadioGroupItemText>Standard</RadioGroupItemText>
+    </RadioGroupItem>
+  </RadioGroup>
+  <button type="submit">Отправить</button>
+</form>
+```
 
-## Accessibility
+<h2 id="настройки">🎚️ Настройки</h2>
 
-Radio Group follows the WAI-ARIA [Radio pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radio/).
+Единственная настройка решает, куда выстроены пункты — влияет не только на вид, но и на то, какими
+стрелками клавиатура двигает выбор между ними.
 
-| Key | What it does |
-|---|---|
-| `Tab` | Moves focus to the checked item, or the first item if none is checked |
-| `Space` | Checks the focused item, if it isn't already |
-| `ArrowDown` / `ArrowRight` | Moves focus to and checks the next item |
-| `ArrowUp` / `ArrowLeft` | Moves focus to and checks the previous item |
-<!-- user:end -->
+| настройка     | значения                | по умолчанию | означает                                                          |
+| ------------- | ------------------------ | -------------- | ---------------------------------------------------------------- |
+| `orientation` | `vertical`/`horizontal`  | `vertical`     | как расположены пункты — от этого зависит навигация с клавиатуры |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+Групповые факты видны на `root`/`label`, состояние каждого пункта отдельно — на `item`/`itemText`/
+`itemControl`. 🎯
+
+|      | состояние      | метка                    | где                              | значение                                          |
+| ---- | --------------- | -------------------------- | ------------------------------------ | ---------------------------------------------------- |
+| 🚫   | disabled        | `[data-disabled]`            | root, label, item, itemText, itemControl, indicator | нельзя выбрать                       |
+| ⚠️   | invalid         | `[data-invalid]`             | root, label, item, itemText, itemControl | невалиден по правилам валидации формы            |
+| ❗   | required        | `[data-required]`            | root, label                          | выбор обязателен для отправки формы                  |
+| ✅   | checked         | `[data-state="checked"]`     | item, itemText, itemControl          | этот пункт выбран                                     |
+| ⬜   | unchecked       | `[data-state="unchecked"]`   | item, itemText, itemControl          | этот пункт не выбран                                  |
+| 🔒   | readonly        | `[data-readonly]`            | item, itemText, itemControl          | значение видно, выбрать другое нельзя                 |
+| 🖱️   | hover           | `[data-hover]`               | item, itemText, itemControl          | указатель наведён на этот пункт                       |
+| 👆   | active          | `[data-active]`              | itemControl                          | этот пункт нажат указателем                           |
+| 🎯   | focus           | `[data-focus]`               | item, itemText, itemControl          | фокус стоит на скрытом вводе этого пункта             |
+| ⌨️   | focus-visible   | `[data-focus-visible]`       | item, itemText, itemControl          | фокус пришёл с клавиатуры                             |
+
+> [!NOTE]
+> `root`/`label` несут ГРУППОВЫЕ факты (`disabled`/`invalid`/`required` — набор целиком, или форма
+> отвергла его, или он обязателен), `item`/`itemText`/`itemControl` — факты КАЖДОГО пункта
+> отдельно. `focus`/`focus-visible` — **атрибуты, не псевдоклассы**: настоящий DOM-фокус лежит на
+> скрытом `<input>` каждого пункта, не на видимых узлах, компонент следит сам и
+> зеркалит результат данными (та же находка, что у чекбокса). `active` — только на `itemControl`,
+> ни `item`, ни `itemText` его не несут. `indicator` несёт только групповой `disabled`, своего
+> `data-state` у него нет — один общий узел, не про один пункт.
+
+<h2 id="io">🔌 IO</h2>
+
+Собранному по схеме набору нужны подпись и список пунктов — выбор ведёт скрытый `<input>` каждого
+пункта сам, наружу как событие не отдаётся. 📥
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "label": "string",
+  "items": [{ "value": "string", "label": "string" }]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Набор ничего не диспатчит через сборку — выбор ведёт скрытый `<input>` каждого пункта сам, это не
+событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+Одна сборка — подпись и пункты из данных, ничего изначально не выбрано. 🧱
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  label 🏷️ · text: {label}
+  item[] 🔘         · repeat: /items · bind: value
+    itemControl ⚪
+    itemText          · text: {label}
+  indicator •
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+`indicator` — маленькая точка, центрированная над кружком ВЫБРАННОГО пункта, а не полноразмерная
+плашка табов: `--width`/`--height` здесь — размер `itemControl`, точке нужно лишь встать в его
+середину (`calc(var(--left) + (var(--width) - 0.5rem) / 2)`), не заполнить его целиком. 🎨
+
+`orientation: "horizontal"` меняет только `root`'s `flexDirection` — сама раскладка пункта не
+зависит от оси.
+
+<h2 id="доступность">♿ Доступность</h2>
+
+Набор следует паттерну WAI-ARIA [Radio Group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/) —
+стрелки вдоль оси `orientation` двигают выбор между пунктами, `Tab` заходит в набор и выходит из
+него одним прыжком (roving tabindex — фокус стоит только на выбранном пункте). ⌨️

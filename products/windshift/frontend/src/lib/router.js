@@ -145,6 +145,7 @@ const routes = {
   '/admin/:tab': 'admin',
   '/profile': 'profile',
   '/security': 'security',
+  '/mcp-console': 'mcp-console',
   '/login': 'homepage',
   '/workflows/:id/design': 'workflow-designer',
   '/board/:slug': 'public-board',

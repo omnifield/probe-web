@@ -2,7 +2,7 @@
   "//": [
     "Конфиг САМОГО пакета: собирает исходники стейта и типизирует его тесты.",
     "Базы для потребителя здесь нет и не будет — её отдаёт зона `build` подпутём",
-    "`@omnifield/probe-web-build/tsconfig` (PROBEWEB-4)."
+    "`@web-core/build/tsconfig` (PROBEWEB-4)."
   ],
   "compilerOptions": {
     "target": "ES2023",

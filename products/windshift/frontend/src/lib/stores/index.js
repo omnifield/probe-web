@@ -31,4 +31,4 @@ export { workItemStalenessSettings } from './workItemStalenessSettings.svelte.js
 export { workspaceDataStore } from './workspaceDataStore.svelte.js';
 export { workspacePathStore } from './workspacePathStore.svelte.js';
 export { workspacePermissions } from './workspacePermissions.svelte.js';
-export { currentWorkspace, workspacesStore } from './workspaces.svelte.js';
+export { currentWorkspace, workspaceCategoriesStore, workspacesStore } from './workspaces.svelte.js';

@@ -1,5 +1,5 @@
-import { Button } from "@omnifield/probe-web-ui";
-import type { SkinMode, SkinSwitch, SkinWorn } from "@omnifield/probe-web-runtime";
+import { Button } from "@web-core/ui";
+import type { SkinMode, SkinSwitch, SkinWorn } from "@web-core/skin/wear";
 import { createResource, createSignal, For, onMount, Show } from "solid-js";
 
 import { listOutfits } from "./skins.js";
@@ -57,7 +57,7 @@ export function App(props: { skin: SkinSwitch }) {
   return (
     <div class="ewc-placeholder">
       <h1>ewc</h1>
-      <p>skins come from the same presets service as products/skin — nothing local here</p>
+      <p>skins come from the same presets service as apps/skin — nothing local here</p>
 
       <Show when={refusal()}>{(said) => <p class="ewc-trouble">{said()}</p>}</Show>
 

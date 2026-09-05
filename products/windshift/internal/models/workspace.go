@@ -20,8 +20,14 @@ type Workspace struct {
 	OwnerID    *int `json:"owner_id,omitempty"` // User ID for personal workspaces
 	// Template flag: workspace can be selected as a source when creating workspaces
 	IsTemplate bool `json:"is_template"`
+	// Overview flag: the one canonical root/about workspace of a workspace
+	// group — pinned first in the sidebar, rendered as its own block instead
+	// of a normal category-grouped item. Standard across every product tree.
+	IsOverview bool `json:"is_overview"`
 	// Time tracking integration
 	TimeProjectID *int `json:"time_project_id,omitempty"` // Default time-tracking project for worklogs on items in this workspace
+	// Sidebar grouping: which category (apps/packages/features/…) this workspace belongs to
+	CategoryID *int `json:"category_id,omitempty"`
 	// Visual identity fields
 	Icon                    string    `json:"icon"`                      // Lucide icon name for workspace
 	Color                   string    `json:"color"`                     // Hex color code for workspace
@@ -36,6 +42,21 @@ type Workspace struct {
 	OwnerName             string `json:"owner_name,omitempty"` // Name of workspace owner for API responses
 	ConfigurationSetID    *int64 `json:"configuration_set_id,omitempty"`
 	TimeProjectCategories []int  `json:"time_project_categories,omitempty"` // Restricted time project categories for this workspace
+	CategoryName          string `json:"category_name,omitempty"`
+	CategoryColor         string `json:"category_color,omitempty"`
+}
+
+// WorkspaceCategory groups workspaces in the sidebar (e.g. "apps", "packages",
+// "features") — its color drives the group's separator/label, independent of
+// each workspace's own icon color.
+type WorkspaceCategory struct {
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Color       string    `json:"color"` // Hex color code (e.g., "#3b82f6")
+	Description string    `json:"description"`
+	SortOrder   int       `json:"sort_order"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // WorkspaceTemplateSummary is the picker-facing summary of a workspace marked

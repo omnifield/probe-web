@@ -1,9 +1,24 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { Workspace, type WorkspaceProps } from "./root.js";
+export { WorkspaceHeader, type WorkspaceHeaderProps } from "./header.js";
+export { WorkspaceSidebar, type WorkspaceSidebarProps } from "./sidebar.js";
+export { WorkspaceMain, type WorkspaceMainProps } from "./main.js";
+export { WorkspaceRightbar, type WorkspaceRightbarProps } from "./rightbar.js";
+export { WorkspaceFooter, type WorkspaceFooterProps } from "./footer.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { Workspace } from "./root.js";
+import { WorkspaceHeader } from "./header.js";
+import { WorkspaceSidebar } from "./sidebar.js";
+import { WorkspaceMain } from "./main.js";
+import { WorkspaceRightbar } from "./rightbar.js";
+import { WorkspaceFooter } from "./footer.js";
+
+export const kit = defineKitComponent(passport, {
+  root: Workspace,
+  header: WorkspaceHeader,
+  sidebar: WorkspaceSidebar,
+  main: WorkspaceMain,
+  rightbar: WorkspaceRightbar,
+  footer: WorkspaceFooter,
+});

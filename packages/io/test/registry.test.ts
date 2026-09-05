@@ -1,10 +1,10 @@
-// Живая проба реестра (PWEB-181): регистрация, чтение по имени, явные отказы вместо тихого
+// Живая проба реестра: регистрация, чтение по имени, явные отказы вместо тихого
 // `undefined`/тихой перезаписи — предмет самого решения, не довесок.
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { createIoRegistry } from "../src/registry.js";
+import { createIoRegistry } from "../src/index.js";
 
 describe("createIoRegistry", () => {
   it("регистрирует два разных паспорта и читает каждый по своему имени", () => {

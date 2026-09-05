@@ -9,10 +9,10 @@
 // Сравниваем не текст файлов, а РЕЗУЛЬТАТ: конфиг приложения обязан совпасть с тем, что
 // отдаёт зона `build`. Текстовая сверка ломалась бы от каждого комментария.
 
-import { defineConfig } from "@omnifield/probe-web-build/vite";
-import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
-import * as values from "@omnifield/probe-web-style";
-import * as tools from "@omnifield/probe-web-style-tools";
+import { defineConfig } from "@web-core/build/vite";
+import { defineTestConfig } from "@web-core/build/vitest";
+import * as values from "@web-core/style";
+import * as tools from "@web-core/style/solid";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,16 +67,16 @@ describe("оснастка приложения ничего не добавля
     // Точка 3 поверхности проверяется прогоном `tsc`, а не тестом: типы — не рантайм. Здесь
     // стережётся другое — что проверять `tsc` будет НАСТРОЙКАМИ ЗОНЫ, а не местными.
     const raw: unknown = JSON.parse(readFileSync(join(ROOT, "tsconfig.json"), "utf8"));
-    expect(raw).toMatchObject({ extends: "@omnifield/probe-web-build/tsconfig" });
+    expect(raw).toMatchObject({ extends: "@web-core/build/tsconfig" });
     expect(raw).not.toHaveProperty("compilerOptions");
   });
 });
 
-describe("значения и инструменты — две разные поставки (`PWEB-3`)", () => {
-  // Разрез между набором значений и ящиком инструментов держится не намерением, а тем, что
-  // потребитель ОБЪЯВЛЯЕТ обе поставки и берёт из каждой своё. Вернуть реэкспорт инструментов
-  // в набор значений можно молча: приложение продолжит собираться, а свойство «инструменты
-  // необязательны» станет ложью, потому что их снова привозит одна установка.
+describe("движок и Solid-обвес — один пакет, разные подпути (`PWEB-3`)", () => {
+  // Ядро (`@web-core/style`, framework-free) и обвес для Solid (`@web-core/style/solid`) жили
+  // двумя отдельными пакетами, слиты в один движок с разными подпутями под разные экспорты —
+  // корень фреймворка по-прежнему не тянет, обвес по-прежнему набора значений не знает. Разрез
+  // держится не намерением, а тем, что подпути не реэкспортируют друг друга ни в одну сторону.
 
   /** Манифест зоны — то, что видно потребителю до всякой сборки. */
   function manifest(): { dependencies?: Record<string, string> } {
@@ -85,14 +85,14 @@ describe("значения и инструменты — две разные п�
     };
   }
 
-  it("в манифесте зоны объявлены обе, и одна не приезжает следом за другой", () => {
+  it("в манифесте зоны объявлен один пакет", () => {
     const dependencies = manifest().dependencies ?? {};
 
-    expect(dependencies).toHaveProperty("@omnifield/probe-web-style");
-    expect(dependencies).toHaveProperty("@omnifield/probe-web-style-tools");
+    expect(dependencies).toHaveProperty("@web-core/style");
+    expect(dependencies).not.toHaveProperty("@web-core/style-tools");
   });
 
-  it("набор значений инструментов не отдаёт", () => {
+  it("корень движка обвеса не отдаёт", () => {
     // Здесь краснеет возвращённый реэкспорт: приложение от него не сломается, а разрез —
     // сломается. Имена перечислены поштучно, потому что стережём именно их переезд.
     expect(values).not.toHaveProperty("createStyle");
@@ -100,12 +100,11 @@ describe("значения и инструменты — две разные п�
     expect(values).not.toHaveProperty("cn");
   });
 
-  it("ящик инструментов значений не отдаёт", () => {
-    // Обратная сторона того же разреза: инструменты не знают ни одного нашего токена, иначе
-    // взять их «у кого-то ещё» стало бы невозможно. Прежде здесь стереглось и имя палитры по
-    // умолчанию — его больше нет ни в одной поставке (`PWEB-52`), и стеречь в инструментах
-    // нечего. На его месте — построение из семени: оно осталось, и уехать в инструменты ему
-    // тоже нельзя.
+  it("подпуть `/solid` набора значений не отдаёт", () => {
+    // Обратная сторона того же разреза: обвес не знает ни одного нашего токена, иначе взять
+    // его «у кого-то ещё» стало бы невозможно. Прежде здесь стереглось и имя палитры по
+    // умолчанию — его больше нет ни в одной поставке (`PWEB-52`), и стеречь в обвесе нечего.
+    // На его месте — построение из семени: оно осталось, и уехать в обвес ему тоже нельзя.
     expect(tools).toHaveProperty("createStyle");
     expect(tools).toHaveProperty("cva");
     expect(tools).toHaveProperty("cn");

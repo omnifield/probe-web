@@ -1,28 +1,16 @@
-// EDITOR-ONLY per-part taxonomy for the select — read by `./index.ts`'s `defineEditorInfo` call
-// (split out `PWEB-127`, at the same time as the rest of the select — this component never had
-// an inline version). Means, states, and nesting — the taxonomy half of the editor slice;
-// scenario data (`assemblies.ts`) and setting prose (`settings.ts`) are the other two, split out
-// the same way: the same physical shape as every other component's `playground/`, at fifteen
-// parts instead of five.
-//
-// Nesting mirrors the anatomy's real Solid composition one level at a time — `root` holding
-// `label`/`control`/`positioner`, `control` holding `trigger`/`clearTrigger`/`indicator`,
-// `positioner` holding `content`, `content` holding items directly OR through `list` (see
-// `../entity/anatomy.ts` for why `list` is here at all, undocumented as it is upstream).
-
-// `as const`, not a `Record<SelectPart, PassportPartEditorInfo<SelectPart>>` annotation — the
-// explicit annotation widens `states`'s keys AND `accepts`'s `kind: "component"` values to bare
-// `string` before `defineEditorInfo` ever sees them (found live on the accordion's own
-// `parts.ts`, 2026-08-30: a typo in a state name compiled clean with this annotation in place,
-// and only `defineEditorInfo`'s runtime check caught it — one step later than it should).
-// `defineEditorInfo`'s own runtime check still catches a wrong/missing key either way; `as const`
-// additionally lets `tsc` catch it at the call site.
+// `as const`, не `Readonly<Record<SelectPart, PassportPartEditorInfo<SelectPart>>>` — явная
+// аннотация расширяет ключи `states` и значения `accepts`'s `kind: "component"` до голого
+// `string` ещё до того, как их увидит `defineEditorInfo` (поймано живьём на `parts.ts` аккордеона:
+// опечатка в имени состояния собралась чисто при такой аннотации, поймала её только runtime-
+// проверка `defineEditorInfo`, на шаг позже, чем могла бы). Проверка `defineEditorInfo` всё равно
+// ловит неверный/пропущенный ключ в любом случае; `as const` дополнительно даёт поймать это `tsc`
+// прямо на месте объявления.
 export const parts = {
   root: {
-    means: "the select as a whole — label, control, and the floating dropdown together",
+    means: "селект целиком — подпись, контрол и плавающий список вместе",
     states: {
-      invalid: { means: "the select is invalid by the form's rules" },
-      readonly: { means: "a value is visible but cannot be changed" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      readonly: { means: "значение видно, выбрать другое нельзя" },
     },
     accepts: [
       { kind: "component", name: "label" },
@@ -31,23 +19,23 @@ export const parts = {
     ],
   },
   label: {
-    means: "the select's label",
+    means: "собственная подпись селекта",
     states: {
-      disabled: { means: "the select is disabled" },
-      invalid: { means: "the select is invalid by the form's rules" },
-      readonly: { means: "a value is visible but cannot be changed" },
-      required: { means: "the form will demand a value on submit" },
+      disabled: { means: "селект отключён" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      readonly: { means: "значение видно, выбрать другое нельзя" },
+      required: { means: "выбор обязателен для отправки формы" },
     },
     accepts: [{ kind: "content", genus: "text" }],
   },
   control: {
-    means: "wraps the trigger and its indicators — the visible box the trigger sits in",
+    means: "оборачивает триггер и его индикаторы — видимая рамка, в которой сидит триггер",
     states: {
-      open: { means: "the dropdown is open" },
-      closed: { means: "the dropdown is closed" },
-      focus: { means: "focus is on the trigger (mirrored here — the control itself cannot be focused)" },
-      disabled: { means: "the select is disabled" },
-      invalid: { means: "the select is invalid by the form's rules" },
+      open: { means: "список открыт" },
+      closed: { means: "список закрыт" },
+      focus: { means: "фокус на триггере (зеркалится сюда — сам контрол фокус принять не может)" },
+      disabled: { means: "селект отключён" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
     },
     accepts: [
       { kind: "component", name: "trigger" },
@@ -56,42 +44,40 @@ export const parts = {
     ],
   },
   trigger: {
-    means: "the button that opens and closes the dropdown",
+    means: "кнопка, открывающая и закрывающая список",
     states: {
-      open: { means: "the dropdown is open" },
-      closed: { means: "the dropdown is closed" },
-      disabled: { means: "the select is disabled — the trigger does not respond" },
-      invalid: { means: "the select is invalid by the form's rules" },
-      readonly: { means: "a value is visible but cannot be changed" },
-      placeholder: { means: "no value is chosen yet — the placeholder text is showing" },
-      hover: { means: "pointer is over the trigger" },
-      "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-      active: { means: "the trigger is being held down" },
+      open: { means: "список открыт" },
+      closed: { means: "список закрыт" },
+      disabled: { means: "селект отключён — триггер не реагирует" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      readonly: { means: "значение видно, выбрать другое нельзя" },
+      placeholder: { means: "значение ещё не выбрано — показан текст плейсхолдера" },
+      hover: { means: "указатель наведён на триггер" },
+      "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+      active: { means: "триггер нажат и удерживается" },
     },
-    // ValueText is the only thing that lives inside the trigger in Ark's own composition —
-    // ClearTrigger and Indicator are the control's OTHER children, siblings of the trigger, not
-    // inside it.
+    // ValueText — единственное, что реально лежит внутри триггера в композиции Ark; ClearTrigger
+    // и Indicator — соседние дети control'а, не триггера.
     accepts: [{ kind: "component", name: "valueText" }],
   },
   valueText: {
-    means: "shows the selected value(s), or the placeholder when none is chosen",
+    means: "показывает выбранное значение(я), либо плейсхолдер, если ничего не выбрано",
     states: {
-      disabled: { means: "the select is disabled" },
-      invalid: { means: "the select is invalid by the form's rules" },
-      focus: { means: "focus is on the trigger (mirrored here, same as on the control)" },
+      disabled: { means: "селект отключён" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      focus: { means: "фокус на триггере (зеркалится сюда же, что и на control)" },
     },
-    // Occupied by the kit's own computed text — the same reasoning as the icon's single part:
-    // nothing is placed inside by the consumer.
+    // Занята собственным вычисленным текстом кита — потребитель сюда ничего не кладёт.
     accepts: [],
   },
   clearTrigger: {
-    means: "button that clears the current selection",
+    means: "кнопка, сбрасывающая текущий выбор",
     states: {
-      invalid: { means: "the select is invalid by the form's rules" },
-      disabled: { means: "the select is disabled — clicking it does nothing" },
-      hover: { means: "pointer is over the button" },
-      "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-      active: { means: "the button is being held down" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      disabled: { means: "селект отключён — клик по кнопке ничего не делает" },
+      hover: { means: "указатель наведён на кнопку" },
+      "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+      active: { means: "кнопка нажата и удерживается" },
     },
     accepts: [
       { kind: "content", genus: "text" },
@@ -99,13 +85,13 @@ export const parts = {
     ],
   },
   indicator: {
-    means: "open/closed indicator — an arrow placed by the consumer",
+    means: "индикатор открыт/закрыт — стрелку кладёт потребитель",
     states: {
-      open: { means: "the dropdown is open" },
-      closed: { means: "the dropdown is closed" },
-      disabled: { means: "the select is disabled" },
-      invalid: { means: "the select is invalid by the form's rules" },
-      readonly: { means: "a value is visible but cannot be changed" },
+      open: { means: "список открыт" },
+      closed: { means: "список закрыт" },
+      disabled: { means: "селект отключён" },
+      invalid: { means: "селект невалиден по правилам валидации формы" },
+      readonly: { means: "значение видно, выбрать другое нельзя" },
     },
     accepts: [
       { kind: "content", genus: "text" },
@@ -113,20 +99,20 @@ export const parts = {
     ],
   },
   positioner: {
-    means: "positions the floating dropdown relative to the trigger",
+    means: "позиционирует плавающий список относительно триггера",
     variables: {
-      "--reference-width": { means: "measured width of the trigger — lets the dropdown match it" },
-      "--reference-height": { means: "measured height of the trigger" },
-      "--available-width": { means: "room left to the nearest viewport edge, widthwise" },
-      "--available-height": { means: "room left to the nearest viewport edge, heightwise — caps a long dropdown" },
+      "--reference-width": { means: "измеренная ширина триггера — список может под неё подстроиться" },
+      "--reference-height": { means: "измеренная высота триггера" },
+      "--available-width": { means: "место, оставшееся до края области просмотра, по ширине" },
+      "--available-height": { means: "место, оставшееся до края области просмотра, по высоте — ограничивает длинный список" },
     },
     accepts: [{ kind: "component", name: "content" }],
   },
   content: {
-    means: "the floating dropdown itself — items live here, grouped or not",
+    means: "сам плавающий список — здесь живут пункты, сгруппированные или нет",
     states: {
-      open: { means: "the dropdown is open" },
-      closed: { means: "the dropdown is closed" },
+      open: { means: "список открыт" },
+      closed: { means: "список закрыт" },
     },
     accepts: [
       { kind: "component", name: "list" },
@@ -135,16 +121,16 @@ export const parts = {
     ],
   },
   list: {
-    means: "an inner listbox region inside the content — an optional alternative to nesting items straight in it",
+    means: "внутренняя область списка внутри content — необязательная альтернатива вложению пунктов прямо в него",
     accepts: [
       { kind: "component", name: "itemGroup" },
       { kind: "component", name: "item" },
     ],
   },
   itemGroup: {
-    means: "groups related items under one label",
+    means: "группирует связанные пункты под одной подписью",
     states: {
-      disabled: { means: "the select is disabled" },
+      disabled: { means: "селект отключён" },
     },
     accepts: [
       { kind: "component", name: "itemGroupLabel" },
@@ -152,16 +138,16 @@ export const parts = {
     ],
   },
   itemGroupLabel: {
-    means: "label of an item group",
+    means: "подпись группы пунктов",
     accepts: [{ kind: "content", genus: "text" }],
   },
   item: {
-    means: "one selectable option",
+    means: "один выбираемый пункт",
     states: {
-      checked: { means: "the item is selected" },
-      unchecked: { means: "the item is not selected" },
-      highlighted: { means: "the item is highlighted — keyboard or pointer moved to it, not yet chosen" },
-      disabled: { means: "the item cannot be selected" },
+      checked: { means: "пункт выбран" },
+      unchecked: { means: "пункт не выбран" },
+      highlighted: { means: "пункт подсвечен — клавиатура или указатель перешли на него, но ещё не выбрали" },
+      disabled: { means: "пункт нельзя выбрать" },
     },
     accepts: [
       { kind: "component", name: "itemText" },
@@ -169,20 +155,20 @@ export const parts = {
     ],
   },
   itemText: {
-    means: "an item's visible label",
+    means: "видимая подпись пункта",
     states: {
-      checked: { means: "the item is selected" },
-      unchecked: { means: "the item is not selected" },
-      highlighted: { means: "the item is highlighted — keyboard or pointer moved to it, not yet chosen" },
-      disabled: { means: "the item cannot be selected" },
+      checked: { means: "пункт выбран" },
+      unchecked: { means: "пункт не выбран" },
+      highlighted: { means: "пункт подсвечен — клавиатура или указатель перешли на него, но ещё не выбрали" },
+      disabled: { means: "пункт нельзя выбрать" },
     },
     accepts: [{ kind: "content", genus: "text" }],
   },
   itemIndicator: {
-    means: "selected-item indicator — a checkmark placed by the consumer",
+    means: "указатель выбранного пункта — галочку кладёт потребитель",
     states: {
-      checked: { means: "the item is selected" },
-      unchecked: { means: "the item is not selected" },
+      checked: { means: "пункт выбран" },
+      unchecked: { means: "пункт не выбран" },
     },
     accepts: [
       { kind: "content", genus: "text" },

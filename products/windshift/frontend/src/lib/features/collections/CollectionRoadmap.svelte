@@ -431,7 +431,9 @@
   // --- Tree helpers ---
   let allItemsSorted = $derived.by(() => {
     if (collectionStore.loading) return [];
-    return [...collectionStore.items].sort((a, b) => (a.level || 0) - (b.level || 0) || a.id - b.id);
+    return [...collectionStore.items].sort(
+      (a, b) => (a.level || 0) - (b.level || 0) || a.title.localeCompare(b.title)
+    );
   });
 
   function getRootItems() {

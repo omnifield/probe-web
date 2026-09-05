@@ -1,9 +1,25 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { RadioGroup, type RadioGroupProps } from "./root.js";
+export { RadioGroupLabel, type RadioGroupLabelProps } from "./label.js";
+export { RadioGroupIndicator, type RadioGroupIndicatorProps } from "./indicator.js";
+export { RadioGroupItem, type RadioGroupItemProps } from "./item/index.js";
+export { RadioGroupItemControl, type RadioGroupItemControlProps } from "./item/control.js";
+export { RadioGroupItemText, type RadioGroupItemTextProps } from "./item/text.js";
+export { RadioGroupItemHiddenInput, type RadioGroupItemHiddenInputProps } from "./item/hidden-input.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { RadioGroup } from "./root.js";
+import { RadioGroupLabel } from "./label.js";
+import { RadioGroupIndicator } from "./indicator.js";
+import { RadioGroupItem } from "./item/index.js";
+import { RadioGroupItemControl } from "./item/control.js";
+import { RadioGroupItemText } from "./item/text.js";
+
+export const kit = defineKitComponent(passport, {
+  root: RadioGroup,
+  label: RadioGroupLabel,
+  indicator: RadioGroupIndicator,
+  item: RadioGroupItem,
+  itemControl: RadioGroupItemControl,
+  itemText: RadioGroupItemText,
+});

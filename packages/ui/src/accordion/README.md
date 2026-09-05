@@ -1,444 +1,227 @@
-# Accordion
+# 🪗 Accordion
 
-**Group:** disclosure · **Genus:** component · **Footprint:** regular
+<h2 id="главное">🏠 Главное</h2>
 
-## Passport
+🏷️ disclosure · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-Runtime contract (`entity/passport.ts`) — parts, states, settings, exactly as the engine sees them.
+Раскрывающийся блок 📂 — используйте, если нужно спрятать часть контента и показывать её только по
+запросу. Разделов может быть сколько угодно, каждый раскрывается и прячется по клику на свой
+заголовок; раскрыт может быть один раздел или сразу несколько. Внутрь любого раздела можно
+положить что угодно — от простого текста до сложных компонентов со своей логикой. Между
+заголовками работает клавиатурная навигация стрелками ⌨️ и вся нужная разметка для экранных
+читалок — без дополнительной настройки.
 
-### Anatomy
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | meaning |
-|---|---|
-| root | the whole set of items — one node wrapping every item |
-| item | one item — a trigger together with its content |
-| itemTrigger | the item's button — expands and collapses it |
-| itemContent | the item's content — the area that gets expanded |
-| itemIndicator | the expansion indicator — an arrow placed by the consumer |
-
-### States
-
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| item | open | [data-state="open"] | the item is expanded — its content is visible |
-| item | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| item | focus | [data-focus] | focus is on this item's trigger |
-| itemTrigger | open | [data-state="open"] | the item is expanded — its content is visible |
-| itemTrigger | focus | [data-focus] | focus is on this item's trigger |
-| itemTrigger | disabled | :disabled | the button is disabled — clicking it does not expand the item |
-| itemTrigger | hover | :hover | pointer is over the button |
-| itemTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| itemTrigger | active | :active | the button is being held down |
-| itemContent | open | [data-state="open"] · may be absent | the item is expanded — its content is visible |
-| itemContent | closed | [data-state="closed"] | the item is collapsed — its content is hidden, but the node stays in place |
-| itemContent | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| itemContent | focus | [data-focus] | focus is on this item's trigger |
-| itemIndicator | open | [data-state="open"] | the item is expanded — its content is visible |
-| itemIndicator | disabled | [data-disabled] | the item is disabled — it cannot be expanded |
-| itemIndicator | focus | [data-focus] | focus is on this item's trigger |
-
-### Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | how items are laid out: top to bottom or left to right — this drives keyboard navigation and aria | `vertical` | [data-orientation] |
-| multiple | whether several items can stay expanded at once | `false` | — |
-| collapsible | whether the last expanded item can be closed, leaving the whole accordion collapsed | `false` (depends on `multiple`) | — |
-
-### CSS Variables
-
-| part | variable | set by | meaning |
-|---|---|---|---|
-| itemContent | `--height` | kit | the measured height of the expanded content |
-| itemContent | `--width` | kit | the measured width of the expanded content — needed by a horizontal accordion |
-
-<!-- user:passport:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:passport:end -->
-
-## Data contract
-
-What an assembly's `bind`/`repeat` paths actually point into (`entity/io.ts`) — separate from the look, the same input can be dressed by any recipe.
-
-### Input
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "sections": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value",
-                "label"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "activeValues": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "title"
-        ],
-        "additionalProperties": false
-      }
-    }
-  },
-  "required": [
-    "sections"
-  ],
-  "additionalProperties": false
-}
-```
-
-### Output
-
-```json
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "value": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [
-    "value"
-  ],
-  "additionalProperties": false
-}
-```
-
-<!-- user:io:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:io:end -->
-
-## Components
-
-Real Solid implementations, one per anatomy part (`components/kit.tsx`) — what actually draws each part, not just its name in the passport.
-
-| part | drawn by |
-|---|---|
-| root | `Accordion` |
-| item | `AccordionItem` |
-| itemTrigger | `AccordionItemTrigger` |
-| itemContent | `AccordionItemContent` |
-| itemIndicator | `AccordionItemIndicator` |
-
-<!-- user:components:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:components:end -->
-
-## Assemblies
-
-Worked `RenderTree` trees (`playground/assemblies/`) — structural skeletons proving the passport composes, not the primary way to use the component (plain JSX composition is).
-
-### base
-
-разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя
+Аккордеон — это список секций. У каждой секции есть заголовок-кнопка и тело, которое раскрывается
+под ним. Стрелка (или любой другой значок раскрытия) — отдельный кусочек внутри заголовка, а не
+часть самой кнопки: где-то нужна стрелка, где-то плюс/минус, где-то индикатор вообще не нужен —
+кит не решает это за вас.
 
 ```
 root
-  item · repeat: /sections · bind: value
-    itemTrigger · on: click
-      text: {title}
-      itemIndicator
-    itemContent · bind: variant
+└─ item[]
+   ├─ control ▶️
+   │  └─ controlIndicator 🔽
+   └─ content 📂
 ```
 
-### action-list
+| часть                 | значение                                              | принимает внутри                  | рисуется                    |
+| --------------------- | ----------------------------------------------------- | --------------------------------- | --------------------------- |
+| 🪗 `root`             | весь набор разделов — один узел, оборачивающий каждый | только `item`                     | `Accordion`                 |
+| 📁 `item`             | один раздел — кнопка вместе со своим содержимым       | `control`, `content`              | `AccordionItem`             |
+| ▶️ `control`          | кнопка раздела — раскрывает и закрывает его           | текст, иконку, `controlIndicator` | `AccordionControl`          |
+| 🔽 `controlIndicator` | индикатор раскрытия — стрелку кладёт потребитель      | текст, иконку, любой компонент    | `AccordionControlIndicator` |
+| 📂 `content`          | содержимое раздела — область, которая раскрывается    | текст, иконку, любой компонент    | `AccordionContent`          |
 
-разделы, а в контенте каждого — настоящий Listbox из общего реестра, не своя копия
+<h2 id="использование">🚀 Использование</h2>
 
-```
-root
-  item · repeat: /sections · bind: value
-    itemTrigger · on: click
-      text: {title}
-      itemIndicator
-    itemContent
-      listbox · bind: items, value
-        listbox.content
-          listbox.item · repeat: items · bind: item · on: click
-            listbox.itemText
-              text: {label}
-            listbox.itemIndicator
-              icon: "✓"
-```
+Собрать аккордеон можно тремя способами: вручную обычной JSX-разметкой, по готовой схеме через
+движок, или тем и другим сразу — взять схему, но подменить одно место в ней живым компонентом
+из кода. 🧩
 
-<!-- user:assemblies:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:assemblies:end -->
-
-## Recipe (proof only)
-
-Proves the passport CAN be dressed by the real skin mechanism (`playground/recipe.ts`) — never ships as-is; a real look for this component lives in `packages/skin`, not here.
-
-No named variants — this proof recipe carries no `data-variant` axis of its own.
-
-Also conditioned by the component's own settings:
-
-| setting | conditions styled |
-|---|---|
-| orientation | horizontal |
-
-<!-- user:recipe:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:recipe:end -->
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Accordion is a set of collapsible items — sections that share one column (or, in `horizontal`
-orientation, one row) and show or hide their content when their own trigger is clicked. It's a
-disclosure component: each item is independently expandable, and how many can stay open at once is
-a setting, not a fixed rule. It was the first composite component the kit took from Ark UI
-(`PWEB-37`) — several DOM nodes sharing one skin coordinate, so dressing the item dresses every one
-of its parts at once.
-
-## Features
-
-- **Independent expand/collapse per item** — each `item` tracks its own `open` state; clicking its
-  `itemTrigger` toggles it.
-- **Single- or multi-open** — `multiple` (default `false`) controls whether more than one item can
-  stay expanded at the same time.
-- **Collapsible single-open mode** — `collapsible` (default `false`) lets the one open item, in
-  single-open mode, be closed too, leaving nothing expanded. It has no extra effect once `multiple`
-  is on, since closing the last open item is already possible there.
-- **Vertical or horizontal layout** — `orientation` (default `vertical`) switches the keyboard
-  navigation axis and the ARIA orientation together; `horizontal` also switches which measured
-  dimension matters for animating content (`--width` instead of `--height`, see Styling hooks).
-- **Per-item disabling** — an `item` can be disabled, which disables its trigger (native
-  `:disabled`) and marks the item/content/indicator with `data-disabled`.
-- **Controlled or uncontrolled expansion** — `value` / `defaultValue` / `onValueChange` on the root,
-  same shape either way: an array of the expanded items' `value`s.
-- **Content stays mounted while collapsed** — a closed `itemContent` keeps its DOM node (`hidden`
-  plus `data-state="closed"`), so it can still be measured and animated (see below), unlike content
-  that's been removed from the tree.
-
-## Anatomy
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
-import {
-  Accordion,
-  AccordionItem,
-  AccordionItemTrigger,
-  AccordionItemContent,
-  AccordionItemIndicator,
-} from "@omnifield/probe-web-ui";
-
 <Accordion>
-  <AccordionItem value="...">
-    {/* Ark has no "header" part — WAI-ARIA wants the trigger inside a heading whose
-        level only the page knows, so the consumer supplies it. */}
-    <SomeHeadingLevel>
-      <AccordionItemTrigger>
-        {/* text and/or icon content */}
-        <AccordionItemIndicator>{/* icon */}</AccordionItemIndicator>
-      </AccordionItemTrigger>
-    </SomeHeadingLevel>
-    <AccordionItemContent>{/* text, or any other component */}</AccordionItemContent>
-  </AccordionItem>
-  {/* repeat AccordionItem for each section */}
-</Accordion>
-```
-
-`AccordionItem`'s `value` is required and must be unique among siblings — it's what `value` /
-`defaultValue` on the root, and every `on:click` callback, identify the item by.
-
-## Examples
-
-### Several items open at once
-
-`multiple` lifts the "only one open" rule; any number of items can be expanded together.
-
-```tsx
-<Accordion multiple defaultValue={["shipping", "returns"]}>
   <AccordionItem value="shipping">
     <h3>
-      <AccordionItemTrigger>
+      <AccordionControl>
         Shipping
-        <AccordionItemIndicator>▾</AccordionItemIndicator>
-      </AccordionItemTrigger>
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
     </h3>
-    <AccordionItemContent>Courier and pickup.</AccordionItemContent>
-  </AccordionItem>
-  <AccordionItem value="returns">
-    <h3>
-      <AccordionItemTrigger>
-        Returns
-        <AccordionItemIndicator>▾</AccordionItemIndicator>
-      </AccordionItemTrigger>
-    </h3>
-    <AccordionItemContent>30-day window, no restocking fee.</AccordionItemContent>
+    <AccordionContent>Courier and pickup</AccordionContent>
   </AccordionItem>
 </Accordion>
 ```
 
-### Single-open, and letting it fully collapse
-
-Without `multiple`, opening an item closes whichever one was open before it — but the last item
-open can't be closed by clicking its own trigger again, unless `collapsible` says it can:
+**Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
 
 ```tsx
-<Accordion collapsible defaultValue={["shipping"]}>
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Рендер через движок с передачей компонента в нужный слот** — то же дерево движка, но узел
+`content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
+
+```tsx
+const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const tree = instanceOf("accordion", {}, "base", data);
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  slots={{ "accordion.content": { render: () => <div>CONTENT</div> } }}
+/>;
+```
+
+**Управляемое раскрытие** — какие секции раскрыты, решает внешнее состояние, не сам аккордеон:
+пригодится, если это нужно синхронизировать с чем-то ещё, например с адресом страницы. 🔗
+
+```tsx
+const [value, setValue] = createSignal<string[]>(["shipping"]);
+
+<Accordion value={value()} onValueChange={(details) => setValue(details.value)}>
   <AccordionItem value="shipping">
     <h3>
-      <AccordionItemTrigger>
+      <AccordionControl>
         Shipping
-        <AccordionItemIndicator>▾</AccordionItemIndicator>
-      </AccordionItemTrigger>
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
     </h3>
-    <AccordionItemContent>Courier and pickup.</AccordionItemContent>
-  </AccordionItem>
-  <AccordionItem value="returns">
-    <h3>
-      <AccordionItemTrigger>
-        Returns
-        <AccordionItemIndicator>▾</AccordionItemIndicator>
-      </AccordionItemTrigger>
-    </h3>
-    <AccordionItemContent>30-day window, no restocking fee.</AccordionItemContent>
+    <AccordionContent>Courier and pickup</AccordionContent>
   </AccordionItem>
 </Accordion>
 ```
 
-### Horizontal orientation
+<h2 id="состояния">🎛️ Состояния</h2>
 
-`orientation="horizontal"` turns the keyboard axis sideways (`ArrowLeft`/`ArrowRight` replace
-`ArrowUp`/`ArrowDown`) and switches the measured dimension a skin would animate from `--height` to
-`--width`, since it's now the expanding content's width that changes, not its height:
+Главное состояние секции — раскрыта она или закрыта, и оно видно сразу в нескольких местах: на
+самой секции, на её кнопке, на значке раскрытия и (когда получится поймать момент, см.
+предупреждение в разделе «Рецепт») на содержимом. Отключённая секция не притворяется недоступной
+— её кнопка становится настоящей disabled-кнопкой, кликом её не раскрыть. Остальное — обычные
+состояния кнопки (наведение, фокус, нажатие), но именно на кнопке заголовка, не на секции целиком.
+
+|      | состояние     | метка                                                | где                                      | значение                                                                |
+| ---- | ------------- | ---------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
+| 🔓🔒 | open / closed | `[data-state]` · у content может отсутствовать       | item, control, controlIndicator, content | раздел раскрыт / закрыт                                                 |
+| 🚫   | disabled      | `[data-disabled]` · у control это `:disabled` кнопки | item, control, controlIndicator, content | раздел отключён — на `control` это НАСТОЯЩИЙ атрибут кнопки, не `data-` |
+| 🎯   | focus         | `[data-focus]`                                       | item, control, controlIndicator, content | фокус стоит на кнопке раздела                                           |
+| 🖱️   | hover         | `:hover`                                             | control                                  | указатель наведён на кнопку                                             |
+| ⌨️   | focus-visible | `:focus-visible`                                     | control                                  | фокус пришёл с клавиатуры — при клике мышью это было бы шумом           |
+| 👆   | active        | `:active`                                            | control                                  | кнопка нажата и удерживается                                            |
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+Три настройки решают, как аккордеон ведёт себя целиком, не по отдельным секциям: можно ли
+раскрыть сразу несколько секций одновременно, можно ли схлопнуть последнюю раскрытую и остаться
+совсем без раскрытых секций, и в какую сторону вообще идёт список — сверху вниз, как обычный FAQ,
+или слева направо, как лента вкладок.
+
+| настройка     | значения                | по умолчанию | означает                                                                            |
+| ------------- | ----------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| `orientation` | `vertical`/`horizontal` | `vertical`   | как расположены разделы — от этого зависит навигация с клавиатуры и aria            |
+| `multiple`    | вкл/выкл                | выкл         | можно ли держать раскрытыми сразу несколько разделов                                |
+| `collapsible` | вкл/выкл                | выкл         | можно ли закрыть последний раскрытый раздел (не нужно, если `multiple` уже включён) |
+
+<h2 id="io">🔌 IO</h2>
+
+Собранный по схеме аккордеон ждёт список секций с заголовком и, если нужно, вложенным списком
+пунктов — обычный сценарий FAQ или настроек с подпунктами. Сам он ничего не решает и никуда
+данные не отправляет — только сообщает, по какой секции кликнули, целиком, тем, кто слушает.
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "sections": [
+    {
+      "id": "string",
+      "title": "string",
+      "items": [{ "value": "string", "label": "string" }],
+      "activeValues": ["string"]
+    }
+  ]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
 
 ```tsx
-<Accordion orientation="horizontal" defaultValue={["shipping"]}>
-  <AccordionItem value="shipping">
-    <h3>
-      <AccordionItemTrigger>Shipping</AccordionItemTrigger>
-    </h3>
-    <AccordionItemContent>Courier and pickup.</AccordionItemContent>
-  </AccordionItem>
-  <AccordionItem value="returns">
-    <h3>
-      <AccordionItemTrigger>Returns</AccordionItemTrigger>
-    </h3>
-    <AccordionItemContent>30-day window, no restocking fee.</AccordionItemContent>
-  </AccordionItem>
-</Accordion>
+const onDispatch = (event: DispatchedEvent) => {
+  // Клик по кнопке раздела, возвращает данные раздела целиком, кроме вложенных items.
+  // event.context.payload = { id: "a", title: "Alpha" }
+};
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  dispatch={onDispatch}
+/>;
 ```
 
-### A disabled item
+<h2 id="сборки">🏗️ Сборки</h2>
 
-`disabled` on `AccordionItem` stops that one item from expanding — its trigger can't be clicked or
-focused via keyboard navigation:
+Две готовые сборки показывают разный уровень сложности содержимого: `base` — голый список секций,
+где что показывать внутри решает потребитель; `action-list` — секция с настоящим списком выбора
+внутри, наглядно показывает, что внутрь секции можно вложить не просто текст, а целый рабочий
+компонент со своим поведением.
 
-```tsx
-<Accordion defaultValue={["shipping"]}>
-  <AccordionItem value="shipping" disabled>
-    <h3>
-      <AccordionItemTrigger>
-        Shipping (temporarily unavailable)
-        <AccordionItemIndicator>▾</AccordionItemIndicator>
-      </AccordionItemTrigger>
-    </h3>
-    <AccordionItemContent>Courier and pickup.</AccordionItemContent>
-  </AccordionItem>
-</Accordion>
+<h3 id="сборка-base">🧱 base</h3>
+
+```
+root
+  item[]              · repeat: /sections · bind: value
+    control ▶️         · on: click → triggerClick
+      🏷️ text: {title}
+      controlIndicator 🔽
+    content 📂         · bind: variant
 ```
 
-### Composing a real component inside the content
+<h3 id="сборка-action-list">🧱 action-list</h3>
 
-`itemContent` accepts arbitrary content, including another independently-addressed component, not
-just text — `playground/assemblies/action-list.ts` is a worked `RenderTree` example of this: each
-item's content nests a real `Listbox` pulled from the shared registry rather than a copy of one.
-`playground/assemblies/base.ts` is the plainer sibling example, with plain content per item.  These
-are secondary references for realistic data shapes; most consumers should reach for the plain JSX
-composition shown throughout this page, not the tree format.
+```
+root
+  item[]              · repeat: /sections · bind: value
+    control ▶️         · on: click → triggerClick
+      🏷️ text: {title}
+      controlIndicator 🔽
+    content 📂
+      listbox           · bind: items, value
+        listbox.content
+          listbox.item[] · repeat: items · bind: item · on: click → select
+            listbox.itemText
+              🏷️ text: {label}
+            listbox.itemIndicator
+              🎨 icon: "✓"
+```
 
-## Styling hooks
+<h2 id="рецепт">🎨 Рецепт</h2>
 
-Every state/setting carrying a mark in the tables above is a real selector a skin can hook into
-(e.g. `[data-scope="accordion"][data-part="item"][data-state="open"]`, see `packages/skin`) — with
-two things worth knowing before relying on one. First, `itemContent`'s `open` mark can be **absent**:
-an item that starts expanded with no animation never gets `data-state` written to it at all, so a
-skin shouldn't require the mark's presence to render the expanded look. Second, `itemTrigger`'s
-`disabled`/`hover`/`focus-visible`/`active` states are native pseudo-classes (`:disabled`, `:hover`,
-`:focus-visible`, `:active`), not `data-*` attributes — Zag disables and tracks the real `<button>`
-directly — while every other part's equivalent states arrive as `data-*` attributes instead.
+Секция раскрывается и закрывается плавно — анимацией по высоте, а не рывком (было скрыто/стало
+видно). Своих именованных видов у аккордеона нет: единственное, что меняет его вид целиком —
+настройка `orientation`, вертикальная или горизонтальная гармошка. 🎬
 
-## Accessibility
+> [!WARNING]
+> Раскрытие `content` — не гарантированная отметка: если раздел раскрыт БЕЗ анимации,
+> `data-state="open"` на content может не прийти вовсе. На ВИД это не влияет — вид смотрит на
+> состояние секции целиком, не на сам content. А вот для АНИМАЦИИ это единственный сигнал: отметка
+> приходит ровно тогда, когда переход реально проигрывается.
 
-Accordion follows the WAI-ARIA [Accordion pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/).
+Высота раскрытого содержимого заранее не известна — она измеряется, поэтому анимация идёт не по
+условному `auto`, а по измеренному размеру:
 
-| Key | What it does |
-|---|---|
-| `Space` / `Enter` | When focus is on a collapsed item's trigger, expands that item |
-| `Tab` | Moves focus to the next focusable element |
-| `Shift + Tab` | Moves focus to the previous focusable element |
-| `ArrowDown` / `ArrowUp` (`vertical`) | Moves focus to the next / previous trigger |
-| `ArrowRight` / `ArrowLeft` (`horizontal`) | Moves focus to the next / previous trigger |
-| `Home` | Moves focus to the first trigger |
-| `End` | Moves focus to the last trigger |
+```
+grow-block-size:   blockSize 0 → var(--height)
+shrink-block-size: blockSize var(--height) → 0
+```
 
-## Assembly & skin notes
-
-Concrete things that cost real time to find — read this before writing a new assembly for
-`accordion`, or composing another real component into it.
-
-- **No `selfAssembly`.** A bare `{ node: "accordion" }` reference from elsewhere gets you the root
-  and nothing else — the whole compound tree (`item`/`itemTrigger`/`itemContent`/`itemIndicator`)
-  has to be authored by hand, mirroring `playground/assemblies/base.ts`.
-- **Composing a real component into a part (e.g. `action-list.ts`'s `listbox` inside
-  `itemContent`) needs a dotted address for anything past that component's own root**:
-  `listbox.content`, `listbox.item`, `listbox.itemText` — a bare `content` resolves nowhere (it
-  isn't `accordion`'s own anatomy) and silently renders no children at all, no error thrown, the
-  root still mounts fine. Same rule applies the other way if anyone ever references `accordion`'s
-  own non-root parts from a foreign assembly: `accordion.item`, `accordion.itemTrigger`, etc.
-- **`itemContent`'s `open` mark can be entirely absent** depending on whether the expansion
-  animated — never key a look off it directly. Address the expanded look through the `item`
-  ancestor instead, which holds the mark reliably (see "States" above).
-- **A repeated, per-item live component needs its own controlled state bound to real data if you
-  want exactly one instance to reflect something external.** `action-list.ts`'s nested `listbox`
-  (one per section) originally left its `value` unbound — every section's listbox then tracked
-  "checked" completely independently (more than one section could show a checked item at once),
-  and none of them survived a page reload, because nothing tied the mark to the one fact that
-  should decide it. Fixed by binding `value` to a data field (`activeValues`) computed from that
-  external fact (which route is currently active) rather than leaving it uncontrolled.
-- **`itemTrigger`'s own `on.click` composes fine with Ark's native expand/collapse handling** — both
-  fire from the same click, proven live (`triggerClick` dispatches the whole section as `payload`
-  via the empty-path marker, `path: ""`, at the same time the item actually expands). The same
-  device works on a referenced component's own items (see `select`'s and `listbox`'s own notes).
-<!-- user:end -->
+В горизонтальной ориентации то же самое происходит по ширине, не по высоте — включается той же
+настройкой `orientation`, отдельного вида на это заводить не нужно. То же самое движение раскрытия
+использует дерево (tree-view) для своих веток — не переизобретено заново под аккордеон.

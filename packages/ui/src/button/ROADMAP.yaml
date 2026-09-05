@@ -1,0 +1,77 @@
+# Дорожная карта кнопки — формат тот же, что у table/diagram/accordion/avatar (см.
+# table/ROADMAP.yaml, шапка). Единственный источник правды: статус проставляется рядом с работой.
+#
+# Пропс-серфейс полный, проверен на 2026-09-04 (`ButtonProps = PolymorphicProps<T,
+# ButtonRootProps<T>>` — гарантия на уровне типа). Фичового бэклога нет. Пункты ниже —
+# документация того, что реально есть.
+
+categories:
+  - category: Основа
+    items:
+      - id: click-dispatch
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Клик диспатчит payload как есть
+        description: |
+          Означает: клик по кнопке возвращает то, что дали, кнопка payload не решает и не трогает.
+          Реализация: собственный selfAssembly (`entity/passport.ts`) — единственный компонент
+          кита с этим механизмом: голая ссылка на кнопку в чужой сборке разворачивает клик →
+          select и подпись из данных сама, без своих on/children на узле ссылки.
+
+      - id: variant-addressing
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Вид через data-variant
+        description: |
+          Означает: `primary`/`quiet`/`danger` — три именованных вида плюс общая база, включая
+          пересечение («несколько видов сразу», compoundVariants на primary+danger вместе).
+          Реализация: обычная ось паспорта, proof-рецепт — единственный в ките с настоящей
+          несколько-значной осью data-variant, не одним плоским видом.
+
+      - id: as-bare-tag
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Рендер другим тегом (as на голый HTML-тег)
+        description: |
+          Означает: `<Button as="a" href="...">` — адрес и вид кнопки сохраняются, меняется
+          только корневой элемент.
+          Реализация: полиморфный `as`, проверено тестом (`test/button.test.tsx`).
+          Примечание: `as` на компонент кита, который сам не участвует в передаче адреса —
+          известный предел, не рабочий путь (см. FAQ.md, log ниже).
+
+# Журнал решений — тот же формат, что у table/diagram/accordion/avatar.
+log:
+  - id: no-forward-roadmap-full-surface
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Пропс-серфейс кнопки полный (`ButtonProps = PolymorphicProps<T, ButtonRootProps<T>>`). Новый
+      пункт здесь появится, только если появится реальный запрос на функциональность, которой нет
+      вовсе.
+
+  - id: as-composition-loses-address
+    type: question
+    date: 2026-09-04
+    summary: >
+      `<Button as={ДругойКомпонентКита}>` (например `Toggle`, `ToggleGroupItem`) теряет собственный
+      адрес кнопки — финальный узел красится как ЦЕЛЬ (`data-scope="toggle"`), не как `button`,
+      потому что `Toggle`/`ToggleGroupItem` не участвуют в передаче адреса (не помечены как
+      участвующие, `shared/utils/slot-chain.ts`). Касается не только кнопки — любой композиции
+      «кит-компонент as= компонент кита, не участвующий в передаче адреса». User, 2026-09-04:
+      задокументировать как известный предел, не чинить сейчас — межкомпонентный вопрос
+      (`slot-chain.ts`), не локальная правка одного компонента. Подробности — `FAQ.md`.
+
+  - id: readme-documented-nonexistent-assemblies
+    type: plan
+    date: 2026-09-04
+    summary: >
+      README называл сборки `icon`/`icon-text`, которых в коде никогда не было в текущем виде —
+      следы неавторизованной попытки их добавить, код откатили, README — нет, до этого аудита
+      (2026-09-04). Исправлено при аудите. Урок — README и код расходятся тихо, если правишь одно
+      без другого; проверять на живом состоянии кода, не на слово прошлой документации.

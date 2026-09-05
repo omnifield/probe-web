@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scope-identity.mjs — SessionStart hook: инжектит identity-баннер по OMNIFIELD_SCOPE.
+// scope-identity.mjs — SessionStart hook: инжектит identity-баннер по WEBCORE_SCOPE.
 // Роль-модель (зоны/пины моделей/число архитекторов) — ДАННЫЕ из `.claude/harness.yaml`
 //, НЕ хардкод. Роли-рамка (инварианты) — .claude/agents/{architect,owner,layer}.md.
 //   - 'main' → architect;  <zone> → owner-<zone>;  невалид → anomaly;  ПУСТО → баннер «роли нет»
@@ -115,7 +115,7 @@ export function overlapNotice(config, scope) {
  */
 export function launchBlock(scopes) {
   const width = Math.max(...scopes.map((s) => s.length));
-  const cmd = (s) => `OMNIFIELD_SCOPE=${s.padEnd(width)} claude`;
+  const cmd = (s) => `WEBCORE_SCOPE=${s.padEnd(width)} claude`;
   return [
     `\`\`\`sh`,
     ...scopes.map((s) =>
@@ -134,7 +134,7 @@ export function launchBlock(scopes) {
 
 function onboardingBanner(config) {
   return [
-    `# Session identity — OMNIFIELD_SCOPE=main (architect · ОНБОРДИНГ)${modelLine(config, "architect")}`,
+    `# Session identity — WEBCORE_SCOPE=main (architect · ОНБОРДИНГ)${modelLine(config, "architect")}`,
     ``,
     `Ты **architect/main**, но \`.claude/harness.yaml\` — ещё НЕЗАПОЛНЕННЫЙ общий шаблон`,
     `(\`product: ${config.product ?? "(пусто)"}\`, зоны/пины — placeholder). Это НЕ аномалия и НЕ повод паниковать:`,
@@ -160,7 +160,7 @@ function onboardingBanner(config) {
 
 function architectBanner(config) {
   return [
-    `# Session identity — OMNIFIELD_SCOPE=main (architect)${modelLine(config, "architect")}`,
+    `# Session identity — WEBCORE_SCOPE=main (architect)${modelLine(config, "architect")}`,
     ``,
     `Ты в роли **architect/main** ${productLabel(config)}. Правила роли — \`.claude/agents/architect.md\` + \`.claude/agents/shared-policy.md\`.`,
     `Роль-модель — данные \`.claude/harness.yaml\` (архитекторов сконфигурено: ${config.architects}).`,
@@ -181,7 +181,7 @@ function ownerBanner(config, { scope, paths, name }) {
     : "`(зона без путей — аномалия конфига)`";
   const firstPath = paths[0] ?? "<зона>";
   return [
-    `# Session identity — OMNIFIELD_SCOPE=${scope} (owner-${scope})${modelLine(config, "owner")}`,
+    `# Session identity — WEBCORE_SCOPE=${scope} (owner-${scope})${modelLine(config, "owner")}`,
     ``,
     `Ты в роли **owner-${scope}** ${productLabel(config)}, владелец зоны: ${list} (${name}).`,
     `**Ты НЕ architect** — правила роли architect не твои.`,
@@ -217,7 +217,7 @@ export function anomalyBanner(config, scope) {
   const scopes = knownScopes(config);
   const near = nearestScopes(scope, config);
   const lines = [
-    `# Session identity — OMNIFIELD_SCOPE=${scope} (UNRESOLVED)`,
+    `# Session identity — WEBCORE_SCOPE=${scope} (UNRESOLVED)`,
     ``,
     `**Аномалия**: scope "${scope}" не резолвится в зону (нет в \`.claude/harness.yaml\`).`,
     ``,
@@ -259,14 +259,14 @@ export function anomalyBanner(config, scope) {
 }
 
 /**
- * `OMNIFIELD_SCOPE` не задан. Раньше здесь была тишина: гейты закрывались правильно, но
+ * `WEBCORE_SCOPE` не задан. Раньше здесь была тишина: гейты закрывались правильно, но
  * человек узнавал об этом на первой правке, а пустой ответ хука неотличим от нормы
  * (BRAIN2-46 §3). Говорим сразу и с готовой командой запуска.
  */
 export function noScopeBanner(config) {
   const scopes = knownScopes(config);
   return [
-    `# Session identity — РОЛИ НЕТ (\`OMNIFIELD_SCOPE\` не задан)`,
+    `# Session identity — РОЛИ НЕТ (\`WEBCORE_SCOPE\` не задан)`,
     ``,
     `Сессия стартовала **без роли**: harness не знает, кто ты, и потому закрывает обе двери —`,
     `любая правка файла и любая git-запись получат \`deny\` с причиной «boundary неизвестна».`,
@@ -305,7 +305,7 @@ function withForeignWarning(banner, config, cwd) {
 function main() {
   const cwd = process.cwd();
   const config = loadConfig(cwd);
-  const scope = process.env.OMNIFIELD_SCOPE;
+  const scope = process.env.WEBCORE_SCOPE;
   if (!scope) return emit(withForeignWarning(noScopeBanner(config), config, cwd));
   if (scope === "main") {
     const banner = needsOnboarding(config) ? onboardingBanner(config) : architectBanner(config);

@@ -1,20 +1,7 @@
-// PROOF RECIPE (`PWEB-111`, `PWEB-114`) — not a shipped product, not product taste. Lives next
-// to the component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only
-// `checkbox.test.tsx` reads it, to prove the checkbox's passport CAN be dressed whole by the
-// real skin mechanism (`skinGaps` empty, CSS is generated).
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
-
-/** Look transition — same device as the button and the accordion. */
 const transition = "background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out)";
 
-/**
- * CHECKBOX. Four parts, eleven states.
- *
- * The control frame carries the border and fill; the indicator only carries the mark's color
- * (the mark itself is placed by the consumer). Checked and indeterminate both paint the frame
- * with a solid accent — both read as "there is a choice", the ordinary market norm.
- */
 export const recipe: SlotRecipe = {
   base: {
     root: {
@@ -22,10 +9,28 @@ export const recipe: SlotRecipe = {
         display: "inline-flex",
         alignItems: "center",
         gap: "var(--space-2)",
+        borderRadius: "var(--radius-sm)",
         cursor: "pointer",
+        transition: "background-color var(--motion-fast) var(--ease-out)",
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
+        checked: { props: { cursor: "pointer" } },
+        unchecked: { props: { cursor: "pointer" } },
+        indeterminate: { props: { cursor: "pointer" } },
         disabled: { props: { cursor: "not-allowed", opacity: "0.5" } },
+        readonly: { props: { cursor: "default" } },
+        invalid: { props: { cursor: "pointer" } },
+        required: { props: { cursor: "pointer" } },
+        hover: { props: { background: "var(--neutral-2)" } },
+        active: { props: { background: "var(--neutral-3)" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": {
+          props: {
+            outline: "var(--border-width-2) solid var(--accent-8)",
+            outlineOffset: "var(--space-1)",
+          },
+        },
       },
     },
     control: {
@@ -46,8 +51,11 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
+        unchecked: { props: { borderColor: "var(--neutral-7)" } },
         indeterminate: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
         hover: { props: { borderColor: "var(--accent-8)" } },
+        active: { props: { transform: "scale(0.92)" } },
+        focus: { props: { outline: "none" } },
         "focus-visible": {
           props: {
             outline: "var(--border-width-2) solid var(--accent-8)",
@@ -56,13 +64,10 @@ export const recipe: SlotRecipe = {
         },
         invalid: { props: { borderColor: "var(--danger-9)" } },
         disabled: { props: { borderColor: "var(--neutral-6)", background: "var(--neutral-3)" } },
+        readonly: { props: { cursor: "default" } },
+        required: { props: { borderColor: "var(--neutral-7)" } },
       },
     },
-    // `display` IS NOT IN THE BASE: the kit hides the indicator with the `hidden` attribute
-    // (native `display: none`) while the checkbox is neither checked nor indeterminate — an
-    // unconditional `display: inline-flex` in the base would override that for EVERY checkbox
-    // at once, and the mark would always show. `display` is set alongside the same two states
-    // that lift `hidden`.
     indicator: {
       props: {
         color: "var(--accent-contrast)",
@@ -71,7 +76,16 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { display: "inline-flex" } },
+        unchecked: { props: { display: "none" } },
         indeterminate: { props: { display: "inline-flex" } },
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { opacity: "0.8" } },
+        invalid: { props: { color: "var(--accent-contrast)" } },
+        required: { props: { color: "var(--accent-contrast)" } },
+        hover: { props: { opacity: "1" } },
+        active: { props: { opacity: "1" } },
+        focus: { props: { opacity: "1" } },
+        "focus-visible": { props: { opacity: "1" } },
       },
     },
     label: {
@@ -80,11 +94,20 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-12)",
       },
       states: {
+        checked: { props: { fontWeight: "var(--weight-medium)" } },
+        unchecked: { props: { fontWeight: "var(--weight-normal)" } },
+        indeterminate: { props: { fontWeight: "var(--weight-medium)" } },
         disabled: { props: { color: "var(--neutral-11)" } },
+        readonly: { props: { color: "var(--neutral-12)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        required: { props: { fontWeight: "var(--weight-medium)" } },
+        hover: { props: { textDecoration: "underline" } },
+        active: { props: { opacity: "0.85" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": { props: { textDecoration: "underline" } },
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "checkbox-sample", component: "checkbox", recipe };

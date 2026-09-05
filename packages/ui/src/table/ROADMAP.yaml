@@ -1,0 +1,463 @@
+# Дорожная карта таблицы — формат спроектирован ПОД механику Windshift (2026-09-04), не наоборот.
+# Этот файл — единственный источник правды: роадмап ведётся по коду, статус проставляется рядом
+# с работой, здесь же, в момент когда она сделана — не в самом Windshift отдельно.
+#
+# Принцип: где у Windshift уже есть готовое понятие — используем его слово напрямую, без своего
+# синонима, который потом придётся кому-то переводить.
+#
+# Что куда превращается при синке:
+#   - Сам компонент (table)              → Epic
+#   - `categories[].category`             → Story (родитель фич этого раздела)
+#   - `categories[].items[].type`         → Task (feature) или Bug (bug) — реальные типы Windshift
+#   - `categories[].items[].status`       → статус Windshift — этот файл источник правды, синкается
+#                                            всегда, не только при создании.
+#   - `categories[].items[].priority`     → приоритет Windshift (Critical/High/Medium/Low)
+#   - `categories[].items[].milestone`    → веха Windshift (см. `milestones` ниже), `null` — без вехи
+#   - `categories[].items[].size`         → кастомное поле "Размер" (S/M/L) — не оценка в часах,
+#                                            порядок величины: S — TanStack даёт логику почти
+#                                            бесплатно (только anatomy+passport+wiring), M — логику
+#                                            даёт частично, L — вторая библиотека или свой движок
+#   - `categories[].items[].depends_on`   → связь "Depends On" на другую фичу по `id`
+#   - `categories[].items[].id`           → кастомное поле "Roadmap Slug" — ключ повторного синка
+#   - `milestones`                        → Milestone в Windshift, с реальной датой
+#   - `log`                                → страница "Решения" компонента, НЕ задачи (без статуса
+#                                            это не работа, а решение/тема)
+#
+# "Протестировано" (галочка "работа сделана и проверена") в файл не входит вообще — это факт о
+# выполнении, а не о планировании, отмечается прямо в Windshift по ходу работы.
+
+milestones:
+  - id: base-power
+    name: Базовая мощь
+    target_date: "2026-12-31"
+    description: >
+      Всё дёшево (S), минимум нового слоя анатомии, TanStack почти всё даёт готовым.
+      Закрывает «таблица уже взрослая»: сортировка по нескольким колонкам, выбор строк,
+      гибкость и постраничность.
+
+  - id: filters
+    name: Фильтры
+    target_date: "2026-12-31"
+    description: >
+      Одна подсистема TanStack (filtering). faceted-values без column-filter смысла не
+      имеет — это его питание для выпадающих списков. Вместе с base-power закрывает «самый
+      частый минимум» дэшборда.
+
+  - id: row-hierarchy
+    name: Иерархия и особые строки
+    target_date: "2027-03-31"
+    description: >
+      grouping/expanding делят одну механику дерева строк у TanStack (subRows).
+      bulk-actions без row-selection (веха base-power) не имеет смысла — тулбар не над
+      чем показывать. row-pinning — тоже «особая строка», логично рядом.
+
+  - id: export
+    name: Экспорт / буфер
+    target_date: "2027-03-31"
+    description: >
+      Отдельная подсистема, ни от чего не зависит (кроме мягкой связи с row-selection —
+      «экспортировать только выбранное»). Стоит раньше структуры колонок и
+      клавиатуры/редактирования — экспорт обычно просят раньше, чем полировку колонок.
+
+  - id: column-structure
+    name: Структура колонок
+    target_date: "2027-06-30"
+    description: "Все про drag/layout заголовков — общая механика указателя."
+
+  - id: keyboard-editing
+    name: Клавиатура и редактирование
+    target_date: "2027-06-30"
+    description: >
+      Редактирование без клавиатурной навигации по ячейкам получится слабым (Enter/Tab/Escape
+      нужны сразу) — делаем вместе, keyboard-navigation первой половиной.
+
+  - id: virtualization
+    name: Виртуализация
+    target_date: "2027-09-30"
+    description: >
+      Самый низкий приоритет НАРОЧНО. Технически меняет ВСЁ рендер-строк сразу — чем позже
+      встраивать, тем меньше слоёв фич придётся сверять с ней задним числом (остальные вехи
+      успеют устаканить форму строки первыми).
+
+categories:
+  - category: Основа
+    items:
+      - id: grid
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Голая сетка
+        description: "Означает: root/caption/head/headRow/headerCell/body/row/cell — без интерактивности вовсе."
+
+      - id: sorting
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Сортировка (одна колонка)
+        description: |
+          Означает: клик по заголовку переключает возрастание/убывание, стрелка в заголовке.
+          Реализация: @tanstack/solid-table (rowSortingFeature) — логика бесплатно, обвязка своя.
+
+  - category: Строки и данные
+    items:
+      - id: pagination
+        type: feature
+        priority: Critical
+        milestone: base-power
+        size: S
+        name: Пагинация (клиентская)
+        description: |
+          Означает: постраничный просмотр, TanStack сам считает страницы.
+          Реализация: @tanstack/solid-table — состояние готово, рисуем кнопки/номер страницы.
+          Примечание: серверная пагинация (manualPagination) — отдельная история, завязана на
+          весь стек данных, не только компонент.
+
+      - id: grouping
+        type: feature
+        priority: High
+        milestone: row-hierarchy
+        size: M
+        name: Группировка + агрегация
+        description: |
+          Означает: сворачиваемые группы строк, сводные строки (сумма/среднее/count/min/max).
+          Реализация: @tanstack/solid-table (groupingFeature) — логика группировки есть,
+          агрегаторы и UI сворачивания наши.
+
+      - id: expanding
+        type: feature
+        priority: High
+        milestone: row-hierarchy
+        size: M
+        name: Раскрытие строк / вложенные данные
+        description: |
+          Означает: детализация строки, tree data — та же идея, что раскрытие в аккордеоне,
+          но на уровне строки таблицы.
+          Реализация: @tanstack/solid-table (expandingFeature) — состояние есть, анатомия под
+          sub-row наша.
+
+      - id: virtualization
+        type: feature
+        priority: Low
+        milestone: virtualization
+        size: L
+        name: Виртуализация
+        description: |
+          Означает: рисовать только видимые строки — без этого дэшборд с тысячами строк тормозит.
+          Реализация: @tanstack/solid-virtual — ВТОРАЯ библиотека, не входит в solid-table.
+          Примечание: обвязка со скроллом (какая часть анатомии скроллится) — отдельное
+          архитектурное решение, ближе к scroll-area, чем к сортировке.
+
+  - category: Колонки
+    items:
+      - id: column-visibility
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: base-power
+        size: S
+        name: Видимость колонок
+        description: |
+          Означает: показать/скрыть колонку — скрытая не рисует headerCell/cell вовсе
+          (row.getVisibleCells()).
+          Реализация: @tanstack/solid-table (columnVisibilityFeature) — обвязка своя, новой
+          анатомии не потребовалось.
+          Примечание: переключатель («показать/скрыть колонку X») кит не рисует —
+          table.getAllColumns()/getToggleVisibilityHandler() дают всё нужное, сборка меню —
+          дело потребителя.
+
+      - id: column-pinning
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: base-power
+        size: S
+        name: Закрепление колонок
+        description: |
+          Означает: headerCell/cell несут pinned-start/pinned-end (data-pinned), стандартная
+          структура рисует start→center→end группами.
+          Реализация: @tanstack/solid-table (columnPinningFeature) — терминология start/end,
+          не left/right (TanStack v9), обвязка своя.
+          Примечание: честный предел — position:sticky с insetInlineStart/End:0 верен для РОВНО
+          одной закреплённой колонки на сторону; TanStack v9 убрал авторасчёт px-смещения для
+          нескольких (был в v8, завязан на resize) — настоящий расчёт ждёт column-resizing.
+
+      - id: column-resizing
+        type: feature
+        priority: Medium
+        milestone: column-structure
+        size: M
+        name: Ресайз колонок
+        description: |
+          Означает: тянешь границу заголовка — колонка меняет ширину.
+          Реализация: @tanstack/solid-table (columnSizingFeature) — состояние ширины есть,
+          сам drag-хендл и его поведение наше.
+
+      - id: column-reordering
+        type: feature
+        priority: Medium
+        milestone: column-structure
+        size: L
+        name: Порядок колонок (drag-n-drop)
+        description: |
+          Означает: перетащить заголовок, чтобы поменять порядок колонок местами.
+          Реализация: TanStack сам DnD не даёт — нужен отдельный drag-механизм.
+
+      - id: column-groups
+        type: feature
+        priority: Medium
+        milestone: column-structure
+        size: M
+        name: Многоуровневые заголовки
+        description: |
+          Означает: «шапка над шапкой» — группа колонок под одним общим заголовком.
+          Реализация: @tanstack/solid-table поддерживает нативно (groupColumns), анатомия
+          усложняется — ещё один уровень headRow.
+
+  - category: Фильтры
+    items:
+      - id: global-filter
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: filters
+        size: S
+        name: Глобальный поиск
+        description: |
+          Означает: одно текстовое поле фильтрует все строки сразу, регистронезависимо, по
+          любой колонке (includesString — единственная встроенная функция фильтра, что кит
+          регистрирует; TanStack v9 не регистрирует ни одной сама).
+          Реализация: @tanstack/solid-table (globalFilteringFeature + columnFilteringFeature —
+          связаны на уровне filteredRowModel, оба нужны разом) — обвязка своя.
+          Примечание: своей анатомии под поле ввода кит не заводит — то же решение, что у
+          видимости колонок; globalFilter/defaultGlobalFilter/onGlobalFilterChange управляют
+          состоянием, само поле рисует потребитель.
+
+      - id: column-filter
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: filters
+        size: M
+        name: Фильтр по колонке
+        description: |
+          Означает: по одному { id, value } на отфильтрованную колонку — columnFilters/
+          defaultColumnFilters/onColumnFiltersChange, тот же управляемый/неуправляемый паттерн,
+          что у остальных фич.
+          Реализация: @tanstack/solid-table (columnFilteringFeature, уже был в FEATURES с
+          global-filter). filterFn: "auto" сам выбирает функцию по типу значения — для строк это
+          includesString, уже зарегистрированная под глобальный поиск, второй раз регистрировать
+          не пришлось.
+          Примечание: своей анатомии НЕ завела — план "текст/select/диапазон — несколько частей
+          анатомии" не подтвердился на практике. Виджет фильтра (какой угодно — текст, select,
+          диапазон, дата) живёт внутри headerCell как обычное содержимое потребителя, то же
+          решение, что у глобального поиска и видимости колонок.
+
+      - id: faceted-values
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: filters
+        size: S
+        depends_on: [column-filter]
+        name: Faceted-значения
+        description: |
+          Означает: список уникальных значений колонки с count — для построения выпадающего
+          фильтра. table.getColumn(id).getFacetedUniqueValues() исключает фильтр самой колонки
+          (но учитывает фильтры остальных колонок и глобальный поиск) — список опций не
+          схлопывается до одного пункта, когда фильтр уже применён.
+          Реализация: @tanstack/solid-table (columnFacetingFeature + facetedRowModel/
+          facetedUniqueValues row-model факторки в FEATURES) считает facets сам, рисует список
+          потребитель.
+          Примечание: своей анатомии не завела и новых пропсов на TableRoot не добавила — чистый
+          доступ к уже существующему table-инстансу через children, то же решение, что у
+          фильтра по колонке.
+
+  - category: Выбор и действия
+    items:
+      - id: row-selection
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: base-power
+        size: S
+        name: Выбор строк
+        description: |
+          Означает: чекбокс-колонка (headerSelectTrigger/rowSelectTrigger, настоящий
+          <input type="checkbox">), чекбокс «выбрать всё» с indeterminate в заголовке, вся
+          строка несёт [data-selected].
+          Реализация: @tanstack/solid-table (rowSelectionFeature) — обвязка своя.
+          Примечание: выключено по умолчанию (enableRowSelection?: boolean, обычный проп
+          TableRoot, не settings) — чекбокс-колонка появляется только если задана явно.
+
+      - id: row-pinning
+        type: feature
+        priority: High
+        milestone: row-hierarchy
+        size: M
+        name: Закрепление строк
+        description: |
+          Означает: важные строки закреплены сверху/снизу независимо от сортировки/фильтров.
+          Реализация: @tanstack/solid-table (rowPinningFeature) — состояние есть, поведение при
+          сортировке/фильтрах наше.
+
+      - id: bulk-actions
+        type: feature
+        priority: High
+        milestone: row-hierarchy
+        size: M
+        depends_on: [row-selection]
+        name: Массовые действия
+        description: |
+          Означает: тулбар над выбранными строками — не часть таблицы самой, а сборка вокруг неё.
+          Реализация: состав деталей типовой (surface + кнопки), таблица только отдаёт
+          выбранные id.
+
+  - category: Навигация
+    items:
+      - id: keyboard-navigation
+        type: feature
+        priority: Medium
+        milestone: keyboard-editing
+        size: L
+        name: Клавиатурная навигация по ячейкам
+        description: |
+          Означает: стрелки двигают фокус между ячейками, как в Excel/Google Sheets.
+          Реализация: TanStack тут не помогает вовсе — вся roving-tabindex-механика наша.
+
+      - id: multi-sort
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: base-power
+        size: S
+        name: Мультиколоночная сортировка
+        description: |
+          Означает: сортировка сразу по нескольким колонкам (shift+клик добавляет, не
+          заменяет), приоритет — номер в тексте заголовка (Имя (1)) + CSS-переменная
+          --sort-index на headerSortTrigger.
+          Реализация: @tanstack/solid-table (enableMultiSort: true, column.getSortIndex()) —
+          обвязка своя.
+          Примечание: API sorting/defaultSorting/onSortingChange сменился с одиночного объекта
+          на массив (readonly TableSort[]) — порядок элементов и есть приоритет.
+
+  - category: Редактирование
+    items:
+      - id: inline-editing
+        type: feature
+        priority: Medium
+        milestone: keyboard-editing
+        size: L
+        depends_on: [keyboard-navigation]
+        name: Инлайн-редактирование ячеек
+        description: |
+          Означает: клик по ячейке → редактор на месте, коммит/отмена, валидация.
+          Реализация: TanStack редакторов не даёт — своя архитектура: тип колонки → тип
+          редактора.
+
+  - category: Экспорт / буфер
+    items:
+      - id: export-csv
+        type: feature
+        priority: High
+        milestone: export
+        size: M
+        name: Экспорт CSV
+        description: |
+          Означает: выгрузка текущих (или всех) строк в CSV.
+          Реализация: простой формат, пишется без сторонних библиотек.
+
+      - id: export-excel
+        type: feature
+        priority: High
+        milestone: export
+        size: L
+        name: Экспорт Excel
+        description: |
+          Означает: выгрузка в .xlsx с форматированием.
+          Реализация: нужна сторонняя библиотека (SheetJS и подобные).
+
+      - id: clipboard-copy
+        type: feature
+        priority: High
+        milestone: export
+        size: L
+        name: Копирование выделения в буфер
+        description: |
+          Означает: Excel-style выделение диапазона ячеек + Ctrl+C.
+          Реализация: TanStack не участвует вовсе — своя логика выделения диапазона и
+          сериализации.
+
+# Журнал архитектурных решений и открытых вопросов — синкается страницей "Решения",
+# не задачами (см. маппинг в шапке файла).
+log:
+  - id: features-are-props-not-settings
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Включение конкретной фичи в реальном использовании — обычный проп `TableRoot`
+      (enableRowSelection/enableGrouping/enableColumnPinning и т.п., по образцу самого
+      TanStack), НЕ `settings` паспорта. Проверено в исходниках TanStack v9: `enableXxx` —
+      настоящая runtime-опция (булево или предикат на строку), не то, что печётся в тип при
+      сборке. В закрытый словарь `settings` это не ложится — та же категория, что
+      `selectionMode` у date-picker (реальный проп, но не одно из трёх закрытых имён).
+
+  - id: one-maximal-features-bag
+    type: plan
+    date: 2026-09-03
+    summary: >
+      `tableFeatures({...})` — печётся в ТИП инстанса один раз при сборке компонента (не
+      per-instance). Решение: собрать его СРАЗУ максимальным (все фичи, которые вообще
+      планируем поддержать), а не заводить несколько вариантов `TableRoot` под разные
+      наборы фич. Один паспорт, один корень — не расходится с остальным китом.
+
+  - id: assemblies-are-showcases-not-gates
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Сборки (`playground/assemblies/`) — витрины/примеры для редактора и документации,
+      НЕ механизм включения фичи для потребителя. 3-4 сборки по уровням («голая сетка» →
+      «сортировка+выбор» → «дэшборд-комбо») — годная демонстрация возможностей паспорта,
+      тот же приём, что уже применён у остальных компонентов кита («basic» = минимальный
+      рабочий пример). Реальный потребитель решает пропы на своём `<TableRoot>` сам, сборка
+      не решает это за него.
+
+  - id: bundle-weight-of-maximal-root
+    type: question
+    date: 2026-09-03
+    summary: >
+      Один максимальный `TableRoot` тянет код ВСЕХ фич в бандл даже для мест, где нужна
+      только сетка+сортировка — TanStack не тришейкает это на уровне `tableFeatures()`.
+      User: сейчас это не проблема — таблицы разного уровня прокачки живут в разных местах
+      ПРИЛОЖЕНИЯ, но сам апп в любом случае везде тащит максималку целиком, сценария «этому
+      приложению нужна только примитивная таблица» не бывает. Решение принято (тащим всё),
+      но оставляю вопросом на будущее — если появится реально бандл-чувствительный сценарий
+      (например, встраиваемый виджет за пределами обычного аппа), стоит вернуться и
+      пересмотреть на отдельные варианты корня.
+
+  - id: passes-and-priority
+    type: plan
+    date: 2026-09-03
+    summary: >
+      Фичи сгруппированы в вехи (milestones) — что логично делать одним куском: общая
+      механика/анатомия/движок TanStack, либо одна фича без другой бессмысленна. Приоритет —
+      реальный приоритет Windshift (Critical/High/Medium/Low), не свой словарь. Виртуализация —
+      Low, осознанно последней: она меняет весь рендер строк, и чем позже встраивать, тем
+      меньше слоёв фич придётся сверять с ней задним числом.
+
+  - id: roadmap-format-v2
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Формат файла переведён на модель, спроектированную ПОД Windshift (Epic/Story/Task/Bug/
+      Milestone/приоритет/кастомные поля/связи Depends On), а не на свой параллельный словарь.
+      Этот файл — единственный источник правды, статус ведётся здесь же, рядом с работой в коде,
+      не отдельно в Windshift. `done`-пункты (grid/sorting) получили категорию «Основа» с
+      `milestone: null` — предшествуют самой системе вех. `depends_on` — настоящая связь
+      "Depends On", не только проза в описании.
+
+# Прикидка по размеру (не оценка в часах, порядок величины):
+#   S — TanStack даёт логику почти бесплатно, нужен только слой anatomy+passport+wiring
+#   M — логику TanStack даёт частично, доделываем сами (UI, дополнительные части анатомии)
+#   L — нужна вторая библиотека ИЛИ заметный собственный движок (TanStack не помогает вовсе)

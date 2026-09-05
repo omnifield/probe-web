@@ -1,19 +1,19 @@
 {
-  "name": "@omnifield/probe-web-assembly",
+  "name": "@web-core/assembly",
   "version": "0.0.0",
-  "description": "Механика сборки probe-web: дерево узлов, реестр из паспортов, правки, проверка вложенности и отрисовка по данным. Одна на редактор скинов и конструктор страниц (PWEB-23).",
+  "description": "Механика сборки web-core: дерево узлов, реестр из паспортов, правки, проверка вложенности и отрисовка по данным. Одна на редактор скинов и конструктор страниц (PWEB-23).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": {
-      "solid": "./dist/index.jsx",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./model": {
-      "types": "./dist/model.d.ts",
-      "default": "./dist/model.js"
+    "./render": {
+      "solid": "./dist/render.jsx",
+      "types": "./dist/render/index.d.ts",
+      "default": "./dist/render.js"
     }
   },
   "files": [
@@ -24,22 +24,28 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
   "dependencies": {
+    "@web-core/trace": "workspace:*",
     "fast-json-patch": "^3.1.1"
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
   },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
-    "@omnifield/probe-web-ui": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/ui": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",

@@ -1,5 +1,3 @@
-// Смоук-проба зоны: не «опции разобрались», а настоящий рендер и настоящая навигация —
-// то, что действительно ловит сломанный реэкспорт или разъехавшийся конкретный вендор.
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -50,7 +48,7 @@ function buildRouter(initialPath: string) {
   });
 }
 
-describe("@omnifield/probe-web-router", () => {
+describe("@web-core/router", () => {
   it("реэкспорт держит дефолты и рендерит дерево маршрутов", async () => {
     expect(defaultRouterOptions.defaultPreload).toBe("intent");
 

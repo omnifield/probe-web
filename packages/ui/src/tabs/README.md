@@ -1,49 +1,202 @@
-# Tabs
+# 📑 Tabs
 
-**Group:** — · **Genus:** component · **Footprint:** regular
+🏷️ other · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole set — the row of tabs together with the panel that's currently showing |
-| list | the row (or column) of tabs — wraps every trigger plus the sliding indicator |
-| trigger | one tab's button — switches to its panel when activated |
-| content | one tab's panel — the content that shows while its tab is selected |
-| indicator | the sliding marker under (or beside) whichever tab is selected — a plain box, no graphic of its own |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🎚️ [Настройки](#настройки)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | focus | [data-focus] | some trigger in this set is focused |
-| list | focus | [data-focus] | some trigger in this list is focused |
-| trigger | selected | [data-selected] | this tab is the one currently showing |
-| trigger | disabled | [data-disabled] | this tab cannot be selected |
-| trigger | focus | [data-focus] | keyboard or pointer focus is on this tab |
-| trigger | hover | :hover | pointer is over this tab |
-| trigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| trigger | active | :active | this tab is being held down |
-| content | selected | [data-selected] | this panel's own tab is selected — the panel is visible |
-| indicator | — | — | — |
+```
+root
+├─ list
+│  ├─ trigger[]
+│  └─ indicator
+└─ content[]
+```
 
-## Settings
+| часть          | значение                                                          | принимает внутри              | рисуется         |
+| --------------- | ---------------------------------------------------------------------- | ---------------------------------- | --------------------- |
+| ⬜ `root`       | весь набор — ряд табов вместе с панелью, которая сейчас показана        | `list`, `content`                  | `Tabs`             |
+| ➖ `list`       | ряд (или столбец) табов — оборачивает каждый триггер и указатель        | `trigger`, `indicator`             | `TabsList`         |
+| 🔘 `trigger`   | кнопка одного таба — переключает на его панель при активации            | текст, иконку                      | `TabsTrigger`      |
+| 📄 `content`   | панель одного таба — содержимое, которое показано, пока таб выбран      | текст, любой компонент             | `TabsContent`      |
+| ▬ `indicator`  | скользящий указатель под (или рядом с) выбранным табом — своего графика не несёт | —                          | `TabsIndicator`    |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which way the tabs lay out — drives keyboard navigation (arrow keys) and aria, not just the look | `horizontal` | [data-orientation] |
+> [!NOTE]
+> `group` (раздел каталога) для табов раньше не был назван вовсе — реальный пробел, найденный при
+> доводке (`playground/index.ts` не передавал поле в `defineEditorInfo`). Не `disclosure`
+> (это раздел аккордеона — раскрыть/закрыть, не переключиться), не `navigation` (табы
+> переключают КОНТЕНТ внутри одного вида, а не уводят на другой) — честно `other`, пока за этим
+> не закрепят собственный раздел.
 
-## CSS Variables
+<h2 id="состояния">🎛️ Состояния</h2>
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| indicator | `--left` | kit | measured horizontal position of the selected tab |
-| indicator | `--top` | kit | measured vertical position of the selected tab |
-| indicator | `--width` | kit | measured width of the selected tab |
-| indicator | `--height` | kit | measured height of the selected tab |
+|      | часть              | состояние      | метка                | значение                                                        |
+| ---- | -------------------- | --------------- | ------------------------ | ---------------------------------------------------------------------- |
+| 🎯   | root, list, trigger  | focus           | `[data-focus]`            | какой-то таб в наборе (или именно этот) в фокусе                        |
+| ✅   | trigger              | selected        | `[data-selected]`         | этот таб сейчас показан                                                 |
+| 🚫   | trigger              | disabled        | `[data-disabled]`         | этот таб нельзя выбрать                                                 |
+| 🖱️   | trigger              | hover           | `:hover`                  | указатель наведён на этот таб                                           |
+| ⌨️   | trigger              | focus-visible   | `:focus-visible`          | фокус пришёл с клавиатуры — при клике мышью это было бы шумом            |
+| 👆   | trigger              | active          | `:active`                 | этот таб нажат и удерживается                                           |
+| 📌   | content              | selected        | `[data-selected]`         | таб этой панели выбран — панель видна                                    |
 
-## Notes
+> [!NOTE]
+> `trigger` — настоящая `<button>`, получающая реальный DOM-фокус САМА (в отличие от чекбокса/
+> свитча, где фокус зеркалится со скрытого `<input>`): `data-focus` честно отражает
+> `context.get("focusedValue") === value`. `focus-visible` объявлен РЯДОМ, не вместо: `data-focus`
+> говорит только «в фокусе», `focus-visible` несёт то, чего `data-focus` не несёт — пришёл ли этот
+> фокус с клавиатуры.
+>
+> `data-value`/`data-ownedby`/`data-ssr` на `trigger` — не состояния: `data-value` называет,
+> КАКОЙ это таб (та же категория, что `value`-проп `AccordionItem` уже стоит вне паспорта),
+> `data-ownedby` указывает на id списка (проводка, не вид), `data-ssr` — факт окружения/тайминга
+> (устоялась ли гидратация), не то, на что скин-автор когда-либо будет опираться.
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+<h2 id="настройки">🎚️ Настройки</h2>
+
+| настройка     | значения                | по умолчанию | означает                                                              |
+| ------------- | ------------------------ | -------------- | -------------------------------------------------------------------------- |
+| `orientation` | `horizontal`/`vertical`  | `horizontal`   | как расположены табы — влияет на навигацию с клавиатуры и aria, не только на вид |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "items": [{ "value": "string", "label": "string", "content": "string" }] }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Набор ничего не диспатчит через сборку — переключение ведёт настоящая машина состояний Ark сама,
+не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  list
+    trigger[] · repeat: /items · bind: value · text: {label}
+    indicator
+  content[]  · repeat: /items · bind: value · text: {content}
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+> [!WARNING]
+> Прогон теста поймал две реальные дыры, унаследованные от исходника:
+> `trigger.states.disabled.props.color: "var(--neutral-8)"` — `checkSkin` отказал
+> (`step-purpose-mismatch`): ступени 1–10 неоновой шкалы — класс «заливка», без обещания
+> контраста, тексту нужна «краска» (11/12). Заменено на `opacity`. Плюс четыре состояния —
+> `root`/`list`/`trigger`'s `focus`, `content`'s `selected` — были буквально пустыми `{}`
+> (`skinGaps` их не засчитывал: пустое правило — не правило). Заполнены явными, но безобидными
+> свойствами (`outline: "none"`, `zIndex: "2"` на фокусе триггера, `display: "block"` на выбранной
+> панели).
+
+**Три именованных стиля** (`line`/`enclosed`/`pills`) — известные способы подать табы: `line`
+(полоса под активным табом, эталон самого ark-ui.com) — база, её собственная запись в `variants`
+пуста, переопределять нечего. `enclosed` — рамка вместо полосы: активный таб приподнят своим фоном
+и рамкой на трёх сторонах, индикатор скрыт (выбор несёт сама рамка). `pills` — заливка вместо
+рамки: индикатор становится самой подложкой под текстом (`zIndex: 0` у него, `zIndex: 1` у текста
+триггера).
+
+> [!NOTE]
+> Модель не поддерживает пересечение «эта настройка И эта вариация» (`packages/skin`'s
+> `SlotRecipe.settings`) — группы накладываются `base → settings → variants` (вариация побеждает,
+> эмитится позже). Поэтому геометрия индикатора для `line` живёт в `base`+`settings.orientation`,
+> а не в `variants.line` — так `line` одинаково верно работает в обеих ориентациях. `enclosed`/
+> `pills` просто переопределяют геометрию своими фиксированными значениями, которые срабатывают
+> ПОСЛЕ настроек независимо от оси — им поэтому всё равно, `horizontal` сейчас или `vertical`.
+
+`indicator`'s `--left`/`--top`/`--width`/`--height` — измеренная, скользящая позиция (тот же
+приём, что у указателя аккордеона). `--transition-duration`/`--transition-timing-function`
+намеренно НЕ объявлены переменными паспорта: кит их только ЧИТАЕТ с фоллбэком
+(`var(--transition-duration, 150ms)`), не измеряет и не пишет — обратное направление от того, что
+модель `PassportVariable` описывает.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<Tabs defaultValue="account">
+  <TabsList>
+    <TabsTrigger value="account">Аккаунт</TabsTrigger>
+    <TabsTrigger value="billing">Оплата</TabsTrigger>
+    <TabsIndicator />
+  </TabsList>
+  <TabsContent value="account">Имя, почта, пароль.</TabsContent>
+  <TabsContent value="billing">Карта и история платежей.</TabsContent>
+</Tabs>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = {
+  items: [
+    { value: "account", label: "Аккаунт", content: "Имя, почта, пароль." },
+    { value: "billing", label: "Оплата", content: "Карта и история платежей." },
+  ],
+};
+const tree = instanceOf("tabs", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Вертикальные табы.**
+
+```tsx
+<Tabs orientation="vertical" defaultValue="account">
+  <TabsList>
+    <TabsTrigger value="account">Аккаунт</TabsTrigger>
+    <TabsTrigger value="billing">Оплата</TabsTrigger>
+  </TabsList>
+  <TabsContent value="account">Имя, почта, пароль.</TabsContent>
+  <TabsContent value="billing">Карта и история платежей.</TabsContent>
+</Tabs>
+```
+
+**Отключённый таб.**
+
+```tsx
+<TabsTrigger value="billing" disabled>
+  Оплата
+</TabsTrigger>
+```
+
+**Ленивое монтирование.** `lazyMount` на `TabsContent` рендерит панель только при первой
+активации; `unmountOnExit` дополнительно размонтирует её при уходе с таба.
+
+```tsx
+<TabsContent value="billing" lazyMount unmountOnExit>
+  Карта и история платежей.
+</TabsContent>
+```
+
+## Доступность
+
+Табы следуют паттерну WAI-ARIA [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
+
+| Клавиша                          | Действие                                                  |
+| ------------------------------- | -------------------------------------------------------------- |
+| `Tab`                            | Фокус на активный таб; со следующим `Tab` — на его панель        |
+| `ArrowRight` / `ArrowDown`      | Переносит фокус на следующий таб и активирует его панель          |
+| `ArrowLeft` / `ArrowUp`         | Переносит фокус на предыдущий таб и активирует его панель          |
+| `Home` / `End`                   | Переносит фокус на первый / последний таб                         |
+| `Enter` / `Space`                | В ручном режиме (`activationMode="manual"`) активирует таб        |

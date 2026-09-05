@@ -80,7 +80,7 @@
     } catch (err) {
       if (myToken !== loadToken) return;
       console.error('Failed to load asset report:', err);
-      error = err.message || 'Failed to load assets';
+      error = err.message || t('portal.failedToLoadAssets');
       assets = [];
     } finally {
       if (myToken === loadToken) loading = false;
@@ -101,7 +101,7 @@
       formValues = initial;
     } catch (err) {
       console.error('Failed to load asset report fields:', err);
-      error = err.message || 'Failed to load form fields';
+      error = err.message || t('portal.failedToLoadFormFields');
     } finally {
       formLoading = false;
     }
@@ -246,7 +246,7 @@
               class="px-1.5 py-0.5 text-[10px] font-medium rounded"
               style="background-color: {portalStore.isDarkMode ? 'rgba(156, 163, 175, 0.2)' : '#f3f4f6'}; color: {portalStore.isDarkMode ? '#9ca3af' : '#6b7280'};"
             >
-              INACTIVE
+              {t('common.inactive')}
             </span>
           {/if}
         </h3>

@@ -1,14 +1,16 @@
-import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportAssembly } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 
 import type { Data } from "../../entity/io.js";
 import { passport } from "../../entity/passport.js";
 
-type AccordionPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
+type AccordionPart =
+  typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 export const base: PassportAssembly<AccordionPart, string, Data> = {
   name: "base",
-  means: "разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя",
+  means:
+    "разделы из данных: заголовок раздела на триггере, контент пустой — место под содержимое потребителя",
   tree: {
     node: "root",
     children: [
@@ -18,8 +20,7 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
         bind: { value: "id" },
         children: [
           {
-            node: "itemTrigger",
-            props: { "data-variant": "secondary" },
+            node: "control",
             on: {
               click: {
                 event: {
@@ -30,11 +31,11 @@ export const base: PassportAssembly<AccordionPart, string, Data> = {
             },
             children: [
               { genus: "text", value: { path: "title" } },
-              { node: "itemIndicator", children: [] },
+              { node: "controlIndicator", children: [] },
             ],
           },
           {
-            node: "itemContent",
+            node: "content",
             bind: { variant: "id" },
             children: [],
           },

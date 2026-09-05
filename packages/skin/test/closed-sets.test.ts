@@ -1,13 +1,13 @@
-// Live proof for PWEB-207: `StatesOf`/`ValuesOf`/`PartOf` resolve to the REAL literal unions a
-// passport declared, not `string` — and only because `definePassport`/`defineSettings` stopped
-// widening through a fixed interface on the way out (`const` type parameters, see
-// `../src/passport/form/{passport,settings}.ts`). `expectTypeOf` assertions are checked by `tsc`
-// (`pnpm typecheck`), same as any other type in this file — this test's runtime body is a no-op.
+// `StatesOf`/`ValuesOf`/`PartOf` resolve to the REAL literal unions a passport declared, not
+// `string` — only because `definePassport`/`defineSettings` stopped widening through a fixed
+// interface on the way out (`const` type parameters, see
+// `../src/engine/passport/form/{passport,settings}.ts`). `expectTypeOf` assertions are checked by
+// `tsc` (`pnpm typecheck`); this test's runtime body is a no-op.
 
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expectTypeOf, it } from "vitest";
 
-import { definePassport, defineSettings, type PartOf, type StatesOf, type ValuesOf } from "../src/passport/form/index.js";
+import { definePassport, defineSettings, type PartOf, type StatesOf, type ValuesOf } from "../src/engine/passport/form/index.js";
 
 const anatomy = createAnatomy("toggle").parts("root", "thumb");
 
@@ -35,7 +35,7 @@ const passport = definePassport({
   }),
 });
 
-describe("closed sets derived from a passport's own literal shape (PWEB-207)", () => {
+describe("closed sets derived from a passport's own literal shape", () => {
   it("PartOf is the union of declared part names, not string", () => {
     expectTypeOf<PartOf<typeof passport>>().toEqualTypeOf<"root" | "thumb">();
   });

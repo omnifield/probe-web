@@ -29,6 +29,7 @@ type itemSummaryDTO struct {
 	PriorityID       *int     `json:"priority_id,omitempty"`
 	Assignee         string   `json:"assignee,omitempty"`
 	AssigneeID       *int     `json:"assignee_id,omitempty"`
+	StartDate        string   `json:"start_date,omitempty"`
 	DueDate          string   `json:"due_date,omitempty"`
 	Type             string   `json:"type,omitempty"`
 	Milestones       []string `json:"milestones,omitempty"`
@@ -75,6 +76,9 @@ func itemToSummary(item *models.Item) itemSummaryDTO {
 	}
 	if item.WorkspaceKey != "" {
 		s.Key = fmt.Sprintf("%s-%d", item.WorkspaceKey, item.WorkspaceItemNumber)
+	}
+	if item.StartDate != nil {
+		s.StartDate = item.StartDate.Format("2006-01-02")
 	}
 	if item.DueDate != nil {
 		s.DueDate = item.DueDate.Format("2006-01-02")
@@ -325,46 +329,45 @@ func init() {
 			if !ok {
 				return map[string]string{"error": "permission denied"}, nil
 			}
+			if env.ItemCreationService == nil {
+				return nil, fmt.Errorf("item creation service not configured")
+			}
 			title := sanitize.PlainTextField.Sanitize(args.Title)
 			desc := sanitize.Comment.Sanitize(args.Description)
-			// Centralized creation validation (parent hierarchy, cross-workspace
-			// parent visibility, status rules) — mirrors the cookie-auth and v1
-			// create paths. Permission-shaped parent failures surface as "Parent
-			// item not found" so existence isn't leaked.
-			validationResult := services.ValidateItemCreation(env.DB, services.ItemValidationParams{
+			startDate, err := parseOptionalDate(args.StartDate)
+			if err != nil {
+				return map[string]string{"error": "invalid start_date format, use YYYY-MM-DD"}, nil
+			}
+			dueDate, err := parseOptionalDate(args.DueDate)
+			if err != nil {
+				return map[string]string{"error": "invalid due_date format, use YYYY-MM-DD"}, nil
+			}
+			// Routed through ItemCreationService (not the low-level
+			// services.CreateItem) so this participates in the same
+			// item_created event emission as interactive/API creation —
+			// notifications and action automations (e.g. item_created
+			// triggers) only fire through that shared pipeline.
+			result, err := env.ItemCreationService.Create(env.UserID, env.Username, services.ItemCreateInput{
 				WorkspaceID: args.WorkspaceID,
 				Title:       title,
-				ItemTypeID:  args.ItemTypeID,
-				ParentID:    args.ParentID,
+				Description: desc,
 				StatusID:    args.StatusID,
-				UserID:      env.UserID,
-				PermService: env.PermService,
-			})
-			if !validationResult.Valid {
-				return map[string]string{"error": validationResult.Error}, nil
-			}
-			itemID, err := services.CreateItem(env.DB, services.ItemCreationParams{
-				WorkspaceID:      args.WorkspaceID,
-				Title:            title,
-				Description:      desc,
-				StatusID:         args.StatusID,
-				PriorityID:       args.PriorityID,
-				AssigneeID:       args.AssigneeID,
-				ParentID:         args.ParentID,
-				ItemTypeID:       args.ItemTypeID,
-				CreatorID:        &env.UserID,
-				ValidatingUserID: env.UserID,
-				PermService:      env.PermService,
+				PriorityID:  args.PriorityID,
+				AssigneeID:  args.AssigneeID,
+				ParentID:    args.ParentID,
+				ItemTypeID:  args.ItemTypeID,
+				StartDate:   startDate,
+				DueDate:     dueDate,
 			})
 			if err != nil {
+				var validationErr *services.ItemCreationValidationError
+				if errors.As(err, &validationErr) {
+					return map[string]string{"error": validationErr.Message}, nil
+				}
 				return map[string]string{"error": fmt.Sprintf("create failed: %s", err.Error())}, nil //nolint:nilerr // surface as a tool error in JSON, not as a protocol error
 			}
-			env.AuditWrite(logger.ResourceItem, int(itemID), "create_item", title)
-			created, err := services.NewItemCRUDService(env.DB).GetByID(int(itemID))
-			if err != nil {
-				return map[string]any{"id": itemID}, nil //nolint:nilerr // surface as a tool error in JSON, not as a protocol error
-			}
-			return itemToSummary(created), nil
+			env.AuditWrite(logger.ResourceItem, result.Item.ID, "create_item", title)
+			return itemToSummary(result.Item), nil
 		},
 	})
 
@@ -560,6 +563,29 @@ func init() {
 				return map[string]string{"error": fmt.Sprintf("transition failed: %s", err.Error())}, nil //nolint:nilerr // surface as a tool error in JSON, not as a protocol error
 			}
 			env.AuditWrite(logger.ResourceItem, itemID, "transition_item", result.Item.Title)
+			// Mirrors the cookie-session handler's post-transition
+			// EmitStatusChanged call: without this, MCP-driven transitions
+			// are invisible to status_transition action automations (they'd
+			// only fire for clicks in the web UI). Notifications are the
+			// interactive handler's job, not this tool's — only the
+			// automation-trigger side is replicated here.
+			if !result.NoOp && env.ActionService != nil {
+				oldStatusID, newStatusID := 0, 0
+				if result.OldStatusID != nil {
+					oldStatusID = *result.OldStatusID
+				}
+				if result.NewStatusID != nil {
+					newStatusID = *result.NewStatusID
+				}
+				env.ActionService.EmitActionEvent(&models.ActionEvent{
+					EventType:   models.ActionTriggerStatusTransition,
+					WorkspaceID: wsID,
+					ItemID:      itemID,
+					ActorUserID: env.UserID,
+					OldValues:   map[string]any{"status_id": oldStatusID},
+					NewValues:   map[string]any{"status_id": newStatusID},
+				})
+			}
 			out := map[string]any{
 				"item":          itemToSummary(result.Item),
 				"old_status_id": result.OldStatusID,
@@ -597,6 +623,8 @@ type createItemArgs struct {
 	AssigneeID  *int   `json:"assignee_id,omitempty" jsonschema:"Assignee user ID"`
 	ParentID    *int   `json:"parent_id,omitempty" jsonschema:"Parent item ID for sub-items"`
 	ItemTypeID  *int   `json:"item_type_id,omitempty" jsonschema:"Item type ID (uses workspace default if omitted)"`
+	StartDate   string `json:"start_date,omitempty" jsonschema:"Start date YYYY-MM-DD (used for roadmap/timeline views)"`
+	DueDate     string `json:"due_date,omitempty" jsonschema:"Due date YYYY-MM-DD (used for roadmap/timeline views)"`
 }
 
 type updateItemArgs struct {
@@ -609,6 +637,7 @@ type updateItemArgs struct {
 	AssigneeID        *int           `json:"assignee_id,omitempty" jsonschema:"New assignee user ID (0 to unassign)"`
 	AssigneeName      *string        `json:"assignee_name,omitempty" jsonschema:"New assignee full name (alternative to ID)"`
 	DueDate           *string        `json:"due_date,omitempty" jsonschema:"Due date YYYY-MM-DD (empty string to clear)"`
+	StartDate         *string        `json:"start_date,omitempty" jsonschema:"Start date YYYY-MM-DD (empty string to clear); used for roadmap/timeline views"`
 	MilestoneID       *int           `json:"milestone_id,omitempty" jsonschema:"Milestone ID"`
 	MilestoneName     *string        `json:"milestone_name,omitempty" jsonschema:"Milestone name (alternative to ID)"`
 	IterationID       *int           `json:"iteration_id,omitempty" jsonschema:"Iteration ID"`
@@ -694,6 +723,17 @@ func buildUpdateData(env *Env, args updateItemArgs, wsID int) (data map[string]a
 		}
 		changed = append(changed, "due_date")
 	}
+	if args.StartDate != nil {
+		if *args.StartDate == "" {
+			out["start_date"] = nil
+		} else {
+			if _, err := time.Parse("2006-01-02", *args.StartDate); err != nil {
+				return nil, nil, fmt.Errorf("invalid start_date format, use YYYY-MM-DD")
+			}
+			out["start_date"] = *args.StartDate
+		}
+		changed = append(changed, "start_date")
+	}
 	switch {
 	case args.MilestoneID != nil:
 		if *args.MilestoneID == 0 {
@@ -747,6 +787,20 @@ func buildUpdateData(env *Env, args updateItemArgs, wsID int) (data map[string]a
 		changed = append(changed, "custom_fields")
 	}
 	return out, changed, nil
+}
+
+// parseOptionalDate parses a YYYY-MM-DD string, returning nil for an empty
+// input. Used by create_item, which has no clear-field semantics (unlike
+// update_item's *string-nil-vs-empty convention).
+func parseOptionalDate(s string) (*time.Time, error) {
+	if s == "" {
+		return nil, nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 func workspaceLookupMap(db database.Database) map[string]int {

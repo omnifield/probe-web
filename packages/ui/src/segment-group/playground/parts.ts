@@ -1,34 +1,30 @@
-// EDITOR-ONLY per-part taxonomy for the segment group — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`) —
-// identical `accepts` shape to the radio group's own (`PWEB-134`, same underlying machine).
-
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type SegmentGroupPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-const groupStateMeans = {
-  disabled: { means: "the whole group is disabled — no item can be chosen" },
-  invalid: { means: "the enclosing form rejected the value" },
-  required: { means: "the form will demand a choice on submit" },
+const groupMeans = {
+  disabled: { means: "набор отключён — выбрать нельзя" },
+  invalid: { means: "набор невалиден по правилам валидации формы" },
+  required: { means: "выбор обязателен для отправки формы" },
 } satisfies PassportPartEditorInfo<SegmentGroupPart>["states"];
 
-const itemStateMeans = {
-  checked: { means: "this is the chosen item" },
-  unchecked: { means: "not the chosen item" },
-  disabled: { means: "this item cannot be chosen — its own flag, or the whole group's" },
-  readonly: { means: "the value is visible but nothing can be chosen" },
-  invalid: { means: "the enclosing form rejected the value" },
-  hover: { means: "pointer is over this item" },
-  focus: { means: "keyboard or pointer focus is on this item's hidden input — mirrored here since the input itself is invisible" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
+const itemMeans = {
+  checked: { means: "этот пункт выбран" },
+  unchecked: { means: "этот пункт не выбран" },
+  disabled: { means: "этот пункт нельзя выбрать — свой отказ или отключён весь набор" },
+  readonly: { means: "значение видно, выбрать другое нельзя" },
+  invalid: { means: "набор невалиден по правилам валидации формы" },
+  hover: { means: "указатель наведён на этот пункт" },
+  focus: { means: "фокус стоит на скрытом вводе этого пункта" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — здесь нужна обводка" },
 } satisfies PassportPartEditorInfo<SegmentGroupPart>["states"];
 
 export const parts: Readonly<Record<SegmentGroupPart, PassportPartEditorInfo<SegmentGroupPart>>> = {
   root: {
-    means: "the whole segmented control — the track and every choice in it",
-    states: groupStateMeans,
+    means: "переключатель целиком — оборачивает подпись, скользящую пилюлю и каждый сегмент",
+    states: groupMeans,
     accepts: [
       { kind: "component", name: "label" },
       { kind: "component", name: "item" },
@@ -36,40 +32,36 @@ export const parts: Readonly<Record<SegmentGroupPart, PassportPartEditorInfo<Seg
     ],
   },
   label: {
-    means: "the set's own label — describes the whole group, not any one choice",
-    states: groupStateMeans,
+    means: "собственная подпись набора — описывает весь набор, не один сегмент",
+    states: groupMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   item: {
-    means: "one segment — a clickable slot; click anywhere on it to select",
-    states: itemStateMeans,
+    means: "один сегмент — кликабельная область целиком, клик в любом месте выбирает его",
+    states: itemMeans,
     accepts: [
       { kind: "component", name: "itemControl" },
       { kind: "component", name: "itemText" },
-      // The real hidden `<input type="radio">` (`PWEB-152`) — no address of its own, but the
-      // node the real `onChange` lives on; without it a preview looks right and never selects.
-      { kind: "component", name: "hiddenInput" },
     ],
   },
   itemText: {
-    means: "this segment's own label text",
-    states: itemStateMeans,
+    means: "видимая подпись сегмента",
+    states: itemMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   itemControl: {
-    means: "this segment's own visible surface — what the sliding indicator sizes itself against",
-    states: { ...itemStateMeans, active: { means: "this segment is being pressed" } },
-    // Occupied — a plain surface, no consumer content in Ark's own documented usage.
+    means: "видимая поверхность сегмента — то, под что подстраивается размер скользящей пилюли",
+    states: { ...itemMeans, active: { means: "этот сегмент нажат указателем" } },
     accepts: [],
   },
   indicator: {
-    means: "the single sliding pill — sits behind whichever segment is currently chosen",
-    states: { disabled: { means: "the whole group is disabled" } },
+    means: "единая скользящая пилюля выбранного сегмента — кит сам измеряет и позиционирует её, своего графика не несёт",
+    states: { disabled: { means: "набор отключён" } },
     variables: {
-      "--left": { means: "measured horizontal position of the chosen segment" },
-      "--top": { means: "measured vertical position of the chosen segment" },
-      "--width": { means: "measured width of the chosen segment" },
-      "--height": { means: "measured height of the chosen segment" },
+      "--left": { means: "измеренное горизонтальное положение выбранного сегмента" },
+      "--top": { means: "измеренное вертикальное положение выбранного сегмента" },
+      "--width": { means: "измеренная ширина выбранного сегмента" },
+      "--height": { means: "измеренная высота выбранного сегмента" },
     },
     accepts: [],
   },

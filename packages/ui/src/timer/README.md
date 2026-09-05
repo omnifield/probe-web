@@ -93,7 +93,7 @@ import {
   TimerSeparator,
   TimerControl,
   TimerActionTrigger,
-} from "@omnifield/probe-web-ui";
+} from "@web-core/ui";
 
 <Timer countdown startMs={60_000}>
   <TimerArea>
@@ -114,7 +114,7 @@ import {
 label/value breakdown parts nest the same way, alongside or instead of `TimerItem`:
 
 ```tsx
-import { TimerItemLabel, TimerItemValue } from "@omnifield/probe-web-ui";
+import { TimerItemLabel, TimerItemValue } from "@web-core/ui";
 
 <TimerArea>
   <TimerItemValue type="minutes" />

@@ -1,13 +1,4 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// `positioner` reads `--available-width`/`--available-height` (its own measured variables,
-// `../entity/passport.ts`), the same pattern the select's/date picker's own positioner already
-// stands on.
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
@@ -24,7 +15,7 @@ const buttonStates = {
 
 export const recipe: SlotRecipe = {
   base: {
-    trigger: {
+    control: {
       props: {
         display: "inline-flex",
         alignItems: "center",
@@ -40,17 +31,25 @@ export const recipe: SlotRecipe = {
         transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
-      states: { ...buttonStates, open: { props: { background: "var(--neutral-4)" } } },
+      states: {
+        ...buttonStates,
+        open: { props: { background: "var(--neutral-4)" } },
+        closed: { props: { background: "var(--neutral-3)" } },
+        current: { props: { background: "var(--accent-3)" } },
+      },
     },
-    indicator: {
+    controlIndicator: {
       props: {
         display: "inline-flex",
         transition: "transform var(--motion-fast) var(--ease-out)",
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
-      states: { open: { props: { transform: "rotate(180deg)" } } },
+      states: {
+        open: { props: { transform: "rotate(180deg)" } },
+        closed: { props: { transform: "rotate(0deg)" } },
+      },
     },
-    anchor: { props: {} },
+    anchor: { props: { display: "contents" } },
     positioner: {
       props: {
         maxWidth: "var(--available-width)",
@@ -71,6 +70,20 @@ export const recipe: SlotRecipe = {
         borderColor: "var(--neutral-6)",
         borderRadius: "var(--radius-lg)",
         boxShadow: "0 4px 16px oklch(0% 0 0 / 0.16)",
+      },
+      states: {
+        open: {
+          props: {
+            animation: "popover-in var(--motion-fast) var(--ease-out)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
+        closed: {
+          props: {
+            animation: "popover-out var(--motion-fast) var(--ease-in)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
       },
     },
     title: {
@@ -108,10 +121,20 @@ export const recipe: SlotRecipe = {
         },
       },
     },
-    arrow: { props: {} },
-    arrowTip: { props: { background: "var(--neutral-1)" } },
+    arrow: { props: { "--arrow-size": "10px" } },
+    arrowTip: { props: { "--arrow-background": "var(--neutral-1)" } },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
-export const form: Form = { name: "popover-sample", component: "popover", recipe };
+export const keyframes = {
+  "popover-in": {
+    from: { opacity: "0", transform: "scale(0.96)" },
+    to: { opacity: "1", transform: "scale(1)" },
+  },
+  "popover-out": {
+    from: { opacity: "1", transform: "scale(1)" },
+    to: { opacity: "0", transform: "scale(0.96)" },
+  },
+};
+
+export const form: Form = { name: "popover-sample", component: "popover", recipe, keyframes };

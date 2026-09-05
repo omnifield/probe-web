@@ -1,31 +1,17 @@
-// Live proof for BOTH of the accordion's assemblies (`../playground/assemblies/`) — one block
-// each, because they answer to different consumers and break in different ways.
-//
-// "action-list" (`assemblies/action-list.ts`) — the real motivating case for PWEB-167–172: the
-// trigger dispatches the whole section via a plain path (""), and each item's content is a real
-// Listbox reference fed by data only (bind, no on/children restated, one node for the whole
-// `items` array — a listbox iterates its own collection internally, unlike the button this
-// assembly used to repeat one-per-item).
-//
-// "base" (`assemblies/base.ts`) — the one the skin product's showcase renders
-// (`products/skin/src/pages/_workspace/showcase/index.tsx`): sections from data, and a content
-// node left deliberately EMPTY for a slot to fill, carrying that section's `variant` for
-// whoever fills it. Nothing in this zone would notice that contract breaking — the page that
-// depends on it lives in another zone — so it is held here.
-
-import { createRegistry, RenderTree, type ReadableComponent, type Registry } from "@omnifield/probe-web-assembly";
-import { admits, baseAssemblyOf } from "@omnifield/probe-web-skin/editor";
-import type { PassportAssembly, PassportEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import { createRegistry, type ReadableComponent, type Registry } from "@web-core/assembly";
+import { RenderTree } from "@web-core/assembly/render";
+import { admits, baseAssemblyOf } from "@web-core/skin/editor";
+import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { kit as accordionKit } from "../components/kit.jsx";
+import { kit as accordionKit } from "../components/index.js";
 import { passport as accordionPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as accordionEditorInfo } from "../playground/index.js";
 
-import { kit as listboxKit } from "../../listbox/components/kit.jsx";
+import { kit as listboxKit } from "../../listbox/components/index.js";
 import { passport as listboxPassport } from "../../listbox/entity/passport.js";
 import { editorInfo as listboxEditorInfo } from "../../listbox/playground/index.js";
 
@@ -42,7 +28,6 @@ function readable<Part extends string, Data = unknown>(
       name: part.name,
       accepts: editorInfo.parts[part.name]?.accepts,
     })),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- narrow-shape boundary, same as button.test.tsx
     selfAssembly: passport.selfAssembly as any,
   };
 }
@@ -79,9 +64,6 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
     };
 
     const assembly = assemblies.find((candidate) => candidate.name === "action-list")!;
-    // `baseAssemblyOf` is a plain runtime tree walker — it never reads `Data`, only resolves paths
-    // against whatever `data` it is handed at call time, so widening here is correct: the same
-    // reasoning as `EDITOR_INFOS`'s own cast (`generators/barrel/templates/passport.ts.hbs`).
     const tree = baseAssemblyOf(accordionPassport, assembly as PassportAssembly, "accordion", data);
 
     const dispatched: unknown[] = [];
@@ -100,7 +82,7 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
       host,
     );
 
-    const trigger = host.querySelector('[data-scope="accordion"][data-part="item-trigger"]') as HTMLElement | null;
+    const trigger = host.querySelector('[data-scope="accordion"][data-part="control"]') as HTMLElement | null;
     expect(trigger?.textContent).toBe("Section 1");
 
     const list = host.querySelector('[data-scope="listbox"]') as HTMLElement | null;
@@ -130,8 +112,6 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
 });
 
 describe('accordion "base" — sections from data, the content spot left for whoever renders it', () => {
-  // The data the showcase actually feeds this assembly (`products/skin/src/pages/_workspace/
-  // showcase/index.tsx`): one section per skin variant, `id` and `title` both holding its name.
   const data = {
     sections: [
       { id: "контурная", title: "контурная" },
@@ -158,14 +138,12 @@ describe('accordion "base" — sections from data, the content spot left for who
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={treeOf()} data={data} />, host);
 
-    expect(partsOf(host, "item-trigger").map((trigger) => trigger.textContent)).toEqual([
+    expect(partsOf(host, "control").map((trigger) => trigger.textContent)).toEqual([
       "контурная",
       "сплошная",
     ]);
 
-    // The content spot is declared EMPTY on purpose (`../playground/assemblies/base.ts`): the node
-    // is there with nothing inside it, waiting for whoever renders the assembly to fill it.
-    const contents = partsOf(host, "item-content");
+    const contents = partsOf(host, "content");
     expect(contents).toHaveLength(2);
     expect(contents.map((content) => content.textContent)).toEqual(["", ""]);
   });
@@ -180,10 +158,7 @@ describe('accordion "base" — sections from data, the content spot left for who
           tree={treeOf()}
           data={data}
           slots={{
-            // Exactly what the showcase does here: `resolved.variant` picks which variant of the
-            // previewed component to dress. It arrives from `bind: { variant: "id" }` in the
-            // assembly — drop that bind and THIS goes red, instead of a page in another zone.
-            "accordion.itemContent": {
+            "accordion.content": {
               render: (resolved) => <span>{String(resolved.variant)}</span>,
               placement: "replace",
             },
@@ -193,7 +168,7 @@ describe('accordion "base" — sections from data, the content spot left for who
       host,
     );
 
-    expect(partsOf(host, "item-content").map((content) => content.textContent)).toEqual([
+    expect(partsOf(host, "content").map((content) => content.textContent)).toEqual([
       "контурная",
       "сплошная",
     ]);

@@ -8,6 +8,6 @@
 // port is already reachable directly, so there is nothing to route around.
 //
 // This file is therefore the same three lines every other app in the workspace has.
-import { defineConfig } from "@omnifield/probe-web-build/vite";
+import { defineConfig } from "@web-core/build/vite";
 
 export default defineConfig();

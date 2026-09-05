@@ -1,146 +1,67 @@
-# Carousel
+# 🎠 Carousel
 
-**Group:** — · **Genus:** component · **Footprint:** wide
+<h2 id="главное">🏠 Главное</h2>
 
-## Anatomy
+🏷️ disclosure · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
-| part | meaning |
-|---|---|
-| root | the whole carousel — viewport, navigation, and indicators together |
-| itemGroup | the scrollable viewport that holds every slide |
-| item | one slide |
-| control | wraps the previous/next navigation buttons and, when present, the autoplay toggle |
-| prevTrigger | scrolls back one page |
-| nextTrigger | scrolls forward one page |
-| indicatorGroup | wraps one indicator per slide (or per page, when slidesPerPage is more than one) |
-| indicator | one dot — jumps straight to its slide when clicked |
-| autoplayTrigger | starts or pauses automatic scrolling |
-| progressText | page count text |
-| autoplayIndicator | the autoplay button's own icon — swaps between children (running) and fallback (paused); always mounted, only the content changes |
+Слайд-шоу с навигацией 🎠 — используйте, чтобы показать несколько карточек, картинок или блоков по
+очереди в одном и том же месте: галерея товара, промо-баннеры, витрина отзывов. Листать можно
+стрелками, точками-индикаторами или пальцем/мышью, а автопрокрутка с кнопкой паузы включается
+одним пропом, когда слайд-шоу должно ехать само.
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| itemGroup | dragging | [data-dragging] | the viewport is being dragged by the pointer (only when allowMouseDrag is on) |
-| item | inview | [data-inview] | this slide is currently visible in the viewport (crosses inViewThreshold) |
-| control | — | — | — |
-| prevTrigger | disabled | :disabled | already at the first page and the carousel does not loop — nothing to scroll back to |
-| prevTrigger | hover | :hover | pointer is over this button |
-| prevTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| prevTrigger | active | :active | this button is being held down |
-| nextTrigger | disabled | :disabled | already at the last page and the carousel does not loop — nothing to scroll forward to |
-| nextTrigger | hover | :hover | pointer is over this button |
-| nextTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| nextTrigger | active | :active | this button is being held down |
-| indicatorGroup | — | — | — |
-| indicator | current | [data-current] | this dot's slide is the one currently showing |
-| indicator | readonly | [data-readonly] | clicking does nothing — the indicator was set read-only |
-| indicator | hover | :hover | pointer is over this button |
-| indicator | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| indicator | active | :active | this button is being held down |
-| autoplayTrigger | pressed | [data-pressed] | autoplay is running — this toggle is in its "on" state |
-| autoplayTrigger | hover | :hover | pointer is over this button |
-| autoplayTrigger | focus-visible | :focus-visible | focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise |
-| autoplayTrigger | active | :active | this button is being held down |
-| progressText | — | — | — |
-| autoplayIndicator | — | — | — |
+Стрелка-индикатор автопрокрутки — отдельная, самостоятельная часть внутри своей кнопки, не
+декорация текста: своё содержимое для «идёт» и «на паузе», переключается само. 🧩
 
-## Settings
-
-| setting | meaning | default | mark |
-|---|---|---|---|
-| orientation | which axis the slides scroll on — also flips which way prevTrigger/nextTrigger point | `horizontal` | [data-orientation] |
-
-## Notes
-
-<!-- user:start -->
-## Overview
-
-Carousel is a scrollable slideshow — one slide in view at a time by default (or several, via
-`slidesPerPage`), advanced by trigger buttons, drag, wheel, indicator dots, or autoplay. Eleven
-parts, the widest footprint in the kit.
-
-## Features
-
-- **`slideCount` is required** — the carousel needs the total up front (useful for SSR, since it
-  computes snap points before any slide has actually measured itself).
-- **Controlled or uncontrolled page** — `page` + `onPageChange` for controlled use, `defaultPage`
-  for uncontrolled.
-- **Horizontal or vertical** — `orientation` (the kit's one real setting for this component) flips
-  which axis slides move on and which way `prevTrigger`/`nextTrigger` point.
-- **Multiple slides per page** — `slidesPerPage` shows more than one slide at once;
-  `slidesPerMove` (default `"auto"`, following `slidesPerPage`) controls how many advance per click.
-- **Variable-width slides** — `autoSize` lets each `item` size itself instead of the kit computing a
-  uniform width; `snapAlign` (`"start"` default, or `"center"`/`"end"`) controls where an item snaps
-  into view.
-- **Looping** — `loop` lets `prevTrigger`/`nextTrigger` wrap around instead of disabling at the
-  ends.
-- **Autoplay** — `autoplay` (`true`, or `{ delay }` for a custom interval) advances automatically;
-  pairs with `loop` so it doesn't just stop dead at the last slide.
-- **Mouse drag is opt-in** — `allowMouseDrag` (default `false`) is required for `itemGroup`'s own
-  `dragging` state to ever apply; touch/trackpad scrolling works regardless.
-- **`item`'s `inview` state is threshold-based** — `inViewThreshold` (default `0.6`) sets how much
-  of a slide must be visible before it's marked `data-inview`.
-- **Read-only indicators** — `indicator`'s `readOnly` stops it from jumping to its slide on click
-  while still showing which slide is current.
-- **Two parts fill in default content** — `progressText` renders `"<page> / <total>"` when given no
-  children; `autoplayIndicator` always stays mounted and switches between `children` (while
-  playing) and its own `fallback` prop (while paused) — neither is a plain pass-through part the
-  way most kit parts are.
-- **Pause-on-hover isn't built in** — Ark's own docs implement it via the `Context` render prop's
-  `play()`/`pause()` methods on `itemGroup`'s pointer events, not a prop; there's no
-  `pauseOnHover` setting to reach for.
-
-## Anatomy
-
-```tsx
-import {
-  Carousel,
-  CarouselControl,
-  CarouselPrevTrigger,
-  CarouselNextTrigger,
-  CarouselItemGroup,
-  CarouselItem,
-  CarouselIndicatorGroup,
-  CarouselIndicator,
-  CarouselAutoplayTrigger,
-  CarouselAutoplayIndicator,
-  CarouselProgressText,
-} from "@omnifield/probe-web-ui";
-
-<Carousel slideCount={items.length}>
-  <CarouselControl>
-    <CarouselPrevTrigger>{/* text or icon */}</CarouselPrevTrigger>
-    <CarouselAutoplayTrigger>
-      <CarouselAutoplayIndicator fallback={/* paused icon */}>
-        {/* playing icon */}
-      </CarouselAutoplayIndicator>
-    </CarouselAutoplayTrigger>
-    <CarouselNextTrigger>{/* text or icon */}</CarouselNextTrigger>
-    <CarouselProgressText />
-  </CarouselControl>
-  <CarouselItemGroup>
-    {/* one CarouselItem per slide; `index` is required */}
-    <CarouselItem index={0}>{/* slide content */}</CarouselItem>
-  </CarouselItemGroup>
-  <CarouselIndicatorGroup>
-    {/* one CarouselIndicator per slide (or per page); `index` is required */}
-    <CarouselIndicator index={0} />
-  </CarouselIndicatorGroup>
-</Carousel>
+```
+root
+├─ control
+│  ├─ prevTrigger ◀️
+│  ├─ autoplayTrigger ⏯️
+│  │  └─ autoplayIndicator
+│  └─ nextTrigger ▶️
+├─ itemGroup 🖼️
+│  └─ item[]
+├─ indicatorGroup ●●●
+│  └─ indicator[]
+└─ progressText 🔢
 ```
 
-## Examples
+| часть                | значение                                                                | принимает внутри            | рисуется                    |
+| --------------------- | ------------------------------------------------------------------------ | ---------------------------- | ---------------------------- |
+| 🎠 `root`             | карусель целиком — область показа, навигация и индикаторы вместе          | `control`, `itemGroup`, `indicatorGroup`, `progressText` | `Carousel`             |
+| 🖼️ `itemGroup`        | прокручиваемая область показа, держит все слайды                          | `item`                        | `CarouselItemGroup`         |
+| 🎞️ `item`             | один слайд                                                                | текст, любой компонент        | `CarouselItem`               |
+| 🎛️ `control`          | оборачивает кнопки вперёд/назад и, если есть, переключатель автопрокрутки | `prevTrigger`, `nextTrigger`, `autoplayTrigger` | `CarouselControl`   |
+| ◀️ `prevTrigger`      | прокручивает на страницу назад                                            | текст, иконку                 | `CarouselPrevTrigger`        |
+| ▶️ `nextTrigger`      | прокручивает на страницу вперёд                                           | текст, иконку                 | `CarouselNextTrigger`        |
+| ●●● `indicatorGroup`  | оборачивает по одному индикатору на слайд                                 | `indicator`                   | `CarouselIndicatorGroup`     |
+| ● `indicator`         | одна точка — по клику переходит сразу на свой слайд                       | ничего                        | `CarouselIndicator`          |
+| ⏯️ `autoplayTrigger`  | запускает или ставит на паузу автопрокрутку                               | текст, иконку, `autoplayIndicator` | `CarouselAutoplayTrigger` |
+| 🔢 `progressText`     | текст со счётчиком страниц                                                | текст                         | `CarouselProgressText`       |
+| 🔁 `autoplayIndicator`| своя иконка кнопки автопрокрутки                                          | текст, иконку                 | `CarouselAutoplayIndicator`  |
 
-### Basic
+> [!NOTE]
+> Одиннадцать частей, не десять голых слайд+навигация — `progressText`/`autoplayIndicator` дают
+> счётчик страниц и собственную картинку кнопки автопрокрутки, обе реально адресуются в паспорте,
+> не декоративные добавки поверх основного набора.
+
+<h2 id="использование">🚀 Использование</h2>
+
+От ручной композиции до автопрокрутки с переключателем — каждый сценарий подключается отдельно. 🔀
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
 
 ```tsx
 <Carousel slideCount={items.length}>
   <CarouselControl>
     <CarouselPrevTrigger>‹</CarouselPrevTrigger>
+    <CarouselAutoplayTrigger>
+      <CarouselAutoplayIndicator fallback="▶">⏸</CarouselAutoplayIndicator>
+    </CarouselAutoplayTrigger>
     <CarouselNextTrigger>›</CarouselNextTrigger>
+    <CarouselProgressText />
   </CarouselControl>
   <CarouselItemGroup>
     <For each={items}>{(item, index) => <CarouselItem index={index()}>{item}</CarouselItem>}</For>
@@ -151,86 +72,125 @@ import {
 </Carousel>
 ```
 
-### Autoplay, with a play/pause toggle
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует `RenderTree`.
 
-`loop` keeps autoplay from stopping dead at the last slide:
+```tsx
+const data = { slide1: { label: "Первый" }, slide2: { label: "Второй" }, slide3: { label: "Третий" } };
+const tree = instanceOf("carousel", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Автопрокрутка с переключателем.** `loop` не даёт автопрокрутке остановиться намертво на
+последнем слайде.
 
 ```tsx
 <Carousel slideCount={items.length} autoplay loop>
-  <CarouselItemGroup>
-    <For each={items}>{(item, index) => <CarouselItem index={index()}>{item}</CarouselItem>}</For>
-  </CarouselItemGroup>
-  <CarouselControl>
-    <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-    <CarouselAutoplayTrigger>
-      <CarouselAutoplayIndicator fallback="▶">⏸</CarouselAutoplayIndicator>
-    </CarouselAutoplayTrigger>
-    <CarouselNextTrigger>›</CarouselNextTrigger>
-  </CarouselControl>
+  ...
 </Carousel>
 ```
 
-### Several slides per page, with spacing
+**Индикатор только для чтения.** `readOnly` на отдельном `CarouselIndicator` — точка показывает,
+какой слайд открыт сейчас, но клик по ней не листает.
 
 ```tsx
-<Carousel slideCount={items.length} slidesPerPage={2} spacing="20px">
-  <CarouselControl>
-    <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-    <CarouselNextTrigger>›</CarouselNextTrigger>
-  </CarouselControl>
-  <CarouselItemGroup>
-    <For each={items}>{(item, index) => <CarouselItem index={index()}>{item}</CarouselItem>}</For>
-  </CarouselItemGroup>
-</Carousel>
+<CarouselIndicator index={2} readOnly />
 ```
 
-### Vertical
+<h2 id="настройки">🎚️ Настройки</h2>
 
-```tsx
-<Carousel slideCount={items.length} orientation="vertical">
-  <CarouselItemGroup>
-    <For each={items}>{(item, index) => <CarouselItem index={index()}>{item}</CarouselItem>}</For>
-  </CarouselItemGroup>
-  <CarouselControl>
-    <CarouselPrevTrigger>↑</CarouselPrevTrigger>
-    <CarouselNextTrigger>↓</CarouselNextTrigger>
-  </CarouselControl>
-</Carousel>
+Единственная настройка решает, по какой оси едут слайды — влияет заодно и на то, в какую сторону
+смотрят стрелки навигации.
+
+| настройка      | значения                | по умолчанию | означает                                                                     |
+| -------------- | ----------------------- | ------------- | -------------------------------------------------------------------------------- |
+| `orientation`  | `horizontal`/`vertical` | `horizontal`  | по какой оси едут слайды — заодно переворачивает, куда смотрят стрелки            |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+`disabled` у стрелок навигации — единственное состояние без цикла, и оно честно про сам факт: ехать
+дальше некуда, а не «эта функция сейчас недоступна». 🎯
+
+|      | состояние        | метка               | где                                                  | значение                                                   |
+| ---- | ------------------ | --------------------- | ------------------------------------------------------- | -------------------------------------------------------------- |
+| 🫳   | dragging          | `[data-dragging]`      | itemGroup                                                | область тащат указателем (только когда включён `allowMouseDrag`) |
+| 👁️   | inview            | `[data-inview]`        | item                                                     | этот слайд сейчас виден в области показа (превышен `inViewThreshold`) |
+| 🚫   | disabled          | `:disabled`             | prevTrigger, nextTrigger                                 | некуда прокручивать в эту сторону, и карусель не зациклена       |
+| 🖱️   | hover             | `:hover`                | prevTrigger, nextTrigger, indicator, autoplayTrigger      | указатель наведён                                               |
+| ⌨️   | focus-visible     | `:focus-visible`        | prevTrigger, nextTrigger, indicator, autoplayTrigger      | фокус пришёл с клавиатуры                                       |
+| 👆   | active            | `:active`                | prevTrigger, nextTrigger, indicator, autoplayTrigger      | кнопка нажата и удерживается                                    |
+| ✅   | current           | `[data-current]`        | indicator                                                | слайд этой точки — тот, что сейчас показан                       |
+| 🔒   | readonly          | `[data-readonly]`       | indicator                                                | клик ничего не делает — индикатор только для чтения              |
+| ⏺️   | pressed           | `[data-pressed]`        | autoplayTrigger                                          | автопрокрутка идёт — переключатель во включённом состоянии       |
+
+> [!NOTE]
+> `disabled` у `prevTrigger`/`nextTrigger` — ТОЛЬКО нативный `:disabled`, без `data-disabled`:
+> проверено напрямую. `root`, `control` и `indicatorGroup` своих
+> состояний не несут вовсе.
+
+<h2 id="io">🔌 IO</h2>
+
+Собранной по схеме карусели нужны три именованных слайда — не массив (почему — предупреждение
+ниже). Переключение страниц ведёт настоящая машина состояний изнутри, наружу как событие не
+отдаётся. 📥
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{
+  "slide1": { "label": "string" },
+  "slide2": { "label": "string" },
+  "slide3": { "label": "string" }
+}
 ```
 
-### Controlled
+> [!WARNING]
+> Не массив `slides[]`, а три именованных поля — это ограничение движка сборки, не вкус:
+> `bind`/`value.path` не поддерживают числовой индекс массива (`Paths<T>` в
+> `packages/skin/src/passport/assembly/paths.ts` — НИКОГДА числовой сегмент), индексация есть
+> только через `repeat`. `repeat` не подходит сюда: он кладёт индекс как `number[]`
+> (`indexPathBind`), а настоящему `CarouselItem`/`CarouselIndicator` нужен голый `number` — то, что
+> движок сегодня отдать не может. Сборка с фиксированным числом слайдов и именованными полями —
+> честный обход, а не постоянная форма контракта.
 
-```tsx
-import { createSignal } from "solid-js";
+<h3 id="io-выход">📤 Выход</h3>
 
-const [page, setPage] = createSignal(0);
+Карусель ничего не диспатчит через эту сборку — переключение страниц ведёт настоящая машина
+состояний внутри самих `prevTrigger`/`nextTrigger`/`indicator`, не событие наружу.
 
-<Carousel slideCount={items.length} page={page()} onPageChange={(details) => setPage(details.page)}>
-  <CarouselItemGroup>
-    <For each={items}>{(item, index) => <CarouselItem index={index()}>{item}</CarouselItem>}</For>
-  </CarouselItemGroup>
-  <CarouselControl>
-    <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-    <CarouselNextTrigger>›</CarouselNextTrigger>
-  </CarouselControl>
-</Carousel>
+<h2 id="сборки">🏗️ Сборки</h2>
+
+Одна сборка — три слайда из данных, полная навигация, кнопка автопрокрутки, пустой счётчик страниц
+(почему пустой — `FAQ.md`). 🧱
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root · slideCount: 3
+  control
+    prevTrigger ◀️ · text: "‹"
+    autoplayTrigger ⏯️
+      autoplayIndicator 🔁 · fallback: "▶"
+        🏷️ text: "⏸"
+    nextTrigger ▶️ · text: "›"
+  itemGroup 🖼️
+    item · index: 0 · 🏷️ text: {slide1.label}
+    item · index: 1 · 🏷️ text: {slide2.label}
+    item · index: 2 · 🏷️ text: {slide3.label}
+  indicatorGroup ●●●
+    indicator · index: 0
+    indicator · index: 1
+    indicator · index: 2
+  progressText 🔢
 ```
 
-## Styling hooks
+<h2 id="рецепт">🎨 Рецепт</h2>
 
-`orientation` is the one setting-level mark (`[data-orientation]`, also present on most parts
-themselves per Ark's own data-attribute table); everything else in the States table above is a
-per-part state a skin can select on directly. Worth knowing before styling `item`: `snapAlign` and
-`autoSize` are layout, not lookable states — there's no mark for "this item is centered," only
-`data-inview` for whether it crosses the visibility threshold. `indicator`'s `current`/`readonly`
-are independent — a read-only indicator can still be the current one.
+Один вид, без именованных вариантов — только настройка `orientation`. 🎨 `indicator` — плоская
+точка без измеряемых переменных: в отличие от собственной скользящей полосы `tabs`'а, `Indicator`
+карусели не несёт `--left`/`--top`/`--width`/`--height` — просто текущая/нетекущая, мерить нечего.
 
-## Accessibility
+<h2 id="доступность">♿ Доступность</h2>
 
-Carousel follows the WAI-ARIA [Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
-Ark's own documentation gives no dedicated keyboard table for it (unlike, say, the accordion) —
-navigation goes through the ordinary button controls: `Tab`/`Shift+Tab` move focus between
-`prevTrigger`/`nextTrigger`/`indicator`/`autoplayTrigger`, and `Space`/`Enter` activate whichever one
-has focus, the same plain [Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) every
-button-shaped part in this kit follows.
-<!-- user:end -->
+Карусель следует паттерну WAI-ARIA [Carousel](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/)
+— стандартная разметка слайд-шоу для экранных читалок, без отсебятины кита поверх неё. ⌨️

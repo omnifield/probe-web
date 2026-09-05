@@ -1,0 +1,125 @@
+# Дорожная карта @web-core/solid — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/router/build (categories → items, log → журнал решений); без milestones — у
+# пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Резолв вендора
+    items:
+      - id: reactive-core-reexport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Полный реэкспорт solid-js
+        description: |
+          Означает: `@web-core/solid` — единственная точка резолва реактивного ядра
+          (`createSignal`, `onMount`, `onCleanup`, …), та же логика, что у `@web-core/router`
+          для `@tanstack/solid-router`. Полный реэкспорт, не отбор по имени — см. FAQ.md.
+
+      - id: web-reexport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Полный реэкспорт solid-js/web
+        description: |
+          Означает: `@web-core/solid/web` зеркалит DOM-специфичный вход вендора (`render`,
+          `Portal`, `hydrate`) отдельным подпутём — та же граница, что вендор сам проводит между
+          `solid-js` и `solid-js/web`.
+
+  - category: Точка монтирования
+    items:
+      - id: mount-app-root-contract
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: mountApp() и контракт #root
+        description: |
+          Означает: скелет приложения потребителя — один вызов `mountApp(() => <App />)` плюс
+          `<div id="root">` в `index.html`. Собственное добавление пакета (не реэкспорт
+          `solid-js`), поэтому отдельный подпуть `./mount`, не в барели `.`/`./web`. Точку
+          монтирования рантайм ищет сам, идентификатор не аргумент сигнатуры — см. FAQ.md.
+
+      - id: single-root-dispose
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Уничтожение прежнего корня при повторном mountApp()
+        description: |
+          Означает: HMR и ручной рестарт не копят живые Solid-корни на одном `#root` — прежний
+          `dispose` вызывается до нового `render()`. Ручка держится `WeakMap` узел→`dispose`, не
+          модульной переменной — см. FAQ.md.
+
+      - id: explicit-mount-error
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Внятный отказ без #root
+        description: |
+          Означает: отсутствие `<div id="root">` в документе — это `Error` с текстом, что
+          добавить, а не тихий пустой экран.
+
+  - category: Документация
+    items:
+      - id: own-triad
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README/FAQ/ROADMAP по шаблону genus engine
+        description: |
+          Означает: пакет документирован как самостоятельная сущность, по образцу
+          `packages/router`/`packages/query` (вендор-обёртка), а не строкой в чужой доке.
+
+  - category: Не сделано
+    items:
+      - id: write-test-suite
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: Написать реальные пробы пакета
+        description: |
+          Означает: тестов нет вовсе — пакет только что заведён. Нужно: смоук на реэкспорт
+          (`createSignal`/`onMount`/… — все `function`, как в `test/router.test.tsx`) и
+          `mount.test.tsx` (настоящее приложение в JSDOM — узел в `#root`, уничтожение прежнего
+          корня при повторном вызове, отказ без `#root`), по образцу теста, который был у старого
+          `@web-core/shared`.
+
+      - id: migrate-direct-solid-imports
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Перевести зоны кита на @web-core/solid
+        description: |
+          Означает: сегодня `assembly`/`store`/`ui`/`trace`/… импортируют `solid-js` напрямую —
+          пакет существует, но единственной точкой резолва фактически не стал. Переезд НЕ разовый
+          рефакторинг всего кита — идёт по мере того, как architect решает добавить сюда
+          очередную вещь (как `mountApp()` стал первым поводом завести сам пакет). Первый
+          кандидат — `apps/reference`/`apps/skin`/`apps/ewc`: их `main.tsx` уже сегодня зовут
+          мёртвый импорт `mount` из `@web-core/shared`, чинить его правильно сразу на
+          `@web-core/solid/mount`, а не возвращать к `@web-core/shared`.
+
+log:
+  - id: package-created-for-mount
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Пакет заведён по прямому указанию user: framework-мостик над `solid-js`, форма — как у
+      `@web-core/router`/`@web-core/query` (полный реэкспорт вендора вместо прямого импорта по
+      всему киту). Первый практический повод завести его именно сейчас — `mountApp()`: точке
+      входа приложения нужен был дом после того, как её выгнали и из `@web-core/shared` (два
+      инструмента без общего механизма), и из `@web-core/trace` (трейсер не должен монтировать
+      приложение, см. `@web-core/trace/FAQ.md`). `solid-js` — peer-зависимость, как у каждой
+      Solid-зоны кита: фасад не должен сам стать источником второй копии Solid в дереве.
+      Публичный адрес: `mountApp` — `@web-core/solid/mount` (был `@web-core/trace/mount`, а до
+      того голый `mount` из `@web-core/shared`). Открыто: ни одна зона кита ещё не переведена на
+      импорт отсюда вместо прямого `solid-js` — переезд идёт постепенно (`id:
+      migrate-direct-solid-imports`), и три приложения (`apps/reference`/`apps/skin`/`apps/ewc`)
+      сегодня зовут несуществующий `mount` из `@web-core/shared` — их `main.tsx` не мои файлы,
+      чинить не входит в эту ревизию.

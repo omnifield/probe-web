@@ -14,8 +14,8 @@
 // not expressible as a static tree" wrinkle table's/tree view's own assemblies template names for
 // their own `root`.
 
-import type { PassportAssembly } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportAssembly } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 // TYPE ONLY: no runtime import of the passport module here — `typeof passport` in a type
 // position needs the binding's TYPE, not the module's side effects.
 import type { passport } from "../entity/passport.js";

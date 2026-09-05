@@ -1,0 +1,33 @@
+{
+  "//": [
+    "This package's own config, does not extend `@web-core/build/tsconfig` — that",
+    "base carries `jsxImportSource: solid-js` and DOM libs for Vite apps, and this zone has",
+    "neither JSX nor a browser: plain Node, same reasoning as `packages/io/tsconfig.json`."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    // Real, unedited copies of foreign components (`test/fixtures/README.md`) — read at RUNTIME
+    // by `importModule` (`vite`'s own resolver, which elides `import type` before ever resolving
+    // it), never through our own module graph. `tsc` has no such elision and would demand the
+    // fixture's own foreign type dependencies (e.g. `AccordionProps`) exist here too, which
+    // defeats the point of a minimal copy.
+    "test/fixtures"
+  ]
+}

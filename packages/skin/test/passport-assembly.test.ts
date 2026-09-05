@@ -1,13 +1,13 @@
-// Live proof for PWEB-170: an empty bind path inside a `repeat` template must resolve to the
-// CURRENT array element as a whole, not to `undefined` — the same meaning an empty path already
-// carries outside a repeat (RFC 6901: an empty pointer means "the whole document"), just made to
-// survive `scopeTemplate`'s relative-path rebasing.
+// An empty bind path inside a `repeat` template must resolve to the CURRENT array element as a
+// whole, not to `undefined` — the same meaning an empty path already carries outside a repeat
+// (RFC 6901: an empty pointer means "the whole document"), just made to survive
+// `scopeTemplate`'s relative-path rebasing.
 
 import { describe, expect, it } from "vitest";
 import { createAnatomy } from "@zag-js/anatomy";
 
-import { baseAssemblyOf, resolveDataBinding } from "../src/passport/assembly/index.js";
-import { definePassport } from "../src/passport/form/index.js";
+import { baseAssemblyOf, resolveDataBinding } from "../src/engine/passport/assembly/index.js";
+import { definePassport } from "../src/engine/passport/form/index.js";
 
 const anatomy = createAnatomy("list").parts("root", "row");
 
@@ -19,7 +19,7 @@ const passport = definePassport({
   settings: {},
 });
 
-describe("empty bind path inside a repeat (PWEB-170)", () => {
+describe("empty bind path inside a repeat", () => {
   it("resolves to the whole current element, not a field on it", () => {
     const data = {
       rows: [

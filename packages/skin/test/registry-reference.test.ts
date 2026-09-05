@@ -1,19 +1,16 @@
-// Live proof for PWEB-208: `PassportAssemblyElement.node` and `PassportAdmission.name` catch a
-// typo in a FOREIGN registry name at compile time once a literal union is plugged into the second
-// type parameter — the exact gap `PWEB-172`'s README named as an accepted, not fixed, price.
-// `expectTypeOf`/`@ts-expect-error` are checked by `tsc` (`pnpm typecheck`); this test's runtime
-// body is a no-op, same device as `closed-sets.test.ts`.
+// Опечатка в ЧУЖОМ имени реестра ловится компилятором, если во второй тип-параметр подставлена
+// литеральная уния. `expectTypeOf`/`@ts-expect-error` проверяет `tsc`; рантайм-тело — no-op.
 
 import { describe, expectTypeOf, it } from "vitest";
 
-import type { PassportAdmission, PassportAssemblyElement } from "../src/passport/assembly/index.js";
+import type { PassportAdmission, PassportAssemblyElement } from "../src/engine/passport/assembly/index.js";
 
 type OwnPart = "root" | "trigger";
 // Stands in for the literal union `packages/ui`'s generated barrel will hand out — a closed list
 // of every component name in the shared registry.
 type KitComponentName = "accordion" | "button";
 
-describe("node/accepts[].name against a plugged-in registry union (PWEB-208)", () => {
+describe("node/accepts[].name против подставленной унии реестра", () => {
   it("node accepts an own part OR a real registry name", () => {
     const ownPart: PassportAssemblyElement<OwnPart, KitComponentName> = { node: "trigger" };
     const foreignRef: PassportAssemblyElement<OwnPart, KitComponentName> = { node: "button" };

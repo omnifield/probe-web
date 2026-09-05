@@ -755,6 +755,22 @@ const (
 	// row on scm_tag_created events. Registered via the node-executor
 	// registry rather than the legacy switch in action_service.go.
 	ActionNodeCreateMilestone ActionNodeType = "create_milestone"
+	// ActionNodeCreateItem creates a new work item through the same
+	// ItemCreationService pipeline as interactive/API creation — hierarchy
+	// rules, validation, and item_created event emission all apply
+	// identically. Config is shared with the logbook/asset engines'
+	// create_item nodes (models.CreateItemNodeConfig).
+	ActionNodeCreateItem ActionNodeType = "create_item"
+	// ActionNodeCreatePage creates a wiki page through the same
+	// PageApplicationService pipeline as interactive/API creation, so
+	// permission checks and audit rows match.
+	ActionNodeCreatePage ActionNodeType = "create_page"
+	// ActionNodeAddLink creates a link between two items through the same
+	// ItemLinkService pipeline as interactive/API linking. Typically pairs
+	// with create_item: the new item's ID (captured via CreateItemNodeConfig.
+	// OutputField) becomes one endpoint, the current execution-context item
+	// the other.
+	ActionNodeAddLink ActionNodeType = "add_link"
 )
 
 // IsIterator reports whether this node type fans out — i.e. the engine must
@@ -1046,6 +1062,35 @@ type RelatedItemsNodeConfig struct {
 	// MaxItems caps emission to prevent runaway iteration on pathological
 	// trees. Zero means use the engine default (1000).
 	MaxItems int `json:"max_items,omitempty"`
+}
+
+// CreatePageNodeConfig configures a create_page node. Title/Content support
+// {{variable}} template interpolation (e.g. {{item.title}}). ParentPageID
+// nests the new page under an existing one in the same workspace; nil
+// creates a root-level page.
+type CreatePageNodeConfig struct {
+	WorkspaceID  int    `json:"workspace_id"`
+	ParentPageID *int   `json:"parent_page_id,omitempty"`
+	Title        string `json:"title"`
+	Content      string `json:"content,omitempty"`
+	// OutputField, if set, stores the new page's ID in ctx.Variables under
+	// this name so a downstream node can reference it.
+	OutputField string `json:"output_field,omitempty"`
+}
+
+// AddLinkNodeConfig configures an add_link node: creates a link between two
+// items through the same ItemLinkService pipeline as interactive/API
+// linking. Each endpoint resolves in this priority: explicit *ItemID, then
+// ItemField (a ctx.Variables entry — typically an earlier create_item
+// node's OutputField), then falling back to whatever item is currently in
+// execution context (the trigger item, or the current iteration item
+// inside a related_items loop).
+type AddLinkNodeConfig struct {
+	LinkTypeID      int    `json:"link_type_id"`
+	SourceItemID    *int   `json:"source_item_id,omitempty"`
+	SourceItemField string `json:"source_item_field,omitempty"`
+	TargetItemID    *int   `json:"target_item_id,omitempty"`
+	TargetItemField string `json:"target_item_field,omitempty"`
 }
 
 // TransitionItemNodeConfig configures a transition_item node.

@@ -168,6 +168,14 @@ var (
 	// schemes the frontend permits; otherwise the HTML sanitizer mistakes
 	// the angle-bracket syntax for an HTML element and drops the link.
 	safeMarkdownAutolinkRegex = regexp.MustCompile("(?i)<(?:(?:https?://|mailto:|tel:|page:)[^\\x00-\\x20<>]*|[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+)>")
+	// Inline code spans (single or double backtick, CommonMark-style).
+	// Documentation prose regularly shows JSX/HTML-shaped snippets as inline
+	// code — `<Show>`, `z.infer<typeof input>` — and without this guard the
+	// HTML sanitizer mistakes the angle brackets for a real element and
+	// drops the span (or truncates it) the same way it would drop actual
+	// markup. Double-backtick is tried first so a literal backtick inside
+	// the span (` ``code`with`backtick`` `) is not split early.
+	inlineCodeSpanRegex = regexp.MustCompile("``([^`\n]+?)``|`([^`\n]+?)`")
 )
 
 // stripAndCap is the common path for PlainTextField + ShortIdentifier:
@@ -208,21 +216,23 @@ func shortIdentifier(s string) string { return stripAndCap(s, ShortIdentifierMax
 // brAllowAndCap is the common path for RichText + LongDocument:
 // decode entities, strip HTML except <br />, normalize bluemonday's
 // break output back to <br /> for Milkdown compatibility, neutralize
-// dangerous URL schemes, byte-cap. Fenced Markdown code blocks are
-// temporarily replaced with placeholders so literal examples like
-// ```html\n<script>...\n``` survive storage. Renderers must still escape code
-// spans/blocks when producing HTML.
+// dangerous URL schemes, byte-cap. Fenced Markdown code blocks and inline
+// code spans are temporarily replaced with placeholders so literal examples
+// like ```html\n<script>...\n``` or `<Show>` survive storage. Renderers must
+// still escape code spans/blocks when producing HTML.
 func brAllowAndCap(input string, maxBytes int) string {
 	if input == "" || input == "null" {
 		return ""
 	}
 	s, codeBlocks := extractFencedCodeBlocks(input)
+	s, codeSpans := extractInlineCodeSpans(s)
 	s, autolinks := extractSafeMarkdownAutolinks(s)
 	s = sanitizeDecoded(s, brOnlyPolicy)
 	s = strings.ReplaceAll(s, "<br/>", "<br />")
 	s = strings.ReplaceAll(s, "<br>", "<br />")
 	s = markdownURLOnly(s)
 	s = restoreProtectedMarkdown(s, autolinks)
+	s = restoreFencedCodeBlocks(s, codeSpans)
 	s = restoreFencedCodeBlocks(s, codeBlocks)
 	if maxBytes > 0 && len(s) > maxBytes {
 		s = s[:maxBytes]
@@ -238,10 +248,12 @@ func commentPolicy(s string) string {
 		return ""
 	}
 	out, codeBlocks := extractFencedCodeBlocks(s)
+	out, codeSpans := extractInlineCodeSpans(out)
 	out, autolinks := extractSafeMarkdownAutolinks(out)
 	out = sanitizeDecoded(out, strictPolicy)
 	out = markdownURLOnly(out)
 	out = restoreProtectedMarkdown(out, autolinks)
+	out = restoreFencedCodeBlocks(out, codeSpans)
 	out = restoreFencedCodeBlocks(out, codeBlocks)
 	if len(out) > LongTextMaxBytes {
 		out = out[:LongTextMaxBytes]
@@ -250,6 +262,8 @@ func commentPolicy(s string) string {
 }
 
 const codeBlockPlaceholderPrefix = "%%WINDSHIFT_CODE_BLOCK_"
+
+const inlineCodeSpanPlaceholderPrefix = "%%WINDSHIFT_INLINE_CODE_"
 
 const autolinkPlaceholderPrefix = "%%WINDSHIFT_AUTOLINK_"
 
@@ -337,6 +351,37 @@ func extractFencedCodeBlocks(input string) (string, []fencedCodeBlock) {
 
 func codeBlockPlaceholder(content string, index int, original string) string {
 	return markdownPlaceholder(codeBlockPlaceholderPrefix, content, index, original)
+}
+
+// extractInlineCodeSpans replaces CommonMark inline code spans (outside any
+// already-extracted fenced block) with placeholders, mirroring
+// extractFencedCodeBlocks. Without this, prose that shows JSX/HTML-shaped
+// snippets as inline code — `<Show>`, `z.infer<typeof input>` — loses the
+// span (or has it silently truncated) because the HTML sanitizer can't tell
+// a documented tag name from a real one.
+func extractInlineCodeSpans(input string) (string, []fencedCodeBlock) {
+	if input == "" {
+		return input, nil
+	}
+
+	matches := inlineCodeSpanRegex.FindAllStringIndex(input, -1)
+	if len(matches) == 0 {
+		return input, nil
+	}
+
+	var out strings.Builder
+	spans := make([]fencedCodeBlock, 0, len(matches))
+	last := 0
+	for _, match := range matches {
+		content := input[match[0]:match[1]]
+		placeholder := markdownPlaceholder(inlineCodeSpanPlaceholderPrefix, content, len(spans), input)
+		spans = append(spans, fencedCodeBlock{placeholder: placeholder, content: content})
+		out.WriteString(input[last:match[0]])
+		out.WriteString(placeholder)
+		last = match[1]
+	}
+	out.WriteString(input[last:])
+	return out.String(), spans
 }
 
 func markdownPlaceholder(prefix, content string, index int, original string) string {

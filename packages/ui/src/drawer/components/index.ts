@@ -1,9 +1,37 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { Drawer, type DrawerProps } from "./root.js";
+export { DrawerTrigger, type DrawerTriggerProps } from "./trigger.js";
+export { DrawerBackdrop, type DrawerBackdropProps } from "./backdrop.js";
+export { DrawerPositioner, type DrawerPositionerProps } from "./positioner.js";
+export { DrawerSwipeArea, type DrawerSwipeAreaProps } from "./swipe-area.js";
+export { DrawerContent, type DrawerContentProps } from "./content/index.js";
+export { DrawerGrabber, type DrawerGrabberProps } from "./content/grabber.js";
+export { DrawerGrabberIndicator, type DrawerGrabberIndicatorProps } from "./content/grabber-indicator.js";
+export { DrawerTitle, type DrawerTitleProps } from "./content/title.js";
+export { DrawerDescription, type DrawerDescriptionProps } from "./content/description.js";
+export { DrawerCloseTrigger, type DrawerCloseTriggerProps } from "./content/close-trigger.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { DrawerTrigger } from "./trigger.js";
+import { DrawerBackdrop } from "./backdrop.js";
+import { DrawerPositioner } from "./positioner.js";
+import { DrawerSwipeArea } from "./swipe-area.js";
+import { DrawerContent } from "./content/index.js";
+import { DrawerGrabber } from "./content/grabber.js";
+import { DrawerGrabberIndicator } from "./content/grabber-indicator.js";
+import { DrawerTitle } from "./content/title.js";
+import { DrawerDescription } from "./content/description.js";
+import { DrawerCloseTrigger } from "./content/close-trigger.js";
+
+export const kit = defineKitComponent(passport, {
+  positioner: DrawerPositioner,
+  content: DrawerContent,
+  title: DrawerTitle,
+  description: DrawerDescription,
+  trigger: DrawerTrigger,
+  backdrop: DrawerBackdrop,
+  grabber: DrawerGrabber,
+  grabberIndicator: DrawerGrabberIndicator,
+  closeTrigger: DrawerCloseTrigger,
+  swipeArea: DrawerSwipeArea,
+});

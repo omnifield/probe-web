@@ -3,7 +3,13 @@
   import { useDebounce } from 'runed';
   import { api } from '../api.js';
   import { navigate } from '../router.js';
-  import { workspacePermissions, currentWorkspace, attachmentStatus, workspacesStore } from '../stores';
+  import {
+    workspacePermissions,
+    currentWorkspace,
+    attachmentStatus,
+    workspaceCategoriesStore,
+    workspacesStore,
+  } from '../stores';
   import { workspaceDataStore } from '../stores/workspaceDataStore.svelte.js';
   import {
     workspaceGradientIndex,
@@ -41,6 +47,7 @@
   let icon = $state('Package');
   let color = $state('#3b82f6');
   let avatarUrl = $state(null);
+  let categoryId = $state(null);
 
   // Avatar upload state
   let uploadingAvatar = $state(false);
@@ -88,7 +95,10 @@
         icon = workspace.icon || 'Package';
         color = workspace.color || '#3b82f6';
         avatarUrl = workspace.avatar_url || null;
+        categoryId = workspace.category_id ?? null;
       }
+
+      workspaceCategoriesStore.load();
 
       currentLayout = layout;
       if (layout) {
@@ -116,23 +126,33 @@
         api.workspaces.update(workspaceId, {
           icon,
           color,
-          avatar_url: avatarUrl
+          avatar_url: avatarUrl,
+          category_id: categoryId
         }),
         api.workspaces.updateHomepageLayout(workspaceId, layoutPayload)
       ]);
+
+      const selectedCategory = $workspaceCategoriesStore.categories.find((c) => c.id === categoryId);
+      const categoryPatch = {
+        category_id: categoryId,
+        category_name: selectedCategory?.name || '',
+        category_color: selectedCategory?.color || ''
+      };
 
       // Update currentWorkspace store immediately (no full reload)
       currentWorkspace.patch({
         icon,
         color,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        ...categoryPatch
       });
 
-      // Also update the workspacesStore so the dropdown shows updated icon/color
+      // Also update the workspacesStore so the dropdown shows updated icon/color/category
       workspacesStore.updateWorkspace(workspaceId, {
         icon,
         color,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        ...categoryPatch
       });
 
       // Update gradient and background stores
@@ -200,6 +220,12 @@
     // Optimistic store update so sidebar dropdown reflects change immediately
     workspacesStore.updateWorkspace(workspaceId, { icon, color });
     currentWorkspace.patch({ icon, color });
+    debouncedSave();
+  }
+
+  function handleCategoryChange(event) {
+    const value = event.target.value;
+    categoryId = value === '' ? null : Number(value);
     debouncedSave();
   }
 
@@ -365,6 +391,21 @@
             compact={true}
             onchange={handleIconChange}
           />
+
+          <div class="mt-4">
+            <Label class="mb-2">{t('workspaceSettings.workspaceCategory')}</Label>
+            <select
+              value={categoryId ?? ''}
+              onchange={handleCategoryChange}
+              class="w-full px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--ds-border-focused)]"
+              style="background-color: var(--ds-background-input); border: 1px solid var(--ds-border); color: var(--ds-text);"
+            >
+              <option value="">{t('workspaceSettings.noCategory')}</option>
+              {#each $workspaceCategoriesStore.categories as category (category.id)}
+                <option value={category.id}>{category.name}</option>
+              {/each}
+            </select>
+          </div>
         </div>
 
         <!-- Avatar Upload -->

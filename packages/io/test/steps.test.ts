@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isBlank, runStep, runSteps, MAX_STEPS, type Step } from "../src/steps.js";
+import { isBlank, runStep, runSteps, MAX_STEPS, type Step } from "../src/index.js";
 
 describe("isBlank", () => {
   it("null/undefined/пустая строка/пробелы/пустой массив — пусто", () => {

@@ -1,24 +1,4 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated,
-// a live browser scrolls and jumps frame by frame). Same physical shape as every other
-// component's `playground/recipe.ts` (`PWEB-127`).
-//
-// ONE LOOK, no named variants — the shipped look with variants lives in the presets service, the
-// same split the accordion's own playground recipe stands on (`component-skin-recipe`). This
-// file only has to prove dressability and give the settings axis a base to branch from.
-//
-// `item`'s `opacity` (dim unless `inview`) is the only place `item`'s own state gets used: with
-// `slidesPerPage` above 1 it visibly marks which slide is the "current" one among several shown
-// at once — `data-inview` is real (`../entity/passport.ts`), not invented for this file.
-//
-// `indicator` does NOT read `--left`/`--top`/`--width`/`--height`: unlike the tabs' own sliding
-// bar, Carousel's own `Indicator` carries no such custom properties in Ark's docs (verified via
-// the `ark-ui` MCP, 2026-08-26) — it is a plain per-slide dot, current/not-current, nothing to
-// measure. The comment that shipped with this file's template claimed otherwise; that claim did
-// not survive a check against the real component and is not carried forward here.
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out)";
 
@@ -114,8 +94,6 @@ export const recipe: SlotRecipe = {
         },
       },
     },
-    // No `disabled` here (unlike the nav buttons): the passport declares none for this part
-    // (`../entity/passport.ts`) — the autoplay toggle is always clickable.
     autoplayTrigger: {
       props: navButton,
       states: {
@@ -147,5 +125,4 @@ export const recipe: SlotRecipe = {
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "carousel-sample", component: "carousel", recipe };

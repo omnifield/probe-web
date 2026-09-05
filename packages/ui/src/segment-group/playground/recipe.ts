@@ -1,16 +1,4 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// SAME MACHINE AS THE RADIO GROUP (`../entity/anatomy.ts`), a DIFFERENT LOOK on purpose: a
-// segmented-control track-and-sliding-pill (the toggle group's own visual family), not a row of
-// separate circles. `indicator` fills the chosen item's own measured box exactly (`--left`/
-// `--top`/`--width`/`--height`) — unlike the radio group's own small centered dot, here the pill
-// IS the item's full background, the same "indicator as the selection surface" shape the tabs'
-// own `pills` variant already uses.
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 const slide = "left var(--motion-normal) var(--ease-out), top var(--motion-normal) var(--ease-out), width var(--motion-normal) var(--ease-out), height var(--motion-normal) var(--ease-out)";
@@ -27,7 +15,11 @@ export const recipe: SlotRecipe = {
         borderRadius: "var(--radius-lg)",
         background: "var(--neutral-3)",
       },
-      states: { disabled: { props: { opacity: "0.6" } } },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        invalid: { props: { opacity: "1" } },
+        required: { props: { opacity: "1" } },
+      },
     },
     label: {
       props: {
@@ -35,6 +27,11 @@ export const recipe: SlotRecipe = {
         fontSize: "var(--font-size-sm)",
         fontWeight: "var(--weight-medium)",
         color: "var(--neutral-11)",
+      },
+      states: {
+        disabled: { props: { opacity: "0.6" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        required: { props: { fontWeight: "var(--weight-semibold)" } },
       },
     },
     item: {
@@ -44,7 +41,14 @@ export const recipe: SlotRecipe = {
         cursor: "pointer",
       },
       states: {
+        checked: { props: { cursor: "pointer" } },
+        unchecked: { props: { cursor: "pointer" } },
         disabled: { props: { cursor: "not-allowed" } },
+        readonly: { props: { cursor: "default" } },
+        invalid: { props: { cursor: "pointer" } },
+        hover: { props: { cursor: "pointer" } },
+        focus: { props: { outline: "none" } },
+        "focus-visible": { props: { outline: "none" } },
       },
     },
     itemControl: {
@@ -56,14 +60,20 @@ export const recipe: SlotRecipe = {
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
+        checked: { props: { background: "transparent" } },
+        unchecked: { props: { background: "transparent" } },
         hover: { props: { background: "var(--neutral-4)" } },
         active: { props: { background: "var(--neutral-5)" } },
+        focus: { props: { outline: "none" } },
         "focus-visible": {
           props: {
             outline: "var(--border-width-2) solid var(--accent-8)",
             outlineOffset: "var(--border-width-2)",
           },
         },
+        disabled: { props: { background: "transparent" } },
+        readonly: { props: { cursor: "default" } },
+        invalid: { props: { background: "transparent" } },
       },
     },
     itemText: {
@@ -83,10 +93,15 @@ export const recipe: SlotRecipe = {
       },
       states: {
         checked: { props: { color: "var(--neutral-12)" } },
-        disabled: { props: { color: "var(--neutral-8)" } },
+        unchecked: { props: { color: "var(--neutral-11)" } },
+        disabled: { props: { opacity: "0.6" } },
+        readonly: { props: { color: "var(--neutral-12)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        hover: { props: { color: "var(--neutral-12)" } },
+        focus: { props: { color: "var(--neutral-12)" } },
+        "focus-visible": { props: { color: "var(--neutral-12)" } },
       },
     },
-    // Fills the chosen item's own box exactly — see the file header.
     indicator: {
       props: {
         position: "absolute",
@@ -115,5 +130,4 @@ export const recipe: SlotRecipe = {
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "segment-group-sample", component: "segment-group", recipe };

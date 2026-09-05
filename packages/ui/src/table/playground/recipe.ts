@@ -1,11 +1,25 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const sortColor = "color var(--motion-fast) var(--ease-out)";
+
+const checkboxLook = {
+  width: "1rem",
+  height: "1rem",
+  cursor: "pointer",
+} as const;
+
+const checkboxStates = {
+  checked: { props: { accentColor: "var(--accent-9)" } },
+  disabled: { props: { opacity: "0.5", cursor: "not-allowed" } },
+  hover: { props: { opacity: "0.85" } },
+  active: { props: { opacity: "0.7" } },
+  "focus-visible": {
+    props: {
+      outline: "var(--border-width-2) solid var(--accent-8)",
+      outlineOffset: "var(--space-1)",
+    },
+  },
+} as const;
 
 export const recipe: SlotRecipe = {
   base: {
@@ -26,8 +40,8 @@ export const recipe: SlotRecipe = {
         fontSize: "var(--font-size-sm)",
       },
     },
-    head: { props: {} },
-    headRow: { props: {} },
+    head: { props: { display: "table-header-group" } },
+    headRow: { props: { display: "table-row" } },
     headerCell: {
       props: {
         textAlign: "start",
@@ -38,13 +52,22 @@ export const recipe: SlotRecipe = {
         fontSize: "var(--font-size-sm)",
         color: "var(--neutral-11)",
       },
+      states: {
+        ascending: { props: { color: "var(--neutral-12)" } },
+        descending: { props: { color: "var(--neutral-12)" } },
+        none: { props: { color: "var(--neutral-11)" } },
+        "pinned-start": {
+          props: { position: "sticky", insetInlineStart: "0", zIndex: "1", background: "var(--neutral-1)" },
+        },
+        "pinned-end": {
+          props: { position: "sticky", insetInlineEnd: "0", zIndex: "1", background: "var(--neutral-1)" },
+        },
+      },
     },
     headerSortTrigger: {
       props: {
         display: "inline-flex",
         alignItems: "center",
-        // `control-inline-gap` (`space-2`) — иконка↔подпись внутри одного контрола, тот же зазор,
-        // что у кнопки/чекбокса/свитча. Был `space-1` без причины — разъезд найден и починен PWEB-198.
         gap: "var(--space-2)",
         borderWidth: "0",
         padding: "0",
@@ -58,7 +81,9 @@ export const recipe: SlotRecipe = {
       states: {
         ascending: { props: { color: "var(--accent-11)" } },
         descending: { props: { color: "var(--accent-11)" } },
+        none: { props: { color: "inherit" } },
         hover: { props: { color: "var(--neutral-12)" } },
+        active: { props: { color: "var(--accent-11)" } },
         "focus-visible": {
           props: {
             outline: "var(--border-width-2) solid var(--accent-8)",
@@ -68,17 +93,35 @@ export const recipe: SlotRecipe = {
         disabled: { props: { cursor: "default" } },
       },
     },
-    body: { props: {} },
-    row: { props: {} },
+    headerSelectTrigger: {
+      props: checkboxLook,
+      states: { ...checkboxStates, indeterminate: { props: { accentColor: "var(--accent-9)" } } },
+    },
+    body: { props: { display: "table-row-group" } },
+    row: {
+      props: { display: "table-row" },
+      states: { selected: { props: { background: "var(--accent-2)" } } },
+    },
     cell: {
       props: {
         paddingInline: "var(--space-3)",
         paddingBlock: "var(--space-2)",
         borderBlockEnd: "var(--border-width-1) solid var(--neutral-4)",
       },
+      states: {
+        "pinned-start": {
+          props: { position: "sticky", insetInlineStart: "0", zIndex: "1", background: "var(--neutral-1)" },
+        },
+        "pinned-end": {
+          props: { position: "sticky", insetInlineEnd: "0", zIndex: "1", background: "var(--neutral-1)" },
+        },
+      },
+    },
+    rowSelectTrigger: {
+      props: checkboxLook,
+      states: checkboxStates,
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "table-sample", component: "table", recipe };

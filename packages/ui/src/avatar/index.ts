@@ -1,14 +1,8 @@
-// What leaves this folder outward.
-//
-// Two different things, two different readers: MARKUP is picked up by the primitives entry
-// (`src/index.ts`), the PASSPORT by the `./passport` build, which walks folders and assembles the
-// list itself.
-
 export {
   Avatar,
-  AvatarFallback,
-  type AvatarFallbackProps,
+  type AvatarProps,
   AvatarImage,
   type AvatarImageProps,
-  type AvatarProps,
+  AvatarFallback,
+  type AvatarFallbackProps,
 } from "./components/index.js";

@@ -4,7 +4,7 @@
 // ## Зачем карта живёт у поставщика
 //
 // Паспорта кит централизует (`PASSPORTS`), а компоненты — нет. Механика сборки адресует части
-// через точку (`accordion.itemTrigger`), кит отдаёт плоские имена (`AccordionItemTrigger`).
+// через точку (`accordion.control`), кит отдаёт плоские имена (`AccordionControl`).
 // Совпадения нет ни по одной части, кроме корня, и собрать карту предлагалось каждому
 // потребителю самому.
 //
@@ -33,9 +33,9 @@
 // написании и `defineKitComponent` на исполнении. Второе не дублирует первое: поставщик вправе
 // приехать сборкой без TypeScript, и тогда между «забыл часть» и молча неодетым узлом у
 // потребителя не стоит ничего. Ровно этим же доводом закрыт перечень групп в форме паспорта
-// (`@omnifield/probe-web-skin/model`, `PWEB-110`).
+// (`@web-core/skin/model`, `PWEB-110`).
 
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { ComponentPassport } from "@web-core/skin/model";
 
 /**
  * Компонент, которым рисуется часть.
@@ -62,13 +62,6 @@ export interface KitComponent<Part extends string = string> {
   /** Чем рисуется каждая часть. Ключи — части паспорта, ни одной своей. */
   readonly parts: Readonly<Record<Part, PartComponent>>;
   /**
-   * Вспомогательные компоненты — БЕЗ адреса анатомии (`PWEB-152`): скрытый `<input>` чекбокса/
-   * радиогруппы и подобные — реальные узлы, без которых собранный превью не работает (клик не
-   * меняет значение), но которых Ark никогда не адресует. Своих ключей нет — имя решает поставщик;
-   * со сверкой с анатомией здесь и не спорят, extras по определению вне неё.
-   */
-  readonly extras?: Readonly<Record<string, PartComponent>>;
-  /**
    * Невидимый провайдер (`PWEB-153`) — оборачивает корень для компонентов вроде поповера/меню,
    * чей корень (`positioner`) не рисует настоящего DOM-узла: `<Popover>`/`<Menu>` сами ничего не
    * рисуют, только раздают контекст вниз. Без обёртки та часть падает при попытке прочитать
@@ -89,15 +82,12 @@ export interface KitComponent<Part extends string = string> {
  *
  * @param passport паспорт компонента — источник перечня частей
  * @param parts чем рисуется каждая часть; ключи сверяются с анатомией
- * @param extras вспомогательные компоненты без адреса анатомии (`PWEB-152`); ключи со сверкой
- *   не участвуют — проверяется только то, что каждое значение можно позвать
  * @param provider невидимый провайдер, оборачивающий корень (`PWEB-153`) — только у компонентов,
  *   чей корень не рисует настоящего DOM-узла; проверяется только то, что его можно позвать
  */
 export function defineKitComponent<Part extends string>(
   passport: ComponentPassport<Part>,
   parts: Readonly<Record<Part, PartComponent>>,
-  extras?: Readonly<Record<string, PartComponent>>,
   provider?: PartComponent,
 ): KitComponent<Part> {
   const declared = passport.anatomy.keys();
@@ -128,18 +118,9 @@ export function defineKitComponent<Part extends string>(
     );
   }
 
-  if (extras) {
-    const deadExtras = Object.keys(extras).filter((name) => typeof extras[name] !== "function");
-    if (deadExtras.length > 0) {
-      throw new Error(
-        `в карте extras «${passport.component}» узлы названы не компонентом: ${deadExtras.join(", ")}`,
-      );
-    }
-  }
-
   if (provider !== undefined && typeof provider !== "function") {
     throw new Error(`провайдер «${passport.component}» назван не компонентом`);
   }
 
-  return { passport, parts, ...(extras ? { extras } : {}), ...(provider ? { provider } : {}) };
+  return { passport, parts, ...(provider ? { provider } : {}) };
 }

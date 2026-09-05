@@ -4,7 +4,7 @@
 //
 // The reset and the size scales come from the base layer: they have fallbacks and work without a
 // palette. Color roles are empty without one — the panel does not lean on them.
-import "@omnifield/probe-web-style/base.css";
+import "@web-core/style/base.css";
 import "./panel.css";
 
 import { render } from "solid-js/web";

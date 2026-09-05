@@ -1,12 +1,9 @@
-// Live proof for PWEB-209 (group C), checked on the SAME two-level nesting the ticket named as the
-// acid test — accordion's real `entity/io.ts` shape (`sections`, and inside each section, `items`)
-// — BEFORE any of this touches the assembly tree types themselves. `expectTypeOf`/`@ts-expect-error`
-// are checked by `tsc` (`pnpm typecheck`); this test's runtime body is a no-op, same device as
-// `closed-sets.test.ts`/`registry-reference.test.ts`.
+// Проверено на реальной вложенности accordion (sections/items), не на синтетической.
+// `expectTypeOf`/`@ts-expect-error` проверяет `tsc`; рантайм-тело — no-op.
 
 import { describe, expectTypeOf, it } from "vitest";
 
-import type { ArrayPaths, ElementAt, Paths } from "../src/passport/assembly/paths.js";
+import type { ArrayPaths, ElementAt, Paths } from "../src/engine/passport/assembly/paths.js";
 
 // Mirrors `packages/ui/src/accordion/entity/io.ts`'s `z.infer<typeof input>` — not imported from
 // there: `packages/skin` does not depend on `packages/ui` or on `packages/io`/zod at all, and this
@@ -26,7 +23,7 @@ interface AccordionInput {
   readonly sections: readonly Section[];
 }
 
-describe("Paths<T> falls through arrays without an index (PWEB-209, point 1)", () => {
+describe("Paths<T> проваливается сквозь массив без индекса", () => {
   it("names the array itself as a leaf path", () => {
     expectTypeOf<"sections">().toMatchTypeOf<Paths<AccordionInput>>();
   });
@@ -51,7 +48,7 @@ describe("Paths<T> falls through arrays without an index (PWEB-209, point 1)", (
   });
 });
 
-describe("ArrayPaths<T> — only paths that actually lead to an array (PWEB-209, point 3)", () => {
+describe("ArrayPaths<T> — только пути, ведущие в массив", () => {
   it("accepts a real array path, at either nesting level", () => {
     expectTypeOf<"sections">().toMatchTypeOf<ArrayPaths<AccordionInput>>();
     expectTypeOf<"items">().toMatchTypeOf<ArrayPaths<Section>>();
@@ -63,7 +60,7 @@ describe("ArrayPaths<T> — only paths that actually lead to an array (PWEB-209,
   });
 });
 
-describe("ElementAt<T, K> — the Data a repeat's template/children actually see (PWEB-209, point 2)", () => {
+describe("ElementAt<T, K> — данные, которые видит шаблон повтора", () => {
   it("narrows to the element type, not the array and not the parent Data", () => {
     expectTypeOf<ElementAt<AccordionInput, "sections">>().toEqualTypeOf<Section>();
   });

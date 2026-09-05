@@ -9,9 +9,9 @@
 // сломанном. Поэтому «страница обязана потерять вид, если снять скин» проверяется живым
 // браузером (`tools/live-check/`), а след замера живёт в узле задачи.
 
-import { withPassports } from "@omnifield/probe-web-skin";
-import { baseCss } from "@omnifield/probe-web-style/generate";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
+import { withPassports } from "@web-core/skin";
+import { baseCss } from "@web-core/style/generate";
+import { passportOf } from "@web-core/ui/passport";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

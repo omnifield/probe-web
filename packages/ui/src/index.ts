@@ -1,4 +1,4 @@
-// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@probe-web/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
 //
 // Поверхность зоны `ui` — примитивы поверх `@ark-ui/solid`/`@kobalte/core`.
 //
@@ -19,13 +19,14 @@
 // реэкспортируется: два входа к одним данным означали бы два обещания вместо одного.
 //
 // Стилей отсюда не едет НИЧЕГО: у зоны нет CSS-артефакта, потому что нет и стилей по умолчанию.
-// Оформление приезжает из `@omnifield/probe-web-style` и пишется потребителем.
+// Оформление приезжает из `@web-core/style` и пишется потребителем.
 export * from "./accordion/index.js";
 export * from "./avatar/index.js";
 export * from "./button/index.js";
 export * from "./carousel/index.js";
 export * from "./checkbox/index.js";
 export * from "./date-picker/index.js";
+export * from "./diagram/index.js";
 export * from "./dialog/index.js";
 export * from "./drawer/index.js";
 export * from "./field/index.js";
@@ -46,12 +47,11 @@ export * from "./switch/index.js";
 export * from "./table/index.js";
 export * from "./tabs/index.js";
 export * from "./timer/index.js";
-export * from "./toast/index.js";
 export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";
 export * from "./tree-view/index.js";
 export * from "./workspace/index.js";
-export * from "./shared/collection.js";
+
 // Карта частей вместе с паспортами (`PWEB-84`) и форма самой карты (`kit-form.js`, `export *`
 // внутри `kit.js` уже её несёт).
 export * from "./kit.js";

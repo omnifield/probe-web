@@ -1,32 +1,18 @@
-// EDITOR-ONLY per-part taxonomy for the carousel — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`): one
-// file, exhaustive over the anatomy, `accepts`/state KEYS true to the real Ark composition read
-// while building `../entity/`.
-//
-// `accepts` CORRECTED against Ark's own documented "Autoplay" example (`ark-ui.com/docs/
-// components/carousel`), not left as the placement guess the template shipped with:
-// `autoplayTrigger` sits INSIDE `control`, between `prevTrigger` and `nextTrigger` — not as a
-// direct child of `root` — and `autoplayIndicator` sits INSIDE `autoplayTrigger` (it is the
-// button's own icon-swap), not a sibling part floating at `root`. `progressText` has no
-// canonical placement in any fetched example; left at `root`, the least wrong guess available.
-
-import type { PassportPartEditorInfo, PassportStateEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo, PassportStateEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type CarouselPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// The shared state-name/`means` dictionary for the four real `<button>` parts (`prevTrigger`/
-// `nextTrigger`/`indicator`/`autoplayTrigger`) that all carry the same native pseudo-class trio.
 const pseudoMeans: Readonly<Record<"hover" | "focus-visible" | "active", PassportStateEditorInfo>> = {
-  hover: { means: "pointer is over this button" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-  active: { means: "this button is being held down" },
+  hover: { means: "указатель наведён на эту кнопку" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это было бы шумом" },
+  active: { means: "эта кнопка нажата и удерживается" },
 };
 
 export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<CarouselPart>>> = {
   root: {
-    means: "the whole carousel — viewport, navigation, and indicators together",
+    means: "карусель целиком — область показа, навигация и индикаторы вместе",
     accepts: [
       { kind: "component", name: "control" },
       { kind: "component", name: "itemGroup" },
@@ -35,20 +21,20 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     ],
   },
   itemGroup: {
-    means: "the scrollable viewport that holds every slide",
-    states: { dragging: { means: "the viewport is being dragged by the pointer (only when allowMouseDrag is on)" } },
+    means: "прокручиваемая область показа, держит все слайды",
+    states: { dragging: { means: "область тащат указателем (только когда включён allowMouseDrag)" } },
     accepts: [{ kind: "component", name: "item" }],
   },
   item: {
-    means: "one slide",
-    states: { inview: { means: "this slide is currently visible in the viewport (crosses inViewThreshold)" } },
+    means: "один слайд",
+    states: { inview: { means: "этот слайд сейчас виден в области показа (превышен inViewThreshold)" } },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "component" },
     ],
   },
   control: {
-    means: "wraps the previous/next navigation buttons and, when present, the autoplay toggle",
+    means: "оборачивает кнопки вперёд/назад и, если есть, переключатель автопрокрутки",
     accepts: [
       { kind: "component", name: "prevTrigger" },
       { kind: "component", name: "nextTrigger" },
@@ -56,9 +42,9 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     ],
   },
   prevTrigger: {
-    means: "scrolls back one page",
+    means: "прокручивает на страницу назад",
     states: {
-      disabled: { means: "already at the first page and the carousel does not loop — nothing to scroll back to" },
+      disabled: { means: "уже на первой странице, и карусель не зациклена — назад прокручивать некуда" },
       ...pseudoMeans,
     },
     accepts: [
@@ -67,9 +53,9 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     ],
   },
   nextTrigger: {
-    means: "scrolls forward one page",
+    means: "прокручивает на страницу вперёд",
     states: {
-      disabled: { means: "already at the last page and the carousel does not loop — nothing to scroll forward to" },
+      disabled: { means: "уже на последней странице, и карусель не зациклена — вперёд прокручивать некуда" },
       ...pseudoMeans,
     },
     accepts: [
@@ -78,23 +64,22 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     ],
   },
   indicatorGroup: {
-    means: "wraps one indicator per slide (or per page, when slidesPerPage is more than one)",
+    means: "оборачивает по одному индикатору на слайд (или на страницу, если slidesPerPage больше одного)",
     accepts: [{ kind: "component", name: "indicator" }],
   },
   indicator: {
-    means: "one dot — jumps straight to its slide when clicked",
+    means: "одна точка — по клику переходит сразу на свой слайд",
     states: {
-      current: { means: "this dot's slide is the one currently showing" },
-      readonly: { means: "clicking does nothing — the indicator was set read-only" },
+      current: { means: "слайд этой точки — тот, что сейчас показан" },
+      readonly: { means: "клик ничего не делает — индикатор сделан только для чтения" },
       ...pseudoMeans,
     },
-    // Occupied — a plain dot, styled by the skin, no content in Ark's own documented usage.
     accepts: [],
   },
   autoplayTrigger: {
-    means: "starts or pauses automatic scrolling",
+    means: "запускает или ставит на паузу автопрокрутку",
     states: {
-      pressed: { means: "autoplay is running — this toggle is in its \"on\" state" },
+      pressed: { means: "автопрокрутка идёт — переключатель во включённом состоянии" },
       ...pseudoMeans,
     },
     accepts: [
@@ -104,16 +89,11 @@ export const parts: Readonly<Record<CarouselPart, PassportPartEditorInfo<Carouse
     ],
   },
   progressText: {
-    means: "page count text",
-    // Occupied-but-overridable — the kit fills `"<page> / <total>"` itself when given no
-    // children, the same shape the select's own `valueText` has.
+    means: "текст со счётчиком страниц",
     accepts: [{ kind: "content", genus: "text" }],
   },
   autoplayIndicator: {
-    means: "the autoplay button's own icon — swaps between children (running) and fallback (paused); always mounted, only the content changes",
-    // No states (`../entity/passport.ts`): content-conditional, not look-conditional. `children`
-    // shows while playing, the `fallback` prop while paused — neither is expressible as a second
-    // `accepts` list, only the general shape of what CAN go inside is.
+    means: "своя иконка кнопки автопрокрутки — меняется между children (идёт) и fallback (пауза); узел смонтирован всегда, меняется только содержимое",
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },

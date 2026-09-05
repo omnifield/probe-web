@@ -1,0 +1,45 @@
+{
+  "name": "@web-core/trace",
+  "version": "0.1.0",
+  "description": "Perf-трейсер web-core: ядро без фреймворка + необязательный Solid-плагин (createLifeTracer, TraceProvider).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "default": "./dist/solid.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

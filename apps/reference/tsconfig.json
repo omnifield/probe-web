@@ -6,6 +6,6 @@
     "а гейт для того и стоит, чтобы `jsxImportSource` или `strict`, уехавшие из зоны `build`,",
     "роняли прогон здесь, а не у потребителя."
   ],
-  "extends": "@omnifield/probe-web-build/tsconfig",
+  "extends": "@web-core/build/tsconfig",
   "include": ["src", "test", "vite.config.ts", "vitest.config.ts"]
 }

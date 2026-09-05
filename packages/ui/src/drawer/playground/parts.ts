@@ -1,70 +1,56 @@
-// EDITOR-ONLY per-part taxonomy for the drawer — read by `./index.ts`'s `defineEditorInfo` call.
-// Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`): one file,
-// exhaustive over the anatomy, `accepts`/state KEYS true to the real Ark composition read while
-// building `../entity/`.
-//
-// Every part key, every state key (matches `../entity/passport.ts` exactly — `defineEditorInfo`
-// throws otherwise), and every `accepts` rule (mirrors the doc-comment example in
-// `../components/index.tsx`: `positioner` wraps `content`, which wraps `grabber` (holding
-// `grabberIndicator`) + `title` + `description` + `closeTrigger`. `trigger`/`backdrop`/
-// `swipeArea` are real DOM siblings of `positioner`, the same limitation the popover's/dialog's
-// own templates already name) is real.
-
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
-// TYPE ONLY — see `assemblies.ts` for why: `typeof passport` needs the binding's TYPE, not the
-// module's side effects.
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type DrawerPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 const openClosedMeans = {
-  open: { means: "the drawer is open" },
-  closed: { means: "the drawer is closed" },
+  open: { means: "шторка открыта" },
+  closed: { means: "шторка закрыта" },
 } satisfies PassportPartEditorInfo<DrawerPart>["states"];
 
 const swipeDirectionMeans = {
-  up: { means: "the drawer slides in from, and dismisses toward, the top" },
-  down: { means: "the drawer slides in from, and dismisses toward, the bottom" },
-  left: { means: "the drawer slides in from, and dismisses toward, the left edge" },
-  right: { means: "the drawer slides in from, and dismisses toward, the right edge" },
+  up: { means: "шторка выезжает и закрывается вверх" },
+  down: { means: "шторка выезжает и закрывается вниз" },
+  left: { means: "шторка выезжает и закрывается влево" },
+  right: { means: "шторка выезжает и закрывается вправо" },
 } satisfies PassportPartEditorInfo<DrawerPart>["states"];
 
 const buttonPseudoMeans = {
-  hover: { means: "pointer is over this button" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-  active: { means: "this button is being held down" },
+  hover: { means: "указатель наведён на эту кнопку" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это было бы шумом" },
+  active: { means: "эта кнопка нажата и удерживается" },
 } satisfies PassportPartEditorInfo<DrawerPart>["states"];
 
 export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPart>>> = {
   positioner: {
-    means: "anchors the drawer's content to the edge it slides from",
+    means: "закрепляет содержимое шторки за тем краем, откуда она выезжает",
     states: { ...openClosedMeans, ...swipeDirectionMeans },
     accepts: [{ kind: "component", name: "content" }],
   },
   content: {
-    means: "the drawer's own panel",
+    means: "собственная панель шторки",
     states: {
       ...openClosedMeans,
       ...swipeDirectionMeans,
-      swiping: { means: "a drag or an opening swipe is in progress right now" },
-      dragging: { means: "a drag specifically is in progress (not the post-release settle)" },
-      expanded: { means: "the drawer is at its fully expanded snap point" },
-      "nested-drawer-open": { means: "a drawer stacked on top of this one is open" },
-      "nested-drawer-swiping": { means: "a drawer stacked on top of this one is being swiped" },
+      swiping: { means: "прямо сейчас идёт перетаскивание или открывающий свайп" },
+      dragging: { means: "именно перетаскивание (не доводка после отпускания)" },
+      expanded: { means: "шторка в полностью раскрытой точке привязки" },
+      "nested-drawer-open": { means: "открыта шторка, вложенная поверх этой" },
+      "nested-drawer-swiping": { means: "вложенную поверх этой шторку сейчас тащат" },
     },
     variables: {
-      "--drawer-translate": { means: "the current slide offset — the same value as `--drawer-translate-y`" },
-      "--drawer-translate-x": { means: "the current horizontal slide/drag offset" },
-      "--drawer-translate-y": { means: "the current vertical slide/drag offset" },
-      "--drawer-snap-point-offset-x": { means: "the horizontal offset of the active snap point" },
-      "--drawer-snap-point-offset-y": { means: "the vertical offset of the active snap point" },
-      "--drawer-swipe-movement-x": { means: "how far the current swipe gesture has moved horizontally" },
-      "--drawer-swipe-movement-y": { means: "how far the current swipe gesture has moved vertically" },
-      "--drawer-swipe-strength": { means: "how close the current swipe is to its dismiss threshold, as a fraction" },
-      "--nested-drawers": { means: "how many drawers are stacked on top of this one" },
-      "--drawer-height": { means: "the measured height of this drawer's content" },
-      "--drawer-frontmost-height": { means: "the measured height of the frontmost (topmost) drawer in the stack" },
+      "--drawer-translate": { means: "текущее смещение выезда — то же значение, что и `--drawer-translate-y`" },
+      "--drawer-translate-x": { means: "текущее горизонтальное смещение выезда/перетаскивания" },
+      "--drawer-translate-y": { means: "текущее вертикальное смещение выезда/перетаскивания" },
+      "--drawer-snap-point-offset-x": { means: "горизонтальное смещение активной точки привязки" },
+      "--drawer-snap-point-offset-y": { means: "вертикальное смещение активной точки привязки" },
+      "--drawer-swipe-movement-x": { means: "насколько далеко сдвинулся текущий свайп по горизонтали" },
+      "--drawer-swipe-movement-y": { means: "насколько далеко сдвинулся текущий свайп по вертикали" },
+      "--drawer-swipe-strength": { means: "насколько текущий свайп близок к порогу закрытия, доля от 0 до 1" },
+      "--nested-drawers": { means: "сколько шторок вложено поверх этой" },
+      "--drawer-height": { means: "измеренная высота содержимого этой шторки" },
+      "--drawer-frontmost-height": { means: "измеренная высота самой верхней шторки в стопке" },
     },
     accepts: [
       { kind: "component", name: "grabber" },
@@ -76,20 +62,20 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
     ],
   },
   title: {
-    means: "the drawer's own title",
+    means: "заголовок шторки",
     states: {},
     accepts: [{ kind: "content", genus: "text" }],
   },
   description: {
-    means: "the drawer's own description",
+    means: "описание шторки",
     states: {},
     accepts: [{ kind: "content", genus: "text" }],
   },
   trigger: {
-    means: "opens the drawer",
+    means: "открывает шторку",
     states: {
       ...openClosedMeans,
-      current: { means: "in a multi-trigger drawer, this is the trigger that opened it" },
+      current: { means: "в шторке с несколькими триггерами — тот, что её открыл" },
       ...buttonPseudoMeans,
     },
     accepts: [
@@ -98,26 +84,26 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
     ],
   },
   backdrop: {
-    means: "the dimmed overlay behind the drawer — fades along with the swipe gesture",
-    states: { ...openClosedMeans, swiping: { means: "a drag or an opening swipe is in progress right now" } },
+    means: "затемнённая подложка за шторкой — тускнеет вместе со свайпом",
+    states: { ...openClosedMeans, swiping: { means: "прямо сейчас идёт перетаскивание или открывающий свайп" } },
     variables: {
-      "--drawer-swipe-progress": { means: "how far open the current swipe gesture has made the drawer, as a fraction" },
-      "--drawer-swipe-strength": { means: "how close the current swipe is to its dismiss threshold, as a fraction" },
+      "--drawer-swipe-progress": { means: "насколько далеко текущий свайп уже раскрыл шторку, доля от 0 до 1" },
+      "--drawer-swipe-strength": { means: "насколько текущий свайп близок к порогу закрытия, доля от 0 до 1" },
     },
     accepts: [],
   },
   grabber: {
-    means: "the drag handle — a pointer-down here starts the swipe-to-dismiss gesture",
-    states: { hover: { means: "pointer is over the grabber" }, active: { means: "the grabber is being held down" } },
+    means: "ручка для перетаскивания — нажатие на неё запускает свайп-закрытие",
+    states: { hover: { means: "указатель наведён на ручку" }, active: { means: "ручку держат нажатой" } },
     accepts: [{ kind: "component", name: "grabberIndicator" }],
   },
   grabberIndicator: {
-    means: "the visible pull-bar inside the grabber — no graphic of its own, a skin draws the bar",
+    means: "видимая полоска внутри ручки — своей графики не несёт, полоску рисует скин",
     states: {},
     accepts: [],
   },
   closeTrigger: {
-    means: "closes the drawer",
+    means: "закрывает шторку",
     states: buttonPseudoMeans,
     accepts: [
       { kind: "content", genus: "text" },
@@ -125,12 +111,12 @@ export const parts: Readonly<Record<DrawerPart, PassportPartEditorInfo<DrawerPar
     ],
   },
   swipeArea: {
-    means: "an invisible, edge-anchored gesture zone that lets a closed drawer be swiped open",
+    means: "невидимая зона у края, позволяющая свайпом открыть закрытую шторку",
     states: {
       ...openClosedMeans,
       ...swipeDirectionMeans,
-      swiping: { means: "a drag or an opening swipe is in progress right now" },
-      disabled: { means: "swiping to open is disabled" },
+      swiping: { means: "прямо сейчас идёт перетаскивание или открывающий свайп" },
+      disabled: { means: "открытие свайпом отключено" },
     },
     accepts: [],
   },

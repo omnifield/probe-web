@@ -24,6 +24,7 @@ type Deps struct {
 	TimerService           *services.TimerService
 	CommentService         *services.CommentService
 	ItemDeletionService    *services.ItemDeletionApplicationService
+	ItemCreationService    *services.ItemCreationService
 	PageApplicationService *services.PageApplicationService
 	PageDiagramService     *services.PageDiagramService
 	// ActionService is the optional cache-invalidation hook used by the

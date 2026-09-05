@@ -1,136 +1,56 @@
-# @omnifield/probe-web-router
+# ⚙️ web-core Router
 
-Роутинг probe-web поверх `@tanstack/solid-router`. Приложение импортирует ровно этот пакет —
-никогда `@tanstack/solid-router` напрямую, — чтобы `RouterProvider`/хуки во всех файлах ловили
-один и тот же модуль-синглтон, а не две копии из-за двух разных спецификаторов импорта.
+🏷️ routing · 🧬 engine · 📦 `@web-core/router`
 
-Три подпутя:
+## 🧭 Навигация
 
-- `.` — реэкспорт всего рантайма роутера (`RouterProvider`, `createRouter`, `createFileRoute`,
-  `Link`, `Outlet`, `useNavigate`, `useParams`, `useSearch`, …) плюс `defaultRouterOptions`.
-- `./vite` — готовый vite-плагин файловой маршрутизации, `target: "solid"` уже назван.
-- `./devtools` — `TanStackRouterDevtools`, отдельно от `.`, чтобы не тянуться в прод случайно.
+- 🏠 [Главное](#главное)
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-Почему здесь ПОЛНЫЙ реэкспорт, а не отбор по имени, как у `ui`/`build`: у `ui` есть своя
-разметка поверх kobalte — есть что прятать и добавлять. У роутинга своей разметки нет, вся
-задача пакета — быть единственным путём резолва. Ручная выборка из ~80 экспортов только
-развела бы дрейф: TanStack допишет хук минорным выпуском — мы забудем прокинуть его сюда.
+<h2 id="главное">🏠 Главное</h2>
 
-## Установка в приложении
+🧭 Роутинг web-core поверх `@tanstack/solid-router` — единственная точка резолва вместо вендора.
+Приложение импортирует ровно этот пакет, никогда `@tanstack/solid-router` напрямую: тогда
+`RouterProvider`/хуки во всех файлах ловят один и тот же модуль-синглтон, а не две копии из-за
+двух разных спецификаторов импорта. 🛠️ Средство, а не решение — пакет не приносит
+своей разметки поверх вендора (в отличие от `@web-core/ui`, у которой есть что прятать и
+добавлять): вся задача здесь — быть единственным путём резолва, плюс вкус дефолтов и готовый
+vite-плагин с верным порядком в массиве.
 
-```jsonc
-// package.json приложения
-"dependencies": {
-  "@omnifield/probe-web-router": "workspace:*",
-  "@tanstack/solid-router": "^1.170.30" // тот же peer, что просит пакет — версию держит приложение
-}
-```
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-`@tanstack/solid-router` — **peer**, не транзитивная зависимость: сгенерированный
-`routeTree.gen.ts` пишет `import { createFileRoute } from "@omnifield/probe-web-router"` сам
-(см. `routeImportPath`/шаблон ниже), но резолвится это через строгий pnpm только если пакет
-стоит и у приложения тоже.
+🗺️ У движка нет DOM-анатомии — «часть» здесь означает подпуть поставки. Три подпути: рантайм
+роутера (полный реэкспорт вендора + дефолты), vite-плагин файловой маршрутизации, девтулы отдельной
+дверью, чтобы не тянуться в прод случайно.
 
-## Вайринг: `vite.config.ts`
+| Часть | Адрес | Экспортирует |
+|---|---|---|
+| Рантайм роутера | `@web-core/router` | весь `@tanstack/solid-router` (`RouterProvider`, `createRouter`, `createRootRoute`, `createRoute`, `createFileRoute`, `Link`, `Outlet`, `useNavigate`, `useParams`, `useSearch`, `useLoaderData`, `useRouteContext`, `getRouteApi`, `createMemoryHistory`, … ~80 экспортов) + `defaultRouterOptions` |
+| Vite-плагин | `@web-core/router/vite` | `tanstackRouterVitePlugin`, `TanstackRouterVitePluginOptions` |
+| Девтулы | `@web-core/router/devtools` | `TanStackRouterDevtools` |
 
-`defineConfig()` зоны `build` кладёт `vite-plugin-solid` ПЕРВЫМ и своей точки расширения
-«перед» не даёт (её `options.plugins` — это «после»). А `@tanstack/router-plugin` обязан
-стоять ПЕРЕД solid-плагином (иначе падает при `autoCodeSplitting`, сверено 2026-08-28). Поэтому
-готовый конфиг собирается вручную, а не через `options.plugins`:
+📦 Внутри пакета: `src/index.ts` — единственный файл в корне `src/`, тонкая поверхность (один
+реэкспорт `engine/`). Каждый подпуть — своя папка: `src/engine/index.ts` (реэкспорт вендора +
+`defaultRouterOptions`), `src/vite/index.ts` (`tanstackRouterVitePlugin`), `src/devtools/index.ts`
+(реэкспорт девтул) — по форме `@web-core/store` (`index.ts` + `engine/` + `machine/` + `addons/`)
+и `@web-core/assembly` (`index.ts` + `engine/` + `render/` + `shared/`).
 
-```ts
-// vite.config.ts
-import { defineConfig } from "@omnifield/probe-web-build/vite";
-import { tanstackRouterVitePlugin } from "@omnifield/probe-web-router/vite";
+<h2 id="использование">🚀 Использование</h2>
 
-const config = defineConfig();
+Три точки, которыми пакет входит в приложение: вайринг сборки, объявление роутера, файлы
+маршрутов. Подробный пошаговый рецепт — в разделе «Рецепт».
 
-export default {
-  ...config,
-  plugins: [tanstackRouterVitePlugin(), ...(config.plugins ?? [])],
-};
-```
-
-По умолчанию генератор ждёт маршруты в `src/routes/` и пишет `src/routeTree.gen.ts` — как и
-везде у TanStack, менять не обязательно. `routeTree.gen.ts` — порождённый файл, в `.gitignore`.
-
-## Вайринг: `src/router.ts`
-
-```ts
-import { createRouter, defaultRouterOptions } from "@omnifield/probe-web-router";
-
-import { routeTree } from "../routeTree.gen.js";
-
-export const router = createRouter({ ...defaultRouterOptions, routeTree });
-
-// ОБЯЗАТЕЛЬНО — без этого блока пропадает типобезопасность навигации по всему приложению.
-declare module "@omnifield/probe-web-router" {
-  interface Register {
-    router: typeof router;
-  }
-}
-```
-
-`defaultRouterOptions` — объект (`defaultPreload: "intent"`, `defaultPreloadStaleTime: 0`,
-`scrollRestoration: true`), не функция-обёртка. `createRouter()` — точка, где TypeScript
-выводит тип дерева маршрутов из аргумента и привязывает его к `Register`; обёртка эту связь
-рвёт (сверено: `TanStack/router#1943` — контекст-типизация ломалась именно на обёрнутом
-вызове). Поэтому дефолты — только объект для спреда, вызов `createRouter` — приложения.
-
-## Вайринг: `src/main.tsx`
-
-Замороженная точка монтирования не меняется (`@omnifield/probe-web-runtime`, `PROBEWEB-4`) —
-роутер просто становится корневым компонентом:
+**Файловый маршрут с параметром и загрузкой данных:**
 
 ```tsx
-import "@omnifield/probe-web-style/base.css";
-
-import { mount } from "@omnifield/probe-web-runtime";
-import { RouterProvider } from "@omnifield/probe-web-router";
-
-import { router } from "./router.js";
-
-mount(() => <RouterProvider router={router} />);
-```
-
-## Файлы маршрутов
-
-```
-src/routes/
-  __root.tsx     — общий layout, Outlet + навигация + девтулы
-  index.tsx      — "/"
-  about.tsx      — "/about"
-  posts/
-    index.tsx    — "/posts"
-    $postId.tsx  — "/posts/:postId"
-  _auth.tsx      — pathless layout (префикс "_" — оборачивает детей, в URL не входит)
-```
-
-```tsx
-// src/routes/__root.tsx
-import { createRootRoute, Link, Outlet } from "@omnifield/probe-web-router";
-import { TanStackRouterDevtools } from "@omnifield/probe-web-router/devtools";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <nav>
-        <Link to="/" activeProps={{ class: "active" }}>Home</Link>
-        <Link to="/about">About</Link>
-      </nav>
-      <Outlet />
-      {/* `import.meta.env.DEV` — статическая константа сборки: Vite подставляет `false` в
-          проде и вырезает ветку целиком, отдельный dynamic import не нужен. */}
-      {import.meta.env.DEV && <TanStackRouterDevtools />}
-    </>
-  ),
-  notFoundComponent: () => <p>Страница не найдена</p>,
-});
-```
-
-```tsx
-// src/routes/posts/$postId.tsx — параметр, загрузка данных, доступ к ним
-import { createFileRoute } from "@omnifield/probe-web-router";
+import { createFileRoute } from "@web-core/router";
 
 export const Route = createFileRoute("/posts/$postId")({
   loader: ({ params }) => fetchPost(params.postId),
@@ -141,23 +61,142 @@ export const Route = createFileRoute("/posts/$postId")({
 });
 ```
 
-## Хуки — Solid, не React: акцессоры, не значения
+**Код-based маршрут без файлового генератора:**
 
-`useParams`, `useSearch`, `useLoaderData`, `useRouteContext` в Solid-адаптере возвращают
-**акцессоры** (функции), а не готовые значения — то же тонкозернистое устройство, что у любого
-Solid-сигнала: `const params = useParams({ from: "/posts/$postId" }); params().postId`, не
-`params.postId`. `useNavigate()` — не акцессор, а сразу функция навигации:
-`const navigate = useNavigate(); navigate({ to: "/about" })`.
+```ts
+import { createRootRoute, createRoute } from "@web-core/router";
 
-Внутри уже смонтированного файла маршрута код-сплиттинга (`autoCodeSplitting: true`) типы
-`from` подставлять не обязательно — их знает сам `Route.useParams()`/`Route.useSearch()`.
-Для общих компонентов вне маршрута — `getRouteApi("/posts/$postId")`, чтобы не писать
-`from` в каждом хуке руками.
+const rootRoute = createRootRoute({ component: () => <Outlet /> });
+const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: "/about", component: About });
+const routeTree = rootRoute.addChildren([aboutRoute]);
+```
 
-## Код-based маршруты вместо файловых
+**Девтулы, обёрнутые в `import.meta.env.DEV`:**
 
-Не обязательно: `createRootRoute`/`createRoute`/`rootRoute.addChildren([...])` работают без
-`./vite`-плагина вовсе — тогда `routeTree` собирается вручную, а не порождается. Для одного-двух
-экранов (как у `products/tables/src/playground/route.ts`, который свой самодельный роутер
-завёл ИМЕННО из-за этого) это может быть дешевле; на файловую маршрутизацию стоит переходить,
-когда экранов и вложенности становится достаточно, чтобы ручное дерево стало неудобным.
+```tsx
+import { TanStackRouterDevtools } from "@web-core/router/devtools";
+
+{import.meta.env.DEV && <TanStackRouterDevtools />}
+```
+
+<h2 id="настройки">🎚️ Настройки</h2>
+
+🔧 Две группы настроек: дефолты роутера (объект, не функция) и опции vite-плагина (передаются
+как есть вендору, кроме зафиксированного `target`).
+
+| Настройка | Где | Тип | По умолчанию |
+|---|---|---|---|
+| `defaultPreload` | `defaultRouterOptions` | `"intent"` | `"intent"` — подгрузка соседних маршрутов по наведению/фокусу на `<Link>` |
+| `defaultPreloadStaleTime` | `defaultRouterOptions` | `number` | `0` — подгруженное протухает мгновенно |
+| `scrollRestoration` | `defaultRouterOptions` | `boolean` | `true` |
+| `target` | `tanstackRouterVitePlugin(options)` | `"solid"` | зафиксирован, в `options` не принимается |
+| `autoCodeSplitting` | `tanstackRouterVitePlugin(options)` | `boolean` | `true` |
+| `routesDirectory`/`generatedRouteTree`/… | `tanstackRouterVitePlugin(options)` | весь `Config` вендора кроме `target` | вендорские дефолты (`src/routes/`, `src/routeTree.gen.ts`) |
+
+<h2 id="состояния">🎛️ Состояния</h2>
+
+🚦 У пакета нет своих состояний — он не добавляет логики поверх `@tanstack/solid-router`, только
+называет вход. Состояния целиком вендорские: у совпадения маршрута (`RouteMatch`) и у самого
+роутера.
+
+| Состояние | Метка | Где |
+|---|---|---|
+| Маршрут ждёт загрузчик | `status: "pending"` | `RouteMatch`, показывается `pendingComponent` |
+| Маршрут загружен | `status: "success"` | `RouteMatch` |
+| Загрузчик упал | `status: "error"` | `RouteMatch`, показывается `errorComponent` |
+| Маршрут не найден | `status: "notFound"` | `RouteMatch`, показывается `notFoundComponent` |
+
+<h2 id="io">🔌 IO</h2>
+
+Вход и выход — вендорские сигнатуры один в один, пакет их не переопределяет и не оборачивает
+(кроме `defaultRouterOptions` — объекта для спреда, не вызова).
+
+<h3 id="io-вход">📥 Вход</h3>
+
+| Конструктор | Принимает |
+|---|---|
+| `createRouter({ ...defaultRouterOptions, routeTree })` | дерево маршрутов + опции роутера |
+| `createFileRoute(path)(options)` | `{ loader?, component?, ... }` |
+| `createRoute(options)` | `{ getParentRoute, path, component?, loader?, ... }` |
+| `tanstackRouterVitePlugin(options?)` | `Partial<Omit<Config, "target">>` |
+| `useParams({ from })`/`useSearch({ from })` | адрес маршрута |
+
+<h3 id="io-выход">📤 Выход</h3>
+
+| Источник | Отдаёт |
+|---|---|
+| `useParams`/`useSearch`/`useLoaderData`/`useRouteContext` | акцессор (функция), не готовое значение |
+| `useNavigate()` | функцию навигации, вызывается сразу: `navigate({ to: "/about" })` |
+| `Route.useLoaderData()` | акцессор `Accessor<T>` данных из `loader` |
+| `tanstackRouterVitePlugin()` | `Plugin \| Plugin[]` для массива `plugins` vite-конфига |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+🧪 Смоук-проба зоны: не «опции разобрались», а настоящий рендер и настоящая навигация — то, что
+действительно ловит сломанный реэкспорт или разъехавшийся вендор.
+
+| Сборка | Что доказывает | Файл |
+|---|---|---|
+| `createRouter` + `RouterProvider` | реальный рендер дерева маршрутов, дефолты (`defaultPreload`) на месте | `test/router.test.tsx` |
+| `router.navigate({ to })` | навигация меняет смонтированное дерево (`home` → `about`) | `test/router.test.tsx` |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+🧩 Полный вайринг приложения — четыре файла, порядок между ними важен там, где отмечено.
+
+```ts
+// vite.config.ts — плагин роутера ОБЯЗАН стоять ПЕРЕД vite-plugin-solid (см. FAQ)
+import { defineConfig } from "@web-core/build/vite";
+import { tanstackRouterVitePlugin } from "@web-core/router/vite";
+
+const config = defineConfig();
+export default {
+  ...config,
+  plugins: [tanstackRouterVitePlugin(), ...(config.plugins ?? [])],
+};
+```
+
+```ts
+// src/router.ts
+import { createRouter, defaultRouterOptions } from "@web-core/router";
+import { routeTree } from "../routeTree.gen.js"; // порождённый файл, в .gitignore
+
+export const router = createRouter({ ...defaultRouterOptions, routeTree });
+
+// ОБЯЗАТЕЛЬНО — без этого блока пропадает типобезопасность навигации по всему приложению.
+declare module "@web-core/router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+```
+
+```tsx
+// src/main.tsx
+import { mount } from "@web-core/shared";
+import { RouterProvider } from "@web-core/router";
+import { router } from "./router.js";
+
+mount(() => <RouterProvider router={router} />);
+```
+
+```tsx
+// src/routes/__root.tsx
+import { createRootRoute, Link, Outlet } from "@web-core/router";
+import { TanStackRouterDevtools } from "@web-core/router/devtools";
+
+export const Route = createRootRoute({
+  component: () => (
+    <>
+      <nav><Link to="/">Home</Link><Link to="/about">About</Link></nav>
+      <Outlet />
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
+    </>
+  ),
+  notFoundComponent: () => <p>Страница не найдена</p>,
+});
+```
+
+✨ `src/routes/` — обычные файлы (`index.tsx` → `/`, `about.tsx` → `/about`,
+`posts/$postId.tsx` → `/posts/:postId`, `_auth.tsx` — pathless layout). `routeTree.gen.ts` пишет
+сам плагин при каждом старте dev-сервера/сборке.

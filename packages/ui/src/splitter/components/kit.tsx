@@ -9,8 +9,8 @@ import {
   type SplitterRootProps as ArkRootProps,
 } from "@ark-ui/solid/splitter";
 
-import { dropAddress } from "../../utils/slot-chain.js";
-import { traceLife } from "../../utils/trace.js";
+import { dropAddress } from "../../shared/utils/slot-chain.js";
+import { traceLife } from "../../shared/utils/trace.js";
 
 // Splitter — resizable panels with a draggable handle between each pair, from Ark
 // (`ark-ui.com/docs/components/splitter`).
@@ -68,10 +68,13 @@ export function SplitterResizeTrigger(props: SplitterResizeTriggerProps) {
 }
 
 /** Props of `SplitterResizeTriggerIndicator`. */
-export type SplitterResizeTriggerIndicatorProps = ArkResizeTriggerIndicatorProps;
+export type SplitterResizeTriggerIndicatorProps =
+  ArkResizeTriggerIndicatorProps;
 
 /** The glyph shown inside the handle — a grip icon, whatever the consumer puts inside it. */
-export function SplitterResizeTriggerIndicator(props: SplitterResizeTriggerIndicatorProps) {
+export function SplitterResizeTriggerIndicator(
+  props: SplitterResizeTriggerIndicatorProps,
+) {
   traceLife("ui.splitter-resize-trigger-indicator");
 
   return <ArkResizeTriggerIndicator {...dropAddress(props)} />;

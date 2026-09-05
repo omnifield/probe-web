@@ -1,65 +1,169 @@
-# Scroll Area
+# 🖱️ Scroll Area
 
-**Group:** — · **Genus:** component · **Footprint:** regular
+🏷️ other · 🧬 component · 📐 regular · 📦 `@web-core/ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | the whole scroll area — sizes the visible window and measures the four variables its own scrollbar/thumb/corner read back |
-| viewport | the clipping window — native overflow:auto, real scroll events |
-| content | the scrollable content itself — sized to fit whatever the consumer puts inside it |
-| scrollbar | one axis's own track |
-| thumb | one axis's own drag handle |
-| corner | the square where two scrollbars would otherwise overlap |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | overflow-x | [data-overflow-x] | content overflows horizontally — a horizontal scrollbar can exist |
-| root | overflow-y | [data-overflow-y] | content overflows vertically — a vertical scrollbar can exist |
-| viewport | overflow-x | [data-overflow-x] | content overflows horizontally — a horizontal scrollbar can exist |
-| viewport | overflow-y | [data-overflow-y] | content overflows vertically — a vertical scrollbar can exist |
-| viewport | at-top | [data-at-top] | scrolled all the way to the top |
-| viewport | at-bottom | [data-at-bottom] | scrolled all the way to the bottom |
-| viewport | at-left | [data-at-left] | scrolled all the way to the left |
-| viewport | at-right | [data-at-right] | scrolled all the way to the right |
-| content | overflow-x | [data-overflow-x] | content overflows horizontally — a horizontal scrollbar can exist |
-| content | overflow-y | [data-overflow-y] | content overflows vertically — a vertical scrollbar can exist |
-| scrollbar | vertical | [data-orientation="vertical"] | this node is the vertical instance — scroll-area renders one of these per axis |
-| scrollbar | horizontal | [data-orientation="horizontal"] | this node is the horizontal instance — scroll-area renders one of these per axis |
-| scrollbar | overflow-x | [data-overflow-x] | content overflows horizontally — a horizontal scrollbar can exist |
-| scrollbar | overflow-y | [data-overflow-y] | content overflows vertically — a vertical scrollbar can exist |
-| scrollbar | hover | [data-hover] | the pointer is anywhere near the scroll area's own scrollbar affordances right now |
-| scrollbar | dragging | [data-dragging] | a thumb is currently being dragged |
-| scrollbar | scrolling | [data-scrolling] | a scroll is actively happening on this axis right now |
-| thumb | vertical | [data-orientation="vertical"] | this node is the vertical instance — scroll-area renders one of these per axis |
-| thumb | horizontal | [data-orientation="horizontal"] | this node is the horizontal instance — scroll-area renders one of these per axis |
-| thumb | hover | [data-hover] | the pointer is anywhere near the scroll area's own scrollbar affordances right now |
-| thumb | dragging | [data-dragging] | a thumb is currently being dragged |
-| corner | overflow-x | [data-overflow-x] | content overflows horizontally — a horizontal scrollbar can exist |
-| corner | overflow-y | [data-overflow-y] | content overflows vertically — a vertical scrollbar can exist |
-| corner | hover | [data-hover] | the pointer is anywhere near the scroll area's own scrollbar affordances right now |
-| corner | hidden | [data-state="hidden"] | hidden by the skin — only one axis scrolls, nothing to fill |
-| corner | visible | [data-state="visible"] | shown by the skin — both axes scroll, the corner square is needed |
+```
+root
+├─ viewport
+│  └─ content
+├─ scrollbar[×2] ▬
+│  └─ thumb[×2] ▭
+└─ corner ◻
+```
 
-## Settings
+| часть          | значение                                                                        | принимает внутри                    | рисуется                 |
+| ---------------- | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------------------------- |
+| 🖱️ `root`       | область прокрутки целиком — задаёт видимое окно и измеряет четыре переменные, которые читают её собственные `scrollbar`/`thumb`/`corner` | `viewport`, `scrollbar`, `corner` | `ScrollArea`       |
+| `viewport`      | окно обрезки — нативный `overflow: auto`, настоящие события прокрутки                | `content`                                  | `ScrollAreaViewport` |
+| `content`       | само прокручиваемое содержимое — подстраивается под то, что в него положил потребитель | текст, любой компонент                   | `ScrollAreaContent`  |
+| ▬ `scrollbar`   | собственный трек одной оси                                                           | `thumb`                                    | `ScrollAreaScrollbar` |
+| ▭ `thumb`       | собственный бегунок одной оси                                                        | —                                           | `ScrollAreaThumb`    |
+| ◻ `corner`      | квадрат, где иначе пересеклись бы два ползунка                                       | —                                           | `ScrollAreaCorner`   |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+> [!NOTE]
+> Анатомия НЕ объявляется здесь — приезжает готовой, тем же приёмом, что и у каждого Zag-компонента
+> кита. Физически живёт в `@zag-js/scroll-area/anatomy`; собственная `scrollAreaAnatomy` пакета Ark —
+> ТОТ ЖЕ объект, реэкспортированный прямо из `@zag-js/scroll-area` (проверено в собранном чанке —
+> `scroll-area.anatomy.ts` делает буквально `export { anatomy } from "@zag-js/scroll-area"`, без
+> `.extendWith(...)`, в отличие от карусели/поля).
 
-## CSS Variables
+> [!NOTE]
+> Шесть частей, но `scrollbar`/`thumb` — КАЖДАЯ рисуется ДВАЖДЫ в двухосевой композиции (по одному
+> разу на `orientation="vertical"|"horizontal"`) — та же форма «одна часть, несколько настоящих
+> узлов», что уже несёт `trigger` у `tabs` (по одному на вкладку), не пробел в анатомии.
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| root | `--corner-width` | kit | measured width of the corner square |
-| root | `--corner-height` | kit | measured height of the corner square |
-| root | `--thumb-width` | kit | measured width of the vertical thumb |
-| root | `--thumb-height` | kit | measured height of the horizontal thumb |
+<h2 id="состояния">🎛️ Состояния</h2>
 
-## Notes
+|      | часть                                   | состояние     | метка                       | значение                                                    |
+| ---- | ------------------------------------------ | --------------- | ------------------------------ | ---------------------------------------------------------------- |
+| ↔️   | root, viewport, content, scrollbar, corner | overflow-x      | `[data-overflow-x]`            | содержимое переполняет по горизонтали — может существовать горизонтальный ползунок |
+| ↕️   | root, viewport, content, scrollbar, corner | overflow-y      | `[data-overflow-y]`            | содержимое переполняет по вертикали — может существовать вертикальный ползунок |
+| ⬆️   | viewport                                   | at-top          | `[data-at-top]`                | прокручено до самого верха                                        |
+| ⬇️   | viewport                                   | at-bottom       | `[data-at-bottom]`             | прокручено до самого низа                                         |
+| ⬅️   | viewport                                   | at-left         | `[data-at-left]`               | прокручено до самого левого края                                  |
+| ➡️   | viewport                                   | at-right        | `[data-at-right]`              | прокручено до самого правого края                                 |
+| ⬍    | scrollbar, thumb                           | vertical        | `[data-orientation="vertical"]`| этот узел — вертикальный экземпляр                                |
+| ⬌    | scrollbar, thumb                           | horizontal      | `[data-orientation="horizontal"]` | этот узел — горизонтальный экземпляр                          |
+| 🖱️   | scrollbar, thumb, corner                   | hover           | `[data-hover]`                 | указатель где-то рядом с собственными элементами управления прокруткой прямо сейчас |
+| 👆   | scrollbar, thumb                           | dragging        | `[data-dragging]`              | бегунок сейчас тащат                                              |
+| 🔄   | scrollbar                                  | scrolling       | `[data-scrolling]`             | прокрутка по этой оси происходит прямо сейчас                     |
+| ◻   | corner                                     | hidden          | `[data-state="hidden"]`        | скрыт скином — прокрутка только по одной оси, заполнять нечего    |
+| ◼   | corner                                     | visible         | `[data-state="visible"]`       | показан скином — прокрутка по обеим осям, квадрат угла нужен      |
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+> [!NOTE]
+> `hover`/`dragging` — ОДНО служебное значение сразу на трёх частях, не отдельное «наведён именно
+> на этот узел». `getScrollbarProps`/`getThumbProps`/`getCornerProps` спредят один и тот же
+> `context.get("hovering")`/`state.matches("dragging")` — общий факт «указатель где-то рядом с
+> собственными элементами прокрутки прямо сейчас», не буквальный per-node `:hover`. Правило скина,
+> завязанное на `hover` у `scrollbar`, может сработать, пока указатель стоит над `thumb`, — это не
+> баг марки, а то, что коннектор реально вычисляет; не замена настоящему `:hover`, как у чекбокса
+> собственный JS-трекнутый hover.
+
+> [!NOTE]
+> `overflow-x`/`overflow-y` достают до ПЯТИ частей, `thumb` — единственное исключение. `root`/
+> `viewport`/`content`/`scrollbar`/`corner` несут `data-overflow-x`/`data-overflow-y` (проверено на
+> каждом `getXxxProps`); `getThumbProps` ни разу их не ставит — проверено как отсутствие, не
+> принято по аналогии с остальными четырьмя.
+
+> [!NOTE]
+> `corner`'s `data-state` — МЕТКА, не автоматическое скрытие. `hiddenState.cornerHidden ? "hidden" :
+> "visible"` — значение `data-state`, никогда нативный атрибут `hidden`; скин должен САМ подействовать
+> на неё, чтобы угол реально исчез, когда прокрутка только по одной оси — кит не прячет непрошено.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "content": "string" }
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+Область прокрутки ничего не диспатчит через сборку — прокрутка ведёт настоящий `overflow: auto` на
+`viewport`, это не событие наружу схемы.
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-basic">🧱 basic</h3>
+
+```
+root
+  viewport
+    content            · text: {content}
+  scrollbar[vertical] ▬
+    thumb[vertical] ▭
+  corner ◻
+```
+
+`content` несёт текст из данных (`bind: /content`) — область прокрутки без настоящего переполнения
+ничего не доказывает, поэтому текст должен быть достаточно длинным, чтобы реально не влезать в
+фиксированную высоту, которую задаёт рецепт. `orientation` на `scrollbar`/`thumb` — статическая
+структурная раскладка (сколько осей и какая), не данные: тот же довод, что у `orientation` вкладок
+`tabs`'а — какие оси показывать решает автор сборки, не что-то, что приходит построчно из данных.
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует.
+
+Классическая сетка ползунков: `viewport` в левом верхнем углу, вертикальный `scrollbar` в правом
+верхнем, горизонтальный `scrollbar` в левом нижнем, `corner` в правом нижнем — `root` держит саму
+сетку (`display: grid`), остальные части просто занимают свою ячейку. `root` получает
+ФИКСИРОВАННУЮ высоту, чтобы длинный текст доказательной сборки реально переполнял её — на пустом
+боксе прокручивать нечего.
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+`ScrollAreaScrollbar`/`ScrollAreaThumb` рисуются по разу на каждую нужную ось.
+
+```tsx
+<ScrollArea>
+  <ScrollAreaViewport>
+    <ScrollAreaContent>Длинный текст…</ScrollAreaContent>
+  </ScrollAreaViewport>
+  <ScrollAreaScrollbar orientation="vertical">
+    <ScrollAreaThumb orientation="vertical" />
+  </ScrollAreaScrollbar>
+  <ScrollAreaScrollbar orientation="horizontal">
+    <ScrollAreaThumb orientation="horizontal" />
+  </ScrollAreaScrollbar>
+  <ScrollAreaCorner />
+</ScrollArea>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `basic`), которую рисует
+`RenderTree`.
+
+```tsx
+const data = { content: "Длинный текст, который реально переполняет фиксированную высоту…" };
+const tree = instanceOf("scroll-area", {}, "basic", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Только одна ось.** Одноосевая прокрутка не несёт `corner` вовсе — он существует только затем,
+чтобы заполнить угол, где встречаются ДВЕ полосы.
+
+```tsx
+<ScrollArea>
+  <ScrollAreaViewport>
+    <ScrollAreaContent>Длинный текст…</ScrollAreaContent>
+  </ScrollAreaViewport>
+  <ScrollAreaScrollbar orientation="vertical">
+    <ScrollAreaThumb orientation="vertical" />
+  </ScrollAreaScrollbar>
+</ScrollArea>
+```

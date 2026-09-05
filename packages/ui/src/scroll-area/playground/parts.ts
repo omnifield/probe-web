@@ -1,38 +1,33 @@
-// EDITOR-ONLY per-part taxonomy for the scroll area — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`).
-
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type ScrollAreaPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
 const overflowMeans = {
-  "overflow-x": { means: "content overflows horizontally — a horizontal scrollbar can exist" },
-  "overflow-y": { means: "content overflows vertically — a vertical scrollbar can exist" },
+  "overflow-x": { means: "содержимое переполняет по горизонтали — может существовать горизонтальный ползунок" },
+  "overflow-y": { means: "содержимое переполняет по вертикали — может существовать вертикальный ползунок" },
 } satisfies PassportPartEditorInfo<ScrollAreaPart>["states"];
 
 const orientationMeans = {
-  vertical: { means: "this node is the vertical instance — scroll-area renders one of these per axis" },
-  horizontal: { means: "this node is the horizontal instance — scroll-area renders one of these per axis" },
+  vertical: { means: "этот узел — вертикальный экземпляр; область прокрутки рисует по одному такому на каждую ось" },
+  horizontal: { means: "этот узел — горизонтальный экземпляр; область прокрутки рисует по одному такому на каждую ось" },
 } satisfies PassportPartEditorInfo<ScrollAreaPart>["states"];
 
-// ONE service-level fact mirrored onto three parts (`../entity/passport.ts`) — the pointer being
-// anywhere near the scroll area's affordances, not literal per-node hover.
 const hoverDraggingMeans = {
-  hover: { means: "the pointer is anywhere near the scroll area's own scrollbar affordances right now" },
-  dragging: { means: "a thumb is currently being dragged" },
+  hover: { means: "указатель где-то рядом с собственными элементами управления прокруткой прямо сейчас" },
+  dragging: { means: "ползунок сейчас тащат" },
 } satisfies PassportPartEditorInfo<ScrollAreaPart>["states"];
 
 export const parts: Readonly<Record<ScrollAreaPart, PassportPartEditorInfo<ScrollAreaPart>>> = {
   root: {
-    means: "the whole scroll area — sizes the visible window and measures the four variables its own scrollbar/thumb/corner read back",
+    means: "область прокрутки целиком — задаёт видимое окно и измеряет четыре переменные, которые читают её собственные ползунок/бегунок/угол",
     states: overflowMeans,
     variables: {
-      "--corner-width": { means: "measured width of the corner square" },
-      "--corner-height": { means: "measured height of the corner square" },
-      "--thumb-width": { means: "measured width of the vertical thumb" },
-      "--thumb-height": { means: "measured height of the horizontal thumb" },
+      "--corner-width": { means: "измеренная ширина квадрата угла" },
+      "--corner-height": { means: "измеренная высота квадрата угла" },
+      "--thumb-width": { means: "измеренная ширина вертикального бегунка" },
+      "--thumb-height": { means: "измеренная высота горизонтального бегунка" },
     },
     accepts: [
       { kind: "component", name: "viewport" },
@@ -41,18 +36,18 @@ export const parts: Readonly<Record<ScrollAreaPart, PassportPartEditorInfo<Scrol
     ],
   },
   viewport: {
-    means: "the clipping window — native overflow:auto, real scroll events",
+    means: "окно обрезки — нативный overflow:auto, настоящие события прокрутки",
     states: {
       ...overflowMeans,
-      "at-top": { means: "scrolled all the way to the top" },
-      "at-bottom": { means: "scrolled all the way to the bottom" },
-      "at-left": { means: "scrolled all the way to the left" },
-      "at-right": { means: "scrolled all the way to the right" },
+      "at-top": { means: "прокручено до самого верха" },
+      "at-bottom": { means: "прокручено до самого низа" },
+      "at-left": { means: "прокручено до самого левого края" },
+      "at-right": { means: "прокручено до самого правого края" },
     },
     accepts: [{ kind: "component", name: "content" }],
   },
   content: {
-    means: "the scrollable content itself — sized to fit whatever the consumer puts inside it",
+    means: "само прокручиваемое содержимое — подстраивается под то, что в него положил потребитель",
     states: overflowMeans,
     accepts: [
       { kind: "content", genus: "text" },
@@ -60,22 +55,27 @@ export const parts: Readonly<Record<ScrollAreaPart, PassportPartEditorInfo<Scrol
     ],
   },
   scrollbar: {
-    means: "one axis's own track",
-    states: { ...orientationMeans, ...overflowMeans, ...hoverDraggingMeans, scrolling: { means: "a scroll is actively happening on this axis right now" } },
+    means: "собственный трек одной оси",
+    states: {
+      ...orientationMeans,
+      ...overflowMeans,
+      ...hoverDraggingMeans,
+      scrolling: { means: "прокрутка по этой оси происходит прямо сейчас" },
+    },
     accepts: [{ kind: "component", name: "thumb" }],
   },
   thumb: {
-    means: "one axis's own drag handle",
+    means: "собственный бегунок одной оси",
     states: { ...orientationMeans, ...hoverDraggingMeans },
     accepts: [],
   },
   corner: {
-    means: "the square where two scrollbars would otherwise overlap",
+    means: "квадрат, где иначе пересеклись бы два ползунка",
     states: {
       ...overflowMeans,
       hover: hoverDraggingMeans.hover,
-      hidden: { means: "hidden by the skin — only one axis scrolls, nothing to fill" },
-      visible: { means: "shown by the skin — both axes scroll, the corner square is needed" },
+      hidden: { means: "скрыт скином — прокрутка только по одной оси, заполнять нечего" },
+      visible: { means: "показан скином — прокрутка по обеим осям, квадрат угла нужен" },
     },
     accepts: [],
   },

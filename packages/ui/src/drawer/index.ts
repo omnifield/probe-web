@@ -1,30 +1,24 @@
-// What leaves this folder outward.
-//
-// Two different things, two different readers: MARKUP is picked up by the primitives entry
-// (`src/index.ts`), the PASSPORT by the `./passport` build, which walks folders and assembles the
-// list itself.
-
 export {
   Drawer,
-  DrawerBackdrop,
-  type DrawerBackdropProps,
-  DrawerCloseTrigger,
-  type DrawerCloseTriggerProps,
-  DrawerContent,
-  type DrawerContentProps,
-  DrawerDescription,
-  type DrawerDescriptionProps,
-  DrawerGrabber,
-  DrawerGrabberIndicator,
-  type DrawerGrabberIndicatorProps,
-  type DrawerGrabberProps,
-  DrawerPositioner,
-  type DrawerPositionerProps,
   type DrawerProps,
-  DrawerSwipeArea,
-  type DrawerSwipeAreaProps,
-  DrawerTitle,
-  type DrawerTitleProps,
   DrawerTrigger,
   type DrawerTriggerProps,
+  DrawerBackdrop,
+  type DrawerBackdropProps,
+  DrawerPositioner,
+  type DrawerPositionerProps,
+  DrawerContent,
+  type DrawerContentProps,
+  DrawerGrabber,
+  type DrawerGrabberProps,
+  DrawerGrabberIndicator,
+  type DrawerGrabberIndicatorProps,
+  DrawerTitle,
+  type DrawerTitleProps,
+  DrawerDescription,
+  type DrawerDescriptionProps,
+  DrawerCloseTrigger,
+  type DrawerCloseTriggerProps,
+  DrawerSwipeArea,
+  type DrawerSwipeAreaProps,
 } from "./components/index.js";

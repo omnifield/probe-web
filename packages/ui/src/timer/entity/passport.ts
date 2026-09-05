@@ -43,7 +43,7 @@
 // above) — `hover`/`focus-visible`/`active` are the only addressable facts it has, the plain
 // button's own reasoning.
 
-import { defineSettings, definePassport, type PassportState } from "@omnifield/probe-web-skin/model";
+import { defineSettings, definePassport, type PassportState } from "@web-core/skin/model";
 // TYPE ONLY: `import type` is erased at build time entirely, and the `./passport` subpath stays
 // what it is sold as — data with no Solid. Needed only so the setting keys are checked against
 // the component's real props.

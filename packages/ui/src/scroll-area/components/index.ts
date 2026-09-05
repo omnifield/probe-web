@@ -1,9 +1,24 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { ScrollArea, type ScrollAreaProps } from "./root.js";
+export { ScrollAreaViewport, type ScrollAreaViewportProps } from "./viewport.js";
+export { ScrollAreaContent, type ScrollAreaContentProps } from "./content.js";
+export { ScrollAreaScrollbar, type ScrollAreaScrollbarProps } from "./scrollbar.js";
+export { ScrollAreaThumb, type ScrollAreaThumbProps } from "./thumb.js";
+export { ScrollAreaCorner, type ScrollAreaCornerProps } from "./corner.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { ScrollArea } from "./root.js";
+import { ScrollAreaViewport } from "./viewport.js";
+import { ScrollAreaContent } from "./content.js";
+import { ScrollAreaScrollbar } from "./scrollbar.js";
+import { ScrollAreaThumb } from "./thumb.js";
+import { ScrollAreaCorner } from "./corner.js";
+
+export const kit = defineKitComponent(passport, {
+  root: ScrollArea,
+  viewport: ScrollAreaViewport,
+  content: ScrollAreaContent,
+  scrollbar: ScrollAreaScrollbar,
+  thumb: ScrollAreaThumb,
+  corner: ScrollAreaCorner,
+});

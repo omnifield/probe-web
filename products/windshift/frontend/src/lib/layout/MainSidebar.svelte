@@ -1,6 +1,7 @@
 <script>
   import { currentRoute, isWorkspaceRoute } from '../router.js';
-  import { permissionStore, uiStore, workspacesStore } from '../stores';
+  import { permissionStore, uiStore, workspaceCategoriesStore, workspacesStore } from '../stores';
+  import { brandingStore } from '../stores/branding.svelte.js';
   import { t } from '../stores/i18n.svelte.js';
   import { aiStore } from '../stores/aiStore.svelte.js';
   import { getShortcutDisplay } from '../utils/keyboardShortcuts.js';
@@ -45,26 +46,50 @@
       }
     });
 
-    // Filter workspaces based on search query (inactive workspaces are
-    // hidden here even for admins — Manage Workspaces is the only surface
-    // that shows them).
+    // Inactive workspaces are hidden here even for admins — Manage
+    // Workspaces is the only surface that shows them.
     const activeRegularWorkspaces = $workspacesStore.regularWorkspaces.filter(ws => ws.active);
+
+    // The one canonical "about/overview" workspace of this group (if any)
+    // is pinned as its own block right under the search input — not a
+    // select item, not subject to search filtering, never grouped under a
+    // category label.
+    const overviewWorkspace = activeRegularWorkspaces.find(ws => ws.is_overview);
+    if (overviewWorkspace) {
+      const hasAvatar = overviewWorkspace.avatar_url;
+      items.push({
+        type: 'pinned-workspace',
+        id: `overview-${overviewWorkspace.id}`,
+        testid: 'workspace-dropdown-overview',
+        icon: hasAvatar ? null : (workspaceIconMap[overviewWorkspace.icon] || workspaceIconMap.Package),
+        iconColor: hasAvatar ? null : overviewWorkspace.color,
+        avatarUrl: hasAvatar ? overviewWorkspace.avatar_url : null,
+        title: overviewWorkspace.name,
+        subtitle: overviewWorkspace.description,
+        href: `/workspaces/${overviewWorkspace.id}`
+      });
+    }
+
+    // Filter the rest by search query.
     const search = workspaceSearchQuery?.trim().toLowerCase();
+    const groupableWorkspaces = activeRegularWorkspaces.filter(ws => ws !== overviewWorkspace);
     const filteredWorkspaces = !search
-      ? activeRegularWorkspaces
-      : activeRegularWorkspaces.filter(workspace => {
+      ? groupableWorkspaces
+      : groupableWorkspaces.filter(workspace => {
           const nameMatch = workspace.name?.toLowerCase().includes(search);
           const keyMatch = workspace.key?.toLowerCase().includes(search);
           const descriptionMatch = workspace.description?.toLowerCase().includes(search);
           return nameMatch || keyMatch || descriptionMatch;
         });
 
-    // Add workspace items
+    // Add workspace items, grouped by sidebar category (apps/packages/features/…)
+    // with a colored separator label per group. No cap — categories keep a
+    // long list organized instead of silently hiding workspaces past a fixed
+    // count.
     if (filteredWorkspaces.length > 0) {
-      const maxVisible = 10;
-      const hasMore = filteredWorkspaces.length > maxVisible;
-      const visibleWorkspaces = filteredWorkspaces.slice(0, maxVisible);
-      const workspaceItems = visibleWorkspaces.map(workspace => {
+      const visibleWorkspaces = filteredWorkspaces;
+
+      const toItem = (workspace) => {
         const hasAvatar = workspace.avatar_url;
         const workspaceIcon = workspaceIconMap[workspace.icon] || workspaceIconMap.Package;
 
@@ -79,14 +104,37 @@
           subtitle: workspace.description,
           href: `/workspaces/${workspace.id}`
         };
-      });
+      };
 
-      items.push({ type: 'group', items: workspaceItems });
-      if (hasMore) {
-        items.push({ type: 'text', text: t('nav.searchToFindMore') });
+      const categories = $workspaceCategoriesStore.categories;
+      const byCategoryId = new Map();
+      const uncategorized = [];
+      for (const workspace of visibleWorkspaces) {
+        if (workspace.category_id == null) {
+          uncategorized.push(workspace);
+          continue;
+        }
+        const bucket = byCategoryId.get(workspace.category_id) || [];
+        bucket.push(workspace);
+        byCategoryId.set(workspace.category_id, bucket);
       }
+
+      let groupsRendered = 0;
+      for (const category of categories) {
+        const bucket = byCategoryId.get(category.id);
+        if (!bucket || bucket.length === 0) continue;
+        if (groupsRendered > 0) items.push({ type: 'divider' });
+        items.push({ type: 'category-label', text: category.name, color: category.color });
+        items.push({ type: 'group', items: bucket.map(toItem) });
+        groupsRendered += 1;
+      }
+      if (uncategorized.length > 0) {
+        if (groupsRendered > 0) items.push({ type: 'divider' });
+        items.push({ type: 'group', items: uncategorized.map(toItem) });
+      }
+
       items.push({ type: 'divider' });
-    } else if (activeRegularWorkspaces.length > 0 && workspaceSearchQuery) {
+    } else if (groupableWorkspaces.length > 0 && workspaceSearchQuery) {
       // Show "no results" only if there are workspaces but search didn't match
       items.push(
         { type: 'text', text: t('nav.noWorkspacesMatch') },
@@ -129,15 +177,23 @@
 </script>
 
 <nav class="main-sidebar {$uiStore.navExpanded ? 'w-[200px]' : 'w-16'} shadow-lg border-r flex flex-col py-4 fixed h-full z-40 themed-nav transition-all duration-200 overflow-x-hidden" style="border-color: var(--ds-border);" aria-label="Main navigation">
-  <!-- Logo -->
-  <Tooltip content="Windshift" placement="right" disabled={$uiStore.navExpanded}>
+  <!-- Brand block: instance name + flanking emoji, configurable per instance
+       (Admin Settings → Branding) instead of a fixed logo image. -->
+  <Tooltip content={brandingStore.instanceName} placement="right" disabled={$uiStore.navExpanded}>
     <a
       href="/"
       class="flex items-center {$uiStore.navExpanded ? 'px-4' : 'justify-center'} w-full h-10 mb-2 hover:opacity-80 transition-opacity cursor-pointer"
     >
-      <img src="windshift-3.svg" alt="Windshift" class="w-8 h-8 flex-shrink-0" />
       {#if $uiStore.navExpanded}
-        <span class="ml-3 font-semibold text-sm whitespace-nowrap">Windshift</span>
+        {#if brandingStore.iconBefore}
+          <span class="text-xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconBefore}</span>
+        {/if}
+        <span class="mx-2 font-semibold text-sm whitespace-nowrap">{brandingStore.instanceName}</span>
+        {#if brandingStore.iconAfter}
+          <span class="text-xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconAfter}</span>
+        {/if}
+      {:else}
+        <span class="text-2xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconBefore || brandingStore.iconAfter || '🧭'}</span>
       {/if}
     </a>
   </Tooltip>

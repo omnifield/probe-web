@@ -2,7 +2,7 @@
 
 // harness-doctor.mjs — самопроверка установки харнесса. НЕ хук: запускается руками из корня репо.
 //   node .claude/hooks/harness-doctor.mjs                 # общий отчёт
-//   OMNIFIELD_SCOPE=<scope> node .claude/hooks/harness-doctor.mjs   # + кто ты при этом scope
+//   WEBCORE_SCOPE=<scope> node .claude/hooks/harness-doctor.mjs   # + кто ты при этом scope
 //
 // Печатает реальность (продукт · зоны+существование папок · твоя роль · регистрация хуков ·
 // marker), чтобы не приходилось «понимать по описанию»: запустил — увидел. Zero-deps
@@ -38,10 +38,6 @@ import {
   zoneReality,
 } from "./harness-config.mjs";
 
-/** Личность обвеса (`package.json.baser.source.id`). Дубль объявления — но ГРОМКИЙ:
- *  расхождение с манифестом ловит contract.test.mjs. Личность стабильна по построению,
- *  имя пакета — нет (форма §1: имя это доставка, id это личность). */
-export const SOURCE_ID = "brainer/harness";
 /** Имя эталонного блока регистрации внутри contentRoot обвеса. */
 export const REGISTRATION_BLOCK = "settings.hooks.json";
 const CONSUMER_SETTINGS = join(".claude", "settings.json");
@@ -390,22 +386,22 @@ export function report(cwd, moduleUrl) {
   p("");
 
   // --- текущий scope ---------------------------------------------------------
-  const scope = process.env.OMNIFIELD_SCOPE;
+  const scope = process.env.WEBCORE_SCOPE;
   if (!scope) {
-    p("OMNIFIELD_SCOPE не задан — запусти `OMNIFIELD_SCOPE=main|<zone> ...` чтобы увидеть роль.");
+    p("WEBCORE_SCOPE не задан — запусти `WEBCORE_SCOPE=main|<zone> ...` чтобы увидеть роль.");
     p(`доступные scope: ${knownScopes(config).join(", ")}`);
   } else {
     const resolved = resolveScope(scope, config);
     if (scope === "main") {
-      p(ok(`OMNIFIELD_SCOPE=main → architect (git: ${gitAccess("main", config)})`));
+      p(ok(`WEBCORE_SCOPE=main → architect (git: ${gitAccess("main", config)})`));
     } else if (resolved?.kind === "zone") {
       p(
         ok(
-          `OMNIFIELD_SCOPE=${scope} → owner-${scope} (git: ${gitAccess(scope, config)}), папки: ${resolved.paths.map((x) => `${x}/`).join(", ")}`,
+          `WEBCORE_SCOPE=${scope} → owner-${scope} (git: ${gitAccess(scope, config)}), папки: ${resolved.paths.map((x) => `${x}/`).join(", ")}`,
         ),
       );
     } else {
-      p(bad(`OMNIFIELD_SCOPE=${scope} НЕ резолвится в зону (роль: ${roleOf(scope)})`));
+      p(bad(`WEBCORE_SCOPE=${scope} НЕ резолвится в зону (роль: ${roleOf(scope)})`));
       p(`    доступные: ${knownScopes(config).join(", ")}`);
     }
   }

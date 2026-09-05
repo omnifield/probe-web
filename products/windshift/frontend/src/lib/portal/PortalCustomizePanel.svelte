@@ -283,7 +283,7 @@
   <!-- Vertical Navigation Sidebar -->
   <div class="w-16 border-r flex flex-col items-center py-4" style="background-color: var(--ds-surface-raised); border-color: var(--ds-border);">
     <!-- Edit Mode Toggle -->
-    <Tooltip content="Edit Mode" placement="right">
+    <Tooltip content={t('portal.customize.editMode')} placement="right">
       {#snippet children()}
         <button
           onclick={() => portalStore.toggleEditing()}
@@ -406,7 +406,7 @@
       {#if portalStore.isEditing}
         <div class="flex items-center gap-2 px-3 py-2 mb-4 rounded text-xs" style="background-color: var(--ds-status-info-bg); color: var(--ds-status-info-text);">
           <Info class="w-4 h-4 flex-shrink-0" />
-          <span>Edit mode active — make changes directly on the portal</span>
+          <span>{t('portal.customize.editModeActiveBanner')}</span>
         </div>
       {/if}
       {#if portalStore.activeSection === 'hero-gradient'}
@@ -615,7 +615,7 @@
                           class="px-1.5 py-0.5 text-[10px] font-medium rounded"
                           style="background-color: {portalStore.isDarkMode ? 'rgba(156, 163, 175, 0.2)' : '#f3f4f6'}; color: {portalStore.isDarkMode ? '#9ca3af' : '#6b7280'};"
                         >
-                          INACTIVE
+                          {t('common.inactive')}
                         </span>
                       {/if}
                     </div>

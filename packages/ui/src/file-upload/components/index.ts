@@ -1,9 +1,42 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { FileUpload, type FileUploadProps } from "./root.js";
+export { FileUploadLabel, type FileUploadLabelProps } from "./label.js";
+export { FileUploadDropzone, type FileUploadDropzoneProps } from "./dropzone.js";
+export { FileUploadTrigger, type FileUploadTriggerProps } from "./trigger.js";
+export { FileUploadClearTrigger, type FileUploadClearTriggerProps } from "./clear-trigger.js";
+export { FileUploadItemGroup, type FileUploadItemGroupProps } from "./item-group.js";
+export { FileUploadItem, type FileUploadItemProps } from "./item/index.js";
+export { FileUploadItemName, type FileUploadItemNameProps } from "./item/name.js";
+export { FileUploadItemSizeText, type FileUploadItemSizeTextProps } from "./item/size-text.js";
+export { FileUploadItemPreview, type FileUploadItemPreviewProps } from "./item/preview.js";
+export { FileUploadItemPreviewImage, type FileUploadItemPreviewImageProps } from "./item/preview-image.js";
+export { FileUploadItemDeleteTrigger, type FileUploadItemDeleteTriggerProps } from "./item/delete-trigger.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { FileUpload } from "./root.js";
+import { FileUploadLabel } from "./label.js";
+import { FileUploadDropzone } from "./dropzone.js";
+import { FileUploadTrigger } from "./trigger.js";
+import { FileUploadClearTrigger } from "./clear-trigger.js";
+import { FileUploadItemGroup } from "./item-group.js";
+import { FileUploadItem } from "./item/index.js";
+import { FileUploadItemName } from "./item/name.js";
+import { FileUploadItemSizeText } from "./item/size-text.js";
+import { FileUploadItemPreview } from "./item/preview.js";
+import { FileUploadItemPreviewImage } from "./item/preview-image.js";
+import { FileUploadItemDeleteTrigger } from "./item/delete-trigger.js";
+
+export const kit = defineKitComponent(passport, {
+  root: FileUpload,
+  label: FileUploadLabel,
+  dropzone: FileUploadDropzone,
+  trigger: FileUploadTrigger,
+  clearTrigger: FileUploadClearTrigger,
+  itemGroup: FileUploadItemGroup,
+  item: FileUploadItem,
+  itemName: FileUploadItemName,
+  itemSizeText: FileUploadItemSizeText,
+  itemPreview: FileUploadItemPreview,
+  itemPreviewImage: FileUploadItemPreviewImage,
+  itemDeleteTrigger: FileUploadItemDeleteTrigger,
+});

@@ -4,7 +4,7 @@ import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createStore, useSelector } from "../src/index.js";
-import { createMachine, useMachine } from "../src/machine.js";
+import { createMachine, useMachine } from "../src/machine/index.js";
 
 let dispose: (() => void) | undefined;
 
@@ -14,7 +14,7 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("@omnifield/probe-web-store — слой ./ (createStore)", () => {
+describe("@web-core/store — слой ./ (createStore)", () => {
   it("useSelector отдаёт аксессор и реагирует на send", () => {
     const store = createStore({
       context: { count: 0 },
@@ -38,7 +38,7 @@ describe("@omnifield/probe-web-store — слой ./ (createStore)", () => {
   });
 });
 
-describe("@omnifield/probe-web-store — слой ./machine (xstate)", () => {
+describe("@web-core/store — слой ./machine (xstate)", () => {
   it("useMachine отдаёт реактивный СНАПШОТ (не аксессор) и send переводит состояние", () => {
     const toggleMachine = createMachine({
       id: "toggle",

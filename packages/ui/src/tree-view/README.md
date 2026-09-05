@@ -1,103 +1,150 @@
-# Tree View
+# 🌳 Tree View
 
-**Group:** — · **Genus:** component · **Footprint:** wide
+🏷️ iteration · 🧬 component · 📐 wide · 📦 `@web-core/ui`
 
-## Anatomy
+## 🧭 Навигация
 
-| part | meaning |
-|---|---|
-| root | дерево целиком — один узел, оборачивающий подпись и сам список |
-| label | подпись дерева — заголовок над списком |
-| tree | список узлов верхнего уровня — `role="tree"`; вложенные листья и ветки строятся рекурсивно |
-| item | один лист — конечный узел без потомков; кликабельная и фокусируемая строка (roving tabindex) |
-| itemText | подпись листа |
-| itemIndicator | отметка выделения листа — кит прячет её атрибутом `hidden`, пока лист не выделен; графику кладёт потребитель |
-| branch | одна ветка — узел с потомками, вложенными в `branchContent` |
-| branchControl | кликабельная и фокусируемая строка ветки — настоящий фокус живёт здесь (roving tabindex), не на `branch` |
-| branchText | подпись ветки |
-| branchIndicator | индикатор раскрытия — обычно стрелка, которую скин поворачивает по `data-state`; графику кладёт потребитель |
-| branchTrigger | отдельная кнопка переключения раскрытия — `role="button"` на `<div>`; клавиатурный фокус на неё никогда не приходит, он остаётся на `branchControl`. Нативный `disabled` здесь отражает не отключённость ветки, а именно `loading` — сама отключённость приходит своим атрибутом `data-disabled` |
-| branchContent | контейнер потомков ветки — виден только пока она раскрыта; при закрытии скрывается целиком атрибутом `hidden`, без измеренной высоты и без анимации (в отличие от аккордеона — у этой части нет `--height`) |
-| branchIndentGuide | вертикальная направляющая линия на глубине узла — чисто структурный элемент, своей графики не несёт |
-| nodeCheckbox | чекбокс узла — работает и на листе, и на ветке; кликабелен, но сам никогда не получает клавиатурный фокус (фокус всегда остаётся на строке) |
-| nodeRenameInput | настоящее поле ввода переименования — показывается только пока узел в режиме переименования (`F2` или `startRenaming`) |
+- 🧩 [Анатомия](#анатомия)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- 🚀 [Использование](#использование)
 
-## States
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-| part | state | mark | meaning |
-|---|---|---|---|
-| root | — | — | — |
-| label | — | — | — |
-| tree | — | — | — |
-| item | focus | [data-focus] | реальный фокус клавиатуры/мыши стоит на этом листе |
-| item | selected | [data-selected] | лист входит в текущее выделение |
-| item | disabled | [data-disabled] | лист отключён — клик по нему не выделяет и не переключает |
-| item | renaming | [data-renaming] | подпись листа сейчас редактируется (`F2` или `startRenaming`) |
-| item | checked | [data-checked] | лист отмечен целиком — для дерева с чекбоксами |
-| item | indeterminate | [data-indeterminate] | отмечена только часть — у листа своих потомков нет, но отметку можно задать извне тем же атрибутом, что и у ветки |
-| itemText | disabled | [data-disabled] | лист отключён |
-| itemText | selected | [data-selected] | лист выделен |
-| itemText | focus | [data-focus] | фокус стоит на этом листе |
-| itemIndicator | disabled | [data-disabled] | лист отключён |
-| itemIndicator | selected | [data-selected] | лист выделен |
-| itemIndicator | focus | [data-focus] | фокус стоит на этом листе |
-| branch | selected | [data-selected] | ветка входит в текущее выделение |
-| branch | disabled | [data-disabled] | ветка отключена — раскрыть, выделить или отметить её нельзя |
-| branch | loading | [data-loading] | ветка подгружает своих потомков (`loadChildren`) |
-| branch | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branch | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchControl | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branchControl | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchControl | disabled | [data-disabled] | ветка отключена |
-| branchControl | selected | [data-selected] | ветка входит в текущее выделение |
-| branchControl | focus | [data-focus] | реальный фокус стоит на этой строке |
-| branchControl | renaming | [data-renaming] | подпись ветки сейчас редактируется (`F2` или `startRenaming`) |
-| branchControl | checked | [data-checked] | ветка отмечена целиком — для дерева с чекбоксами |
-| branchControl | indeterminate | [data-indeterminate] | отмечена только часть потомков ветки |
-| branchControl | loading | [data-loading] | ветка подгружает своих потомков |
-| branchControl | hover | :hover | указатель наведён на строку |
-| branchControl | active | :active | строка нажата указателем |
-| branchText | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branchText | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchText | disabled | [data-disabled] | ветка отключена |
-| branchText | loading | [data-loading] | ветка подгружает своих потомков |
-| branchIndicator | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branchIndicator | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchIndicator | disabled | [data-disabled] | ветка отключена |
-| branchIndicator | selected | [data-selected] | ветка входит в текущее выделение |
-| branchIndicator | focus | [data-focus] | реальный фокус стоит на строке ветки |
-| branchIndicator | loading | [data-loading] | ветка подгружает своих потомков |
-| branchTrigger | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branchTrigger | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchTrigger | disabled | [data-disabled] | ветка отключена — клик по этой кнопке не раскрывает и не закрывает её |
-| branchTrigger | loading | [data-loading] | ветка подгружает своих потомков; нативный `disabled` кнопки в этот момент тоже включён |
-| branchTrigger | hover | :hover | указатель наведён на строку |
-| branchTrigger | active | :active | строка нажата указателем |
-| branchContent | open | [data-state="open"] | ветка раскрыта — её содержимое видно |
-| branchContent | closed | [data-state="closed"] | ветка закрыта — узел содержимого остаётся в разметке, но скрыт атрибутом `hidden` |
-| branchIndentGuide | — | — | — |
-| nodeCheckbox | checked | [data-state="checked"] | узел отмечен целиком |
-| nodeCheckbox | unchecked | [data-state="unchecked"] | узел не отмечен |
-| nodeCheckbox | indeterminate | [data-state="indeterminate"] | отмечена только часть потомков узла |
-| nodeCheckbox | disabled | [data-disabled] | узел отключён |
-| nodeCheckbox | hover | :hover | указатель наведён на строку |
-| nodeCheckbox | active | :active | строка нажата указателем |
-| nodeRenameInput | — | — | — |
+```
+root
+└─ item[] 🍃/🌿
+   ├─ control ▶️
+   │  └─ controlIndicator
+   └─ content 📂
+```
 
-## Settings
+| часть                 | значение                                                           | принимает внутри                       | рисуется               |
+| --------------------- | ------------------------------------------------------------------ | -------------------------------------- | ---------------------- |
+| 🌳 `root`             | дерево целиком — один узел                                         | только `item`                          | `TreeRoot`             |
+| 🍃🌿 `item`           | один узел повтора — лист или ветка, решает сам компонент по данным | `control`, `content`                   | `TreeItem`             |
+| ▶️ `control`          | шапка узла — кликабельная и фокусируемая строка                    | текст, иконку, любой компонент         | `TreeControl`          |
+| 🔽 `controlIndicator` | индикатор внутри шапки — раскрытие для ветки, выделение для листа  | только иконку                          | `TreeControlIndicator` |
+| 📂 `content`          | открытый слот узла — своего вида не несёт                          | `item`, текст, иконку, любой компонент | `TreeContent`          |
 
-| setting | meaning | default | mark |
-|---|---|---|---|
+<h2 id="состояния">🎛️ Состояния</h2>
 
-## CSS Variables
+|      | состояние     | метка                  | где                             | значение                                            |
+| ---- | ------------- | ---------------------- | ------------------------------- | --------------------------------------------------- |
+| 🎯   | focus         | `[data-focus]`         | item, control, controlIndicator | реальный фокус стоит на этом узле                   |
+| ✅   | selected      | `[data-selected]`      | item, control, controlIndicator | узел входит в текущее выделение                     |
+| 🚫   | disabled      | `[data-disabled]`      | item, control, controlIndicator | узел отключён                                       |
+| ⏳   | loading       | `[data-loading]`       | item, control, controlIndicator | узел-ветка подгружает потомков (`loadChildren`)     |
+| 🔓🔒 | open / closed | `[data-state]`         | item, control, controlIndicator | ветка раскрыта / закрыта                            |
+| ✏️   | renaming      | `[data-renaming]`      | item, control                   | подпись сейчас редактируется (`F2`/`startRenaming`) |
+| ☑️   | checked       | `[data-checked]`       | item, control                   | узел отмечен целиком — для дерева с чекбоксами      |
+| ➖   | indeterminate | `[data-indeterminate]` | item, control                   | отмечена только часть потомков                      |
+| 🖱️   | hover         | `:hover`               | control                         | указатель наведён на строку                         |
+| 👆   | active        | `:active`              | control                         | строка нажата указателем                            |
 
-| part | variable | set by | meaning |
-|---|---|---|---|
-| item | `--depth` | kit | глубина вложенности листа — от неё считается отступ строки |
-| branch | `--depth` | kit | глубина вложенности ветки — от неё считается отступ строки |
+<h2 id="io">🔌 IO</h2>
 
-## Notes
+<h3 id="io-вход">📥 Вход</h3>
 
-<!-- user:start -->
-_Nothing written here yet — this section survives regeneration; everything above it does not._
-<!-- user:end -->
+```json
+{
+  "items": [
+    {
+      "id": "string",
+      "label": "string",
+      "children": [recursive]
+    }
+  ]
+}
+```
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```tsx
+const onDispatch = (event: DispatchedEvent) => {
+  // Клик по узлу, возвращает все данные кликнотого узла, кроме детей.
+  // event.context.payload = { id: "a", label: "Alpha" }
+};
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  dispatch={onDispatch}
+/>;
+```
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+<h3 id="сборка-base">🧱 base</h3>
+
+```
+root
+  item[] 🍃/🌿          · repeat: /items · bind: весь узел
+    control ▶️           · on: click → controlClick
+      🏷️ text: {label}
+      controlIndicator 🔽
+    content 📂
+```
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+Доказательный рецепт (`playground/recipe.ts`) — доказывает, что паспорт МОЖНО одеть целиком
+настоящей скин-механикой (`skinGaps` пуст, CSS реально генерируется). В продакшене не участвует —
+живой вид дерева живёт в `packages/skin`, не здесь. Своих вариантов нет — рецепт не несёт оси
+`data-variant`.
+
+> [!WARNING]
+> `content` рисуется то простым `<div>`, то `ArkBranchContent` (ветка) — а видимость ветки
+> переключает нативный `[hidden]`. Безусловный `display` в базе проиграл бы ему по специфичности
+> (`[data-scope][data-part]` — два атрибута против одного) — ветка перестала бы схлопываться,
+> продолжая честно переключать атрибут под капотом. Поэтому у `content`/`controlIndicator`
+> `display` появляется только внутри состояний (`open`/`closed`/`selected`), никогда в базе.
+
+Отступ строки — одна формула на `item`, `control` её достаёт через `ancestors`, не своим
+`var(--depth)`:
+
+```
+calc(var(--space-3) + var(--depth) * var(--space-6))
+```
+
+<h2 id="использование">🚀 Использование</h2>
+
+**Ручная сборка** — компонент собирается вручную, JSX-композицией, без схемы и движка.
+
+```tsx
+<TreeRoot>
+  <TreeItem>
+    <TreeControl>
+      <TreeControlIndicator />
+    </TreeControl>
+    <TreeContent />
+  </TreeItem>
+</TreeRoot>
+```
+
+**Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
+
+```tsx
+const data = { items: [{ id: "a", label: "Alpha" }] };
+const tree = instanceOf("tree-view", {}, "base", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
+```
+
+**Рендер через движок с передачей компонента в нужный слот** — то же дерево движка, но узел
+`content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
+
+```tsx
+const data = { items: [{ id: "a", label: "Alpha" }] };
+const tree = instanceOf("tree-view", {}, "base", data);
+
+<RenderTree
+  tree={tree}
+  registry={registry}
+  data={data}
+  slots={{ "tree-view.content": { render: () => <div>CONTENT</div> } }}
+/>;
+```

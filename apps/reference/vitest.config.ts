@@ -8,6 +8,6 @@
 // Единственный тест, которому пресет не подходит, объявляет своё окружение сам — докблоком
 // `@vitest-environment node` в `test/chain.test.ts`: он не рендерит, а запускает НАСТОЯЩУЮ
 // сборку. Это механика vitest на файл, а не правка пресета.
-import { defineTestConfig } from "@omnifield/probe-web-build/vitest";
+import { defineTestConfig } from "@web-core/build/vitest";
 
 export default defineTestConfig();

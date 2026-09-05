@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-skin",
+  "name": "@web-core/skin",
   "version": "0.0.0",
-  "description": "probe-web skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, and CSS generation (PWEB-4). The mechanic is a framework; the actual dressing lives in the product.",
+  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, CSS generation, and wearing it (switch/connection) — a framework, not a product's own dressing.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -21,6 +21,18 @@
     "./editor": {
       "types": "./dist/editor.d.ts",
       "default": "./dist/editor.js"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "default": "./dist/presets.js"
+    },
+    "./wear": {
+      "types": "./dist/wear.d.ts",
+      "default": "./dist/wear.js"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "default": "./dist/solid.js"
     }
   },
   "files": [
@@ -31,28 +43,29 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
   "dependencies": {
+    "@web-core/trace": "workspace:*",
     "@zag-js/anatomy": "^1.43.1"
   },
   "peerDependencies": {
-    "@omnifield/probe-web-style": "^0.1.0",
+    "@web-core/style": "^0.1.0",
     "postcss": "^8.5.14",
-    "postcss-nested": "^7.0.2"
+    "postcss-nested": "^7.0.2",
+    "solid-js": "^1.9.14"
   },
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
-    "@omnifield/probe-web-runtime": "workspace:*",
-    "@omnifield/probe-web-style": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "@web-core/style": "workspace:*",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "postcss": "^8.5.14",
@@ -68,6 +81,9 @@
       "optional": true
     },
     "postcss-nested": {
+      "optional": true
+    },
+    "solid-js": {
       "optional": true
     }
   }

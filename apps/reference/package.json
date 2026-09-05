@@ -1,8 +1,8 @@
 {
-  "name": "@omnifield/probe-web-reference",
+  "name": "@web-core/reference",
   "version": "0.0.0",
   "private": true,
-  "description": "Эталонное приложение probe-web: гейт сборки всей цепочки. В реестр не едет (PROBEWEB-4).",
+  "description": "Эталонное приложение web-core: гейт сборки всей цепочки. В реестр не едет (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
@@ -15,16 +15,16 @@
   },
   "dependencies": {
     "@kobalte/core": "^0.13.12",
-    "@omnifield/probe-web-runtime": "workspace:*",
-    "@omnifield/probe-web-skin": "workspace:*",
-    "@omnifield/probe-web-style": "workspace:*",
-    "@omnifield/probe-web-style-tools": "workspace:*",
-    "@omnifield/probe-web-ui": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/solid": "workspace:*",
+    "@web-core/style": "workspace:*",
+    "@web-core/trace": "workspace:*",
+    "@web-core/ui": "workspace:*",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",

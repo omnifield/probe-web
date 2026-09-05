@@ -1,6 +1,3 @@
-// EDITOR-ONLY per-setting text for the workspace — read by `./index.ts`'s `defineEditorInfo` call
-// (`PWEB-161`). Same physical shape as every other component's `playground/settings.ts`.
-
 export const settings = {
   outlined: {
     means:

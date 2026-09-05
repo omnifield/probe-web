@@ -1,0 +1,69 @@
+# Дорожная карта инфраструктуры кита (packages/ui как пакета, не отдельного компонента) — формат
+# тот же, что у роадмапов компонентов (см. table/ROADMAP.yaml, шапка). Единственный источник
+# правды: статус проставляется рядом с работой, в момент когда она сделана.
+#
+# ОТЛИЧИЕ от роадмапов компонентов: это не фичи одного компонента, а процессная/инфраструктурная
+# работа над пакетом целиком — сборка, публикация, документация, тестирование. При синке в
+# Windshift ложится не под Initiative "Кит" (внешний экспорт для потребителей), а под отдельную
+# Initiative "Внутренняя разработка".
+
+categories:
+  - category: Сборка
+    items:
+      - id: vite-build
+        type: feature
+        status: Done
+        priority: High
+        name: Репозиторий пакета + сборка через Vite
+        description: Поднят репозиторий веб-библиотеки, настроен Vite на сборку пакета.
+
+      - id: barrel-generator
+        type: feature
+        priority: Medium
+        name: Генератор барелов
+        description: Настройка генератора barrel-файлов (index.ts) для пакета.
+
+  - category: Документация
+    items:
+      - id: docs-canonical
+        type: feature
+        priority: Medium
+        name: Перевод всех компонентов на эталон документации
+        description: >
+          Каждый компонент кита приведён к единому эталону документации (README/FAQ/ROADMAP в
+          установленном формате). Сам факт унификации, без перечисления конкретных компонентов —
+          список и так виден по дереву компонентов.
+
+  - category: Публикация
+    items:
+      - id: deploy-staging
+        type: feature
+        priority: Medium
+        name: Деплой на стенд
+        description: Настройка деплоя пакета на тестовый стенд.
+
+      - id: kit-versioning
+        type: feature
+        priority: Medium
+        name: Версионирование кита
+        description: Настройка версионирования пакета.
+
+      - id: nexus-publish
+        type: feature
+        priority: Medium
+        name: Подключение к NEXUS и публикация
+        description: Подключение пакета к NEXUS и настройка публикации в него.
+
+      - id: repo-split
+        type: feature
+        priority: Medium
+        name: Переезд в отдельный рабочий репозиторий
+        description: Вынос пакета из текущего репозитория в отдельный рабочий репозиторий.
+
+  - category: Тестирование
+    items:
+      - id: screenshot-testing
+        type: feature
+        priority: Medium
+        name: Скриншот-тестирование
+        description: Дополнение возможностей тестирования компонентов скриншот-тестами.

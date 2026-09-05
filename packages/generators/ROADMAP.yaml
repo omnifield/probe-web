@@ -1,0 +1,267 @@
+# Дорожная карта @web-core/generators — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/store/packages/build (categories → items, log → журнал решений); без milestones
+# — у пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Раннер
+    items:
+      - id: entry-context
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: EntryContext — без node:fs в руках плагина
+        description: |
+          Означает: плагин узнаёт про файлы entry (есть ли файл, прочитать текст, импортировать
+          модуль, получить абсолютный путь) через объект, который ему передал раннер — не через
+          собственный `import fs`/`node:path`.
+
+      - id: aggregate-and-per-entry-plugins
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: AggregatePlugin / PerEntryPlugin — две формы плагина
+        description: |
+          Означает: «один файл из всех entries» (агрегат, например барель) и «файл на каждый
+          entry» (например README компонента) — два разных, явно различимых вида плагина, не один
+          с флагом режима.
+
+      - id: define-config-and-run
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: defineConfig / run — раннер вида vite/webpack
+        description: |
+          Означает: продукт описывает `{ rootDir, isEntry, plugins }`, раннер сам сканирует,
+          гоняет каждый плагин (собрать → провалидировать → отрендерить) и пишет результат —
+          продукту не нужно писать оркестрацию руками.
+
+      - id: zones-auto-merge
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: zones — ручная зона сливается раннером сама
+        description: |
+          Означает: плагин просто называет зоны строками (`zones: ["notes"]`) — раннер сам читает
+          то, что сейчас на диске, и сливает зону из `preserve`, плагину не нужно звать
+          `mergeMarkedRegions` руками.
+
+      - id: has-file-predicate
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: hasFile — предикат isEntry без ручного existsSync/join
+        description: |
+          Означает: `isEntry: hasFile("entity/passport.ts")` вместо `existsSync(join(entryPath,
+          "entity/passport.ts"))` в каждом конфиге продукта.
+
+      - id: engine-consolidated
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: barrel + scaffold + plugin слиты в один engine
+        description: |
+          Означает: одна и та же механика (скан → собрать → отрендерить → записать) больше не
+          продублирована в трёх модулях — `scan`/`write`/`template`/`identifier`/типы живут в
+          одном `engine/`, раннер вызывает `AggregatePlugin`/`PerEntryPlugin` напрямую, без
+          промежуточного приведения типа к старым `BarrelSpec`/`ScaffoldSpec`. См. FAQ.md.
+
+      - id: plugin-renamed-to-engine
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Модуль переименован plugin → engine
+        description: |
+          Означает: папка с нулём настоящих плагинов внутри больше не называется так, будто она
+          сама плагин — переименована в то, чем реально является: механика, запускающая плагины.
+          Слово «плагин» осталось только в названиях типов. См. FAQ.md.
+
+  - category: Чтение TS-модулей
+    items:
+      - id: import-module
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: importModule — чтение реального значения, не текста
+        description: |
+          Означает: `entity/passport.ts` читается ИСПОЛНЕНИЕМ (headless `vite` dev-сервер), не
+          разбором AST — данные, построенные вызовом хелпера (`definePassport(...)`), приходят
+          такими, какими их реально видит остальное приложение.
+
+      - id: import-module-cjs-and-jsx-fix
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Второй аргумент InlineConfig — фикс CJS-интеропа и JSX
+        description: |
+          Означает: транзитивная CommonJS-зависимость без `exports` (`fast-json-patch` под
+          `@web-core/io`) и `.tsx` с настоящим Solid JSX больше не валят `importModule` —
+          вызывающий передаёт свой `InlineConfig` (`ssr.noExternal`, `plugins: [solid()]`), пакет
+          остаётся не в курсе ни про одно, ни про другое. См. FAQ.md.
+
+  - category: Сохранение правок
+    items:
+      - id: merge-marked-regions
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: mergeMarkedRegions — одна размеченная зона переживает регенерацию
+        description: |
+          Означает: прогон, целиком перезаписывающий файл, не стирает то, что человек дописал
+          между парой маркеров — свежий рендер несёт свой плейсхолдер, `mergeMarkedRegions`
+          подставляет вместо него то, что реально было на диске.
+
+  - category: Точка входа
+    items:
+      - id: cli-entry-point
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: web-core-generate — CLI грузит TS-конфиг исполнением
+        description: |
+          Означает: продукту не нужно писать `fileURLToPath`/`dirname`/`await run(...)` в своём
+          скрипте — один конфиг-файл (`export default defineConfig(...)`) плюс
+          `web-core-generate <config>`. `runCli` экспортирован отдельно для программного вызова.
+
+  - category: Готовые плагины
+    items:
+      - id: kit-barrel-plugins
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: kitBarrelPlugins — passport/kit/io/index под «кит»-раскладку
+        description: |
+          Означает: продукт с раскладкой `entity/`+`playground/`+`components/kit.ts(x)` (сегодня
+          — `packages/ui`) не пишет данные четырёх барелей руками — только пути (`outputDir`,
+          `templatesDir`). См. FAQ.md про границу применимости («кит» в имени не декоративный).
+
+      - id: kit-readme-plugin
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Готовый PerEntryPlugin — README на каждый компонент кита
+        description: |
+          Означает: механическая часть README компонента (таблицы anatomy/states/settings, зоны
+          passport/io/components/assemblies/recipe/notes) — тоже готовый плагин отсюда, не
+          рукописный `.mjs`/`.ts` в `packages/ui`. Была рабочая версия до переезда сюда
+          (`packages/ui/generators/readme.mjs`) — логика перенесётся, не пишется с нуля.
+
+      - id: kit-prompt-plugin
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: Готовый PerEntryPlugin — сырой промпт для пишущего агента
+        description: |
+          Означает: сбор сырых данных компонента (паспорт+editorInfo+реальный исходник
+          `kit.tsx`) в один файл для агента, который потом дописывает прозу — тоже готовый плагин,
+          не рукописный скрипт в `packages/ui`.
+
+  - category: Не сделано
+    items:
+      - id: scaffold-write-read-tags
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: scaffold — создание НОВОГО файла по шаблону, с чтением обратно
+        description: |
+          Означает: способность создать НОВЫЙ файл по шаблону (как `nx generate`, не пересборка
+          существующего — это уже умеют `AggregatePlugin`/`PerEntryPlugin`), где часть шаблона —
+          блоки с фиксированной структурой, которые можно перечитать обратно в данные, а часть —
+          свободная проза, которую движок не трогает.
+
+          Устройство (согласовано с user, см. журнал ниже, ЕЩЁ НЕ РЕАЛИЗОВАНО):
+          тег — чистая адресация текстом («вот этот кусок — блок X»), работает одинаково в любом
+          файле, движок сам тегов не интерпретирует. Двусторонний разбор содержимого блока (и
+          рисует, и парсит обратно из ОДНОЙ схемы) — не часть движка, а ПЛАГИН под конкретный
+          формат (TypeScript, дальше markdown), схему вызывающий код передаёт вместе с данными,
+          не хранит её при теге. `write` и `read` — независимые составные инструменты, не одна
+          операция «записал-перечитал»: `read` отдаёт данные вызвавшему его коду, а не действует
+          сам по себе. `.hbs` остаётся отдельным, однонаправленным инструментом — для содержимого,
+          которое никогда не перечитывается обратно (обвязка файла, части без тега).
+
+log:
+  - id: engine-consolidated-from-barrel-scaffold-plugin
+    type: plan
+    date: 2026-09-04
+    summary: >
+      `barrel` (агрегатный рендер) и `scaffold` (файл на запись) были двумя модулями с
+      несимметричной зависимостью — `scaffold` тянул `Entry`/`GeneratedFile`/скан/запись прямо из
+      `../barrel/`, хотя оба вида равнозначны. Поверх обоих появился `plugin` (раннер с
+      `EntryContext`), приводивший `AggregatePlugin`/`PerEntryPlugin` к `BarrelSpec`/
+      `ScaffoldSpec` через `as unknown as` и звавший их же функции — та же механика в третий раз,
+      последний слой — небезопасным кастом. User: «выглядит как помойка». Слито в один `engine/`:
+      `runAggregatePlugin`/`runPerEntryPlugin` реализованы прямо в терминах `AggregatePlugin`/
+      `PerEntryPlugin`, без промежуточных типов и без каста. Тесты низкого уровня
+      (scan/write/template/identifier) перенесены как есть; тесты старых
+      `generateBarrels`/`generateScaffoldFiles`/`runBarrelGeneration`/`runScaffoldGeneration` не
+      перенесены — то же поведение уже покрыто тестами раннера.
+
+  - id: plugin-renamed-to-engine
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Сразу за слиянием: папка `plugin` (единственное число) не содержала НИ ОДНОГО настоящего
+      плагина — только раннер и формы плагина (`AggregatePlugin`/`PerEntryPlugin`). User: «где сам
+      движок-то? я вижу только плагины». Переименовано в `engine` — имя, отвечающее тому, чем
+      модуль реально является (механика, запускающая плагины), не тому, что он производит. Слово
+      «плагин» осталось только в названиях типов.
+
+  - id: kit-barrel-moved-then-reverted-then-moved-properly
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Первый заход перенёс логику четырёх барелей кита (`passport`/`kit`/`io`/`index`) прямо в
+      `packages/ui/generators/*.mjs` как хендрайтед JS-плагины, без общего движка. User отклонил:
+      «реализация не та, плюс выглядит грязно». Второй заход построил `engine`/CLI, но саму данные
+      барелей снова оставил в `packages/ui` (`generate.config.ts`), исходя из «плагин с доменным
+      знанием — дело потребителя». User поправил: «плагины сразу неси в продукт генераторов, это
+      будут юзать все». Итог — `plugins/kit/barrels.ts`: данные барелей (какие поля собрать,
+      какие entries участвуют в `io.ts`, обе проверки валидации) — в `@web-core/generators`,
+      параметризованы только путями (`outputDir`, `templatesDir`); текст самих файлов
+      (Handlebars-шаблоны) остаётся у потребителя, как продукт-специфичное знание. `packages/ui`'s
+      `generate.config.ts` — тонкая обвязка поверх готового плагина.
+
+  - id: scaffold-concept-agreed
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Концепция `scaffold` (создание нового файла по шаблону, с блоками, которые можно перечитать
+      обратно) согласована с user пошагово, вопрос за вопросом, каждый шаг записывался сюда сразу
+      после подтверждения — не пересказом по памяти. Итоговая форма: тег — чистая текстовая
+      адресация блока, одинаковая в любом файле, движок не знает про форматы вообще. Двусторонний
+      разбор содержимого блока — плагин под конкретный формат (кандидат для TypeScript —
+      `ts-morph`: `getStructure()`/`set()`/`printStructure()`, одна схема на обе стороны;
+      markdown — свой, ещё не выбран), подключается по необходимости, движок сам ни про TS, ни
+      про markdown ничего не знает. Схема — не хранится при теге, вызывающий код передаёт её сам,
+      вместе с данными. `write`/`read` — независимые составные инструменты (пример цепочки:
+      `write` создал файл → человек заполнил блоки → `read` вытащил данные → они ушли в `write`
+      ДРУГОГО файла), не одна операция над одним файлом. `.hbs` остаётся отдельным
+      однонаправленным инструментом для содержимого, которое никогда не перечитывается. Реализация
+      — следующий шаг, после наведения порядка в самом пакете (см. `id: docs-collapsed-to-single-triad`).
+
+  - id: docs-collapsed-to-single-triad
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Репозиторий формализовал единый шаблон доки сущности (корневой README.md, раздел «Как это
+      оформляется в доке») — одна тройка README/FAQ/ROADMAP.yaml НА ПАКЕТ, не по одной на каждый
+      подпуть. У `generators` было пять отдельных README (`src/engine/`, `src/extract/`,
+      `src/preserve/`, `src/plugins/kit/`, `src/scaffold/`) — собраны в одну тройку в корне,
+      `genus: engine` (как у `packages/store`) — у пакета есть один настоящий механизм (раннер
+      плагинов), `extract`/`preserve` — его собственные внутренние опоры, не независимые соседи,
+      как было бы у `genus: tooling`. Код в `src/` не тронут — правка только докой.

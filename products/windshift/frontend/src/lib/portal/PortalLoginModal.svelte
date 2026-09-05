@@ -90,7 +90,7 @@
       onloginsuccess?.();
       closeModal();
     } else {
-      internalError = authStore.error || 'Login failed';
+      internalError = authStore.error || t('portal.loginFailed');
     }
   }
 
@@ -137,7 +137,7 @@
                 <p class="text-sm mt-1" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.82)' : 'var(--ds-text-subtle)'};">{t('portal.magicLinkSent')}</p>
               </div>
             </div>
-            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label="Close">
+            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label={t('common.close')}>
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -162,7 +162,7 @@
               <h2 id="portal-login-title" class="text-xl font-semibold" style="color: {hasPortalVisual ? '#ffffff' : 'var(--ds-text)'};">{t('portal.signInTitle')}</h2>
               <p class="text-sm mt-1 leading-relaxed" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.82)' : 'var(--ds-text-subtle)'};">{t('portal.signInDescription')}</p>
             </div>
-            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label="Close">
+            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label={t('common.close')}>
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -216,7 +216,7 @@
           {#if passkeySupported}
             <div class="my-5 flex items-center gap-3 text-xs" style="color: var(--ds-text-subtle);">
               <span class="flex-1 h-px" style="background-color: var(--ds-border);"></span>
-              <span>or</span>
+              <span>{t('portal.or')}</span>
               <span class="flex-1 h-px" style="background-color: var(--ds-border);"></span>
             </div>
             <Button
@@ -250,10 +250,10 @@
             style="{hasPortalVisual ? portalStore.headerBackgroundStyle : 'background-color: var(--ds-surface-card);'} border-color: {hasPortalVisual ? 'rgba(255,255,255,0.18)' : 'var(--ds-border)'};"
           >
             <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.72)' : 'var(--ds-text-subtle)'};">Windshift staff</div>
+              <div class="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.72)' : 'var(--ds-text-subtle)'};">{t('portal.staffLabel')}</div>
               <h2 id="portal-login-title" class="text-xl font-semibold" style="color: {hasPortalVisual ? '#ffffff' : 'var(--ds-text)'};">{t('portal.internalSignIn')}</h2>
             </div>
-            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label="Close">
+            <button type="button" onclick={closeModal} class="modal-close" style="color: {hasPortalVisual ? 'rgba(255,255,255,0.88)' : 'var(--ds-text-subtle)'};" aria-label={t('common.close')}>
               <X class="w-5 h-5" />
             </button>
           </div>

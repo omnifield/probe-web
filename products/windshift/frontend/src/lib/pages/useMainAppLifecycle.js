@@ -17,10 +17,12 @@ import {
   homepageStore,
   permissionStore,
   ssoStore,
+  workspaceCategoriesStore,
   workspaceDataStore,
   workspacePermissions,
   workspacesStore,
 } from '../stores';
+import { brandingStore } from '../stores/branding.svelte.js';
 import { capabilitiesStore } from '../stores/capabilities.svelte.js';
 import { startNotificationPoller, stopNotificationPoller } from '../stores/notifications.js';
 import { initDesktopFocusRefresh } from '../utils/desktopFocusRefresh.svelte.js';
@@ -90,6 +92,8 @@ export function useMainAppLifecycle({
 
     const deferredTasks = [
       () => workspacesStore.loadPersonalWorkspace(),
+      () => workspaceCategoriesStore.load(),
+      () => brandingStore.load(),
       async () => {
         try {
           const bootstrap = await api.shellBootstrap.get();

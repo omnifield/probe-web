@@ -826,6 +826,10 @@
             onBeforeDiagramOpen={flushSave}
             {onDiagramPersisted}
             onContentChange={onContentInput}
+            onAnchorClick={(slug) => {
+              const target = headings.find((h) => h.slug === slug);
+              if (target) scrollToHeading(target);
+            }}
           />
         </div>
         {#if mode === 'read' && headings.length > 0}

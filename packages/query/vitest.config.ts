@@ -2,7 +2,7 @@ import solid from "vite-plugin-solid";
 import { defineConfig } from "vitest/config";
 
 // Браузерное окружение целиком: смоук-проба монтирует настоящий QueryClientProvider + useQuery
-// в JSDOM. `module` в условиях — той же страховкой, что завела `@omnifield/probe-web-store`
+// в JSDOM. `module` в условиях — той же страховкой, что завела `@web-core/store`
 // (`vitest.config.ts` там же, разбор — в её README): дальний вендор может публиковать dual-пакет
 // по конвенции бандлеров, и без "module" резолв уходит в CJS-ветку с ВТОРОЙ копией Solid.
 export default defineConfig({

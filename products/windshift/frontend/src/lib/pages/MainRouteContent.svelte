@@ -21,7 +21,8 @@
   import NotificationsPage from './NotificationsPage.svelte';
   import OAuthAuthorize from './OAuthAuthorize.svelte';
   import SearchPage from './SearchPage.svelte';
-  import Security from './Security.svelte';
+  import McpConsole from './McpConsole.svelte';
+import Security from './Security.svelte';
   import UnauthorizedAccess from './UnauthorizedAccess.svelte';
   import UserProfile from './UserProfile.svelte';
   import Workspaces from '../workspaces/Workspaces.svelte';
@@ -133,6 +134,8 @@
   <div class="p-6" style="background-color: var(--ds-surface);">
     <Security />
   </div>
+{:else if view === 'mcp-console'}
+  <McpConsole />
 {:else if view === 'about'}
   <About />
 {:else if view === 'api-docs'}

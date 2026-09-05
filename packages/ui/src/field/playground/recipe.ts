@@ -1,12 +1,4 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// `input`/`select`/`textarea` share ONE look (`../entity/passport.ts`'s own `controlStates`):
-// interchangeable renderers of the same conceptual control, not three different looks.
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const controlTransition = "border-color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out)";
 
@@ -14,9 +6,6 @@ const controlProps = {
   boxSizing: "border-box",
   width: "100%",
   minBlockSize: "var(--control-height-md)",
-  // `control-padding-inline` (`space-4`) — the md control's own padding, `packages/style/src/
-  // dimension.ts`. Used to be `space-3` (paired with `control-height-sm`, not `-md`) — the
-  // mismatch was found and fixed in PWEB-198.
   paddingInline: "var(--space-4)",
   borderWidth: "var(--border-width-1)",
   borderStyle: "solid",
@@ -31,6 +20,7 @@ const controlProps = {
 
 const controlStates = {
   hover: { props: { borderColor: "var(--neutral-8)" } },
+  focus: { props: { outline: "none" } },
   "focus-visible": {
     props: {
       outline: "var(--border-width-2) solid var(--accent-8)",
@@ -38,8 +28,9 @@ const controlStates = {
     },
   },
   invalid: { props: { borderColor: "var(--danger-9)" } },
+  required: { props: { borderColor: "var(--neutral-7)" } },
   readonly: { props: { background: "var(--neutral-2)" } },
-  disabled: { props: { background: "var(--neutral-3)", color: "var(--neutral-9)", cursor: "not-allowed" } },
+  disabled: { props: { background: "var(--neutral-3)", color: "var(--neutral-11)", cursor: "not-allowed" } },
 } as const;
 
 export const recipe: SlotRecipe = {
@@ -48,6 +39,8 @@ export const recipe: SlotRecipe = {
       props: { display: "flex", flexDirection: "column", gap: "var(--space-1)" },
       states: {
         disabled: { props: { opacity: "0.6" } },
+        invalid: { props: { opacity: "1" } },
+        readonly: { props: { opacity: "0.85" } },
       },
     },
     label: {
@@ -61,6 +54,9 @@ export const recipe: SlotRecipe = {
       },
       states: {
         disabled: { props: { color: "var(--neutral-11)" } },
+        invalid: { props: { color: "var(--danger-11)" } },
+        readonly: { props: { color: "var(--neutral-11)" } },
+        required: { props: { fontWeight: "var(--weight-semibold)" } },
       },
     },
     input: { props: controlProps, states: controlStates },
@@ -80,7 +76,7 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-11)",
       },
       states: {
-        disabled: { props: { color: "var(--neutral-9)" } },
+        disabled: { props: { color: "var(--neutral-11)" } },
       },
     },
     errorText: {
@@ -91,11 +87,10 @@ export const recipe: SlotRecipe = {
     },
     requiredIndicator: {
       props: {
-        color: "var(--danger-9)",
+        color: "var(--danger-11)",
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "field-sample", component: "field", recipe };

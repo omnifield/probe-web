@@ -1,7 +1,7 @@
 {
   "//": [
     "Config for THIS package itself. The zone does not hand out its own `tsconfig` outward — the",
-    "`build` zone sets the baseline for apps via its `/tsconfig` subpath (PROBEWEB-4).",
+    "`build` zone sets the baseline for apps via its `/tsconfig` subpath.",
     "",
     "JSX is configured here ONLY for the sake of tests: the skin mechanic itself renders no",
     "component at all — it turns data into text. Live markup is needed by `test/dom.tsx`/",

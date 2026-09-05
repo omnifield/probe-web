@@ -1,14 +1,4 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — only proves the
-// passport CAN be dressed whole by the real skin mechanism (`skinGaps` empty, CSS is generated).
-// Same physical shape as every other component's `playground/recipe.ts` (`PWEB-127`).
-//
-// The classic scrollbar grid: `viewport` top-left, vertical `scrollbar` top-right, horizontal
-// `scrollbar` bottom-left, `corner` bottom-right — `root` is the grid, everyone else just claims
-// a cell. `root` gets a FIXED height so the proof assembly's long text actually overflows;
-// nothing here scrolls on an empty box.
-
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 const transition = "background-color var(--motion-fast) var(--ease-out)";
 
@@ -28,9 +18,21 @@ export const recipe: SlotRecipe = {
         borderRadius: "var(--radius-lg)",
         background: "var(--neutral-1)",
       },
+      states: {
+        "overflow-x": { props: { overscrollBehaviorX: "contain" } },
+        "overflow-y": { props: { overscrollBehaviorY: "contain" } },
+      },
     },
     viewport: {
       props: { gridColumn: "1 / 2", gridRow: "1 / 2" },
+      states: {
+        "overflow-x": { props: { overscrollBehaviorX: "contain" } },
+        "overflow-y": { props: { overscrollBehaviorY: "contain" } },
+        "at-top": { props: { scrollPaddingBlockStart: "0" } },
+        "at-bottom": { props: { scrollPaddingBlockEnd: "0" } },
+        "at-left": { props: { scrollPaddingInlineStart: "0" } },
+        "at-right": { props: { scrollPaddingInlineEnd: "0" } },
+      },
     },
     content: {
       props: {
@@ -38,6 +40,10 @@ export const recipe: SlotRecipe = {
         color: "var(--neutral-12)",
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
+      },
+      states: {
+        "overflow-x": { props: { willChange: "scroll-position" } },
+        "overflow-y": { props: { willChange: "scroll-position" } },
       },
     },
     scrollbar: {
@@ -51,6 +57,11 @@ export const recipe: SlotRecipe = {
       states: {
         vertical: { props: { gridColumn: "2 / 3", gridRow: "1 / 2", width: "0.75rem", flexDirection: "column" } },
         horizontal: { props: { gridColumn: "1 / 2", gridRow: "2 / 3", height: "0.75rem", flexDirection: "row" } },
+        "overflow-x": { props: { pointerEvents: "auto" } },
+        "overflow-y": { props: { pointerEvents: "auto" } },
+        hover: { props: { background: "var(--neutral-3)" } },
+        dragging: { props: { background: "var(--neutral-4)" } },
+        scrolling: { props: { opacity: "1" } },
       },
     },
     thumb: {
@@ -62,6 +73,8 @@ export const recipe: SlotRecipe = {
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
+        vertical: { props: { minHeight: "1.5rem" } },
+        horizontal: { props: { minWidth: "1.5rem" } },
         hover: { props: { background: "var(--neutral-8)" } },
         dragging: { props: { background: "var(--neutral-9)" } },
       },
@@ -75,10 +88,12 @@ export const recipe: SlotRecipe = {
       states: {
         hidden: { props: { display: "none" } },
         visible: { props: { display: "block" } },
+        "overflow-x": { props: { pointerEvents: "none" } },
+        "overflow-y": { props: { pointerEvents: "none" } },
+        hover: { props: { background: "var(--neutral-3)" } },
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
 export const form: Form = { name: "scroll-area-sample", component: "scroll-area", recipe };

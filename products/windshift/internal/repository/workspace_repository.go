@@ -24,23 +24,24 @@ func NewWorkspaceRepository(db database.Database) *WorkspaceRepository {
 }
 
 // workspaceSelectBase is the common SELECT columns for workspace queries.
-const workspaceSelectBase = `SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.time_project_id, w.is_personal, w.owner_id, w.icon, w.color, w.avatar_url, w.default_view, w.display_mode, w.internal_comments_enabled, w.created_at, w.updated_at,
-       tp.name as time_project_name`
+const workspaceSelectBase = `SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_overview, w.time_project_id, w.is_personal, w.owner_id, w.icon, w.color, w.avatar_url, w.default_view, w.display_mode, w.internal_comments_enabled, w.created_at, w.updated_at, w.category_id,
+       tp.name as time_project_name, wc.name as category_name, wc.color as category_color`
 
 const workspaceFromJoinsBase = ` FROM workspaces w
-LEFT JOIN time_projects tp ON w.time_project_id = tp.id`
+LEFT JOIN time_projects tp ON w.time_project_id = tp.id
+LEFT JOIN workspace_categories wc ON w.category_id = wc.id`
 
-const workspaceGroupByBase = ` GROUP BY w.id, w.name, w.key, w.description, w.active, w.is_template, w.time_project_id, w.is_personal, w.owner_id, w.icon, w.color, w.avatar_url, w.default_view, w.display_mode, w.internal_comments_enabled, w.created_at, w.updated_at, tp.name`
+const workspaceGroupByBase = ` GROUP BY w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_overview, w.time_project_id, w.is_personal, w.owner_id, w.icon, w.color, w.avatar_url, w.default_view, w.display_mode, w.internal_comments_enabled, w.created_at, w.updated_at, w.category_id, tp.name, wc.name, wc.color`
 
 // scanWorkspaceBase scans a standard workspace row and applies nullable fields.
 func scanWorkspaceBase(s interface{ Scan(dest ...any) error }) (models.Workspace, error) {
 	var ws models.Workspace
-	var icon, color, defaultView, displayMode, timeProjectName sql.NullString
+	var icon, color, defaultView, displayMode, timeProjectName, categoryName, categoryColor sql.NullString
 	err := s.Scan(&ws.ID, &ws.Name, &ws.Key, &ws.Description,
-		&ws.Active, &ws.IsTemplate, &ws.TimeProjectID, &ws.IsPersonal, &ws.OwnerID,
+		&ws.Active, &ws.IsTemplate, &ws.IsOverview, &ws.TimeProjectID, &ws.IsPersonal, &ws.OwnerID,
 		&icon, &color, &ws.AvatarURL, &defaultView, &displayMode,
 		&ws.InternalCommentsEnabled,
-		&ws.CreatedAt, &ws.UpdatedAt, &timeProjectName)
+		&ws.CreatedAt, &ws.UpdatedAt, &ws.CategoryID, &timeProjectName, &categoryName, &categoryColor)
 	if err != nil {
 		return ws, err
 	}
@@ -48,6 +49,8 @@ func scanWorkspaceBase(s interface{ Scan(dest ...any) error }) (models.Workspace
 	ws.Color = color.String
 	ws.DefaultView = defaultView.String
 	ws.TimeProjectName = timeProjectName.String
+	ws.CategoryName = categoryName.String
+	ws.CategoryColor = categoryColor.String
 	return ws, nil
 }
 
@@ -193,7 +196,7 @@ func (r *WorkspaceRepository) ListIDKeys() ([]IDKey, error) {
 // FindByID retrieves a workspace by ID with its time-tracking project name.
 func (r *WorkspaceRepository) FindByID(id int) (*models.Workspace, error) {
 	var workspace models.Workspace
-	var timeProjectName, icon, color, defaultView, displayMode sql.NullString
+	var timeProjectName, icon, color, defaultView, displayMode, categoryName, categoryColor sql.NullString
 	var configSetID sql.NullInt64
 
 	err := r.db.QueryRow(workspaceSelectBase+`,
@@ -201,11 +204,11 @@ func (r *WorkspaceRepository) FindByID(id int) (*models.Workspace, error) {
 		LEFT JOIN workspace_configuration_sets wcs ON w.id = wcs.workspace_id
 		WHERE w.id = ?`+workspaceGroupByBase+`, wcs.configuration_set_id
 	`, id).Scan(&workspace.ID, &workspace.Name, &workspace.Key, &workspace.Description,
-		&workspace.Active, &workspace.IsTemplate, &workspace.TimeProjectID, &workspace.IsPersonal, &workspace.OwnerID,
+		&workspace.Active, &workspace.IsTemplate, &workspace.IsOverview, &workspace.TimeProjectID, &workspace.IsPersonal, &workspace.OwnerID,
 		&icon, &color, &workspace.AvatarURL, &defaultView, &displayMode,
 		&workspace.InternalCommentsEnabled,
-		&workspace.CreatedAt, &workspace.UpdatedAt,
-		&timeProjectName, &configSetID)
+		&workspace.CreatedAt, &workspace.UpdatedAt, &workspace.CategoryID,
+		&timeProjectName, &categoryName, &categoryColor, &configSetID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -218,6 +221,8 @@ func (r *WorkspaceRepository) FindByID(id int) (*models.Workspace, error) {
 	workspace.Color = color.String
 	workspace.DefaultView = defaultView.String
 	workspace.TimeProjectName = timeProjectName.String
+	workspace.CategoryName = categoryName.String
+	workspace.CategoryColor = categoryColor.String
 	if configSetID.Valid {
 		workspace.ConfigurationSetID = &configSetID.Int64
 	}
@@ -305,11 +310,11 @@ func (r *WorkspaceRepository) CreateTx(tx database.Tx, workspace *models.Workspa
 	var id int64
 
 	err := tx.QueryRow(`
-		INSERT INTO workspaces (name, key, description, active, is_template, time_project_id, is_personal, owner_id, icon, color, avatar_url, default_view, display_mode, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO workspaces (name, key, description, active, is_template, is_overview, category_id, time_project_id, is_personal, owner_id, icon, color, avatar_url, default_view, display_mode, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 	`, workspace.Name, workspace.Key, workspace.Description, workspace.Active,
-		workspace.IsTemplate, workspace.TimeProjectID, workspace.IsPersonal, workspace.OwnerID,
+		workspace.IsTemplate, workspace.IsOverview, workspace.CategoryID, workspace.TimeProjectID, workspace.IsPersonal, workspace.OwnerID,
 		workspace.Icon, workspace.Color, workspace.AvatarURL, workspace.DefaultView, "default",
 		now, now).Scan(&id)
 

@@ -1,0 +1,10 @@
+{
+  "//": "Точка `/tsconfig` — фронтенд-профиль. Разбор — README.md/FAQ.md пакета.",
+  "extends": "./shared.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"]
+  }
+}

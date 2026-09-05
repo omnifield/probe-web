@@ -17,7 +17,7 @@ import { defineConfig } from "vitest/config";
 //     гармошки лежат в СОСЕДНЕМ файле рядом с компонентом (`src/accordion/accordion.live.test.ts`),
 //     а не в `accordion.test.tsx` (разбор — в шапке `accordion.live.test.ts`).
 //
-// Пресет `@omnifield/probe-web-build/vitest` сюда НЕ подключается: он собран под ОДИН проект
+// Пресет `@web-core/build/vitest` сюда НЕ подключается: он собран под ОДИН проект
 // (окружение jsdom, три вещи из доки Solid), а у зоны их три с разными окружениями и
 // конвейерами (см. выше) — пресет решал бы не ту задачу. `ui` вполне зависит от `build` для
 // сборки (`vite.config.ts`, `defineLibraryConfig`) — это уже не табу (`PROBEWEB-4`).
@@ -35,6 +35,9 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "jsdom",
+          // jsdom не несёт `ResizeObserver` — настоящие Zag-машины зовут его напрямую, без
+          // заглушки падают раньше, чем до проверяемого поведения доходит очередь.
+          setupFiles: ["test/setup-dom.ts"],
           // Три адреса: общезонные пробы — в `test/`; компонентные — в своей же папке, под
           // `test/` (`src/<имя>/test/*.test.tsx`, `PWEB-195` continuation — компоненты
           // переезжают на эту раскладку по одному). Старый плоский адрес

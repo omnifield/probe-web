@@ -249,6 +249,12 @@ export default {
     mermaidRendering: 'Rendering diagram',
     mermaidParseError: 'Mermaid parse error',
     mermaidEmpty: 'Empty mermaid block',
+    // GitHub-style blockquote alerts (`> [!NOTE]` etc.)
+    alertNote: 'Note',
+    alertTip: 'Tip',
+    alertImportant: 'Important',
+    alertWarning: 'Warning',
+    alertCaution: 'Caution',
   },
 
   dialogs: {
@@ -385,6 +391,8 @@ export default {
       profileSubtitle: 'Manage your profile and settings',
       security: 'Security',
       securitySubtitle: 'Manage passwords, 2FA, and API tokens',
+      mcpConsole: 'MCP Console',
+      mcpConsoleSubtitle: 'Browse and run this server\'s MCP tools live',
       themeTitle: 'Theme: {mode}',
       themeLight: 'Light',
       themeDark: 'Dark',
@@ -597,5 +605,22 @@ export default {
     apiReference: 'API reference',
     licenses: 'Licenses',
     reportProblem: 'Report a problem',
+  },
+
+  mcpConsole: {
+    title: 'MCP Console',
+    subtitle: 'Live catalog of this server\'s MCP tools — calls go through the real protocol, same as any external MCP client.',
+    searchPlaceholder: 'Search tools…',
+    selectPrompt: 'Select a tool from the list',
+    schemaHeading: 'Input schema',
+    argsHeading: 'Arguments (JSON)',
+    execute: 'Execute',
+    executing: 'Running…',
+    resultHeading: 'Result',
+    errorHeading: 'Error',
+    destructiveWarning: 'This tool is marked destructive — double-check the arguments before running it.',
+    tokenError: 'Could not mint a session token for the console.',
+    loadError: 'Could not reach the MCP server.',
+    invalidJson: 'Arguments must be valid JSON.',
   },
 };

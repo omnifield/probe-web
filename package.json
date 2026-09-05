@@ -1,13 +1,13 @@
 {
-  "name": "probe-web",
+  "name": "web-core",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "FORCE_COLOR=0 nx run-many -t build -p '@omnifield/*'",
-    "test": "FORCE_COLOR=0 nx run-many -t test -p '@omnifield/*'",
-    "lint": "FORCE_COLOR=0 nx run-many -t lint -p '@omnifield/*'",
-    "typecheck": "FORCE_COLOR=0 nx run-many -t typecheck -p '@omnifield/*'",
-    "dev": "nx run-many -t dev -p '@omnifield/*' --parallel=10",
+    "build": "FORCE_COLOR=0 nx run-many -t build -p '@web-core/*'",
+    "test": "FORCE_COLOR=0 nx run-many -t test -p '@web-core/*'",
+    "lint": "FORCE_COLOR=0 nx run-many -t lint -p '@web-core/*'",
+    "typecheck": "FORCE_COLOR=0 nx run-many -t typecheck -p '@web-core/*'",
+    "dev": "nx run-many -t dev -p '@web-core/*' --parallel=10",
     "graph": "nx graph",
     "nx": "nx"
   },

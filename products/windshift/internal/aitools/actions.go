@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -255,6 +256,11 @@ type updateActionArgs struct {
 	WorkspaceID int                 `json:"workspace_id" jsonschema:"Workspace the action lives in. Must match the action's stored workspace; mismatches return 'workspace not found' to avoid leaking that a cross-workspace id exists."`
 	ActionID    int                 `json:"action_id" jsonschema:"ID of the action to replace"`
 	Action      actionDefinitionArg `json:"action" jsonschema:"Full replacement graph. Updates are not partial — call get_action first to read the existing graph, mutate, and send the complete definition back. Anything you omit is deleted."`
+}
+
+type deleteActionArgs struct {
+	WorkspaceID int `json:"workspace_id" jsonschema:"Workspace the action lives in. Must match the action's stored workspace; mismatches return 'action not found' to avoid leaking that a cross-workspace id exists."`
+	ActionID    int `json:"action_id" jsonschema:"ID of the action to delete"`
 }
 
 type listActionTemplatesArgs struct{}
@@ -592,6 +598,44 @@ func init() {
 				NodeCount:     len(updated.Nodes),
 				EdgeCount:     len(updated.Edges),
 			}, nil
+		},
+	})
+
+	Register(Default, Tool[deleteActionArgs]{
+		Name:        "delete_action",
+		Group:       CapabilityActions,
+		Access:      AccessDestructive,
+		Risk:        RiskHigh,
+		Description: "Permanently delete an automation action (and its nodes/edges/execution history) from a workspace. Cannot be undone.",
+		Scopes:      []string{auth.ScopeActionsWrite},
+		Run: func(_ context.Context, env *Env, args deleteActionArgs) (any, error) {
+			if !env.HasWorkspaceAccess(args.WorkspaceID) {
+				return map[string]string{"error": "workspace not found"}, nil
+			}
+			ok, err := env.PermService.HasWorkspacePermission(env.UserID, args.WorkspaceID, models.PermissionActionManage)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				return map[string]string{"error": "permission denied"}, nil
+			}
+			repo := repository.NewActionRepository(env.DB)
+			existing, err := repo.GetByID(args.ActionID)
+			if err != nil || existing == nil || existing.WorkspaceID != args.WorkspaceID {
+				// Same 404-disclosure rule as update_action above.
+				return map[string]string{"error": "action not found"}, nil //nolint:nilerr // intentional: don't leak existence of cross-workspace actions
+			}
+			if err := repo.Delete(args.ActionID); err != nil {
+				if errors.Is(err, repository.ErrNotFound) {
+					return map[string]string{"error": "action not found"}, nil
+				}
+				return nil, err
+			}
+			if env.ActionService != nil {
+				env.ActionService.InvalidateWorkspaceCache(args.WorkspaceID)
+			}
+			emitActionAudit(env, logger.ActionAutomationDelete, args.WorkspaceID, args.ActionID, existing.Name)
+			return map[string]any{"success": true, "id": args.ActionID}, nil
 		},
 	})
 

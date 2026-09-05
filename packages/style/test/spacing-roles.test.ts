@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DERIVED_SCALES, SPACE_ROLES, type SpaceRole } from "../src/dimension.js";
-
-// Роли отступов — тот же приём, что `STEP_PURPOSE` у цвета (`packages/style/test/scale.test.ts`
-// проверял его тем же способом до снятия пакета тестов, PWEB-124): число ступени само по себе
-// не несёт смысла, значит смысл обязана нести ЗАКРЫТАЯ таблица, а не память автора рецепта.
+import { DERIVED_SCALES, SPACE_ROLES, type SpaceRole } from "../src/engine/dimension.js";
 
 const SPACE_STEP_NAMES = new Set(
   DERIVED_SCALES.find((scale) => scale.seed === "space")!.steps.map((step) => step.name),

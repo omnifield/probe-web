@@ -23,6 +23,7 @@
   import { excalidrawBlock } from './milkdown-excalidraw-block.svelte.js';
   import PageDiagramModal from '../features/pages/PageDiagramModal.svelte';
   import { highlightCodeBlocks } from './code-highlight.js';
+  import { githubAlertsPlugin } from './github-alerts-plugin.js';
   import { t } from '../stores/i18n.svelte.js';
   import { attachmentStatus } from '../stores/attachmentStatus.svelte.js';
   import { navigate } from '../router.js';
@@ -38,6 +39,7 @@
     expectedContentHash = '',
     onBeforeDiagramOpen = async () => {},
     onDiagramPersisted = (_payload) => {},
+    onAnchorClick = null,
     testId = null
   } = $props();
 
@@ -407,6 +409,24 @@
     return true;
   }
 
+  // In-page anchor links (`[Overview](#overview)`, a manual table of
+  // contents, etc). Milkdown never stamps heading `id`s onto the rendered
+  // DOM, so the browser's native "jump to #id" has nothing to jump to and
+  // the click does nothing. Don't preventDefault — the browser still
+  // updates location.hash, which is worth keeping for copy-a-link-to-this-
+  // section — just also hand the target slug to the caller so it can
+  // scroll to the heading itself (PagesView matches it against its own
+  // parsed heading list).
+  function handleAnchorLinkClick(event) {
+    if (!onAnchorClick) return false;
+    const link = event.target?.closest?.('a[href]');
+    if (!link) return false;
+    const href = link.getAttribute('href') || '';
+    if (!href.startsWith('#') || href.length < 2) return false;
+    onAnchorClick(decodeURIComponent(href.slice(1)));
+    return false;
+  }
+
   function handleDiagramSaved({ attachmentId, name, contentHash, pageContent }) {
     if (!editor) return;
     editor.action(replaceAll(pageContent || ''));
@@ -505,6 +525,7 @@
                 if (handleInternalPageLinkClick(event)) {
                   return true;
                 }
+                handleAnchorLinkClick(event);
                 // Close mention picker when clicking elsewhere
                 if (mentionPickerOpen) {
                   closeMentionPicker();
@@ -530,6 +551,7 @@
         .use(upload)  // Include upload in main chain per docs
         .use(imageBlockComponent)  // Enable image resizing
         .use(mentionDecorationPlugin)  // Add mention chip decorations
+        .use(githubAlertsPlugin)       // Style `> [!NOTE]`-style GitHub alerts
         .use(linkSanitizerPlugin);     // Sanitize dangerous URL schemes in links/images
 
       if (enableDiagrams) {
@@ -1024,6 +1046,81 @@
     margin: 0.75rem 0;
     font-style: italic;
     color: var(--ds-text-subtle);
+  }
+
+  /* GitHub-style alerts (`> [!NOTE]` etc.) — see github-alerts-plugin.js,
+     which decorates the blockquote and hides/replaces the marker text. The
+     underlying "[!IMPORTANT]" text is still in the document (decorations
+     don't touch content), just visually collapsed via .gfm-alert-marker-hidden
+     the same way milkdown-mention-mark.js hides the raw @" "  of a quoted
+     mention. */
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert]) {
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    font-style: normal;
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert] p) {
+    color: var(--ds-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-marker-hidden) {
+    font-size: 0;
+    width: 0;
+    display: inline;
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-title) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-style: normal;
+    margin-bottom: 0.35rem;
+  }
+
+  :global(.milkdown-editor .ProseMirror .gfm-alert-title svg) {
+    flex-shrink: 0;
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='note']) {
+    border-left-color: var(--ds-status-info-border);
+    background-color: var(--ds-status-info-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='note'] .gfm-alert-title) {
+    color: var(--ds-status-info-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='tip']) {
+    border-left-color: var(--ds-status-success-border);
+    background-color: var(--ds-status-success-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='tip'] .gfm-alert-title) {
+    color: var(--ds-status-success-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='important']) {
+    border-left-color: var(--ds-accent-purple);
+    background-color: var(--ds-accent-purple-subtle);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='important'] .gfm-alert-title) {
+    color: var(--ds-accent-purple);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='warning']) {
+    border-left-color: var(--ds-status-warning-border);
+    background-color: var(--ds-status-warning-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='warning'] .gfm-alert-title) {
+    color: var(--ds-status-warning-text);
+  }
+
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='caution']) {
+    border-left-color: var(--ds-status-danger-border);
+    background-color: var(--ds-status-danger-bg);
+  }
+  :global(.milkdown-editor .ProseMirror blockquote[data-alert='caution'] .gfm-alert-title) {
+    color: var(--ds-status-danger-text);
   }
 
   :global(.milkdown-editor .ProseMirror code) {

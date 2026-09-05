@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -58,9 +59,11 @@ func (s *WorkspaceService) List(params WorkspaceListParams) ([]models.Workspace,
 	}
 	listArgs := append(append([]any{}, workspaceArgs...), params.Limit, params.Offset)
 	rows, err := s.db.Query(`
-		SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_personal,
-		       w.icon, w.color, w.internal_comments_enabled, w.created_at, w.updated_at
+		SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_overview, w.is_personal,
+		       w.icon, w.color, w.internal_comments_enabled, w.created_at, w.updated_at,
+		       w.category_id, wc.name, wc.color
 		FROM workspaces w
+		LEFT JOIN workspace_categories wc ON w.category_id = wc.id
 		WHERE w.id IN (`+placeholders+`)
 		ORDER BY w.name
 		LIMIT ? OFFSET ?
@@ -73,14 +76,17 @@ func (s *WorkspaceService) List(params WorkspaceListParams) ([]models.Workspace,
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var ws models.Workspace
-		var icon, color sql.NullString
-		err = rows.Scan(&ws.ID, &ws.Name, &ws.Key, &ws.Description, &ws.Active, &ws.IsTemplate, &ws.IsPersonal,
-			&icon, &color, &ws.InternalCommentsEnabled, &ws.CreatedAt, &ws.UpdatedAt)
+		var icon, color, categoryName, categoryColor sql.NullString
+		err = rows.Scan(&ws.ID, &ws.Name, &ws.Key, &ws.Description, &ws.Active, &ws.IsTemplate, &ws.IsOverview, &ws.IsPersonal,
+			&icon, &color, &ws.InternalCommentsEnabled, &ws.CreatedAt, &ws.UpdatedAt,
+			&ws.CategoryID, &categoryName, &categoryColor)
 		if err != nil {
 			continue
 		}
 		ws.Icon = icon.String
 		ws.Color = color.String
+		ws.CategoryName = categoryName.String
+		ws.CategoryColor = categoryColor.String
 		workspaces = append(workspaces, ws)
 	}
 	if err := rows.Err(); err != nil {
@@ -130,6 +136,8 @@ type CreateWorkspaceParams struct {
 	OwnerID       *int
 	AvatarURL     *string
 	DefaultView   string
+	CategoryID    *int
+	IsOverview    bool
 
 	TemplateWorkspaceID *int
 }
@@ -143,6 +151,9 @@ type CreateWorkspaceResult struct {
 	TemplatesCopied          int
 	ItemsCopied              int
 	OmittedCustomFieldValues int
+	PagesCopied              int
+	MilestonesCopied         int
+	IterationsCopied         int
 }
 
 // Create creates a new workspace and grants the Administrator role to the
@@ -200,7 +211,38 @@ func (s *WorkspaceService) Create(ctx context.Context, params CreateWorkspacePar
 			return nil, fmt.Errorf("commit workspace creation: %w", err)
 		}
 
-		if result.ItemsCopied > 0 || result.TemplatesCopied > 0 || result.ConfigSetAttached {
+		// Pages live outside the clone transaction: PageService.Create manages
+		// its own tx per page, so this runs after the workspace/items commit
+		// and is best-effort — a failure here doesn't unwind the workspace
+		// that already exists. Skipped for CreatorID 0 (unknown actor, e.g.
+		// Jira import jobs) since pages require a real created_by user.
+		if params.TemplateWorkspaceID != nil && params.CreatorID > 0 {
+			pagesCopied, pageErr := s.copyTemplatePages(ctx, *params.TemplateWorkspaceID, result.Workspace.ID, params.CreatorID)
+			result.PagesCopied = pagesCopied
+			if pageErr != nil {
+				slog.Warn("workspace template page copy incomplete",
+					slog.String("component", "workspaces"),
+					slog.Int("workspace_id", result.Workspace.ID),
+					slog.Int("source_workspace_id", *params.TemplateWorkspaceID),
+					slog.Int("pages_copied", pagesCopied),
+					slog.String("error", pageErr.Error()))
+			}
+
+			milestonesCopied, iterationsCopied, planningErr := s.copyTemplatePlanning(*params.TemplateWorkspaceID, result.Workspace.ID)
+			result.MilestonesCopied = milestonesCopied
+			result.IterationsCopied = iterationsCopied
+			if planningErr != nil {
+				slog.Warn("workspace template planning copy incomplete",
+					slog.String("component", "workspaces"),
+					slog.Int("workspace_id", result.Workspace.ID),
+					slog.Int("source_workspace_id", *params.TemplateWorkspaceID),
+					slog.Int("milestones_copied", milestonesCopied),
+					slog.Int("iterations_copied", iterationsCopied),
+					slog.String("error", planningErr.Error()))
+			}
+		}
+
+		if result.ItemsCopied > 0 || result.TemplatesCopied > 0 || result.ConfigSetAttached || result.PagesCopied > 0 {
 			repository.InvalidateItemListCountCache(s.db, result.Workspace.ID)
 			logWorkspaceCloneResult(result, time.Since(started))
 		}
@@ -232,6 +274,8 @@ type UpdateWorkspaceParams struct {
 	InternalCommentsEnabled *bool
 	TimeProjectCategories   *[]int
 	IsTemplate              *bool
+	IsOverview              *bool
+	CategoryID              *int
 }
 
 // Update changes only the supplied workspace fields. Personal workspaces and
@@ -303,6 +347,12 @@ func (s *WorkspaceService) Update(params UpdateWorkspaceParams) (*models.Workspa
 	}
 	if params.IsTemplate != nil {
 		appendField("is_template", *params.IsTemplate)
+	}
+	if params.IsOverview != nil {
+		appendField("is_overview", *params.IsOverview)
+	}
+	if params.CategoryID != nil {
+		appendField("category_id", *params.CategoryID)
 	}
 
 	if len(sets) > 0 {

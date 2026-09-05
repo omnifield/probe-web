@@ -3,6 +3,7 @@
 import { actions } from './actions.js';
 import {
   agentTemplates,
+  brandingSettings,
   oauthClients,
   securitySettings,
   setup,
@@ -141,7 +142,7 @@ import {
   validateApiToken,
 } from './users.js';
 import { statusCategories, statuses, workflows } from './workflows.js';
-import { workspaceRoles, workspaces } from './workspaces.js';
+import { workspaceCategories, workspaceRoles, workspaces } from './workspaces.js';
 
 // Assemble the api object with the same structure as the original
 export const api = {
@@ -156,6 +157,7 @@ export const api = {
   customFields,
   projectFieldRequirements,
   workspaces,
+  workspaceCategories,
   workspaceRoles,
   screens,
   items,
@@ -418,6 +420,9 @@ export const api = {
 
   // Security Settings (admin only)
   securitySettings,
+
+  // Sidebar brand block (read: any user, write: admin only)
+  brandingSettings,
 
   // Authenticated application-shell capability discovery
   shellBootstrap,

@@ -117,6 +117,7 @@ type ItemHandlers struct {
 // WorkspaceHandlers groups workspace-related handlers.
 type WorkspaceHandlers struct {
 	Workspace             *handlers.WorkspaceHandler
+	Category              *handlers.EnumHandler
 	Bootstrap             *handlers.WorkspaceBootstrapHandler
 	Screen                *handlers.ScreenHandler
 	ConfigSet             *handlers.ConfigurationSetHandler
@@ -162,6 +163,7 @@ type UserHandlers struct {
 // AdminHandlers groups admin-related handlers.
 type AdminHandlers struct {
 	SecuritySettings     *handlers.SecuritySettingsHandler
+	BrandingSettings     *handlers.BrandingSettingsHandler
 	AuthPolicy           *handlers.AuthPolicyHandler
 	Theme                *handlers.ThemeHandler
 	UserPreferences      *handlers.UserPreferencesHandler

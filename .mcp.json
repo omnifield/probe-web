@@ -8,9 +8,24 @@
         "Authorization": "Bearer ${WINDSHIFT_TOKEN}"
       }
     },
+    "newWindshift": {
+      "type": "http",
+      "url": "http://localhost:7777/mcp",
+      "headers": {
+        "Authorization": "Bearer ${WINDSHIFT_LOCAL_TOKEN}"
+      }
+    },
     "ark-ui": {
       "command": "npx",
       "args": ["-y", "@ark-ui/mcp"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--executablePath", "/usr/bin/chromium", "--chromeArg=--no-sandbox"]
+    },
+    "skin": {
+      "command": "node",
+      "args": ["apps/skin/.mcp/src/server.js"]
     }
   }
 }

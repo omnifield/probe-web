@@ -1,9 +1,9 @@
-// Живая проба реестра заготовок (PWEB-188): регистрация, чтение по теме, явные отказы вместо
-// тихого `undefined`/тихой перезаписи — тем же приёмом, что уже доказан у `IoRegistry`.
+// Живая проба реестра заготовок: регистрация, чтение по теме, явные отказы вместо тихого
+// `undefined`/тихой перезаписи — тем же приёмом, что уже доказан у `IoRegistry`.
 
 import { describe, expect, it } from "vitest";
 
-import { createPackRegistry } from "../src/packs.js";
+import { createPackRegistry } from "../src/index.js";
 
 describe("createPackRegistry", () => {
   it("регистрирует две разные темы и читает каждую по своему имени", () => {

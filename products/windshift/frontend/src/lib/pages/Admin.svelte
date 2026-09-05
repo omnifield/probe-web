@@ -26,6 +26,7 @@
   import SCMProviderManager from '../settings/SCMProviderManager.svelte';
   import IntegrationsManager from '../settings/IntegrationsManager.svelte';
   import SecuritySettings from '../settings/SecuritySettings.svelte';
+  import BrandingSettings from '../settings/BrandingSettings.svelte';
   import AIContainer from '../settings/AIContainer.svelte';
   import ActionCapabilitiesManager from '../settings/ActionCapabilitiesManager.svelte';
   import AssetManager from '../features/assets/AssetManager.svelte';
@@ -561,6 +562,11 @@
   <!-- Theme Settings Tab -->
   {#if activeTab === 'themes'}
     <ThemeManager />
+  {/if}
+
+  <!-- Branding Settings Tab -->
+  {#if activeTab === 'branding'}
+    <BrandingSettings />
   {/if}
 
   <!-- Hierarchy Levels Tab -->

@@ -1,10 +1,16 @@
 /** Reactive i18n store with lazy locales, RTL, interpolation, pluralization,
  * backend-error translation, and persisted selection. */
 
-import { getPluralCategory, negotiateLocale } from './i18n-utils.js';
+import { getPluralCategory } from './i18n-utils.js';
 
 const STORAGE_KEY = 'windshift-locale';
+// Reference locale: the only catalog guaranteed complete, used as the
+// fallback when a key is missing from the active locale. Keep this 'en'
+// even though the UI now defaults to ru — see DEFAULT_UI_LOCALE below.
 const DEFAULT_LOCALE = 'en';
+// Locale shown to a visitor who hasn't picked one yet (no saved
+// preference). Deliberately independent of the browser's language.
+const DEFAULT_UI_LOCALE = 'ru';
 
 // Supported locale metadata.
 export const SUPPORTED_LOCALES = [
@@ -124,8 +130,14 @@ async function loadFallbackTranslations() {
 /**
  * Load translations for a locale
  * @param {string} localeCode - Locale code to load
+ * @param {object} [options]
+ * @param {boolean} [options.persist=true] - Save this locale as the user's
+ *   preference. Set to `false` for the transient error-fallback below — a
+ *   one-off failed chunk fetch (e.g. a dev-server restart racing a dynamic
+ *   `import()`) must not silently overwrite a saved 'ru' preference with
+ *   'en' for every future visit.
  */
-async function loadTranslations(localeCode) {
+async function loadTranslations(localeCode, { persist = true } = {}) {
   loading = true;
 
   try {
@@ -141,8 +153,9 @@ async function loadTranslations(localeCode) {
     }
     locale = localeCode;
 
-    // Persist to localStorage
-    if (typeof localStorage !== 'undefined') {
+    // Persist to localStorage — only for a deliberate resolution (saved
+    // preference, explicit setLocale), not a transient failure fallback.
+    if (persist && typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, localeCode);
     }
 
@@ -154,9 +167,10 @@ async function loadTranslations(localeCode) {
   } catch (err) {
     console.error(`Failed to load locale: ${localeCode}`, err);
 
-    // Fall back to English if loading fails
+    // Fall back to English IN MEMORY if loading fails — never persisted,
+    // so a transient fetch failure can't overwrite the saved preference.
     if (localeCode !== DEFAULT_LOCALE) {
-      await loadTranslations(DEFAULT_LOCALE);
+      await loadTranslations(DEFAULT_LOCALE, { persist: false });
     }
   } finally {
     loading = false;
@@ -167,21 +181,14 @@ async function loadTranslations(localeCode) {
  * Initialize i18n with saved or default locale
  */
 async function init() {
-  let initialLocale = DEFAULT_LOCALE;
-  let hasSavedPreference = false;
+  let initialLocale = DEFAULT_UI_LOCALE;
 
   // Check localStorage for saved preference
   if (typeof localStorage !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && SUPPORTED_LOCALES.some((l) => l.code === saved)) {
       initialLocale = saved;
-      hasSavedPreference = true;
     }
-  }
-
-  // Only fall back to browser language when no preference was explicitly saved
-  if (!hasSavedPreference && typeof navigator !== 'undefined') {
-    initialLocale = negotiateLocale(navigator.language, SUPPORTED_LOCALES, DEFAULT_LOCALE);
   }
 
   await loadTranslations(initialLocale);

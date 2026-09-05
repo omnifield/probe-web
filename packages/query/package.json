@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-query",
+  "name": "@web-core/query",
   "version": "0.1.0",
-  "description": "Данные из сети probe-web поверх @tanstack/solid-query: одна точка входа вместо вендора, готовый QueryClient с дефолтами (PROBEWEB-4).",
+  "description": "Данные из сети web-core поверх @tanstack/solid-query: одна точка входа вместо вендора, готовый QueryClient с дефолтами (PROBEWEB-4).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -11,12 +11,12 @@
       "default": "./dist/index.js"
     },
     "./devtools": {
-      "types": "./dist/devtools.d.ts",
-      "default": "./dist/devtools.js"
+      "types": "./dist/devtools/index.d.ts",
+      "default": "./dist/devtools/index.js"
     },
     "./persist": {
-      "types": "./dist/persist.d.ts",
-      "default": "./dist/persist.js"
+      "types": "./dist/persist/index.d.ts",
+      "default": "./dist/persist/index.js"
     }
   },
   "files": [
@@ -42,8 +42,8 @@
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@omnifield/probe-web-build": "workspace:*",
-    "@omnifield/probe-web-lint": "workspace:*",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",

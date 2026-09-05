@@ -214,6 +214,55 @@ var Catalog = []Migration{
 			CREATE INDEX idx_notifications_workspace_id ON notifications(workspace_id);
 		`,
 	},
+	{
+		Version:       "20260905_workspace_categories",
+		Name:          "Group workspaces into categories (apps/packages/features) with their own color",
+		CheckSQLite:   sqliteColumnCheck("workspaces", "category_id"),
+		CheckPostgres: pgColumnCheck("workspaces", "category_id"),
+		SQLite: `
+			CREATE TABLE IF NOT EXISTS workspace_categories (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT UNIQUE NOT NULL,
+				color TEXT NOT NULL,
+				description TEXT,
+				sort_order INTEGER NOT NULL DEFAULT 0,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);
+			INSERT OR IGNORE INTO workspace_categories (name, color, sort_order) VALUES
+			('apps', '#7c3aed', 1),
+			('packages', '#3b82f6', 2),
+			('features', '#059669', 3);
+			ALTER TABLE workspaces ADD COLUMN category_id INTEGER;
+			CREATE INDEX IF NOT EXISTS idx_workspaces_category_id ON workspaces(category_id);
+		`,
+		Postgres: `
+			CREATE TABLE IF NOT EXISTS workspace_categories (
+				id SERIAL PRIMARY KEY,
+				name TEXT UNIQUE NOT NULL,
+				color TEXT NOT NULL,
+				description TEXT,
+				sort_order INTEGER NOT NULL DEFAULT 0,
+				created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+			);
+			INSERT INTO workspace_categories (name, color, sort_order) VALUES
+			('apps', '#7c3aed', 1),
+			('packages', '#3b82f6', 2),
+			('features', '#059669', 3)
+			ON CONFLICT (name) DO NOTHING;
+			ALTER TABLE workspaces ADD COLUMN category_id INTEGER;
+			CREATE INDEX IF NOT EXISTS idx_workspaces_category_id ON workspaces(category_id);
+		`,
+	},
+	{
+		Version:       "20260905_workspaces_is_overview",
+		Name:          "Mark the one canonical root/about workspace of a group, pinned first in the sidebar",
+		CheckSQLite:   sqliteColumnCheck("workspaces", "is_overview"),
+		CheckPostgres: pgColumnCheck("workspaces", "is_overview"),
+		SQLite:        `ALTER TABLE workspaces ADD COLUMN is_overview BOOLEAN DEFAULT false;`,
+		Postgres:      `ALTER TABLE workspaces ADD COLUMN is_overview BOOLEAN DEFAULT false;`,
+	},
 }
 
 func (m Migration) checksum(driver string) string {

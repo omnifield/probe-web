@@ -1,9 +1,32 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { Field, type FieldProps } from "./root.js";
+export { FieldLabel, type FieldLabelProps } from "./label.js";
+export { FieldInput, type FieldInputProps } from "./input.js";
+export { FieldSelect, type FieldSelectProps } from "./select.js";
+export { FieldTextarea, type FieldTextareaProps } from "./textarea.js";
+export { FieldHelperText, type FieldHelperTextProps } from "./helper-text.js";
+export { FieldErrorText, type FieldErrorTextProps } from "./error-text.js";
+export { FieldRequiredIndicator, type FieldRequiredIndicatorProps } from "./required-indicator.js";
+export { FieldItem, type FieldItemProps } from "./item.js";
+export { FieldContext, useFieldContext, useField } from "@ark-ui/solid/field";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { Field } from "./root.js";
+import { FieldLabel } from "./label.js";
+import { FieldInput } from "./input.js";
+import { FieldSelect } from "./select.js";
+import { FieldTextarea } from "./textarea.js";
+import { FieldHelperText } from "./helper-text.js";
+import { FieldErrorText } from "./error-text.js";
+import { FieldRequiredIndicator } from "./required-indicator.js";
+
+export const kit = defineKitComponent(passport, {
+  root: Field,
+  label: FieldLabel,
+  input: FieldInput,
+  select: FieldSelect,
+  textarea: FieldTextarea,
+  helperText: FieldHelperText,
+  errorText: FieldErrorText,
+  requiredIndicator: FieldRequiredIndicator,
+});

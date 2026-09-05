@@ -1,23 +1,31 @@
-// EDITOR-ONLY per-part taxonomy for the table — read by `./index.ts`'s `defineEditorInfo` call.
-// Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`).
-
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type TablePart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// `headerCell`/`headerSortTrigger` share one three-valued dictionary (`../entity/passport.ts`'s
-// own `sortStates`) — written once here and reused.
 const sortStateMeans = {
-  ascending: { means: "this column is the one currently sorted, low to high" },
-  descending: { means: "this column is the one currently sorted, high to low" },
-  none: { means: "this column can sort, but isn't the one sorted right now" },
+  ascending: { means: "эта колонка сейчас отсортирована по возрастанию" },
+  descending: { means: "эта колонка сейчас отсортирована по убыванию" },
+  none: { means: "эта колонка умеет сортироваться, но сейчас не она отсортирована" },
+} satisfies PassportPartEditorInfo<TablePart>["states"];
+
+const checkboxStateMeans = {
+  checked: { means: "отмечен" },
+  disabled: { means: "этот чекбокс нельзя использовать" },
+  hover: { means: "указатель наведён на этот чекбокс" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+  active: { means: "этот чекбокс нажат и удерживается" },
+} satisfies PassportPartEditorInfo<TablePart>["states"];
+
+const pinnedStateMeans = {
+  "pinned-start": { means: "колонка закреплена у начала — не уезжает при горизонтальном скролле" },
+  "pinned-end": { means: "колонка закреплена у конца — не уезжает при горизонтальном скролле" },
 } satisfies PassportPartEditorInfo<TablePart>["states"];
 
 export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>>> = {
   root: {
-    means: "the whole table",
+    means: "таблица целиком",
     states: {},
     accepts: [
       { kind: "component", name: "caption" },
@@ -26,59 +34,78 @@ export const parts: Readonly<Record<TablePart, PassportPartEditorInfo<TablePart>
     ],
   },
   caption: {
-    means: "the table's own caption — describes what the table holds",
+    means: "собственная подпись таблицы — что она показывает",
     states: {},
     accepts: [{ kind: "content", genus: "text" }],
   },
   head: {
-    means: "wraps the header row(s)",
+    means: "оборачивает строку(и) заголовков",
     states: {},
     accepts: [{ kind: "component", name: "headRow" }],
   },
   headRow: {
-    means: "one row of column headers",
+    means: "одна строка заголовков колонок",
     states: {},
     accepts: [{ kind: "component", name: "headerCell" }],
   },
   headerCell: {
-    means: "one column's header — carries the sorted look for that column, whether or not it holds a button",
-    states: sortStateMeans,
+    means: "заголовок одной колонки — несёт вид сортировки и закрепления для неё, есть кнопка внутри или нет",
+    states: { ...sortStateMeans, ...pinnedStateMeans },
     accepts: [
       { kind: "component", name: "headerSortTrigger" },
+      { kind: "component", name: "headerSelectTrigger" },
       { kind: "content", genus: "text" },
     ],
   },
   headerSortTrigger: {
-    means: "the button that toggles this column's sort — a real button, separate from its cell so a non-sortable column can simply omit it",
+    means: "кнопка, переключающая сортировку этой колонки — настоящая кнопка, отдельная от ячейки заголовка, чтобы несортируемая колонка могла просто её не нести",
     states: {
       ...sortStateMeans,
-      disabled: { means: "this column cannot sort — no button behavior, just the native disabled look" },
-      hover: { means: "pointer is over this button" },
-      "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-      active: { means: "this button is being held down" },
+      disabled: { means: "эта колонка не умеет сортироваться — поведения кнопки нет, только нативный вид disabled" },
+      hover: { means: "указатель наведён на эту кнопку" },
+      "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+      active: { means: "эта кнопка нажата и удерживается" },
+    },
+    variables: {
+      "--sort-index": { means: "приоритет этой колонки в мультисортировке, считая с 1 — не выставлена, пока колонка не отсортирована" },
     },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
+  headerSelectTrigger: {
+    means: "чекбокс «выбрать все строки» в заголовке — отмечен целиком, частично (indeterminate) или пусто",
+    states: {
+      ...checkboxStateMeans,
+      indeterminate: { means: "выбраны не все строки, но и не ноль" },
+    },
+    accepts: [],
+  },
   body: {
-    means: "wraps the data rows",
+    means: "оборачивает строки данных",
     states: {},
     accepts: [{ kind: "component", name: "row" }],
   },
   row: {
-    means: "one data row — v1 has no per-row look (no selection, no pinning)",
-    states: {},
+    means: "одна строка данных — несёт выбор, если включён; закрепление строк и группировка пока нет",
+    states: {
+      selected: { means: "эта строка выбрана" },
+    },
     accepts: [{ kind: "component", name: "cell" }],
   },
   cell: {
-    means: "one cell — content is the consumer's, same as every other kit part",
-    states: {},
+    means: "одна ячейка — содержимое даёт потребитель, как и у любой другой части кита",
+    states: pinnedStateMeans,
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
       { kind: "component" },
     ],
+  },
+  rowSelectTrigger: {
+    means: "чекбокс выбора одной строки",
+    states: checkboxStateMeans,
+    accepts: [],
   },
 };

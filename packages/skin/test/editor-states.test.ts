@@ -1,8 +1,7 @@
-// Live proof for PWEB-207's follow-up — StatesOf<Passport, Part>/ValuesOf<Passport, Setting>
-// (passport/form/derive.ts) wired into PassportPartEditorInfo/PassportSettingEditorInfo via a new
-// `Passport` type parameter on PassportEditorSpec/PassportEditorInfo/defineEditorInfo.
+// `StatesOf`/`ValuesOf` (passport/form/derive.ts) подключены к PassportPartEditorInfo/
+// PassportSettingEditorInfo через параметр `Passport` на PassportEditorSpec/Info/defineEditorInfo.
 //
-// Mirrors accordion's real stress case on purpose: `root` has NO states, `itemTrigger` has six,
+// Реальный стресс-случай accordion: `root` без состояний, `itemTrigger` — с шестью,
 // `itemContent` has a DIFFERENT four — the point of StatesOf being keyed by PART, not by the whole
 // passport at once. `expectTypeOf`/`@ts-expect-error` are checked by `tsc` (`pnpm typecheck`); this
 // test's runtime body also genuinely calls `defineEditorInfo` (same discipline as
@@ -11,8 +10,8 @@
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { defineEditorInfo } from "../src/passport/editor/index.js";
-import { definePassport, defineSettings } from "../src/passport/form/index.js";
+import { defineEditorInfo } from "../src/editor/index.js";
+import { definePassport, defineSettings } from "../src/engine/passport/form/index.js";
 
 const anatomy = createAnatomy("accordion").parts("root", "item", "itemTrigger", "itemContent");
 
@@ -53,10 +52,10 @@ const passport = definePassport({
   }),
 });
 
-describe("StatesOf/ValuesOf wired into the editor slice, on accordion's real stress case (PWEB-207 follow-up)", () => {
+describe("StatesOf/ValuesOf подключены к срезу редактора, на реальном стресс-случае accordion", () => {
   it("defineEditorInfo accepts different states per part with zero explicit type arguments", () => {
     const editorInfo = defineEditorInfo(passport, {
-      package: "@omnifield/probe-web-ui",
+      package: "@web-core/ui",
       genus: "component",
       variantAxis: { means: "proof" },
       parts: {
@@ -220,10 +219,10 @@ describe("StatesOf/ValuesOf wired into the editor slice, on accordion's real str
     });
 
     // Same registry shape `editorInfoOf` uses across the kit (`packages/ui/src/passport.ts`,
-    // `products/skin`, `products/diagrams`) — a real, fully-typed value must fit in it.
-    function editorInfoOf(): import("../src/passport/editor/index.js").PassportEditorInfo | undefined {
+    // `apps/skin`, `products/diagrams`) — a real, fully-typed value must fit in it.
+    function editorInfoOf(): import("../src/editor/index.js").PassportEditorInfo | undefined {
       return editorInfo;
     }
-    expectTypeOf(editorInfoOf()).toEqualTypeOf<import("../src/passport/editor/index.js").PassportEditorInfo | undefined>();
+    expectTypeOf(editorInfoOf()).toEqualTypeOf<import("../src/editor/index.js").PassportEditorInfo | undefined>();
   });
 });

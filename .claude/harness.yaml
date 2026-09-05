@@ -6,10 +6,10 @@
 #
 # Здесь ТОЛЬКО две вещи: зоны (границы правки) и пины моделей. Ни адресов служб, ни ключей
 # трекера — тем, чего нет, обвес больше не распоряжается.
-apiVersion: omnifield.dev/v1
+apiVersion: web-core.dev/v1
 kind: harness
 
-product: probe-web
+product: web-core
 
 # Число архитекторов (main-сессий).
 architects: 1
@@ -37,12 +37,12 @@ zones:
   ui:
     paths: [packages/ui]
     description: примитивы на Ark/Zag — 1-to-1 DOM, ноль стилей по умолчанию, паспорт компонента
-  runtime:
-    paths: [packages/runtime]
-    description: mount() и надевание скина — то, что зовёт скелет у потребителя
+  shared:
+    paths: [packages/shared]
+    description: "mount()/#root и общий perf-трейсер (createTracer) — то, что зовёт скелет у потребителя. Было packages/runtime; надевание скина уехало в skin-mech (PWEB-221)."
   skin-mech:
     paths: [packages/skin, packages/skin-reference]
-    description: "МЕХАНИКА скина — модель, сборка рецепта по частям, адресация из анатомии, порождение CSS. Рядом `skin-reference`, эталонный скин фреймворка: отдельная поставка, потому что механика не знает ни одного скина. Зависимость односторонняя: эталон знает механику, механика о нём нет. Один овнер у обоих: предмет соседний, компетенция та же."
+    description: "МЕХАНИКА скина — модель, сборка рецепта по частям, адресация из анатомии, порождение CSS, служба раздачи (`./presets`), надевание и снятие (`./wear`, `./solid` — переехало из `packages/runtime`, PWEB-221). Рядом `skin-reference`, эталонный скин фреймворка: отдельная поставка, потому что механика не знает ни одного скина. Зависимость односторонняя: эталон знает механику, механика о нём нет. Один овнер у обоих: предмет соседний, компетенция та же."
   assembly:
     paths: [packages/assembly]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
@@ -52,9 +52,6 @@ zones:
   lint:
     paths: [packages/lint]
     description: пресет eslint-plugin-solid — канон Solid, выраженный машиной
-  starter:
-    paths: [packages/starter]
-    description: npm-обвес @omnifield/probe-web — шаблоны скелета для потребителя
   mcp:
     paths: [packages/mcp]
     description: "тонкий переиспользуемый MCP-сервер (`PWEB-117`) — каркас, которым ЛЮБОЙ продукт на фреймворке подключает агента: фреймворк отдаёт готовые интроспекционные инструменты (паспорта кита, пресеты), продукт добавляет свои поверх одним вызовом. Не про одного конкретного агента (скин-генератор — свой отдельный вопрос, PWEB-115/116) — про общий протокол подключения."
@@ -68,13 +65,13 @@ zones:
     paths: [products/studio, canons/studio]
     description: витрина первой волны — что умеет производство
   presets:
-    paths: [products/presets]
+    paths: [backend/presets]
     description: хранилище пресетов — кладёт и отдаёт JSON, формата фильтра НЕ понимает
   map:
     paths: [products/map, canons/map]
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера
   skin:
-    paths: [products/skin, canons/ui-skin]
+    paths: [apps/skin, canons/ui-skin]
     description: "производство оформлений для безголового кита — своя логика, кит остаётся голым. У продукта СВОЙ архитектор: заявки сюда приходят от него, а не ставятся ему."
   chat:
     paths: [products/chat, canons/chat]

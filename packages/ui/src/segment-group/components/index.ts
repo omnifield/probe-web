@@ -1,9 +1,28 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { SegmentGroup, type SegmentGroupProps } from "./root.js";
+export { SegmentGroupLabel, type SegmentGroupLabelProps } from "./label.js";
+export { SegmentGroupIndicator, type SegmentGroupIndicatorProps } from "./indicator.js";
+export { SegmentGroupItem, type SegmentGroupItemProps } from "./item/index.js";
+export { SegmentGroupItemControl, type SegmentGroupItemControlProps } from "./item/control.js";
+export { SegmentGroupItemText, type SegmentGroupItemTextProps } from "./item/text.js";
+export {
+  SegmentGroupItemHiddenInput,
+  type SegmentGroupItemHiddenInputProps,
+} from "./item/hidden-input.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { SegmentGroup } from "./root.js";
+import { SegmentGroupLabel } from "./label.js";
+import { SegmentGroupIndicator } from "./indicator.js";
+import { SegmentGroupItem } from "./item/index.js";
+import { SegmentGroupItemControl } from "./item/control.js";
+import { SegmentGroupItemText } from "./item/text.js";
+
+export const kit = defineKitComponent(passport, {
+  root: SegmentGroup,
+  label: SegmentGroupLabel,
+  indicator: SegmentGroupIndicator,
+  item: SegmentGroupItem,
+  itemControl: SegmentGroupItemControl,
+  itemText: SegmentGroupItemText,
+});

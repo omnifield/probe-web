@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/app";
 import { cleanup, mount, one, type } from "./dom";
 
-const FLAG = "__PROBE_WEB_REFERENCE_TRACE__";
+const FLAG = "__WEB_CORE_REFERENCE_TRACE__";
 
 type TraceGlobal = typeof globalThis & { [FLAG]?: boolean };
 
@@ -28,7 +28,7 @@ afterEach(() => {
 function ours(spy: { mock: { calls: unknown[][] } }): string[] {
   return spy.mock.calls
     .map((call) => String(call[0]))
-    .filter((line) => line.startsWith("[probe-web-reference]"));
+    .filter((line) => line.startsWith("[web-core-reference]"));
 }
 
 describe("канал трейсов", () => {

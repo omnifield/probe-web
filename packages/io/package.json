@@ -1,7 +1,7 @@
 {
-  "name": "@omnifield/probe-web-io",
+  "name": "@web-core/io",
   "version": "0.0.0",
-  "description": "Универсальный вход/выход данных probe-web: паспорт формы (Zod), реестр по имени компонента, слои преобразования по несхожести данных (PWEB-180). Не зависит от паспорта скина, и наоборот.",
+  "description": "Универсальный вход/выход данных web-core: паспорт формы (Zod), реестр по имени компонента, слои преобразования по несхожести данных (PWEB-180). Не зависит от паспорта скина, и наоборот.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "pnpm run typecheck",
+    "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
   "dependencies": {
@@ -29,7 +29,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
+    "eslint": "^10.8.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }

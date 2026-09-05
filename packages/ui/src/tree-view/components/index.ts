@@ -1,9 +1,21 @@
-// OUTWARD FACE of this folder's components — a plain re-export list, nothing defined here.
-//
-// The real implementations (and the passport-part map built from them) live in `./kit.tsx` — see
-// its own header comment for why the two used to be swapped (`PWEB-195` continuation,
-// 2026-08-30): before this, `index.tsx` held the real implementations (wrong — an "index" is a
-// facade by every other convention in this codebase) and `kit.ts` had to import the very
-// components it was named to just describe.
+export { TreeRoot, type TreeRootProps } from "./root.js";
+export { TreeItem, type TreeItemProps } from "./item/index.js";
+export { TreeControl, type TreeControlProps } from "./item/control.js";
+export { TreeControlIndicator, type TreeControlIndicatorProps } from "./item/indicator.js";
+export { TreeContent, type TreeContentProps } from "./item/content.js";
 
-export * from "./kit.jsx";
+import { defineKitComponent } from "../../kit-form.js";
+import { passport } from "../entity/passport.js";
+import { TreeContent } from "./item/content.js";
+import { TreeControl } from "./item/control.js";
+import { TreeItem } from "./item/index.js";
+import { TreeControlIndicator } from "./item/indicator.js";
+import { TreeRoot } from "./root.js";
+
+export const kit = defineKitComponent(passport, {
+  root: TreeRoot,
+  item: TreeItem,
+  control: TreeControl,
+  controlIndicator: TreeControlIndicator,
+  content: TreeContent,
+});

@@ -1,0 +1,191 @@
+# Дорожная карта @web-core/skin — источник правды по фактически сделанной работе. Формат тот же,
+# что у packages/assembly/packages/store: categories → items, без milestones — у пакета нет
+# освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Паспорт и анатомия
+    items:
+      - id: anatomy-from-zag
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Форма анатомии — от @zag-js/anatomy, не своя
+        description: |
+          Означает: одно объявление анатомии порождает и attrs для узла, и selector для скина —
+          разъехаться им негде по построению. Своей формы паспорта в пакете нет.
+
+      - id: passport-two-slices
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Паспорт режется на срез рантайма и срез редактора
+        description: |
+          Означает: `./model` видит только то, что читают assemble/checkOutfit/generateSkinCss;
+          `means`, сборки и правило вложенности живут в `./editor` и не едут в бандл потребителя,
+          которому порождение не нужно. Разбор — FAQ.md.
+
+      - id: passport-view-bridge
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Мост «узел → координата» (passport-view)
+        description: |
+          Означает: механика сборки адресует узлы, скин — координаты; без моста редактор
+          произвёл бы стили экземпляров, а не скин.
+
+      - id: self-assembly-slice
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Сборка компонента — отдельно от паспорта, их может быть несколько
+        description: |
+          Означает: держатель сборок — срез редактора (`PassportEditorInfo.assemblies`), не поле
+          паспорта; паспорт остался про форму компонента, не про витрину случаев.
+
+  - category: Значения
+    items:
+      - id: seed-values
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Литерал и семя смешиваются как один механизм
+        description: |
+          Означает: скин пересеваем — назвал семя, обе половины построила механика; литерал по
+          имени перебивает построенное, и ручная правка переживает перегенерацию.
+
+      - id: fluid-poles
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Текучий размер объявляется полюсами, не CSS-выражением руками
+        description: |
+          Означает: палитра называет значение на узком и широком краю, `clamp()` печатает
+          механика — наклон проверяем, а не выведен на глаз автором.
+
+      - id: vocabulary-contract
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Словарь ролей — закрытый машинный контракт палитра↔форма↔наряд
+        description: |
+          Означает: роль называется по назначению, не по виду; неполнота палитры относительно
+          словаря названа ДО дressing, не всплывает молча на странице.
+
+  - category: Рецепт и порождение
+    items:
+      - id: recipe-form-from-panda
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Форма рецепта — от Panda CSS, с двумя сознательными отличиями
+        description: |
+          Означает: части/база/вариации/умолчание/пересечения — взятая форма; ось вариаций одна
+          (не карта осей), состояние и предок — координаты из паспорта, не чужой словарь условий.
+
+      - id: nested-output
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Порождение — вложенный CSS по умолчанию, плоский — отдельным подпутём
+        description: |
+          Означает: браузер разворачивает вложенность сам; `./flat` — для файла на диск, старого
+          клиента, сверки снимком, не свойство порождения по умолчанию.
+
+      - id: bound-single-source
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Источник паспортов называется один раз (withPassports)
+        description: |
+          Означает: сигнатура не даёт передать разные источники в проверку наряда и в порождение
+          — раньше это расходилось молча, отчёт был чист, а страница адресовала несуществующее.
+
+  - category: Проверки
+    items:
+      - id: coverage-check
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: skinGaps — покрытие координат значением, не консольным предупреждением
+        description: |
+          Означает: используется каждым recipe.test.tsx кита — проверка одного паспорта против
+          собственного наряда.
+
+      - id: contrast-check
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: skinContrast — читаемость по формуле зоны значений
+        description: |
+          Означает: перечень пар «текст на заливке», не прошедших WCAG-норму, и пар, которые
+          посчитать нечем. Пока без потребителя — витрина ещё не показывает предупреждения.
+
+  - category: Служба раздачи и надевание
+    items:
+      - id: presets-full-crud
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Полный CRUD по каждому виду записи службы раздачи
+        description: |
+          Означает: list/get/save/replace/remove по палитре/форме/наряду/сборке одним клиентом;
+          имя — довод операции, не поле содержимого (у сборки своего имени нет).
+
+      - id: wear-switch-moved
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Надевание скина переехало в движок из отдельного рантайм-пакета
+        description: |
+          Означает: `./wear` (framework-agnostic) + `./solid` (реактивный плагин) — тот же приём,
+          что `@web-core/style/solid`. Гонка source.css() гасится счётчиком последнего действия.
+
+  - category: Структура пакета
+    items:
+      - id: engine-folder-reshape
+        type: refactor
+        status: Done
+        priority: High
+        milestone: null
+        name: Внутренние папки собраны под src/engine/, публичная поверхность пересмотрена
+        description: |
+          Означает: корень — тонкий барель, ~18 внутренних папок нет как отдельных сиблингов;
+          экспорт очищен от шестерёнок без своего глагола (семена/шкалы/адресные селекторы),
+          оставлено то, что реально настраивает движок или названо контрактом для чужого кода.
+
+  - category: Открытое
+    items:
+      - id: contrast-consumer
+        type: feature
+        status: Open
+        priority: Low
+        milestone: null
+        name: Потребитель для skinContrast
+        description: |
+          Означает: витрина/редактор, реально показывающие предупреждения о читаемости —
+          механика готова, вызывающего пока нет.
+
+      - id: editor-plugin-surface
+        type: feature
+        status: Open
+        priority: Low
+        milestone: null
+        name: Формальный плагин для будущего редактора скина
+        description: |
+          Означает: когда появится редактор палитр/форм/нарядов, то, что ему реально понадобится
+          из сегодняшних внутренних шестерёнок (семена, адресные селекторы), оформляется своим
+          плагином — не раскрывается заранее вслепую.

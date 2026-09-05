@@ -40,7 +40,7 @@ export default {
     agentOnline: 'Агент в сети — активный runner подхватит назначенные элементы',
     agentOffline: 'Агент не в сети — в пуле runner-ов нет активных; назначенные элементы встанут в очередь',
     agentLocal: 'Агент работает на этом сервере',
-    agentUnbound: 'В этом рабочем пространстве нет привязки агента — назначение не запустит выполнение',
+    agentUnbound: 'В этом воркспейсе нет привязки агента — назначение не запустит выполнение',
 
     // Выбор группы (Group Picker)
     selectGroup: 'Выбрать группу',
@@ -55,17 +55,17 @@ export default {
     // Выбор коллекции (Collection Picker)
     selectCollections: 'Выбрать коллекции',
 
-    // Выбор рабочего пространства (Workspace Picker)
-    selectWorkspaces: 'Выбрать рабочие пространства',
-    searchWorkspaces: 'Поиск рабочих пространств...',
-    noWorkspacesFound: 'Рабочие пространства не найдены',
+    // Выбор воркспейса (Workspace Picker)
+    selectWorkspaces: 'Выбрать воркспейсы',
+    searchWorkspaces: 'Поиск воркспейсов...',
+    noWorkspacesFound: 'Воркспейсы не найдены',
 
     // Выбор набора конфигураций (Configuration Set Picker)
     selectConfigurationSet: 'Выбрать набор конфигураций',
     searchConfigurationSets: 'Поиск наборов конфигураций...',
     configurationSets: 'Наборы конфигураций',
     defaultConfiguration: 'Конфигурация по умолчанию',
-    defaultConfigurationDescription: 'Использует настройки рабочего пространства по умолчанию',
+    defaultConfigurationDescription: 'Использует настройки воркспейса по умолчанию',
     noConfigurationSetsFound: 'Наборы конфигураций не найдены',
 
     // Выбор сущности набора конфигураций (Configuration Set Entity Picker)
@@ -251,6 +251,12 @@ export default {
     mermaidRendering: 'Отрисовка диаграммы',
     mermaidParseError: 'Ошибка разбора Mermaid',
     mermaidEmpty: 'Пустой блок Mermaid',
+    // Алерты в стиле GitHub (`> [!NOTE]` и т.д.)
+    alertNote: 'Заметка',
+    alertTip: 'Совет',
+    alertImportant: 'Важно',
+    alertWarning: 'Предупреждение',
+    alertCaution: 'Осторожно',
   },
 
   dialogs: {
@@ -290,7 +296,7 @@ export default {
         'Вы уверены, что хотите удалить это подключение? Это действие нельзя отменить.',
       deleteWidget: 'Удалить этот раздел? Все виджеты в нём будут удалены.',
       deleteScreen:
-        'Вы уверены, что хотите удалить экран «{name}»? Это затронет все рабочие пространства, использующие этот экран.',
+        'Вы уверены, что хотите удалить экран «{name}»? Это затронет все воркспейсы, использующие этот экран.',
     },
     // Сообщения оповещений для диалогов alert()
     alerts: {
@@ -301,7 +307,7 @@ export default {
       timerSyncing: 'Таймер синхронизируется. Подождите и попробуйте снова.',
       startTimerFromItem: 'Запустите таймер из рабочего элемента, чтобы указать контекст.',
       cannotDeleteDefaultScreen:
-        'Невозможно удалить экран по умолчанию. Этот экран необходим для рабочих пространств без набора конфигураций.',
+        'Невозможно удалить экран по умолчанию. Этот экран необходим для воркспейсов без набора конфигураций.',
       applicationShuttingDown: 'Приложение завершает работу...',
       pdfExportComingSoon: 'Экспорт в PDF для представления временных блоков скоро появится',
       configUpdatedSuccess:
@@ -386,11 +392,13 @@ export default {
 
     // Компонент UserAvatar
     userAvatar: {
-      myWorkspace: 'Моё рабочее пространство',
-      myWorkspaceSubtitle: 'Личное рабочее пространство для задач и заметок',
+      myWorkspace: 'Мой воркспейс',
+      myWorkspaceSubtitle: 'Личный воркспейс для задач и заметок',
       profileSubtitle: 'Управление профилем и настройками',
       security: 'Безопасность',
       securitySubtitle: 'Управление паролями, двухфакторной аутентификацией и API-токенами',
+      mcpConsole: 'MCP-консоль',
+      mcpConsoleSubtitle: 'Каталог MCP-инструментов сервера и живой запуск',
       themeTitle: 'Тема: {mode}',
       themeLight: 'Светлая',
       themeDark: 'Тёмная',
@@ -603,5 +611,22 @@ export default {
     apiReference: 'Справочник API',
     licenses: 'Лицензии',
     reportProblem: 'Сообщить о проблеме',
+  },
+
+  mcpConsole: {
+    title: 'MCP-консоль',
+    subtitle: 'Живой каталог MCP-инструментов этого сервера — вызовы идут через настоящий протокол, как у любого внешнего MCP-клиента.',
+    searchPlaceholder: 'Поиск инструментов…',
+    selectPrompt: 'Выбери инструмент из списка',
+    schemaHeading: 'Схема входных данных',
+    argsHeading: 'Аргументы (JSON)',
+    execute: 'Выполнить',
+    executing: 'Выполняется…',
+    resultHeading: 'Результат',
+    errorHeading: 'Ошибка',
+    destructiveWarning: 'Этот инструмент помечен как разрушительный — перепроверь аргументы перед запуском.',
+    tokenError: 'Не удалось выпустить токен сессии для консоли.',
+    loadError: 'Не удалось достучаться до MCP-сервера.',
+    invalidJson: 'Аргументы должны быть валидным JSON.',
   },
 };

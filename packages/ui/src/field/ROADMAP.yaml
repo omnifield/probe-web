@@ -1,0 +1,91 @@
+# Дорожная карта поля — формат тот же, что у остальных компонентов кита (см. table/ROADMAP.yaml,
+# шапка). Единственный источник правды: статус проставляется рядом с работой.
+#
+# Пропс-серфейс полный — ни одна часть (root/label/input/select/textarea/helperText/errorText/
+# requiredIndicator/item) не урезает и не преобразует свои пропсы, сверено целиком 2026-09-04.
+
+categories:
+  - category: Основа
+    items:
+      - id: conditional-mount
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Условный монтаж ошибки и метки обязательности
+        description: |
+          Означает: `errorText`/`requiredIndicator` монтируются в DOM только пока поле реально
+          невалидно/обязательно — не всегда с `display: none`, а по-настоящему отсутствуют в
+          разметке в обратном случае.
+          Реализация: готовое поведение компонента, проверено тестом (оба случая — отсутствие и
+          присутствие).
+
+      - id: mixed-state-marks
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Смешанные метки состояний на контролах
+        description: |
+          Означает: `invalid`/`required`/`readonly` на `input`/`select`/`textarea` — атрибуты
+          `data-*` (состояние поля, спущенное на контрол), а `disabled`/`hover`/`focus`/
+          `focus-visible` — настоящие нативные псевдоклассы браузера, не дублированные атрибутами.
+          Реализация: готовое поведение компонента, отражено в паспорте.
+
+  - category: Тонкая настройка
+    items:
+      - id: label-target
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: Адресация подписи на конкретный FieldItem
+        description: |
+          Означает: `target` на корне указывает, к значению какого `FieldItem` должна привязаться
+          подпись — пригождается, когда несколько повторяющихся полей (`FieldItem`) делят один
+          `Field`.
+          Реализация: готовый проп компонента — технически проброшен, НЕ проверен отдельным
+          тестом при аудите 2026-09-04.
+
+      - id: textarea-autoresize
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: Автоувеличение textarea по содержимому
+        description: |
+          Означает: `autoresize` на `FieldTextarea` растягивает высоту поля вслед за текстом, без
+          скролла внутри самого поля.
+          Реализация: готовый проп компонента — технически проброшен, не проверен отдельным
+          тестом при аудите 2026-09-04.
+
+      - id: required-indicator-fallback
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: Заглушка метки обязательности для необязательного поля
+        description: |
+          Означает: `fallback` на `FieldRequiredIndicator` — что рисовать вместо «*», пока поле не
+          обязательно (по умолчанию — ничего, узел просто отсутствует).
+          Реализация: готовый проп компонента — технически проброшен, не проверен отдельным
+          тестом при аудите 2026-09-04.
+
+# Журнал решений.
+log:
+  - id: full-prop-surface
+    type: plan
+    date: 2026-09-04
+    summary: >
+      В отличие от select/listbox, здесь нет промежуточного преобразования данных — каждая часть
+      принимает свои пропсы один в один, включая `FieldItem`. Единственная сущность кита без
+      стейт-машины под собой.
+
+  - id: three-unverified-props-honestly-noted
+    type: plan
+    date: 2026-09-04
+    summary: >
+      Тот же довод, что у select/slider: `target` (Root), `autoresize` (Textarea), `fallback`
+      (RequiredIndicator) технически доступны через прямой проброс типа, но не добавлены в
+      README/тесты при этом аудите — эмпирическая проверка каждого не уложилась в проход. Честно
+      отмечено как непроверенное, не выдуман пример без проверки.

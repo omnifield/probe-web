@@ -1,226 +1,149 @@
-// PROOF RECIPE (`PWEB-111`) — not a shipped product, not product taste. Lives next to the
-// component, but is NEVER exported from `index.ts`/`passport.ts`/`kit.ts` — proves the tree
-// view's passport CAN be dressed whole by the real skin mechanism, the same role every other
-// component's own recipe plays.
-//
-// Fifteen parts, the biggest part count in the kit after the date picker's. `item`/`branch` carry
-// `--depth` (`../entity/passport.ts`) as an inline custom property; it is NOT repeated on
-// `branchControl`/`branchText`/`branchIndicator`/`branchContent`/`branchIndentGuide` below — CSS
-// custom properties inherit, and those parts are all DOM descendants of `item`/`branch`, so one
-// `calc(var(--depth) * …)` reaches every one of them without a second declaration.
-//
-// NO HEIGHT ANIMATION on `branchContent` — checked against the INSTALLED `@zag-js/tree-view`
-// connector (`1.43.1`), not the ark-ui.com docs' own shared demo CSS (which references a
-// `--height` this connector never writes): `getBranchContentProps` only ever toggles the native
-// `hidden` attribute. A `hidden` node has no box to transition — the accordion's own "measured
-// size" device does not apply here, and inventing an animation over a variable nobody sets would
-// be dead code, not restraint.
-//
-// SELECTION READS AS A SOFT FILL (`accent-3`/`accent-12`), not the solid `accent-9` the checkbox
-// uses for "checked": a tree's selection is closer to the date picker's own `in-range` (many rows
-// can carry the mark at once, and it needs to stay legible next to plain rows) than to a single
-// binary control's own on/off.
+import { GROW_SHRINK_BLOCK, type Form, type SlotRecipe } from "@web-core/skin/model";
 
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+const transition =
+  "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
 
-/** Look transition — same device as the rest of the kit: different durations on neighbors is a defect. */
-const transition = "background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out)";
-
-/** Shared row shape — `item` and `branchControl` are both one clickable, focusable row at some `--depth`. */
-const rowProps = {
-  display: "flex",
-  alignItems: "center",
-  gap: "var(--space-2)",
-  minHeight: "var(--control-height-sm)",
-  paddingInlineStart: "calc(var(--space-3) + var(--depth) * var(--space-6))",
-  paddingInlineEnd: "var(--space-3)",
-  borderRadius: "var(--radius-sm)",
-  color: "var(--neutral-12)",
-  cursor: "pointer",
-  userSelect: "none",
-  transition,
-  "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+const disabledRow = {
+  color: "var(--neutral-11)",
+  cursor: "not-allowed",
+  opacity: "0.6",
 };
 
-/** Shared focus ring — keyed on the explicit `data-focus` attribute, not `:focus-visible`: the
- * connector emits it itself, on both mouse and keyboard arrival (`../entity/passport.ts`). */
-const focusRing = {
-  outline: "var(--border-width-2) solid var(--accent-8)",
-  outlineOffset: "calc(var(--border-width-2) * -1)",
-};
+const depthIndent = "calc((var(--depth) - 1) * var(--space-6) / 2)";
 
-/** Shared selection fill — see the file header ("soft fill, not solid"). */
-const selectedFill = { background: "var(--accent-3)", color: "var(--accent-12)" };
-
-/** Shared disabledness — a row that cannot be acted on, at any depth. */
-const disabledRow = { color: "var(--neutral-11)", cursor: "not-allowed", opacity: "0.6" };
-
-/**
- * TREE VIEW. Fifteen parts, the reading order matches the DOM: a leaf draws `item` alone; a
- * branch draws `branch` wrapping `branchControl` (the row) and `branchContent` (the children).
- */
 export const recipe: SlotRecipe = {
   base: {
     root: {
-      props: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-2)",
-        fontSize: "var(--font-size-md)",
-        color: "var(--neutral-12)",
-      },
-    },
-    label: {
-      props: {
-        fontSize: "var(--font-size-sm)",
-        fontWeight: "var(--weight-medium)",
-        color: "var(--neutral-11)",
-      },
-    },
-    tree: {
       props: { display: "flex", flexDirection: "column" },
     },
     item: {
-      props: rowProps,
-      states: {
-        selected: { props: selectedFill },
-        focus: { props: focusRing },
-        disabled: { props: disabledRow },
-      },
-    },
-    itemText: {
-      props: { flex: "1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-      states: {
-        disabled: { props: { color: "var(--neutral-11)" } },
-      },
-    },
-    // `display` NOT IN THE BASE — the kit hides the indicator with `hidden` while the node is not
-    // selected (same device as the checkbox's own indicator); an unconditional `display` in the
-    // base would show every leaf's mark at once regardless of selection.
-    itemIndicator: {
-      props: { color: "var(--accent-9)" },
-      states: {
-        selected: { props: { display: "inline-flex" } },
-      },
-    },
-    branch: {
-      props: { display: "flex", flexDirection: "column" },
-    },
-    branchControl: {
-      props: rowProps,
-      states: {
-        hover: { props: { background: "var(--neutral-4)" } },
-        active: { props: { background: "var(--neutral-5)" } },
-        focus: { props: focusRing },
-        selected: { props: selectedFill },
-        disabled: { props: disabledRow },
-        loading: { props: { cursor: "progress", opacity: "0.7" } },
-      },
-    },
-    branchText: {
-      props: { flex: "1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-      states: {
-        disabled: { props: { color: "var(--neutral-11)" } },
-        loading: { props: { color: "var(--neutral-11)" } },
-      },
-    },
-    // Rotates on the branch's OWN mark (`data-state`, shared with `branchControl`/`branchText`),
-    // same device as the accordion's own indicator.
-    branchIndicator: {
       props: {
-        display: "inline-flex",
+        display: "flex",
+        flexDirection: "column",
+        "--active-color": "initial",
+        "--active-weight": "initial",
+      },
+      states: {
+        disabled: { props: { pointerEvents: "none" } },
+        loading: { props: { pointerEvents: "none" } },
+        renaming: { props: { cursor: "text" } },
+        focus: { props: { zIndex: "1" } },
+        // Единственная ступень шкалы, у которой одновременно и цвет бренда, и обещание контраста
+        // КАК ТЕКСТА (`STEP_PURPOSE`/`NO_PROMISE`, packages/style).
+        selected: {
+          props: {
+            "--active-color": "var(--accent-11)",
+            "--active-weight": "var(--weight-semibold)",
+          },
+        },
+        checked: {
+          props: { borderInlineStartWidth: "0" },
+        },
+        indeterminate: {
+          props: { borderInlineStartWidth: "0" },
+        },
+        open: { props: { marginBlockEnd: "var(--space-1)" } },
+        closed: { props: { marginBlockEnd: "0" } },
+
+        branch: { props: { display: "flex" } },
+      },
+    },
+    control: {
+      props: {
+        display: "flex",
         alignItems: "center",
-        justifyContent: "center",
-        flexShrink: "0",
-        color: "var(--neutral-11)",
-        transition: "transform var(--motion-fast) var(--ease-out)",
-        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
-      },
-      states: {
-        open: { props: { transform: "rotate(90deg)" } },
-        disabled: { props: { opacity: "0.6" } },
-        loading: { props: { opacity: "0.6" } },
-      },
-    },
-    // A SEPARATE toggle button, for compositions that keep the row itself non-clickable and put
-    // expand/collapse on its own control — `role="button"` on a `<div>`, never itself focused
-    // (`../entity/passport.ts`).
-    branchTrigger: {
-      props: {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: "0",
-        color: "var(--neutral-11)",
-        cursor: "pointer",
-      },
-      states: {
-        hover: { props: { color: "var(--neutral-12)" } },
-        active: { props: { color: "var(--neutral-12)" } },
-        disabled: { props: { cursor: "not-allowed", opacity: "0.5" } },
-        loading: { props: { cursor: "progress" } },
-      },
-    },
-    // NO ANIMATION, NO MEASURED SIZE — see the file header. `position: relative` only, so
-    // `branchIndentGuide` (absolutely positioned) has something to measure against.
-    branchContent: {
-      props: { display: "flex", flexDirection: "column", position: "relative" },
-    },
-    // A vertical guide at the child's OWN depth — reads `--depth` inherited from the `branch` it
-    // sits inside (same inheritance the file header names), offset to land under the row's icon.
-    branchIndentGuide: {
-      props: {
-        position: "absolute",
-        insetBlockStart: "0",
-        insetBlockEnd: "0",
-        insetInlineStart: "calc(var(--space-3) + var(--depth) * var(--space-6) + var(--space-2))",
-        width: "var(--border-width-1)",
-        background: "var(--neutral-6)",
-      },
-    },
-    // Same square the checkbox's own `control` uses (`../../checkbox/playground/recipe.ts`) —
-    // one glyph size for "a checkbox" across the kit, not a second size invented here.
-    nodeCheckbox: {
-      props: {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: "0",
-        width: "var(--control-height-sm)",
-        height: "var(--control-height-sm)",
+        gap: "var(--space-1)",
+        minHeight: "var(--control-height-sm)",
+        paddingInlineEnd: "var(--space-3)",
         borderRadius: "var(--radius-sm)",
-        borderWidth: "var(--border-width-1)",
-        borderStyle: "solid",
-        borderColor: "var(--neutral-7)",
-        background: "var(--neutral-1)",
-        color: "var(--accent-contrast)",
+        color: "var(--neutral-12)",
+        fontSize: "var(--font-size-md)",
+        fontWeight: "var(--weight-medium)",
         cursor: "pointer",
+        userSelect: "none",
         transition,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       },
       states: {
-        checked: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
-        indeterminate: { props: { borderColor: "var(--accent-9)", background: "var(--accent-9)" } },
-        hover: { props: { borderColor: "var(--accent-8)" } },
-        disabled: { props: { borderColor: "var(--neutral-6)", background: "var(--neutral-3)" } },
+        hover: { props: { background: "transparent" } },
+        active: { props: { background: "transparent" } },
+        selected: { props: { background: "transparent" } },
+        checked: { props: { background: "transparent" } },
+        indeterminate: { props: { background: "transparent" } },
+        focus: { props: { outline: "none" } },
+        disabled: { props: disabledRow },
+        loading: { props: { cursor: "progress", opacity: "0.7" } },
+        renaming: { props: { cursor: "text" } },
+        open: { props: { background: "transparent" } },
+        closed: { props: { background: "transparent" } },
+      },
+      ancestors: [
+        {
+          component: "tree-view",
+          part: "item",
+          style: {
+            props: {
+              paddingInlineStart: depthIndent,
+              color: "var(--active-color, var(--neutral-12))",
+              fontWeight: "var(--active-weight, var(--weight-medium))",
+            },
+          },
+        },
+      ],
+    },
+    controlIndicator: {
+      props: {
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: "0",
+        color: "var(--neutral-11)",
+        fontSize: "var(--font-size-sm)",
+        transition: "transform var(--motion-fast) var(--ease-out)",
+        "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+      },
+      states: {
+        // Лист не носит `data-state` вовсе (только ветка) — эти два правила физически не
+        // применяются к листу. У листа же `hidden` стоит нативно, если узел НЕ выбран (родное
+        // поведение Ark для чекмарки, которое здесь просто не трогаем) — раз иконка на листе не
+        // нужна вообще, лишний `display` в состоянии `selected` только включал её обратно.
+        open: { props: { display: "inline-flex", transform: "rotate(90deg)" } },
+        closed: {
+          props: { display: "inline-flex", transform: "rotate(0deg)" },
+        },
+        selected: {
+          props: { color: "var(--accent-11)" },
+        },
+        disabled: { props: { opacity: "0.6" } },
+        loading: { props: { opacity: "0.6" } },
+        focus: { props: { color: "var(--neutral-12)" } },
       },
     },
-    // A real `<input>` that REPLACES the row's text while renaming — same width as the text it
-    // covers, no border games: it should read as "this text is now editable", not a new control.
-    nodeRenameInput: {
-      props: {
-        flex: "1",
-        minWidth: "0",
-        font: "inherit",
-        color: "inherit",
-        background: "var(--neutral-1)",
-        border: "var(--border-width-1) solid var(--accent-8)",
-        borderRadius: "var(--radius-sm)",
-        paddingInline: "var(--space-1)",
+    content: {
+      // `overflow`+`boxSizing` — то же устройство, что у аккордеона: без них раскрытие/сжатие по
+      // измеренной `--height` (сценарий `GROW_SHRINK_BLOCK`) не отсекало бы содержимое на
+      // промежуточных кадрах.
+      props: { position: "relative", overflow: "hidden", boxSizing: "border-box" },
+      states: {
+        open: {
+          props: {
+            animation: "grow-block-size var(--motion-normal) var(--ease-out)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
+        closed: {
+          props: {
+            animation: "shrink-block-size var(--motion-normal) var(--ease-out)",
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          },
+        },
       },
     },
   },
 };
 
-/** Form — the "name + component + recipe" record `assemble` accepts. */
-export const form: Form = { name: "tree-view-sample", component: "tree-view", recipe };
+export const form: Form = {
+  name: "tree-view-sample",
+  component: "tree-view",
+  recipe,
+  keyframes: { ...GROW_SHRINK_BLOCK },
+};

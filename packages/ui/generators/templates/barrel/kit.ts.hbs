@@ -1,0 +1,31 @@
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+//
+// Перечень компонентов кита собирается тем же обходом папок, что и перечень паспортов: компонент
+// объявляет себя в своей папке и попадает в поставку самим фактом объявления.
+
+import type { KitComponent } from "./kit-form.js";
+{{#each items}}
+import { kit as {{kitIdentifier}} } from "./{{kitModule}}";
+{{/each}}
+export * from "./kit-form.js";
+
+/**
+ * Компоненты кита по имени: паспорт вместе с картой его частей.
+ *
+ * Ключ — то же имя, которым компонент подписан на каждом своём узле (`data-scope`), и то же,
+ * которым он лежит в `PASSPORTS`: оба перечня снимают его с паспорта, а не пишут рядом ещё раз.
+ */
+export const KIT: Readonly<Record<string, KitComponent>> = {
+{{#each items}}
+  [{{kitIdentifier}}.passport.component]: {{kitIdentifier}},
+{{/each}}
+};
+
+/**
+ * Компонент кита по имени, либо `undefined` — если такого кит не отдаёт.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ */
+export function kitOf(component: string): KitComponent | undefined {
+  return KIT[component];
+}

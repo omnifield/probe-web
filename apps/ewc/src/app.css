@@ -5,7 +5,7 @@ html, body { height: 100%; margin: 0; }
 body {
   display: grid;
   place-items: center;
-  /* Real vocabulary roles (`products/skin/src/showcase/showcase.css`), not invented names: no
+  /* Real vocabulary roles (`apps/skin/src/showcase/showcase.css`), not invented names: no
      skin worn yet — no role printed — browser default, same as everywhere else in the base. */
   background: var(--ui-surface);
   color: var(--ui-ink);

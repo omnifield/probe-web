@@ -14,13 +14,13 @@
 // is real too (`footprintOf`, `PWEB-31`): `"compact"` — a handful of digits and a couple of
 // buttons, the same small-atom bracket the icon/checkbox already sit in.
 
-import { defineEditorInfo } from "@omnifield/probe-web-skin/editor";
+import { defineEditorInfo } from "@web-core/skin/editor";
 import { passport } from "../entity/passport.js";
 import { assemblies } from "./assemblies.js";
 import { parts } from "./parts.js";
 
 export const editorInfo = /*@__PURE__*/ defineEditorInfo(passport, {
-  package: "@omnifield/probe-web-ui",
+  package: "@web-core/ui",
   genus: "component",
   group: "other",
   footprint: "compact",

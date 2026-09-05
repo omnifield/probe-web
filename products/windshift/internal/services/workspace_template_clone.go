@@ -85,6 +85,8 @@ func (s *WorkspaceService) createWorkspaceTx(ctx context.Context, tx database.Tx
 		Color:         params.Color,
 		AvatarURL:     params.AvatarURL,
 		DefaultView:   params.DefaultView,
+		CategoryID:    params.CategoryID,
+		IsOverview:    params.IsOverview,
 	})
 	if err != nil {
 		return nil, err
@@ -515,6 +517,122 @@ func (c *workspaceTemplateClone) copyItemLinks(source *templateSourceWorkspace) 
 		}
 	}
 	return nil
+}
+
+// copyTemplatePages clones a template workspace's knowledge-page tree into
+// the newly created workspace. It runs after the core clone transaction has
+// committed — PageService.Create manages its own transaction per page, so
+// this step is deliberately best-effort: a failure here does not unwind the
+// workspace, which already exists and is usable without its docs. The
+// returned count reflects how many pages copied before any error.
+//
+// Pages come back ordered depth ASC (see PageRepository.listWorkspaceTree),
+// so every parent is created — and present in idMap — before its children
+// are visited.
+func (s *WorkspaceService) copyTemplatePages(ctx context.Context, sourceWorkspaceID, destinationWorkspaceID, actorID int) (int, error) {
+	pageSvc := NewPageService(s.db)
+	pages, err := pageSvc.ListTree(sourceWorkspaceID, false)
+	if err != nil {
+		return 0, fmt.Errorf("list template pages: %w", err)
+	}
+
+	idMap := make(map[int]int, len(pages))
+	copied := 0
+	for _, p := range pages {
+		if err := ctx.Err(); err != nil {
+			return copied, err
+		}
+
+		var parentID *int
+		if p.ParentID != nil {
+			if mapped, ok := idMap[*p.ParentID]; ok {
+				parentID = &mapped
+			}
+		}
+
+		created, err := pageSvc.Create(actorID, CreatePageInput{
+			WorkspaceID: destinationWorkspaceID,
+			ParentID:    parentID,
+			Title:       p.Title,
+			Metadata:    p.Metadata,
+			Content:     p.Content,
+			IsHome:      p.IsHome,
+		})
+		if err != nil {
+			return copied, fmt.Errorf("copy page %q: %w", p.Title, err)
+		}
+		idMap[p.ID] = created.ID
+		copied++
+	}
+	return copied, nil
+}
+
+// templateListLimit bounds the planning-object listing queries below, which
+// require a non-zero LIMIT (0 would return no rows). Template workspaces are
+// small by construction (see MaxTemplateSeedItems), so this is generous
+// headroom rather than a real cap.
+const templateListLimit = 10000
+
+// copyTemplatePlanning clones a template workspace's local (non-global)
+// milestones and iterations into the newly created workspace. Like
+// copyTemplatePages, this runs after the core clone transaction has
+// committed and is best-effort: global milestones/iterations are shared
+// already and are deliberately not copied.
+func (s *WorkspaceService) copyTemplatePlanning(sourceWorkspaceID, destinationWorkspaceID int) (milestonesCopied, iterationsCopied int, err error) {
+	planningSvc := NewPlanningService(s.db)
+
+	milestones, _, err := planningSvc.ListMilestones(MilestoneListParams{
+		WorkspaceID: &sourceWorkspaceID,
+		Limit:       templateListLimit,
+	})
+	if err != nil {
+		return 0, 0, fmt.Errorf("list template milestones: %w", err)
+	}
+	for _, m := range milestones {
+		_, err := planningSvc.CreateMilestone(CreateMilestoneParams{
+			Name:        m.Name,
+			Description: m.Description,
+			TargetDate:  nullableStringPtr(m.TargetDate),
+			Status:      m.Status,
+			WorkspaceID: &destinationWorkspaceID,
+		})
+		if err != nil {
+			return milestonesCopied, iterationsCopied, fmt.Errorf("copy milestone %q: %w", m.Name, err)
+		}
+		milestonesCopied++
+	}
+
+	iterations, _, err := planningSvc.ListIterations(IterationListParams{
+		WorkspaceID: &sourceWorkspaceID,
+		Limit:       templateListLimit,
+	})
+	if err != nil {
+		return milestonesCopied, 0, fmt.Errorf("list template iterations: %w", err)
+	}
+	for _, it := range iterations {
+		_, err := planningSvc.CreateIteration(CreateIterationParams{
+			Name:        it.Name,
+			Description: it.Description,
+			StartDate:   it.StartDate,
+			EndDate:     it.EndDate,
+			Status:      it.Status,
+			WorkspaceID: &destinationWorkspaceID,
+		})
+		if err != nil {
+			return milestonesCopied, iterationsCopied, fmt.Errorf("copy iteration %q: %w", it.Name, err)
+		}
+		iterationsCopied++
+	}
+	return milestonesCopied, iterationsCopied, nil
+}
+
+// nullableStringPtr turns "" into nil so an absent template target date
+// doesn't become a literal empty-string column value.
+func nullableStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func (c *workspaceTemplateClone) hydrateDestination() (*models.Workspace, error) {

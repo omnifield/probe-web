@@ -1,43 +1,39 @@
-// EDITOR-ONLY per-part taxonomy for the date picker — read by `./index.ts`'s `defineEditorInfo`
-// call. Same physical shape as every other component's `playground/parts.ts` (`PWEB-127`).
-
-import type { PassportPartEditorInfo } from "@omnifield/probe-web-skin/editor";
-import type { ComponentPassport } from "@omnifield/probe-web-skin/model";
+import type { PassportPartEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import type { passport } from "../entity/passport.js";
 
 type DatePickerPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-// Shared dictionaries, mirroring `../entity/passport.ts`'s own.
 const openClosedMeans = {
-  open: { means: "the calendar panel is showing" },
-  closed: { means: "the calendar panel is hidden" },
+  open: { means: "панель календаря показана" },
+  closed: { means: "панель календаря скрыта" },
 } satisfies PassportPartEditorInfo<DatePickerPart>["states"];
 
 const viewMeans = {
-  day: { means: "showing the day grid — pick a date directly" },
-  month: { means: "showing the month grid — pick a month, then drill into its days" },
-  year: { means: "showing the year grid — pick a year, then drill into its months" },
+  day: { means: "показана сетка дней — выбор даты напрямую" },
+  month: { means: "показана сетка месяцев — выбор месяца, затем переход внутрь его дней" },
+  year: { means: "показана сетка лет — выбор года, затем переход внутрь его месяцев" },
 } satisfies PassportPartEditorInfo<DatePickerPart>["states"];
 
 const buttonPseudoMeans = {
-  hover: { means: "pointer is over this button" },
-  "focus-visible": { means: "focus arrived from the keyboard — an outline is needed; on a mouse click it would be noise" },
-  active: { means: "this button is being held down" },
+  hover: { means: "указатель наведён на эту кнопку" },
+  "focus-visible": { means: "фокус пришёл с клавиатуры — нужна обводка; при клике мышью это шум" },
+  active: { means: "эта кнопка нажата и удерживается" },
 } satisfies PassportPartEditorInfo<DatePickerPart>["states"];
 
 const tableSectionMeans = {
   ...viewMeans,
-  disabled: { means: "the whole picker is disabled" },
+  disabled: { means: "весь пикер отключён" },
 } satisfies PassportPartEditorInfo<DatePickerPart>["states"];
 
 export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DatePickerPart>>> = {
   root: {
-    means: "the whole date picker — label, control, and the floating calendar together",
+    means: "пикер даты целиком — подпись, контрол и плавающий календарь вместе",
     states: {
       ...openClosedMeans,
-      disabled: { means: "the whole picker is disabled" },
-      readonly: { means: "the value is visible, changing it is not possible" },
-      empty: { means: "no value is selected yet" },
+      disabled: { means: "весь пикер отключён" },
+      readonly: { means: "значение видно, изменить нельзя" },
+      empty: { means: "значение ещё не выбрано" },
     },
     accepts: [
       { kind: "component", name: "label" },
@@ -46,19 +42,19 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   label: {
-    means: "the picker's own label",
+    means: "собственная подпись пикера",
     states: {
       ...openClosedMeans,
-      disabled: { means: "the whole picker is disabled" },
-      readonly: { means: "the value is visible, changing it is not possible" },
+      disabled: { means: "весь пикер отключён" },
+      readonly: { means: "значение видно, изменить нельзя" },
     },
     accepts: [{ kind: "content", genus: "text" }],
   },
   control: {
-    means: "wraps the input and the buttons that open/clear the picker — the row visible while closed",
+    means: "оборачивает поле ввода и кнопки открытия/сброса — видимая строка, пока пикер закрыт",
     states: {
-      disabled: { means: "the whole picker is disabled" },
-      empty: { means: "no value is selected yet" },
+      disabled: { means: "весь пикер отключён" },
+      empty: { means: "значение ещё не выбрано" },
     },
     accepts: [
       { kind: "component", name: "input" },
@@ -67,19 +63,19 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   input: {
-    means: "the typed-date field — one per index in range/multiple mode",
+    means: "поле ввода даты текстом — по одному на индекс в режиме диапазона/множественного выбора",
     states: {
       ...openClosedMeans,
-      empty: { means: "no value is selected yet" },
-      invalid: { means: "the enclosing form rejected the value" },
-      disabled: { means: "this input cannot be used" },
-      readonly: { means: "the value is visible, changing it is not possible" },
-      required: { means: "the form will demand a value on submit" },
+      empty: { means: "значение ещё не выбрано" },
+      invalid: { means: "форма отвергла значение" },
+      disabled: { means: "это поле нельзя использовать" },
+      readonly: { means: "значение видно, изменить нельзя" },
+      required: { means: "форма потребует значение при отправке" },
     },
     accepts: [],
   },
   clearTrigger: {
-    means: "clears the selected value — hidden by the kit while nothing is selected",
+    means: "сбрасывает выбранное значение — скрыт китом, пока ничего не выбрано",
     states: buttonPseudoMeans,
     accepts: [
       { kind: "content", genus: "text" },
@@ -87,31 +83,31 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   trigger: {
-    means: "opens or closes the calendar panel",
-    states: { ...openClosedMeans, empty: { means: "no value is selected yet" }, disabled: { means: "this button cannot be used" } },
+    means: "открывает или закрывает панель календаря",
+    states: { ...openClosedMeans, empty: { means: "значение ещё не выбрано" }, disabled: { means: "эту кнопку нельзя использовать" } },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
   content: {
-    means: "the floating panel — holds every view",
-    states: { ...openClosedMeans, inline: { means: "shown inline in the page flow, not floating over it" } },
+    means: "плавающая панель — держит все виды",
+    states: { ...openClosedMeans, inline: { means: "показан прямо в потоке страницы, не всплывает над ней" } },
     accepts: [{ kind: "component", name: "view" }],
   },
   positioner: {
-    means: "positions the floating panel against the control — a pure wrapper, no look of its own",
+    means: "позиционирует плавающую панель относительно контрола — чистая обёртка, своего вида не несёт",
     states: {},
     variables: {
-      "--reference-width": { means: "measured width of the control the panel is anchored to" },
-      "--reference-height": { means: "measured height of the control the panel is anchored to" },
-      "--available-width": { means: "space left before the panel would hit the viewport edge" },
-      "--available-height": { means: "space left before the panel would hit the viewport edge" },
+      "--reference-width": { means: "измеренная ширина контрола, к которому привязана панель" },
+      "--reference-height": { means: "измеренная высота контрола, к которому привязана панель" },
+      "--available-width": { means: "место, оставшееся до края области просмотра, по ширине" },
+      "--available-height": { means: "место, оставшееся до края области просмотра, по высоте" },
     },
     accepts: [{ kind: "component", name: "content" }],
   },
   view: {
-    means: "one view's panel (day, month, or year) — hidden while a different one is active",
+    means: "панель одного вида (день, месяц или год) — скрыта, пока активен другой",
     states: viewMeans,
     accepts: [
       { kind: "component", name: "viewControl" },
@@ -119,7 +115,7 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   viewControl: {
-    means: "wraps a view's own prev/next/toggle row",
+    means: "оборачивает собственную строку назад/вперёд/переключения вида",
     states: viewMeans,
     accepts: [
       { kind: "component", name: "prevTrigger" },
@@ -128,46 +124,46 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   viewTrigger: {
-    means: "switches to the next-broader view (day → month → year)",
-    states: { ...viewMeans, disabled: { means: "the whole picker is disabled" } },
+    means: "переключает на следующий, более широкий вид (день → месяц → год)",
+    states: { ...viewMeans, disabled: { means: "весь пикер отключён" } },
     accepts: [
       { kind: "component", name: "rangeText" },
       { kind: "content", genus: "text" },
     ],
   },
   rangeText: {
-    means: "the visible range's own label (e.g. a month name) — text set by the kit",
+    means: "собственная подпись видимого диапазона (например, название месяца) — текст задаёт кит",
     states: {},
     accepts: [],
   },
   prevTrigger: {
-    means: "steps the visible range backward",
-    states: { disabled: { means: "there is nothing earlier to step to" } },
+    means: "сдвигает видимый диапазон назад",
+    states: { disabled: { means: "сдвигать назад больше некуда" } },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
   nextTrigger: {
-    means: "steps the visible range forward",
-    states: { disabled: { means: "there is nothing later to step to" } },
+    means: "сдвигает видимый диапазон вперёд",
+    states: { disabled: { means: "сдвигать вперёд больше некуда" } },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
     ],
   },
   monthSelect: {
-    means: "jumps the focused month directly — a native dropdown",
-    states: { disabled: { means: "this control cannot be used" } },
+    means: "прыгает к нужному месяцу напрямую — нативный выпадающий список",
+    states: { disabled: { means: "этот контрол нельзя использовать" } },
     accepts: [],
   },
   yearSelect: {
-    means: "jumps the focused year directly — a native dropdown",
-    states: { disabled: { means: "this control cannot be used" } },
+    means: "прыгает к нужному году напрямую — нативный выпадающий список",
+    states: { disabled: { means: "этот контрол нельзя использовать" } },
     accepts: [],
   },
   table: {
-    means: "the calendar grid — one per view",
+    means: "сетка календаря — по одной на вид",
     states: tableSectionMeans,
     accepts: [
       { kind: "component", name: "tableHead" },
@@ -175,25 +171,22 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   tableHead: {
-    means: "wraps the grid's header row",
+    means: "оборачивает строку заголовка сетки",
     states: tableSectionMeans,
     accepts: [{ kind: "component", name: "tableRow" }],
   },
   tableHeader: {
-    means: "one column's own header cell (a weekday, in the day view)",
+    means: "собственная ячейка заголовка одного столбца (день недели, в дневном виде)",
     states: tableSectionMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   tableBody: {
-    means: "wraps the grid's data rows",
+    means: "оборачивает строки данных сетки",
     states: tableSectionMeans,
     accepts: [{ kind: "component", name: "tableRow" }],
   },
   tableRow: {
-    // `tableRow` is ONE anatomy part shared by both the header row (inside `tableHead`, holding
-    // `tableHeader`s) and every body row (inside `tableBody`, holding `tableCell`s) — the
-    // template's own guess named only the second use; both belong here.
-    means: "one row — either the weekday header row, or one week (day view) / one row of months/years (other views)",
+    means: "одна строка — либо строка заголовка дней недели, либо одна неделя (дневной вид) / одна строка месяцев или лет (другие виды)",
     states: tableSectionMeans,
     accepts: [
       { kind: "component", name: "tableHeader" },
@@ -201,40 +194,39 @@ export const parts: Readonly<Record<DatePickerPart, PassportPartEditorInfo<DateP
     ],
   },
   tableCell: {
-    means: "one grid cell — wraps the clickable trigger inside it",
-    // `selected` real only in month/year views — see `../entity/passport.ts`'s own note.
-    states: { ...viewMeans, selected: { means: "this cell's own value is the one currently selected (month/year views only)" } },
+    means: "одна ячейка сетки — оборачивает кликабельный триггер внутри",
+    states: { ...viewMeans, selected: { means: "собственное значение этой ячейки и есть выбранное сейчас (только в видах месяца/года)" } },
     accepts: [{ kind: "component", name: "tableCellTrigger" }],
   },
   tableCellTrigger: {
-    means: "the clickable surface inside a cell — picks that date/month/year",
+    means: "кликабельная поверхность внутри ячейки — выбирает эту дату/месяц/год",
     states: {
       ...viewMeans,
-      disabled: { means: "this cell cannot be picked" },
-      selectable: { means: "this cell CAN be picked at all — the baseline every other state here refines" },
-      selected: { means: "this cell's own value is the one currently selected" },
-      focus: { means: "keyboard roving focus is on this cell" },
-      "outside-range": { means: "belongs to the adjacent month/year, shown only to fill out the grid" },
-      "range-start": { means: "the first date of the selected range" },
-      "range-end": { means: "the last date of the selected range" },
-      "in-range": { means: "falls between the selected range's start and end" },
-      "in-hover-range": { means: "falls between the range's start and wherever the pointer is hovering right now (range mode only)" },
-      "hover-range-start": { means: "would become the range's start if clicked next (range mode only)" },
-      "hover-range-end": { means: "would become the range's end if clicked next (range mode only)" },
-      today: { means: "this cell is today's date (day view only)" },
-      unavailable: { means: "this date cannot be picked, e.g. outside min/max (day view only)" },
-      weekend: { means: "this cell falls on a weekend (day view only)" },
+      disabled: { means: "эту ячейку нельзя выбрать" },
+      selectable: { means: "эту ячейку вообще МОЖНО выбрать — базовое состояние, которое уточняют все остальные" },
+      selected: { means: "собственное значение этой ячейки и есть выбранное сейчас" },
+      focus: { means: "клавиатурный roving-фокус стоит на этой ячейке" },
+      "outside-range": { means: "принадлежит соседнему месяцу/году, показана только для заполнения сетки" },
+      "range-start": { means: "первая дата выбранного диапазона" },
+      "range-end": { means: "последняя дата выбранного диапазона" },
+      "in-range": { means: "попадает между началом и концом выбранного диапазона" },
+      "in-hover-range": { means: "попадает между началом диапазона и тем, где сейчас наведён указатель (только в режиме диапазона)" },
+      "hover-range-start": { means: "станет началом диапазона при следующем клике (только в режиме диапазона)" },
+      "hover-range-end": { means: "станет концом диапазона при следующем клике (только в режиме диапазона)" },
+      today: { means: "эта ячейка — сегодняшняя дата (только в дневном виде)" },
+      unavailable: { means: "эту дату нельзя выбрать, например вне min/max (только в дневном виде)" },
+      weekend: { means: "эта ячейка приходится на выходной (только в дневном виде)" },
       ...buttonPseudoMeans,
     },
     accepts: [{ kind: "content", genus: "text" }],
   },
   presetTrigger: {
-    means: "jumps straight to a named range (e.g. \"last 7 days\")",
+    means: "прыгает сразу к именованному диапазону (например, «последние 7 дней»)",
     states: buttonPseudoMeans,
     accepts: [{ kind: "content", genus: "text" }],
   },
   valueText: {
-    means: "shows the selected value(s) as text, formatted by the kit",
+    means: "показывает выбранное значение(я) текстом, форматирует кит",
     states: {},
     accepts: [],
   },

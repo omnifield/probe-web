@@ -670,6 +670,11 @@ func (s *Server) initialize() error {
 	onCallHandler := handlers.NewOnCallHandler(onCallRepo, teamRepo, onCallService, permService, logger.NewAuditor(s.db))
 	s.actionService.SetTeamService(teamService)
 
+	workspaceCategoryConfig := services.NewWorkspaceCategoryConfig()
+	workspaceCategoryConfig.AuditEmit = enumAuditEmit
+	workspaceCategoryHandler := handlers.NewEnumHandler(
+		services.NewEnumService(s.db, workspaceCategoryConfig),
+		func() any { return &models.WorkspaceCategory{} }).WithGlobalMutationPermission(permService, models.PermissionWorkspaceCreate)
 	milestoneCategoryConfig := services.NewMilestoneCategoryConfig()
 	milestoneCategoryConfig.AuditEmit = enumAuditEmit
 	milestoneCategoryHandler := handlers.NewEnumHandler(
@@ -696,6 +701,7 @@ func (s *Server) initialize() error {
 	reviewHandler := handlers.NewReviewHandler(s.db, permService)
 	calendarFeedHandler := handlers.NewCalendarFeedHandler(s.db, permService, cfg.BaseURL)
 	securitySettingsHandler := handlers.NewSecuritySettingsHandler(repository.NewSystemSettingRepository(s.db), logger.NewAuditor(s.db), cfg.Plugins.Disabled)
+	brandingSettingsHandler := handlers.NewBrandingSettingsHandler(repository.NewSystemSettingRepository(s.db), logger.NewAuditor(s.db))
 
 	// WI-87/88/89/90 coding-agent harness stack lands later in the
 	// constructor — see the block right after the SCM handlers are
@@ -964,6 +970,15 @@ func (s *Server) initialize() error {
 	itemHandler.SetEventCoordinator(eventCoordinator)
 	s.actionService.SetItemUpdateApplicationService(itemHandler.ItemUpdateApplicationService())
 	s.assetActionService.SetItemCreationService(itemHandler.ItemCreationService())
+	s.actionService.RegisterNodeExecutor(
+		services.NewCreateItemNodeExecutor(itemHandler.ItemCreationService(), permService, s.actionService),
+	)
+	s.actionService.RegisterNodeExecutor(
+		services.NewCreatePageNodeExecutor(pageHandler.PageApplicationService(), s.actionService),
+	)
+	s.actionService.RegisterNodeExecutor(
+		services.NewAddLinkNodeExecutor(itemLinkHandler.LinkService(), s.actionService),
+	)
 	commentHandler.SetWebhookSender(webhookSender)
 
 	// Item live-update stream (WI-484): register the in-memory SSE hub as the
@@ -1440,6 +1455,7 @@ func (s *Server) initialize() error {
 		},
 		Workspaces: routes.WorkspaceHandlers{
 			Workspace:             workspaceHandler,
+			Category:              workspaceCategoryHandler,
 			Bootstrap:             workspaceBootstrapHandler,
 			Screen:                screenHandler,
 			ConfigSet:             configSetHandler,
@@ -1481,6 +1497,7 @@ func (s *Server) initialize() error {
 		},
 		Admin: routes.AdminHandlers{
 			SecuritySettings: securitySettingsHandler,
+			BrandingSettings: brandingSettingsHandler,
 			AuthPolicy:       authPolicyHandler,
 			Theme:            themeHandler,
 			UserPreferences:  userPreferencesHandler,
@@ -1658,6 +1675,7 @@ func (s *Server) initialize() error {
 			TimerService:           timerService,
 			CommentService:         commentService,
 			ItemDeletionService:    itemHandler.ItemDeletionApplicationService(),
+			ItemCreationService:    itemHandler.ItemCreationService(),
 			PageApplicationService: pageHandler.PageApplicationService(),
 			PageDiagramService:     pageDiagramService,
 			ActionService:          s.actionService,

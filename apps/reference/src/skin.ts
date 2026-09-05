@@ -29,9 +29,9 @@
 // Снят скин — имени нет вовсе, и вид уходит целиком. Это и есть машинная разница между «вид от
 // скина» и «вид сбоку».
 
-import { withPassports, type Skin } from "@omnifield/probe-web-skin";
-import { makeSkinSwitch, type SkinSwitch } from "@omnifield/probe-web-runtime";
-import { passportOf } from "@omnifield/probe-web-ui/passport";
+import { withPassports, type Skin } from "@web-core/skin";
+import { makeSkinSwitch, type SkinSwitch } from "@web-core/skin/wear";
+import { passportOf } from "@web-core/ui/passport";
 
 // Источник паспортов называется ОДИН РАЗ на файл и дальше едет связкой (`PWEB-94`): у связанных
 // вызовов довода для второго источника нет, и разойтись проверке с порождением нечем.

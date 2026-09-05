@@ -1,0 +1,140 @@
+# Дорожная карта @web-core/trace — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build/store (categories → items, log → журнал решений); без milestones — у
+# пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Ядро
+    items:
+      - id: create-tracer
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createTracer(zone) / createNoter(zone)
+        description: |
+          Означает: замер интервала (`createTracer`) и разовая пометка без замера
+          (`createNoter`) — обе фабрики читают один и тот же флаг зоны
+          `__WEB_CORE_<ZONE>_TRACE__`. Ноль зависимостей, годится любому коду.
+
+      - id: barrel-index
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: index.ts — тонкий барель поверх engine.ts
+        description: |
+          Означает: публичный адрес `@web-core/trace` не завязан на имя файла с реализацией —
+          тот же приём, что `src/index.ts` у `@web-core/style` поверх `src/engine/`.
+
+  - category: Solid-плагин
+    items:
+      - id: create-life-tracer
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: createLifeTracer(zone)
+        description: |
+          Означает: лог монтирования и снятия Solid-компонента (`onCleanup`) одним вызовом.
+          Отдельный подпуть `./solid` — единственное место движка, зависящее от `solid-js`.
+          `solid-js` — необязательный peer (`peerDependenciesMeta.optional`), как у `@web-core/style`.
+
+      - id: plugin-reuses-core-flag
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Плагин переиспользует isEnabled ядра
+        description: |
+          Означает: флаг зоны проверяется одной функцией (`isEnabled` из `engine.ts`), не двумя
+          параллельными реализациями одной и той же строки.
+
+      - id: trace-provider
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: TraceProvider — декларативный тумблер зон
+        description: |
+          Означает: `<TraceProvider zones={["assembly","ui"]}><App /></TraceProvider>` включает
+          перечисленные зоны на время жизни поддерева и гасит их при размонтировании — форма
+          компонента взята у `QueryClientProvider`, но не контекст (у трейсера нет объекта с
+          состоянием, который стоило бы раздавать через `useContext`, только глобальный флаг).
+          `setEnabled(zone, value)` — новая функция ядра (`engine.ts`), симметричная `isEnabled`,
+          которую и вызывает провайдер. См. FAQ.md.
+
+  - category: Документация
+    items:
+      - id: own-triad
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README/FAQ/ROADMAP по шаблону genus engine
+        description: |
+          Означает: движок документирован как самостоятельная сущность-пакет, по образцу
+          `packages/store`/`packages/assembly`/`packages/style`, а не строкой в чужой доке.
+
+  - category: Не сделано
+    items:
+      - id: write-test-suite
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: Написать реальные пробы движка
+        description: |
+          Означает: `pnpm test` сегодня падает `No test files found` — тестов не было ни разу с
+          момента, когда трейсер жил внутри `@web-core/shared`. Нужно: `engine.test.ts`
+          (`createTracer`/`createNoter`/`isEnabled` — флаг вкл/выкл, префикс лога) и
+          `solid.test.ts` (`createLifeTracer` внутри `createRoot` из `solid-js` — лог
+          монтирования, лог снятия через `dispose`).
+
+
+log:
+  - id: promoted-from-shared-to-own-package
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Трейсер выделен из пакета `@web-core/shared` (genus `tooling`: `mount()` + трейсер, два
+      инструмента без общего механизма) в собственный пакет `packages/trace` — по указанию,
+      что трейсер сам по себе цельный движок (ядро + необязательный Solid-плагин), той же формы,
+      что `@web-core/style` (ядро без фреймворка + `./solid`-обвес), и заслуживает своего
+      пакета, а не подпутей внутри чужого. Папка `packages/shared` переименована в
+      `packages/trace`; `src/engine.ts`/`src/index.ts`/`src/solid.ts` подняты из `src/trace/` на
+      уровень пакета. Публичные подпути: `@web-core/shared/trace` → `@web-core/trace`,
+      `@web-core/shared/trace-life` → `@web-core/trace/solid`.
+
+  - id: mount-moved-out-to-web-core-solid
+    type: plan
+    date: 2026-09-05
+    summary: >
+      `mount()`/`#root` ненадолго заезжал в этот пакет (`src/mount.ts`, подпуть `./mount`,
+      переименован по пути в `mountApp()`) — попытка дать ему физический дом сразу после того,
+      как он выпал из старого `@web-core/shared`. Отклонено (по итогам разбора user): трейсер,
+      который меряет время, не обязан ничего монтировать — это повторило бы ровно тот дефект
+      `shared` (два инструмента без общего механизма под одним именем), от которого сам трейсер
+      и уехал в отдельный пакет одним шагом раньше. `mount()`/`mountApp()` окончательно переехал
+      в `@web-core/solid/mount` — новый пакет-обёртка над `solid-js`, где ему и место (про Solid,
+      не про трейс). `tsconfig.json` этого пакета лишился `DOM` из `lib` — она была нужна только
+      ради `document`/`Element` в `mount.ts`.
+
+  - id: all-consumers-migrated
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Все зовущие зоны переведены с `@web-core/shared` на новые адреса, по прямому указанию user
+      («все, кто юзают свои трейсы, пересади на наш новый»). Трейсер: `packages/assembly/src/
+      shared/trace.ts`, `packages/ui/src/shared/utils/trace.ts`, `apps/reference/src/trace.ts` —
+      импорт-спецификатор поправлен на `@web-core/trace`/`@web-core/trace/solid`, тела обёрток не
+      менялись. `mount`: `apps/reference/src/main.tsx`, `apps/reference/test/mount.test.tsx`,
+      `apps/skin/src/app/main.tsx`, `apps/ewc/src/main.tsx` — импорт и вызов переведены на
+      `mountApp` из `@web-core/solid/mount`. Заодно мигрированы `build`/`style`: их СОБСТВЕННЫЕ
+      копии реализации (заведённые из-за цикла зависимостей через `@web-core/shared`, см. FAQ.md)
+      заменены на ту же тонкую обёртку, что у остальных пяти зон — цикл физически исчез, когда
+      `@web-core/trace` при выделении из `shared` не унаследовал `devDependency` на
+      `@web-core/style`. Пять `package.json` (`apps/ewc`, `apps/skin`, `apps/reference`,
+      `packages/assembly`, `packages/ui`) и два новых (`packages/build`, `packages/style`)
+      обновлены — зависимость на несуществующий `@web-core/shared` заменена на `@web-core/trace`
+      и/или `@web-core/solid` по факту использования каждой зоны.

@@ -5,7 +5,7 @@
 
 export default {
   nav: {
-    workspaces: 'Рабочие пространства',
+    workspaces: 'Воркспейсы',
     collections: 'Коллекции',
     timeAndProjects: 'Время и проекты',
     milestones: 'Вехи',
@@ -22,12 +22,12 @@ export default {
     profile: 'Профиль',
     expand: 'Развернуть',
     collapse: 'Свернуть',
-    manageWorkspaces: 'Управление рабочими пространствами',
-    manageWorkspacesSubtitle: 'Создание, изменение и упорядочивание рабочих пространств',
-    searchWorkspaces: 'Поиск рабочих пространств...',
-    noWorkspacesMatch: 'Нет рабочих пространств, соответствующих запросу',
-    noWorkspacesFound: 'Рабочие пространства не найдены',
-    searchToFindMore: 'Введите запрос, чтобы найти другие рабочие пространства...',
+    manageWorkspaces: 'Управление воркспейсами',
+    manageWorkspacesSubtitle: 'Создание, изменение и упорядочивание воркспейсов',
+    searchWorkspaces: 'Поиск воркспейсов...',
+    noWorkspacesMatch: 'Нет воркспейсов, соответствующих запросу',
+    noWorkspacesFound: 'Воркспейсы не найдены',
+    searchToFindMore: 'Введите запрос, чтобы найти другие воркспейсы...',
     loadingSearch: 'Загрузка поиска...',
     loadingCreateForm: 'Загрузка формы создания...',
     loading: 'Загрузка...',
@@ -56,7 +56,7 @@ export default {
     // Названия и описания команд
     commands: {
       // Навигация
-      workspaces: { label: 'Рабочие пространства', description: 'Управление рабочими пространствами проектов' },
+      workspaces: { label: 'Воркспейсы', description: 'Управление воркспейсами проектов' },
       search: { label: 'Поиск', description: 'Поиск рабочих элементов и содержимого' },
       dashboard: { label: 'Дашборд', description: 'Просмотр аналитики и отчётов' },
       milestones: { label: 'Вехи', description: 'Отслеживание вех проекта' },
@@ -68,7 +68,7 @@ export default {
         description: 'Тренды скорости, время цикла и прогнозирование',
       },
 
-      // Управление тестированием (метки согласованы с навигацией по рабочему пространству)
+      // Управление тестированием (метки согласованы с навигацией по воркспейсу)
       tests: { label: 'Тесты', description: 'Управление тест-кейсами, планами и выполнением' },
       testCases: { label: 'Тест-кейсы', description: 'Просмотр и управление тест-кейсами' },
       testPlans: { label: 'Тест-планы', description: 'Просмотр и управление тест-планами' },
@@ -101,7 +101,7 @@ export default {
 
       // Команды создания
       createWorkItem: { label: 'Создать рабочий элемент', description: 'Создать новый рабочий элемент или задачу' },
-      createWorkspace: { label: 'Создать рабочее пространство', description: 'Создать новое рабочее пространство проекта' },
+      createWorkspace: { label: 'Создать воркспейс', description: 'Создать новый воркспейс проекта' },
       createMilestone: { label: 'Создать веху', description: 'Создать новую веху проекта' },
       createCollection: {
         label: 'Создать коллекцию',
@@ -171,8 +171,8 @@ export default {
         description: 'Управление комплектами прав доступа для наборов конфигураций',
       },
       adminWorkspaceRoles: {
-        label: 'Роли рабочего пространства',
-        description: 'Просмотр ролей рабочего пространства и их прав доступа',
+        label: 'Роли воркспейса',
+        description: 'Просмотр ролей воркспейса и их прав доступа',
       },
       adminSso: {
         label: 'Единый вход (SSO)',
@@ -187,7 +187,7 @@ export default {
         label: 'Управление активами',
         description: 'Настройка типов и категорий активов',
       },
-      adminWorkspaces: { label: 'Администрирование рабочих пространств', description: 'Управление рабочими пространствами и настройками' },
+      adminWorkspaces: { label: 'Администрирование воркспейсов', description: 'Управление воркспейсами и настройками' },
       adminNotifications: {
         label: 'Настройки уведомлений',
         description: 'Управление конфигурациями уведомлений',
@@ -213,11 +213,11 @@ export default {
       assets: { label: 'Активы', description: 'Управление наборами активов и элементами' },
       organizations: { label: 'Организации', description: 'Управление организациями клиентов' },
 
-      // Динамические команды рабочего пространства
-      goToWorkspace: { label: 'Перейти в {name}', description: 'Перейти в рабочее пространство {name}' },
+      // Динамические команды воркспейса
+      goToWorkspace: { label: 'Перейти в {name}', description: 'Перейти в воркспейс {name}' },
       workspaceOverview: {
         label: 'Обзор {name}',
-        description: 'Просмотр дашборда рабочего пространства со статистикой и графиками',
+        description: 'Просмотр дашборда воркспейса со статистикой и графиками',
       },
     },
   },
@@ -257,8 +257,8 @@ export default {
     createWorkItemDesc: 'Начать отслеживание нового рабочего элемента',
     manageMilestones: 'Управление вехами',
     manageMilestonesDesc: 'Просмотр и упорядочивание вех',
-    manageWorkspaces: 'Управление рабочими пространствами',
-    manageWorkspacesDesc: 'Настройка рабочих пространств',
+    manageWorkspaces: 'Управление воркспейсами',
+    manageWorkspacesDesc: 'Настройка воркспейсов',
     recentWorkItems: 'Недавние рабочие элементы',
     whatsNew: 'Что нового',
     noNotifications: 'Пока нет уведомлений',
@@ -273,8 +273,8 @@ export default {
     quickAccessHint: 'Нажмите {shortcut}, чтобы открыть командную строку',
     upcomingMilestones: 'Ближайшие вехи',
     watching: 'Отслеживается',
-    recentWorkspaces: 'Недавние рабочие пространства',
-    noRecentWorkspaces: 'Нет недавних рабочих пространств',
+    recentWorkspaces: 'Недавние воркспейсы',
+    noRecentWorkspaces: 'Нет недавних воркспейсов',
     goodMorning: 'Доброе утро',
     goodAfternoon: 'Добрый день',
     goodEvening: 'Добрый вечер',
@@ -287,7 +287,7 @@ export default {
 
   search: {
     title: 'Поиск',
-    subtitle: 'Поиск по всем рабочим пространствам с расширенными параметрами фильтрации',
+    subtitle: 'Поиск по всем воркспейсам с расширенными параметрами фильтрации',
     searchPlaceholder: 'Поиск...',
     searchItems: 'Поиск элементов...',
     searchResults: 'Результаты поиска',
@@ -299,7 +299,7 @@ export default {
     advancedSearch: 'Расширенный поиск',
     recentSearches: 'Недавние запросы',
     workItem: 'Рабочий элемент',
-    workspace: 'Рабочее пространство',
+    workspace: 'Воркспейс',
   },
 
   about: {
@@ -336,21 +336,21 @@ export default {
 
   onboarding: {
     welcomeTo: 'Добро пожаловать в Windshift',
-    getStartedMessage: 'Давайте начнём с создания вашего первого рабочего пространства и рабочего элемента',
+    getStartedMessage: 'Давайте начнём с создания вашего первого воркспейса и рабочего элемента',
     progress: 'Прогресс',
     completed: 'выполнено',
     of: 'из',
-    createWorkspace: 'Создайте своё рабочее пространство',
-    workspacesHelp: 'Рабочие пространства помогают организовать проекты и команды',
-    createWorkspaceBtn: 'Создать рабочее пространство',
+    createWorkspace: 'Создайте свой воркспейс',
+    workspacesHelp: 'Воркспейсы помогают организовать проекты и команды',
+    createWorkspaceBtn: 'Создать воркспейс',
     createFirstWorkItem: 'Создайте свой первый рабочий элемент',
     trackTasks: 'Отслеживайте задачи, ошибки, функции и многое другое',
     createWorkItemBtn: 'Создать рабочий элемент',
     dismissAssistant: 'Скрыть помощника',
     dismissOnboarding: 'Пропустить введение',
-    getStartedMember: 'Вот рабочие пространства, доступные вам',
-    selectWorkspace: 'Выберите рабочее пространство, чтобы начать',
+    getStartedMember: 'Вот воркспейсы, доступные вам',
+    selectWorkspace: 'Выберите воркспейс, чтобы начать',
     noWorkspacesAvailable:
-      'Пока нет доступных рабочих пространств. Обратитесь к администратору, чтобы получить доступ к рабочему пространству.',
+      'Пока нет доступных воркспейсов. Обратитесь к администратору, чтобы получить доступ к воркспейсу.',
   },
 };

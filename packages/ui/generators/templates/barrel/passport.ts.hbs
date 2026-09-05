@@ -1,0 +1,147 @@
+// ПОРОЖДЁН СБОРКОЙ (`scripts/generate.mjs`, движок — `@web-core/generators/barrel`) — НЕ ПРАВИТЬ И НЕ КОММИТИТЬ.
+//
+// Перечень паспортов собирается обходом папок `src/*`: компонент объявляет себя в своей папке
+// (`entity/passport.ts`) и попадает в поставку самим фактом объявления.
+//
+// ФОРМА ПАСПОРТА (`PWEB-110`, `PWEB-111`) переехала в `@web-core/skin` — она общая
+// для любого поставщика компонентов, а не привилегия этого кита. Реэкспорт ниже ПОИМЁННЫЙ, а не
+// `export *`: подпути несут и чужое (рецепты, палитру, словарь скина), а
+// `@web-core/ui/passport` обязан остаться тем же набором имён, что был до переезда
+// (жёсткое условие `PWEB-110`/`PWEB-111` — `packages/assembly` ходит сюда и не вправе
+// почувствовать перенос).
+//
+// ДВА ИСТОЧНИКА, не один (`PWEB-115`, `PWEB-118`): форма паспорта сама разрезана на срез
+// РАНТАЙМА (`/model` — то, что читают `generateSkinCss`/`checkOutfit`/`assemble`) и срез
+// РЕДАКТОРА (`/editor` — `means`, род, группа, пакет, правило вложенности, сборки). Этот
+// подпуть остаётся ОДНИМ плоским входом, как и был, — держатель реестра (кит) не обязан знать
+// про чужую границу тайм-шейкинга у форм; кто у НАС не сошлётся на редакторские имена, тот их и
+// не утащит в свой бандл — тем же `sideEffects: false`, которым разрезана сама форма.
+//
+// `PASSPORTS`/`passportOf` остаются здесь — это факт про ЭТОТ кит (какие компоненты у него
+// есть), а не про форму, и переезду не подлежат (`PWEB-26`, `PWEB-110`).
+export type {
+  ComponentPassport,
+  PassportAnatomy,
+  PassportLookup,
+  PassportMark,
+  PassportPart,
+  PassportSelfAssembly,
+  PassportSetting,
+  PassportSettingDependency,
+  PassportSettingName,
+  PassportSettingOption,
+  PassportSettings,
+  PassportSettingValues,
+  PassportSpec,
+  PassportState,
+  PassportVariable,
+  PassportVariantAxis,
+  SkinAncestor,
+  SkinCoordinate,
+} from "@web-core/skin/model";
+export {
+  addressesView,
+  coordinateOf,
+  createAnatomy,
+  defineSettings,
+  definePassport,
+  partOf,
+  SETTINGS,
+  settingApplies,
+} from "@web-core/skin/model";
+// Срез РЕДАКТОРА — `means`, род, группа, правило вложенности, сборки. Не рантайм кита, но
+// `@web-core/ui/passport` держал их всегда одним входом, и держит дальше (см. шапку).
+export type {
+  BaseAssemblyContent,
+  BaseAssemblyElement,
+  BaseAssemblyNode,
+  BaseAssemblyTree,
+  ComponentGroup,
+  DataBinding,
+  DataPreset,
+  DynamicValue,
+  PassportAdmission,
+  PassportAssembly,
+  PassportAssemblyContent,
+  PassportAssemblyElement,
+  PassportAssemblyExtra,
+  PassportAssemblyNode,
+  PassportAssemblyRepeat,
+  PassportComponentGenus,
+  PassportEditorInfo,
+  PassportEditorSpec,
+  PassportGenus,
+  PassportPartEditorInfo,
+  PassportSettingEditorInfo,
+  PassportSettingOptionEditorInfo,
+  PassportStateEditorInfo,
+  PassportVariableEditorInfo,
+} from "@web-core/skin/editor";
+export {
+  admits,
+  baseAssemblyOf,
+  defineEditorInfo,
+  GROUPS,
+  groupOf,
+  isAssemblyContent,
+  isAssemblyExtra,
+  isAssemblyRepeat,
+  isContentNode,
+  isDataBinding,
+  resolveDataBinding,
+} from "@web-core/skin/editor";
+// Реэкспорт (`export ... from`) не заводит локальное имя — `ComponentPassport`/`PassportEditorInfo`
+// ниже нужны САМ файлу, для `PASSPORTS`/`passportOf`/`EDITOR_INFOS`/`editorInfoOf`, и берутся
+// отдельным `import type`.
+import type { ComponentPassport } from "@web-core/skin/model";
+import type { PassportEditorInfo } from "@web-core/skin/editor";
+{{#each items}}
+import { passport as {{passportIdentifier}} } from "./{{passportModule}}";
+import { editorInfo as {{editorInfoIdentifier}} } from "./{{editorInfoModule}}";
+{{/each}}
+/**
+ * Паспорта пакета по имени компонента.
+ *
+ * Перечень, а не «сколько их»: число устаревает при добавлении каждого следующего паспорта, а
+ * форма чтения — нет. Компонент без паспорта здесь отсутствует ЧЕСТНО: его ещё не одевали, и
+ * молчаливая заглушка выглядела бы как объявленный контракт.
+ */
+export const PASSPORTS: Readonly<Record<string, ComponentPassport>> = {
+{{#each items}}
+  [{{passportIdentifier}}.component]: {{passportIdentifier}},
+{{/each}}
+};
+
+/**
+ * Паспорт по имени компонента, либо `undefined` — если компонент его ещё не объявил.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ */
+export function passportOf(component: string): ComponentPassport | undefined {
+  return PASSPORTS[component];
+}
+
+/**
+ * Срезы РЕДАКТОРА пакета по имени компонента (`PWEB-115`, `PWEB-118`) — тем же ключом, что
+ * `PASSPORTS`, и тем же доводом: перечень, не число, обходом папок, а не рукой.
+ */
+// Cast to the bare `PassportEditorInfo` (`Data = unknown`) on each entry: this record spans EVERY
+// component at once, each with its OWN `Data` (`PWEB-209` follow-up) — there is no single concrete
+// `Data` that fits all of them, so widening here is correct, not a workaround. `tsc` cannot do the
+// widening on its own (`Data` sits behind conditional types — `BoundPath`/`ElementAt` — that it
+// compares nominally, not structurally, across different instantiations; confirmed live piloting
+// this on `accordion`).
+export const EDITOR_INFOS: Readonly<Record<string, PassportEditorInfo>> = {
+{{#each items}}
+  [{{editorInfoIdentifier}}.component]: {{editorInfoIdentifier}} as PassportEditorInfo,
+{{/each}}
+};
+
+/**
+ * Срез редактора по имени компонента, либо `undefined` — если компонент его ещё не объявил.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ */
+export function editorInfoOf(component: string): PassportEditorInfo | undefined {
+  return EDITOR_INFOS[component];
+}

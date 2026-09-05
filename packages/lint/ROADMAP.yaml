@@ -1,0 +1,146 @@
+# Дорожная карта @web-core/lint — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/trace/style (categories → items, log → журнал решений); без milestones — у
+# пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Канон (ядро)
+    items:
+      - id: canon-as-data
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Канон как данные, независимо от движка проверки
+        description: |
+          Означает: `CanonRule` (`id`, `severity: "required" | "off"`, `summary`) — семантическое
+          описание правила без привязки к неймспейсу/уровню конкретного линтера. Раньше канон БЫЛ
+          картой ESLint-правил (`{ "solid/reactivity": "error" }`) — перевод в конкретный движок
+          вынесен в его собственный подпуть. См. FAQ.md.
+
+      - id: barrel-index
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: index.ts — тонкий барель поверх engine/
+        description: |
+          Означает: публичный адрес `@web-core/lint` не завязан на структуру файлов реализации —
+          тот же приём, что у `@web-core/trace`/`@web-core/style`/`@web-core/router`.
+
+  - category: ESLint-плагин
+    items:
+      - id: eslint-plugin
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: ./eslint — перевод канона в eslint-plugin-solid
+        description: |
+          Означает: `defineConfig()` — тот же публичный контракт, что был у пакета раньше
+          (массив flat-конфигов, `PresetOptions.ignores`), теперь как реализация канона, а не
+          единственная форма пакета. Перевод `id` → `solid/<id>`, `severity` → `error`/`off` —
+          `toEslintRules` в `src/eslint/index.ts`. Проверено: собранный `defineConfig()` даёт
+          побайтово ту же карту из 20 правил, что была до рефакторинга (уровни, опция
+          `jsx-no-undef`).
+
+      - id: babel-parser
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Разбор — Babel, не @typescript-eslint/parser
+        description: |
+          Означает: плагин не зависит от версии TypeScript и не может сломаться при её смене —
+          `@typescript-eslint/parser` не поддерживает TS 7.0, на котором стоит продукт, а
+          правилам `eslint-plugin-solid` типы не нужны вовсе. См. FAQ.md.
+
+      - id: split-ts-jsx-parsing
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Раздельный разбор .ts и .tsx
+        description: |
+          Означает: угловой каст `<string>value` в `.ts` не читается как JSX-элемент — секции
+          `parser-ts`/`parser-jsx` включают плагин `jsx` только там, где он не даст ложных
+          срабатываний.
+
+      - id: error-level-no-downgrade
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Уровень — error, без ручки «понизить»
+        description: |
+          Означает: включённое правило канона всегда `error` в ESLint-выводе, никогда `warn` —
+          `eslint` выходит с кодом 0, пока в отчёте только `warn`, и канон на `warn` — это канон,
+          которому верят и который молча не работает. См. FAQ.md.
+
+      - id: prepare-lifecycle
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: prepare — пакет собирается на установке
+        description: |
+          Означает: свежий клон линтуется без отдельной команды сборки пресета —
+          `eslint.config.js` потребителя грузит Node напрямую, подменить путь на исходники
+          некому. См. FAQ.md.
+
+  - category: Не сделано
+    items:
+      - id: rebuild-test-suite
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: Восстановить настоящие пробы зоны
+        description: |
+          Означает: `vitest.config.ts` ссылается на `test/*.test.ts`, которого в репозитории нет
+          — снесён коммитом `f807343` («replaced by apps/panel») вместе с тестами
+          `packages/build`, и, в отличие от `build`, не восстановлен до сих пор. Раньше здесь были
+          настоящие пробы: `test/preset.test.ts` (фикстуры violation/canon/limit + сверка состава
+          канона), `test/consumer.test.ts` (чистый проект, реальный CLI ESLint, код возврата),
+          `test/prepare.test.ts` (сборка на установке с нуля), `test/surface.test.ts` (`pnpm pack`
+          + разбор тарбола). При восстановлении фикстуры и сверку состава канона нужно завести
+          независимо от движка (проверять `engine/index.ts`), а `consumer.test.ts` — уже против
+          `./eslint`, не корня.
+
+      - id: biome-plugin
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: ./biome — второй плагин канона
+        description: |
+          Означает: тот же канон (`../engine/index.js`), другой перевод `id` → правило/конфиг
+          Biome. Форма (свой подпуть, своя функция перевода, канон как единственный источник
+          правды) уже подготовлена рефакторингом `./eslint`, писать саму реализацию — отдельная
+          задача, когда придёт время переезда с ESLint.
+
+log:
+  - id: engine-eslint-split
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Пакет переведён на форму "движок" по прямому указанию user, тем же приёмом, что
+      `@web-core/style`/`@web-core/trace`/`@web-core/solid`: канон (`.`) — данные независимо от
+      движка проверки, плагин (`./eslint`) — сегодняшняя реализация поверх
+      `eslint-plugin-solid`. Мотив, названный user: сегодня линтер — ESLint, позже планируется
+      переезд на Biome; канон как ESLint-специфичная карта правил (`src/rules.ts`, три объекта
+      `{ "solid/<rule>": "error" }`) заставил бы переписывать пакет целиком вместо добавления
+      подпутя. `src/rules.ts` заменён на `src/engine/index.ts` (`CanonRule[]`, семантический
+      `id`, `severity: "required" | "off"`, без привязки к ESLint). `src/index.ts` (было
+      `src/index.ts` со всем содержанием сразу) стал тонким барелем. Публичный экспорт
+      `defineConfig` переехал с корня (`@web-core/lint`) на `@web-core/lint/eslint` — 12
+      потребителей (`eslint.config.js` в `apps/{skin,ewc,panel,reference}` и
+      `packages/{io,skin,assembly,style,query,store,router,ui}`) переведены на новый путь.
+      Функционально ничего не изменилось: `defineConfig()` собранного `./eslint` даёт побайтово
+      ту же карту из 20 правил (уровни, опция `jsx-no-undef`), что была до рефакторинга —
+      проверено сравнением и реальным прогоном `eslint` на `packages/ui` (главный потребитель
+      пресета) и на файле с намеренным нарушением (`solid/reactivity` по-прежнему ловится).
+      README старого образца (без badge/раздельного FAQ, один файл на 250 строк) разобран на
+      триаду по шаблону `genus: engine`; попутно зафиксирован факт, который прежний README не
+      называл: `test/` не существует с коммита `f807343`, как и было у `packages/build` до его
+      же починки доки (`id: rebuild-test-suite`).

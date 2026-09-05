@@ -10,7 +10,7 @@
 // button's own recipe is the nearest sibling for `actionTrigger`'s pseudo-class trio, nothing
 // else in the kit is close enough in shape for the `item`/`itemLabel`/`itemValue` half.
 
-import type { Form, SlotRecipe } from "@omnifield/probe-web-skin/model";
+import type { Form, SlotRecipe } from "@web-core/skin/model";
 
 export const recipe: SlotRecipe = {
   base: {
