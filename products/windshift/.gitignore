@@ -7,7 +7,7 @@
 *.wasm
 *.dylib
 windshift
-.dev-windshift
+.dev-windshift*
 cx
 /ws
 /logbook
