@@ -103,6 +103,25 @@ type CreatePageInput struct {
 	FracIndex   *string
 }
 
+// uniqueSlugTx picks a free slug for a new page within workspaceID: the
+// plain title-derived slug, or base-2/base-3/… on collision. Slugs are
+// chosen once here and frozen afterward (see Update) — a later title edit
+// never moves a page's URL out from under a link that already points at it.
+func (s *PageService) uniqueSlugTx(tx database.Tx, workspaceID int, title string) (string, error) {
+	base := makeSlug(title)
+	slug := base
+	for n := 2; ; n++ {
+		exists, err := s.pages.SlugExistsTx(tx, workspaceID, slug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return slug, nil
+		}
+		slug = fmt.Sprintf("%s-%d", base, n)
+	}
+}
+
 // Create inserts a new page after sanitizing inputs and computing derived
 // columns. Returns the persisted page.
 func (s *PageService) Create(actorID int, in CreatePageInput) (*models.Page, error) {
@@ -135,11 +154,16 @@ func (s *PageService) Create(actorID int, in CreatePageInput) (*models.Page, err
 			return nil, ErrPageDepthExceeded
 		}
 
+		slug, err := s.uniqueSlugTx(tx, in.WorkspaceID, title)
+		if err != nil {
+			return nil, err
+		}
+
 		id, err := s.pages.CreateTx(tx, repository.CreateInput{
 			WorkspaceID:        in.WorkspaceID,
 			ParentID:           parentID,
 			Title:              title,
-			Slug:               makeSlug(title),
+			Slug:               slug,
 			Metadata:           metadata,
 			Content:            content,
 			ContentHash:        hash,
@@ -176,6 +200,19 @@ func (s *PageService) Create(actorID int, in CreatePageInput) (*models.Page, err
 // checks workspace membership and runs the page ACL evaluator.
 func (s *PageService) GetByID(id int) (*models.Page, error) {
 	page, err := s.pages.GetByID(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrPageNotFound
+		}
+		return nil, err
+	}
+	return page, nil
+}
+
+// GetBySlug resolves a page by its stable slug within one workspace — see
+// repository.PageRepository.GetBySlug.
+func (s *PageService) GetBySlug(workspaceID int, slug string) (*models.Page, error) {
+	page, err := s.pages.GetBySlug(workspaceID, slug)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrPageNotFound
@@ -232,15 +269,13 @@ func (s *PageService) Update(actorID int, in UpdatePageInput) (*models.Page, err
 			return nil, ErrPageContentConflict
 		}
 
-		newSlug := existing.Slug
-		if !strings.EqualFold(title, existing.Title) {
-			newSlug = makeSlug(title)
-		}
+		// Slug is frozen at creation (see uniqueSlugTx) — a title edit must not
+		// move a page's URL out from under a link that already points at it.
 
 		err = s.pages.UpdateTx(tx, repository.UpdateInput{
 			ID:                 in.ID,
 			Title:              title,
-			Slug:               newSlug,
+			Slug:               existing.Slug,
 			Content:            content,
 			ContentHash:        hash,
 			Excerpt:            excerpt,

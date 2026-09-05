@@ -617,7 +617,7 @@ func (s *Server) initialize() error {
 	pageService.SetPageLabelRepository(pageLabelRepo)
 	pagePermissionService := services.NewPagePermissionService(s.db, permService)
 	itemLinkHandler.SetPagePermissionChecker(pagePermissionService)
-	pageHandler := handlers.NewPageHandler(pageService, pagePermissionService, permService, logger.NewAuditor(s.db))
+	pageHandler := handlers.NewPageHandler(pageService, pagePermissionService, permService, logger.NewAuditor(s.db), workspaceKeyCache)
 	pageDiagramService := services.NewPageDiagramService(
 		s.db,
 		cfg.AttachmentPath,

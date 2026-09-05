@@ -181,6 +181,41 @@ func (r *PageRepository) GetByID(id int) (*models.Page, error) {
 	return page, nil
 }
 
+// SlugExistsTx reports whether an active (non-archived) page in the given
+// workspace already uses this exact slug — used at creation time to pick a
+// free slug (base, base-2, base-3, …) before the row is inserted.
+func (r *PageRepository) SlugExistsTx(tx database.Tx, workspaceID int, slug string) (bool, error) {
+	var exists bool
+	err := tx.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM pages WHERE workspace_id = ? AND slug = ? AND archived_at IS NULL)",
+		workspaceID, slug,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check slug existence in workspace %d: %w", workspaceID, err)
+	}
+	return exists, nil
+}
+
+// GetBySlug resolves a page by its stable, human-readable slug within one
+// workspace (slugs are unique per workspace, not globally — see CreateTx's
+// collision handling). Lets deep links and hardcoded references address a
+// page as /workspaces/{key}/pages/{slug} instead of an ID that differs
+// between a fresh dev database and any other instance.
+func (r *PageRepository) GetBySlug(workspaceID int, slug string) (*models.Page, error) {
+	row := r.db.QueryRow(
+		"SELECT "+pageColumns+" FROM pages WHERE workspace_id = ? AND slug = ? AND archived_at IS NULL",
+		workspaceID, slug,
+	)
+	page, err := scanPage(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get page by slug %q in workspace %d: %w", slug, workspaceID, err)
+	}
+	return page, nil
+}
+
 // GetByIDs loads multiple pages in a single query. Missing ids are simply
 // absent from the result — the caller decides how to surface that. The slice
 // is ordered as returned by the database (callers that need a specific order
