@@ -218,10 +218,10 @@
     data-menu-container
     role="menu"
     onkeydown={handleMenuKeydown}
-    class="{maxWidth} rounded shadow-xl border focus:outline-none z-[60]"
+    class="{maxWidth} rounded shadow-xl border focus:outline-none z-[60] flex flex-col max-h-[calc(100vh-2rem)]"
     style="background-color: var(--ds-surface-raised); border-color: var(--ds-border); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15);"
   >
-    <div>
+    <div class="flex-1 min-h-0 overflow-y-auto">
       {#each items as itemData, index (itemData.id || index)}
         {#if itemData.type === 'divider'}
           <div class="border-t mx-2" style="border-color: var(--ds-border);"></div>

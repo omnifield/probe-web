@@ -10,6 +10,13 @@
 старого чекпойнта — путь, которого в дереве больше нет) — это отдельная задача второй волны, не
 часть этого сервера.
 
+**Регистрация тулов и транспорт — через `@web-core/mcp`.** Зона больше не зовёт SDK
+(`@modelcontextprotocol/sdk`) напрямую — общий тулинг закрывает то, чего не хватало живому аудиту
+этой зоны: annotations на каждом туле (раньше не было вовсе), настоящий `isError` по спеке (раньше
+даже настоящие отказы уезжали `isError:false`), пагинацию `list_presets`, бутстрап транспорта
+(stdio/Streamable HTTP одним конфигом, без переписывания). Разбор устройства и решений самого
+тулинга — `packages/mcp/README.md`/`FAQ.md`, здесь не повторяется.
+
 ## Устройство
 
 | файл | что делает |
@@ -18,8 +25,8 @@
 | `src/mechanics.ts` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@web-core/skin/editor`, раньше были заперты внутри `defineEditorInfo` |
 | `src/store.ts` | разговор со службой пресетов (`8787`) — Node-версия клиента `apps/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
 | `src/validate.ts` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
-| `src/tools.ts` | регистрация десяти ручек |
-| `src/server.ts` | точка входа, stdio-транспорт |
+| `src/tools.ts` | регистрация десяти ручек через `@web-core/mcp` (`registerTool`/`ok`/`err`) |
+| `src/server.ts` | точка входа — бутстрап транспорта через `@web-core/mcp/transport` |
 
 ## Ручки
 
@@ -30,12 +37,27 @@
 проверяет механика, а не граница протокола: второй, более узкий контракт здесь молча разошёлся бы
 с настоящим (тот же довод, что у `backend/presets`, которая тоже не толкует содержимое).
 
+Каждая ручка размечена `access` (`read`/`write`) через `@web-core/mcp` — отображается в нативные
+`readOnlyHint`/`destructiveHint` спеки MCP; только `save_preset` — `write`, остальные девять —
+`read`. Отказ протокола (`isError: true`) — только для не найденного по имени/сломанного входа
+(`get_passport`/`get_preset` с неизвестным именем, `save_preset` с кривой формой assembly-состояния);
+флав-отчёты (`check_*`, отказ валидации внутри `save_preset`, `OutfitRefused` внутри
+`assemble_preview`) — обычные business-данные тула (`isError: false`), а не отказ протокола: тул
+СДЕЛАЛ, что просили (проверил), просто результат проверки отрицательный. `list_presets` с
+указанным `kind` отдаёт страницу (`cursor`/`limit`, курсорная пагинация из `@web-core/mcp/pagination`),
+без `kind` — всё как раньше, без пагинации (видов всего четыре).
+
 ## Запуск
 
 ```sh
-pnpm --filter @web-core/skin-mcp start   # stdio-сервер
+pnpm --filter @web-core/skin-mcp start   # stdio-сервер (по умолчанию)
 pnpm --filter @web-core/skin-mcp typecheck
 ```
+
+Транспорт переключается без правки кода — `SKIN_MCP_TRANSPORT=http` (плюс `PORT`, по умолчанию
+`3000`) поднимает Streamable HTTP вместо stdio, через `createServer` из `@web-core/mcp/transport`.
+Auth-хука сегодня нет — служба пресетов сама не проверяет ни токен, ни scope, добавлять проверку
+только на этой границе было бы обманом безопасности, не защитой.
 
 Нужна живая служба пресетов (`pnpm --filter @web-core/presets start`, порт `8787`) — без неё
 ручки хранения отвечают `StoreDown`. Адрес переопределяется `SKIN_MCP_PRESETS_URL`.

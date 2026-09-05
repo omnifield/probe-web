@@ -1,0 +1,234 @@
+# Дорожная карта @web-core/mcp — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/build/store (categories → items, log → журнал решений); без milestones — у
+# пакета нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Регистрация тула
+    items:
+      - id: register-tool-mandatory-annotations
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: registerTool() — обязательные annotations, input/output как настоящие Zod-схемы
+        description: |
+          Означает: тул нельзя зарегистрировать без явного access ("read"/"write"/"destructive")
+          — регистрация бросает на старте, не молча принимает тул без разметки. access
+          отображается в нативные annotations спеки MCP (readOnlyHint/destructiveHint),
+          idempotent/openWorld — отдельные необязательные флаги поверх. input/output —
+          настоящие Zod-схемы: SDK (@modelcontextprotocol/sdk) сам валидирует по ним аргументы и
+          сам строит JSON Schema для протокола — отдельного шага конвертации нет вовсе (см. log,
+          zod-output-schema-was-unnecessary).
+          Причина: аудит apps/skin/.mcp показал, что там annotations нет вовсе — ни один из
+          десяти тулов не размечен, save_preset (пишет) неотличим от list_components (читает), и
+          outputSchema не объявлен ни разу. Образец обязательности — Windshift
+          internal/aitools/registry.go (Access/Risk/Scopes обязательны, паника при регистрации
+          без них).
+
+      - id: response-envelope
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: ok()/err() — конверт ответа по спеке
+        description: |
+          Означает: успех и отказ хендлера всегда заворачиваются в форму, которую ждёт спека MCP
+          (content, structuredContent если есть output, isError) — хендлеру не нужно знать про
+          протокол вообще.
+          Причина: в apps/skin/.mcp isError никогда не true, даже для настоящих отказов
+          (unknown component) — расхождение со спекой, найденное аудитом, не осознанное решение.
+
+  - category: Транспорт
+    items:
+      - id: transport-bootstrap
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createServer() — stdio и Streamable HTTP одним конфигом
+        description: |
+          Означает: зона поднимает сервер локально (stdio, как сегодня apps/skin/.mcp/src/server.ts)
+          и на сервере (Streamable HTTP) без переписывания — выбор транспортом по конфигу/env, не
+          отдельным кодом на каждую зону.
+          Реализация: auth — точка расширения (хук-функция на каждый HTTP-запрос), сама проверка
+          токена/scope — забота потребителя, не пакета. HTTP-транспорт держит сессию
+          (sessionIdGenerator: randomUUID, не undefined) — честный stateless в этой версии TS SDK
+          требует новый McpServer на каждый запрос, не подходит модели "тулы регистрируются один
+          раз" (см. FAQ.md, log sessionid-not-stateless-in-ts-sdk). Windshift
+          internal/mcp/server.go — образец формы решения (HTTP + auth-мидлварь), не буквальной
+          настройки транспорта (тот Stateless: true — другой SDK, другого вендора, не совпадает).
+
+  - category: Листинги
+    items:
+      - id: cursor-pagination
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: paginate() — курсорная пагинация list_x
+        description: |
+          Означает: любой list_x-тул (list_presets в skin-mcp, будущие list_x в других зонах)
+          отдаёт страницу с nextCursor, а не весь список разом — сегодня list_presets в
+          apps/skin/.mcp отдаёт всё по виду без лимита.
+
+  - category: Документация
+    items:
+      - id: readme-tooling-skeleton
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README/FAQ/ROADMAP по шаблону tooling
+        description: |
+          Означает: тройка доки заведена по образцу packages/build (genus: tooling, тот же
+          порядок разделов). Начиналась как согласованный с user план до кода — теперь описывает
+          настоящую реализацию (index.ts-барель + register-tool/transport/pagination каталогами,
+          реальные тесты, реальный round-trip через MCP SDK), не план.
+
+      - id: real-tests-not-mocks
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Тесты — настоящий round-trip через MCP SDK, не имитация
+        description: |
+          Означает: registerTool/ok/err проверены через InMemoryTransport.createLinkedPair() с
+          настоящим Client (annotations на проводе, structuredContent, isError), createServer —
+          через настоящий StreamableHTTPClientTransport на реально поднятый HTTP-порт (успех, 401
+          от auth-хука, проход после верного заголовка), paginate — полный обход list по
+          nextCursor. 15/15 зелёных (vitest run).
+
+  - category: Не в этом пакете
+    items:
+      - id: concrete-auth-verification
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Проверка bearer-токена/scope под конкретный бэк
+        description: |
+          Означает: createServer() даёт точку расширения (auth-хук), но САМУ проверку токена
+          против сервиса пресетов (или другого бэка зоны) пишет зона, не этот пакет — привязка к
+          конкретному бэку не тулинг, а бизнес-логика продукта.
+
+      - id: response-format-verbosity
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: response_format (concise/detailed)
+        description: |
+          Означает: переключатель подробности ответа (по совету Anthropic — DETAILED/CONCISE) —
+          решение конкретного тула конкретной зоны (например get_passport в skin-mcp), не общий
+          примитив этого пакета.
+
+      - id: eval-harness
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Eval-харнесс для тулов
+        description: |
+          Означает: набор реалистичных многошаговых сценариев с проверяемым результатом (гайд
+          Anthropic называет это главным способом измерить качество тула) — отдельная задача по
+          зоне (например skin-mcp), не часть общего тулинга.
+
+log:
+  - id: folders-not-flat-files-in-src
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Предыдущая запись лога (single-file-not-subpaths) сама была неверно понята: user имел в
+      виду не "весь код в одном файле", а правило репозитория "в корне src только index.ts-барель,
+      всё остальное по каталогам" (packages/store: engine/ → ., machine/+addons/ → свои подпути;
+      packages/build тут не образец — у него нет корневого барреля вовсе). Три подпути (`.`,
+      `/transport`, `/pagination`) возвращены — они были верны с самого начала, ошибкой было
+      собрать их в плоские файлы src/index.ts+transport.ts+pagination.ts вместо каталогов
+      register-tool/, transport/, pagination/ с тонким корневым барелем, реэкспортирующим только
+      register-tool/ (общее — через барель, тяжёлое/опциональное — своим подпутём+каталогом).
+
+  - id: single-file-not-subpaths
+    type: plan
+    date: 2026-09-05
+    summary: >
+      User поправил структуру после первого прохода: код был раскидан по трём файлам
+      (index.ts/transport.ts/pagination.ts) с тремя exports-подпутями — калька формы
+      packages/build, но без довода build (там подпути — правда разные цели потребления: конфиг
+      Vite, JSON-профиль типов, бинарник). Здесь все три функции потребляются одним способом
+      (импорт в TS-файл MCP-сервера зоны) — подпути были поверхностью ради поверхности. Собрано в
+      один src/index.ts, один адрес поставки; заодно убраны все объясняющие абзацы из кода
+      (правило корневого README "в коде — не проза") — обоснования только в FAQ.md.
+
+  - id: z-via-io-not-raw-zod
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Package.json нёс "zod" отдельной зависимостью (сперва dependencies, потом devDependencies
+      для тестов) — user спросил, почему не через packages/io, которая уже единственная точка
+      входа к z в репозитории (packages/io/src/engine/index.ts, прямым текстом "z через этот
+      пакет, не напрямую из zod"), тем же приёмом, что apps/skin/.mcp/src/kit.ts. "zod" снято из
+      package.json целиком, тесты берут z из @web-core/io (devDependency) — src/index.ts саму
+      zod не импортирует, только тип AnySchema из @modelcontextprotocol/sdk (стирается на
+      компиляции).
+
+  - id: sessionid-not-stateless-in-ts-sdk
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Первая версия createServer({transport:"http"}) использовала sessionIdGenerator: undefined
+      (честный stateless, по аналогии с Windshift Stateless: true) — живой тест показал, что
+      ВТОРОЙ HTTP-запрос на тот же transport падает 500 без сообщения. Причина найдена в
+      собственном эталонном примере SDK (examples/server/simpleStatelessStreamableHttp.js):
+      честный stateless в этой версии @modelcontextprotocol/sdk требует новый McpServer+transport
+      НА КАЖДЫЙ запрос — несовместимо с моделью "тулы регистрируются один раз в createServer".
+      Починка — sessionIdGenerator: () => randomUUID() (stateful, сессия в заголовке
+      mcp-session-id, SDK ведёт её сам) — проверено тем же способом, работает на много запросов
+      подряд одним зарегистрированным сервером. Windshift использует другой (Go) SDK другого
+      вендора — поведение между реализациями одного протокола не гарантированно совпадает.
+
+  - id: zod-output-schema-was-unnecessary
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Изначальный план нёс отдельную точку поверхности /schema (zodTool) — предполагалось, что
+      outputSchema требует ручной конвертации Zod → JSON Schema, тем же приёмом (z.toJSONSchema),
+      которым apps/skin/.mcp/src/kit.ts уже строит io-схему для get_passport. Чтение исходников
+      SDK (@modelcontextprotocol/sdk/server/mcp.js, normalizeObjectSchema/toJsonSchemaCompat)
+      перед написанием кода показало: registerTool уже принимает настоящую Zod-схему в
+      input/outputSchema напрямую и сам делает и конвертацию, и safeParseAsync-валидацию —
+      z.toJSONSchema в kit.ts решает другую задачу (показать io-схему КАК ДАННЫЕ внутри ответа
+      тула, не заявить outputSchema самого тула). Точка /schema снята, output стал просто полем
+      ToolDefinition — меньше поверхности, тот же результат.
+
+  - id: genus-tooling-decision
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Пакет заведён user (packages/mcp, пустой на момент старта) как ответ на аудит
+      apps/skin/.mcp: MCP скоро едет на сервер отдельно и станет основным способом создания
+      скинов, важнее ручного редактора — значит дыры аудита (annotations, outputSchema,
+      isError-конвенция, транспорт/auth, дублирование между будущими MCP-серверами разных зон)
+      стоит закрывать один раз в общем месте, а не по зоне. User classified genus как tooling
+      ("он тоже тулинг" — по аналогии с packages/build) — образцы доков взяты оттуда же, не из
+      packages/store (engine).
+
+  - id: v1-scope-agreed
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Объём v1 согласован после трёх источников: 1) построчный аудит apps/skin/.mcp
+      (kit.ts/mechanics.ts/validate.ts/tools.ts/store.ts/server.ts) — консолидированные тулы и
+      actionable-флавы уже хороши, но annotations/outputSchema отсутствуют целиком, isError не
+      используется никогда, list_presets без пагинации, транспорт только stdio; 2) внешний
+      research — гайд Anthropic "Writing effective tools for AI agents" (консолидация тулов,
+      семантические имена, actionable errors, response_format, eval-driven итерация) и спека MCP
+      2025-06-18 (tools/annotations, outputSchema+structuredContent, isError, OAuth 2.1 для
+      удалённых серверов); 3) внутренний образец — Windshift internal/aitools/registry.go
+      (Access/Risk обязательны при регистрации, паника если не проставлены) и
+      internal/mcp/server.go (Streamable HTTP + bearer-auth-мидлварь, уже едет на сервере). v1 —
+      registerTool с обязательными annotations, ok/err с isError-конвенцией, zodTool для
+      outputSchema, createServer (stdio/http + auth-хук), paginate. Сознательно вне v1 (см.
+      категорию "Не в этом пакете"): сама проверка токена под конкретный бэк, response_format
+      per-тула, eval-харнесс — все три обсуждались явно и отложены как задачи потребителя/зоны,
+      не общего пакета.

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS workspace_categories (
 INSERT INTO workspace_categories (name, color, sort_order) VALUES
 ('apps', '#7c3aed', 1),
 ('packages', '#3b82f6', 2),
-('features', '#059669', 3)
+('services', '#059669', 3)
 ON CONFLICT (name) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS workspaces (

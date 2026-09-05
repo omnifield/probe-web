@@ -1,36 +1,37 @@
-# Служба пресетов. Сборки в этом образе НЕТ и это решение, а не упрощение: исходник —
-# обычный JS с типами в JSDoc, поэтому контейнер запускает ровно те файлы, что лежат в
-# репозитории. Нечему компилироваться — нечему и разъехаться с проверенным.
-#
-# Зависимостей в поставку ноль (`shared-policy`), поэтому `npm install` здесь тоже нет:
-# `node_modules` в образе не появляется вовсе.
+# Служба пресетов. Двухступенчатая сборка: первый слой собирает статический бинарник Go,
+# второй его просто запускает — итоговый образ не носит в себе ни компилятора, ни исходников.
 
-FROM node:24-alpine
+FROM golang:1.27-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN CGO_ENABLED=0 go build -o /out/presets ./cmd/presets
 
-ENV NODE_ENV=production \
-    PRESETS_DIR=/data \
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates
+
+ENV PRESETS_DB=/data/presets.db \
     PRESETS_PORT=8787 \
     PRESETS_HOST=0.0.0.0
 
+RUN addgroup -S presets && adduser -S presets -G presets
+
 WORKDIR /app
+COPY --from=build /out/presets ./presets
 
-COPY package.json ./
-COPY src ./src
-
-# Данные ПЕРЕЖИВАЮТ перезапуск: том, а не слой образа. Без этого первый же `docker rm` унёс
-# бы всё сохранённое — а сохранённое там чужое.
-#
-# Каталог создаётся и отдаётся пользователю `node` заранее: если том подмонтируют пустым,
-# права возьмутся отсюда. Смонтируют том с хоста — права придут с хоста, и это забота того,
-# кто разворачивает.
-RUN mkdir -p /data && chown node:node /data
+# Данные ПЕРЕЖИВАЮТ перезапуск: том, а не слой образа. Без этого первый же `docker rm` унёс бы
+# всё сохранённое — а сохранённое там чужое.
+RUN mkdir -p /data && chown presets:presets /data
 VOLUME ["/data"]
 
-USER node
+USER presets
 EXPOSE 8787
 
-# Проверка живости — той же службой, без лишних тулз в образе.
+# Проверка живости — той же службой, без лишних тулз в образе: сам бинарник умеет /healthz,
+# отдельный curl/wget сюда тащить незачем.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=3s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PRESETS_PORT||8787)+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+  CMD ["/app/presets", "-healthcheck"]
 
-CMD ["node", "src/server.js"]
+CMD ["/app/presets"]
