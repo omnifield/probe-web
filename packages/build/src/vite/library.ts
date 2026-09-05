@@ -41,6 +41,22 @@ async function buildRawJsxBranch(root: string, entries: readonly LibraryEntry[])
   }
 }
 
+/**
+ * Один `.d.ts` на вход, свёрнутый в плоский файл — независимо от того, где физически лежит
+ * исходник (`src/<name>.ts` или `src/<a>/<b>.ts`). Голый `tsc` так не умеет: он зеркалит дерево
+ * исходников буквально при эмите деклараций. Разбор — FAQ.md зоны `build`.
+ */
+async function buildDeclarationFiles(root: string, entries: readonly LibraryEntry[]): Promise<void> {
+  const { rollup } = await import("rollup");
+  const { default: dts } = await import("rollup-plugin-dts");
+
+  for (const entry of entries) {
+    const bundle = await rollup({ input: resolve(root, entry.source), plugins: [dts()] });
+    await bundle.write({ file: resolve(root, "dist", `${entry.name}.d.ts`), format: "es" });
+    await bundle.close();
+  }
+}
+
 /** Готовый конфиг Vite для сборки библиотеки web-core (library mode). Разбор — README.md. */
 export function defineLibraryConfig(options: DefineLibraryConfigOptions): UserConfig {
   const solidEntries = options.entries.filter((entry) => entry.solid);
@@ -57,6 +73,13 @@ export function defineLibraryConfig(options: DefineLibraryConfigOptions): UserCo
             },
           }
         : undefined,
+      {
+        name: "web-core-build:library-types",
+        apply: "build",
+        async closeBundle() {
+          await buildDeclarationFiles(process.cwd(), options.entries);
+        },
+      },
     ],
     build: {
       target: "es2023",

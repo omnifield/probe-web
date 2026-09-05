@@ -8,11 +8,11 @@
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expect, it } from "vitest";
 
-import { passportLookup } from "../src/address/index.js";
-import { checkOutfit } from "../src/look/index.js";
-import type { Form, LookParts, Outfit } from "../src/look/index.js";
-import { GROW_SHRINK_BLOCK } from "../src/motion/index.js";
-import { definePassport } from "../src/passport/form/index.js";
+import { passportLookup } from "../src/engine/address/index.js";
+import { checkOutfit } from "../src/engine/look/index.js";
+import type { Form, LookParts, Outfit } from "../src/engine/look/index.js";
+import { GROW_SHRINK_BLOCK } from "../src/engine/motion/index.js";
+import { definePassport } from "../src/engine/passport/form/index.js";
 
 const anatomyA = createAnatomy("collision-a").parts("root");
 const anatomyB = createAnatomy("collision-b").parts("root");

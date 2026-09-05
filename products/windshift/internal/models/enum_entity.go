@@ -24,6 +24,12 @@ func (m *MilestoneCategory) GetID() int { return m.ID }
 // GetName returns the Name of the MilestoneCategory.
 func (m *MilestoneCategory) GetName() string { return m.Name }
 
+// GetID returns the ID of the WorkspaceCategory.
+func (c *WorkspaceCategory) GetID() int { return c.ID }
+
+// GetName returns the Name of the WorkspaceCategory.
+func (c *WorkspaceCategory) GetName() string { return c.Name }
+
 // GetID returns the ID of the Priority.
 func (p *Priority) GetID() int { return p.ID }
 

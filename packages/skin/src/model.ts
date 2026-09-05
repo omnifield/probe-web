@@ -1,4 +1,3 @@
-// Design notes: ./model.README.md
 
 export type {
   AncestorStyle,
@@ -15,16 +14,7 @@ export type {
   SlotRecipe,
   StyleObject,
   StyleValue,
-} from "./recipe/index.js";
-
-export {
-  DARK_CLASS,
-  FORCE_ATTRIBUTE,
-  LAYER_ORDER,
-  NODE_ATTRIBUTE,
-  SKETCH_LAYER,
-  SKIN_LAYER,
-} from "./marks/index.js";
+} from "./engine/recipe/index.js";
 
 export type {
   ComponentPassport,
@@ -41,7 +31,7 @@ export type {
   PassportState,
   PassportVariable,
   PassportVariantAxis,
-} from "./passport/form/index.js";
+} from "./engine/passport/form/index.js";
 export {
   addressesView,
   createAnatomy,
@@ -49,88 +39,41 @@ export {
   definePassport,
   SETTINGS,
   settingApplies,
-} from "./passport/form/index.js";
+} from "./engine/passport/form/index.js";
 
-export type { SkinAncestor, SkinCoordinate } from "./passport-view/index.js";
-export { coordinateOf, partOf } from "./passport-view/index.js";
+export type { SkinAncestor, SkinCoordinate } from "./engine/passport-view/index.js";
+export { coordinateOf, partOf } from "./engine/passport-view/index.js";
+
+export {
+  DARK_CLASS,
+  FORCE_ATTRIBUTE,
+  LAYER_ORDER,
+  NODE_ATTRIBUTE,
+  SKETCH_LAYER,
+  SKIN_LAYER,
+} from "./engine/marks/index.js";
 
 export type {
   DataBinding,
   DispatchAction,
   DynamicValue,
-  PassportAssemblyContent,
-  PassportAssemblyElement,
-  PassportAssemblyNode,
-  PassportAssemblyRepeat,
   PassportGenus,
   PassportSelfAssembly,
-} from "./passport/assembly/index.js";
-export {
-  isAssemblyContent,
-  isAssemblyRepeat,
-  isDataBinding,
-  resolveDataBinding,
-} from "./passport/assembly/index.js";
+} from "./engine/passport/assembly/index.js";
 
-export type { PassportLookup } from "./address/index.js";
-export {
-  ancestorSelector,
-  markSelector,
-  nodeSelector,
-  componentSelector,
-  partSelector,
-  passportLookup,
-  safeName,
-  stateSelector,
-  variantSelector,
-} from "./address/index.js";
+export type { PassportLookup } from "./engine/address/index.js";
+export { passportLookup } from "./engine/address/index.js";
 
-export type {
-  CssRule,
-  RuleCoordinate,
-  SkinFlaw,
-  SkinFlawName,
-  SkinRule,
-  SkinRules,
-  SketchRules,
-  ValueVocabulary,
-} from "./rules/index.js";
+export type { BoundModel } from "./engine/bound/index.js";
+export { withPassports } from "./engine/bound/index.js";
 
-export type { BoundModel } from "./bound/index.js";
-export { withPassports } from "./bound/index.js";
+export type { SkinGap, SkinGapKind } from "./engine/coverage/index.js";
+export { skinGaps } from "./engine/coverage/index.js";
 
-export type { SkinGap, SkinGapKind } from "./coverage/index.js";
-export { skinGaps } from "./coverage/index.js";
+export { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE } from "./engine/motion/index.js";
 
-export { GROW_SHRINK_BLOCK, GROW_SHRINK_INLINE, isMotion, MOTION_FAMILIES } from "./motion/index.js";
+export type { Form, Outfit, Palette } from "./engine/look/index.js";
+export { OutfitRefused } from "./engine/look/index.js";
 
-export type { SkinHalf, SkinValue, ValueOrigin } from "./seeds/index.js";
-export { NOT_SEEDED, skinValues, valueNames } from "./seeds/index.js";
-export type { SizeRefusal, SizeSeed } from "./sizes/index.js";
-export { SIZE_SEEDS, sizeRefusals, sizeValues } from "./sizes/index.js";
-
-export type {
-  DimensionSeed,
-  FluidBarKind,
-  FluidPole,
-  FluidRefusal,
-  FluidReport,
-  FluidSeed,
-} from "./fluid/index.js";
-export { fluidBar, fluidExpression, fluidPoles, fluidRefusals, isFluid } from "./fluid/index.js";
-
-export type {
-  Assembled,
-  ComponentAssembly,
-  Form,
-  LookParts,
-  Outfit,
-  OutfitFlaw,
-  OutfitFlawName,
-  OutfitReport,
-  Palette,
-} from "./look/index.js";
-export { OutfitRefused } from "./look/index.js";
-
-export type { Role, RoleKind } from "./vocabulary/index.js";
-export { knownRole, ROLE_NAMES, SCALE_ROLES, VOCABULARY } from "./vocabulary/index.js";
+export type { Role, RoleKind } from "./engine/vocabulary/index.js";
+export { knownRole, ROLE_NAMES, SCALE_ROLES, VOCABULARY } from "./engine/vocabulary/index.js";

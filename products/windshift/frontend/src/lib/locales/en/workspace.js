@@ -724,6 +724,8 @@ export default {
     visualIdentityDescription:
       'Customize the visual appearance of your workspace with icons, colors, and avatars.',
     workspaceIconColor: 'Workspace Icon & Color',
+    workspaceCategory: 'Sidebar Category',
+    noCategory: 'No category',
     workspaceAvatar: 'Workspace Avatar',
     customAvatar: 'Custom Avatar',
     imageUploadedSuccessfully: 'Image uploaded successfully',

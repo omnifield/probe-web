@@ -73,7 +73,7 @@ export default defineLibraryConfig({
 
 ```jsonc
 // package.json потребителя-библиотеки
-"build": "vite build && tsc -p tsconfig.build.json"
+"build": "vite build"
 ```
 
 **Пресет тестов:**

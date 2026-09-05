@@ -141,7 +141,7 @@ import {
   validateApiToken,
 } from './users.js';
 import { statusCategories, statuses, workflows } from './workflows.js';
-import { workspaceRoles, workspaces } from './workspaces.js';
+import { workspaceCategories, workspaceRoles, workspaces } from './workspaces.js';
 
 // Assemble the api object with the same structure as the original
 export const api = {
@@ -156,6 +156,7 @@ export const api = {
   customFields,
   projectFieldRequirements,
   workspaces,
+  workspaceCategories,
   workspaceRoles,
   screens,
   items,

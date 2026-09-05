@@ -222,3 +222,50 @@ function createWorkspacesStore() {
 
 export const currentWorkspace = createCurrentWorkspaceStore();
 export const workspacesStore = createWorkspacesStore();
+
+// Sidebar categories (apps/packages/features/…) that group workspaces — a
+// small, rarely-changing list, loaded once and cached the same way
+// workspacesStore caches its own list.
+function createWorkspaceCategoriesStore() {
+  const categories = writable([]);
+  const loaded = writable(false);
+  let loadPromise = null;
+
+  const combined = derived([categories, loaded], ([$categories, $loaded]) => ({
+    categories: $categories,
+    loaded: $loaded,
+  }));
+
+  return {
+    subscribe: combined.subscribe,
+
+    load({ force = false } = {}) {
+      if (!force && get(loaded)) return Promise.resolve(get(categories));
+      if (!force && loadPromise) return loadPromise;
+
+      const request = api.workspaceCategories
+        .getAll()
+        .then((all) => {
+          const sorted = [...(all || [])].sort((a, b) => a.sort_order - b.sort_order);
+          categories.set(sorted);
+          loaded.set(true);
+          return sorted;
+        })
+        .catch((error) => {
+          if (isExpectedBackgroundSyncError(error)) return [];
+          console.error('Failed to load workspace categories:', error);
+          categories.set([]);
+          loaded.set(true);
+          return [];
+        })
+        .finally(() => {
+          if (loadPromise === request) loadPromise = null;
+        });
+
+      loadPromise = request;
+      return request;
+    },
+  };
+}
+
+export const workspaceCategoriesStore = createWorkspaceCategoriesStore();

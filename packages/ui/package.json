@@ -40,7 +40,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build",
     "generate": "node ../../packages/generators/dist/cli.js generators/generate.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",

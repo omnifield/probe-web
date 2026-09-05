@@ -12,6 +12,14 @@ func RegisterWorkspaceRoutes(deps *Deps) {
 	auth := deps.AuthMiddleware.RequireAuth
 	admin := deps.PermissionMiddleware.RequireSystemAdmin()
 	workspaceView := deps.PermissionMiddleware.RequireWorkspacePermission(models.PermissionItemView)
+	globalWorkspaceManage := deps.PermissionMiddleware.RequireGlobalPermission(models.PermissionWorkspaceCreate)
+
+	// Workspace category endpoints (sidebar grouping — apps/packages/features/…)
+	api.HandleH("GET /workspace-categories", auth(http.HandlerFunc(deps.Workspaces.Category.GetAll)))
+	api.HandleH("POST /workspace-categories", auth(globalWorkspaceManage(http.HandlerFunc(deps.Workspaces.Category.Create))))
+	api.HandleH("GET /workspace-categories/{id}", auth(http.HandlerFunc(deps.Workspaces.Category.Get)))
+	api.HandleH("PUT /workspace-categories/{id}", auth(globalWorkspaceManage(http.HandlerFunc(deps.Workspaces.Category.Update))))
+	api.HandleH("DELETE /workspace-categories/{id}", auth(globalWorkspaceManage(http.HandlerFunc(deps.Workspaces.Category.Delete))))
 
 	// Workspace endpoints
 	api.HandleH("GET /workspaces", auth(http.HandlerFunc(deps.Workspaces.Workspace.GetAll)))

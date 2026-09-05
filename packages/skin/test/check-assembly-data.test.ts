@@ -9,8 +9,8 @@
 // fixtures below are what that JSON looks like on the way in.
 
 import { describe, expect, it } from "vitest";
-import { checkAssemblyData } from "../src/passport/editor/check-assembly-data.js";
-import type { PassportAssembly } from "../src/passport/assembly/index.js";
+import { checkAssemblyData } from "../src/editor/check-assembly-data.js";
+import type { PassportAssembly } from "../src/engine/passport/assembly/index.js";
 
 interface Item {
   readonly id: string;

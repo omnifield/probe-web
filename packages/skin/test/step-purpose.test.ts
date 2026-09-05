@@ -9,10 +9,10 @@
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expect, it } from "vitest";
 
-import { passportLookup } from "../src/address/index.js";
-import { definePassport } from "../src/passport/form/index.js";
-import { checkSkin } from "../src/rules/index.js";
-import type { Skin, SlotRecipe } from "../src/recipe/index.js";
+import { passportLookup } from "../src/engine/address/index.js";
+import { definePassport } from "../src/engine/passport/form/index.js";
+import { checkSkin } from "../src/engine/rules/index.js";
+import type { Skin, SlotRecipe } from "../src/engine/recipe/index.js";
 
 const anatomy = createAnatomy("swatch-proof").parts("root");
 

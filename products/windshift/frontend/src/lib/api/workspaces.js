@@ -24,6 +24,12 @@ export const workspaces = {
   // board's per-pair /items/{id}/available-status-transitions preload.
 };
 
+// Sidebar categories (apps/packages/features/…) that group workspaces —
+// separate from a workspace's own icon color (workspaces.color).
+export const workspaceCategories = {
+  ...createCrudClient('/workspace-categories'),
+};
+
 // `create` and `delete` here go to the new admin endpoints
 // (POST /workspace-roles + DELETE /workspace-roles/{id}) which create
 // label-only custom roles and refuse to delete is_system rows.

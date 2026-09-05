@@ -186,6 +186,97 @@ func NewMilestoneCategoryConfig() EnumConfig {
 	}
 }
 
+// NewWorkspaceCategoryConfig returns the configuration for WorkspaceCategory CRUD.
+// Groups workspaces in the sidebar (apps/packages/features/…) — the category's
+// own color drives the group separator, independent of each workspace's icon color.
+func NewWorkspaceCategoryConfig() EnumConfig {
+	return EnumConfig{
+		TableName:      "workspace_categories",
+		EntityName:     "Workspace category",
+		SelectColumns:  "id, name, color, description, sort_order, created_at, updated_at",
+		DefaultOrderBy: "sort_order ASC, name ASC",
+
+		ScanRow: func(rows *sql.Rows) (EnumEntity, error) {
+			var c models.WorkspaceCategory
+			var description sql.NullString
+			err := rows.Scan(&c.ID, &c.Name, &c.Color, &description, &c.SortOrder, &c.CreatedAt, &c.UpdatedAt)
+			if description.Valid {
+				c.Description = description.String
+			}
+			return &c, err
+		},
+
+		ScanSingleRow: func(row *sql.Row) (EnumEntity, error) {
+			var c models.WorkspaceCategory
+			var description sql.NullString
+			err := row.Scan(&c.ID, &c.Name, &c.Color, &description, &c.SortOrder, &c.CreatedAt, &c.UpdatedAt)
+			if description.Valid {
+				c.Description = description.String
+			}
+			return &c, err
+		},
+
+		ApplyDefaults: func(entity any) {
+			c := entity.(*models.WorkspaceCategory) //nolint:errcheck // type assertion is safe here
+			if strings.TrimSpace(c.Color) == "" {
+				c.Color = "#3b82f6"
+			}
+		},
+
+		Validate: func(entity any, isUpdate bool) string {
+			c := entity.(*models.WorkspaceCategory) //nolint:errcheck // type assertion is safe here
+			if strings.TrimSpace(c.Name) == "" {
+				return "Name is required"
+			}
+			return ""
+		},
+
+		CheckUnique: func(db database.Database, entity any, excludeID int) (bool, error) {
+			c := entity.(*models.WorkspaceCategory) //nolint:errcheck // type assertion is safe here
+			var count int
+			var err error
+			if excludeID == 0 {
+				err = db.QueryRow("SELECT COUNT(*) FROM workspace_categories WHERE LOWER(name) = LOWER(?)",
+					c.Name).Scan(&count)
+			} else {
+				err = db.QueryRow("SELECT COUNT(*) FROM workspace_categories WHERE LOWER(name) = LOWER(?) AND id != ?",
+					c.Name, excludeID).Scan(&count)
+			}
+			return count > 0, err
+		},
+
+		CheckDependencies: func(db database.Database, id int) string {
+			var count int
+			if err := db.QueryRow("SELECT COUNT(*) FROM workspaces WHERE category_id = ?", id).Scan(&count); err != nil {
+				slog.Error("dependency check failed", slog.Any("error", err), slog.String("table", "workspaces"), slog.Int("id", id))
+				return "Unable to verify dependencies — please try again"
+			}
+			if count > 0 {
+				return "Cannot delete workspace category that is in use by workspaces"
+			}
+			return ""
+		},
+
+		InsertArgs: func(entity any, now time.Time) (string, string, []any) {
+			c := entity.(*models.WorkspaceCategory) //nolint:errcheck // type assertion is safe here
+			return "name, color, description, sort_order, created_at, updated_at",
+				"?, ?, ?, ?, ?, ?",
+				[]any{c.Name, c.Color, c.Description, c.SortOrder, now, now}
+		},
+
+		UpdateArgs: func(entity any, now time.Time) (string, []any) {
+			c := entity.(*models.WorkspaceCategory) //nolint:errcheck // type assertion is safe here
+			return "name = ?, color = ?, description = ?, sort_order = ?, updated_at = ?",
+				[]any{c.Name, c.Color, c.Description, c.SortOrder, now}
+		},
+
+		AuditActionCreate: "workspace_category.create",
+		AuditActionUpdate: "workspace_category.update",
+		AuditActionDelete: "workspace_category.delete",
+		AuditResourceType: "workspace_category",
+	}
+}
+
 // NewCollectionCategoryConfig returns the configuration for CollectionCategory CRUD
 func NewCollectionCategoryConfig() EnumConfig {
 	return EnumConfig{

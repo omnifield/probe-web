@@ -1,26 +1,7 @@
-// Design notes: ../README.md#presets
-//
-// ПОЛНЫЙ CRUD ПО КАЖДОМУ ВИДУ ЗАПИСИ (`PWEB-216`) — контракт службы один на все четыре ярлыка
-// (`palette`/`form`/`outfit`/`assembly`), и понимание этого контракта не продуктовое знание
-// (тот же довод, что у `PWEB-214`/`PWEB-215`): кто бы ни звал службу раздачи, ему нужны ровно эти
-// пять операций и ни разу — свой `fetch`.
-//
-// ## Имя — ДОВОД, а не поле содержимого
-//
-// `Palette`/`Form`/`Outfit` несут своё `name` — но `ComponentAssembly` его не несёт (у неё
-// `component`+`assembly`, и на то есть причина: кодовая сборка кита живёт в `editorInfo.
-// assemblies` тем же типом и никогда не была записью с собственным именем). Выведи клиент имя из
-// содержимого — четвёртый ярлык не завёлся бы вовсе, а требование «симметричный набор по каждому
-// виду» стоит явно. Поэтому имя — отдельный довод `save`/`replace`/`get`/`remove`, один и тот же
-// по форме для всех четырёх ярлыков.
-//
-// Для palette/form/outfit это накладывает молчаливое ожидание — `state.name` совпадает с
-// переданным `name`: `assemble`/`checkOutfit` читают имя ИЗ СОДЕРЖИМОГО (`outfit.palette`
-// ищется по `Palette.name`), а не из обёртки записи. Клиент это не проверяет и не может: у
-// `ComponentAssembly` поля `name` попросту нет, а вводить проверку на три ярлыка из четырёх —
-// заводить для четвёртого молчаливое исключение.
+// Полный CRUD по каждому виду записи службы раздачи. Имя — довод операции, не поле содержимого
+// (`ComponentAssembly` своего имени не несёт). Разбор — FAQ.md.
 
-import type { ComponentAssembly, Form, Outfit, Palette } from "../look/index.js";
+import type { ComponentAssembly, Form, Outfit, Palette } from "../engine/look/index.js";
 import { ask, PresetsRefused } from "./wire.js";
 
 /** Ярлыки вида: по ним служба отбирает записи, не толкуя ни одной. */
@@ -65,22 +46,13 @@ const text = (value: unknown): string => (typeof value === "string" ? value : ""
 
 /** Клиент службы раздачи: по каждому виду — перечень, чтение, запись, замена, удаление. */
 export interface PresetsClient {
-  /**
-   * Перечень записей вида — СО СОДЕРЖИМЫМ, не только именами. Служба отдаёт перечень и
-   * содержимое разными ответами (`?kind=` — без него, `/id` — с ним); N+1 запрос делает клиент,
-   * параллельно, не тот, кто его зовёт.
-   */
+  /** Перечень записей вида со содержимым — N+1-запрос делает клиент, не тот, кто его зовёт. */
   list<K extends PresetKind>(kind: K): Promise<readonly PresetRecord<PresetKindState[K]>[]>;
 
   /** Запись по имени, либо `undefined` — такой в службе нет. */
   get<K extends PresetKind>(kind: K, name: string): Promise<PresetRecord<PresetKindState[K]> | undefined>;
 
-  /**
-   * Кладёт НОВУЮ запись. Уникальность имени держит служба — отказ на занятое имя приходит
-   * оттуда: только она видит все записи разом.
-   *
-   * @param label имя для человека; не названо — берётся машинное
-   */
+  /** Кладёт новую запись. Уникальность имени держит служба. */
   save<K extends PresetKind>(
     kind: K,
     name: string,
@@ -88,13 +60,7 @@ export interface PresetsClient {
     label?: string,
   ): Promise<PresetRecord<PresetKindState[K]>>;
 
-  /**
-   * Кладёт запись ВМЕСТО прежней с тем же именем и ярлыком.
-   *
-   * Правок служба не знает — принимает запись целиком и отдаёт ей новый идентификатор, поэтому
-   * замена — два шага (снять, положить), и делает их клиент одним вызовом: два потребителя,
-   * написавшие эту пару каждый сам, рано или поздно разойдутся порядком шагов.
-   */
+  /** Кладёт запись вместо прежней с тем же именем и ярлыком (снять, потом положить). */
   replace<K extends PresetKind>(
     kind: K,
     name: string,
@@ -102,7 +68,7 @@ export interface PresetsClient {
     label?: string,
   ): Promise<PresetRecord<PresetKindState[K]>>;
 
-  /** Убирает запись по имени и ярлуку. Имени нет — уже убрано, а не отказ (см. README). */
+  /** Убирает запись по имени и ярлыку. Имени нет — уже убрано, а не отказ. */
   remove(kind: PresetKind, name: string): Promise<void>;
 }
 
@@ -112,14 +78,11 @@ export interface PresetsClientOptions {
   readonly url: string;
 }
 
-/**
- * Заводит клиент службы раздачи. Один вызов — один адрес; общего состояния между экземплярами
- * нет, и любое число приложений заводит свой клиент своим адресом без единой правки друг у друга.
- */
+/** Заводит клиент службы раздачи по одному адресу; общего состояния между экземплярами нет. */
 export function createPresetsClient(options: PresetsClientOptions): PresetsClient {
   const { url } = options;
 
-  /** Перечень записей одного вида — без содержимого. Записи без машинного имени неадресуемы. */
+  /** Перечень записей одного вида без содержимого. Записи без машинного имени неадресуемы. */
   async function wireList(kind: string): Promise<WireRecord[]> {
     const response = await ask(`${url}?kind=${kind}`);
     const body: unknown = await response.json();

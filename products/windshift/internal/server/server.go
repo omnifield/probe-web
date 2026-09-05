@@ -670,6 +670,11 @@ func (s *Server) initialize() error {
 	onCallHandler := handlers.NewOnCallHandler(onCallRepo, teamRepo, onCallService, permService, logger.NewAuditor(s.db))
 	s.actionService.SetTeamService(teamService)
 
+	workspaceCategoryConfig := services.NewWorkspaceCategoryConfig()
+	workspaceCategoryConfig.AuditEmit = enumAuditEmit
+	workspaceCategoryHandler := handlers.NewEnumHandler(
+		services.NewEnumService(s.db, workspaceCategoryConfig),
+		func() any { return &models.WorkspaceCategory{} }).WithGlobalMutationPermission(permService, models.PermissionWorkspaceCreate)
 	milestoneCategoryConfig := services.NewMilestoneCategoryConfig()
 	milestoneCategoryConfig.AuditEmit = enumAuditEmit
 	milestoneCategoryHandler := handlers.NewEnumHandler(
@@ -1449,6 +1454,7 @@ func (s *Server) initialize() error {
 		},
 		Workspaces: routes.WorkspaceHandlers{
 			Workspace:             workspaceHandler,
+			Category:              workspaceCategoryHandler,
 			Bootstrap:             workspaceBootstrapHandler,
 			Screen:                screenHandler,
 			ConfigSet:             configSetHandler,

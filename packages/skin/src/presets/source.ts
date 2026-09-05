@@ -1,33 +1,24 @@
-// Design notes: ../README.md#presets
 
 import type { SkinSource } from "../wear/switch.js";
 
-import type { PassportLookup } from "../address/index.js";
-import { withPassports } from "../generate/index.js";
+import type { PassportLookup } from "../engine/address/index.js";
+import { withPassports } from "../engine/generate/index.js";
 import { createPresetsClient, PRESET_KIND } from "./client.js";
 import { PresetsRefused } from "./wire.js";
 
-/** Чем заводится источник. Ровно два своих: адрес службы и паспорта СВОЕГО кита. */
+/** Чем заводится источник: адрес службы и паспорта своего кита. */
 export interface PresetsSkinSourceOptions {
-  /** Адрес службы раздачи, ДО `?kind=` — `{base}` контракта. */
   readonly url: string;
   /** Чтение паспортов кита приложения: `assemble()` без него не работает. */
   readonly lookup: PassportLookup;
 }
 
 /**
- * `SkinSource` поверх службы раздачи (`backend/presets`) — приложение отдаёт адрес и паспорта
- * СВОЕГО кита, остальное (HTTP, разбор ответа, различение «легла»/«отказала», сборка наряда из
- * частей, порождение CSS) остаётся внутри и наружу не течёт: с этой стороны — обычный `SkinSource`,
- * который просто скармливается в `createSkinConnection`/`makeSkinSwitch` как есть.
- *
- * Один и тот же контракт службы (не продуктовое знание) кормит любое число приложений — у каждого
- * СВОЙ вызов со своим `url` и своим `lookup`, общего состояния между ними нет. Читает через
- * {@link createPresetsClient} — тот же клиент, которым читают и пишут все четыре вида записей.
+ * `SkinSource` поверх службы раздачи — обычный `SkinSource`, скармливается в
+ * `createSkinConnection`/`makeSkinSwitch` как есть.
  *
  * @throws {PresetsDown} службы нет по названному адресу
- * @throws {PresetsRefused} служба ответила и отказала, либо у наряда изъяны (`OutfitRefused` из
- *   `assemble()` — как есть, эта фабрика её не глотает и не подменяет)
+ * @throws {PresetsRefused} служба отказала, либо у наряда изъяны
  */
 export function createPresetsSkinSource(options: PresetsSkinSourceOptions): SkinSource {
   const { url, lookup } = options;

@@ -58,6 +58,8 @@ type UpdateWorkspaceRequest struct {
 	InternalCommentsEnabled *bool                      `json:"internal_comments_enabled,omitempty"`
 	TimeProjectCategories   *[]int                     `json:"time_project_categories,omitempty"`
 	IsTemplate              *bool                      `json:"is_template,omitempty"`
+	IsOverview              *bool                      `json:"is_overview,omitempty"`
+	CategoryID              *int                       `json:"category_id,omitempty"`
 }
 
 func NewWorkspaceHandler(db database.Database, permissionService *services.PermissionService, activityTracker *services.ActivityTracker, keyCache *WorkspaceKeyCache) *WorkspaceHandler {
@@ -371,6 +373,8 @@ func (h *WorkspaceHandler) Update(w http.ResponseWriter, r *http.Request) {
 		InternalCommentsEnabled: req.InternalCommentsEnabled,
 		TimeProjectCategories:   req.TimeProjectCategories,
 		IsTemplate:              req.IsTemplate,
+		IsOverview:              req.IsOverview,
+		CategoryID:              req.CategoryID,
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {

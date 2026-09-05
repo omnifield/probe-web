@@ -739,6 +739,8 @@ export default {
     visualIdentityDescription:
       'Настройте внешний вид воркспейса с помощью значков, цветов и аватаров.',
     workspaceIconColor: 'Значок и цвет воркспейса',
+    workspaceCategory: 'Категория в сайдбаре',
+    noCategory: 'Без категории',
     workspaceAvatar: 'Аватар воркспейса',
     customAvatar: 'Свой аватар',
     imageUploadedSuccessfully: 'Изображение успешно загружено',

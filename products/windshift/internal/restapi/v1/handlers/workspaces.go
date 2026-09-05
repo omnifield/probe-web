@@ -45,9 +45,13 @@ type WorkspaceResponse struct {
 	Active                  bool     `json:"active"`
 	IsPersonal              bool     `json:"is_personal"`
 	IsTemplate              bool     `json:"is_template"`
+	IsOverview              bool     `json:"is_overview"`
 	InternalCommentsEnabled bool     `json:"internal_comments_enabled"`
 	Icon                    string   `json:"icon,omitempty"`
 	Color                   string   `json:"color,omitempty"`
+	CategoryID              *int     `json:"category_id,omitempty"`
+	CategoryName            string   `json:"category_name,omitempty"`
+	CategoryColor           string   `json:"category_color,omitempty"`
 	CreatedAt               string   `json:"created_at"`
 	UpdatedAt               string   `json:"updated_at"`
 	Warnings                []string `json:"warnings,omitempty"`
@@ -63,6 +67,8 @@ type WorkspaceCreateRequest struct {
 	Description         string `json:"description,omitempty"`
 	Icon                string `json:"icon,omitempty"`
 	Color               string `json:"color,omitempty"`
+	CategoryID          *int   `json:"category_id,omitempty"`
+	IsOverview          bool   `json:"is_overview,omitempty"`
 	TemplateWorkspaceID *int   `json:"template_workspace_id,omitempty"`
 }
 
@@ -74,6 +80,8 @@ type WorkspaceUpdateRequest struct {
 	Icon        *string `json:"icon,omitempty"`
 	Color       *string `json:"color,omitempty"`
 	IsTemplate  *bool   `json:"is_template,omitempty"`
+	IsOverview  *bool   `json:"is_overview,omitempty"`
+	CategoryID  *int    `json:"category_id,omitempty"`
 }
 
 // WorkspaceTemplateSummaryResponse is the public API representation of a
@@ -98,9 +106,13 @@ func toWorkspaceResponse(ws *models.Workspace) WorkspaceResponse {
 		Active:                  ws.Active,
 		IsPersonal:              ws.IsPersonal,
 		IsTemplate:              ws.IsTemplate,
+		IsOverview:              ws.IsOverview,
 		InternalCommentsEnabled: ws.InternalCommentsEnabled,
 		Icon:                    ws.Icon,
 		Color:                   ws.Color,
+		CategoryID:              ws.CategoryID,
+		CategoryName:            ws.CategoryName,
+		CategoryColor:           ws.CategoryColor,
 		CreatedAt:               ws.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:               ws.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
@@ -240,6 +252,8 @@ func (h *WorkspaceHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Icon:                req.Icon,
 		Color:               req.Color,
 		CreatorID:           user.ID,
+		CategoryID:          req.CategoryID,
+		IsOverview:          req.IsOverview,
 		TemplateWorkspaceID: req.TemplateWorkspaceID,
 	})
 	if err != nil {
@@ -339,6 +353,8 @@ func (h *WorkspaceHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Icon:        req.Icon,
 		Color:       req.Color,
 		IsTemplate:  req.IsTemplate,
+		IsOverview:  req.IsOverview,
+		CategoryID:  req.CategoryID,
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {

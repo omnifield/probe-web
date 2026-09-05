@@ -1,14 +1,12 @@
-// Live proof for PWEB-171: `repeat` as a field on the node itself (`part`/`component`), not a
-// separate `{repeat, template}` wrapper — sitting right next to `bind`/`props`, matching user's
-// sketch on Windshift page 112 §2. Nested repeat (an outer repeat whose per-instance template
-// itself repeats) is the real shape the accordion+button case needs: sections, and inside each
-// section, its own items.
+// `repeat` — поле самого узла, не отдельная обёртка `{repeat, template}`. Проверен вложенный
+// повтор (повтор внутри шаблона повтора) — реальная форма accordion+button: секции, внутри
+// каждой — свои пункты.
 
 import { createAnatomy } from "@zag-js/anatomy";
 import { describe, expect, it } from "vitest";
 
-import { baseAssemblyOf, resolveDataBinding, type BaseAssemblyElement } from "../src/passport/assembly/index.js";
-import { definePassport } from "../src/passport/form/index.js";
+import { baseAssemblyOf, resolveDataBinding, type BaseAssemblyElement } from "../src/engine/passport/assembly/index.js";
+import { definePassport } from "../src/engine/passport/form/index.js";
 
 const anatomy = createAnatomy("list").parts("root", "section", "row");
 
@@ -27,7 +25,7 @@ const data = {
   ],
 };
 
-describe("repeat as a field, including nested repeat (PWEB-171)", () => {
+describe("repeat как поле, включая вложенный повтор", () => {
   it("grows one node per array element, and a nested repeat inside the template grows per its own array", () => {
     const tree = baseAssemblyOf(
       passport,

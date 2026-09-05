@@ -35,8 +35,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@typescript/typescript6": "^6.0.2",
     "@web-core/trace": "workspace:*",
     "esbuild": "^0.27.7",
+    "rollup": "^4.63.1",
+    "rollup-plugin-dts": "^6.5.1",
     "tsx": "^4.23.13",
     "vite-plugin-solid": "^2.11.14"
   },

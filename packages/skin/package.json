@@ -1,7 +1,7 @@
 {
   "name": "@web-core/skin",
   "version": "0.0.0",
-  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, CSS generation, and wearing it (switch/connection, PWEB-221) — a framework, not a product's own dressing.",
+  "description": "web-core skin mechanic: model, part-by-part recipe assembly, anatomy-based addressing, CSS generation, and wearing it (switch/connection) — a framework, not a product's own dressing.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -43,7 +43,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
@@ -61,11 +61,11 @@
   "devDependencies": {
     "@csstools/postcss-cascade-layers": "^5.0.2",
     "@kobalte/core": "^0.13.12",
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.10.1",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
     "@web-core/style": "workspace:*",
-    "@types/jsdom": "^27.0.0",
-    "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "postcss": "^8.5.14",

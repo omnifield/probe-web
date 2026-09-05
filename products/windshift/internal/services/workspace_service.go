@@ -59,9 +59,11 @@ func (s *WorkspaceService) List(params WorkspaceListParams) ([]models.Workspace,
 	}
 	listArgs := append(append([]any{}, workspaceArgs...), params.Limit, params.Offset)
 	rows, err := s.db.Query(`
-		SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_personal,
-		       w.icon, w.color, w.internal_comments_enabled, w.created_at, w.updated_at
+		SELECT w.id, w.name, w.key, w.description, w.active, w.is_template, w.is_overview, w.is_personal,
+		       w.icon, w.color, w.internal_comments_enabled, w.created_at, w.updated_at,
+		       w.category_id, wc.name, wc.color
 		FROM workspaces w
+		LEFT JOIN workspace_categories wc ON w.category_id = wc.id
 		WHERE w.id IN (`+placeholders+`)
 		ORDER BY w.name
 		LIMIT ? OFFSET ?
@@ -74,14 +76,17 @@ func (s *WorkspaceService) List(params WorkspaceListParams) ([]models.Workspace,
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var ws models.Workspace
-		var icon, color sql.NullString
-		err = rows.Scan(&ws.ID, &ws.Name, &ws.Key, &ws.Description, &ws.Active, &ws.IsTemplate, &ws.IsPersonal,
-			&icon, &color, &ws.InternalCommentsEnabled, &ws.CreatedAt, &ws.UpdatedAt)
+		var icon, color, categoryName, categoryColor sql.NullString
+		err = rows.Scan(&ws.ID, &ws.Name, &ws.Key, &ws.Description, &ws.Active, &ws.IsTemplate, &ws.IsOverview, &ws.IsPersonal,
+			&icon, &color, &ws.InternalCommentsEnabled, &ws.CreatedAt, &ws.UpdatedAt,
+			&ws.CategoryID, &categoryName, &categoryColor)
 		if err != nil {
 			continue
 		}
 		ws.Icon = icon.String
 		ws.Color = color.String
+		ws.CategoryName = categoryName.String
+		ws.CategoryColor = categoryColor.String
 		workspaces = append(workspaces, ws)
 	}
 	if err := rows.Err(); err != nil {
@@ -131,6 +136,8 @@ type CreateWorkspaceParams struct {
 	OwnerID       *int
 	AvatarURL     *string
 	DefaultView   string
+	CategoryID    *int
+	IsOverview    bool
 
 	TemplateWorkspaceID *int
 }
@@ -267,6 +274,8 @@ type UpdateWorkspaceParams struct {
 	InternalCommentsEnabled *bool
 	TimeProjectCategories   *[]int
 	IsTemplate              *bool
+	IsOverview              *bool
+	CategoryID              *int
 }
 
 // Update changes only the supplied workspace fields. Personal workspaces and
@@ -338,6 +347,12 @@ func (s *WorkspaceService) Update(params UpdateWorkspaceParams) (*models.Workspa
 	}
 	if params.IsTemplate != nil {
 		appendField("is_template", *params.IsTemplate)
+	}
+	if params.IsOverview != nil {
+		appendField("is_overview", *params.IsOverview)
+	}
+	if params.CategoryID != nil {
+		appendField("category_id", *params.CategoryID)
 	}
 
 	if len(sets) > 0 {

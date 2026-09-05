@@ -85,6 +85,8 @@ func (s *WorkspaceService) createWorkspaceTx(ctx context.Context, tx database.Tx
 		Color:         params.Color,
 		AvatarURL:     params.AvatarURL,
 		DefaultView:   params.DefaultView,
+		CategoryID:    params.CategoryID,
+		IsOverview:    params.IsOverview,
 	})
 	if err != nil {
 		return nil, err

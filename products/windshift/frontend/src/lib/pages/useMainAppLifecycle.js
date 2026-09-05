@@ -17,6 +17,7 @@ import {
   homepageStore,
   permissionStore,
   ssoStore,
+  workspaceCategoriesStore,
   workspaceDataStore,
   workspacePermissions,
   workspacesStore,
@@ -90,6 +91,7 @@ export function useMainAppLifecycle({
 
     const deferredTasks = [
       () => workspacesStore.loadPersonalWorkspace(),
+      () => workspaceCategoriesStore.load(),
       async () => {
         try {
           const bootstrap = await api.shellBootstrap.get();
