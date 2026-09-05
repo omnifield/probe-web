@@ -3,6 +3,7 @@
 import { actions } from './actions.js';
 import {
   agentTemplates,
+  brandingSettings,
   oauthClients,
   securitySettings,
   setup,
@@ -419,6 +420,9 @@ export const api = {
 
   // Security Settings (admin only)
   securitySettings,
+
+  // Sidebar brand block (read: any user, write: admin only)
+  brandingSettings,
 
   // Authenticated application-shell capability discovery
   shellBootstrap,

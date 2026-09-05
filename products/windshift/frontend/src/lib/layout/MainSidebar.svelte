@@ -1,6 +1,7 @@
 <script>
   import { currentRoute, isWorkspaceRoute } from '../router.js';
   import { permissionStore, uiStore, workspaceCategoriesStore, workspacesStore } from '../stores';
+  import { brandingStore } from '../stores/branding.svelte.js';
   import { t } from '../stores/i18n.svelte.js';
   import { aiStore } from '../stores/aiStore.svelte.js';
   import { getShortcutDisplay } from '../utils/keyboardShortcuts.js';
@@ -176,15 +177,23 @@
 </script>
 
 <nav class="main-sidebar {$uiStore.navExpanded ? 'w-[200px]' : 'w-16'} shadow-lg border-r flex flex-col py-4 fixed h-full z-40 themed-nav transition-all duration-200 overflow-x-hidden" style="border-color: var(--ds-border);" aria-label="Main navigation">
-  <!-- Logo -->
-  <Tooltip content="Windshift" placement="right" disabled={$uiStore.navExpanded}>
+  <!-- Brand block: instance name + flanking emoji, configurable per instance
+       (Admin Settings → Branding) instead of a fixed logo image. -->
+  <Tooltip content={brandingStore.instanceName} placement="right" disabled={$uiStore.navExpanded}>
     <a
       href="/"
       class="flex items-center {$uiStore.navExpanded ? 'px-4' : 'justify-center'} w-full h-10 mb-2 hover:opacity-80 transition-opacity cursor-pointer"
     >
-      <img src="windshift-3.svg" alt="Windshift" class="w-8 h-8 flex-shrink-0" />
       {#if $uiStore.navExpanded}
-        <span class="ml-3 font-semibold text-sm whitespace-nowrap">Windshift</span>
+        {#if brandingStore.iconBefore}
+          <span class="text-xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconBefore}</span>
+        {/if}
+        <span class="mx-2 font-semibold text-sm whitespace-nowrap">{brandingStore.instanceName}</span>
+        {#if brandingStore.iconAfter}
+          <span class="text-xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconAfter}</span>
+        {/if}
+      {:else}
+        <span class="text-2xl leading-none flex-shrink-0" aria-hidden="true">{brandingStore.iconBefore || brandingStore.iconAfter || '🧭'}</span>
       {/if}
     </a>
   </Tooltip>

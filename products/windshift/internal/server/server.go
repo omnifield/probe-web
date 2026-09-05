@@ -701,6 +701,7 @@ func (s *Server) initialize() error {
 	reviewHandler := handlers.NewReviewHandler(s.db, permService)
 	calendarFeedHandler := handlers.NewCalendarFeedHandler(s.db, permService, cfg.BaseURL)
 	securitySettingsHandler := handlers.NewSecuritySettingsHandler(repository.NewSystemSettingRepository(s.db), logger.NewAuditor(s.db), cfg.Plugins.Disabled)
+	brandingSettingsHandler := handlers.NewBrandingSettingsHandler(repository.NewSystemSettingRepository(s.db), logger.NewAuditor(s.db))
 
 	// WI-87/88/89/90 coding-agent harness stack lands later in the
 	// constructor — see the block right after the SCM handlers are
@@ -1496,6 +1497,7 @@ func (s *Server) initialize() error {
 		},
 		Admin: routes.AdminHandlers{
 			SecuritySettings: securitySettingsHandler,
+			BrandingSettings: brandingSettingsHandler,
 			AuthPolicy:       authPolicyHandler,
 			Theme:            themeHandler,
 			UserPreferences:  userPreferencesHandler,

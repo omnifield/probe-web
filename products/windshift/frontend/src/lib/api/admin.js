@@ -53,6 +53,17 @@ export const securitySettings = {
 export const getSecuritySettings = securitySettings.get;
 export const updateSecuritySettings = securitySettings.update;
 
+// Sidebar brand block (name + flanking emoji) — read by every authenticated
+// user, written by admins only.
+export const brandingSettings = {
+  get: () => fetchAPI('/branding-settings'),
+  update: (data) =>
+    fetchAPI('/admin/branding-settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
 // Authentication Policy (admin only)
 export const authPolicy = {
   // Get current auth policy configuration

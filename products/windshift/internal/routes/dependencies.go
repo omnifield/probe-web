@@ -163,6 +163,7 @@ type UserHandlers struct {
 // AdminHandlers groups admin-related handlers.
 type AdminHandlers struct {
 	SecuritySettings     *handlers.SecuritySettingsHandler
+	BrandingSettings     *handlers.BrandingSettingsHandler
 	AuthPolicy           *handlers.AuthPolicyHandler
 	Theme                *handlers.ThemeHandler
 	UserPreferences      *handlers.UserPreferencesHandler

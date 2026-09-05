@@ -53,6 +53,12 @@ func RegisterAdminRoutes(deps *Deps) {
 	// Public auth policy status endpoint (no auth required - for login page)
 	api.HandleH("GET /auth/policy-status", deps.AuthRateLimiter.Limit(http.HandlerFunc(deps.Admin.AuthPolicy.GetPublicPolicyStatus)))
 
+	// Sidebar brand block: name + flanking emoji, one instance per repo.
+	// Read by every authenticated user (drives the sidebar), written by
+	// admins only.
+	api.HandleH("GET /branding-settings", auth(http.HandlerFunc(deps.Admin.BrandingSettings.GetBrandingSettings)))
+	api.HandleH("PUT /admin/branding-settings", admin(http.HandlerFunc(deps.Admin.BrandingSettings.UpdateBrandingSettings)))
+
 	// Theme management endpoints
 	api.HandleH("GET /themes", auth(http.HandlerFunc(deps.Admin.Theme.GetThemes)))
 	api.HandleH("GET /themes/active", auth(http.HandlerFunc(deps.Admin.Theme.GetActiveTheme)))

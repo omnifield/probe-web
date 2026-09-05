@@ -74,6 +74,7 @@ export default {
       attachments: { title: 'Attachments', description: 'Manage attachment settings' },
       modules: { title: 'Modules', description: 'Enable or disable system modules' },
       themes: { title: 'Themes', description: 'Manage application themes and appearance' },
+      branding: { title: 'Branding', description: 'Set the sidebar instance name and flanking emoji icons' },
       users: { title: 'Users', description: 'Manage user accounts and profiles' },
       groups: { title: 'Groups', description: 'Manage user groups and memberships' },
       permissions: {
@@ -164,6 +165,20 @@ export default {
         'Attachment functionality is not available. Configure an attachment directory to enable attachments.',
       failedToLoad: 'Failed to load attachment settings',
       failedToSave: 'Failed to save settings',
+    },
+
+    // Branding Settings
+    branding: {
+      title: 'Branding',
+      subtitle: 'Set the sidebar instance name and the emoji shown before/after it',
+      instanceName: 'Instance Name',
+      iconBefore: 'Icon Before Name',
+      iconAfter: 'Icon After Name',
+      description:
+        'Paste a colorful emoji, the same style used across this repo\'s own docs — not a monochrome icon.',
+      savedSuccess: 'Branding saved successfully',
+      failedToLoad: 'Failed to load branding settings',
+      failedToSave: 'Failed to save branding settings',
     },
 
     // Group Manager

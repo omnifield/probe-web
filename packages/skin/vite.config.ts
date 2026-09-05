@@ -4,10 +4,10 @@ export default defineLibraryConfig({
   entries: [
     { name: "index", source: "src/index.ts" },
     { name: "model", source: "src/model.ts" },
-    { name: "flat", source: "src/flat.ts" },
-    { name: "editor", source: "src/editor.ts" },
-    { name: "presets", source: "src/presets.ts" },
-    { name: "wear", source: "src/wear.ts" },
-    { name: "solid", source: "src/solid.ts" },
+    { name: "flat", source: "src/flat/index.ts" },
+    { name: "editor", source: "src/editor/index.ts" },
+    { name: "presets", source: "src/presets/index.ts" },
+    { name: "wear", source: "src/wear/index.ts" },
+    { name: "solid", source: "src/solid/index.ts" },
   ],
 });
