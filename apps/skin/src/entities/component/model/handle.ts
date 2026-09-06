@@ -1,3 +1,4 @@
+import type { ComponentInfo } from "@web-core/ui/component-info";
 import { useAtom } from "@web-core/store";
 import { createEffect, createMemo, on } from "solid-js";
 
@@ -9,6 +10,8 @@ export interface ComponentHandle {
   readonly ready: () => boolean;
   /** Сгенерировать заново фейковые данные ТЕКУЩЕГО компонента, записать в `componentDataAtom`. */
   readonly generate: () => void;
+  /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
+  readonly info: () => ComponentInfo | undefined;
 }
 
 /**
@@ -34,5 +37,10 @@ export function componentHandle(): ComponentHandle {
     componentDataAtom.set(generateFakeData(state.data.io?.schema, state.data.component));
   }
 
-  return { ready, generate };
+  const componentInfo = createMemo(() => {
+    const state = info();
+    return state.status === "done" ? state.data : undefined;
+  });
+
+  return { ready, generate, info: componentInfo };
 }

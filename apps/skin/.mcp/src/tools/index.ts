@@ -9,11 +9,27 @@ const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 const looseRecord = z.looseObject({ name: z.string() });
 const DEFAULT_TAG = "default";
 
-async function resolveTags(outfit: Record<string, unknown>) {
-  const rawTags = outfit["tags"];
-  const requested = Array.isArray(rawTags) ? (rawTags as unknown[]).filter((t) => typeof t === "string") : [];
-  const tags = requested.length > 0 ? (requested as string[]) : [DEFAULT_TAG];
-  return { tags, flaws: await checkTags(tags) };
+async function resolveTags(rawTags: unknown, where = "tags") {
+  const requested = Array.isArray(rawTags) ? rawTags.filter((t): t is string => typeof t === "string") : [];
+  const tags = requested.length > 0 ? requested : [DEFAULT_TAG];
+  return { tags, flaws: await checkTags(tags, where) };
+}
+
+async function resolveVariantTags(form: Record<string, unknown>) {
+  const recipe = form["recipe"] as { variants?: Record<string, unknown> } | undefined;
+  const variantNames = Object.keys(recipe?.variants ?? {});
+  const provided = (form["variantTags"] as Record<string, unknown> | undefined) ?? {};
+
+  const variantTags: Record<string, string[]> = {};
+  const flaws: Awaited<ReturnType<typeof checkTags>> = [];
+
+  for (const name of variantNames) {
+    const resolved = await resolveTags(provided[name], `variantTags.${name}`);
+    variantTags[name] = resolved.tags;
+    flaws.push(...resolved.flaws);
+  }
+
+  return { variantTags, flaws };
 }
 
 export function registerTools(server: McpServer) {
@@ -98,14 +114,28 @@ export function registerTools(server: McpServer) {
     description:
       "Проверяет рецепт ДО сохранения в два прохода: ссылки (роль/переменная существует?) — тем же checkOutfit, " +
       "что и наряд, затем адрес (часть/состояние/настройка существуют у паспорта?) — checkSkin на собранном " +
-      "скине. Опечатка возвращается с адресом, не тихим неприменением. Нужна палитра для сверки ролей — " +
-      "не назвали paletteName, берётся первая из службы.",
+      "скине. Плюс unknown-tag по каждому значению recipe.variants против словаря (kind:\"tag\") — тот же " +
+      "механизм, что и tags наряда, только на уровне значения варианта, не всей записи. Опечатка возвращается " +
+      "с адресом, не тихим неприменением. Нужна палитра для сверки ролей — не назвали paletteName, берётся " +
+      "первая из службы.",
     access: "read",
     input: z.object({
-      form: looseRecord.extend({ component: z.string() }).describe("Form целиком: name, component, recipe, keyframes?"),
+      form: looseRecord
+        .extend({ component: z.string() })
+        .describe("Form целиком: name, component, recipe, keyframes?, variantTags?: {[имя варианта]: string[]}"),
       paletteName: z.string().optional(),
     }),
-    handler: async ({ form, paletteName }) => ok(await checkForm(form as never, paletteName)),
+    handler: async ({ form, paletteName }) => {
+      const result = await checkForm(form as never, paletteName);
+      const { flaws: variantTagFlaws } = await resolveVariantTags(form as Record<string, unknown>);
+      if (variantTagFlaws.length === 0) return ok(result);
+      return ok({
+        ...result,
+        ok: false,
+        referenceFlaws: [...result.referenceFlaws, ...variantTagFlaws],
+        css: undefined,
+      });
+    },
   });
 
   registerTool(server, {
@@ -136,7 +166,7 @@ export function registerTools(server: McpServer) {
       const palettes = await store.readPalettes();
       const forms = await store.readForms();
       const flaws = skin.checkOutfit(outfit as never, { palettes, forms });
-      const { flaws: tagFlaws } = await resolveTags(outfit);
+      const { flaws: tagFlaws } = await resolveTags((outfit as Record<string, unknown>)["tags"]);
       const allFlaws = [...flaws, ...tagFlaws];
       return ok({ ok: allFlaws.length === 0, flaws: allFlaws });
     },
@@ -172,18 +202,22 @@ export function registerTools(server: McpServer) {
     name: "save_preset",
     title: "Сохранить запись",
     description:
-      "Кладёт запись в службу ПОСЛЕ проверки: palette/form через ту же проверку, что и check_palette/check_form, " +
-      "outfit через checkOutfit (плюс tags против словаря kind:\"tag\" — пусто считается [\"default\"], " +
-      "неизвестный тег — тот же флав-отказ, что unknown-palette), assembly через ту же двухпроходную " +
-      "проверку, что и check_assembly (структура + bind/repeat.path против примера по io-схеме). " +
-      "Флав — отказ до записи, служба не тронута. Кладёт вместо прежней записи с тем же именем " +
-      "(снять-положить), не плодит дубли по имени.",
+      "Кладёт запись в службу ПОСЛЕ проверки: palette через check_palette, form через check_form (плюс " +
+      "variantTags — по значению каждой recipe.variants против словаря kind:\"tag\"), outfit через checkOutfit " +
+      "(плюс tags — на весь наряд, тот же словарь), assembly через ту же двухпроходную проверку, что и " +
+      "check_assembly (структура + bind/repeat.path против примера по io-схеме). Тег — одна и та же механика " +
+      "на двух уровнях (наряд целиком / значение варианта формы): пусто считается [\"default\"], неизвестный " +
+      "тег — флав unknown-tag той же формы, что unknown-palette. Флав — отказ до записи, служба не тронута. " +
+      "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени.",
     access: "write",
     input: z.object({
       kind: KIND,
       state: z
         .looseObject({ name: z.string() })
-        .describe("Palette | Form | Outfit ({..., tags?: string[]}) | {component, assembly} | {name} — по kind"),
+        .describe(
+          "Palette | Form ({..., variantTags?: {[имя варианта]: string[]}}) | " +
+            "Outfit ({..., tags?: string[]}) | {component, assembly} | {name} — по kind",
+        ),
       label: z.string().optional(),
       paletteName: z.string().optional().describe("для kind=form — какую палитру сверять, см. check_form"),
     }),
@@ -194,7 +228,11 @@ export function registerTools(server: McpServer) {
         const result = await checkPalette(state as never);
         if (!result.ok) return ok(result);
       } else if (kind === "form") {
-        const result = await checkForm(state as never, paletteName);
+        const { variantTags, flaws: tagFlaws } = await resolveVariantTags(state as Record<string, unknown>);
+        if (tagFlaws.length > 0) return ok({ ok: false, referenceFlaws: tagFlaws, structuralFlaws: [] });
+        stateToSave = { ...state, variantTags };
+
+        const result = await checkForm(stateToSave as never, paletteName);
         if (!result.ok) return ok(result);
       } else if (kind === "outfit") {
         const { tags, flaws: tagFlaws } = await resolveTags(state);

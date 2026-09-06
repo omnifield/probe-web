@@ -8,6 +8,7 @@ import { traceLife } from "../../shared/utils/trace.js";
 
 export type DialogPositionerProps = ArkPositionerProps;
 
+/** Не составляется потребителем отдельно — `DialogContent` кладёт её сама, см. `content/index.tsx`. */
 export function DialogPositioner(props: DialogPositionerProps) {
   traceLife("ui.dialog-positioner");
 

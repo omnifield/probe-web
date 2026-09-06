@@ -1,7 +1,5 @@
 export { Dialog, type DialogProps } from "./root.js";
 export { DialogTrigger, type DialogTriggerProps } from "./trigger.js";
-export { DialogBackdrop, type DialogBackdropProps } from "./backdrop.js";
-export { DialogPositioner, type DialogPositionerProps } from "./positioner.js";
 export { DialogContent, type DialogContentProps } from "./content/index.js";
 export { DialogTitle, type DialogTitleProps } from "./content/title.js";
 export { DialogDescription, type DialogDescriptionProps } from "./content/description.js";

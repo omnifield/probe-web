@@ -22,7 +22,7 @@ const buttonPseudos: readonly PassportState[] = [
 
 export const passport = definePassport({
   anatomy,
-  root: "positioner",
+  root: "content",
   parts: [
     {
       name: "trigger",

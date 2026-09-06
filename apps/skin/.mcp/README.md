@@ -51,13 +51,23 @@
 📂 Девять `read`, один `write` (`save_preset`) — размечено через `access` `@web-core/mcp`,
 отображается в нативные `readOnlyHint`/`destructiveHint` спеки MCP.
 
-🏷️ **Теги наряда** — навигация по множеству вариантов одной сборки (для витрины и для агента,
-которому иначе пришлось бы перебирать сотни нарядов вслепую), никак не влияет на механику сборки.
-`Outfit.tags?: string[]` — свободные строки-слаги (тот же `^[a-z0-9][a-z0-9-]{0,31}$`, что и у
-`name`/`kind` любой записи), сверяются со словарём (`kind: "tag"` — отдельный пятый вид пресета,
-запись = просто имя, без списка участников: принадлежность живёт на самом наряде, не дублируется
-в двух местах). Пусто или не передано — подставляется `["default"]`; неизвестный тег — флав
-`unknown-tag`, той же формы, что `unknown-palette`. Наряд может состоять в нескольких тегах разом.
+🏷️ **Теги** — навигация по множеству вариантов (для витрины и для агента, которому иначе пришлось
+бы перебирать сотни записей вслепую), никак не влияет на механику сборки. Одна и та же машинерия
+(`resolveTags`/`checkTags`, `tools/index.ts` + `engine/validate.ts`) сверяет строки-теги со
+словарём (`kind: "tag"` — отдельный пятый вид пресета, запись = просто имя, без списка участников:
+принадлежность живёт на самой записи, не дублируется в двух местах) и применена на ДВУХ разных
+слоях:
+
+- **Наряд целиком** — `Outfit.tags?: string[]`, одна метка на весь `outfit` (`check_outfit`/
+  `save_preset`).
+- **Значение варианта формы** — `Form.variantTags?: { [variantName]: string[] }`, метка на КАЖДОЕ
+  значение `recipe.variants` отдельно (`check_form`/`save_preset`) — та же кнопка, где `error`/
+  `success`/`warning` уместно тегировать «статусы», а `primary`/`secondary`/`tertiary` нет.
+
+На обоих слоях: тег — свободная строка-слаг (тот же `^[a-z0-9][a-z0-9-]{0,31}$`, что и у `name`/
+`kind` любой записи, кириллица отказывает `bad_name`), пусто или не передан — подставляется
+`["default"]`, неизвестный — флав `unknown-tag` (для формы — с адресом `variantTags.<имя>`, чтобы
+было видно, у какого именно значения проблема). Запись может состоять в нескольких тегах разом.
 
 Устройство на каталоги — свой стиль подгруппы `mcp`: в корне `src/` только барель `index.ts`
 (`export * from "./server"`, заодно и точка входа `pnpm start`), у каждого каталога своя роль и
@@ -110,8 +120,8 @@ pnpm --filter @web-core/skin-mcp typecheck
 |---|---|---|
 | Проверка нашла флавы | `isError: false`, флавы — часть данных ответа | `check_*`, `save_preset` при отказе валидации |
 | Наряд не собрался (`OutfitRefused`) | `isError: false`, `{flaws}` в ответе | `assemble_preview` |
-| `tags` не переданы/пусто | молча подставляется `["default"]` | `check_outfit`, `save_preset` |
-| Тег не найден в словаре | флав `unknown-tag`, `isError: false` | `check_outfit`, `save_preset` |
+| `tags`/`variantTags[x]` не переданы/пусто | молча подставляется `["default"]` | `check_outfit`/`check_form`, `save_preset` |
+| Тег не найден в словаре | флав `unknown-tag`, `isError: false` | `check_outfit`/`check_form`, `save_preset` |
 | Имя компонента/пресета не найдено | `isError: true` | `get_passport`, `get_preset` |
 | Форма assembly-состояния сломана | `isError: true` | `save_preset` (`kind: "assembly"`) |
 | Компонент без `entity/io.ts` | `dataCheck: "skipped"`, не тихий успех | `check_assembly` |
@@ -132,7 +142,7 @@ pnpm --filter @web-core/skin-mcp typecheck
 | `list_presets` | `{ kind?, cursor?, limit? }` |
 | `get_preset` | `{ kind, name }` |
 | `check_palette` | `{ palette }` — `Palette` целиком |
-| `check_form` | `{ form, paletteName? }` — `Form` целиком |
+| `check_form` | `{ form, paletteName? }` — `Form` целиком, `form.variantTags?` — теги по значению варианта |
 | `check_assembly` | `{ component, assembly }` — `PassportAssembly` |
 | `check_outfit` / `assemble_preview` | `{ outfit }` — `{ name, palette, forms[], tags? }` |
 | `save_preset` | `{ kind, state, label?, paletteName? }` |
@@ -161,9 +171,11 @@ pnpm --filter @web-core/skin-mcp typecheck
 | Пагинация на реальном сервисе | `list_presets({kind:"palette", limit:1})` на живую службу `:8787` | `{items:[]}`/страница, не падает |
 | Миграция легаси-пресетов | 25 записей (`backend/presets/data/*.json`, JS-эпоха) перенесены через `POST /api/presets` в Go+bbolt | `state`/`label` совпадают побайтово на выборке, `healthz` видит 25 |
 | HTTP-транспорт наружу контейнера | `SKIN_MCP_TRANSPORT=http SKIN_MCP_HOST=0.0.0.0 PORT=3000` | реальный `initialize` с внешнего клиента, 200 |
-| Тег по умолчанию | `check_outfit`/`save_preset` без `tags` на реальном словаре | флавов по тегу нет — тихо взят `["default"]` |
-| Неизвестный тег | `tags: ["no-such-tag"]` | флав `unknown-tag` рядом с `unknown-palette`, обе проверки не мешают друг другу |
+| Тег по умолчанию (наряд) | `check_outfit`/`save_preset` без `tags` на реальном словаре | флавов по тегу нет — тихо взят `["default"]` |
+| Неизвестный тег (наряд) | `tags: ["no-such-tag"]` | флав `unknown-tag` рядом с `unknown-palette`, обе проверки не мешают друг другу |
 | Тег с кириллицей в имени | `save_preset({kind:"tag", state:{name:"статусы"}})` | служба пресетов отказывает `bad_name` — имя тега тот же slug-формат, что у `name` любой записи |
+| Тег по значению варианта (реальная форма) | `save_preset(kind:"form")` на живой `omnifield-button` с `variantTags:{error:["status"],success:["status"],warning:["status"]}` | сохранено; `primary`/`secondary`/`tertiary`/`error-quiet` автоматически получили `["default"]`, не переданные явно |
+| Неизвестный тег по значению варианта | `variantTags:{error:["no-such-tag"]}` на реальной форме | флав `unknown-tag` с адресом `variantTags.error`, `css` в ответе тоже пропадает (сигнал непротиворечив) |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

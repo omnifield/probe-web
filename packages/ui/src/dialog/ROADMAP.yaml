@@ -30,6 +30,21 @@ categories:
           Тот же приём, что у `drawer`/`popover`.
           Реализация: готовый проп компонента, проверено тестом.
 
+      - id: self-portal-backdrop-positioner
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "backdrop/positioner портализуются сами, без Portal от потребителя"
+        description: |
+          Означает: `DialogBackdrop`/`DialogPositioner` каждый оборачивает себя в `Portal` из
+          `solid-js/web` — потребителю не нужно писать `<Portal>` вокруг них вручную, как того
+          требуют все примеры на ark-ui.com.
+          Реализация: `components/backdrop.tsx`/`components/positioner.tsx`, тот же приём, что уже
+          был у `select`'s позиционера (найден вживую там же класс бага — несвязанный сосед на
+          странице забирал клики). Тесты обновлены — портализованные части ищутся через
+          `document.querySelector`, не `host.querySelector`.
+
       - id: alertdialog-role
         type: feature
         status: Done
@@ -75,6 +90,17 @@ categories:
 
 # Журнал решений.
 log:
+  - id: portal-was-documented-before-it-was-true
+    type: plan
+    date: 2026-09-06
+    summary: >
+      `FAQ.md` уже утверждал «плавающие компоненты порталятся ближе к концу документа» ДО этой
+      правки — формально неверно: до сегодняшнего дня `backdrop`/`positioner` не портализовались
+      нигде в коде, разметка оставалась там, где её положили в JSX. User нашёл баг вживую (сверено
+      с примерами ark-ui.com, где `Portal` — обязательная часть композиции) и попросил закрыть его
+      на уровне кита, не оставлять потребителю. Урок тот же, что уже был у `button` — дока и код
+      расходятся тихо, если проверять на слово прошлой записи, а не на реальное поведение.
+
   - id: full-surface-context-missing
     type: plan
     date: 2026-09-04

@@ -371,7 +371,11 @@
   });
 
   async function loadTree() {
-    loading = true;
+    // Only show the full-replace loading state on the very first load.
+    // A refetch triggered while the tree is already on screen (whatever
+    // the trigger) should refresh in place, not blank the list out from
+    // under the user mid-navigation.
+    if (pages.length === 0) loading = true;
     try {
       const resp = await api.pages.getTree(workspaceId);
       pages = flattenDepthFirst(resp.tree || []);

@@ -32,6 +32,25 @@ categories:
           Найдено живьём: имя тега — тот же slug-формат backend/presets, что и любой name
           (кириллица отказывает bad_name) — человекочитаемый текст только в label конверта.
 
+      - id: form-variant-tags-second-layer
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Теги на значении варианта формы (Form.variantTags) — второй слой той же механики
+        description: |
+          Означает: Form.variantTags?: {[имя значения recipe.variants]: string[]} — та же машинерия
+          (resolveTags/checkTags), что и Outfit.tags, приложена на другом уровне: не на весь
+          наряд, а на КАЖДОЕ значение оси варианта формы отдельно. Ключи берутся из recipe.variants
+          сохраняемой формы; значение без явного тега получает ["default"], неизвестный тег даёт
+          unknown-tag с адресом variantTags.<имя>, в check_form и save_preset(kind:"form").
+          Причина: живой тест на реальной кнопке (omnifield-button) показал, что "разные кнопки" —
+          не разные наряды, а разные значения ОДНОЙ оси variants внутри ОДНОЙ формы (primary/
+          secondary/tertiary/error/success/warning/error-quiet) — тег на весь Outfit был бы неверен.
+          Проверено живьём реальным сохранением: error/success/warning → ["status"], остальные
+          четыре значения молча получили ["default"], css пропадает из ответа check_form вместе с
+          флавом (не только referenceFlaws), чтобы сигнал не был противоречивым.
+
       - id: negative-report-is-not-protocol-error
         type: feature
         status: Done
@@ -183,6 +202,24 @@ categories:
           способ измерить качество тула по гайду Anthropic, сегодня не заведён вовсе.
 
 log:
+  - id: form-variant-tags-correction
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Попросили затестить теги на реальных кнопках — выяснилось, что первая версия (только
+      Outfit.tags) не про тот уровень: "разные кнопки" в ките — это значения ОДНОЙ оси
+      recipe.variants внутри ОДНОЙ формы (primary/secondary/tertiary/error/success/warning/
+      error-quiet), не разные наряды. Тег на весь наряд смешал бы статусные и не статусные цвета
+      в одной записи. Признано архитектором как собственная ошибка проектирования (спроецировал
+      "наряд" вместо того, чтобы свериться с оригинальной формулировкой user про "варианты под
+      одной сборкой"), не решение user. User подтвердил: Outfit.tags остаётся (пригодится для
+      других вопросов навигации), плюс новый слой Form.variantTags — та же функция
+      (resolveTags/checkTags), просто разные точки вызова ("мех одна, слои разные"). Реализовано
+      и проверено живым сохранением на omnifield-button: error/success/warning → ["status"],
+      остальные четыре значения — молча ["default"]. Ожидает от user: какие ИМЕННО 5 значений
+      варианта кнопки нужно пометить "статусы" (пока протестированы только 3 явно статусных цвета
+      — error/success/warning).
+
   - id: outfit-tags-agreed-and-shipped
     type: plan
     date: 2026-09-06

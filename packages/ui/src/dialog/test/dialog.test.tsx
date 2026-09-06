@@ -9,7 +9,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   Dialog,
   DialogContent,
-  DialogPositioner,
   DialogTitle,
   DialogTrigger,
   kit as dialogKit,
@@ -61,15 +60,18 @@ describe('dialog "basic" — the floating half, open by default via providerProp
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={data} />, host);
 
-    expect(host.querySelector('[data-scope="dialog"][data-part="title"]')?.textContent).toBe("Добро пожаловать");
-    expect(host.querySelector('[data-scope="dialog"][data-part="description"]')?.textContent).toBe(
+    // `DialogContent` carries its own `Portal`/`backdrop`/`positioner` now (see
+    // `components/content/index.tsx`) — everything it renders lands on `document.body`, not
+    // nested inside `host` anymore.
+    expect(document.querySelector('[data-scope="dialog"][data-part="title"]')?.textContent).toBe("Добро пожаловать");
+    expect(document.querySelector('[data-scope="dialog"][data-part="description"]')?.textContent).toBe(
       "Войдите в аккаунт, чтобы продолжить.",
     );
 
-    const content = host.querySelector('[data-scope="dialog"][data-part="content"]');
+    const content = document.querySelector('[data-scope="dialog"][data-part="content"]');
     expect(content?.getAttribute("data-state")).toBe("open");
 
-    const closeTrigger = host.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
+    const closeTrigger = document.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
     expect(closeTrigger?.textContent).toBe("✕");
   });
 });
@@ -84,11 +86,9 @@ describe("multiple triggers sharing one dialog", () => {
         <Dialog>
           <DialogTrigger value="alice">Alice</DialogTrigger>
           <DialogTrigger value="bob">Bob</DialogTrigger>
-          <DialogPositioner>
-            <DialogContent>
-              <DialogTitle>Edit</DialogTitle>
-            </DialogContent>
-          </DialogPositioner>
+          <DialogContent>
+            <DialogTitle>Edit</DialogTitle>
+          </DialogContent>
         </Dialog>
       ),
       host,
@@ -101,7 +101,7 @@ describe("multiple triggers sharing one dialog", () => {
 
     expect(triggers[1]!.getAttribute("data-current")).toBe("");
     expect(triggers[0]!.getAttribute("data-current")).toBeNull();
-    expect(host.querySelector('[data-scope="dialog"][data-part="content"]')?.getAttribute("data-state")).toBe(
+    expect(document.querySelector('[data-scope="dialog"][data-part="content"]')?.getAttribute("data-state")).toBe(
       "open",
     );
   });

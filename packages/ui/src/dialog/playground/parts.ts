@@ -29,14 +29,14 @@ export const parts: Readonly<Record<DialogPart, PassportPartEditorInfo<DialogPar
     ],
   },
   backdrop: {
-    means: "затемнённая подложка за диалогом",
+    means: "затемнённая подложка за диалогом — кладёт её сама content, отдельно не составляется",
     states: openClosedMeans,
     accepts: [],
   },
   positioner: {
-    means: "центрирует содержимое диалога во вьюпорте — чистая обёртка, своего вида не несёт",
+    means: "центрирует содержимое диалога во вьюпорте — кладёт её сама content, отдельно не составляется",
     states: {},
-    accepts: [{ kind: "component", name: "content" }],
+    accepts: [],
   },
   content: {
     means: "собственная панель диалога",

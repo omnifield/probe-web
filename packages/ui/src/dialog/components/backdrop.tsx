@@ -8,6 +8,7 @@ import { traceLife } from "../../shared/utils/trace.js";
 
 export type DialogBackdropProps = ArkBackdropProps;
 
+/** Не составляется потребителем отдельно — `DialogContent` кладёт её сама, см. `content/index.tsx`. */
 export function DialogBackdrop(props: DialogBackdropProps) {
   traceLife("ui.dialog-backdrop");
 

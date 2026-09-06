@@ -11,16 +11,11 @@ export const basic: PassportAssembly<DialogPart, string, Data> = {
   means: "плавающая панель диалога сама по себе: заголовок и описание из данных, крестик закрытия",
   providerProps: { defaultOpen: true },
   tree: {
-    node: "positioner",
+    node: "content",
     children: [
-      {
-        node: "content",
-        children: [
-          { node: "title", children: [{ genus: "text", value: { path: "/title" } }] },
-          { node: "description", children: [{ genus: "text", value: { path: "/description" } }] },
-          { node: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
-        ],
-      },
+      { node: "title", children: [{ genus: "text", value: { path: "/title" } }] },
+      { node: "description", children: [{ genus: "text", value: { path: "/description" } }] },
+      { node: "closeTrigger", children: [{ genus: "text", value: "✕" }] },
     ],
   },
 };

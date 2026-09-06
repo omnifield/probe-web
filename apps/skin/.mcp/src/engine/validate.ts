@@ -4,17 +4,17 @@ import { list, readPalettes } from "./store";
 
 export interface TagFlaw {
   readonly name: "unknown-tag";
-  readonly where: "tags";
+  readonly where: string;
   readonly means: string;
 }
 
-export async function checkTags(tags: readonly string[]): Promise<TagFlaw[]> {
+export async function checkTags(tags: readonly string[], where = "tags"): Promise<TagFlaw[]> {
   const known = new Set((await list("tag")).map((record) => record.name));
   return tags
     .filter((tag) => !known.has(tag))
     .map((tag) => ({
       name: "unknown-tag" as const,
-      where: "tags" as const,
+      where,
       means: `тега "${tag}" нет в словаре — заведите его записью kind:"tag" или возьмите существующий из list_presets({kind:"tag"})`,
     }));
 }

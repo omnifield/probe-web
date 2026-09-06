@@ -260,8 +260,11 @@
       pagePermissionsLoaded = false;
       // Run in parallel: linked work items / permissions are independent
       // of the page payload, and the link-types list is cached for the session.
-      void loadPageLinks(id);
-      void ensurePageEffectiveLevel(id);
+      // loadPageLinks hits a global, non-workspace-scoped endpoint
+      // (/api/pages/:id/links) that only resolves numeric ids — use the
+      // resolved page.id, not the raw param, which may be a slug.
+      void loadPageLinks(page.id);
+      void ensurePageEffectiveLevel(page.id);
       void ensureLinkTypesLoaded();
     } catch (err) {
       if (requestSeq !== loadPageRequestSeq) return;
