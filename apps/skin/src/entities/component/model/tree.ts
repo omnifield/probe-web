@@ -1,6 +1,6 @@
 import { GROUPS, editorInfoOf, groupOf } from "@web-core/ui/passport";
 
-import { listComponents } from "./list.js";
+import { listComponents } from "./list";
 
 export interface TreeItemData {
   readonly id: string;

@@ -3,10 +3,10 @@
 // из двух друг про друга не знает, знает только этот виджет.
 import type { DispatchedEvent } from "@web-core/assembly";
 
-import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
-import { Slot } from "#/entities/showcase/ui/slot/slot.jsx";
+import { Renderer } from "#/entities/component";
+import { Slot } from "#/entities/showcase";
 
-export function ComponentPreview(props: {
+export function Preview(props: {
   component: string;
   /** Имя сборки — не задано, берётся первая объявленная (см. `instanceOf`). */
   assembly?: string;

@@ -6,5 +6,8 @@
     "это находка про базу, и она идёт заявкой к architect, а не правкой сюда."
   ],
   "extends": "@web-core/build/tsconfig",
+  "compilerOptions": {
+    "paths": { "#/*": ["./src/*"] }
+  },
   "include": ["src", "test", "vite.config.ts"]
 }

@@ -1,9 +1,9 @@
 import { createResourceAtom } from "@web-core/store";
 import { createSignal } from "solid-js";
 
-import { componentInfo } from "./info.js";
-import { listComponents } from "./list.js";
-import { treeItems } from "./tree.js";
+import { componentInfo } from "./info";
+import { listComponents } from "./list";
+import { treeItems } from "./tree";
 
 export const componentsAtom = createResourceAtom(() => listComponents());
 export const componentTreeAtom = createResourceAtom(() => treeItems());

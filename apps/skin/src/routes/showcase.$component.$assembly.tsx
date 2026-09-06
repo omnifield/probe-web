@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router";
 
-import { ShowcasePage } from "../pages/showcase/index.jsx";
+import { ShowcasePage } from "../pages/showcase";
 
 export const Route = createFileRoute("/showcase/$component/$assembly")({
   component: () => {

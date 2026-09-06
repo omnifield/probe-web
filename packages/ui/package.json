@@ -120,7 +120,8 @@
     "@zag-js/switch": "^1.43.1",
     "@zag-js/tabs": "^1.43.1",
     "@zag-js/toggle": "^1.43.1",
-    "@zag-js/toggle-group": "^1.43.1"
+    "@zag-js/toggle-group": "^1.43.1",
+    "lucide-solid": "^1.41.0"
   },
   "peerDependencies": {
     "@ark-ui/solid": "^5.38.2",

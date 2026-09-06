@@ -8,8 +8,8 @@ import {
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
 
-import { ComponentTree } from "#/widgets/component-tree/component-tree.jsx";
-import { Header } from "#/widgets/header/header.jsx";
+import { Input, Tree } from "#/widgets/component";
+import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
   return (
@@ -19,7 +19,7 @@ export function WorkspaceLayout() {
       style={{ "block-size": "100dvh" }}
     >
       <WorkspaceSidebar>
-        <ComponentTree />
+        <Tree />
       </WorkspaceSidebar>
 
       <WorkspaceHeader
@@ -36,7 +36,9 @@ export function WorkspaceLayout() {
         <Outlet />
       </WorkspaceMain>
 
-      <WorkspaceRightbar />
+      <WorkspaceRightbar>
+        <Input />
+      </WorkspaceRightbar>
 
       <WorkspaceFooter
         style={{ display: "flex", gap: "var(--space-6)", "flex-wrap": "wrap" }}

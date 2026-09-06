@@ -26,7 +26,7 @@ import { mountApp } from "@web-core/solid/mount";
 import { QueryClient, QueryClientProvider } from "@web-core/query";
 import { RouterProvider } from "@web-core/router";
 
-import { router } from "../router.js";
+import { router } from "../router";
 
 const queryClient = new QueryClient();
 

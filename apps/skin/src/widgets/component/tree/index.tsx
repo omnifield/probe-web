@@ -3,11 +3,9 @@ import { useNavigate, useParams } from "@web-core/router";
 import { useAtom } from "@web-core/store";
 import { createMemo } from "solid-js";
 
-import { componentTreeAtom } from "#/entities/component/model/store.js";
-import type { TreeItemData } from "#/entities/component/model/tree.js";
-import { Renderer } from "#/entities/component/ui/renderer/renderer.jsx";
+import { componentTreeAtom, Renderer, type TreeItemData } from "#/entities/component";
 
-export function ComponentTree() {
+export function Tree() {
   const tree = useAtom(componentTreeAtom);
   const items = createMemo((): readonly TreeItemData[] => {
     const state = tree();
