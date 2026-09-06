@@ -6,18 +6,20 @@ import { traceLife } from "../../shared/utils/trace.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 export interface IconProps {
-  /** Имя иконки — свободная строка, не завязана на то, как её называет конкретная библиотека. */
   readonly name: string;
 }
 
 type ResolvedIcon = Component<JSX.SvgSVGAttributes<SVGSVGElement>>;
 
-/**
- * Резолв имени в реальный компонент — единственное место, которое знает про lucide. Смена
- * библиотеки иконок меняет только эту функцию, не проп `name` наружу.
- */
+const modules = import.meta.glob<{ default: ResolvedIcon }>(
+  "../../../node_modules/lucide-solid/dist/esm/icons/*.mjs",
+);
+
 async function resolveIcon(name: string): Promise<ResolvedIcon> {
-  const mod = (await import(`lucide-solid/icons/${name}`)) as { default: ResolvedIcon };
+  const load = modules[`../../../node_modules/lucide-solid/dist/esm/icons/${name}.mjs`];
+  if (!load) throw new Error(`unknown icon "${name}"`);
+
+  const mod = await load();
   return mod.default;
 }
 

@@ -63,7 +63,7 @@ describe("Icon — resolves a real lucide icon by name", () => {
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <Icon name="trash-2" />, host);
+    dispose = render(() => <Icon name="trash" />, host);
 
     const svg = await vi.waitFor(() => {
       const found = host.querySelector('svg[data-scope="icon"][data-part="root"]');

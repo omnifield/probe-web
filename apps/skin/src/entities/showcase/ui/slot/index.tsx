@@ -1,5 +1,5 @@
-// СЛОТ ПОКАЗА — место витрины, куда ставится показываемое. Сам не знает, ЧТО именно листает —
-// просто карусель из чужих слайдов (обычно сборки одного компонента, но слоту это не название).
+// СЛОТ ПОКАЗА — место витрины, куда ставится показываемое.
+import type { PassportAssembly } from "@web-core/skin/editor";
 import {
   Carousel,
   CarouselControl,
@@ -10,22 +10,77 @@ import {
   CarouselNextTrigger,
   CarouselPrevTrigger,
   CarouselProgressText,
+  type CarouselProps,
 } from "@web-core/ui";
-import { For, type JSX } from "solid-js";
+import { createEffect, For } from "solid-js";
 
-export function Slot(props: { slides: readonly JSX.Element[]; defaultPage?: number }) {
+export function Slot(props: {
+  assemblies: readonly PassportAssembly[];
+  variants: readonly string[];
+  defaultPage?: number;
+  page?: CarouselProps["page"];
+  onPageChange?: CarouselProps["onPageChange"];
+  orientation?: CarouselProps["orientation"];
+}) {
+  createEffect(() => console.log(props.assemblies, props.variants));
+
   return (
-    <Carousel slideCount={props.slides.length} defaultPage={props.defaultPage}>
+    <Carousel
+      slideCount={props.variants.length}
+      defaultPage={props.defaultPage}
+      page={props.page}
+      onPageChange={props.onPageChange}
+      data-variant="plain"
+    >
       <CarouselControl>
         <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-        <CarouselProgressText />
+        <CarouselProgressText>
+          <For each={props.variants}>
+            {(variant, index) => (
+              <CarouselItem index={index()}>{variant}</CarouselItem>
+            )}
+          </For>
+        </CarouselProgressText>
         <CarouselNextTrigger>›</CarouselNextTrigger>
       </CarouselControl>
       <CarouselItemGroup>
-        <For each={props.slides}>{(slide, index) => <CarouselItem index={index()}>{slide}</CarouselItem>}</For>
+        <Carousel
+          orientation={"vertical"}
+          slideCount={props.assemblies.length}
+          defaultPage={props.defaultPage}
+          page={props.page}
+          onPageChange={props.onPageChange}
+          data-variant="plain"
+        >
+          <CarouselControl>
+            <CarouselPrevTrigger>‹</CarouselPrevTrigger>
+            <CarouselProgressText>
+              <For each={props.assemblies}>
+                {(assembly, index) => (
+                  <CarouselItem index={index()}>{assembly.name}</CarouselItem>
+                )}
+              </For>
+            </CarouselProgressText>
+            <CarouselNextTrigger>›</CarouselNextTrigger>
+          </CarouselControl>
+          <CarouselItemGroup>
+            <For each={props.assemblies}>
+              {(assembly, index) => (
+                <CarouselItem index={index()}>{assembly.name}</CarouselItem>
+              )}
+            </For>
+          </CarouselItemGroup>
+          <CarouselIndicatorGroup>
+            <For each={props.assemblies}>
+              {(_assembly, index) => <CarouselIndicator index={index()} />}
+            </For>
+          </CarouselIndicatorGroup>
+        </Carousel>
       </CarouselItemGroup>
       <CarouselIndicatorGroup>
-        <For each={props.slides}>{(_slide, index) => <CarouselIndicator index={index()} />}</For>
+        <For each={props.assemblies}>
+          {(_assembly, index) => <CarouselIndicator index={index()} />}
+        </For>
       </CarouselIndicatorGroup>
     </Carousel>
   );
