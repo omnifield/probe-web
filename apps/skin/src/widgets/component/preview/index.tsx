@@ -1,6 +1,7 @@
 // ПРЕВЬЮ КОМПОНЕНТА — composeит слот витрины (`entities/showcase/ui/slot`) и рендерер
 // (`entities/component/ui/renderer`): слот — место показа, рендерер — чем в нём рисуют. Ни один
-// из двух друг про друга не знает, знает только этот виджет.
+// из двух друг про друга не знает, знает только этот виджет. Одна сборка — один Preview; по
+// сборкам компонента ходит вызывающий (`<For>`), не сам виджет.
 import type { DispatchedEvent } from "@web-core/assembly";
 
 import { Renderer } from "#/entities/component";
@@ -18,14 +19,16 @@ export function Preview(props: {
   dispatch?: (event: DispatchedEvent) => void;
 }) {
   return (
-    <Slot>
-      <Renderer
-        component={props.component}
-        assembly={props.assembly}
-        variant={props.variant}
-        data={props.data}
-        dispatch={props.dispatch}
-      />
-    </Slot>
+    <Slot
+      slides={[
+        <Renderer
+          component={props.component}
+          assembly={props.assembly}
+          variant={props.variant}
+          data={props.data}
+          dispatch={props.dispatch}
+        />,
+      ]}
+    />
   );
 }

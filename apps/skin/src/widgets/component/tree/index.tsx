@@ -16,14 +16,9 @@ export function Tree() {
 
   const params = useParams({
     strict: false,
-    select: (p) => ({ component: p.component, assembly: p.assembly }),
+    select: (p) => p.component,
   });
-  const activeValue = createMemo(() => {
-    const { component, assembly } = params();
-    return component !== undefined && assembly !== undefined
-      ? `${component}/${assembly}`
-      : undefined;
-  });
+  const activeValue = createMemo(() => params());
 
   const onDispatch = (event: DispatchedEvent) => {
     if (event.name !== "controlClick") return;
@@ -31,10 +26,11 @@ export function Tree() {
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;
 
-    const [component, assembly] = payload.id.split("/");
+    // Сборка в дереве не выбирается — клик по компоненту всегда ведёт на "base", листать
+    // остальные сборки (если есть) теперь дело карусели показа (`entities/showcase/ui/slot`).
     void navigate({
       to: "/showcase/$component/$assembly",
-      params: { component: component!, assembly: assembly! },
+      params: { component: payload.id, assembly: "base" },
     });
   };
 

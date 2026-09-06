@@ -1123,7 +1123,6 @@
 
   .tree-item.active .page-button {
     background: var(--ds-surface-selected);
-    font-weight: 500;
   }
 
   /* Drop affordances: a thin line for sibling drops, full-row tint for child drops */

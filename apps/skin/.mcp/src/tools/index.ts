@@ -1,25 +1,20 @@
-// РЕГИСТРАЦИЯ РУЧЕК — тонкий слой поверх kit.ts/mechanics.ts/store.ts/validate.ts. Здесь нет
-// проверок содержимого: палитра/форма/наряд/сборка приходят СВОБОДНОЙ формой (`z.looseObject`),
-// потому что содержимое проверяет механика (`checkOutfit`/`checkSkin`/`checkAssembly`), а не эта
-// граница протокола — второй, более узкий контракт здесь молча разошёлся бы с настоящим.
-//
-// access/isError по @web-core/mcp: флав-репорты (check_*, save_preset при отказе валидации) —
-// business-данные тула (isError:false), не отказ протокола — отказ протокола (err()) только для
-// не найденного по имени/сломанного входа. Домен-исключения (StoreDown/StoreRefused) не ловятся
-// здесь нигде — SDK сам заворачивает любой брошенный на handler exception в isError:true.
-
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
 import { err, ok, registerTool } from "@web-core/mcp";
 import { paginate } from "@web-core/mcp/pagination";
-import { getPassport, listComponents } from "./kit";
-import { skin, checkAssembly, skinGaps } from "./mechanics";
 import { OutfitRefused } from "@web-core/skin";
-import * as store from "./store";
-import { checkForm, checkPalette } from "./validate";
+import { getPassport, listComponents, skin, checkAssembly, skinGaps, store, checkForm, checkPalette, checkTags } from "../engine";
 
-const KIND = z.enum(["palette", "form", "outfit", "assembly"]);
+const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 const looseRecord = z.looseObject({ name: z.string() });
+const DEFAULT_TAG = "default";
+
+async function resolveTags(outfit: Record<string, unknown>) {
+  const rawTags = outfit["tags"];
+  const requested = Array.isArray(rawTags) ? (rawTags as unknown[]).filter((t) => typeof t === "string") : [];
+  const tags = requested.length > 0 ? (requested as string[]) : [DEFAULT_TAG];
+  return { tags, flaws: await checkTags(tags) };
+}
 
 export function registerTools(server: McpServer) {
   registerTool(server, {
@@ -51,18 +46,19 @@ export function registerTools(server: McpServer) {
     name: "list_presets",
     title: "Перечень сохранённого",
     description:
-      "Что уже лежит в службе пресетов, по ярлыку вида (без него — все виды, без пагинации — их всего четыре). " +
-      "С ярлыком — страница по cursor/limit (по умолчанию 50), не весь список разом.",
+      "Что уже лежит в службе пресетов, по ярлыку вида (без него — все пять видов, без пагинации). " +
+      "С ярлыком — страница по cursor/limit (по умолчанию 50), не весь список разом. kind:\"tag\" — " +
+      "словарь допустимых тегов наряда (см. check_outfit/save_preset).",
     access: "read",
     input: z.object({
-      kind: KIND.optional().describe("ярлык вида; не назван — отдаются все четыре, без пагинации"),
+      kind: KIND.optional().describe("ярлык вида; не назван — отдаются все пять, без пагинации"),
       cursor: z.string().optional().describe("курсор из предыдущей страницы; только вместе с kind"),
       limit: z.number().int().positive().optional(),
     }),
     handler: async ({ kind, cursor, limit }) => {
       if (kind) return ok(paginate(await store.list(kind), { cursor, limit }));
 
-      const kinds = ["palette", "form", "outfit", "assembly"] as const;
+      const kinds = ["palette", "form", "outfit", "assembly", "tag"] as const;
       const byKind = Object.fromEntries(await Promise.all(kinds.map(async (k) => [k, await store.list(k)])));
       return ok(byKind);
     },
@@ -131,15 +127,18 @@ export function registerTools(server: McpServer) {
     title: "Проверить наряд",
     description:
       "Прямой проброс checkOutfit(outfit, parts): unknown-palette/unknown-form/palette-incomplete/" +
-      "component-twice/unknown-component/outside-vocabulary/variable-elsewhere и т.д. Палитра и формы " +
-      "резолвятся по имени из службы целиком (как и настоящий клиент витрины).",
+      "component-twice/unknown-component/outside-vocabulary/variable-elsewhere и т.д, плюс unknown-tag " +
+      "по словарю (kind:\"tag\") — tags пустой считается [\"default\"]. Палитра и формы резолвятся по " +
+      "имени из службы целиком (как и настоящий клиент витрины).",
     access: "read",
     input: z.object({ outfit: looseRecord.extend({ palette: z.string(), forms: z.array(z.string()) }) }),
     handler: async ({ outfit }) => {
       const palettes = await store.readPalettes();
       const forms = await store.readForms();
       const flaws = skin.checkOutfit(outfit as never, { palettes, forms });
-      return ok({ ok: flaws.length === 0, flaws });
+      const { flaws: tagFlaws } = await resolveTags(outfit);
+      const allFlaws = [...flaws, ...tagFlaws];
+      return ok({ ok: allFlaws.length === 0, flaws: allFlaws });
     },
   });
 
@@ -174,17 +173,23 @@ export function registerTools(server: McpServer) {
     title: "Сохранить запись",
     description:
       "Кладёт запись в службу ПОСЛЕ проверки: palette/form через ту же проверку, что и check_palette/check_form, " +
-      "outfit через checkOutfit, assembly через ту же двухпроходную проверку, что и check_assembly (структура + " +
-      "bind/repeat.path против примера по io-схеме). Флав — отказ до записи, служба не тронута. " +
-      "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени.",
+      "outfit через checkOutfit (плюс tags против словаря kind:\"tag\" — пусто считается [\"default\"], " +
+      "неизвестный тег — тот же флав-отказ, что unknown-palette), assembly через ту же двухпроходную " +
+      "проверку, что и check_assembly (структура + bind/repeat.path против примера по io-схеме). " +
+      "Флав — отказ до записи, служба не тронута. Кладёт вместо прежней записи с тем же именем " +
+      "(снять-положить), не плодит дубли по имени.",
     access: "write",
     input: z.object({
       kind: KIND,
-      state: z.looseObject({ name: z.string() }).describe("Palette | Form | Outfit | {component, assembly} — по kind"),
+      state: z
+        .looseObject({ name: z.string() })
+        .describe("Palette | Form | Outfit ({..., tags?: string[]}) | {component, assembly} | {name} — по kind"),
       label: z.string().optional(),
       paletteName: z.string().optional().describe("для kind=form — какую палитру сверять, см. check_form"),
     }),
     handler: async ({ kind, state, label, paletteName }) => {
+      let stateToSave: typeof state = state;
+
       if (kind === "palette") {
         const result = await checkPalette(state as never);
         if (!result.ok) return ok(result);
@@ -192,9 +197,13 @@ export function registerTools(server: McpServer) {
         const result = await checkForm(state as never, paletteName);
         if (!result.ok) return ok(result);
       } else if (kind === "outfit") {
+        const { tags, flaws: tagFlaws } = await resolveTags(state);
+        if (tagFlaws.length > 0) return ok({ ok: false, flaws: tagFlaws });
+        stateToSave = { ...state, tags };
+
         const palettes = await store.readPalettes();
         const forms = await store.readForms();
-        const flaws = skin.checkOutfit(state as never, { palettes, forms });
+        const flaws = skin.checkOutfit(stateToSave as never, { palettes, forms });
         if (flaws.length > 0) return ok({ ok: false, flaws });
       } else if (kind === "assembly") {
         const component = (state as { component?: unknown })["component"];
@@ -206,7 +215,7 @@ export function registerTools(server: McpServer) {
         if (!result.ok) return ok(result);
       }
 
-      return ok({ saved: await store.replace(kind, state.name, state, label) });
+      return ok({ saved: await store.replace(kind, stateToSave.name, stateToSave, label) });
     },
   });
 }

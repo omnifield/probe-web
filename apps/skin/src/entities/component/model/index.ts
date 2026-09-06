@@ -7,3 +7,4 @@ export {
   componentDataAtom,
 } from "./store";
 export type { TreeItemData } from "./tree";
+export { componentHandle, type ComponentHandle } from "./handle";

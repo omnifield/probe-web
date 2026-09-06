@@ -1,1 +1,1 @@
-export * from "./register-tool/index.js";
+export * from "./register-tool";

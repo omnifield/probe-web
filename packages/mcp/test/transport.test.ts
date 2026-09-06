@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { ok, registerTool } from "../src/index.js";
-import { createServer, type ZoneServer } from "../src/transport/index.js";
+import { ok, registerTool } from "../src";
+import { createServer, type ZoneServer } from "../src/transport";
 
 const PORT = 39781;
 const URL_ = new URL(`http://127.0.0.1:${PORT}/mcp`);
@@ -91,7 +91,6 @@ describe("createServer — transport: http", () => {
     expect(resultA.isError).toBe(false);
     expect(resultB.isError).toBe(false);
 
-    // client A must still be alive after client B connected — this is the bug being guarded against.
     const resultAAgain = await clientA.callTool({ name: "ping", arguments: {} });
     expect(resultAAgain.isError).toBe(false);
 

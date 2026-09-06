@@ -5,10 +5,12 @@ import {
   WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
+  Surface,
+  Flow,
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
 
-import { Input, Tree } from "#/widgets/component";
+import { Info, Input, Output, Tree } from "#/widgets/component";
 import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
@@ -19,25 +21,29 @@ export function WorkspaceLayout() {
       style={{ "block-size": "100dvh" }}
     >
       <WorkspaceSidebar>
-        <Tree />
+        <Surface data-variant="filled">
+          <Tree />
+        </Surface>
       </WorkspaceSidebar>
 
-      <WorkspaceHeader
-        style={{
-          display: "flex",
-          "align-items": "center",
-          "justify-content": "space-between",
-        }}
-      >
-        <Header />
+      <WorkspaceHeader>
+        <Flow>
+          <Header />
+        </Flow>
       </WorkspaceHeader>
 
       <WorkspaceMain>
-        <Outlet />
+        <Surface data-variant="filled">
+          <Outlet />
+        </Surface>
       </WorkspaceMain>
 
       <WorkspaceRightbar>
-        <Input />
+        <Flow>
+          <Info />
+          <Input />
+          <Output />
+        </Flow>
       </WorkspaceRightbar>
 
       <WorkspaceFooter

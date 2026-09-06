@@ -10,17 +10,12 @@ export type AuthHook = (req: IncomingMessage) => boolean | Promise<boolean>;
 export interface CreateServerOptions {
   readonly name: string;
   readonly version: string;
-  /** Идёт в ответ на `initialize` — единственное бесплатное место объяснить агенту порядок тулов. */
   readonly instructions?: string;
-  /** Вызывается на каждую HTTP-сессию заново (stdio — один раз) — тулы регистрируются здесь. */
   readonly registerTools: (server: McpServer) => void;
   readonly transport?: "stdio" | "http";
   readonly auth?: AuthHook;
-  /** Только для `"http"`. По умолчанию `"127.0.0.1"` — наружу машины не выходит без явного решения. */
   readonly host?: string;
-  /** Только для `"http"` — allowlist заголовка `Host`; не задан, проверки нет. */
   readonly allowedHosts?: readonly string[];
-  /** Только для `"http"` — allowlist заголовка `Origin`; не задан, проверки нет. */
   readonly allowedOrigins?: readonly string[];
 }
 

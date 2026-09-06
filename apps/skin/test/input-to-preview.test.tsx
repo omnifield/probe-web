@@ -8,6 +8,23 @@ import { componentDataAtom, setCurrentComponent } from "#/entities/component";
 import { Input } from "#/widgets/component/input";
 import { Preview } from "#/widgets/component/preview";
 
+// jsdom не даёт IntersectionObserver/ResizeObserver — карусель (Preview → Slot) заводит их
+// настоящей zag-машиной, которая следит за видимостью и размером слайдов. Живому браузеру оба
+// есть, здесь — минимальные заглушки, только чтобы карусель могла смонтироваться.
+(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+};
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 let dispose: (() => void) | undefined;
 
 afterEach(() => {
