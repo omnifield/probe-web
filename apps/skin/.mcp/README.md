@@ -52,11 +52,13 @@
 отображается в нативные `readOnlyHint`/`destructiveHint` спеки MCP.
 
 🏷️ **Теги** — навигация по множеству вариантов (для витрины и для агента, которому иначе пришлось
-бы перебирать сотни записей вслепую), никак не влияет на механику сборки. Одна и та же машинерия
-(`resolveTags`/`checkTags`, `tools/index.ts` + `engine/validate.ts`) сверяет строки-теги со
-словарём (`kind: "tag"` — отдельный пятый вид пресета, запись = просто имя, без списка участников:
-принадлежность живёт на самой записи, не дублируется в двух местах) и применена на ДВУХ разных
-слоях:
+бы перебирать сотни записей вслепую), никак не влияет на механику сборки. Чистая механика
+(`sortTags`/`checkTags`/`groupByTag`, словарь передаётся параметром, сама за ним не ходит) живёт в
+`@web-core/skin/tags` — витрина (`apps/skin/src`) читает пресеты напрямую из `backend/presets`,
+минуя MCP, и тоже нуждается в тех же функциях, так что дублировать их здесь было ошибкой (см.
+FAQ.md). Здесь, в `engine/validate.ts` и `tools/index.ts`, остался только И/О-клей: сходить в
+службу за словарём (`store.list("tag")`), собрать из него `Set`, применить дефолт `["default"]`,
+позвать чистую функцию. Применено на ДВУХ разных слоях:
 
 - **Наряд целиком** — `Outfit.tags?: string[]`, одна метка на весь `outfit` (`check_outfit`/
   `save_preset`).
@@ -77,12 +79,15 @@
 |---|---|---|
 | `server/` | точка входа — бутстрап транспорта через `@web-core/mcp/transport` | ничего наружу, только запускает |
 | `tools/` | граница протокола — регистрация всех десяти тулов через `registerTool`/`ok`/`err` | `registerTools(server)` |
-| `engine/` | связка с доменом skin — специфична ИМЕННО этой зоне, у другой MCP-зоны будет свой домен | `getPassport`/`listComponents` (кит), `skin`/`checkAssembly`/`skinGaps` (механика), `store` (клиент службы пресетов), `checkForm`/`checkPalette` (проверка одной записи) |
+| `engine/` | связка с доменом skin — специфична ИМЕННО этой зоне, у другой MCP-зоны будет свой домен | `getPassport`/`listComponents` (кит), `skin`/`checkAssembly`/`skinGaps` (механика), `store` (клиент службы пресетов), `checkForm`/`checkPalette`/`checkTags` (проверка одной записи) |
 
 Внутри `engine/` — четыре файла по одному на концерн (`kit.ts` реестр паспортов кита под форму
 MCP, `mechanics.ts` связка с источником паспортов, `store.ts` Node-клиент службы пресетов,
 `validate.ts` проверка ОДНОЙ палитры/формы синтетическим нарядом — своей функции для этого у
-механики нет) — они друг другу соседи, не публикуются напрямую, только через `engine/index.ts`.
+механики нет, плюс `checkTags` — тонкая И/О-обёртка над чистым `checkTags` из
+`@web-core/skin/tags`) — они друг другу соседи, не публикуются напрямую, только через
+`engine/index.ts`. `sortTags`/`groupByTag` в `tools/index.ts` зовутся напрямую из
+`@web-core/skin/tags`, минуя `engine/` — они не про домен skin-mcp, это готовая чужая механика.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -154,7 +159,7 @@ pnpm --filter @web-core/skin-mcp typecheck
 | `list_components` | массив `{ component, genus, group, footprint, package, parts, assemblies }` |
 | `get_passport` | `{ component, passport, editor, io }` |
 | `list_presets`/`get_preset` | `{ items, nextCursor? }` / конверт записи (`{id,label,...,state}`) |
-| `check_*` | отчёт с флавами (форма своя у каждого — см. `packages/skin` README) |
+| `check_*` | отчёт с флавами (форма своя у каждого — см. `packages/skin` README); `check_form` при `ok:true` дополнительно отдаёт `tagGroups` (`variantTags` наоборот — тег → варианты, из `@web-core/skin/tags`) — готовая раскладка под свайперы витрины |
 | `assemble_preview` | `{ report, gaps, css }` |
 | `save_preset` | `{ saved }` — сохранённый конверт |
 
@@ -176,6 +181,7 @@ pnpm --filter @web-core/skin-mcp typecheck
 | Тег с кириллицей в имени | `save_preset({kind:"tag", state:{name:"статусы"}})` | служба пресетов отказывает `bad_name` — имя тега тот же slug-формат, что у `name` любой записи |
 | Тег по значению варианта (реальная форма) | `save_preset(kind:"form")` на живой `omnifield-button` с `variantTags:{error:["status"],success:["status"],warning:["status"]}` | сохранено; `primary`/`secondary`/`tertiary`/`error-quiet` автоматически получили `["default"]`, не переданные явно |
 | Неизвестный тег по значению варианта | `variantTags:{error:["no-such-tag"]}` на реальной форме | флав `unknown-tag` с адресом `variantTags.error`, `css` в ответе тоже пропадает (сигнал непротиворечив) |
+| Механика тегов из `@web-core/skin/tags` (после переезда) | реальный `check_form` с известными/неизвестными тегами через живой сервер, свежий рестарт | `tagGroups` собран верно (`default` первым, `status` вторым), `unknown-tag` по-прежнему ловится — поведение не изменилось после переноса чистой механики в `packages/skin` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

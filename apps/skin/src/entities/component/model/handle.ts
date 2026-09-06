@@ -1,9 +1,10 @@
+import type { DispatchedEvent } from "@web-core/assembly";
 import type { ComponentInfo } from "@web-core/ui/component-info";
 import { useAtom } from "@web-core/store";
 import { createEffect, createMemo, on } from "solid-js";
 
 import { generateFakeData } from "../utils/fake-generator";
-import { componentDataAtom, componentInfoAtom, currentComponent } from "./store";
+import { componentDataAtom, componentEventsAtom, componentInfoAtom, currentComponent } from "./store";
 
 export interface ComponentHandle {
   /** Готовы ли данные компонента (инфо и io-схема пришли) — раньше генерировать/показывать нечего. */
@@ -12,6 +13,8 @@ export interface ComponentHandle {
   readonly generate: () => void;
   /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
   readonly info: () => ComponentInfo | undefined;
+  /** Дописать событие в историю ТЕКУЩЕГО компонента (`componentEventsAtom`) — сброс при смене компонента. */
+  readonly recordEvent: (event: DispatchedEvent) => void;
 }
 
 /**
@@ -24,7 +27,16 @@ export interface ComponentHandle {
 export function componentHandle(): ComponentHandle {
   const info = useAtom(componentInfoAtom);
 
-  createEffect(on(currentComponent, () => componentDataAtom.set(undefined)));
+  createEffect(
+    on(currentComponent, () => {
+      componentDataAtom.set(undefined);
+      componentEventsAtom.set([]);
+    }),
+  );
+
+  function recordEvent(event: DispatchedEvent): void {
+    componentEventsAtom.set((events) => [...events, event]);
+  }
 
   const ready = createMemo(() => {
     const state = info();
@@ -42,5 +54,5 @@ export function componentHandle(): ComponentHandle {
     return state.status === "done" ? state.data : undefined;
   });
 
-  return { ready, generate, info: componentInfo };
+  return { ready, generate, info: componentInfo, recordEvent };
 }

@@ -9,5 +9,6 @@ export default defineLibraryConfig({
     { name: "presets", source: "src/presets/index.ts" },
     { name: "wear", source: "src/wear/index.ts" },
     { name: "solid", source: "src/solid/index.ts" },
+    { name: "tags", source: "src/tags/index.ts" },
   ],
 });

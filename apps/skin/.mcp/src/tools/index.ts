@@ -3,15 +3,15 @@ import { z } from "@web-core/io";
 import { err, ok, registerTool } from "@web-core/mcp";
 import { paginate } from "@web-core/mcp/pagination";
 import { OutfitRefused } from "@web-core/skin";
+import { DEFAULT_TAG, groupByTag, sortTags } from "@web-core/skin/tags";
 import { getPassport, listComponents, skin, checkAssembly, skinGaps, store, checkForm, checkPalette, checkTags } from "../engine";
 
 const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 const looseRecord = z.looseObject({ name: z.string() });
-const DEFAULT_TAG = "default";
 
 async function resolveTags(rawTags: unknown, where = "tags") {
   const requested = Array.isArray(rawTags) ? rawTags.filter((t): t is string => typeof t === "string") : [];
-  const tags = requested.length > 0 ? requested : [DEFAULT_TAG];
+  const tags = sortTags(requested.length > 0 ? requested : [DEFAULT_TAG]);
   return { tags, flaws: await checkTags(tags, where) };
 }
 
@@ -29,7 +29,7 @@ async function resolveVariantTags(form: Record<string, unknown>) {
     flaws.push(...resolved.flaws);
   }
 
-  return { variantTags, flaws };
+  return { variantTags, tagGroups: groupByTag(variantTags), flaws };
 }
 
 export function registerTools(server: McpServer) {
@@ -117,7 +117,8 @@ export function registerTools(server: McpServer) {
       "скине. Плюс unknown-tag по каждому значению recipe.variants против словаря (kind:\"tag\") — тот же " +
       "механизм, что и tags наряда, только на уровне значения варианта, не всей записи. Опечатка возвращается " +
       "с адресом, не тихим неприменением. Нужна палитра для сверки ролей — не назвали paletteName, берётся " +
-      "первая из службы.",
+      "первая из службы. При ok:true в ответе есть tagGroups — variantTags, перевёрнутые в тег→варианты " +
+      "(отсортировано, default первым) — готовая раскладка для свайперов/витрины по группам.",
     access: "read",
     input: z.object({
       form: looseRecord
@@ -127,8 +128,8 @@ export function registerTools(server: McpServer) {
     }),
     handler: async ({ form, paletteName }) => {
       const result = await checkForm(form as never, paletteName);
-      const { flaws: variantTagFlaws } = await resolveVariantTags(form as Record<string, unknown>);
-      if (variantTagFlaws.length === 0) return ok(result);
+      const { flaws: variantTagFlaws, tagGroups } = await resolveVariantTags(form as Record<string, unknown>);
+      if (variantTagFlaws.length === 0) return ok({ ...result, tagGroups });
       return ok({
         ...result,
         ok: false,

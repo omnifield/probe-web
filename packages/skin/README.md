@@ -25,7 +25,7 @@
 
 <h2 id="анатомия">🧩 Анатомия</h2>
 
-🗺️ У движка нет DOM — часть здесь означает подпуть поставки. Семь точек входа, каждая — свой срез
+🗺️ У движка нет DOM — часть здесь означает подпуть поставки. Восемь точек входа, каждая — свой срез
 того, что реально нужно потребителю: от голого чтения паспорта без порождения CSS до Solid-плагина,
 который движок вообще не обязан знать.
 
@@ -38,12 +38,13 @@
 | Служба раздачи | `@web-core/skin/presets` | `createPresetsClient`, `createPresetsSkinSource`, `PRESET_KIND`, `PresetsDown`, `PresetsRefused`, `PresetRecord` |
 | Надевание | `@web-core/skin/wear` | `makeSkinSwitch`, `checkStyleOrder`, `SkinSwitch`, `SkinSource`, `SkinWorn`, `SkinMode`, `StyleMarker`, `StyleOrderReport` |
 | Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection` |
+| Теги | `@web-core/skin/tags` | `sortTags`, `checkTags`, `groupByTag`, `DEFAULT_TAG`, `TagFlaw`, `TagGroup` |
 
 📦 Внутри пакета: `src/index.ts` — тонкий барель поверх `src/engine/` (та же форма, что у
 `assembly`/`store`). `src/engine/` несёт всё, что не экспортируется отдельным подпутём: паспорт,
 адресацию, значения (семена/шкалы/текучий размер — чистая арифметика печати, без своего глагола
 наружу), словарь ролей, рецепт, сборку правил, покрытие, контраст, порождение. `editor/`, `flat/`,
-`wear/`, `solid/`, `presets/` — отдельные папки один в один со своими точками входа.
+`wear/`, `solid/`, `presets/`, `tags/` — отдельные папки один в один со своими точками входа.
 
 <h2 id="использование">🚀 Использование</h2>
 

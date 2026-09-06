@@ -1,31 +1,14 @@
-import { Renderer, type TreeItemData } from "#/entities/component";
+import { componentEventsAtom } from "#/entities/component";
+import { useAtom } from "@web-core/store";
 import { Surface } from "@web-core/ui";
 
-const MOCK_ITEMS: readonly TreeItemData[] = [
-  { id: "payload", label: "payload" },
-  {
-    id: "meta",
-    label: "meta",
-    children: [
-      { id: "meta.timestamp", label: "timestamp" },
-      { id: "meta.source", label: "source" },
-    ],
-  },
-];
-
 export function Output() {
+  const events = useAtom(componentEventsAtom);
+
+  // Сырой JSON — пока задел, настоящее дерево (tree-view) заведём отдельно.
   return (
     <Surface>
-      <Renderer
-        component="tree-view"
-        assembly="base"
-        rootProps={{
-          items: MOCK_ITEMS,
-          selectionMode: "single",
-          defaultExpandedValue: MOCK_ITEMS.map((item) => item.id),
-        }}
-        data={{ items: MOCK_ITEMS }}
-      />
+      <pre>{JSON.stringify(events(), null, 2)}</pre>
     </Surface>
   );
 }

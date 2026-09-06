@@ -51,6 +51,27 @@ categories:
           четыре значения молча получили ["default"], css пропадает из ответа check_form вместе с
           флавом (не только referenceFlaws), чтобы сигнал не был противоречивым.
 
+      - id: tags-mechanics-moved-to-packages-skin
+        type: refactor
+        status: Done
+        priority: High
+        milestone: null
+        name: Чистая механика тегов переехала в @web-core/skin/tags
+        description: |
+          Означает: sortTags/checkTags(tags, knownTags, where)/groupByTag больше не определены
+          локально в tools/index.ts — зовутся из @web-core/skin/tags (написан user по заявке
+          архитектора в чате). Причина: витрина (apps/skin/src) читает пресеты напрямую из
+          backend/presets, минуя MCP — чистая (без сети) механика, оставленная только здесь,
+          заставила бы витрину дублировать её при рендере группировки. engine/validate.ts's
+          checkTags остался тонкой И/О-обёрткой (ходит в store.list("tag") за словарём, строит Set,
+          зовёт чистую функцию) — внешняя сигнатура не изменилась, tools/index.ts's
+          resolveTags/resolveVariantTags правок на этом стыке не потребовали. check_form при
+          ok:true теперь дополнительно отдаёт tagGroups (считался и раньше внутри
+          resolveVariantTags, но нигде не использовался) — внешнему агенту, у которого нет доступа
+          к npm-пакету, иначе неоткуда взять готовую раскладку под свайперы. Проверено живьём
+          реальным HTTP round-trip после рестарта сервера: известные теги группируются верно
+          (default первым), неизвестный по-прежнему даёт unknown-tag — поведение не изменилось.
+
       - id: negative-report-is-not-protocol-error
         type: feature
         status: Done
@@ -202,6 +223,25 @@ categories:
           способ измерить качество тула по гайду Anthropic, сегодня не заведён вовсе.
 
 log:
+  - id: tags-mechanics-moved-to-packages-skin-log
+    type: plan
+    date: 2026-09-06
+    summary: >
+      User заметил зону-путаницу: "я перепутал и сказал тебе писать это в мсипи. но это логика
+      packages/skin" — витрина (apps/skin/src) ходит за пресетами напрямую в backend/presets, не
+      через MCP, значит чистая (без сети) механика тегов, написанная только здесь, заставила бы
+      витрину при рендере группировки (свайперы по тегам) дублировать sortTags/checkTags/
+      groupByTag. Архитектор написал заявку прямо в чате (сигнатуры, разделение
+      чистое/сеть — тот же чертёж, что у checkOutfit(outfit, parts)), user реализовал сам в
+      packages/skin/src/tags/index.ts, архитектор проверил (typecheck/build/тесты пакета — все
+      зелёные, 65/65) и пересадил потребителя: engine/validate.ts's checkTags — тонкая И/О-обёртка
+      над чистой функцией (ходит в service за словарём, зовёт чистую), tools/index.ts зовёт
+      sortTags/groupByTag из пакета напрямую. Внешняя сигнатура checkTags(tags, where) не
+      изменилась — resolveTags/resolveVariantTags правок не потребовали. Попутно замечено и
+      исправлено: tagGroups считался в resolveVariantTags и раньше, но нигде не отдавался наружу —
+      теперь часть ответа check_form при ok:true. Проверено живьём после рестарта сервера
+      (:3000) — group/дефолт/unknown-tag ведут себя так же, как до переноса.
+
   - id: form-variant-tags-correction
     type: plan
     date: 2026-09-06

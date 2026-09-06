@@ -1,22 +1,13 @@
 import type { Form, Palette } from "@web-core/skin/model";
+import { checkTags as checkTagsPure, type TagFlaw } from "@web-core/skin/tags";
 import { skin } from "./mechanics";
 import { list, readPalettes } from "./store";
 
-export interface TagFlaw {
-  readonly name: "unknown-tag";
-  readonly where: string;
-  readonly means: string;
-}
+export type { TagFlaw };
 
 export async function checkTags(tags: readonly string[], where = "tags"): Promise<TagFlaw[]> {
-  const known = new Set((await list("tag")).map((record) => record.name));
-  return tags
-    .filter((tag) => !known.has(tag))
-    .map((tag) => ({
-      name: "unknown-tag" as const,
-      where,
-      means: `тега "${tag}" нет в словаре — заведите его записью kind:"tag" или возьмите существующий из list_presets({kind:"tag"})`,
-    }));
+  const known = new Set((await list("tag")).map((record) => record.name).filter((name): name is string => name !== undefined));
+  return checkTagsPure(tags, known, where);
 }
 
 export async function checkPalette(palette: Palette) {

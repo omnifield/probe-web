@@ -1,14 +1,8 @@
 export {
   Dialog,
   type DialogProps,
-  DialogTrigger,
-  type DialogTriggerProps,
+  DialogControl,
+  type DialogControlProps,
   DialogContent,
   type DialogContentProps,
-  DialogTitle,
-  type DialogTitleProps,
-  DialogDescription,
-  type DialogDescriptionProps,
-  DialogCloseTrigger,
-  type DialogCloseTriggerProps,
 } from "./components/index.js";

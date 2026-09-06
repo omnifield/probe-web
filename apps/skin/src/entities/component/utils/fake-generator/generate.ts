@@ -2,6 +2,7 @@ import { z } from "@web-core/io";
 import { zocker } from "zocker";
 
 import { hintsFor } from "./hints";
+import { randomPayload } from "./payload";
 import { fakeText, targetLength } from "./text";
 
 // Схема — не компонент: генератору незачем знать имя, паспорт или что-либо ещё о компоненте,
@@ -22,6 +23,11 @@ export function generateFakeData(schema: z.ZodType | undefined, component: strin
       if (!fieldSchema) continue;
       generator = generator.supply(fieldSchema, () => fakeText(targetLength(hint.length)));
     }
+
+    // `payload` почти всегда `z.unknown()` — без этого он остаётся пустым. Не по имени компонента,
+    // любой компонент с таким полем в схеме.
+    const payloadSchema = schema.shape["payload"];
+    if (payloadSchema) generator = generator.supply(payloadSchema, () => randomPayload());
   }
 
   return generator.generate();

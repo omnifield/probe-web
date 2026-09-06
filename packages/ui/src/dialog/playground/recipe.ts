@@ -4,7 +4,7 @@ const transition = "background-color var(--motion-fast) var(--ease-out), color v
 
 export const recipe: SlotRecipe = {
   base: {
-    trigger: {
+    control: {
       props: {
         display: "inline-flex",
         alignItems: "center",
@@ -45,61 +45,11 @@ export const recipe: SlotRecipe = {
         closed: { props: { display: "none" } },
       },
     },
-    positioner: {
-      props: {
-        position: "fixed",
-        inset: "0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "var(--space-4)",
-        pointerEvents: "none",
-      },
-    },
     content: {
-      props: {
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-3)",
-        width: "100%",
-        maxWidth: "28rem",
-        padding: "var(--space-6)",
-        background: "var(--neutral-1)",
-        borderWidth: "var(--border-width-1)",
-        borderStyle: "solid",
-        borderColor: "var(--neutral-6)",
-        borderRadius: "var(--radius-lg)",
-        boxShadow: "0 8px 32px oklch(0% 0 0 / 0.2)",
-        pointerEvents: "auto",
-      },
+      props: { isolation: "isolate" },
       states: {
-        open: {
-          props: {
-            animation: "dialog-in var(--motion-normal) var(--ease-out)",
-            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-          },
-        },
-        closed: {
-          props: {
-            animation: "dialog-out var(--motion-fast) var(--ease-in)",
-            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
-          },
-        },
-      },
-    },
-    title: {
-      props: {
-        fontSize: "var(--font-size-lg)",
-        fontWeight: "var(--weight-semibold)",
-        color: "var(--neutral-12)",
-      },
-    },
-    description: {
-      props: {
-        fontSize: "var(--font-size-md)",
-        color: "var(--neutral-11)",
-        lineHeight: "var(--leading-relaxed)",
+        open: { props: { display: "contents" } },
+        closed: { props: { display: "none" } },
       },
     },
     closeTrigger: {
@@ -134,15 +84,4 @@ export const recipe: SlotRecipe = {
   },
 };
 
-export const keyframes = {
-  "dialog-in": {
-    from: { opacity: "0", transform: "scale(0.96)" },
-    to: { opacity: "1", transform: "scale(1)" },
-  },
-  "dialog-out": {
-    from: { opacity: "1", transform: "scale(1)" },
-    to: { opacity: "0", transform: "scale(0.96)" },
-  },
-};
-
-export const form: Form = { name: "dialog-sample", component: "dialog", recipe, keyframes };
+export const form: Form = { name: "dialog-sample", component: "dialog", recipe };

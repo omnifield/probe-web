@@ -3,11 +3,11 @@ const WORDS = [
   "sed", "do", "eiusmod", "tempor", "incididunt", "labore", "dolore", "magna",
 ] as const;
 
-function randomWord(): string {
+export function randomWord(): string {
   return WORDS[Math.floor(Math.random() * WORDS.length)]!;
 }
 
-function randomInt(min: number, max: number): number {
+export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 

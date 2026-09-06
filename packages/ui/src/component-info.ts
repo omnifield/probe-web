@@ -37,6 +37,7 @@ import { createIoRegistry, type IoEntry, type IoRegistry } from "@web-core/io";
 import type { ComponentPassport, Form } from "@web-core/skin/model";
 import type { PassportEditorInfo } from "@web-core/skin/editor";
 import { PRESET_KIND, type PresetRecord, type PresetsClient } from "@web-core/skin/presets";
+import { groupByTag, type TagGroup } from "@web-core/skin/tags";
 
 import type { KitComponent } from "./kit-form.js";
 import { IO as KIT_IO } from "./io.js";
@@ -164,6 +165,8 @@ export interface ComponentSkinInfo {
   readonly variants: readonly string[];
   /** Имена нарядов службы, которые включают эту форму. */
   readonly outfits: readonly string[];
+  /** `Form.variantTags`, перевёрнутые в тег→варианты (`@web-core/skin/tags`, отсортировано). */
+  readonly tags: readonly TagGroup[];
 }
 
 /** Всё известное об одном компоненте — из кита и из службы, одной записью. */
@@ -205,6 +208,7 @@ export function createComponentInfo(sources: ComponentInfoSources): (component: 
             outfits: outfits
               .filter((record) => record.state.forms.includes(form.name))
               .map((record) => record.name),
+            tags: groupByTag(form.state.variantTags ?? {}),
           };
 
     return {
