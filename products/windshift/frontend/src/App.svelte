@@ -8,6 +8,7 @@
   import { themeStore } from './lib/stores/theme.svelte.js';
   import { i18n, SUPPORTED_LOCALES } from './lib/stores/i18n.svelte.js';
   import { safeLoginReturnPath } from './lib/utils/loginReturnPath.js';
+  import { resolveWorkspaceIdParam } from './lib/utils/workspaceRouteParam.js';
   import BrandedLoader from './lib/components/BrandedLoader.svelte';
   import LazyRootDialog from './lib/components/LazyRootDialog.svelte';
   import LazyRootView from './lib/components/LazyRootView.svelte';
@@ -330,8 +331,8 @@
       loader={ROOT_VIEW_LOADERS.pagePrint}
       label="print view"
       componentProps={{
-        workspaceId: Number($currentRoute.params.id),
-        pageId: Number($currentRoute.params.pageId),
+        workspaceId: resolveWorkspaceIdParam($currentRoute.params.id),
+        pageId: $currentRoute.params.pageId || null,
       }}
     />
   {:else if $authStore.isAuthenticated && appInitialized && $currentRoute.view === 'time-report-print'}

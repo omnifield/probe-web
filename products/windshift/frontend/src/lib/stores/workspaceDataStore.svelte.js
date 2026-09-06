@@ -4,6 +4,7 @@ import {
   isExpectedBackgroundSyncError,
   onBackgroundSyncAvailable,
 } from '../utils/backgroundSync.js';
+import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
 
 const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -49,7 +50,7 @@ class WorkspaceDataStore {
   async initialize(workspaceId) {
     if (!workspaceId) return;
 
-    const id = typeof workspaceId === 'string' ? parseInt(workspaceId, 10) : workspaceId;
+    const id = resolveWorkspaceIdParam(workspaceId);
 
     // Already initialized for this workspace
     if (this.initialized && this.workspaceId === id) {
@@ -256,7 +257,7 @@ class WorkspaceDataStore {
   }
 
   hydrateHomepageLayout(workspaceId, layout) {
-    const id = typeof workspaceId === 'string' ? parseInt(workspaceId, 10) : workspaceId;
+    const id = resolveWorkspaceIdParam(workspaceId);
     if (this.workspaceId === id) this.homepageLayout = layout;
   }
 

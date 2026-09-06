@@ -20,6 +20,8 @@ export interface CreateServerOptions {
   readonly host?: string;
   /** Только для `"http"` — allowlist заголовка `Host`; не задан, проверки нет. */
   readonly allowedHosts?: readonly string[];
+  /** Только для `"http"` — allowlist заголовка `Origin`; не задан, проверки нет. */
+  readonly allowedOrigins?: readonly string[];
 }
 
 export interface ZoneServer {
@@ -37,6 +39,7 @@ export function createServer(options: CreateServerOptions): ZoneServer {
     auth,
     host = "127.0.0.1",
     allowedHosts,
+    allowedOrigins,
   } = options;
 
   const buildServer = (): McpServer => {
@@ -67,26 +70,35 @@ export function createServer(options: CreateServerOptions): ZoneServer {
             res.writeHead(400).end();
             return;
           }
+          if (allowedOrigins && !allowedOrigins.includes(req.headers.origin ?? "")) {
+            res.writeHead(400).end();
+            return;
+          }
           if (auth && !(await auth(req))) {
             res.writeHead(401).end();
             return;
           }
 
           const sessionId = req.headers["mcp-session-id"];
-          const existing = typeof sessionId === "string" ? sessions.get(sessionId) : undefined;
 
-          let transport = existing?.transport;
-          if (!transport) {
-            const server = buildServer();
-            transport = new StreamableHTTPServerTransport({
-              sessionIdGenerator: () => randomUUID(),
-              onsessioninitialized: (sid) => void sessions.set(sid, { server, transport: transport! }),
-              onsessionclosed: (sid) => void sessions.delete(sid),
-            });
-            await server.connect(transport);
+          if (typeof sessionId === "string") {
+            const existing = sessions.get(sessionId);
+            if (!existing) {
+              res.writeHead(404).end();
+              return;
+            }
+            await existing.transport.handleRequest(req, res);
+            return;
           }
 
-          await transport.handleRequest(req, res);
+          const server = buildServer();
+          const sessionTransport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (sid) => void sessions.set(sid, { server, transport: sessionTransport }),
+            onsessionclosed: (sid) => void sessions.delete(sid),
+          });
+          await server.connect(sessionTransport);
+          await sessionTransport.handleRequest(req, res);
         } catch {
           if (!res.headersSent) res.writeHead(500).end();
         }

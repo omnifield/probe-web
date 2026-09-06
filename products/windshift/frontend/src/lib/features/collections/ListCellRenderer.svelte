@@ -125,8 +125,8 @@
         {item}
         {workspace}
         href={collectionId && workspace
-          ? `/workspaces/${workspace.id}/collections/${collectionId}/items/${item.id}`
-          : `/workspaces/${workspace?.id || item.workspace_id}/items/${item.id}`}
+          ? `/workspaces/${workspace.key || workspace.id}/collections/${collectionId}/items/${item.id}`
+          : `/workspaces/${workspace?.key || workspace?.id || item.workspace_id}/items/${item.id}`}
       />
     </div>
 

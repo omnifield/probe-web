@@ -125,6 +125,7 @@ registerTool(server, {
 | `auth` | `createServer`, `options.auth` | `(req: IncomingMessage) => boolean \| Promise<boolean>` | не задан — без проверки |
 | `host` | `createServer`, `options.host` (только `"http"`) | `string` | `"127.0.0.1"` — наружу машины не выходит без явного решения |
 | `allowedHosts` | `createServer`, `options.allowedHosts` (только `"http"`) | `readonly string[]` | не задан — заголовок `Host` не проверяется |
+| `allowedOrigins` | `createServer`, `options.allowedOrigins` (только `"http"`) | `readonly string[]` | не задан — заголовок `Origin` не проверяется |
 | `instructions` | `createServer`, `options.instructions` | `string` | не задан |
 | `limit` | `paginate`, `options.limit` | `number` | `50` |
 
@@ -140,8 +141,10 @@ registerTool(server, {
 | Хендлер отказал | `content` текстом, `isError: true` | `err()` |
 | Транспорт локальный | `stdio`, один `McpServer` на процесс | `createServer` |
 | Транспорт серверный, новая сессия | нет заголовка `mcp-session-id` от клиента — новый `McpServer` + `registerTools()` заново | `createServer` |
-| Транспорт серверный, известная сессия | `mcp-session-id` найден — переиспользуется её `McpServer`/`transport`, не создаётся заново | `createServer` |
+| Транспорт серверный, известная сессия | `mcp-session-id` найден в карте — переиспользуется её `McpServer`/`transport`, не создаётся заново | `createServer` |
+| Транспорт серверный, НЕИЗВЕСТНАЯ сессия | заголовок есть, в карте его нет — `404` СРАЗУ, `McpServer` не строится вовсе | `createServer` |
 | Host не в allowlist | `400`, транспорт не вызывается | `createServer` |
+| Origin не в allowlist | `400`, транспорт не вызывается | `createServer` |
 | Auth-хук отказал | `401`, транспорт не вызывается | `createServer` |
 | Страница листинга не последняя | `nextCursor` в ответе | `paginate` |
 | Страница листинга последняя | `nextCursor` отсутствует | `paginate` |
@@ -154,7 +157,7 @@ registerTool(server, {
 |---|---|
 | `registerTool(server, definition)` | `ToolDefinition` (`name`, `title?`, `description`, `access`, `idempotent?`, `openWorld?`, `input?`, `output?`, `handler`) — `input`/`output` настоящие Zod-схемы |
 | `ok(value?)` / `err(message)` | значение под `output`-схему тула / текст отказа |
-| `createServer(options)` | `{ name, version, instructions?, registerTools, transport?, auth?, host?, allowedHosts? }` |
+| `createServer(options)` | `{ name, version, instructions?, registerTools, transport?, auth?, host?, allowedHosts?, allowedOrigins? }` |
 | `server.listen(port?)` / `server.close()` | ничего / ничего |
 | `paginate(items, options)` | массив + `{ cursor?, limit? }` |
 
@@ -170,7 +173,7 @@ registerTool(server, {
 <h2 id="сборки">🏗️ Сборки</h2>
 
 ✅ Настоящий round-trip через MCP SDK, не имитация — каждая строка ниже доказана тестом
-(`vitest run`, 18/18 зелёных).
+(`vitest run`, 20/20 зелёных).
 
 | Проверено | Как | Результат |
 |---|---|---|
@@ -183,6 +186,8 @@ registerTool(server, {
 | Auth-хук пропускает | тот же клиент с верным `Authorization` | тул отвечает штатно |
 | Два клиента одновременно | два `StreamableHTTPClientTransport` на один `createServer`, оба зовут тул | разные `sessionId`, первый жив после подключения второго |
 | Host не в allowlist | `fetch` с несовпадающим заголовком `Host` | `400`, тул не вызван |
+| Origin не в allowlist | `fetch` с несовпадающим заголовком `Origin` | `400`, тул не вызван |
+| Неизвестный `mcp-session-id` не строит сервер | `fetch` с выдуманным `mcp-session-id`, счётчик вызовов `registerTools` | `404`, счётчик остался `0` |
 | `instructions` доезжают клиенту | `client.getInstructions()` после `connect()` | совпадает с переданной строкой |
 | Пагинация — полный обход | `paginate` в цикле по `nextCursor` до его исчезновения | ни одного пропуска/повтора элемента |
 

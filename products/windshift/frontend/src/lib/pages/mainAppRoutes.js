@@ -1,3 +1,5 @@
+import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
+
 // Keep every dynamic import literal in one registry so Vite preserves the
 // existing route-level chunks while MainApp remains a small composition root.
 export const MAIN_APP_COMPONENT_LOADERS = {
@@ -67,14 +69,16 @@ export const MAIN_APP_COMPONENT_LOADERS = {
 
 const route = (loadingMsg, errorMsg, options = {}) => ({ loadingMsg, errorMsg, ...options });
 const workspaceCollectionProps = (currentRoute) => ({
-  workspaceId: currentRoute.params.id,
+  workspaceId: resolveWorkspaceIdParam(currentRoute.params.id),
   collectionId: currentRoute.params.collectionId,
 });
 const globalCollectionProps = (currentRoute) => ({
   workspaceId: null,
   collectionId: currentRoute.params.id,
 });
-const workspaceProps = (currentRoute) => ({ workspaceId: currentRoute.params.id });
+const workspaceProps = (currentRoute) => ({
+  workspaceId: resolveWorkspaceIdParam(currentRoute.params.id),
+});
 
 /**
  * @typedef {object} MainAppRouteConfig
@@ -192,13 +196,13 @@ export const MAIN_APP_ROUTE_CONFIG = {
   'workspace-pages': route('Loading Pages...', 'Failed to load Pages', {
     wrapper: 'none',
     getProps: (currentRoute) => ({
-      workspaceId: Number(currentRoute.params.id),
-      pageId: currentRoute.params.pageId ? Number(currentRoute.params.pageId) : null,
+      workspaceId: resolveWorkspaceIdParam(currentRoute.params.id),
+      pageId: currentRoute.params.pageId || null,
     }),
   }),
   'workspace-pages-archived': route('Loading Archived Pages...', 'Failed to load Archived Pages', {
     wrapper: 'none',
-    getProps: (currentRoute) => ({ workspaceId: Number(currentRoute.params.id) }),
+    getProps: (currentRoute) => ({ workspaceId: resolveWorkspaceIdParam(currentRoute.params.id) }),
   }),
   'collection-board': route('Loading Board View...', 'Failed to load Board View', {
     getProps: globalCollectionProps,
@@ -234,7 +238,7 @@ export const MAIN_APP_ROUTE_CONFIG = {
   'workspace-actions': route('Loading Actions...', 'Failed to load Actions', {
     wrapper: 'none',
     getProps: (currentRoute) => ({
-      workspaceId: currentRoute.params.id,
+      workspaceId: resolveWorkspaceIdParam(currentRoute.params.id),
       actionId: Number(currentRoute.params.actionId) || 0,
     }),
   }),
@@ -253,7 +257,7 @@ export const MAIN_APP_ROUTE_CONFIG = {
   'workspace-agent-profile': route('Loading Agent...', 'Failed to load Agent', {
     wrapper: 'surface-full',
     getProps: (currentRoute) => ({
-      workspaceId: currentRoute.params.id,
+      workspaceId: resolveWorkspaceIdParam(currentRoute.params.id),
       agentId: currentRoute.params.agentId,
       tab: currentRoute.query?.tab,
     }),
@@ -292,7 +296,7 @@ export const MAIN_APP_ROUTE_CONFIG = {
     getProps: (currentRoute, context) => ({
       workspaceId: currentRoute.path.startsWith('/personal')
         ? context.personalWorkspaceId
-        : currentRoute.params.id,
+        : resolveWorkspaceIdParam(currentRoute.params.id),
       itemId: currentRoute.params.itemId,
       isModal: false,
     }),
@@ -315,7 +319,7 @@ export const MAIN_APP_ROUTE_CONFIG = {
     getProps: (currentRoute, context) => ({
       workspaceId: currentRoute.path.startsWith('/personal')
         ? context.personalWorkspaceId
-        : currentRoute.params.id,
+        : resolveWorkspaceIdParam(currentRoute.params.id),
     }),
   }),
   'workspace-reviews': route('Loading Reviews...', 'Failed to load Reviews', {
@@ -324,7 +328,7 @@ export const MAIN_APP_ROUTE_CONFIG = {
       currentUser: context.currentUser,
       workspaceId: currentRoute.path.startsWith('/personal')
         ? context.personalWorkspaceId
-        : currentRoute.params.id,
+        : resolveWorkspaceIdParam(currentRoute.params.id),
     }),
   }),
   'workflow-designer': route('Loading workflow designer...', 'Failed to load workflow designer'),

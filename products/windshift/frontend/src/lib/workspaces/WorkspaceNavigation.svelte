@@ -20,6 +20,7 @@
   import { navItemStyle, onNavMouseEnter, onNavMouseLeave } from '../navigation/navItemStyle.js';
   import { navigate, currentRoute } from '../router.js';
   import { currentWorkspace, workspacePermissions } from '../stores';
+  import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
   import { moduleSettings } from '../stores/moduleSettings.js';
   import { api } from '../api.js';
   import DropdownMenu from '../layout/DropdownMenu.svelte';
@@ -127,10 +128,15 @@
   const isSettingsView = $derived(SETTINGS_VIEWS.includes($currentRoute.view));
   const defaultCollectionView = workspaceViewItems[0]?.id || 'backlog';
 
+  // workspaceId is the raw URL segment (numeric id or workspace key) — used
+  // as-is for building nav hrefs. Permission lookups need the canonical
+  // numeric id, resolved locally so this one prop can still serve both.
+  const resolvedWorkspaceId = $derived(resolveWorkspaceIdParam(workspaceId));
+
   // Permission-based visibility
-  const canViewTests = $derived.by(() => workspacePermissions.canViewTests(workspaceId));
-  const canManageActions = $derived.by(() => workspacePermissions.canManageActions(workspaceId));
-  const canAdmin = $derived.by(() => workspacePermissions.canAdminWorkspace(workspaceId));
+  const canViewTests = $derived.by(() => workspacePermissions.canViewTests(resolvedWorkspaceId));
+  const canManageActions = $derived.by(() => workspacePermissions.canManageActions(resolvedWorkspaceId));
+  const canAdmin = $derived.by(() => workspacePermissions.canAdminWorkspace(resolvedWorkspaceId));
 
   // Filter workspace-only views based on permissions
   const filteredWorkspaceOnlyViews = $derived.by(() => {
@@ -192,7 +198,7 @@
       allCollections = result || [];
 
       // Filter collections for this workspace
-      collections = filterCollectionsForWorkspace(allCollections, workspaceId);
+      collections = filterCollectionsForWorkspace(allCollections, resolvedWorkspaceId);
 
       // Sync with current route (reactive statement will handle this, but we need to rebuild dropdown)
       syncCollectionWithRoute($currentRoute.params.collectionId);

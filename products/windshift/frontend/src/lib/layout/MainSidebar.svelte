@@ -66,7 +66,7 @@
         avatarUrl: hasAvatar ? overviewWorkspace.avatar_url : null,
         title: overviewWorkspace.name,
         subtitle: overviewWorkspace.description,
-        href: `/workspaces/${overviewWorkspace.id}`
+        href: `/workspaces/${overviewWorkspace.key || overviewWorkspace.id}`
       });
     }
 
@@ -102,7 +102,7 @@
           avatarUrl: hasAvatar ? workspace.avatar_url : null,
           title: workspace.name,
           subtitle: workspace.description,
-          href: `/workspaces/${workspace.id}`
+          href: `/workspaces/${workspace.key || workspace.id}`
         };
       };
 

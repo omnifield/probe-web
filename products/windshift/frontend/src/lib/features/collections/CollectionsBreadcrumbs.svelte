@@ -47,7 +47,7 @@
 
   function handleNavigateWorkspace() {
     if (workspace?.id) {
-      navigate(`/workspaces/${workspace.id}`);
+      navigate(`/workspaces/${workspace.key || workspace.id}`);
     }
   }
 

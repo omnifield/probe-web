@@ -118,6 +118,56 @@ describe("createServer — transport: http", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects a request whose Origin header is not in allowedOrigins", async () => {
+    server = createServer({
+      name: "test-http-origin",
+      version: "0.0.0",
+      transport: "http",
+      allowedOrigins: ["https://allowed.example"],
+      registerTools: registerPing,
+    });
+    await server.listen(PORT);
+
+    const res = await fetch(URL_, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        origin: "https://evil.example",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an unknown mcp-session-id with 404 without building a fresh server", async () => {
+    let builds = 0;
+    server = createServer({
+      name: "test-http-unknown-session",
+      version: "0.0.0",
+      transport: "http",
+      registerTools: (mcp) => {
+        builds += 1;
+        registerPing(mcp);
+      },
+    });
+    await server.listen(PORT);
+
+    const res = await fetch(URL_, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        "mcp-session-id": "no-such-session",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+
+    expect(res.status).toBe(404);
+    expect(builds).toBe(0);
+  });
+
   it("returns instructions to the client on initialize", async () => {
     server = createServer({
       name: "test-http-instructions",

@@ -12,7 +12,7 @@
   }
 
   function go(workspace) {
-    navigate(`/workspaces/${workspace.id}`);
+    navigate(`/workspaces/${workspace.key || workspace.id}`);
   }
 </script>
 

@@ -13,6 +13,7 @@
   import { getShortcut, matchesShortcut, getDisplayString } from '../utils/keyboardShortcuts.js';
   import { errorToast } from '../stores/toasts.svelte.js';
   import { showCreatedItemToast } from '../utils/createdItemToast.js';
+  import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
 
   // Import form components
   import WorkItemForm from '../forms/WorkItemForm.svelte';
@@ -286,7 +287,7 @@
 
         window.dispatchEvent(new CustomEvent('refresh-workspaces'));
         if (!skipNavigate) {
-          navigate(`/workspaces/${result.id}`);
+          navigate(`/workspaces/${result.key || result.id}`);
         }
         close();
       } else if (selectedType === 'collection') {
@@ -399,7 +400,8 @@
   }
 
   async function applyWorkspace(workspaceId) {
-    const workspaceIdNum = Number.parseInt(String(workspaceId), 10);
+    const resolved = resolveWorkspaceIdParam(workspaceId);
+    const workspaceIdNum = typeof resolved === 'number' ? resolved : Number.parseInt(String(workspaceId), 10);
     if (!Number.isFinite(workspaceIdNum)) return;
 
     collectionFormData.workspace_id = workspaceIdNum;

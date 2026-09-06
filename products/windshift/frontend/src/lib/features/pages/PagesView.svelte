@@ -3,6 +3,8 @@
   import { api } from '../../api.js';
   import Input from '../../components/Input.svelte';
   import { navigate } from '../../router.js';
+  import { workspacesStore } from '../../stores/workspaces.svelte.js';
+  import { workspaceUrlSegment } from '../../utils/workspaceRouteParam.js';
   import LazyMilkdownEditor from '../../editors/LazyMilkdownEditor.svelte';
   import PagePermissionsDialog from './PagePermissionsDialog.svelte';
   import PageMoveDialog from './PageMoveDialog.svelte';
@@ -36,6 +38,10 @@
   /** Right-pane knowledge-page editor with sidebar-owned tree/actions and
    * debounced autosave instead of an explicit Save button. */
   let { workspaceId, pageId = null } = $props();
+
+  let workspaceUrlKey = $derived(
+    workspaceUrlSegment(workspaceId, $workspacesStore.allWorkspaces)
+  );
 
   // Coalesce typing without noticeably delaying autosave.
   const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -429,7 +435,7 @@
       dirty = false;
       saveStatus = 'idle';
       pagesTreeRefresh.bump();
-      navigate(`/workspaces/${workspaceId}/pages`);
+      navigate(`/workspaces/${workspaceUrlKey}/pages`);
     } catch (err) {
       error = err?.message || t('pages.errorArchive');
     }
@@ -561,7 +567,7 @@
       // auto-opens the browser print dialog once content has rendered.
       onClick: () =>
         window.open(
-          `/workspaces/${workspaceId}/pages/${selectedPage.id}/print`,
+          `/workspaces/${workspaceUrlKey}/pages/${selectedPage.slug || selectedPage.id}/print`,
           '_blank',
           'noopener'
         ),
@@ -874,7 +880,7 @@
       pagesTreeRefresh.bump();
       if (moved?.workspace_id !== workspaceId) {
         selectedPage = null;
-        navigate(`/workspaces/${workspaceId}/pages`);
+        navigate(`/workspaces/${workspaceUrlKey}/pages`);
         return;
       }
       if (selectedPage) await loadPage(selectedPage.id);

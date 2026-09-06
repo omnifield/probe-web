@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { api } from '../api.js';
 import { gradients } from '../utils/gradients.js';
 import { workspaceDataStore } from './workspaceDataStore.svelte.js';
+import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
 
 // Store for workspace gradient settings (using writable for compatibility with components using $ syntax)
 export const workspaceGradientIndex = writable(0); // Default to 0 (None)
@@ -82,7 +83,7 @@ export async function loadWorkspaceGradient(workspaceId, { force = false } = {})
 async function loadWorkspaceLayout(workspaceId, force) {
   if (force) return api.workspaces.getHomepageLayout(workspaceId);
   await workspaceDataStore.initialize(workspaceId);
-  const expectedID = Number.parseInt(String(workspaceId), 10);
+  const expectedID = resolveWorkspaceIdParam(workspaceId);
   if (
     workspaceDataStore.initialized &&
     workspaceDataStore.workspaceId === expectedID &&

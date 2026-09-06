@@ -1,11 +1,13 @@
 // pagesFilter shares session-only per-workspace sidebar labels without prop
 // drilling; workspace changes reset writing-first defaults.
 
-let activeWorkspaceId = $state(/** @type {number | null} */ (null));
+import { resolveWorkspaceIdParam } from '../../utils/workspaceRouteParam.js';
+
+let activeWorkspaceId = $state(/** @type {number | string | null} */ (null));
 let labelIds = $state(/** @type {Set<number>} */ (new Set()));
 
 function ensureWorkspace(workspaceId) {
-  const id = Number(workspaceId);
+  const id = resolveWorkspaceIdParam(workspaceId);
   if (activeWorkspaceId !== id) {
     activeWorkspaceId = id;
     labelIds = new Set();

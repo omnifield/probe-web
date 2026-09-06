@@ -14,6 +14,7 @@ import { currentRoute, GLOBAL_COLLECTION_VIEWS } from '../router.js';
 import { isExpectedBackgroundSyncError } from '../utils/backgroundSync.js';
 import { calcHasMore } from '../utils/paginationUtils.js';
 import { workspaceDataStore } from './workspaceDataStore.svelte.js';
+import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
 
 const COLLECTION_VIEWS = new Set([
   'workspace-board',
@@ -152,7 +153,7 @@ class CollectionStore {
       }
 
       // Workspace collection views
-      const wsId = $route.params?.id;
+      const wsId = resolveWorkspaceIdParam($route.params?.id);
       const colId = $route.params?.collectionId || null;
 
       if (!wsId || !COLLECTION_VIEWS.has(view)) {
