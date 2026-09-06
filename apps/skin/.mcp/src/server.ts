@@ -3,6 +3,7 @@ import { registerTools } from "./tools";
 
 const transport = process.env["SKIN_MCP_TRANSPORT"] === "http" ? "http" : "stdio";
 const port = Number(process.env["PORT"] ?? 3000);
+const host = process.env["SKIN_MCP_HOST"];
 
 const instructions = [
   "Разведка: list_components (что есть) → get_passport (части/состояния/настройки/io-схема",
@@ -18,6 +19,6 @@ const instructions = [
   "тоже проверяет перед записью и откажет тем же отчётом при флавах).",
 ].join(" ");
 
-const server = createServer({ name: "web-core-skin", version: "0.0.0", transport, instructions, registerTools });
+const server = createServer({ name: "web-core-skin", version: "0.0.0", transport, host, instructions, registerTools });
 
 await server.listen(port);
