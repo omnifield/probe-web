@@ -138,9 +138,15 @@
   const canManageActions = $derived.by(() => workspacePermissions.canManageActions(resolvedWorkspaceId));
   const canAdmin = $derived.by(() => workspacePermissions.canAdminWorkspace(resolvedWorkspaceId));
 
+  // Pages sits in the primary row next to Board/Backlog/Roadmap instead of
+  // the collapsible "workspace tools" section — it's checked often enough
+  // that hiding it behind an extra expand click added friction.
+  const pagesNavItem = workspaceOnlyViews.find((view) => view.id === 'pages');
+
   // Filter workspace-only views based on permissions
   const filteredWorkspaceOnlyViews = $derived.by(() => {
     return workspaceOnlyViews.filter(view => {
+      if (view.id === 'pages') return false;
       if (view.id === 'agents') return canAdmin;
       if (view.id === 'actions') return canManageActions;
       return true;
@@ -534,6 +540,9 @@
         {#each workspaceViewItems as view}
           {@render collapsedNavIcon({ href: getNavigationUrl(view.id), label: t(view.labelKey), icon: view.icon, isActive: $currentRoute.view === `workspace-${view.id}` })}
         {/each}
+        {#if pagesNavItem}
+          {@render collapsedNavIcon({ href: getNavigationUrl(pagesNavItem.id), label: t(pagesNavItem.labelKey), icon: pagesNavItem.icon, isActive: isWorkspaceViewActive(pagesNavItem) })}
+        {/if}
 
         {#if $moduleSettings.test_management_enabled && canViewTests && !currentCollectionId}
           {@render sectionDivider()}
@@ -584,8 +593,8 @@
     </div>
     {@render resizeHandle()}
   </div>
-{:else if $currentRoute.view === 'workspace-pages' || $currentRoute.view === 'workspace-pages-archived'}
-  <!-- Pages drilldown keeps the common workspace identity header and swaps the body for the page tree. -->
+{:else if $currentRoute.view === 'workspace-pages-archived'}
+  <!-- Archived-pages admin drilldown keeps the common workspace identity header and swaps the body for the page tree. -->
   <div
     class="sidebar-mode-panel relative h-full flex-shrink-0 {sidebarBgClass} border-r flex flex-col py-4"
     style="width: {sidebarWidth}px; min-width: {MIN_WIDTH}px; max-width: {MAX_WIDTH}px; {sidebarBgStyle}"
@@ -636,6 +645,9 @@
       {#each workspaceViewItems as view}
         {@render navLink({ href: getNavigationUrl(view.id), label: t(view.labelKey), tooltip: t(view.tooltipKey), icon: view.icon, testId: view.testId, isActive: $currentRoute.view === `workspace-${view.id}` })}
       {/each}
+      {#if pagesNavItem}
+        {@render navLink({ href: getNavigationUrl(pagesNavItem.id), label: t(pagesNavItem.labelKey), tooltip: t(pagesNavItem.tooltipKey), icon: pagesNavItem.icon, testId: pagesNavItem.testId, isActive: isWorkspaceViewActive(pagesNavItem) })}
+      {/if}
 
       {#if currentCollectionId}
         <div class="mt-4 pt-4 border-t" style="border-color: var(--ds-border);">

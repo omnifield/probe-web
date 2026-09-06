@@ -1,2 +1,9 @@
-export { componentsAtom, componentTreeAtom, currentComponent, setCurrentComponent, componentInfoAtom } from "./store";
+export {
+  componentsAtom,
+  componentTreeAtom,
+  currentComponent,
+  setCurrentComponent,
+  componentInfoAtom,
+  componentDataAtom,
+} from "./store";
 export type { TreeItemData } from "./tree";

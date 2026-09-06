@@ -31,6 +31,7 @@
   import { t } from '../../stores/i18n.svelte.js';
   import { pagesTreeRefresh } from './pagesTreeRefresh.svelte.js';
   import { pagesFocusTitle } from './pagesFocusTitle.svelte.js';
+  import PagesNavSidebar from './PagesNavSidebar.svelte';
   import { createPageAutosaveQueue } from './pageAutosaveQueue.js';
   import { mergePageUpdate } from './pageState.js';
   import { agentRuns } from '../../stores/agentRuns.svelte.js';
@@ -628,7 +629,11 @@
   });
 </script>
 
-<main class="page-pane" data-testid="pages-view">
+<div class="pages-view-layout">
+  <div class="pages-tree-pane">
+    <PagesNavSidebar {workspaceId} embedded />
+  </div>
+  <main class="page-pane" data-testid="pages-view">
   {#if error}
     <div class="error" role="alert" data-testid="page-error">{error}</div>
   {/if}
@@ -863,7 +868,8 @@
       </div>
     </div>
   {/if}
-</main>
+  </main>
+</div>
 
 {#if selectedPage}
   <PagePermissionsDialog
@@ -898,7 +904,26 @@
 {/if}
 
 <style>
+  .pages-view-layout {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .pages-tree-pane {
+    width: fit-content;
+    min-width: 200px;
+    max-width: 420px;
+    flex-shrink: 0;
+    height: 100%;
+    min-height: 0;
+    padding-right: 0.75rem;
+    border-right: 1px solid var(--ds-border);
+  }
+
   .page-pane {
+    flex: 1;
+    min-width: 0;
     height: 100%;
     overflow-y: auto;
     padding: 1.5rem 0;

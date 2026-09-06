@@ -46,8 +46,8 @@ export function Tree() {
         items: items(),
         selectionMode: "single",
         defaultExpandedValue: items().map((item) => item.id),
+        activeValue: activeValue(),
       }}
-      liveProps={{ activeValue: activeValue() }}
       data={{ items: items() }}
       dispatch={onDispatch}
     />

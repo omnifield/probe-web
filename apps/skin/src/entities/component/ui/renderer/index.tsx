@@ -10,7 +10,6 @@ export function Renderer(props: {
   assembly?: string;
   variant?: string;
   rootProps?: Readonly<Record<string, unknown>>;
-  liveProps?: Readonly<Record<string, unknown>>;
   data?: unknown;
   dispatch?: (event: DispatchedEvent) => void;
 }) {
@@ -26,13 +25,5 @@ export function Renderer(props: {
     ),
   );
 
-  return (
-    <RenderTree
-      tree={tree()}
-      registry={registry}
-      data={props.data}
-      dispatch={props.dispatch}
-      rootProps={props.liveProps}
-    />
-  );
+  return <RenderTree tree={tree()} registry={registry} data={props.data} dispatch={props.dispatch} />;
 }

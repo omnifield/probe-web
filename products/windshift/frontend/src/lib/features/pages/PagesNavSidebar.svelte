@@ -375,6 +375,18 @@
     try {
       const resp = await api.pages.getTree(workspaceId);
       pages = flattenDepthFirst(resp.tree || []);
+
+      // Landing on the bare /pages route with nothing selected — jump
+      // straight to the workspace's home page instead of an empty pane.
+      // Every workspace is expected to have one going forward; older
+      // workspaces without an is_home page just keep the empty state.
+      if ($currentRoute.view === 'workspace-pages' && !$currentRoute.params.pageId) {
+        const home = pages.find((p) => p.is_home);
+        if (home) {
+          navigate(`/workspaces/${workspaceUrlKey}/pages/${home.slug || home.id}`, { replace: true });
+        }
+      }
+
       // Cache every label we encounter so the filter row can render names
       // + colors for active filters without an extra round-trip.
       for (const page of pages) {
@@ -929,8 +941,9 @@
 
   .title-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
     padding: 0 0.25rem;
   }
 
