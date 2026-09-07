@@ -13,12 +13,21 @@ describe("rail/card/layout — шкалы ширины композиции", ()
     expect(scale!.steps.length).toBeGreaterThan(0);
   });
 
-  it.each(["rail-sm", "rail-md", "rail-lg", "card-sm", "card-md", "card-lg", "layout-sm", "layout-md", "layout-lg"])(
-    "ступень %s попадает в DERIVED_TOKENS",
-    (name) => {
-      expect(DERIVED_TOKENS).toContain(name);
-    },
-  );
+  const SUFFIXES = ["sm", "md", "lg", "xl", "xxl", "xxxl", "full"];
+  const STEP_NAMES = ["rail", "card", "layout"].flatMap((seed) => SUFFIXES.map((suffix) => `${seed}-${suffix}`));
+
+  it.each(STEP_NAMES)("ступень %s попадает в DERIVED_TOKENS", (name) => {
+    expect(DERIVED_TOKENS).toContain(name);
+  });
+
+  it("full — фиксированное значение 100%, не завязанное на плотность", () => {
+    for (const seed of ["rail", "card", "layout"] as const) {
+      const scale = DERIVED_SCALES.find((entry) => entry.seed === seed)!;
+      const full = scale.steps.find((step) => step.name === `${seed}-full`)!;
+
+      expect("value" in full && full.value).toBe("100%");
+    }
+  });
 
   it.each(["rail", "card", "layout"] as const)("%s объявлена в AXES той же единицей, что column/space (rem)", (seed) => {
     const axis = axisOf(seed);

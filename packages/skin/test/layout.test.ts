@@ -66,6 +66,13 @@ describe("railVar/cardVar/layoutVar — та же сверка со своей �
     expect(layoutVar("layout-sm")).toBe("var(--layout-sm)");
   });
 
+  it("resolves the xl/xxl/xxxl/full steps too", () => {
+    expect(railVar("rail-xl")).toBe("var(--rail-xl)");
+    expect(cardVar("card-xxl")).toBe("var(--card-xxl)");
+    expect(layoutVar("layout-xxxl")).toBe("var(--layout-xxxl)");
+    expect(railVar("rail-full")).toBe("var(--rail-full)");
+  });
+
   it("throws loudly for a step its own scale does not declare", () => {
     // @ts-expect-error — рантайм-проверка нужна ровно на случай, когда литеральный тип и шкала разошлись
     expect(() => railVar("rail-999")).toThrow(/rail-999/);

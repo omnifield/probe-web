@@ -10,6 +10,7 @@ import {
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
 import { layoutSelf } from "@web-core/skin";
+import { Chat } from "#/entities/chat";
 import { Info, Input, Tree } from "#/widgets/component";
 import { Header } from "#/widgets/header";
 
@@ -41,6 +42,9 @@ export function WorkspaceLayout() {
           </FlowItem>
           <FlowItem style={layoutSelf({ align: "stretch" })}>
             <Input />
+          </FlowItem>
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            <Chat />
           </FlowItem>
         </Flow>
       </WorkspaceRightbar>

@@ -33,7 +33,7 @@ export function spaceVar(token: SpaceToken): string {
   return scaleVar("space", KNOWN_SPACE_STEPS, token);
 }
 
-export type RailToken = "rail-sm" | "rail-md" | "rail-lg";
+export type RailToken = "rail-sm" | "rail-md" | "rail-lg" | "rail-xl" | "rail-xxl" | "rail-xxxl" | "rail-full";
 
 const KNOWN_RAIL_STEPS = knownSteps("rail");
 
@@ -41,7 +41,7 @@ export function railVar(token: RailToken): string {
   return scaleVar("rail", KNOWN_RAIL_STEPS, token);
 }
 
-export type CardToken = "card-sm" | "card-md" | "card-lg";
+export type CardToken = "card-sm" | "card-md" | "card-lg" | "card-xl" | "card-xxl" | "card-xxxl" | "card-full";
 
 const KNOWN_CARD_STEPS = knownSteps("card");
 
@@ -52,7 +52,14 @@ export function cardVar(token: CardToken): string {
 // Шкала "layout" (ширина области раскладки) и `layoutSelf`/`layoutGroup` (место элемента в потоке)
 // — разные понятия, случайно делящие корень имени. `layoutVar` возвращает токен ширины, к месту
 // элемента отношения не имеет.
-export type LayoutToken = "layout-sm" | "layout-md" | "layout-lg";
+export type LayoutToken =
+  | "layout-sm"
+  | "layout-md"
+  | "layout-lg"
+  | "layout-xl"
+  | "layout-xxl"
+  | "layout-xxxl"
+  | "layout-full";
 
 const KNOWN_LAYOUT_STEPS = knownSteps("layout");
 

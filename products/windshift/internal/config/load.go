@@ -108,6 +108,7 @@ func Load(frontend embed.FS, shutdownChan chan os.Signal) Config {
 	resolvedContextPath = normalizeContextPath(resolvedContextPath)
 
 	resolvedFormEmbedOrigins := os.Getenv("FORM_EMBED_ORIGINS")
+	resolvedPageEmbedOrigins := os.Getenv("PAGE_EMBED_ORIGINS")
 
 	// Booleans: flag OR env.
 	sshEnabled := *enableSSH || parseBoolEnv("SSH_ENABLED")
@@ -209,6 +210,7 @@ func Load(frontend embed.FS, shutdownChan chan os.Signal) Config {
 		AllowedHosts:      resolvedAllowedHosts,
 		AllowedPort:       *allowedPort,
 		FormEmbedOrigins:  resolvedFormEmbedOrigins,
+		PageEmbedOrigins:  resolvedPageEmbedOrigins,
 		UseProxy:          proxyVal,
 		UseProxyExplicit:  useProxyExplicit,
 		AdditionalProxies: resolvedAdditionalProxies,

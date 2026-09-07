@@ -101,6 +101,10 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
       { name: "rail-sm", factor: 0.75 },
       { name: "rail-md", factor: 1 },
       { name: "rail-lg", factor: 1.5 },
+      { name: "rail-xl", factor: 2 },
+      { name: "rail-xxl", factor: 2.5 },
+      { name: "rail-xxxl", factor: 3 },
+      { name: "rail-full", value: "100%" },
     ],
   },
   {
@@ -113,6 +117,10 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
       { name: "card-sm", factor: 0.75 },
       { name: "card-md", factor: 1 },
       { name: "card-lg", factor: 1.5 },
+      { name: "card-xl", factor: 2 },
+      { name: "card-xxl", factor: 2.5 },
+      { name: "card-xxxl", factor: 3 },
+      { name: "card-full", value: "100%" },
     ],
   },
   {
@@ -125,6 +133,10 @@ export const DERIVED_SCALES: readonly DerivedScale[] = [
       { name: "layout-sm", factor: 0.75 },
       { name: "layout-md", factor: 1 },
       { name: "layout-lg", factor: 1.5 },
+      { name: "layout-xl", factor: 2 },
+      { name: "layout-xxl", factor: 2.5 },
+      { name: "layout-xxxl", factor: 3 },
+      { name: "layout-full", value: "100%" },
     ],
   },
   {

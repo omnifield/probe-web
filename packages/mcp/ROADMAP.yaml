@@ -107,6 +107,69 @@ categories:
           от auth-хука, проход после верного заголовка), paginate — полный обход list по
           nextCursor. 15/15 зелёных (vitest run).
 
+  - category: Обмен с другими инстансами
+    items:
+      - id: peer-connector
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: httpPeer()/stdioPeer() — клиент к чужому MCP-серверу, ленивое подключение
+        description: |
+          Означает: любая зона может дозвониться до другого MCP-сервера (HTTP-адрес или локальный
+          процесс по stdio) и позвать его тул через один и тот же интерфейс ({callTool, close}) —
+          не пишет клиентский код заново на каждую пару зон. Подключение — на первый callTool, не
+          в момент вызова httpPeer/stdioPeer (объявить peer — не то же самое, что решить им
+          воспользоваться; ранний коннект открыл бы соединение или процесс впустую).
+          Причина: apps/skin/.mcp/src/engine/browser.ts был написан как разовый клиент к
+          chrome-devtools-mcp прямо в зоне — задача "дозвониться до другого MCP и позвать тул"
+          ничем не завязана на скин, её же назовёт прод-синк той же зоны (list_feedback с прод-
+          инстанса, push эталонов на прод). Перенесено сюда до второго использования, не после.
+
+      - id: stdio-peer-env-passthrough
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "stdioPeer(..., {env}) — явный проброс окружения дочернему процессу"
+        description: |
+          Означает: StdioPeerOptions получил третье поле env (Record<string,string|undefined>,
+          undefined-значения отфильтровываются перед передачей в StdioClientTransport) — не задано,
+          SDK по-прежнему даёт свой обрезанный безопасный набор (PATH/HOME/SHELL/USER/LOGNAME/TERM),
+          не весь process.env. Умолчание НЕ поменяно (осознанно: stdioPeer порой спавнит СТОРОННИЙ
+          процесс — chrome-devtools-mcp через npx в createBrowser — которому наши секреты видеть не
+          нужно, supply-chain-риск при полном наследовании по умолчанию).
+          Причина: живая финальная сверка apps/skin/.mcp перед первым деплоем на VPS прогнала
+          stdioPeer("pnpm",["start"]) с SKIN_MCP_ADMIN_AUTHOR/TOKEN/CHROME_EXECUTABLE в оболочке
+          теста — оба симптома (author-guard молча пропустил чужую перезапись, browser_screenshot
+          не нашёл Chrome) оказались одной причиной: дочерний процесс их не увидел вовсе. apps/skin/
+          .mcp/scripts/push-to-prod.mjs (спавнит СВОЙ ЖЕ локальный сервер тем же stdioPeer) чинится
+          тем же полем — env: process.env, доверенный случай, не сторонний процесс.
+          Проверено живьём и тестом: две новые строки в peer.test.ts (env не передан — фикстура не
+          видит свою переменную; env: process.env передан — видит) плюс повторный прогон полной
+          финальной сверки apps/skin/.mcp (17 тулов, author-guard/content/feedback/browser — все
+          зелёные после починки). 27/27 в packages/mcp (было 25).
+
+      - id: browser-proxy-factory
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: createBrowser() — обёртка над chrome-devtools-mcp (newPage/navigate/screenshot)
+        description: |
+          Означает: зона получает headless-браузер как три функции (newPage/navigate/screenshot)
+          поверх stdioPeer к chrome-devtools-mcp, без своего рендера — не переписывает то, что
+          внешний пакет уже поддерживает (--pageIdRouting, включён по умолчанию, "useful for
+          concurrent agent sessions" по его собственной документации). pageId — число, разобранное
+          регуляркой из текстового списка страниц ("`${N}: ... [selected]`") — реальный формат
+          ответа new_page/navigate_page, не структурированное поле (проверено живым вызовом, не по
+          документации). executablePath/chromeArgs — параметры фабрики, не хардкод: путь к
+          бинарнику Chrome и обязательные для контейнера флаги (--no-sandbox,
+          --disable-dev-shm-usage) отличаются между дев-контейнером и прод-VPS.
+          Причина: apps/skin/.mcp понадобился браузер для визуальной обратной связи внешнему
+          агенту — механика (процесс chrome-devtools-mcp, peer, парсинг pageId) не специфична
+          скину, унесена сюда до того, как обросла бы второй копией в следующей зоне.
+
   - category: Не в этом пакете
     items:
       - id: concrete-auth-verification
@@ -143,6 +206,25 @@ categories:
           зоне (например skin-mcp), не часть общего тулинга.
 
 log:
+  - id: browser-mechanic-moved-from-skin-mcp
+    type: plan
+    date: 2026-09-05
+    summary: >
+      User сформулировал прод-план apps/skin/.mcp (эталоны толкаются на VPS, заявки тянутся
+      обратно) и сразу указал: "тебе надо настроить просто базовые мехи для общения между
+      инстансами... я предлагаю это вынести в packages/mcp, бери сразу на себя". httpPeer/stdioPeer
+      написаны первыми (peer/index.ts, peer.test.ts — реальный round-trip: httpPeer против живого
+      createServer({transport:"http"}), stdioPeer против настоящего спавненного процесса-фикстуры
+      test/fixtures/stdio-ping-server.mjs, включая проверку "один процесс на весь peer, не на
+      каждый вызов" через process.pid). Пока шла правка apps/skin/.mcp/src/engine/browser.ts под
+      stdioPeer, user отдельным сообщением уточнил объём шире: "вот это [browser.ts] неси тоже в
+      общак, браузер нужен всем" — то есть не только связь, но и весь браузер-прокси целиком.
+      Добавлен browser/index.ts (createBrowser) и browser.test.ts (реальный headless Chromium,
+      skipIf без бинарника). apps/skin/.mcp/src/engine/browser.ts стал тонкой обёрткой (одна
+      строка вызова createBrowser со своим executablePath из SKIN_MCP_CHROME_EXECUTABLE) —
+      проверено живьём после переноса тем же способом (browser_navigate+browser_screenshot против
+      реального дев-сервера показа, настоящий PNG на выходе).
+
   - id: unknown-session-and-origin-review-fixes
     type: plan
     date: 2026-09-05

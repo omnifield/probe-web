@@ -18,6 +18,7 @@ type Config struct {
 	AllowedHosts      string
 	AllowedPort       string
 	FormEmbedOrigins  string
+	PageEmbedOrigins  string
 	UseProxy          bool
 	UseProxyExplicit  bool
 	AdditionalProxies string

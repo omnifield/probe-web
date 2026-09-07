@@ -4,10 +4,50 @@ import { err, ok, registerTool } from "@web-core/mcp";
 import { paginate } from "@web-core/mcp/pagination";
 import { OutfitRefused } from "@web-core/skin";
 import { DEFAULT_TAG, groupByTag, sortTags } from "@web-core/skin/tags";
-import { getPassport, listComponents, skin, checkAssembly, skinGaps, store, checkForm, checkPalette, checkTags } from "../engine";
+import {
+  browser,
+  checkAssembly,
+  checkContentData,
+  checkForm,
+  checkPalette,
+  checkTags,
+  getPassport,
+  listComponents,
+  skin,
+  skinGaps,
+  store,
+} from "../engine";
 
 const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 const looseRecord = z.looseObject({ name: z.string() });
+
+const ADMIN_AUTHOR = process.env["SKIN_MCP_ADMIN_AUTHOR"];
+const ADMIN_TOKEN = process.env["SKIN_MCP_ADMIN_TOKEN"];
+
+// Единственная жёсткая граница в этой зоне — эталоны (author защищённого имени) не переписывает
+// никто, кроме владельца токена. Всё остальное — свободно, любой агент пишет с любым author.
+async function authorGuard(
+  kind: string,
+  name: string,
+  nextAuthor: string | undefined,
+  adminToken: string | undefined,
+): Promise<string | undefined> {
+  if (!ADMIN_AUTHOR) return undefined;
+
+  const existing = await store.findByName(kind, name);
+  const currentAuthor = existing
+    ? ((await store.read(existing.id)).state as { author?: unknown })["author"]
+    : undefined;
+
+  const touchesAdmin = nextAuthor === ADMIN_AUTHOR || currentAuthor === ADMIN_AUTHOR;
+  if (!touchesAdmin) return undefined;
+
+  if (adminToken !== ADMIN_TOKEN) {
+    return `only "${ADMIN_AUTHOR}" may create or modify records authored as "${ADMIN_AUTHOR}" — missing or wrong adminToken`;
+  }
+
+  return undefined;
+}
 
 async function resolveTags(rawTags: unknown, where = "tags") {
   const requested = Array.isArray(rawTags) ? rawTags.filter((t): t is string => typeof t === "string") : [];
@@ -33,6 +73,17 @@ async function resolveVariantTags(form: Record<string, unknown>) {
 }
 
 export function registerTools(server: McpServer) {
+  // Своя вкладка на СЕССИЮ, не на весь сервер — registerTools зовётся заново на каждую новую
+  // сессию (@web-core/mcp/transport), значит замыкание здесь и есть та самая изоляция, ту же роль
+  // у store.ts играет пер-сессийная карта на уровне транспорта, здесь она не нужна — замыкания
+  // достаточно.
+  let pageId: number | undefined;
+
+  async function ensurePage(): Promise<number> {
+    if (pageId === undefined) pageId = await browser.newPage();
+    return pageId;
+  }
+
   registerTool(server, {
     name: "list_components",
     title: "Компоненты кита",
@@ -209,7 +260,10 @@ export function registerTools(server: McpServer) {
       "check_assembly (структура + bind/repeat.path против примера по io-схеме). Тег — одна и та же механика " +
       "на двух уровнях (наряд целиком / значение варианта формы): пусто считается [\"default\"], неизвестный " +
       "тег — флав unknown-tag той же формы, что unknown-palette. Флав — отказ до записи, служба не тронута. " +
-      "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени.",
+      "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени. " +
+      "author — просто атрибуция (кто сохранил), ни на что не влияет, ЕСЛИ не совпадает с защищённым " +
+      "именем этой службы — тогда без верного adminToken отказ до записи (единственная жёсткая " +
+      "граница в этой зоне: эталоны своего автора не переписывает никто чужой).",
     access: "write",
     input: z.object({
       kind: KIND,
@@ -221,32 +275,40 @@ export function registerTools(server: McpServer) {
         ),
       label: z.string().optional(),
       paletteName: z.string().optional().describe("для kind=form — какую палитру сверять, см. check_form"),
+      author: z.string().optional().describe("кто сохранил — атрибуция; см. adminToken про защищённое имя"),
+      adminToken: z
+        .string()
+        .optional()
+        .describe("нужен, только если author (свой или уже существующей записи) — защищённое имя службы"),
     }),
-    handler: async ({ kind, state, label, paletteName }) => {
-      let stateToSave: typeof state = state;
+    handler: async ({ kind, state, label, paletteName, author, adminToken }) => {
+      const guardFlaw = await authorGuard(kind, state.name, author, adminToken);
+      if (guardFlaw) return err(guardFlaw);
+
+      let stateToSave: typeof state = author !== undefined ? { ...state, author } : state;
 
       if (kind === "palette") {
-        const result = await checkPalette(state as never);
+        const result = await checkPalette(stateToSave as never);
         if (!result.ok) return ok(result);
       } else if (kind === "form") {
-        const { variantTags, flaws: tagFlaws } = await resolveVariantTags(state as Record<string, unknown>);
+        const { variantTags, flaws: tagFlaws } = await resolveVariantTags(stateToSave as Record<string, unknown>);
         if (tagFlaws.length > 0) return ok({ ok: false, referenceFlaws: tagFlaws, structuralFlaws: [] });
-        stateToSave = { ...state, variantTags };
+        stateToSave = { ...stateToSave, variantTags };
 
         const result = await checkForm(stateToSave as never, paletteName);
         if (!result.ok) return ok(result);
       } else if (kind === "outfit") {
-        const { tags, flaws: tagFlaws } = await resolveTags(state);
+        const { tags, flaws: tagFlaws } = await resolveTags(stateToSave);
         if (tagFlaws.length > 0) return ok({ ok: false, flaws: tagFlaws });
-        stateToSave = { ...state, tags };
+        stateToSave = { ...stateToSave, tags };
 
         const palettes = await store.readPalettes();
         const forms = await store.readForms();
         const flaws = skin.checkOutfit(stateToSave as never, { palettes, forms });
         if (flaws.length > 0) return ok({ ok: false, flaws });
       } else if (kind === "assembly") {
-        const component = (state as { component?: unknown })["component"];
-        const assembly = (state as { assembly?: unknown })["assembly"];
+        const component = (stateToSave as { component?: unknown })["component"];
+        const assembly = (stateToSave as { assembly?: unknown })["assembly"];
         if (typeof component !== "string" || !assembly) {
           return err('assembly state needs "component" (string) and "assembly" (PassportAssembly)');
         }
@@ -255,6 +317,149 @@ export function registerTools(server: McpServer) {
       }
 
       return ok({ saved: await store.replace(kind, stateToSave.name, stateToSave, label) });
+    },
+  });
+
+  registerTool(server, {
+    name: "report_feedback",
+    title: "Оставить репорт по ручке",
+    description:
+      "Лёгкий сигнал «тут не так» по любой ручке этого MCP — не тикет и не заявка на разбор прямо " +
+      "сейчас, просто сырая заметка: какую ручку звали, что сделали, что ожидали, что получили. " +
+      "Ничего не проверяется и не анализируется на этой стороне — раз в службу пресетов, тем же " +
+      "kind-агностичным хранилищем, что и palette/form/outfit/assembly/tag, но отдельным kind:" +
+      "\"feedback\", не смешивается с ними в list_presets. Живёт в этой службе, а не у платформы " +
+      "агента — переживает смену агента/сессии/платформы.",
+    access: "write",
+    input: z.object({
+      tool: z.string().describe("имя ручки этого MCP, к которой относится репорт"),
+      action: z.string().describe("что сделали — вызов и с чем, своими словами"),
+      expected: z.string().optional().describe("что ожидали получить"),
+      actual: z.string().describe("что получили на самом деле"),
+    }),
+    handler: async ({ tool, action, expected, actual }) => {
+      const name = `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const state = { tool, action, expected, actual, at: new Date().toISOString() };
+      return ok({ saved: await store.save("feedback", name, state, `${tool}: ${actual.slice(0, 60)}`) });
+    },
+  });
+
+  registerTool(server, {
+    name: "list_feedback",
+    title: "Прочитать репорты",
+    description:
+      "Читает report_feedback обратно — постранично (cursor/limit, по умолчанию 50), каждый элемент уже с " +
+      "содержимым (tool/action/expected/actual/at), не только id/label: репорт мал, второй шаг (get_preset) " +
+      "тут не нужен. kind:\"feedback\" не входит в list_presets/get_preset по той же причине, по которой не " +
+      "смешивается с palette/form/outfit/assembly/tag там — своя ручка на чтение, своя на запись.",
+    access: "read",
+    input: z.object({
+      cursor: z.string().optional().describe("курсор из предыдущей страницы"),
+      limit: z.number().int().positive().optional(),
+    }),
+    handler: async ({ cursor, limit }) => {
+      const page = paginate(await store.list("feedback"), { cursor, limit });
+      const items = await Promise.all(page.items.map((record) => store.read(record.id)));
+      return ok({ items, nextCursor: page.nextCursor });
+    },
+  });
+
+  registerTool(server, {
+    name: "save_content",
+    title: "Сохранить данные для наполнения компонента",
+    description:
+      "Кладёт РЕАЛЬНЫЕ данные (не абстрактный мок) под конкретный компонент — то, чем можно заполнить bind/" +
+      "repeat.path сборки при живом просмотре (browser_navigate), вместо случайного значения из io-схемы. " +
+      "Перед записью сверяет data с io-схемой компонента (get_passport().io.input) — несовпадение отказывает " +
+      "флавом, не тихой записью мусора; у компонента без io-схемы (например table — свои props, не bind по " +
+      "IO) сверять нечем, проходит без проверки. kind:\"content\" — ещё один бесплатный вид (backend/presets " +
+      "не толкует kind), отдельно от palette/form/outfit/assembly/tag/feedback. author/adminToken — та же " +
+      "граница, что и у save_preset.",
+    access: "write",
+    input: z.object({
+      component: z.string().describe("имя компонента, оно же data-scope из паспорта"),
+      name: z.string().describe("имя ЭТОГО набора данных, не компонента — можно завести несколько на компонент"),
+      data: z.unknown().describe("данные вида, ожидаемого io-схемой компонента"),
+      label: z.string().optional(),
+      author: z.string().optional().describe("кто сохранил — атрибуция; см. adminToken про защищённое имя"),
+      adminToken: z.string().optional(),
+    }),
+    handler: async ({ component, name, data, label, author, adminToken }) => {
+      const guardFlaw = await authorGuard("content", name, author, adminToken);
+      if (guardFlaw) return err(guardFlaw);
+
+      const check = checkContentData(component, data);
+      if (!check.ok) return ok(check);
+
+      const state = author !== undefined ? { component, data, author } : { component, data };
+      return ok({ saved: await store.replace("content", name, state, label) });
+    },
+  });
+
+  registerTool(server, {
+    name: "list_content",
+    title: "Перечень сохранённых данных наполнения",
+    description:
+      "Что уже лежит в kind:\"content\", постранично (cursor/limit, по умолчанию 50), сразу с содержимым " +
+      "(component/data), не только id/label — второй проход не нужен. Необязательный component сужает до " +
+      "наборов ИМЕННО этого компонента.",
+    access: "read",
+    input: z.object({
+      component: z.string().optional(),
+      cursor: z.string().optional(),
+      limit: z.number().int().positive().optional(),
+    }),
+    handler: async ({ component, cursor, limit }) => {
+      const records = await store.list("content");
+      const entries = await Promise.all(records.map((record) => store.read(record.id)));
+      const matching = component
+        ? entries.filter((entry) => (entry.state as { component?: unknown })["component"] === component)
+        : entries;
+      return ok(paginate(matching, { cursor, limit }));
+    },
+  });
+
+  registerTool(server, {
+    name: "get_content",
+    title: "Содержимое набора данных наполнения",
+    description: "Один набор данных по имени (см. list_content) — конверт целиком, .state есть {component, data}.",
+    access: "read",
+    input: z.object({ name: z.string() }),
+    handler: async ({ name }) => {
+      const record = await store.findByName("content", name);
+      if (!record) return err(`no content record named "${name}"`);
+      return ok(await store.read(record.id));
+    },
+  });
+
+  registerTool(server, {
+    name: "browser_navigate",
+    title: "Открыть страницу в браузере сервера",
+    description:
+      "Переходит по URL в СВОЕЙ вкладке headless-браузера этого сервера — одна вкладка на эту MCP-" +
+      "сессию, заводится при первом вызове, живёт до конца сессии. Отдельный процесс от чьего-либо " +
+      "интерактивного браузера (свой профиль, --isolated) — сессии друг другу не мешают. Обычный " +
+      "адрес — витрина apps/skin, например http://127.0.0.1:5174/showcase/<component>/<tag> — " +
+      "реальный рендер сохранённого наряда, не только CSS-текст assemble_preview.",
+    access: "read",
+    input: z.object({ url: z.string().describe("куда перейти") }),
+    handler: async ({ url }) => {
+      const id = await ensurePage();
+      return ok({ report: await browser.navigate(id, url) });
+    },
+  });
+
+  registerTool(server, {
+    name: "browser_screenshot",
+    title: "Скриншот текущей страницы",
+    description:
+      "PNG текущей страницы своей вкладки (см. browser_navigate — сначала туда перейти). " +
+      "Единственный способ в этой зоне реально УВИДЕТЬ вид, а не прочитать CSS-текст.",
+    access: "read",
+    handler: async () => {
+      if (pageId === undefined) return err("no page yet — call browser_navigate first");
+      const { mimeType, base64 } = await browser.screenshot(pageId);
+      return { content: [{ type: "image", data: base64, mimeType }], isError: false };
     },
   });
 }

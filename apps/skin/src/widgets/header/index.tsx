@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from "@web-core/router";
 import { createMemo, For } from "solid-js";
 
 import { ThemeSwitch } from "#/shared/ui/theme-switch";
+import { Auth } from "#/entities/user";
 
 const SCREENS = [
   { value: "lab", label: "Lab", to: "/lab" },
@@ -58,7 +59,10 @@ export function Header() {
         </SegmentGroup>
       </FlowItem>
       <FlowItem>
-        <ThemeSwitch />
+        <Flow>
+          <ThemeSwitch />
+          <Auth />
+        </Flow>
       </FlowItem>
     </Flow>
   );

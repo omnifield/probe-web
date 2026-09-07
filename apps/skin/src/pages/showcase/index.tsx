@@ -31,8 +31,11 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
 
   function onDispatch(event: DispatchedEvent) {
     component.recordEvent(event);
+    // event.timestamp — ISO-строка (`new Date().toISOString()`), формат уже несёт всё — берём
+    // только часы:минуты:секунды, без даты и миллисекунд.
+    const time = event.timestamp.slice(11, 19);
     toast.create({
-      title: event.name,
+      title: `${event.name}\n${time}`,
       description: JSON.stringify(event.context["payload"], null, 2),
     });
   }

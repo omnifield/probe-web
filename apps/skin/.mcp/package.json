@@ -8,6 +8,7 @@
   "scripts": {
     "start": "web-core-node src/index.ts",
     "dev": "web-core-node watch src/index.ts",
+    "push-to-prod": "node scripts/push-to-prod.mjs",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck"
