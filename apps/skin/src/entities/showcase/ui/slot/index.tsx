@@ -1,8 +1,10 @@
 // СЛОТ ПОКАЗА — место витрины, куда ставится показываемое. Сверху навигация по сборкам
 // (Segment Group), ниже одна горизонтальная карусель по вариантам.
 import type { DispatchedEvent } from "@web-core/assembly";
+import { layoutSelf } from "@web-core/skin";
 import type { PassportAssembly } from "@web-core/skin/editor";
 import { Renderer } from "#/entities/component";
+import { slotSizeOf } from "#/entities/component/utils/slot-size";
 import {
   Carousel,
   CarouselControl,
@@ -22,7 +24,6 @@ import {
   Typography,
   type CarouselProps,
   Surface,
-  FlowItem,
 } from "@web-core/ui";
 import { createEffect, createSignal, For } from "solid-js";
 
@@ -74,46 +75,45 @@ export function Slot(props: {
             )}
           </For>
         </SegmentGroup>
-        <FlowItem stretch>
-          <Carousel
-            data-variant="plain"
-            slideCount={props.variants.length}
-            defaultPage={props.defaultPage}
-            page={props.page}
-            onPageChange={(details) => {
-              setCurrentPage(details.page);
-              props.onPageChange?.(details);
-            }}
-          >
-            <CarouselControl>
-              <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-              <CarouselProgressText>
-                <Typography>{props.variants[currentPage()]}</Typography>
-              </CarouselProgressText>
-              <CarouselNextTrigger>›</CarouselNextTrigger>
-            </CarouselControl>
-            <CarouselItemGroup>
-              <For each={props.variants}>
-                {(variant, index) => (
-                  <CarouselItem index={index()}>
-                    <Renderer
-                      component={props.component}
-                      assembly={currentAssembly()}
-                      variant={variant}
-                      data={props.data}
-                      dispatch={props.dispatch}
-                    />
-                  </CarouselItem>
-                )}
-              </For>
-            </CarouselItemGroup>
-            <CarouselIndicatorGroup>
-              <For each={props.variants}>
-                {(_variant, index) => <CarouselIndicator index={index()} />}
-              </For>
-            </CarouselIndicatorGroup>
-          </Carousel>
-        </FlowItem>
+        <Carousel
+          style={layoutSelf({ align: "stretch" })}
+          data-variant="plain"
+          slideCount={props.variants.length}
+          defaultPage={props.defaultPage}
+          page={props.page}
+          onPageChange={(details) => {
+            setCurrentPage(details.page);
+            props.onPageChange?.(details);
+          }}
+        >
+          <CarouselControl>
+            <CarouselPrevTrigger>‹</CarouselPrevTrigger>
+            <CarouselProgressText>
+              <Typography>{props.variants[currentPage()]}</Typography>
+            </CarouselProgressText>
+            <CarouselNextTrigger>›</CarouselNextTrigger>
+          </CarouselControl>
+          <CarouselItemGroup style={slotSizeOf(props.component)}>
+            <For each={props.variants}>
+              {(variant, index) => (
+                <CarouselItem index={index()}>
+                  <Renderer
+                    component={props.component}
+                    assembly={currentAssembly()}
+                    variant={variant}
+                    data={props.data}
+                    dispatch={props.dispatch}
+                  />
+                </CarouselItem>
+              )}
+            </For>
+          </CarouselItemGroup>
+          <CarouselIndicatorGroup>
+            <For each={props.variants}>
+              {(_variant, index) => <CarouselIndicator index={index()} />}
+            </For>
+          </CarouselIndicatorGroup>
+        </Carousel>
       </Flow>
     </Surface>
   );

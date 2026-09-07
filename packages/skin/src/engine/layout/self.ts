@@ -1,7 +1,6 @@
 
-import type { StyleObject } from "../recipe/index.js";
 import { spaceVar, type SpaceToken } from "./tokens.js";
-import type { AlignPosition } from "./types.js";
+import type { AlignPosition, NativeStyle } from "./types.js";
 
 export interface LayoutSelfProps {
   readonly grow?: boolean;
@@ -16,7 +15,7 @@ export interface LayoutSelfProps {
 // детей. Ключи выходят kebab-case: так реально пишут `style={{...}}` в этом репо (см.
 // apps/skin/src/shared/ui/theme-switch), а не camelCase, как в рецептах скина — тот формат идёт
 // через порождение CSS и здесь ни при чём.
-export function layoutSelf(input: LayoutSelfProps): StyleObject {
+export function layoutSelf(input: LayoutSelfProps): NativeStyle {
   const style: Record<string, string> = {};
 
   if (input.grow !== undefined) style["flex-grow"] = input.grow ? "1" : "0";

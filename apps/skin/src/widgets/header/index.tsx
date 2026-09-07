@@ -10,6 +10,7 @@ import {
   FlowItem,
   Flow,
 } from "@web-core/ui";
+import { layoutGroup } from "@web-core/skin";
 import { useLocation, useNavigate } from "@web-core/router";
 import { createMemo, For } from "solid-js";
 
@@ -37,27 +38,27 @@ export function Header() {
   };
 
   return (
-    <Surface>
-      <Flow>
-        <FlowItem>
-          <SegmentGroup
-            value={screen()}
-            onValueChange={onValueChange}
-            orientation="horizontal"
-          >
-            <SegmentGroupIndicator />
-            <For each={SCREENS}>
-              {(item) => (
-                <SegmentGroupItem value={item.value}>
-                  <SegmentGroupItemControl />
-                  <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
-                </SegmentGroupItem>
-              )}
-            </For>
-          </SegmentGroup>
-        </FlowItem>
+    <Flow style={layoutGroup({ justify: "space-between" })}>
+      <FlowItem>
+        <SegmentGroup
+          value={screen()}
+          onValueChange={onValueChange}
+          orientation="horizontal"
+        >
+          <SegmentGroupIndicator />
+          <For each={SCREENS}>
+            {(item) => (
+              <SegmentGroupItem value={item.value}>
+                <SegmentGroupItemControl />
+                <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
+              </SegmentGroupItem>
+            )}
+          </For>
+        </SegmentGroup>
+      </FlowItem>
+      <FlowItem>
         <ThemeSwitch />
-      </Flow>
-    </Surface>
+      </FlowItem>
+    </Flow>
   );
 }

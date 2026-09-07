@@ -36,16 +36,21 @@ import { createMemo, createResource, For, onMount, Show } from "solid-js";
 
 /** Адрес службы раздачи — задаётся снаружи, умолчание — служба на этой машине. */
 const PRESETS_URL =
-  (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ?? "http://127.0.0.1:8787/api/presets";
+  (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ??
+  "http://127.0.0.1:8787/api/presets";
 
 /** Наряд, который надеваем на первом заходе, если запомненного нет — единственный сегодня в службе. */
 const DEFAULT_SKIN = "omnifield";
 
-const SOURCE = createPresetsSkinSource({ url: PRESETS_URL, lookup: passportOf });
+const SOURCE = createPresetsSkinSource({
+  url: PRESETS_URL,
+  lookup: passportOf,
+});
 
 /** Причина отказа — короткой строкой человеку, не в отладчик. */
 function reasonOf(cause: unknown): string {
-  if (cause instanceof PresetsDown) return `${cause.message} · служба раздачи не отвечает`;
+  if (cause instanceof PresetsDown)
+    return `${cause.message} · служба раздачи не отвечает`;
   if (cause instanceof PresetsRefused) return cause.message;
   return cause instanceof Error ? cause.message : String(cause);
 }
@@ -56,24 +61,38 @@ interface SkinItem {
 }
 
 export function ThemeSwitch() {
-  const skin = createSkinConnection(SOURCE, { fallback: { skin: DEFAULT_SKIN, mode: "light" } });
+  const skin = createSkinConnection(SOURCE, {
+    fallback: { skin: DEFAULT_SKIN, mode: "light" },
+  });
 
   const [names] = createResource(() => SOURCE.names());
-  const items = createMemo((): SkinItem[] => (names() ?? []).map((name) => ({ value: name, label: name })));
+  const items = createMemo((): SkinItem[] =>
+    (names() ?? []).map((name) => ({ value: name, label: name })),
+  );
 
   onMount(() => {
-    skin.restore().catch((cause: unknown) => console.debug("скин не надет", cause));
+    skin
+      .restore()
+      .catch((cause: unknown) => console.debug("скин не надет", cause));
   });
 
   const dark = createMemo(() => skin.worn()?.mode === "dark");
 
   const trouble = (): string | null => {
     if (names.error !== undefined) return reasonOf(names.error);
-    return names() !== undefined && names()!.length === 0 ? "Нарядов в службе нет" : null;
+    return names() !== undefined && names()!.length === 0
+      ? "Нарядов в службе нет"
+      : null;
   };
 
   return (
-    <div style={{ display: "flex", "align-items": "center", gap: "var(--space-3)" }}>
+    <div
+      style={{
+        display: "flex",
+        "align-items": "center",
+        gap: "var(--space-3)",
+      }}
+    >
       <Show when={trouble()}>{(said) => <span>{said()}</span>}</Show>
 
       <Select
@@ -82,7 +101,9 @@ export function ThemeSwitch() {
         onValueChange={(details) => {
           const name = details.value[0];
           if (name !== undefined) {
-            void skin.wear(name).catch((cause: unknown) => console.debug("скин не надет", cause));
+            void skin
+              .wear(name)
+              .catch((cause: unknown) => console.debug("скин не надет", cause));
           }
         }}
       >

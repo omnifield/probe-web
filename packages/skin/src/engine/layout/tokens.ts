@@ -1,8 +1,20 @@
 
 import { DERIVED_SCALES } from "@web-core/style";
 
-// Литералы держат в паре со ступенями шкалы "space" (packages/style/src/engine/dimension.ts).
-// Рассинхрон не проходит молча: `spaceVar` сверяется с самой шкалой в рантайме, а не с этим списком.
+function knownSteps(seed: string): ReadonlySet<string> {
+  return new Set(DERIVED_SCALES.find((scale) => scale.seed === seed)!.steps.map((step) => step.name));
+}
+
+function scaleVar(seed: string, known: ReadonlySet<string>, token: string): string {
+  if (!known.has(token)) {
+    throw new Error(`layout: "${token}" is not a step of the "${seed}" scale — known: ${[...known].join(", ")}`);
+  }
+
+  return `var(--${token})`;
+}
+
+// Литералы держат в паре со ступенями одноимённой шкалы (packages/style/src/engine/dimension.ts).
+// Рассинхрон не проходит молча: каждый `*Var` сверяется с самой шкалой в рантайме, а не с этим списком.
 export type SpaceToken =
   | "space-1"
   | "space-2"
@@ -15,16 +27,35 @@ export type SpaceToken =
   | "space-24"
   | "space-32";
 
-const KNOWN_SPACE_STEPS: ReadonlySet<string> = new Set(
-  DERIVED_SCALES.find((scale) => scale.seed === "space")!.steps.map((step) => step.name),
-);
+const KNOWN_SPACE_STEPS = knownSteps("space");
 
 export function spaceVar(token: SpaceToken): string {
-  if (!KNOWN_SPACE_STEPS.has(token)) {
-    throw new Error(
-      `layout: "${token}" is not a step of the "space" scale — known: ${[...KNOWN_SPACE_STEPS].join(", ")}`,
-    );
-  }
+  return scaleVar("space", KNOWN_SPACE_STEPS, token);
+}
 
-  return `var(--${token})`;
+export type RailToken = "rail-sm" | "rail-md" | "rail-lg";
+
+const KNOWN_RAIL_STEPS = knownSteps("rail");
+
+export function railVar(token: RailToken): string {
+  return scaleVar("rail", KNOWN_RAIL_STEPS, token);
+}
+
+export type CardToken = "card-sm" | "card-md" | "card-lg";
+
+const KNOWN_CARD_STEPS = knownSteps("card");
+
+export function cardVar(token: CardToken): string {
+  return scaleVar("card", KNOWN_CARD_STEPS, token);
+}
+
+// Шкала "layout" (ширина области раскладки) и `layoutSelf`/`layoutGroup` (место элемента в потоке)
+// — разные понятия, случайно делящие корень имени. `layoutVar` возвращает токен ширины, к месту
+// элемента отношения не имеет.
+export type LayoutToken = "layout-sm" | "layout-md" | "layout-lg";
+
+const KNOWN_LAYOUT_STEPS = knownSteps("layout");
+
+export function layoutVar(token: LayoutToken): string {
+  return scaleVar("layout", KNOWN_LAYOUT_STEPS, token);
 }

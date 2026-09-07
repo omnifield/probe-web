@@ -1,7 +1,8 @@
 import { Flow, FlowItem, Toc, Surface, Typography } from "@web-core/ui";
+import { layoutSelf } from "@web-core/skin";
 import { useNavigate } from "@web-core/router";
 import { useAtom } from "@web-core/store";
-import { createEffect, createMemo, For } from "solid-js";
+import { createEffect, createMemo, For, Show } from "solid-js";
 
 import {
   componentDataAtom,
@@ -9,6 +10,12 @@ import {
   setCurrentComponent,
 } from "#/entities/component";
 import { Slot } from "#/entities/showcase";
+
+// ВРЕМЕННЫЙ ФИЛЬТР (тот же приём, что `entities/component/model/list.ts`) — витрина показывает
+// только доведённые компоненты, у остальных пока "не доступно". Список пуст → все отключены;
+// готов скин — имя добавляется сюда одной строкой. Убрать вместе с фильтром списка, когда
+// доведены все.
+const ENABLED: readonly string[] = ["button"];
 
 export function ShowcasePage(props: { component: string; tag?: string }) {
   createEffect(() => setCurrentComponent(props.component));
@@ -19,23 +26,26 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
     () => component.info()?.editorInfo?.assemblies ?? [],
   );
   const tagGroups = createMemo(() => component.info()?.skin?.tags ?? []);
+  const available = createMemo(() => ENABLED.includes(props.component));
 
   return (
-    <Flow data-variant="column-center">
-      <For each={tagGroups()}>
-        {(tag) => (
-          <FlowItem stretch>
-            <Slot
-              component={props.component}
-              assemblies={assemblies()}
-              tag={tag.tag}
-              variants={tag.variants}
-              data={data()}
-              dispatch={component.recordEvent}
-            />
-          </FlowItem>
-        )}
-      </For>
-    </Flow>
+    <Show when={available()} fallback={<p>не доступно</p>}>
+      <Flow data-variant="column-center">
+        <For each={tagGroups()}>
+          {(tag) => (
+            <FlowItem style={layoutSelf({ align: "stretch" })}>
+              <Slot
+                component={props.component}
+                assemblies={assemblies()}
+                tag={tag.tag}
+                variants={tag.variants}
+                data={data()}
+                dispatch={component.recordEvent}
+              />
+            </FlowItem>
+          )}
+        </For>
+      </Flow>
+    </Show>
   );
 }

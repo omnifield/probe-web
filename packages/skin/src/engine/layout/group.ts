@@ -1,7 +1,6 @@
 
-import type { StyleObject } from "../recipe/index.js";
 import { spaceVar, type SpaceToken } from "./tokens.js";
-import type { AlignPosition, ContentDistribution, FlexDirection } from "./types.js";
+import type { AlignPosition, ContentDistribution, FlexDirection, NativeStyle } from "./types.js";
 
 export interface LayoutGroupProps {
   readonly align?: AlignPosition;
@@ -15,7 +14,7 @@ export interface LayoutGroupProps {
 // элемента (`layoutSelf`). Имя то же (`align`/`justify`), но точка входа решает, в какое CSS-свойство
 // оно ляжет: align-items/justify-content здесь, align-self/justify-self — там. Смешивать оба смысла
 // в одном плоском объекте намеренно не стали — это и была бы та самая тихая неоднозначность.
-export function layoutGroup(input: LayoutGroupProps): StyleObject {
+export function layoutGroup(input: LayoutGroupProps): NativeStyle {
   const style: Record<string, string> = {};
 
   if (input.align !== undefined) style["align-items"] = input.align;

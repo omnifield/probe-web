@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { layoutGroup, layoutSelf, spaceVar } from "../src/engine/layout/index.js";
+import { cardVar, layoutGroup, layoutSelf, layoutVar, railVar, spaceVar } from "../src/engine/layout/index.js";
 
 describe("layoutSelf — место одного элемента в чужом потоке", () => {
   it("maps grow/shrink to flex-grow/flex-shrink", () => {
@@ -56,5 +56,27 @@ describe("spaceVar — не рассинхронится молча со шка�
   it("throws loudly for a step the scale does not declare", () => {
     // @ts-expect-error — рантайм-проверка нужна ровно на случай, когда литеральный тип и шкала разошлись
     expect(() => spaceVar("space-999")).toThrow(/space-999/);
+  });
+});
+
+describe("railVar/cardVar/layoutVar — та же сверка со своей шкалой", () => {
+  it("resolves each scale's known steps to its custom property", () => {
+    expect(railVar("rail-md")).toBe("var(--rail-md)");
+    expect(cardVar("card-lg")).toBe("var(--card-lg)");
+    expect(layoutVar("layout-sm")).toBe("var(--layout-sm)");
+  });
+
+  it("throws loudly for a step its own scale does not declare", () => {
+    // @ts-expect-error — рантайм-проверка нужна ровно на случай, когда литеральный тип и шкала разошлись
+    expect(() => railVar("rail-999")).toThrow(/rail-999/);
+    // @ts-expect-error — то же для card
+    expect(() => cardVar("card-999")).toThrow(/card-999/);
+    // @ts-expect-error — то же для layout
+    expect(() => layoutVar("layout-999")).toThrow(/layout-999/);
+  });
+
+  it("does not cross-accept another scale's step name", () => {
+    // @ts-expect-error — "space-4" не ступень шкалы "rail"
+    expect(() => railVar("space-4")).toThrow(/"rail" scale/);
   });
 });

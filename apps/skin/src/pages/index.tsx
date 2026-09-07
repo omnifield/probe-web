@@ -7,9 +7,10 @@ import {
   WorkspaceSidebar,
   Surface,
   Flow,
+  FlowItem,
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
-
+import { layoutSelf, railVar } from "@web-core/skin";
 import { Info, Input, Output, Tree } from "#/widgets/component";
 import { Header } from "#/widgets/header";
 
@@ -27,9 +28,9 @@ export function WorkspaceLayout() {
       </WorkspaceSidebar>
 
       <WorkspaceHeader>
-        <Flow>
+        <Surface data-variant="filled">
           <Header />
-        </Flow>
+        </Surface>
       </WorkspaceHeader>
 
       <WorkspaceMain>
@@ -41,9 +42,15 @@ export function WorkspaceLayout() {
       <WorkspaceRightbar>
         <Surface data-variant="filled">
           <Flow data-variant="column-center">
-            <Info />
-            <Input />
-            <Output />
+            <FlowItem style={layoutSelf({ align: "stretch" })}>
+              <Info />
+            </FlowItem>
+            <FlowItem style={layoutSelf({ align: "stretch" })}>
+              <Input />
+            </FlowItem>
+            <FlowItem style={layoutSelf({ align: "stretch" })}>
+              <Output />
+            </FlowItem>
           </Flow>
         </Surface>
       </WorkspaceRightbar>
