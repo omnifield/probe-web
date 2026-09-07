@@ -14,3 +14,13 @@ export type {
   UnreckonableReason,
 } from "./contrast/index.js";
 export { INDISTINCT, skinContrast } from "./contrast/index.js";
+
+export type {
+  AlignPosition,
+  ContentDistribution,
+  FlexDirection,
+  LayoutGroupProps,
+  LayoutSelfProps,
+  SpaceToken,
+} from "./layout/index.js";
+export { layoutGroup, layoutSelf, spaceVar } from "./layout/index.js";

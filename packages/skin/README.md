@@ -32,7 +32,7 @@
 | Часть | Адрес | Экспортирует |
 |---|---|---|
 | Модель (срез рантайма) | `@web-core/skin/model` | `ComponentPassport`, `PassportAnatomy`, `PassportPart`, `PassportSetting*`, `PassportVariantAxis`, `definePassport`, `createAnatomy`, `defineSettings`, `SETTINGS`, `settingApplies`, `addressesView`, `PassportLookup`, `passportLookup`, `coordinateOf`, `partOf`, `SkinAncestor`, `SkinCoordinate`, `BoundModel`, `withPassports`, `SkinGap(Kind)`, `skinGaps`, `GROW_SHRINK_BLOCK/INLINE`, `DARK_CLASS`/`FORCE_ATTRIBUTE`/`LAYER_ORDER`/`NODE_ATTRIBUTE`/`SKETCH_LAYER`/`SKIN_LAYER`, `Form`/`Outfit`/`Palette`, `OutfitRefused`, `Role`/`RoleKind`, `knownRole`, `ROLE_NAMES`, `SCALE_ROLES`, `VOCABULARY`, типы рецепта (`Skin`, `SlotRecipe`, …) |
-| Корень (модель + порождение) | `@web-core/skin` | всё из `./model` плюс `SkinRefused`, `withPassports` (с `generateSkinCss`/`generateSketchCss`), `BoundSkin`, `skinContrast`, `INDISTINCT`, типы контраста |
+| Корень (модель + порождение) | `@web-core/skin` | всё из `./model` плюс `SkinRefused`, `withPassports` (с `generateSkinCss`/`generateSketchCss`), `BoundSkin`, `skinContrast`, `INDISTINCT`, типы контраста, `layoutSelf`/`layoutGroup`/`spaceVar`, типы `LayoutSelfProps`/`LayoutGroupProps`/`AlignPosition`/`ContentDistribution`/`FlexDirection`/`SpaceToken` |
 | Плоский CSS | `@web-core/skin/flat` | `flattenCss` |
 | Срез редактора | `@web-core/skin/editor` | `admits`, `defineEditorInfo`, `checkAssembly`, `checkAssemblyData`, `footprintOf`, `GROUPS`, `groupOf`, `baseAssemblyOf`, `isAssemblyContent`, `isAssemblyRepeat`, `isContentNode`, `isDataBinding`, `resolveDataBinding`, `PassportAssembly`, `PassportEditorInfo` и её срез-типы |
 | Служба раздачи | `@web-core/skin/presets` | `createPresetsClient`, `createPresetsSkinSource`, `PRESET_KIND`, `PresetsDown`, `PresetsRefused`, `PresetRecord` |
@@ -95,6 +95,19 @@ import { createPresetsClient, createPresetsSkinSource, PRESET_KIND } from "@web-
 const source = createPresetsSkinSource({ url, lookup: passportOf });
 const client = createPresetsClient({ url });
 await client.save(PRESET_KIND.palette, "brand", palette);
+```
+
+**Расставить руками — без дерева и без рецепта** (ручная JSX-сборка вне `RenderTree`, где адреса
+`SketchEdit` по `node` взять неоткуда): `layoutSelf` — место ОДНОГО элемента в чужом потоке,
+`layoutGroup` — как этот элемент расставляет СВОИХ детей. Оба принимают только имена токенов и
+литералы, отдают обычный объект под нативный `style`:
+
+```tsx
+import { layoutGroup, layoutSelf } from "@web-core/skin";
+
+<div style={layoutGroup({ direction: "column", gap: "space-4", align: "stretch" })}>
+  <div style={layoutSelf({ grow: true })}>...</div>
+</div>;
 ```
 
 <h2 id="настройки">🎚️ Настройки</h2>
