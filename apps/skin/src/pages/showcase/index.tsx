@@ -1,4 +1,5 @@
-import { Flow, FlowItem, Toc, Surface, Typography } from "@web-core/ui";
+import type { DispatchedEvent } from "@web-core/assembly";
+import { Flow, FlowItem, Toc, Surface, Typography, toast } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 import { useNavigate } from "@web-core/router";
 import { useAtom } from "@web-core/store";
@@ -28,6 +29,14 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
   const tagGroups = createMemo(() => component.info()?.skin?.tags ?? []);
   const available = createMemo(() => ENABLED.includes(props.component));
 
+  function onDispatch(event: DispatchedEvent) {
+    component.recordEvent(event);
+    toast.create({
+      title: event.name,
+      description: JSON.stringify(event.context["payload"], null, 2),
+    });
+  }
+
   return (
     <Show when={available()} fallback={<p>не доступно</p>}>
       <Flow data-variant="column-center">
@@ -40,7 +49,7 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
                 tag={tag.tag}
                 variants={tag.variants}
                 data={data()}
-                dispatch={component.recordEvent}
+                dispatch={onDispatch}
               />
             </FlowItem>
           )}

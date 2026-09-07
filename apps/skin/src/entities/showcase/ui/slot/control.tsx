@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@web-core/ui";
 import { For } from "solid-js";
-import { layoutGroup } from "@web-core/skin";
+import { layoutGroup, layoutSelf } from "@web-core/skin";
 export function Control(props: {
   tag: string;
   assemblies: readonly PassportAssembly[];
@@ -19,7 +19,12 @@ export function Control(props: {
   onValueChange?: (value: string) => void;
 }) {
   return (
-    <Flow style={layoutGroup({ justify: "space-between" })}>
+    <Flow
+      style={{
+        ...layoutGroup({ justify: "space-between" }),
+        ...layoutSelf({ align: "stretch" }),
+      }}
+    >
       <Typography id={props.tag}>{props.tag}</Typography>
       <SegmentGroup
         orientation="horizontal"
@@ -38,6 +43,7 @@ export function Control(props: {
           )}
         </For>
       </SegmentGroup>
+      <Typography>menu</Typography>
     </Flow>
   );
 }

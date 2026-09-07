@@ -6,10 +6,11 @@ import {
   WorkspaceSidebar,
   Flow,
   FlowItem,
+  Toast,
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
 import { layoutSelf } from "@web-core/skin";
-import { Info, Input, Output, Tree } from "#/widgets/component";
+import { Info, Input, Tree } from "#/widgets/component";
 import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
@@ -19,6 +20,8 @@ export function WorkspaceLayout() {
       outlined
       style={{ "block-size": "100dvh" }}
     >
+      <Toast />
+
       <WorkspaceSidebar>
         <Tree />
       </WorkspaceSidebar>
@@ -38,9 +41,6 @@ export function WorkspaceLayout() {
           </FlowItem>
           <FlowItem style={layoutSelf({ align: "stretch" })}>
             <Input />
-          </FlowItem>
-          <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <Output />
           </FlowItem>
         </Flow>
       </WorkspaceRightbar>

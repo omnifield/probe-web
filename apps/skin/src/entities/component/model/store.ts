@@ -20,5 +20,5 @@ export const componentInfoAtom = createResourceAtom(currentComponent, (component
 export const componentDataAtom = createAtom<unknown>(undefined);
 
 /** История событий, продиктованных активным компонентом — пока он не сменился (сброс — `handle.ts`).
- *  Пишет витрина через `componentHandle().recordEvent`, читает `Output`. */
+ *  Пишет витрина через `componentHandle().recordEvent`, читателя пока нет. */
 export const componentEventsAtom = createAtom<readonly DispatchedEvent[]>([]);
