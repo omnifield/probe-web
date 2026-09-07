@@ -23,7 +23,7 @@ export const basic: PassportAssembly<ListboxPart, string, Data> = {
             bind: { item: "" },
             children: [
               { node: "itemText", children: [{ genus: "text", value: { path: "label" } }] },
-              { node: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
+              { node: "itemIndicator", children: [{ node: "icon", props: { name: "check" } }] },
             ],
           },
         ],

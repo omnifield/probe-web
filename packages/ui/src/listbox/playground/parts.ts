@@ -77,7 +77,7 @@ export const parts: Readonly<Record<ListboxPart, PassportPartEditorInfo<ListboxP
       checked: { means: "этот пункт выбран" },
       unchecked: { means: "этот пункт не выбран" },
     },
-    accepts: [{ kind: "content", genus: "icon" }],
+    accepts: [{ kind: "content", genus: "icon" }, { kind: "component" }],
   },
   valueText: {
     means: "показывает выбранное значение(я) строкой через запятую, либо плейсхолдер",

@@ -69,6 +69,17 @@ categories:
 
 # Журнал решений — тот же формат, что у table/diagram.
 log:
+  - id: action-list-listbox-indicator-real-icon
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Сборка `action-list`'s вложенный `listbox.itemIndicator` раньше держал буквальный символ
+      (`{ genus: "icon", value: "✓" }`). Заменено на настоящий `Icon` из общего реестра
+      (`{ node: "icon", props: { name: "check" } }`) — та же правка, что прошла по `listbox`'s
+      собственному `basic` (см. `listbox/ROADMAP.yaml`), поскольку это ровно та же часть чужого
+      компонента. Своя `controlIndicator` аккордеона (шеврон раскрытия) не тронута — её `children`
+      были и остаются пустыми, своего графика она не несёт.
+
   - id: no-forward-roadmap-full-surface
     type: plan
     date: 2026-09-04

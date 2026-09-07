@@ -199,7 +199,7 @@ root
             listbox.itemText
               🏷️ text: {label}
             listbox.itemIndicator
-              🎨 icon: "✓"
+              icon · name: "check"
 ```
 
 <h2 id="рецепт">🎨 Рецепт</h2>

@@ -109,6 +109,20 @@ categories:
 
 # Журнал решений.
 log:
+  - id: itemIndicator-real-icon-not-literal-glyph
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Сборка `basic`'s `itemIndicator` раньше держала буквальный символ (`{ genus: "icon", value:
+      "✓" }`). User попросил заменить голые символы на настоящий `Icon` из общего реестра во всех
+      сборках кита, где они стоят, — заменено на `{ node: "icon", props: { name: "check" } }`.
+      `parts.ts`'s `itemIndicator.accepts` получил `{ kind: "component" }` — раньше пускал внутрь
+      только буквальный символ, реальный компонент был не допущен. Побочный эффект, найденный по
+      пути: `RenderTree` заворачивает всё дерево в ОДИН `<Suspense>` — реальный асинхронный `Icon`
+      внутри повторяемого пункта подвешивает всё дерево (включая `label`) до своего резолва, не
+      только свой слот — тесты, проверявшие содержимое сразу после mount без ожидания, ловили
+      пустой `host` (проверено эмпирически, `packages/ui/src/icon/FAQ.md`).
+
   - id: not-fully-direct-collection-transform
     type: plan
     date: 2026-09-04

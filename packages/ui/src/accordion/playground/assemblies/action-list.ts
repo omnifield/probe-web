@@ -58,7 +58,10 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
                         },
                         children: [
                           { node: "listbox.itemText", children: [{ genus: "text", value: { path: "label" } }] },
-                          { node: "listbox.itemIndicator", children: [{ genus: "icon", value: "✓" }] },
+                          {
+                            node: "listbox.itemIndicator",
+                            children: [{ node: "icon", props: { name: "check" } }],
+                          },
                         ],
                       },
                     ],

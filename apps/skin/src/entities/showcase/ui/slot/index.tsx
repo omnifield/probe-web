@@ -1,5 +1,8 @@
-// СЛОТ ПОКАЗА — место витрины, куда ставится показываемое.
+// СЛОТ ПОКАЗА — место витрины, куда ставится показываемое. Сверху навигация по сборкам
+// (Segment Group), ниже одна горизонтальная карусель по вариантам.
+import type { DispatchedEvent } from "@web-core/assembly";
 import type { PassportAssembly } from "@web-core/skin/editor";
+import { Renderer } from "#/entities/component";
 import {
   Carousel,
   CarouselControl,
@@ -10,13 +13,26 @@ import {
   CarouselNextTrigger,
   CarouselPrevTrigger,
   CarouselProgressText,
+  Flow,
+  SegmentGroup,
+  SegmentGroupIndicator,
+  SegmentGroupItem,
+  SegmentGroupItemControl,
+  SegmentGroupItemText,
+  Typography,
   type CarouselProps,
+  Surface,
+  FlowItem,
 } from "@web-core/ui";
-import { createEffect, For } from "solid-js";
+import { createEffect, createSignal, For } from "solid-js";
 
 export function Slot(props: {
+  component: string;
+  tag: string;
   assemblies: readonly PassportAssembly[];
   variants: readonly string[];
+  data?: unknown;
+  dispatch?: (event: DispatchedEvent) => void;
   defaultPage?: number;
   page?: CarouselProps["page"];
   onPageChange?: CarouselProps["onPageChange"];
@@ -24,64 +40,81 @@ export function Slot(props: {
 }) {
   createEffect(() => console.log(props.assemblies, props.variants));
 
+  const [currentAssembly, setCurrentAssembly] = createSignal<string>();
+
+  // Активна сама, без клика — всегда 0-й элемент: сменился компонент (значит и список сборок) —
+  // назад на первую, а не оставленная по имени (у соседних компонентов сборки тоже зовут "base").
+  createEffect(() => {
+    void props.component; // трекаем смену компонента явно, не только смену списка сборок
+    setCurrentAssembly(props.assemblies[0]?.name);
+  });
+
+  createEffect(() => console.log("currentAssembly", currentAssembly()));
+
+  const [currentPage, setCurrentPage] = createSignal(props.defaultPage ?? 0);
+
   return (
-    <Carousel
-      slideCount={props.variants.length}
-      defaultPage={props.defaultPage}
-      page={props.page}
-      onPageChange={props.onPageChange}
-      data-variant="plain"
-    >
-      <CarouselControl>
-        <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-        <CarouselProgressText>
-          <For each={props.variants}>
-            {(variant, index) => (
-              <CarouselItem index={index()}>{variant}</CarouselItem>
+    <Surface>
+      <Flow data-variant="column-center">
+        <Typography id={props.tag}>{props.tag}</Typography>
+        <SegmentGroup
+          orientation="horizontal"
+          value={currentAssembly() ?? null}
+          onValueChange={(details) => {
+            if (details.value) setCurrentAssembly(details.value);
+          }}
+        >
+          <SegmentGroupIndicator />
+          <For each={props.assemblies}>
+            {(assembly) => (
+              <SegmentGroupItem value={assembly.name}>
+                <SegmentGroupItemControl />
+                <SegmentGroupItemText>{assembly.name}</SegmentGroupItemText>
+              </SegmentGroupItem>
             )}
           </For>
-        </CarouselProgressText>
-        <CarouselNextTrigger>›</CarouselNextTrigger>
-      </CarouselControl>
-      <CarouselItemGroup>
-        <Carousel
-          orientation={"vertical"}
-          slideCount={props.assemblies.length}
-          defaultPage={props.defaultPage}
-          page={props.page}
-          onPageChange={props.onPageChange}
-          data-variant="plain"
-        >
-          <CarouselControl>
-            <CarouselPrevTrigger>‹</CarouselPrevTrigger>
-            <CarouselProgressText>
-              <For each={props.assemblies}>
-                {(assembly, index) => (
-                  <CarouselItem index={index()}>{assembly.name}</CarouselItem>
+        </SegmentGroup>
+        <FlowItem stretch>
+          <Carousel
+            data-variant="plain"
+            slideCount={props.variants.length}
+            defaultPage={props.defaultPage}
+            page={props.page}
+            onPageChange={(details) => {
+              setCurrentPage(details.page);
+              props.onPageChange?.(details);
+            }}
+          >
+            <CarouselControl>
+              <CarouselPrevTrigger>‹</CarouselPrevTrigger>
+              <CarouselProgressText>
+                <Typography>{props.variants[currentPage()]}</Typography>
+              </CarouselProgressText>
+              <CarouselNextTrigger>›</CarouselNextTrigger>
+            </CarouselControl>
+            <CarouselItemGroup>
+              <For each={props.variants}>
+                {(variant, index) => (
+                  <CarouselItem index={index()}>
+                    <Renderer
+                      component={props.component}
+                      assembly={currentAssembly()}
+                      variant={variant}
+                      data={props.data}
+                      dispatch={props.dispatch}
+                    />
+                  </CarouselItem>
                 )}
               </For>
-            </CarouselProgressText>
-            <CarouselNextTrigger>›</CarouselNextTrigger>
-          </CarouselControl>
-          <CarouselItemGroup>
-            <For each={props.assemblies}>
-              {(assembly, index) => (
-                <CarouselItem index={index()}>{assembly.name}</CarouselItem>
-              )}
-            </For>
-          </CarouselItemGroup>
-          <CarouselIndicatorGroup>
-            <For each={props.assemblies}>
-              {(_assembly, index) => <CarouselIndicator index={index()} />}
-            </For>
-          </CarouselIndicatorGroup>
-        </Carousel>
-      </CarouselItemGroup>
-      <CarouselIndicatorGroup>
-        <For each={props.assemblies}>
-          {(_assembly, index) => <CarouselIndicator index={index()} />}
-        </For>
-      </CarouselIndicatorGroup>
-    </Carousel>
+            </CarouselItemGroup>
+            <CarouselIndicatorGroup>
+              <For each={props.variants}>
+                {(_variant, index) => <CarouselIndicator index={index()} />}
+              </For>
+            </CarouselIndicatorGroup>
+          </Carousel>
+        </FlowItem>
+      </Flow>
+    </Surface>
   );
 }

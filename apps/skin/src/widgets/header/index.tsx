@@ -6,6 +6,9 @@ import {
   SegmentGroupItem,
   SegmentGroupItemControl,
   SegmentGroupItemText,
+  Surface,
+  FlowItem,
+  Flow,
 } from "@web-core/ui";
 import { useLocation, useNavigate } from "@web-core/router";
 import { createMemo, For } from "solid-js";
@@ -23,7 +26,9 @@ export function Header() {
   const navigate = useNavigate();
 
   const screen = createMemo(
-    () => SCREENS.find((item) => pathname().startsWith(item.to))?.value ?? "showcase",
+    () =>
+      SCREENS.find((item) => pathname().startsWith(item.to))?.value ??
+      "showcase",
   );
 
   const onValueChange = (details: { value: string | null }) => {
@@ -32,19 +37,27 @@ export function Header() {
   };
 
   return (
-    <>
-      <SegmentGroup value={screen()} onValueChange={onValueChange} orientation="horizontal">
-        <SegmentGroupIndicator />
-        <For each={SCREENS}>
-          {(item) => (
-            <SegmentGroupItem value={item.value}>
-              <SegmentGroupItemControl />
-              <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
-            </SegmentGroupItem>
-          )}
-        </For>
-      </SegmentGroup>
-      <ThemeSwitch />
-    </>
+    <Surface>
+      <Flow>
+        <FlowItem>
+          <SegmentGroup
+            value={screen()}
+            onValueChange={onValueChange}
+            orientation="horizontal"
+          >
+            <SegmentGroupIndicator />
+            <For each={SCREENS}>
+              {(item) => (
+                <SegmentGroupItem value={item.value}>
+                  <SegmentGroupItemControl />
+                  <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
+                </SegmentGroupItem>
+              )}
+            </For>
+          </SegmentGroup>
+        </FlowItem>
+        <ThemeSwitch />
+      </Flow>
+    </Surface>
   );
 }

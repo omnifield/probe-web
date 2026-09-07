@@ -127,7 +127,8 @@ positioner
       item · value: "delete" · text: "Удалить"
     separator ─
     item · value: "notify"
-      itemIndicator ✓ · icon: "✓"
+      itemIndicator ✓
+        icon · name: "check"
       itemText · text: "Уведомления"
 ```
 

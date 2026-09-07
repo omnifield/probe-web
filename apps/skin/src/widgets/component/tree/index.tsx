@@ -1,9 +1,14 @@
 import type { DispatchedEvent } from "@web-core/assembly";
 import { useNavigate, useParams } from "@web-core/router";
+import { DEFAULT_TAG } from "@web-core/skin/tags";
 import { useAtom } from "@web-core/store";
 import { createMemo } from "solid-js";
 
-import { componentTreeAtom, Renderer, type TreeItemData } from "#/entities/component";
+import {
+  componentTreeAtom,
+  Renderer,
+  type TreeItemData,
+} from "#/entities/component";
 
 export function Tree() {
   const tree = useAtom(componentTreeAtom);
@@ -26,11 +31,11 @@ export function Tree() {
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;
 
-    // Сборка в дереве не выбирается — клик по компоненту всегда ведёт на "base", листать
-    // остальные сборки (если есть) теперь дело карусели показа (`entities/showcase/ui/slot`).
+    // Тег в дереве не выбирается — клик по компоненту всегда ведёт на дефолтный, листать
+    // остальные теги/сборки — дело витрины показа (`entities/showcase/ui/slot`).
     void navigate({
-      to: "/showcase/$component/$assembly",
-      params: { component: payload.id, assembly: "base" },
+      to: "/showcase/$component/$tag",
+      params: { component: payload.id, tag: DEFAULT_TAG },
     });
   };
 

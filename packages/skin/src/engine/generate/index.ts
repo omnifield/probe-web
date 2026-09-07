@@ -5,7 +5,7 @@ import { SKETCH_LAYER, SKIN_LAYER } from "../marks/index.js";
 import type { Skin, SketchEdit } from "../recipe/index.js";
 import { skinRules, sketchRules, type ValueVocabulary } from "../rules/index.js";
 import { trace } from "../../trace/index.js";
-import { darkPairs, keyframesText, layered, modeText, ruleText, variablesText } from "./print.js";
+import { darkPairs, fontText, keyframesText, layered, modeText, ruleText, variablesText } from "./print.js";
 import { SkinRefused } from "./refused.js";
 
 export { SkinRefused } from "./refused.js";
@@ -23,7 +23,7 @@ export function generateSkinCss(skin: Skin, lookup: PassportLookup, vocabulary: 
       "   Editing is pointless: the next generation overwrites it.\n" +
       "   Addresses are built from component anatomy, selectors are never hand-written. */",
     SKIN_LAYER,
-    [...variablesText(skin, dark, lookup), ...keyframesText(skin), ...rules.map(ruleText)],
+    [...variablesText(skin, dark, lookup), fontText(), ...keyframesText(skin), ...rules.map(ruleText)],
     modeText(dark),
   );
 

@@ -95,6 +95,7 @@ export const parts: Readonly<Record<FileUploadPart, PassportPartEditorInfo<FileU
     accepts: [
       { kind: "component", name: "itemPreviewImage" },
       { kind: "content", genus: "icon" },
+      { kind: "component" },
     ],
   },
   itemPreviewImage: {

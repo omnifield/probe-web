@@ -28,7 +28,7 @@ export const basic: PassportAssembly<MenuPart> = {
             node: "item",
             props: { value: "notify" },
             children: [
-              { node: "itemIndicator", children: [{ genus: "icon", value: "✓" }] },
+              { node: "itemIndicator", children: [{ node: "icon", props: { name: "check" } }] },
               { node: "itemText", children: [{ genus: "text", value: "Уведомления" }] },
             ],
           },

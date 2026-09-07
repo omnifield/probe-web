@@ -39,16 +39,14 @@ export function WorkspaceLayout() {
       </WorkspaceMain>
 
       <WorkspaceRightbar>
-        <Flow>
-          <Info />
-          <Input />
-          <Output />
-        </Flow>
+        <Surface data-variant="filled">
+          <Flow data-variant="column-center">
+            <Info />
+            <Input />
+            <Output />
+          </Flow>
+        </Surface>
       </WorkspaceRightbar>
-
-      <WorkspaceFooter
-        style={{ display: "flex", gap: "var(--space-6)", "flex-wrap": "wrap" }}
-      />
     </Workspace>
   );
 }

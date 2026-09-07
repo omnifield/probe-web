@@ -86,6 +86,7 @@ root
     control ▶️           · on: click → controlClick
       🏷️ text: {label}
       controlIndicator 🔽
+        icon · name: "chevron-right"
     content 📂
 ```
 
