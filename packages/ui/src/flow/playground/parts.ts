@@ -15,9 +15,6 @@ export const parts: Readonly<Record<FlowPart, PassportPartEditorInfo<FlowPart>>>
   },
   item: {
     means: "место одного элемента в потоке — им адресуется «этот тянется, остальные по содержимому»",
-    states: {
-      stretch: { means: "этот элемент растягивается и забирает свободное место, остальные — по содержимому" },
-    },
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "component" },
