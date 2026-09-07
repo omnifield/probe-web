@@ -11,6 +11,9 @@ export interface ComponentHandle {
   readonly ready: () => boolean;
   /** Сгенерировать заново фейковые данные ТЕКУЩЕГО компонента, записать в `componentDataAtom`. */
   readonly generate: () => void;
+  /** Положить готовые данные напрямую в `componentDataAtom`, минуя фейк-генератор — второй
+   *  источник наполнения показа (сохранённый content), рядом с `generate()`. */
+  readonly setData: (data: unknown) => void;
   /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
   readonly info: () => ComponentInfo | undefined;
   /** Дописать событие в историю ТЕКУЩЕГО компонента (`componentEventsAtom`) — сброс при смене компонента. */
@@ -54,5 +57,9 @@ export function componentHandle(): ComponentHandle {
     return state.status === "done" ? state.data : undefined;
   });
 
-  return { ready, generate, info: componentInfo, recordEvent };
+  function setData(data: unknown): void {
+    componentDataAtom.set(data);
+  }
+
+  return { ready, generate, setData, info: componentInfo, recordEvent };
 }

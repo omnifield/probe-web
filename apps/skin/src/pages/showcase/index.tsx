@@ -1,9 +1,11 @@
 import type { DispatchedEvent } from "@web-core/assembly";
 import { Flow, FlowItem, Toc, Surface, Typography, toast } from "@web-core/ui";
+import type { PassportAssembly } from "@web-core/skin/editor";
 import { layoutSelf } from "@web-core/skin";
+import type { TagGroup } from "@web-core/skin/tags";
 import { useNavigate } from "@web-core/router";
 import { useAtom } from "@web-core/store";
-import { createEffect, createMemo, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 
 import {
   componentDataAtom,
@@ -23,10 +25,21 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
 
   const data = useAtom(componentDataAtom);
   const component = componentHandle();
-  const assemblies = createMemo(
-    () => component.info()?.editorInfo?.assemblies ?? [],
-  );
-  const tagGroups = createMemo(() => component.info()?.skin?.tags ?? []);
+
+  // Держим ПОСЛЕДНЕЕ известное дерево/теги, пока грузится новое — componentInfoAtom на каждую
+  // смену компонента честно проходит через "pending" (data === undefined, реальный запрос к
+  // службе пресетов), и без этого <For> на секунду схлопывался в пустоту: экран мигал пустым
+  // между "не доступно"/предыдущим показом и новым содержимым.
+  const [assemblies, setAssemblies] = createSignal<readonly PassportAssembly[]>([]);
+  const [tagGroups, setTagGroups] = createSignal<readonly TagGroup[]>([]);
+
+  createEffect(() => {
+    const info = component.info();
+    if (!info) return;
+    setAssemblies(info.editorInfo?.assemblies ?? []);
+    setTagGroups(info.skin?.tags ?? []);
+  });
+
   const available = createMemo(() => ENABLED.includes(props.component));
 
   function onDispatch(event: DispatchedEvent) {

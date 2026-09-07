@@ -3,7 +3,7 @@
 // (`frame-ancestors`) — там же явно разрешён наш origin для встраивания.
 const DOCS_URL =
   (import.meta.env["VITE_DOCS_URL"] as string | undefined) ??
-  "http://localhost:5555/workspaces/UI/pages";
+  "http://localhost:7777/workspaces/UI/pages";
 
 /** Адрес embed-страницы доки компонента — базовый урл + имя компонента + `/embed` (голая
  *  страница, без интерфейса воркспейса вокруг). Сборка URL живёт здесь, не в виджете показа

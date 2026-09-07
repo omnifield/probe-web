@@ -26,6 +26,9 @@ const instructions = [
   "тот же принцип: флавы наряда — часть ответа, не isError.",
   "save_preset — сохранить ТОЛЬКО после того, как соответствующий check_* прошёл (сама ручка",
   "тоже проверяет перед записью и откажет тем же отчётом при флавах).",
+  "list_docs/get_doc — тематические разборы (например \"color\": accent красит бренд, neutral красит",
+  "всю тему; готовые сочетания). Зовите ТОЛЬКО когда тема реально нужна для текущей задачи (перед",
+  "тем, как строить Palette — get_doc(\"color\")), не заранее про запас.",
 ].join(" ");
 
 const server = createServer({ name: "web-core-skin", version: "0.0.0", transport, host, instructions, registerTools });

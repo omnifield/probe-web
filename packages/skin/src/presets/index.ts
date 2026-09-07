@@ -4,6 +4,7 @@ export { createPresetsSkinSource, type PresetsSkinSourceOptions } from "./source
 export {
   createPresetsClient,
   PRESET_KIND,
+  type ContentState,
   type PresetKind,
   type PresetRecord,
   type PresetsClient,

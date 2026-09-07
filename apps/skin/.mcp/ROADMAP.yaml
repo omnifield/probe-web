@@ -298,6 +298,97 @@ categories:
           createBrowser сначала жили в apps/skin/.mcp, переехали в packages/mcp только когда
           понадобился второй потребитель/явный запрос user, не заранее).
 
+  - category: Цвет наряда
+    items:
+      - id: accent-vs-neutral-outfit-request-guidance
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Канон «свой аутфит» — accent-only vs neutral-тоже, таблица сочетаний с radix-ui.com/colors"
+        description: |
+          Означает: README.md/FAQ.md/server/index.ts's instructions теперь различают два разных
+          запроса, которые раньше смешивались в один: "как X, но бренд-цвет другой" (менять только
+          scales.accent, +dark.accent-9/10 той же дельтой) и "хочу свою тему/скин/аутфит" (обязана
+          смениться scales.neutral — ВЕСЬ фон/поверхности/бордеры/приглушённый текст считает движок
+          из НЕЁ одной, OKLCH-рэмп в packages/style/src/engine/scale.ts, accent тут ни при чём).
+          README получил таблицу из семи готовых сочетаний accent+neutral (индиго/фиолет/бирюза/
+          трава/апельсин/малина/небо) — значения и пары не выдуманы, взяты с radix-ui.com/colors
+          (шаг 9, официальная рекомендация пары в "Composing a palette"; наш dark.accent-9/10 и так
+          повторяет их нумерацию шага, packages/style/FAQ.md уже объявлял lineage: "взята МОДЕЛЬ, а
+          не пакет"). warning — amber-11 (#ab6400), не amber-9 (#ffc53d, слишком светлый для заливки)
+          — явно названо правилом, не угадывается каждый раз заново.
+          Причина: живой инцидент — построил amethyst-palette (см. следующую запись), поменял только
+          accent, user поймал словами "поменялось только цвет бренда... всё остальное в том же
+          цвете" — и явно попросил не давать агенту ни изобретать сочетания самому, ни гуглить
+          модные палитры на каждый запрос, а завести один раз собранный канон. Проверено живьём:
+          amethyst-palette's neutral переставлен на #8e8c99 (mauve, родная пара violet по таблице
+          Radix) тем же save_preset, check_palette/assemble_preview прошли чисто (232 gaps, то же
+          число, что и раньше — палитра не единственный источник непокрытых мест), instructions
+          на реальном initialize несут новое правило текстом (проверено client.getInstructions()).
+
+      - id: amethyst-second-outfit
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: "amethyst/amethyst-palette — второй наряд, чтобы было на что переключиться"
+        description: |
+          Означает: kind:"outfit" впервые перестал быть единственной записью — amethyst-palette
+          (тот же набор ролей/размеров/типографики, что у omnifield-palette, только accent/neutral
+          фиолетовые) + amethyst (те же 26 форм, что у omnifield) дают честное сравнение "тот же
+          кит, другой цвет" в переключателе тем apps/skin/src (ThemeSwitch читает SOURCE.names() из
+          службы динамически — код трогать не пришлось, второй наряд просто появился в списке).
+          Причина: user — "у нас только омнифилд, даже нельзя переключиться посмотреть". Первый
+          заход (только accent) вскрыл настоящий пробел в каноне — см. предыдущую запись; neutral
+          донастроен по её результату, не оставлен как ошибочный пример.
+
+      - id: neutral-chroma-proportional-to-background
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "neutral по таблице Radix (mauve-9) недостаточно насыщен — фон всё равно неотличим"
+        description: |
+          Означает: значения из docs/color.md — это ХЬЮ (какой оттенок), не насыщенность. Фон
+          каждого шага получает лишь ДОЛЮ насыщенности seed'а (packages/style/src/engine/scale.ts,
+          CHROMA_FACTOR["1"]=0.04, ["2"]=0.09) — mauve-9 в OKLCH (c:0.019) даже МЕНЕЕ насыщен, чем
+          нейтральный omnifield (c:0.023), 4% от такого числа остаётся почти нулём.
+          Причина: user поймал ВТОРОЙ раз подряд — после первой правки (neutral → mauve-9 по
+          таблице) попросил "поменяй цвета для фона... для наглядности", фон всё ещё не читался
+          другим. Посчитал реальные OKLCH-хромы (parseColor из packages/style/dist) ДО правки,
+          не на глаз — подобрал #6b5b8a (c:0.075, та же хью-семья, что фиолетовый accent), заранее
+          посчитал производные шаги 1-3 через buildScale() (#f9f7fc/#f4f1fb вместо почти-белого
+          #f8f8fa/#f2f3f6), убедился числом, только потом save_preset. Правило (ориентир c≥~0.06)
+          вписано в docs/color.md — не только починена одна запись, но и закрыт следующий такой же
+          вопрос заранее.
+
+  - category: Доки по темам
+    items:
+      - id: docs-folder-and-tools
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "docs/*.md + list_docs/get_doc — прогрессивное раскрытие вместо раздутого README"
+        description: |
+          Означает: объёмный разбор ОДНОЙ темы (первая — docs/color.md, весь разбор accent/neutral
+          + таблица сочетаний + правило по насыщенности) живёт отдельным файлом, не внутри README —
+          README держит только костяк с коротким указателем. list_docs отдаёт заголовки (первая
+          строка `# ...` каждого файла — фронт-маттер не заводили), get_doc — сырой markdown одной
+          темы по topic. Topic проверяется тем же slug-паттерном, что name/kind любой записи службы
+          пресетов (^[a-z0-9][a-z0-9-]{0,63}$) — traversal (`../../../etc/passwd`, `..%2f`) отсеян
+          регуляркой ДО readFile, не второй проверкой резолвленного пути.
+          Причина: user завёл apps/skin/.mcp/docs/ и спросил, можно ли вместо ручного сжатия слать
+          агенту весь README теперь, когда он короче — вместо статического дампа выбран тот же
+          принцип прогрессивного раскрытия, что уже работает у list_components→get_passport: агент
+          тянет ИМЕННО нужную тему (get_doc("color") перед тем, как строить Palette), не платит
+          токенами на instructions за темы, которые в конкретной сессии не понадобятся. instructions
+          теперь только НАЗЫВАЕТ, что list_docs/get_doc существуют — не пересказывает ни одной темы.
+          Проверено живьём: list_docs видит реальный docs/color.md с верным заголовком, get_doc по
+          несуществующей теме и по двум traversal-строкам (буквальной и percent-encoded) — все три
+          isError:true до похода на диск. 19 тулов (было 17), 16 read/3 write.
+
   - category: Пресеты
     items:
       - id: legacy-json-migrated-to-bbolt

@@ -11,8 +11,10 @@ import {
   checkForm,
   checkPalette,
   checkTags,
+  getDoc,
   getPassport,
   listComponents,
+  listDocs,
   skin,
   skinGaps,
   store,
@@ -92,6 +94,30 @@ export function registerTools(server: McpServer) {
       "части анатомии, готовые сборки-образцы кита (не хранимые, кодовые).",
     access: "read",
     handler: () => ok(listComponents()),
+  });
+
+  registerTool(server, {
+    name: "list_docs",
+    title: "Перечень тематических доков",
+    description:
+      "Список docs/*.md этой зоны — заголовок каждого файла, без содержимого. README.md держит только костяк " +
+      "(что есть, как вызывать), объёмный разбор конкретной темы (например цвет наряда) живёт отдельным " +
+      "файлом и подтягивается get_doc ТОЛЬКО когда он реально нужен для текущей задачи — не платите токенами " +
+      "на каждую сессию за темы, которые сейчас не при делах.",
+    access: "read",
+    handler: async () => ok(await listDocs()),
+  });
+
+  registerTool(server, {
+    name: "get_doc",
+    title: "Содержимое тематического дока",
+    description: "Сырой markdown одного docs/<topic>.md — имя topic берите из list_docs.",
+    access: "read",
+    input: z.object({ topic: z.string() }),
+    handler: async ({ topic }) => {
+      const content = await getDoc(topic);
+      return content === undefined ? err(`no doc named "${topic}" — see list_docs`) : ok(content);
+    },
   });
 
   registerTool(server, {

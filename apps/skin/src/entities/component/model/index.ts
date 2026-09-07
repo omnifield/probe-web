@@ -9,3 +9,4 @@ export {
 } from "./store";
 export type { TreeItemData } from "./tree";
 export { componentHandle, type ComponentHandle } from "./handle";
+export { listContentFor } from "./content";
