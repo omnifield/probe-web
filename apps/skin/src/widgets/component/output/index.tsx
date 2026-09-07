@@ -8,6 +8,7 @@ export function Output() {
   // Сырой JSON — пока задел, настоящее дерево (tree-view) заведём отдельно.
   return (
     <Surface>
+      ауа
       <pre>{JSON.stringify(events(), null, 2)}</pre>
     </Surface>
   );

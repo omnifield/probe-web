@@ -6,6 +6,7 @@ export const SETTINGS = {
   multiple: "Multiple at once",
   collapsible: "Can close all",
   outlined: "Outlined",
+  filled: "Filled",
 } as const satisfies Readonly<Record<string, string>>;
 
 export type PassportSettingName = keyof typeof SETTINGS;

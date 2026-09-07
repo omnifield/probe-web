@@ -17,8 +17,8 @@ import { createMemo, For } from "solid-js";
 import { ThemeSwitch } from "#/shared/ui/theme-switch";
 
 const SCREENS = [
-  { value: "showcase", label: "Showcase", to: "/showcase" },
   { value: "lab", label: "Lab", to: "/lab" },
+  { value: "showcase", label: "Showcase", to: "/showcase" },
   { value: "playground", label: "Playground", to: "/playground" },
 ] as const;
 
@@ -39,6 +39,7 @@ export function Header() {
 
   return (
     <Flow style={layoutGroup({ justify: "space-between" })}>
+      <FlowItem>LOGO</FlowItem>
       <FlowItem>
         <SegmentGroup
           value={screen()}

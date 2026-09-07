@@ -16,16 +16,14 @@ import {
   CarouselPrevTrigger,
   CarouselProgressText,
   Flow,
-  SegmentGroup,
-  SegmentGroupIndicator,
-  SegmentGroupItem,
-  SegmentGroupItemControl,
-  SegmentGroupItemText,
   Typography,
   type CarouselProps,
   Surface,
+  FlowItem,
 } from "@web-core/ui";
 import { createEffect, createSignal, For } from "solid-js";
+import { layoutGroup } from "@web-core/skin";
+import { Control } from "./control";
 
 export function Slot(props: {
   component: string;
@@ -57,24 +55,13 @@ export function Slot(props: {
   return (
     <Surface>
       <Flow data-variant="column-center">
-        <Typography id={props.tag}>{props.tag}</Typography>
-        <SegmentGroup
-          orientation="horizontal"
-          value={currentAssembly() ?? null}
-          onValueChange={(details) => {
-            if (details.value) setCurrentAssembly(details.value);
-          }}
-        >
-          <SegmentGroupIndicator />
-          <For each={props.assemblies}>
-            {(assembly) => (
-              <SegmentGroupItem value={assembly.name}>
-                <SegmentGroupItemControl />
-                <SegmentGroupItemText>{assembly.name}</SegmentGroupItemText>
-              </SegmentGroupItem>
-            )}
-          </For>
-        </SegmentGroup>
+        <Control
+          tag={props.tag}
+          assemblies={props.assemblies}
+          value={currentAssembly()}
+          onValueChange={setCurrentAssembly}
+        />
+
         <Carousel
           style={layoutSelf({ align: "stretch" })}
           data-variant="plain"

@@ -7,12 +7,13 @@ import { anatomyParts } from "../entity/anatomy.js";
 
 export type WorkspaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T> & {
   outlined?: boolean;
+  filled?: boolean;
 };
 
 export const Workspace = slotAware(function Workspace<T extends ValidComponent = "div">(props: WorkspaceProps<T>) {
   traceLife("ui.workspace");
 
-  const [local, others] = splitProps(props, ["outlined"]);
+  const [local, others] = splitProps(props, ["outlined", "filled"]);
   const [address, rest] = useAddress(others, anatomyParts.root.attrs);
 
   return (
@@ -21,6 +22,7 @@ export const Workspace = slotAware(function Workspace<T extends ValidComponent =
       {...rest}
       {...address}
       data-outlined={local.outlined ? "true" : undefined}
+      data-filled={local.filled === false ? undefined : "true"}
     />
   );
 });

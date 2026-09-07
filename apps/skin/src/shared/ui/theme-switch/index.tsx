@@ -107,12 +107,11 @@ export function ThemeSwitch() {
           }
         }}
       >
-        <SelectLabel>Скин</SelectLabel>
         <SelectControl>
           <SelectTrigger>
             <SelectValueText placeholder="Выбрать скин" />
           </SelectTrigger>
-          <SelectClearTrigger>✕</SelectClearTrigger>
+
           <SelectIndicator>▾</SelectIndicator>
         </SelectControl>
         <SelectPositioner>

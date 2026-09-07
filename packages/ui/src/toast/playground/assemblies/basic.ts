@@ -6,6 +6,6 @@ type ToastPart = typeof passport extends ComponentPassport<infer Part> ? Part : 
 
 export const basic: PassportAssembly<ToastPart> = {
   name: "basic",
-  means: "голый root, доказывает, что паспорт собирается — не финальная форма",
-  tree: { node: "root", children: [{ genus: "text", value: "Сообщение" }] },
+  means: "точка монтирования — содержимое одного сообщения кладёт сама control.ts, потребитель не составляет",
+  tree: { node: "group", children: [] },
 };
