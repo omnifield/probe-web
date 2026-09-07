@@ -4,13 +4,16 @@ import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { kit as treeViewKit } from "../components/index.jsx";
 import type { Data } from "../entity/io.js";
 import { passport as treeViewPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as treeViewEditorInfo } from "../playground/index.js";
+import { kit as iconKit } from "../../icon/components/index.js";
+import { passport as iconPassport } from "../../icon/entity/passport.js";
+import { editorInfo as iconEditorInfo } from "../../icon/playground/index.js";
 
 function readable<Part extends string, EditorData = unknown>(
   passport: ComponentPassport<Part>,
@@ -34,6 +37,7 @@ const REGISTRY: Registry = createRegistry({
       passport: readable(treeViewPassport, treeViewEditorInfo),
       parts: treeViewKit.parts,
     },
+    icon: { passport: readable(iconPassport, iconEditorInfo), parts: iconKit.parts },
   },
   admits,
 });
@@ -113,11 +117,24 @@ describe('tree view "base" — recur grows the same node again from its own data
     const dispatched: DispatchedEvent[] = [];
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
 
+    // `RenderTree` wraps everything in one `<Suspense>` — a branch's real Icon indicator suspends
+    // the whole tree until it resolves, not just its own slot.
+    await vi.waitFor(() => {
+      if (host.querySelectorAll('[data-scope="tree-view"][data-part="control"]').length === 0) {
+        throw new Error("suspended tree not resolved yet");
+      }
+    });
+
     const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
-    expect(controls.map((node) => node.textContent)).toEqual(["▶Alpha", "▶Alpha One", "Alpha One X"]);
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "Alpha One", "Alpha One X"]);
 
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
     expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "2", "3"]);
+
+    // Только у веток есть controlIndicator (Zag сам не рисует его для листа).
+    expect(controls[0]!.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+    expect(controls[1]!.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+    expect(controls[2]!.querySelector('svg[data-scope="icon"][data-part="root"]')).toBeNull();
 
     (controls[2] as HTMLElement).click();
     await Promise.resolve();

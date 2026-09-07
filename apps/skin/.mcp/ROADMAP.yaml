@@ -1,0 +1,358 @@
+# Дорожная карта apps/skin/.mcp — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/mcp/store (categories → items, log → журнал решений); без milestones.
+
+categories:
+  - category: Тулы
+    items:
+      - id: migrated-to-web-core-mcp
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Все десять тулов — через @web-core/mcp
+        description: |
+          Означает: registerTool/ok/err вместо прямых вызовов SDK — каждый тул размечен access
+          (девять read, save_preset write), isError по спеке (раньше даже настоящие отказы
+          уезжали isError:false), list_presets с курсорной пагинацией. z теперь только из
+          @web-core/io (был отдельный "zod" в зависимостях).
+
+      - id: outfit-tags-for-navigation
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Теги наряда (kind:"tag" словарь, дефолт, проверка)
+        description: |
+          Означает: Outfit.tags?: string[] — навигация по множеству вариантов одной сборки
+          (витрина + агент), не влияет на механику сборки. Пусто/не передано → ["default"].
+          Каждый тег сверяется со словарём (kind:"tag", пятый вид пресета — просто реестр имён,
+          без списка участников: принадлежность живёт на наряде, не дублируется). Неизвестный тег
+          — флав unknown-tag той же формы, что unknown-palette, в check_outfit и save_preset.
+          Найдено живьём: имя тега — тот же slug-формат backend/presets, что и любой name
+          (кириллица отказывает bad_name) — человекочитаемый текст только в label конверта.
+
+      - id: form-variant-tags-second-layer
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Теги на значении варианта формы (Form.variantTags) — второй слой той же механики
+        description: |
+          Означает: Form.variantTags?: {[имя значения recipe.variants]: string[]} — та же машинерия
+          (resolveTags/checkTags), что и Outfit.tags, приложена на другом уровне: не на весь
+          наряд, а на КАЖДОЕ значение оси варианта формы отдельно. Ключи берутся из recipe.variants
+          сохраняемой формы; значение без явного тега получает ["default"], неизвестный тег даёт
+          unknown-tag с адресом variantTags.<имя>, в check_form и save_preset(kind:"form").
+          Причина: живой тест на реальной кнопке (omnifield-button) показал, что "разные кнопки" —
+          не разные наряды, а разные значения ОДНОЙ оси variants внутри ОДНОЙ формы (primary/
+          secondary/tertiary/error/success/warning/error-quiet) — тег на весь Outfit был бы неверен.
+          Проверено живьём реальным сохранением: error/success/warning → ["status"], остальные
+          четыре значения молча получили ["default"], css пропадает из ответа check_form вместе с
+          флавом (не только referenceFlaws), чтобы сигнал не был противоречивым.
+
+      - id: tags-mechanics-moved-to-packages-skin
+        type: refactor
+        status: Done
+        priority: High
+        milestone: null
+        name: Чистая механика тегов переехала в @web-core/skin/tags
+        description: |
+          Означает: sortTags/checkTags(tags, knownTags, where)/groupByTag больше не определены
+          локально в tools/index.ts — зовутся из @web-core/skin/tags (написан user по заявке
+          архитектора в чате). Причина: витрина (apps/skin/src) читает пресеты напрямую из
+          backend/presets, минуя MCP — чистая (без сети) механика, оставленная только здесь,
+          заставила бы витрину дублировать её при рендере группировки. engine/validate.ts's
+          checkTags остался тонкой И/О-обёрткой (ходит в store.list("tag") за словарём, строит Set,
+          зовёт чистую функцию) — внешняя сигнатура не изменилась, tools/index.ts's
+          resolveTags/resolveVariantTags правок на этом стыке не потребовали. check_form при
+          ok:true теперь дополнительно отдаёт tagGroups (считался и раньше внутри
+          resolveVariantTags, но нигде не использовался) — внешнему агенту, у которого нет доступа
+          к npm-пакету, иначе неоткуда взять готовую раскладку под свайперы. Проверено живьём
+          реальным HTTP round-trip после рестарта сервера: известные теги группируются верно
+          (default первым), неизвестный по-прежнему даёт unknown-tag — поведение не изменилось.
+
+      - id: negative-report-is-not-protocol-error
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Флав-отчёт — business-данные, не отказ протокола
+        description: |
+          Означает: check_*, отказ валидации внутри save_preset, OutfitRefused/SkinRefused внутри
+          assemble_preview — все isError:false, потому что тул выполнил операцию (проверил),
+          просто результат отрицательный. Отказ протокола (isError:true) — только для не
+          найденного по имени и сломанной формы входа. См. FAQ.md.
+
+  - category: Транспорт
+    items:
+      - id: http-transport-live
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Streamable HTTP поднят и проверен с внешним доступом
+        description: |
+          Означает: SKIN_MCP_TRANSPORT=http + SKIN_MCP_HOST=0.0.0.0 + PORT реально поднимают
+          сервер, видный снаружи контейнера (тот же довод, что у server.host у packages/build) —
+          используется внешним агентом, который делает скины через этот сервер. Concurrent-сессии,
+          host/origin allowlist, instructions — из @web-core/mcp, здесь не переоткрывается.
+
+  - category: Пресеты
+    items:
+      - id: legacy-json-migrated-to-bbolt
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: 25 legacy-записей перенесены в backend/presets (Go+bbolt)
+        description: |
+          Означает: backend/presets/data/*.json (JS-эпоха хранения на диске) удалены, их
+          содержимое реально сохранено через POST /api/presets в новую службу — не скопировано
+          файлами в обход API. Сверено побайтово на выборке (state/label совпадают), healthz
+          видит 25 записей.
+
+  - category: Документация
+    items:
+      - id: mcp-genus-readme-first-pilot
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "README/FAQ/ROADMAP: genus service, подгруппа mcp — первый пилот подгруппы"
+        description: |
+          Означает: тройка доки заведена по тому же скелету, что и у packages/mcp (genus tooling),
+          genus этой зоны — service (как backend/presets), подгруппа — mcp (MCP-серверы зон,
+          канон — корневой README.md, «Правила для шаблонов»); первый пилот подгруппы, не genus
+          (сама подгруппа устоялась именно на этом пилоте). Анатомия переопределена под тулы
+          (адрес = имя в tools/call), а не подпути поставки. README.old.md (прежняя разовая версия
+          доки, одним файлом без FAQ/ROADMAP) — снесён, содержание перенесено сюда.
+
+      - id: src-layout-server-tools-engine
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: src/ — server/tools/engine каталогами, не шесть файлов плоско
+        description: |
+          Означает: в корне src/ не больше одного файла (index.ts, барель — заодно и точка входа
+          pnpm start/dev), у каждого каталога своя роль и свой index.ts как публичная поверхность.
+          server/ — бутстрап транспорта, tools/ — регистрация десяти ручек, engine/ — связка с
+          доменом skin (kit/mechanics/store/validate, специфично именно этой зоне). См. FAQ.md.
+
+  - category: Не сделано
+    items:
+      - id: reference-skins-per-component
+        type: feature
+        status: Planned
+        priority: High
+        milestone: null
+        name: Эталонные скин-варианты по каждому компоненту кита
+        description: |
+          Означает: пройти все ~31 компонент packages/ui по одному, для каждого сделать несколько
+          эталонных вариантов (не одну тестовую форму, как сейчас у 22 из них) — доказательство,
+          что и механика компонента, и его скин реально работают живым кликом, не только
+          типами/тестами. Только после этого прохода имеет смысл грузить внешнего агента
+          документацией "как выглядит хороший скин" — сейчас показывать особо нечего, кроме пары
+          кнопок и аккордеонов. Работа над самими компонентами (entity/анатомия) — не зона
+          skin-mcp, чинит user/другая сессия; с этой стороны — playground/рецепт/сборка.
+
+      - id: list-presets-tag-filter
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: list_presets — фильтр outfit по тегу
+        description: |
+          Означает: сегодня list_presets(kind:"outfit") отдаёт лёгкий конверт без state (id/label/
+          name/kind/savedAt) — тег живёт внутри state, значит фильтрация по нему потребовала бы
+          читать каждую запись целиком на каждый листинг, не только конверт. Отложено осознанно,
+          пока витрина не сформулировала запрос — решать, когда появится реальный потребитель
+          (см. reference-skins-per-component выше).
+
+      - id: auth-hook-wiring
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Подключить auth-хук createServer
+        description: |
+          Означает: bearer/scope на границе HTTP — отложено осознанно, пока работаем внутри
+          команды и служба пресетов сама без токена (см. FAQ.md). Не блокер для внешнего агента
+          сегодня.
+
+      - id: agent-onboarding-docs
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Доки/instructions для внешнего агента про домен скина
+        description: |
+          Означает: расширенный концептуальный примар (палитра/форма/наряд простыми словами,
+          словарь терминов кита) плюс разобранные примеры — отложено ДО reference-skins-per-
+          component, чтобы разбирать реально хорошие примеры, а не тестовые заглушки.
+
+      - id: per-tool-output-schemas
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: outputSchema на каждом туле
+        description: |
+          Означает: ни один из десяти тулов сегодня не объявляет output — @web-core/mcp это умеет
+          нативно (настоящая Zod-схема), просто руки не дошли расписать форму каждого тула.
+
+      - id: response-format-verbosity
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: response_format (concise/detailed) на get_passport
+        description: |
+          Означает: переключатель подробности ответа (совет Anthropic) — get_passport всегда
+          отдаёт паспорт целиком, для агента, который уже знает компонент, это лишние токены.
+
+      - id: eval-harness
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Eval-харнесс для тулов зоны
+        description: |
+          Означает: набор реалистичных многошаговых сценариев с проверяемым результатом — главный
+          способ измерить качество тула по гайду Anthropic, сегодня не заведён вовсе.
+
+log:
+  - id: tags-mechanics-moved-to-packages-skin-log
+    type: plan
+    date: 2026-09-06
+    summary: >
+      User заметил зону-путаницу: "я перепутал и сказал тебе писать это в мсипи. но это логика
+      packages/skin" — витрина (apps/skin/src) ходит за пресетами напрямую в backend/presets, не
+      через MCP, значит чистая (без сети) механика тегов, написанная только здесь, заставила бы
+      витрину при рендере группировки (свайперы по тегам) дублировать sortTags/checkTags/
+      groupByTag. Архитектор написал заявку прямо в чате (сигнатуры, разделение
+      чистое/сеть — тот же чертёж, что у checkOutfit(outfit, parts)), user реализовал сам в
+      packages/skin/src/tags/index.ts, архитектор проверил (typecheck/build/тесты пакета — все
+      зелёные, 65/65) и пересадил потребителя: engine/validate.ts's checkTags — тонкая И/О-обёртка
+      над чистой функцией (ходит в service за словарём, зовёт чистую), tools/index.ts зовёт
+      sortTags/groupByTag из пакета напрямую. Внешняя сигнатура checkTags(tags, where) не
+      изменилась — resolveTags/resolveVariantTags правок не потребовали. Попутно замечено и
+      исправлено: tagGroups считался в resolveVariantTags и раньше, но нигде не отдавался наружу —
+      теперь часть ответа check_form при ok:true. Проверено живьём после рестарта сервера
+      (:3000) — group/дефолт/unknown-tag ведут себя так же, как до переноса.
+
+  - id: form-variant-tags-correction
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Попросили затестить теги на реальных кнопках — выяснилось, что первая версия (только
+      Outfit.tags) не про тот уровень: "разные кнопки" в ките — это значения ОДНОЙ оси
+      recipe.variants внутри ОДНОЙ формы (primary/secondary/tertiary/error/success/warning/
+      error-quiet), не разные наряды. Тег на весь наряд смешал бы статусные и не статусные цвета
+      в одной записи. Признано архитектором как собственная ошибка проектирования (спроецировал
+      "наряд" вместо того, чтобы свериться с оригинальной формулировкой user про "варианты под
+      одной сборкой"), не решение user. User подтвердил: Outfit.tags остаётся (пригодится для
+      других вопросов навигации), плюс новый слой Form.variantTags — та же функция
+      (resolveTags/checkTags), просто разные точки вызова ("мех одна, слои разные"). Реализовано
+      и проверено живым сохранением на omnifield-button: error/success/warning → ["status"],
+      остальные четыре значения — молча ["default"]. Ожидает от user: какие ИМЕННО 5 значений
+      варианта кнопки нужно пометить "статусы" (пока протестированы только 3 явно статусных цвета
+      — error/success/warning).
+
+  - id: outfit-tags-agreed-and-shipped
+    type: plan
+    date: 2026-09-06
+    summary: >
+      User поднял запрос на группировку: у компонента много скин-вариантов на одну код-сборку
+      (сборка+вариант = «вид компонента» со своим именем), плоский список путает и витрину, и
+      агента/человека без знания внутреннего устройства при создании скина. Обсудили две формы —
+      тег-на-наряде против отдельной сущности-группы со списком участников — user выбрал тег
+      («подвязан к нескольким группам» — от наряда к группам, не наоборот) и попросил сразу вести
+      словарь тегов, чтобы не разъехались синонимы/опечатки, плюс обязательный тег по умолчанию
+      («default»), если ничего не сформулировано. Реализация в один заход: kind:"tag" — пятый вид
+      пресета (реестр имён, backend/presets и так не толкует kind), Outfit.tags?: string[],
+      resolveTags/checkTags (tools/index.ts + engine/validate.ts) подставляют default и сверяют
+      со словарём в check_outfit/save_preset. Проверено живьём реальным round-trip (не только
+      typecheck): дефолт молча берёт "default", известный тег проходит, неизвестный даёт
+      unknown-tag рядом с unknown-palette, кириллица в имени тега отказывает bad_name (тот же
+      slug-формат, что у любого name службы). Фильтр list_presets по тегу — сознательно не сделан
+      в этот же заход (нужно читать state каждой записи, не только лёгкий конверт) — Backlog.
+
+  - id: genus-service-group-mcp-not-new-genus
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Архитектор разобрал доку этой зоны на ревью с user — исходное решение (genus "mcp" как
+      НОВЫЙ жанр, записи skin-mcp-mcp-genus-doc-rewrite/mcp-genus-readme-first-pilot ниже)
+      оказалось неверным. Дословно от user: «я предлагаю ген сервис, а тип мсипи!.. сама суть
+      мсипи должна быть в общаке, так как он не единственный, а первый». Прецедент той же формы —
+      genus "feature" у backend/presets переименован в genus "service" раньше по той же причине
+      (genus называет модель потребления — свой процесс/сеть/протокол против импорта, — не имя
+      протокола/технологии сверху неё). Итог: genus этой зоны — service (как backend/presets),
+      MCP — устоявшаяся ПОДГРУППА внутри genus service (корневой README.md, «Правила для
+      шаблонов», новый абзац + WARNING), эта зона — первый пилот ПОДГРУППЫ, backend/presets
+      остаётся общим пилотом genus. Поправлены: шапка (`🏷️ mcp · 🧬 service`, было
+      `🏷️ skin · 🧬 mcp`), абзац «Главное», первый вопрос FAQ.md (посыл целиком пересобран под
+      группу, не genus). Домен-специфичный контент (тулы, engine/, IO, Сборки, Рецепт) не тронут
+      — он не зависел от genus-решения. Старые записи лога ниже не переписаны — они верно
+      описывают решение, принятое НА ТОТ МОМЕНТ, это его правка, не отмена истории.
+
+  - id: src-layout-two-corrections
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Первый проход doc rewrite оставил код как есть — шесть файлов плоско в src/
+      (kit/mechanics/store/validate/tools/server.ts). User указал на корневое правило репозитория
+      (README.md: "никто не пишет россыпь файлов в корне") и попросил свой стиль для genus mcp.
+      Первое предложение — server.ts и tools.ts как два фиксированных файла в корне, остальное в
+      engine/ — user поправил ещё раз: "барел в корне есть", то есть даже server и tools должны
+      быть каталогами со своим index.ts, а не файлами-исключениями. Итог — src/index.ts (барель,
+      export * from "./server/index.js") + server/, tools/, engine/, у каждого свой index.ts.
+      package.json start/dev теперь указывают на src/index.ts. Проверено живьём после переноса:
+      typecheck зелёный, реальный HTTP tools/call (list_components) через новую структуру отвечает
+      isError:false с полным списком компонентов.
+
+  - id: reference-skins-per-component-agreed
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Внешний агент (первый реальный потребитель через HTTP) дал фидбек по итогам первой пробы:
+      инструменты устраивают, авторизация пока не критична (работаем внутри команды), но по
+      созданию скинов — у него нет примеров, кроме пары кнопок/аккордеонов, и нет общего понимания
+      домена (без словаря терминов "аккордеон" в промпте не обязательно читается как UI-виджет).
+      User предложил не грузить внешнего агента доками сейчас, а сначала пройти ВСЕ ~31 компонент
+      кита по одному, сделать несколько эталонных вариантов на каждый — заодно проверить живьём
+      механику компонентов (не только скин), многие из которых вообще не потрогали живым кликом.
+      Разделение труда: user правит сами компоненты (entity/анатомия) в ките при находках, эта
+      зона (я) — только MCP-сторона; playground/рецепт/сборка компонентов — отдельная работа,
+      начнётся после ревью этой доки.
+
+  - id: skin-mcp-mcp-genus-doc-rewrite
+    type: plan
+    date: 2026-09-06
+    summary: >
+      User скопировал README/FAQ/ROADMAP пакета packages/mcp (genus tooling) в корень этой зоны
+      как шаблон оформления — попросил заполнить под НОВЫЙ genus "mcp" (деплоимый сервер, не
+      библиотека), тем же скелетом разделов, но своим содержанием; старую однофайловую версию
+      README пометил README.old.md для переноса нужного и удаления. Анатомия переопределена как
+      перечень тулов (адрес = имя в tools/call, не подпуть поставки) — первый пилот genus,
+      прецедент для будущих MCP-зон других продуктов.
+
+  - id: legacy-presets-migrated
+    type: plan
+    date: 2026-09-05
+    summary: >
+      backend/presets/data/*.json (25 файлов, JS-эпоха хранения на диске) перенесены через
+      настоящий POST /api/presets в Go+bbolt службу — не скопированы в обход API. Сверено
+      побайтово на выборке (state/label совпадают), healthz видит 25. Файлы удалены (были
+      закоммичены — удаление сейчас в git как unstaged, коммит за user).
+
+  - id: skin-mcp-migrated-to-web-core-mcp-package
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Зона переведена с прямых вызовов @modelcontextprotocol/sdk на @web-core/mcp — закрывает
+      дыры живого аудита (annotations не было вовсе, isError никогда не true даже для настоящих
+      отказов, list_presets без пагинации, транспорт только stdio). Полная история решений самого
+      пакета — packages/mcp/ROADMAP.yaml, здесь не дублируется.

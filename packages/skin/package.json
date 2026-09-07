@@ -33,6 +33,10 @@
     "./solid": {
       "types": "./dist/solid.d.ts",
       "default": "./dist/solid.js"
+    },
+    "./tags": {
+      "types": "./dist/tags.d.ts",
+      "default": "./dist/tags.js"
     }
   },
   "files": [

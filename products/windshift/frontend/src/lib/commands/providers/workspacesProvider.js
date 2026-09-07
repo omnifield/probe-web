@@ -7,7 +7,7 @@ export function workspacesProvider(ctx) {
   const active = (workspaces || []).filter((ws) => ws.is_personal || ws.active !== false);
 
   return active.slice(0, 8).map((ws) => {
-    const url = ws.is_personal ? '/personal' : `/workspaces/${ws.id}`;
+    const url = ws.is_personal ? '/personal' : `/workspaces/${ws.key || ws.id}`;
     return createCommand({
       id: `goto-workspace-${ws.id}`,
       label: t('commandPalette.commands.goToWorkspace.label', { name: ws.name }),

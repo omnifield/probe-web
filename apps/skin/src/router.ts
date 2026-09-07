@@ -6,7 +6,7 @@
 
 import { createRouter, defaultRouterOptions } from "@web-core/router";
 
-import { routeTree } from "./routeTree.gen.js";
+import { routeTree } from "./routeTree.gen";
 
 export const router = createRouter({ ...defaultRouterOptions, routeTree });
 

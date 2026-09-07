@@ -30,8 +30,10 @@ import {
  * @typedef {Object} WorkspaceView
  * @property {string} id
  * @property {string} label
+ * @property {string} [labelKey]
  * @property {any}    icon
  * @property {string} [tooltip]
+ * @property {string} [tooltipKey]
  * @property {string} [testId]
  * @property {string[]} [activeViews]  Route view names that highlight this item.
  */

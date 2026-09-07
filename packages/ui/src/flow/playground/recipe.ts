@@ -10,7 +10,10 @@ export const recipe: SlotRecipe = {
         gap: "var(--space-3)",
       },
     },
-    item: { props: { display: "block", minWidth: "0" } },
+    item: {
+      props: { display: "block", minWidth: "0" },
+      states: { stretch: { props: { flexGrow: "1" } } },
+    },
   },
   variants: {
     row: {

@@ -10,6 +10,7 @@ import {
   mergeProps,
   Show,
   Suspense,
+  untrack,
 } from "solid-js";
 import { createComponent } from "solid-js/web";
 
@@ -231,33 +232,52 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
     return { ...current.props, ...resolvedBind(current.bind), ...dispatchHandlers(), ...props.rootProps };
   };
 
+  // `declared` собирается ОДИН РАЗ, СНАРУЖИ мемо (`each` внутри несёт свой геттер — сам остаётся
+  // реактивным). Две ловушки, обе найдены эмпирически (PWEB, 2026-09-06):
+  //
+  // 1) Если строить `<For>`+детей ВНУТРИ тела мемо (даже за ленивым `if (declared === undefined)`),
+  //    они попадают в число «усыновлённых» этим самым мемо на первом заходе — а Solid при КАЖДОМ
+  //    следующем пересчёте мемо сперва диспоузит всё усыновлённое на прошлом заходе, ПУСТЬ ДАЖЕ
+  //    выход мемо не поменяется. Вторая пересборка дерева уже попадает на мёртвых детей.
+  // 2) Проверка «есть ли вообще дети» не может читать `node()` СНАРУЖИ мемо напрямую (реактивно)
+  //    — тогда эта подписка на `props.tree` утекает потребителю `props.children`, тот сам
+  //    переподписывается на каждую пересборку, и ТА ЖЕ история — Solid диспоузит усыновлённое им
+  //    (сам мемо, созданный внутри) при каждой такой переподписке. Отсюда `untrack`: снимок
+  //    структуры берём один раз, без подписки, а не через `node()` в теле функции контейнера.
+  //
+  // Итог: мемо ниже читает `node()` только ради решения «слот или объявленное», это единственная
+  // его настоящая реактивная зависимость; сам вывод стабилен, пока слот не поменялся, поэтому
+  // потребитель `props.children` не видит «мемо поменялся» на каждую пересборку и не диспоузит
+  // сам мемо. Пусто — `null`, не пустой `<For>`: чужие компоненты различают их (Ark-паттерн
+  // `props.children ?? "*"` — пустой `<For>` truthy, дефолт молча не срабатывает).
   const contentCache: { memo?: () => JSX.Element | null } = {};
   const contentOf = (): JSX.Element | null => {
     if (!contentCache.memo) {
+      const current = untrack(node);
+      const declared =
+        !current || current.children.length === 0 ? null : (
+          <For each={(node()?.children ?? []) as readonly NodeId[]}>
+            {(childId) => (
+              <RenderNode
+                nodeId={childId}
+                tree={props.tree}
+                registry={props.registry}
+                fallback={props.fallback}
+                errorFallback={props.errorFallback}
+                editOverlay={props.editOverlay}
+                data={props.data}
+                dispatch={props.dispatch}
+                slots={props.slots}
+              />
+            )}
+          </For>
+        );
+
       contentCache.memo = createMemo(() => {
-        const current = node();
-        if (!current) return null;
+        const cur = node();
+        if (!cur) return null;
 
-        const declared =
-          current.children.length === 0 ? null : (
-            <For each={(node()?.children ?? []) as readonly NodeId[]}>
-              {(childId) => (
-                <RenderNode
-                  nodeId={childId}
-                  tree={props.tree}
-                  registry={props.registry}
-                  fallback={props.fallback}
-                  errorFallback={props.errorFallback}
-                  editOverlay={props.editOverlay}
-                  data={props.data}
-                  dispatch={props.dispatch}
-                  slots={props.slots}
-                />
-              )}
-            </For>
-          );
-
-        const entry = !isContent(current) ? props.slots?.[current.type] : undefined;
+        const entry = !isContent(cur) ? props.slots?.[cur.type] : undefined;
         if (!entry) return declared;
 
         const rendered = entry.render(ownProps());

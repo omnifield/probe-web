@@ -28,7 +28,7 @@ export const basic: PassportAssembly<FileUploadPart, string, Data> = {
             node: "item",
             props: { file: acceptedFile },
             children: [
-              { node: "itemPreview", children: [{ genus: "icon", value: "📄" }] },
+              { node: "itemPreview", children: [{ node: "icon", props: { name: "file-text" } }] },
               { node: "itemName", children: [{ genus: "text", value: acceptedFile.name }] },
               { node: "itemSizeText", children: [{ genus: "text", value: "16 Б" }] },
               { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },
@@ -44,7 +44,7 @@ export const basic: PassportAssembly<FileUploadPart, string, Data> = {
             node: "item",
             props: { file: rejectedFile },
             children: [
-              { node: "itemPreview", children: [{ genus: "icon", value: "🎬" }] },
+              { node: "itemPreview", children: [{ node: "icon", props: { name: "film" } }] },
               { node: "itemName", children: [{ genus: "text", value: rejectedFile.name }] },
               { node: "itemSizeText", children: [{ genus: "text", value: "превышен лимит" }] },
               { node: "itemDeleteTrigger", children: [{ genus: "text", value: "✕" }] },

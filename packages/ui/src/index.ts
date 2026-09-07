@@ -33,6 +33,7 @@ export * from "./field/index.js";
 export * from "./file-upload/index.js";
 export * from "./flow/index.js";
 export * from "./grid/index.js";
+export * from "./icon/index.js";
 export * from "./listbox/index.js";
 export * from "./menu/index.js";
 export * from "./popover/index.js";
@@ -47,11 +48,13 @@ export * from "./switch/index.js";
 export * from "./table/index.js";
 export * from "./tabs/index.js";
 export * from "./timer/index.js";
+export * from "./toc/index.js";
 export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";
 export * from "./tree-view/index.js";
+export * from "./typography/index.js";
 export * from "./workspace/index.js";
-
+export * from "./shared/utils/collection.js";
 // Карта частей вместе с паспортами (`PWEB-84`) и форма самой карты (`kit-form.js`, `export *`
 // внутри `kit.js` уже её несёт).
 export * from "./kit.js";

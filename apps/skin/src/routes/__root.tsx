@@ -6,7 +6,7 @@
 import { createRootRoute } from "@web-core/router";
 import { TanStackRouterDevtools } from "@web-core/router/devtools";
 
-import { WorkspaceLayout } from "../pages/index.jsx";
+import { WorkspaceLayout } from "../pages";
 
 export const Route = createRootRoute({
   component: () => (

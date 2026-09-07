@@ -1,0 +1,113 @@
+# Дорожная карта оглавления — формат тот же, что у остальных компонентов кита (см.
+# table/ROADMAP.yaml, шапка). Единственный источник правды: статус проставляется рядом с работой.
+#
+# Первый компонент кита, для которого пришлось поднять @ark-ui/solid (^5.38.2 → ^5.39.1) —
+# в 5.38.2 у Solid-сборки Ark компонента `toc` не было вовсе, появился только в 5.39.0.
+# Проверено эмпирически (`npm pack` обеих версий, сверены dist/components).
+
+categories:
+  - category: Основа
+    items:
+      - id: address-from-real-headings
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Список ссылок из реальных заголовков
+        description: |
+          Означает: `items` (value/depth/label/href) ведёт список ссылок в `nav`, а `content` —
+          пустой слот с настоящими заголовками потребителя; оглавление ищет их по `id === value`.
+          Реализация: сборка `basic`, проверено тестом через настоящий `RenderTree` — подписи,
+          `href`, `data-depth` совпадают с данными.
+
+      - id: extended-content-nav-address
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "content/nav — свой адрес поверх голых Ark-обёрток"
+        description: |
+          Означает: `TocContent`/`TocNav` несут `data-scope="toc"`/`data-part`, хотя сам Ark их не
+          адресует (`.extendWith("content", "nav")` — их нет в анатомии Zag вовсе).
+          Реализация: явная простановка адреса в компоненте (`components/content.tsx`,
+          `components/nav.tsx`), проверено тестом.
+
+      - id: active-state-controlled
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Активный пункт — управляемый `activeIds`
+        description: |
+          Означает: `data-active`/`aria-current` на нужном `item`/`link` реально появляются, когда
+          заданы через `activeIds`.
+          Реализация: готовый проп Ark-машины, проверено тестом. Реальное слежение за скроллом
+          (`IntersectionObserver`) в jsdom не проверено — см. категорию «Не построено».
+
+  - category: Не построено
+    items:
+      - id: no-live-scroll-tracking-test
+        type: feature
+        priority: Medium
+        milestone: null
+        name: Нет живой проверки слежения за скроллом
+        description: |
+          Означает: `test/setup-dom.ts` подменяет `IntersectionObserver` no-op заглушкой на все
+          DOM-тесты пакета (без неё Zag-машины падают при монтировании) — значит настоящее
+          пересечение при скролле в этом наборе тестов никогда не сработает, симулировать его
+          нечем. Проверено только управляемое состояние (`activeIds`), не реальное слежение.
+          Реализация: отсутствует — нужен либо `*.live.test.ts` с настоящим Chromium (тот же приём,
+          что у `accordion.live.test.ts`), либо остаётся непроверенным до первого живого прогона в
+          приложении.
+
+      - id: nav-placement-not-a-setting
+        type: feature
+        priority: Low
+        milestone: null
+        name: "`Toc.Nav`'s `placement` не проброшен как настройка кита"
+        description: |
+          Означает: у `TocNav` есть реальный проп `placement: 'left' | 'right'` (сторона, с которой
+          сама навигация ожидает, что её позиционируют), но он не заведён как настройка кита —
+          `defineSettings` типизирует против `TocProps` (пропсов `root`), а `placement` живёт на
+          `nav`, другой части.
+          Реализация: отсутствует — проп доступен только прямым `<TocNav placement="right">` в
+          ручной композиции, схема его не знает.
+
+      - id: no-root-provider-wrapper
+        type: feature
+        priority: Low
+        milestone: null
+        name: "`useToc`/`Toc.RootProvider` не обёрнуты китом"
+        description: |
+          Означает: реальный Ark даёт хук `useToc` + `Toc.RootProvider` — способ достать
+          `activeIds`/`scrollTo` НАРУЖУ дерева компонента, не разбирая дерево на composedInto.
+          Кит сегодня отдаёт только обычные JSX-части (карта кита строится из `passport.parts`,
+          хук в эту форму не ложится) — кто использует, ставит `useToc`/`RootProvider` из
+          `@ark-ui/solid/toc` напрямую в обход кита.
+          Реализация: отсутствует — честный пробел, не решение спрятать хук.
+
+# Журнал решений.
+log:
+  - id: ark-ui-solid-bumped-for-toc
+    type: plan
+    date: 2026-09-06
+    summary: >
+      `@ark-ui/solid` поднят с `^5.38.2` до `^5.39.1` — только в этой версии у Solid-сборки
+      появился `toc` вообще (проверено: `npm pack` 5.38.2 не несёт `dist/components/toc/`,
+      5.39.1 несёт). Полный прогон `vitest`/`tsc`/`eslint` всего пакета после подъёма — без
+      регрессий.
+
+  - id: extend-vs-bare-content-nav
+    type: plan
+    date: 2026-09-06
+    summary: >
+      User, 2026-09-06: дать `content`/`nav` честный адрес через `extendWith`, а не оставить
+      неадресованными, как у голого Ark — раз кит адресует всё остальное, эти две части не должны
+      быть исключением только потому, что сам Ark их не адресовал.
+
+  - id: href-in-data-not-computed
+    type: plan
+    date: 2026-09-06
+    summary: >
+      `href` — отдельное поле `items`, не вычисляется из `value` внутри схемы: `bind` резолвит путь
+      один в один, склеивания строк схема не умеет. Тот, кто даёт данные, даёт готовую ссылку.

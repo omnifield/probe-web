@@ -5,6 +5,8 @@
   import { isSelfOrDescendant } from './pageHierarchy.js';
   import { api } from '../../api.js';
   import { navigate, currentRoute } from '../../router.js';
+  import { workspacesStore } from '../../stores/workspaces.svelte.js';
+  import { workspaceUrlSegment } from '../../utils/workspaceRouteParam.js';
   import { t } from '../../stores/i18n.svelte.js';
   import { confirm } from '../../composables/useConfirm.js';
   import { errorToast } from '../../stores/toasts.svelte.js';
@@ -34,6 +36,12 @@
   import { pagesFilter } from './pagesFilter.svelte.js';
 
   let { workspaceId, embedded = false } = $props();
+
+  // Human-readable workspace URL segment (its key, e.g. "assembly") when
+  // known; falls back to the numeric id while the workspace list loads.
+  let workspaceUrlKey = $derived(
+    workspaceUrlSegment(workspaceId, $workspacesStore.allWorkspaces)
+  );
 
   let pages = $state([]);
   let loading = $state(true);
@@ -301,9 +309,12 @@
   // The currently active page id comes from the route param, not local state —
   // navigating back/forward (or PagesView selecting via a different path) must
   // keep the sidebar's highlight in sync.
-  let activePageId = $derived(
-    $currentRoute?.params?.pageId ? Number($currentRoute.params.pageId) : null
-  );
+  let activePageId = $derived.by(() => {
+    const raw = $currentRoute?.params?.pageId;
+    if (!raw) return null;
+    if (/^\d+$/.test(raw)) return Number(raw);
+    return pages.find((p) => p.slug === raw)?.id ?? null;
+  });
 
   // Reveal the active page in the tree: navigating to a page (sidebar
   // click, deep link, in-page link, search result) expands every ancestor
@@ -360,10 +371,26 @@
   });
 
   async function loadTree() {
-    loading = true;
+    // Only show the full-replace loading state on the very first load.
+    // A refetch triggered while the tree is already on screen (whatever
+    // the trigger) should refresh in place, not blank the list out from
+    // under the user mid-navigation.
+    if (pages.length === 0) loading = true;
     try {
       const resp = await api.pages.getTree(workspaceId);
       pages = flattenDepthFirst(resp.tree || []);
+
+      // Landing on the bare /pages route with nothing selected — jump
+      // straight to the workspace's home page instead of an empty pane.
+      // Every workspace is expected to have one going forward; older
+      // workspaces without an is_home page just keep the empty state.
+      if ($currentRoute.view === 'workspace-pages' && !$currentRoute.params.pageId) {
+        const home = pages.find((p) => p.is_home);
+        if (home) {
+          navigate(`/workspaces/${workspaceUrlKey}/pages/${home.slug || home.id}`, { replace: true });
+        }
+      }
+
       // Cache every label we encounter so the filter row can render names
       // + colors for active filters without an extra round-trip.
       for (const page of pages) {
@@ -398,14 +425,15 @@
     return out;
   }
 
-  function selectPage(id) {
+  function selectPage(page) {
+    const id = page.id;
     // Selecting a page opens its own subtree so its direct children are
     // immediately available. Descendant subtrees keep their existing state.
     if ((childCountById.get(id) || 0) > 0 && !expandedIds.has(id)) {
       expandedIds = new Set(expandedIds).add(id);
       persistExpanded();
     }
-    navigate(`/workspaces/${workspaceId}/pages/${id}`);
+    navigate(`/workspaces/${workspaceUrlKey}/pages/${page.slug || id}`);
   }
 
   async function createPage(parentId) {
@@ -426,7 +454,7 @@
         persistExpanded();
       }
       pagesFocusTitle.request(page.id);
-      navigate(`/workspaces/${workspaceId}/pages/${page.id}`);
+      navigate(`/workspaces/${workspaceUrlKey}/pages/${page.slug || page.id}`);
       await loadTree();
     } catch (err) {
       errorToast(err?.message || t('pages.errorCreate'));
@@ -447,7 +475,7 @@
     try {
       await api.pages.archivePage(workspaceId, page.id);
       if (activePageId === page.id) {
-        navigate(`/workspaces/${workspaceId}/pages`);
+        navigate(`/workspaces/${workspaceUrlKey}/pages`);
       }
       await loadTree();
     } catch (err) {
@@ -457,7 +485,7 @@
 
   function requestRename(page) {
     if (activePageId !== page.id) {
-      navigate(`/workspaces/${workspaceId}/pages/${page.id}`);
+      navigate(`/workspaces/${workspaceUrlKey}/pages/${page.slug || page.id}`);
     }
     pagesFocusTitle.request(page.id);
   }
@@ -685,7 +713,7 @@
               class="header-button"
               class:header-button--active={$currentRoute.view === 'workspace-pages-archived'}
               type="button"
-              onclick={() => navigate(`/workspaces/${workspaceId}/pages/archived`)}
+              onclick={() => navigate(`/workspaces/${workspaceUrlKey}/pages/archived`)}
               aria-label={t('pages.archivedOpenAria')}
               data-testid="pages-archived-open"
             >
@@ -844,7 +872,7 @@
           <button
             class="page-button"
             type="button"
-            onclick={() => selectPage(page.id)}
+            onclick={() => selectPage(page)}
             data-testid="page-tree-page"
           >
             {#if PageIcon}
@@ -917,8 +945,9 @@
 
   .title-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
     padding: 0 0.25rem;
   }
 
@@ -1098,7 +1127,6 @@
 
   .tree-item.active .page-button {
     background: var(--ds-surface-selected);
-    font-weight: 500;
   }
 
   /* Drop affordances: a thin line for sibling drops, full-row tint for child drops */

@@ -7,7 +7,6 @@
   import Spinner from '../components/Spinner.svelte';
   import EmailVerificationBanner from '../features/notifications/EmailVerificationBanner.svelte';
   import CollectionNavigation from '../features/collections/CollectionNavigation.svelte';
-  import Footer from '../layout/Footer.svelte';
   import MainSidebar from '../layout/MainSidebar.svelte';
   import {
     GLOBAL_COLLECTION_VIEWS,
@@ -315,14 +314,6 @@
     </div>
   </div>
 
-  <footer
-    class="authenticated-footer transition-[margin] duration-200 ease-out"
-    style={!$uiStore.reviewFullscreen
-      ? `margin-left: ${$uiStore.navExpanded ? '200px' : '64px'}`
-      : ''}
-  >
-    <Footer />
-  </footer>
 </div>
 
 <MainAppOverlays
@@ -388,10 +379,6 @@
       background: color-mix(in srgb, var(--ds-blanket, #091e42) 54%, transparent);
     }
 
-    .authenticated-footer {
-      margin-left: 4rem !important;
-      transform: none !important;
-    }
   }
 
   :global(.themed-nav) {

@@ -3,17 +3,11 @@ import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
+import { createContext, useContext } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogPositioner,
-  DialogTitle,
-  DialogTrigger,
-  kit as dialogKit,
-} from "../components/index.js";
+import { Dialog, DialogContent, DialogControl, kit as dialogKit } from "../components/index.js";
 import { passport as dialogPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as dialogEditorInfo } from "../playground/index.js";
@@ -35,9 +29,14 @@ function readable<Part extends string, Data = unknown>(
   };
 }
 
+// `provider: dialogKit.provider` — the REAL kit-declared provider, not a hardcoded re-import of
+// `Dialog`. A hardcoded provider would keep this test green even if `defineKitComponent`'s third
+// argument were ever dropped from `components/index.ts` — found live exactly this way (the
+// showcase app threw `useDialogContext returned undefined` while a test with a hardcoded provider
+// still passed).
 const REGISTRY: Registry = createRegistry({
   components: {
-    dialog: { passport: readable(dialogPassport, dialogEditorInfo), parts: dialogKit.parts, provider: Dialog },
+    dialog: { passport: readable(dialogPassport, dialogEditorInfo), parts: dialogKit.parts, provider: dialogKit.provider },
   },
   admits,
 });
@@ -50,58 +49,94 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe('dialog "basic" — the floating half, open by default via providerProps', () => {
-  it("shows the title/description from data and a close cross, addressed by the real anatomy", () => {
-    const data = { title: "Добро пожаловать", description: "Войдите в аккаунт, чтобы продолжить." };
+describe('dialog "basic" — pure mechanics, open by default via providerProps, content is an empty slot', () => {
+  it("addresses content by the real anatomy, and renders whatever the consumer puts inside it", () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-    const tree = baseAssemblyOf(dialogPassport, assembly as PassportAssembly, "dialog", data);
+    const tree = baseAssemblyOf(dialogPassport, assembly as PassportAssembly, "dialog", {});
 
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={data} />, host);
-
-    expect(host.querySelector('[data-scope="dialog"][data-part="title"]')?.textContent).toBe("Добро пожаловать");
-    expect(host.querySelector('[data-scope="dialog"][data-part="description"]')?.textContent).toBe(
-      "Войдите в аккаунт, чтобы продолжить.",
+    dispose = render(
+      () => (
+        <RenderTree
+          registry={REGISTRY}
+          tree={tree}
+          data={{}}
+          slots={{
+            dialog: { render: () => <p>Собственная разметка потребителя</p>, placement: "replace" },
+          }}
+        />
+      ),
+      host,
     );
 
-    const content = host.querySelector('[data-scope="dialog"][data-part="content"]');
+    const content = document.querySelector('[data-scope="dialog"][data-part="content"]');
     expect(content?.getAttribute("data-state")).toBe("open");
+    expect(content?.textContent).toContain("Собственная разметка потребителя");
 
-    const closeTrigger = host.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
-    expect(closeTrigger?.textContent).toBe("✕");
+    expect(document.querySelector('[data-scope="dialog"][data-part="backdrop"]')).not.toBeNull();
+    expect(document.querySelector('[data-scope="dialog"][data-part="close-trigger"]')?.textContent).toBe("✕");
   });
 });
 
-describe("multiple triggers sharing one dialog", () => {
-  it("marks the clicked trigger current and opens the shared dialog", async () => {
+describe("context flows through DialogContent's Portal into the consumer's own element", () => {
+  it("a Context.Provider placed around DialogContent reaches a component rendered inside it", () => {
+    const Greeting = createContext("no context");
+
+    function ReadsGreeting() {
+      return <p data-testid="greeting">{useContext(Greeting)}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <Greeting.Provider value="hello from outside the portal">
+          <Dialog defaultOpen>
+            <DialogControl>Open</DialogControl>
+            <DialogContent>
+              <ReadsGreeting />
+            </DialogContent>
+          </Dialog>
+        </Greeting.Provider>
+      ),
+      host,
+    );
+
+    expect(document.querySelector('[data-testid="greeting"]')?.textContent).toBe(
+      "hello from outside the portal",
+    );
+  });
+});
+
+describe("multiple controls sharing one dialog", () => {
+  it("marks the clicked control current and opens the shared dialog", async () => {
     const host = document.createElement("div");
     document.body.append(host);
 
     dispose = render(
       () => (
         <Dialog>
-          <DialogTrigger value="alice">Alice</DialogTrigger>
-          <DialogTrigger value="bob">Bob</DialogTrigger>
-          <DialogPositioner>
-            <DialogContent>
-              <DialogTitle>Edit</DialogTitle>
-            </DialogContent>
-          </DialogPositioner>
+          <DialogControl value="alice">Alice</DialogControl>
+          <DialogControl value="bob">Bob</DialogControl>
+          <DialogContent>
+            <p>Edit</p>
+          </DialogContent>
         </Dialog>
       ),
       host,
     );
 
-    const triggers = host.querySelectorAll('[data-scope="dialog"][data-part="trigger"]');
-    (triggers[1] as HTMLElement).click();
+    const controls = host.querySelectorAll('[data-scope="dialog"][data-part="control"]');
+    (controls[1] as HTMLElement).click();
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(triggers[1]!.getAttribute("data-current")).toBe("");
-    expect(triggers[0]!.getAttribute("data-current")).toBeNull();
-    expect(host.querySelector('[data-scope="dialog"][data-part="content"]')?.getAttribute("data-state")).toBe(
+    expect(controls[1]!.getAttribute("data-current")).toBe("");
+    expect(controls[0]!.getAttribute("data-current")).toBeNull();
+    expect(document.querySelector('[data-scope="dialog"][data-part="content"]')?.getAttribute("data-state")).toBe(
       "open",
     );
   });

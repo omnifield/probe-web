@@ -4,7 +4,7 @@ import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { kit as accordionKit } from "../components/index.js";
 import { passport as accordionPassport } from "../entity/passport.js";
@@ -14,6 +14,10 @@ import { editorInfo as accordionEditorInfo } from "../playground/index.js";
 import { kit as listboxKit } from "../../listbox/components/index.js";
 import { passport as listboxPassport } from "../../listbox/entity/passport.js";
 import { editorInfo as listboxEditorInfo } from "../../listbox/playground/index.js";
+
+import { kit as iconKit } from "../../icon/components/index.js";
+import { passport as iconPassport } from "../../icon/entity/passport.js";
+import { editorInfo as iconEditorInfo } from "../../icon/playground/index.js";
 
 function readable<Part extends string, Data = unknown>(
   passport: ComponentPassport<Part>,
@@ -36,6 +40,7 @@ const REGISTRY: Registry = createRegistry({
   components: {
     accordion: { passport: readable(accordionPassport, accordionEditorInfo), parts: accordionKit.parts },
     listbox: { passport: readable(listboxPassport, listboxEditorInfo), parts: listboxKit.parts },
+    icon: { passport: readable(iconPassport, iconEditorInfo), parts: iconKit.parts },
   },
   admits,
 });
@@ -82,6 +87,14 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
       host,
     );
 
+    // `RenderTree` wraps everything in one `<Suspense>` — the real Icon inside each listbox
+    // item's indicator suspends the whole tree until it resolves, not just its own slot.
+    await vi.waitFor(() => {
+      if (!host.querySelector('[data-scope="accordion"][data-part="control"]')) {
+        throw new Error("suspended tree not resolved yet");
+      }
+    });
+
     const trigger = host.querySelector('[data-scope="accordion"][data-part="control"]') as HTMLElement | null;
     expect(trigger?.textContent).toBe("Section 1");
 
@@ -91,6 +104,7 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
     const items = [...host.querySelectorAll('[data-scope="listbox"][data-part="item"]')] as HTMLElement[];
     const texts = [...host.querySelectorAll('[data-scope="listbox"][data-part="item-text"]')] as HTMLElement[];
     expect(texts.map((text) => text.textContent)).toEqual(["Item 1", "Item 2"]);
+    expect(items[0]?.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
 
     trigger?.click();
     items[1]!.click();

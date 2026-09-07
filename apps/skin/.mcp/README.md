@@ -1,91 +1,200 @@
-# Зона `skin-mcp` — MCP-сервер для создания скина
+# 🎨 web-core skin-mcp
 
-Ручки на уже готовую механику `packages/skin`, не новая механика. Заявка, из которой собран этот
-список (Windshift, workspace SKINED), и проверка её пункт за пунктом против кода — в истории
-разговора, не здесь; повторять её не будем.
+🏷️ mcp · 🧬 service · 📦 `@web-core/skin-mcp`
 
-**v1 — только текст.** CSS-текст (`generateSkinCss`) и структурированные отчёты проверок
-(`checkOutfit`/`checkSkin`/`checkAssembly`/`skinGaps`), без скриншота. Живого рендера в headless-
-браузере в репозитории сегодня нет нигде (`playwright` не установлен, `tools/live-check` из
-старого чекпойнта — путь, которого в дереве больше нет) — это отдельная задача второй волны, не
-часть этого сервера.
+## 🧭 Навигация
 
-**Регистрация тулов и транспорт — через `@web-core/mcp`.** Зона больше не зовёт SDK
-(`@modelcontextprotocol/sdk`) напрямую — общий тулинг закрывает то, чего не хватало живому аудиту
-этой зоны: annotations на каждом туле (раньше не было вовсе), настоящий `isError` по спеке (раньше
-даже настоящие отказы уезжали `isError:false`), пагинацию `list_presets`, бутстрап транспорта
-(stdio/Streamable HTTP одним конфигом, без переписывания). Разбор устройства и решений самого
-тулинга — `packages/mcp/README.md`/`FAQ.md`, здесь не повторяется.
+- ✨ [Главное](#главное)
+- 🧩 [Анатомия](#анатомия)
+- 🚀 [Использование](#использование)
+- 🎚️ [Настройки](#настройки)
+- 🎛️ [Состояния](#состояния)
+- 🔌 [IO](#io)
+- 🏗️ [Сборки](#сборки)
+- 🎨 [Рецепт](#рецепт)
+- ❓ [FAQ](./FAQ.md)
 
-## Устройство
+<h2 id="главное">✨ Главное</h2>
 
-| файл | что делает |
-|---|---|
-| `src/kit.ts` | реестр кита — `passportOf`/`editorInfoOf`/`ioOf` уже собраны барреллом (`packages/ui/src/passport.ts`, `.../io.ts`), здесь только форма ответа под MCP; плюс `exampleDataFor` — пример по io-схеме через `packages/io`'s `exampleOf`, для проверки данных сборки |
-| `src/mechanics.ts` | связка с источником паспортов, один раз (`withPassports`, `PWEB-94`) — `checkOutfit`/`assemble`/`checkSkin`/`generateSkinCss`, плюс двухпроходная проверка сборки: `checkAssembly` (структура) и `checkAssemblyData` (`bind`/`repeat.path` против примера) — обе выведены наружу из `@web-core/skin/editor`, раньше были заперты внутри `defineEditorInfo` |
-| `src/store.ts` | разговор со службой пресетов (`8787`) — Node-версия клиента `apps/skin/src/entities/outfit/api/store.ts`, тот читает адрес из `import.meta.env`, здесь `process.env` |
-| `src/validate.ts` | проверка ОДИНОЧНОЙ палитры/формы — своей функции у механики для этого нет, здесь синтетический наряд из одной записи (см. комментарий в файле) |
-| `src/tools.ts` | регистрация десяти ручек через `@web-core/mcp` (`registerTool`/`ok`/`err`) |
-| `src/server.ts` | точка входа — бутстрап транспорта через `@web-core/mcp/transport` |
+🎨 MCP-сервер для создания скина web-core — используйте, если агенту (не человеку — для человека
+есть визуальный редактор) нужно собрать/проверить/сохранить палитру, форму компонента, наряд или
+сборку. Ручки на уже готовую механику `packages/skin`, не новая механика — сервер разведывает кит
+(паспорта компонентов), проверяет ДО сохранения (два прохода: ссылки и адрес) и кладёт результат в
+службу пресетов (`backend/presets`, Go+bbolt). **v1 — только текст**: CSS-текст (`generateSkinCss`)
+и структурированные отчёты проверок, без скриншота — живого рендера в headless-браузере в
+репозитории сегодня нет нигде, это отдельная задача второй волны.
 
-## Ручки
+🧵 Первый пилот подгруппы `mcp` внутри `genus: service` (канон подгруппы — корневой README.md,
+раздел «Правила для шаблонов») — сама регистрация тулов и транспорт (stdio/Streamable HTTP) взяты
+из `@web-core/mcp` целиком (устройство и решения самого тулинга — его `README.md`/`FAQ.md`, здесь
+не повторяются); этот README держит только то, что специфично ИМЕННО скину — какие тулы, что
+каждый принимает/отдаёт, и что уже найдено живым использованием.
 
-`list_components` · `get_passport` · `list_presets` · `get_preset` · `check_palette` ·
-`check_form` · `check_assembly` · `check_outfit` · `assemble_preview` · `save_preset`.
+<h2 id="анатомия">🧩 Анатомия</h2>
 
-Входы палитры/формы/наряда/сборки приходят СВОБОДНОЙ формой (`z.looseObject`) — содержимое
-проверяет механика, а не граница протокола: второй, более узкий контракт здесь молча разошёлся бы
-с настоящим (тот же довод, что у `backend/presets`, которая тоже не толкует содержимое).
+У сервера-зоны без DOM и без файловой поставки «часть» 🧩 — один тул, адресуемый по имени в
+`tools/call`, а «адрес» — это имя.
 
-Каждая ручка размечена `access` (`read`/`write`) через `@web-core/mcp` — отображается в нативные
-`readOnlyHint`/`destructiveHint` спеки MCP; только `save_preset` — `write`, остальные девять —
-`read`. Отказ протокола (`isError: true`) — только для не найденного по имени/сломанного входа
-(`get_passport`/`get_preset` с неизвестным именем, `save_preset` с кривой формой assembly-состояния);
-флав-отчёты (`check_*`, отказ валидации внутри `save_preset`, `OutfitRefused` внутри
-`assemble_preview`) — обычные business-данные тула (`isError: false`), а не отказ протокола: тул
-СДЕЛАЛ, что просили (проверил), просто результат проверки отрицательный. `list_presets` с
-указанным `kind` отдаёт страницу (`cursor`/`limit`, курсорная пагинация из `@web-core/mcp/pagination`),
-без `kind` — всё как раньше, без пагинации (видов всего четыре).
+| Тул | `access` | Что делает |
+|---|---|---|
+| `list_components` | `read` | Перечень компонентов кита с паспортом — что вообще можно одеть |
+| `get_passport` | `read` | Паспорт одного компонента: части, состояния, настройки, io-схема, means |
+| `list_presets` | `read` | Перечень сохранённого по виду (палитра/форма/наряд/сборка/тег), с пагинацией |
+| `get_preset` | `read` | Содержимое одной сохранённой записи по имени |
+| `check_palette` | `read` | Проверка палитры ДО сохранения |
+| `check_form` | `read` | Проверка формы (рецепта компонента) в два прохода |
+| `check_assembly` | `read` | Проверка дерева сборки: структура + данные (`bind`/`repeat.path`) |
+| `check_outfit` | `read` | Проверка наряда (палитра+формы+теги) целиком |
+| `assemble_preview` | `read` | Собрать наряд и увидеть CSS-текст + покрытие, без сохранения |
+| `save_preset` | `write` | Сохранить палитру/форму/наряд/сборку/тег — после той же проверки, что и `check_*` |
 
-## Запуск
+📂 Девять `read`, один `write` (`save_preset`) — размечено через `access` `@web-core/mcp`,
+отображается в нативные `readOnlyHint`/`destructiveHint` спеки MCP.
+
+🏷️ **Теги** — навигация по множеству вариантов (для витрины и для агента, которому иначе пришлось
+бы перебирать сотни записей вслепую), никак не влияет на механику сборки. Чистая механика
+(`sortTags`/`checkTags`/`groupByTag`, словарь передаётся параметром, сама за ним не ходит) живёт в
+`@web-core/skin/tags` — витрина (`apps/skin/src`) читает пресеты напрямую из `backend/presets`,
+минуя MCP, и тоже нуждается в тех же функциях, так что дублировать их здесь было ошибкой (см.
+FAQ.md). Здесь, в `engine/validate.ts` и `tools/index.ts`, остался только И/О-клей: сходить в
+службу за словарём (`store.list("tag")`), собрать из него `Set`, применить дефолт `["default"]`,
+позвать чистую функцию. Применено на ДВУХ разных слоях:
+
+- **Наряд целиком** — `Outfit.tags?: string[]`, одна метка на весь `outfit` (`check_outfit`/
+  `save_preset`).
+- **Значение варианта формы** — `Form.variantTags?: { [variantName]: string[] }`, метка на КАЖДОЕ
+  значение `recipe.variants` отдельно (`check_form`/`save_preset`) — та же кнопка, где `error`/
+  `success`/`warning` уместно тегировать «статусы», а `primary`/`secondary`/`tertiary` нет.
+
+На обоих слоях: тег — свободная строка-слаг (тот же `^[a-z0-9][a-z0-9-]{0,31}$`, что и у `name`/
+`kind` любой записи, кириллица отказывает `bad_name`), пусто или не передан — подставляется
+`["default"]`, неизвестный — флав `unknown-tag` (для формы — с адресом `variantTags.<имя>`, чтобы
+было видно, у какого именно значения проблема). Запись может состоять в нескольких тегах разом.
+
+Устройство на каталоги — свой стиль подгруппы `mcp`: в корне `src/` только барель `index.ts`
+(`export * from "./server"`, заодно и точка входа `pnpm start`), у каждого каталога своя роль и
+свой `index.ts` как публичная поверхность.
+
+| Каталог | Роль | Публичная поверхность |
+|---|---|---|
+| `server/` | точка входа — бутстрап транспорта через `@web-core/mcp/transport` | ничего наружу, только запускает |
+| `tools/` | граница протокола — регистрация всех десяти тулов через `registerTool`/`ok`/`err` | `registerTools(server)` |
+| `engine/` | связка с доменом skin — специфична ИМЕННО этой зоне, у другой MCP-зоны будет свой домен | `getPassport`/`listComponents` (кит), `skin`/`checkAssembly`/`skinGaps` (механика), `store` (клиент службы пресетов), `checkForm`/`checkPalette`/`checkTags` (проверка одной записи) |
+
+Внутри `engine/` — четыре файла по одному на концерн (`kit.ts` реестр паспортов кита под форму
+MCP, `mechanics.ts` связка с источником паспортов, `store.ts` Node-клиент службы пресетов,
+`validate.ts` проверка ОДНОЙ палитры/формы синтетическим нарядом — своей функции для этого у
+механики нет, плюс `checkTags` — тонкая И/О-обёртка над чистым `checkTags` из
+`@web-core/skin/tags`) — они друг другу соседи, не публикуются напрямую, только через
+`engine/index.ts`. `sortTags`/`groupByTag` в `tools/index.ts` зовутся напрямую из
+`@web-core/skin/tags`, минуя `engine/` — они не про домен skin-mcp, это готовая чужая механика.
+
+<h2 id="использование">🚀 Использование</h2>
 
 ```sh
-pnpm --filter @web-core/skin-mcp start   # stdio-сервер (по умолчанию)
+pnpm --filter @web-core/skin-mcp start      # stdio-сервер (по умолчанию)
+pnpm --filter @web-core/skin-mcp dev        # то же, с перезапуском на правку
 pnpm --filter @web-core/skin-mcp typecheck
 ```
 
-Транспорт переключается без правки кода — `SKIN_MCP_TRANSPORT=http` (плюс `PORT`, по умолчанию
-`3000`) поднимает Streamable HTTP вместо stdio, через `createServer` из `@web-core/mcp/transport`.
-Auth-хука сегодня нет — служба пресетов сама не проверяет ни токен, ни scope, добавлять проверку
-только на этой границе было бы обманом безопасности, не защитой.
+Нужна живая служба пресетов (`pnpm --filter @web-core/presets start`, порт `8787` по умолчанию) —
+без неё ручки хранения отвечают `StoreDown`.
 
-Нужна живая служба пресетов (`pnpm --filter @web-core/presets start`, порт `8787`) — без неё
-ручки хранения отвечают `StoreDown`. Адрес переопределяется `SKIN_MCP_PRESETS_URL`.
+**Типичный порядок вызова** (то же самое уходит агенту в `instructions` на `initialize`):
+`list_components` → `get_passport` конкретного компонента → `check_palette`/`check_form`/
+`check_assembly`/`check_outfit` → (если чисто) `save_preset`; `assemble_preview` — увидеть CSS без
+сохранения. Отрицательный отчёт проверки — часть ответа (`isError: false`), не отказ инструмента.
 
-## Дыра, найденная живым тестом — `checkAssembly` не читает `bind`/`props`/`on` вообще
+<h2 id="настройки">🎚️ Настройки</h2>
 
-`checkAssembly` (структура) по устройству механики никогда не смотрит на `bind`/`repeat.path` —
-на уровне типов это закрывает `BoundPath` (`packages/skin/src/passport/assembly/paths.ts`), но
-только пока смотрит `tsc`. Сборка, собранная агентом через MCP, приезжает JSON'ом — компилятора
-над ней нет, и опечатка в пути раньше проходила как `{ok:true}` наравне с верным деревом.
+🎛️ Все — переменные окружения `server/index.ts`, ничего не конфигурируется кодом зоны.
 
-Починка — `checkAssemblyData` (`packages/skin/src/passport/editor/check-assembly-data.ts`),
-второй обход того же дерева: абсолютит каждый путь тем же приёмом, каким это делает рантайм при
-развороте `repeat` (`scopedPath`, вынесена из `expand.ts` — один источник, не два), резолвит через
-уже публичный `resolveDataBinding` и называет путь, ушедший в никуда. `check_assembly` теперь
-проверяет структуру и данные разом; данные — против ПРИМЕРА по io-схеме компонента (`exampleDataFor`,
-`packages/io`'s `exampleOf`), не выдуманного вручную. Компонент без `entity/io.ts` — `dataCheck:
-"skipped"`, честно, а не тихий успех.
+| Переменная | Значение | По умолчанию |
+|---|---|---|
+| `SKIN_MCP_TRANSPORT` | `"stdio" \| "http"` | `"stdio"` |
+| `PORT` | порт HTTP-транспорта | `3000` |
+| `SKIN_MCP_HOST` | адрес привязки HTTP (см. FAQ.md — зачем отдельно от умолчания пакета) | `"127.0.0.1"` (умолчание `@web-core/mcp`) |
+| `SKIN_MCP_PRESETS_URL` | адрес службы пресетов (`engine/store.ts`) | `http://127.0.0.1:8787/api/presets` |
 
-## Побочная находка — почин `packages/io`
+<h2 id="состояния">🎛️ Состояния</h2>
 
-`get_passport` тянет io-схему компонента через `@web-core/ui/io`, а та — саму
-`@web-core/io`. Под настоящим (не бандлерным) Node ESM это падало:
-`packages/io/src/paths.ts` брала `getValueByPointer` именованным импортом из `fast-json-patch`, а
-библиотека кладёт это имя в `exports` ДИНАМИКОЙ (`Object.assign(exports, core)`) — статический
-анализ Node (`cjs-module-lexer`) такое не видит, и именованный импорт падает
-`ERR_MODULE_NOT_FOUND`. Под Vite/Vitest это не проявлялось — там интероп терпимее, поэтому не
-было замечено раньше. Почин — дефолтный импорт вместо именованного (`packages/io/src/paths.ts`),
-дефолтный экспорт `module.exports` целиком работает у Node ESM всегда, независимо от статического
-анализа. Тот же паттерн (тот же лоуд) остаётся у `packages/assembly/src/tree.ts` — не тронуто,
-эта зона в графе зависимостей `skin-mcp` не стоит.
+🚦 Состояния протокола (annotations/`isError`/сессии/auth) — общие для любой зоны на
+`@web-core/mcp`, см. его README. Специфично для skin-mcp:
+
+| Состояние | Метка | Где |
+|---|---|---|
+| Проверка нашла флавы | `isError: false`, флавы — часть данных ответа | `check_*`, `save_preset` при отказе валидации |
+| Наряд не собрался (`OutfitRefused`) | `isError: false`, `{flaws}` в ответе | `assemble_preview` |
+| `tags`/`variantTags[x]` не переданы/пусто | молча подставляется `["default"]` | `check_outfit`/`check_form`, `save_preset` |
+| Тег не найден в словаре | флав `unknown-tag`, `isError: false` | `check_outfit`/`check_form`, `save_preset` |
+| Имя компонента/пресета не найдено | `isError: true` | `get_passport`, `get_preset` |
+| Форма assembly-состояния сломана | `isError: true` | `save_preset` (`kind: "assembly"`) |
+| Компонент без `entity/io.ts` | `dataCheck: "skipped"`, не тихий успех | `check_assembly` |
+| Служба пресетов недоступна | бросает `StoreDown`, SDK заворачивает в `isError: true` | любой тул со стораджем |
+
+<h2 id="io">🔌 IO</h2>
+
+<h3>📥 Вход</h3>
+
+Палитра/форма/наряд/сборка приходят СВОБОДНОЙ формой (`z.looseObject`) — содержимое проверяет
+механика (`checkOutfit`/`checkSkin`/`checkAssembly`), а не граница протокола: второй, более узкий
+контракт здесь молча разошёлся бы с настоящим (тот же довод, что у `backend/presets`, которая тоже
+не толкует `state`).
+
+| Тул | Принимает |
+|---|---|
+| `get_passport` | `{ component }` |
+| `list_presets` | `{ kind?, cursor?, limit? }` |
+| `get_preset` | `{ kind, name }` |
+| `check_palette` | `{ palette }` — `Palette` целиком |
+| `check_form` | `{ form, paletteName? }` — `Form` целиком, `form.variantTags?` — теги по значению варианта |
+| `check_assembly` | `{ component, assembly }` — `PassportAssembly` |
+| `check_outfit` / `assemble_preview` | `{ outfit }` — `{ name, palette, forms[], tags? }` |
+| `save_preset` | `{ kind, state, label?, paletteName? }` |
+
+<h3>📤 Выход</h3>
+
+| Тул | Отдаёт (успех) |
+|---|---|
+| `list_components` | массив `{ component, genus, group, footprint, package, parts, assemblies }` |
+| `get_passport` | `{ component, passport, editor, io }` |
+| `list_presets`/`get_preset` | `{ items, nextCursor? }` / конверт записи (`{id,label,...,state}`) |
+| `check_*` | отчёт с флавами (форма своя у каждого — см. `packages/skin` README); `check_form` при `ok:true` дополнительно отдаёт `tagGroups` (`variantTags` наоборот — тег → варианты, из `@web-core/skin/tags`) — готовая раскладка под свайперы витрины |
+| `assemble_preview` | `{ report, gaps, css }` |
+| `save_preset` | `{ saved }` — сохранённый конверт |
+
+<h2 id="сборки">🏗️ Сборки</h2>
+
+✅ Проверено живьём, не только typecheck.
+
+| Проверено | Как | Результат |
+|---|---|---|
+| Все десять тулов регистрируются | `registerTools(server)` на реальном `McpServer`, `client.listTools()` | 10 тулов, annotations верные (9 `readOnlyHint`, 1 нет) |
+| Два клиента одновременно на реальных тулах зоны | два `StreamableHTTPClientTransport` на поднятый `createServer({registerTools})` | оба живы, `list_components` отвечает обоим |
+| `instructions` доезжают | `client.getInstructions()` | совпадает с текстом порядка вызова из `server/index.ts` |
+| Неизвестный компонент | `get_passport` с выдуманным именем | `isError: true` |
+| Пагинация на реальном сервисе | `list_presets({kind:"palette", limit:1})` на живую службу `:8787` | `{items:[]}`/страница, не падает |
+| Миграция легаси-пресетов | 25 записей (`backend/presets/data/*.json`, JS-эпоха) перенесены через `POST /api/presets` в Go+bbolt | `state`/`label` совпадают побайтово на выборке, `healthz` видит 25 |
+| HTTP-транспорт наружу контейнера | `SKIN_MCP_TRANSPORT=http SKIN_MCP_HOST=0.0.0.0 PORT=3000` | реальный `initialize` с внешнего клиента, 200 |
+| Тег по умолчанию (наряд) | `check_outfit`/`save_preset` без `tags` на реальном словаре | флавов по тегу нет — тихо взят `["default"]` |
+| Неизвестный тег (наряд) | `tags: ["no-such-tag"]` | флав `unknown-tag` рядом с `unknown-palette`, обе проверки не мешают друг другу |
+| Тег с кириллицей в имени | `save_preset({kind:"tag", state:{name:"статусы"}})` | служба пресетов отказывает `bad_name` — имя тега тот же slug-формат, что у `name` любой записи |
+| Тег по значению варианта (реальная форма) | `save_preset(kind:"form")` на живой `omnifield-button` с `variantTags:{error:["status"],success:["status"],warning:["status"]}` | сохранено; `primary`/`secondary`/`tertiary`/`error-quiet` автоматически получили `["default"]`, не переданные явно |
+| Неизвестный тег по значению варианта | `variantTags:{error:["no-such-tag"]}` на реальной форме | флав `unknown-tag` с адресом `variantTags.error`, `css` в ответе тоже пропадает (сигнал непротиворечив) |
+| Механика тегов из `@web-core/skin/tags` (после переезда) | реальный `check_form` с известными/неизвестными тегами через живой сервер, свежий рестарт | `tagGroups` собран верно (`default` первым, `status` вторым), `unknown-tag` по-прежнему ловится — поведение не изменилось после переноса чистой механики в `packages/skin` |
+
+<h2 id="рецепт">🎨 Рецепт</h2>
+
+🔌 Съёмный слой — `auth`-хук `createServer` (см. `@web-core/mcp`): сегодня не подключён — служба
+пресетов сама без токена/scope, работаем внутри команды, все свои (осознанное решение, не
+забытое). Когда понадобится:
+
+```ts
+const server = createServer({
+  name: "web-core-skin",
+  version: "0.0.0",
+  transport: "http",
+  auth: (req) => req.headers.authorization === `Bearer ${process.env["SKIN_MCP_TOKEN"]}`,
+  registerTools,
+});
+```

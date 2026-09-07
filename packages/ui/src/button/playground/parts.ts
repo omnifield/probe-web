@@ -19,6 +19,7 @@ export const parts: Readonly<Record<ButtonPart, PassportPartEditorInfo<ButtonPar
     accepts: [
       { kind: "content", genus: "text" },
       { kind: "content", genus: "icon" },
+      { kind: "component" },
     ],
   },
 };

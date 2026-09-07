@@ -5,11 +5,13 @@ import {
   WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
+  Surface,
+  Flow,
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
 
-import { ComponentTree } from "#/widgets/component-tree/component-tree.jsx";
-import { Header } from "#/widgets/header/header.jsx";
+import { Info, Input, Output, Tree } from "#/widgets/component";
+import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
   return (
@@ -19,28 +21,32 @@ export function WorkspaceLayout() {
       style={{ "block-size": "100dvh" }}
     >
       <WorkspaceSidebar>
-        <ComponentTree />
+        <Surface data-variant="filled">
+          <Tree />
+        </Surface>
       </WorkspaceSidebar>
 
-      <WorkspaceHeader
-        style={{
-          display: "flex",
-          "align-items": "center",
-          "justify-content": "space-between",
-        }}
-      >
-        <Header />
+      <WorkspaceHeader>
+        <Flow>
+          <Header />
+        </Flow>
       </WorkspaceHeader>
 
       <WorkspaceMain>
-        <Outlet />
+        <Surface data-variant="filled">
+          <Outlet />
+        </Surface>
       </WorkspaceMain>
 
-      <WorkspaceRightbar />
-
-      <WorkspaceFooter
-        style={{ display: "flex", gap: "var(--space-6)", "flex-wrap": "wrap" }}
-      />
+      <WorkspaceRightbar>
+        <Surface data-variant="filled">
+          <Flow data-variant="column-center">
+            <Info />
+            <Input />
+            <Output />
+          </Flow>
+        </Surface>
+      </WorkspaceRightbar>
     </Workspace>
   );
 }

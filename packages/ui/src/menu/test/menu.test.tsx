@@ -4,12 +4,15 @@ import { admits, baseAssemblyOf } from "@web-core/skin/editor";
 import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Menu, kit as menuKit } from "../components/index.js";
 import { passport as menuPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as menuEditorInfo } from "../playground/index.js";
+import { kit as iconKit } from "../../icon/components/index.js";
+import { passport as iconPassport } from "../../icon/entity/passport.js";
+import { editorInfo as iconEditorInfo } from "../../icon/playground/index.js";
 
 function readable<Part extends string, Data = unknown>(
   passport: ComponentPassport<Part>,
@@ -31,6 +34,7 @@ function readable<Part extends string, Data = unknown>(
 const REGISTRY: Registry = createRegistry({
   components: {
     menu: { passport: readable(menuPassport, menuEditorInfo), parts: menuKit.parts, provider: Menu },
+    icon: { passport: readable(iconPassport, iconEditorInfo), parts: iconKit.parts },
   },
   admits,
 });
@@ -44,7 +48,7 @@ afterEach(() => {
 });
 
 describe('menu "basic" — a labeled group, a separator, a checked item, open by default', () => {
-  it("shows the group label, both plain items, and the checked item's text", () => {
+  it("shows the group label, both plain items, and the checked item's text", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
     const tree = baseAssemblyOf(menuPassport, assembly as PassportAssembly, "menu", {});
 
@@ -52,6 +56,14 @@ describe('menu "basic" — a labeled group, a separator, a checked item, open by
     document.body.append(host);
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
+
+    // `RenderTree` wraps everything in one `<Suspense>` — the checked item's real Icon indicator
+    // suspends the whole tree until it resolves, not just its own slot.
+    await vi.waitFor(() => {
+      if (!host.querySelector('[data-scope="menu"][data-part="item-group-label"]')) {
+        throw new Error("suspended tree not resolved yet");
+      }
+    });
 
     const groupLabel = host.querySelector('[data-scope="menu"][data-part="item-group-label"]');
     expect(groupLabel?.textContent).toBe("Файл");
@@ -67,5 +79,10 @@ describe('menu "basic" — a labeled group, a separator, a checked item, open by
 
     const content = host.querySelector('[data-scope="menu"][data-part="content"]');
     expect(content?.getAttribute("data-state")).toBe("open");
+
+    const indicatorIcon = host.querySelector(
+      '[data-scope="menu"][data-part="item-indicator"] svg[data-scope="icon"][data-part="root"]',
+    );
+    expect(indicatorIcon).not.toBeNull();
   });
 });

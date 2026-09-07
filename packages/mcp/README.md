@@ -19,12 +19,13 @@
 🤖 Тулинг для MCP-серверов зон web-core — используйте, если заводите новый MCP-сервер (`skin` —
 первый, дальше другие зоны) и не хотите каждый раз заново решать одни и те же вопросы: как
 обязать `annotations` на каждом туле, как правильно завернуть отказ по спеке (`isError`), как
-поднять сервер локально (stdio), а потом на сервере (Streamable HTTP) без переписывания зоны с
-нуля. Три точки поверхности закрывают путь целиком: регистрация тула с обязательными annotations
-и конвертом ответа (`@web-core/mcp`), бутстрап транспорта с точкой расширения под auth
-(`/transport`), курсорная пагинация листингов (`/pagination`). Output-схема тула — не отдельная
-функция: SDK (`@modelcontextprotocol/sdk`) сам принимает настоящую Zod-схему и для входа, и для
-выхода, сам валидирует и сам строит JSON Schema для протокола.
+поднять сервер локально (stdio), а потом на сервере (Streamable HTTP, с отдельной сессией на
+каждого клиента и безопасным умолчанием по адресу) без переписывания зоны с нуля. Три точки
+поверхности закрывают путь целиком: регистрация тула с обязательными annotations и конвертом
+ответа (`@web-core/mcp`), бутстрап транспорта с точкой расширения под auth (`/transport`),
+курсорная пагинация листингов (`/pagination`). Output-схема тула — не отдельная функция: SDK
+(`@modelcontextprotocol/sdk`) сам принимает настоящую Zod-схему и для входа, и для выхода, сам
+валидирует и сам строит JSON Schema для протокола.
 
 <h2 id="анатомия">🧩 Анатомия</h2>
 
@@ -83,8 +84,14 @@ registerTool(server, {
 ```ts
 import { createServer } from "@web-core/mcp/transport";
 
-const server = createServer({ name: "web-core-skin", version: "0.0.0" });
-// registerTool(server, ...) для каждого тула зоны
+const server = createServer({
+  name: "web-core-skin",
+  version: "0.0.0",
+  instructions: "check_* перед save_preset; отрицательный отчёт — не отказ, а результат",
+  registerTools: (mcp) => {
+    // registerTool(mcp, ...) для каждого тула зоны — вызывается заново на каждую HTTP-сессию
+  },
+});
 await server.listen(); // stdio в деве, Streamable HTTP в проде — по конфигу/env, без правки зоны
 // await server.close(); — штатное завершение (и HTTP-сокет, если он поднят)
 ```
@@ -116,6 +123,10 @@ registerTool(server, {
 | `output` | `registerTool`, `definition.output` | Zod-схема | не задан — `outputSchema` не прикладывается |
 | `transport` | `createServer`, `options.transport` | `"stdio" \| "http"` | `"stdio"` |
 | `auth` | `createServer`, `options.auth` | `(req: IncomingMessage) => boolean \| Promise<boolean>` | не задан — без проверки |
+| `host` | `createServer`, `options.host` (только `"http"`) | `string` | `"127.0.0.1"` — наружу машины не выходит без явного решения |
+| `allowedHosts` | `createServer`, `options.allowedHosts` (только `"http"`) | `readonly string[]` | не задан — заголовок `Host` не проверяется |
+| `allowedOrigins` | `createServer`, `options.allowedOrigins` (только `"http"`) | `readonly string[]` | не задан — заголовок `Origin` не проверяется |
+| `instructions` | `createServer`, `options.instructions` | `string` | не задан |
 | `limit` | `paginate`, `options.limit` | `number` | `50` |
 
 <h2 id="состояния">🎛️ Состояния</h2>
@@ -128,8 +139,12 @@ registerTool(server, {
 | Тул зарегистрирован без обязательных annotations | бросает при регистрации, не при вызове | `registerTool` |
 | Хендлер отдал успех | `content` (+ `structuredContent`, если значение — объект), `isError: false` | `ok()` |
 | Хендлер отказал | `content` текстом, `isError: true` | `err()` |
-| Транспорт локальный | `stdio` | `createServer` |
-| Транспорт серверный | Streamable HTTP с сессией (`mcp-session-id`), `auth`-хук на каждый запрос | `createServer` |
+| Транспорт локальный | `stdio`, один `McpServer` на процесс | `createServer` |
+| Транспорт серверный, новая сессия | нет заголовка `mcp-session-id` от клиента — новый `McpServer` + `registerTools()` заново | `createServer` |
+| Транспорт серверный, известная сессия | `mcp-session-id` найден в карте — переиспользуется её `McpServer`/`transport`, не создаётся заново | `createServer` |
+| Транспорт серверный, НЕИЗВЕСТНАЯ сессия | заголовок есть, в карте его нет — `404` СРАЗУ, `McpServer` не строится вовсе | `createServer` |
+| Host не в allowlist | `400`, транспорт не вызывается | `createServer` |
+| Origin не в allowlist | `400`, транспорт не вызывается | `createServer` |
 | Auth-хук отказал | `401`, транспорт не вызывается | `createServer` |
 | Страница листинга не последняя | `nextCursor` в ответе | `paginate` |
 | Страница листинга последняя | `nextCursor` отсутствует | `paginate` |
@@ -142,8 +157,8 @@ registerTool(server, {
 |---|---|
 | `registerTool(server, definition)` | `ToolDefinition` (`name`, `title?`, `description`, `access`, `idempotent?`, `openWorld?`, `input?`, `output?`, `handler`) — `input`/`output` настоящие Zod-схемы |
 | `ok(value?)` / `err(message)` | значение под `output`-схему тула / текст отказа |
-| `createServer(options)` | `{ name, version, transport?, auth? }` |
-| `server.listen(port?)` / `server.close()` | номер порта (только для `"http"`) / ничего |
+| `createServer(options)` | `{ name, version, instructions?, registerTools, transport?, auth?, host?, allowedHosts?, allowedOrigins? }` |
+| `server.listen(port?)` / `server.close()` | ничего / ничего |
 | `paginate(items, options)` | массив + `{ cursor?, limit? }` |
 
 <h3>📤 Выход</h3>
@@ -152,13 +167,13 @@ registerTool(server, {
 |---|---|
 | `registerTool` | ничего вызывающему — регистрирует тул на переданном `server` |
 | `ok`/`err` | конверт результата тула по спеке MCP (`content`, `structuredContent?`, `isError`) |
-| `createServer` | `ZoneServer` (`McpServer` + `.listen()`/`.close()`) |
+| `createServer` | `ZoneServer` (`{ listen(port?), close() }`) — сырой `McpServer` наружу не отдаётся, он свой на каждую HTTP-сессию |
 | `paginate` | `{ items, nextCursor? }` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
 ✅ Настоящий round-trip через MCP SDK, не имитация — каждая строка ниже доказана тестом
-(`vitest run`, 15/15 зелёных).
+(`vitest run`, 20/20 зелёных).
 
 | Проверено | Как | Результат |
 |---|---|---|
@@ -169,6 +184,11 @@ registerTool(server, {
 | Streamable HTTP — тул отвечает | реальный `fetch`/`StreamableHTTPClientTransport` на поднятый `createServer({transport:"http"})` | `200`, `isError: false` |
 | Auth-хук отказывает | `StreamableHTTPClientTransport` без верного заголовка | `client.connect()` падает (сервер отвечает `401`) |
 | Auth-хук пропускает | тот же клиент с верным `Authorization` | тул отвечает штатно |
+| Два клиента одновременно | два `StreamableHTTPClientTransport` на один `createServer`, оба зовут тул | разные `sessionId`, первый жив после подключения второго |
+| Host не в allowlist | `fetch` с несовпадающим заголовком `Host` | `400`, тул не вызван |
+| Origin не в allowlist | `fetch` с несовпадающим заголовком `Origin` | `400`, тул не вызван |
+| Неизвестный `mcp-session-id` не строит сервер | `fetch` с выдуманным `mcp-session-id`, счётчик вызовов `registerTools` | `404`, счётчик остался `0` |
+| `instructions` доезжают клиенту | `client.getInstructions()` после `connect()` | совпадает с переданной строкой |
 | Пагинация — полный обход | `paginate` в цикле по `nextCursor` до его исчезновения | ни одного пропуска/повтора элемента |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
@@ -185,6 +205,9 @@ const server = createServer({
   version: "0.0.0",
   transport: "http",
   auth: (req) => req.headers.authorization === `Bearer ${process.env["SKIN_MCP_TOKEN"]}`,
+  registerTools: (mcp) => {
+    /* registerTool(mcp, ...) для каждого тула зоны */
+  },
 });
 ```
 

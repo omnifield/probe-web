@@ -75,16 +75,20 @@ type PageHandler struct {
 	pageDiagrams      *services.PageDiagramService
 	pageAuth          *services.PagePermissionService
 	permissionService *services.PermissionService
+	keyCache          *WorkspaceKeyCache
 }
 
-// NewPageHandler constructs a PageHandler.
-func NewPageHandler(service *services.PageService, pageAuth *services.PagePermissionService, permissionService *services.PermissionService, auditor *logger.Auditor) *PageHandler {
+// NewPageHandler constructs a PageHandler. keyCache lets the {workspaceId}
+// path segment be either a numeric ID or a workspace key, the same as every
+// other workspace-scoped handler.
+func NewPageHandler(service *services.PageService, pageAuth *services.PagePermissionService, permissionService *services.PermissionService, auditor *logger.Auditor, keyCache *WorkspaceKeyCache) *PageHandler {
 	_ = auditor // retained for constructor compatibility; audits now live in the application service.
 	return &PageHandler{
 		service:           service,
 		application:       services.NewPageApplicationService(service, pageAuth),
 		pageAuth:          pageAuth,
 		permissionService: permissionService,
+		keyCache:          keyCache,
 	}
 }
 
@@ -172,7 +176,7 @@ type setInheritanceRequest struct {
 // GetTree returns every page in the workspace that the user can view,
 // plus the assembled tree shape for direct client-side rendering.
 func (h *PageHandler) GetTree(w http.ResponseWriter, r *http.Request) {
-	workspaceID, ok := requireIDParam(w, r, "workspaceId")
+	workspaceID, ok := requireWorkspaceIDParam(w, r, h.keyCache, "workspaceId")
 	if !ok {
 		return
 	}
@@ -226,7 +230,7 @@ func (h *PageHandler) GetTree(w http.ResponseWriter, r *http.Request) {
 // case-insensitively. It drives the page picker and returns only pages the
 // user may view. The response stays metadata-only.
 func (h *PageHandler) Search(w http.ResponseWriter, r *http.Request) {
-	workspaceID, ok := requireIDParam(w, r, "workspaceId")
+	workspaceID, ok := requireWorkspaceIDParam(w, r, h.keyCache, "workspaceId")
 	if !ok {
 		return
 	}
@@ -309,7 +313,7 @@ func (h *PageHandler) Get(w http.ResponseWriter, r *http.Request) {
 // a parent is supplied the user must also have edit on the parent (so we
 // can't insert under a page they can't otherwise see).
 func (h *PageHandler) Create(w http.ResponseWriter, r *http.Request) {
-	workspaceID, ok := requireIDParam(w, r, "workspaceId")
+	workspaceID, ok := requireWorkspaceIDParam(w, r, h.keyCache, "workspaceId")
 	if !ok {
 		return
 	}
@@ -699,7 +703,7 @@ func (h *PageHandler) Unarchive(w http.ResponseWriter, r *http.Request) {
 // unleakable, consistent with the project-wide policy captured in
 // project_workspace_permissions_open_default.
 func (h *PageHandler) requireWorkspaceAdmin(w http.ResponseWriter, r *http.Request) (workspaceID int, user *models.User, ok bool) {
-	workspaceID, ok = requireIDParam(w, r, "workspaceId")
+	workspaceID, ok = requireWorkspaceIDParam(w, r, h.keyCache, "workspaceId")
 	if !ok {
 		return
 	}
@@ -755,11 +759,11 @@ func (h *PageHandler) requireWorkspacePageViewAuth(w http.ResponseWriter, r *htt
 // Mutating endpoints pass the result to PageApplicationService, which owns
 // the shared operation-specific permission checks.
 func (h *PageHandler) requireWorkspacePageTarget(w http.ResponseWriter, r *http.Request) (workspaceID, pageID int, user *models.User, ok bool) {
-	workspaceID, ok = requireIDParam(w, r, "workspaceId")
+	workspaceID, ok = requireWorkspaceIDParam(w, r, h.keyCache, "workspaceId")
 	if !ok {
 		return
 	}
-	pageID, ok = requireIDParam(w, r, "pageId")
+	pageID, ok = h.resolvePageIDParam(w, r, workspaceID, "pageId")
 	if !ok {
 		return
 	}
@@ -768,6 +772,32 @@ func (h *PageHandler) requireWorkspacePageTarget(w http.ResponseWriter, r *http.
 		return
 	}
 	return
+}
+
+// resolvePageIDParam accepts either a numeric page ID or a slug scoped to
+// workspaceID — the same "ID or human-readable key" shape already used for
+// workspaces (WorkspaceKeyCache) and items (GetByKeyAndNumber), so a link
+// like /workspaces/assembly/pages/main survives a fresh database where the
+// numeric ID would be different.
+func (h *PageHandler) resolvePageIDParam(w http.ResponseWriter, r *http.Request, workspaceID int, paramName string) (int, bool) {
+	raw := r.PathValue(paramName)
+	if raw == "" {
+		respondBadRequest(w, r, "page ID or slug is required")
+		return 0, false
+	}
+	if id, err := strconv.Atoi(raw); err == nil {
+		return id, true
+	}
+	page, err := h.service.GetBySlug(workspaceID, raw)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			respondNotFound(w, r, "Page")
+			return 0, false
+		}
+		respondInternalError(w, r, err)
+		return 0, false
+	}
+	return page.ID, true
 }
 
 func (h *PageHandler) respondServiceError(w http.ResponseWriter, r *http.Request, err error) {

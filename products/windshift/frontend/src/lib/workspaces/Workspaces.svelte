@@ -70,7 +70,7 @@
         icon: Edit,
         title: 'Edit',
         hoverClass: 'hover-bg',
-        onClick: () => navigate(`/workspaces/${workspace.id}`)
+        onClick: () => navigate(`/workspaces/${workspace.key || workspace.id}`)
       }
       // Delete action removed - workspaces can only be deleted from workspace settings
     ];
@@ -136,13 +136,13 @@
         emptyMessage="No workspaces found. Create your first workspace to get started."
         emptyIcon={Circle}
         actionItems={buildWorkspaceDropdownItems}
-        onRowClick={(workspace) => navigate(`/workspaces/${workspace.id}`)}
+        onRowClick={(workspace) => navigate(`/workspaces/${workspace.key || workspace.id}`)}
         rowAttrs={(workspace) => ({ 'data-testid': `workspace-row-${workspace.id}` })}
       >
     {#snippet name(workspace)}
       {@const WorkspaceIcon = iconMap[workspace.icon] || Grip}
       <a
-        href={`/workspaces/${workspace.id}`}
+        href={`/workspaces/${workspace.key || workspace.id}`}
         class="flex items-center gap-3 no-underline"
         style="color: inherit;"
       >

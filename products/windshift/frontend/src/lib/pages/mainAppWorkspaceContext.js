@@ -1,5 +1,6 @@
 import { GLOBAL_COLLECTION_VIEWS } from '../router.js';
 import { MAIN_APP_TEST_VIEWS } from './mainAppRoutes.js';
+import { resolveWorkspaceIdParam } from '../utils/workspaceRouteParam.js';
 
 function isPersonalWorkspaceView(view) {
   return (
@@ -27,12 +28,11 @@ export function resolveMainAppWorkspaceContext(currentRoute, personalWorkspaceId
       : { kind: 'personal-pending' };
   }
 
-  if (
-    currentRoute.params?.id &&
-    /^\d+$/.test(String(currentRoute.params.id)) &&
-    isRegularWorkspaceView(currentRoute.view)
-  ) {
-    return { kind: 'workspace', workspaceId: currentRoute.params.id };
+  if (currentRoute.params?.id && isRegularWorkspaceView(currentRoute.view)) {
+    const workspaceId = resolveWorkspaceIdParam(currentRoute.params.id);
+    if (typeof workspaceId === 'number') {
+      return { kind: 'workspace', workspaceId };
+    }
   }
 
   return GLOBAL_COLLECTION_VIEWS.has(currentRoute.view)

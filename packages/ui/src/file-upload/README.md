@@ -115,13 +115,15 @@ root
     trigger 🔘 · text: "Выбрать файлы"
   itemGroup (accepted) 📁
     item 📄 · file: resume.pdf
-      itemPreview 🖼️ · icon: "📄"
+      itemPreview 🖼️
+        icon · name: "file-text"
       itemName · text: "resume.pdf"
       itemSizeText · text: "16 Б"
       itemDeleteTrigger ✕ · text: "✕"
   itemGroup (rejected) 📁
     item 📄 · file: video.mp4
-      itemPreview 🖼️ · icon: "🎬"
+      itemPreview 🖼️
+        icon · name: "film"
       itemName · text: "video.mp4"
       itemSizeText · text: "превышен лимит"
       itemDeleteTrigger ✕ · text: "✕"

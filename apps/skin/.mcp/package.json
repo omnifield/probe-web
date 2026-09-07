@@ -6,8 +6,8 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "start": "web-core-node src/server.ts",
-    "dev": "web-core-node watch src/server.ts",
+    "start": "web-core-node src/index.ts",
+    "dev": "web-core-node watch src/index.ts",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck"

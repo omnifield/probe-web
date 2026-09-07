@@ -71,6 +71,10 @@ function overrideBlocks(skin: Skin, lookup: PassportLookup): string[] {
   return blocks;
 }
 
+export function fontText(): string {
+  return ':root {\n  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;\n}';
+}
+
 export function modeText(dark: readonly (readonly [string, string])[]): string[] {
   const blocks = [
     "/* WHICH HALF IS WORN — an answer to the browser, not styling: it drives scrollbars,\n" +

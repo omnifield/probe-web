@@ -12,6 +12,8 @@ export interface Form {
   readonly component: string;
   readonly recipe: SlotRecipe;
   readonly keyframes?: Keyframes;
+  /** Имя варианта → его теги (`@web-core/skin/tags`), для группировки в свайперах/витрине. */
+  readonly variantTags?: Readonly<Record<string, readonly string[]>>;
 }
 
 /**

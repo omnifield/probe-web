@@ -3,6 +3,8 @@
   import { api } from '../../api.js';
   import Input from '../../components/Input.svelte';
   import { navigate } from '../../router.js';
+  import { workspacesStore } from '../../stores/workspaces.svelte.js';
+  import { workspaceUrlSegment } from '../../utils/workspaceRouteParam.js';
   import LazyMilkdownEditor from '../../editors/LazyMilkdownEditor.svelte';
   import PagePermissionsDialog from './PagePermissionsDialog.svelte';
   import PageMoveDialog from './PageMoveDialog.svelte';
@@ -29,6 +31,7 @@
   import { t } from '../../stores/i18n.svelte.js';
   import { pagesTreeRefresh } from './pagesTreeRefresh.svelte.js';
   import { pagesFocusTitle } from './pagesFocusTitle.svelte.js';
+  import PagesNavSidebar from './PagesNavSidebar.svelte';
   import { createPageAutosaveQueue } from './pageAutosaveQueue.js';
   import { mergePageUpdate } from './pageState.js';
   import { agentRuns } from '../../stores/agentRuns.svelte.js';
@@ -36,6 +39,10 @@
   /** Right-pane knowledge-page editor with sidebar-owned tree/actions and
    * debounced autosave instead of an explicit Save button. */
   let { workspaceId, pageId = null } = $props();
+
+  let workspaceUrlKey = $derived(
+    workspaceUrlSegment(workspaceId, $workspacesStore.allWorkspaces)
+  );
 
   // Coalesce typing without noticeably delaying autosave.
   const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -253,8 +260,11 @@
       pagePermissionsLoaded = false;
       // Run in parallel: linked work items / permissions are independent
       // of the page payload, and the link-types list is cached for the session.
-      void loadPageLinks(id);
-      void ensurePageEffectiveLevel(id);
+      // loadPageLinks hits a global, non-workspace-scoped endpoint
+      // (/api/pages/:id/links) that only resolves numeric ids — use the
+      // resolved page.id, not the raw param, which may be a slug.
+      void loadPageLinks(page.id);
+      void ensurePageEffectiveLevel(page.id);
       void ensureLinkTypesLoaded();
     } catch (err) {
       if (requestSeq !== loadPageRequestSeq) return;
@@ -429,7 +439,7 @@
       dirty = false;
       saveStatus = 'idle';
       pagesTreeRefresh.bump();
-      navigate(`/workspaces/${workspaceId}/pages`);
+      navigate(`/workspaces/${workspaceUrlKey}/pages`);
     } catch (err) {
       error = err?.message || t('pages.errorArchive');
     }
@@ -561,7 +571,7 @@
       // auto-opens the browser print dialog once content has rendered.
       onClick: () =>
         window.open(
-          `/workspaces/${workspaceId}/pages/${selectedPage.id}/print`,
+          `/workspaces/${workspaceUrlKey}/pages/${selectedPage.slug || selectedPage.id}/print`,
           '_blank',
           'noopener'
         ),
@@ -622,7 +632,11 @@
   });
 </script>
 
-<main class="page-pane" data-testid="pages-view">
+<div class="pages-view-layout">
+  <div class="pages-tree-pane">
+    <PagesNavSidebar {workspaceId} embedded />
+  </div>
+  <main class="page-pane" data-testid="pages-view">
   {#if error}
     <div class="error" role="alert" data-testid="page-error">{error}</div>
   {/if}
@@ -857,7 +871,8 @@
       </div>
     </div>
   {/if}
-</main>
+  </main>
+</div>
 
 {#if selectedPage}
   <PagePermissionsDialog
@@ -874,7 +889,7 @@
       pagesTreeRefresh.bump();
       if (moved?.workspace_id !== workspaceId) {
         selectedPage = null;
-        navigate(`/workspaces/${workspaceId}/pages`);
+        navigate(`/workspaces/${workspaceUrlKey}/pages`);
         return;
       }
       if (selectedPage) await loadPage(selectedPage.id);
@@ -892,7 +907,26 @@
 {/if}
 
 <style>
+  .pages-view-layout {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .pages-tree-pane {
+    width: fit-content;
+    min-width: 200px;
+    max-width: 420px;
+    flex-shrink: 0;
+    height: 100%;
+    min-height: 0;
+    padding-right: 0.75rem;
+    border-right: 1px solid var(--ds-border);
+  }
+
   .page-pane {
+    flex: 1;
+    min-width: 0;
     height: 100%;
     overflow-y: auto;
     padding: 1.5rem 0;

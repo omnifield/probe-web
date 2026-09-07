@@ -1,0 +1,206 @@
+# Дорожная карта @web-core/skin-app — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/store (categories → items, log → журнал решений); без milestones — у приложения
+# нет освоенной поставки с датами релиза, только сделанное и открытое.
+
+categories:
+  - category: Структура каталогов
+    items:
+      - id: index-as-public-api
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: index.ts/tsx — единственный публичный вход папки
+        description: |
+          Означает: файл вида `папка/папка.tsx` (дублирующее имя) переименован в `папка/index.tsx`
+          везде, где встретился (header, tree, preview, input, renderer, slot, app). Агрегирующие
+          папки без единственного файла (model, ui, верх слайса entities/component,
+          entities/showcase, widgets/component) получили тонкий index.ts-barrel — снаружи ходят
+          только в него, не глубже.
+
+      - id: index-stays-thin
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: index держит только реэкспорт, не логику
+        description: |
+          Означает: entities/component/utils/fake-generator разнесён на index.ts (один реэкспорт),
+          generate.ts (сама функция), text.ts (приватные хелперы текста), hints.ts (таблица
+          подсказок, тоже не публичная). Разбор — FAQ.md.
+
+  - category: Импорты
+    items:
+      - id: no-file-extensions
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Расширения убраны из всех импортов
+        description: |
+          Означает: ни настоящих (.ts/.tsx), ни поддельных под скомпилированный вывод (.js/.jsx) —
+          бандлер (Vite, moduleResolution bundler) в них не нуждается.
+
+      - id: hash-imports-need-tsconfig-paths
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "package.json#imports (алиас #/*) не резолвится без расширения даже под bundler"
+        description: |
+          Означает: TypeScript 7.0.2 даёт мягкое резолвление bundler-режима (без расширения, с
+          авто-index папки) только относительным путям и tsconfig.paths — не package.json#imports,
+          тот остаётся строгим по спецификации Node ESM независимо от moduleResolution. Починено
+          зеркальным compilerOptions.paths в apps/skin/tsconfig.json, локально для этого
+          приложения. Разбор — FAQ.md.
+
+  - category: Фейк-генератор
+    items:
+      - id: schema-only-generator
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: generateFakeData принимает io-схему, не компонент целиком
+        description: |
+          Означает: движок один и общий — zocker, читает зод-теги (email/телефон/имя и т.д.) прямо
+          из схемы. Второй параметр (component) — только ключ таблицы подсказок, не источник
+          знаний о паспорте/ките.
+
+      - id: hints-per-field
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Таблица подсказок длины текста (component → field → length)
+        description: |
+          Означает: применяется точечно — zocker(schema).supply(схема-конкретного-поля, генератор)
+          по ссылке, не глобальный override() по типу — не задевает другие строковые поля той же
+          или соседних схем. Пока одна запись — button.label = 10, первый тест механики.
+
+  - category: Документация
+    items:
+      - id: readme-app-template
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: README по общему шаблону — первый пилот genus "app"
+        description: |
+          Означает: Анатомия — таблица маршрутов (адрес = URL, не импорт-спецификатор, у
+          приложения нет импортируемой поверхности); Использование — команды и адреса вместо
+          кода-потребителя; Настройки — переменные окружения Vite и флаги dev-сервера; Состояния —
+          статус componentInfoAtom (ResourceState); IO — параметры маршрута и адрес службы на
+          входе, реальный рендер и фейковые данные на выходе; Рецепт — таблица подсказок
+          фейк-генератора как съёмный слой снаружи io-схемы. genus "app" — новый, эталон для
+          будущих apps/*.
+
+      - id: faq-roadmap
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: FAQ.md и ROADMAP.yaml — первое заполнение
+        description: |
+          Означает: FAQ.md сгруппирован по темам (структура каталогов / импорты / фейк-генератор /
+          тесты), каждый ответ со ссылкой на проверку. ROADMAP.yaml — по образцу packages/store
+          (Done-пункты сразу с описанием, log — датированный журнал решений).
+
+  - category: Не сделано
+    items:
+      - id: input-widget-real-ui
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Input — реальная форма ввода данных компонента
+        description: |
+          Означает: сейчас плейсхолдер в WorkspaceRightbar — параграф-заглушка, эффектом дёргающий
+          generateFakeData и логирующий результат в консоль. Реальный UI редактирования
+          пропов/данных показываемого компонента не построен.
+
+      - id: array-count-hints
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Подсказки количества/контента для полей-массивов
+        description: |
+          Означает: для компонентов со списками (меню, аккордеон) — не просто заменить N пунктов
+          на аналоги, а сгенерить и разное количество, и разный контент. Тем же приёмом (supply по
+          ссылке на .element-схему массива + подсказка на количество), но отдельным заходом, когда
+          дойдём до конкретного такого компонента.
+
+      - id: lab-page-purpose
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "/lab — назначение экрана не объявлено"
+        description: |
+          Означает: маршрут жив ("Лаборатория (мок)"), что там будет показано — не решено.
+
+      - id: no-tests
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: Нет ни одного теста
+        description: |
+          Означает: vitest.config.ts настроен, test/ — пустая папка. Композиции, описанные в
+          README как "Сборки", проверены только вручную через dev-сервер и браузер, не
+          автоматическим прогоном.
+
+log:
+  - id: fsd-index-barrels
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Переезд widgets/entities на структуру, где каждая папка — модуль с ОДНИМ публичным входом.
+      Файлы вида `папка/папка.tsx` (header, tree, preview, input, renderer, slot, app)
+      переименованы в `папка/index.tsx`. Агрегирующие папки без единственного файла (model, ui,
+      entities/component, entities/showcase, widgets/component) получили тонкий index.ts-barrel,
+      реэкспортирующий только используемое снаружи. Снаружи теперь ходят в корень слайса
+      (#/entities/component), не глубже (не #/entities/component/model/store).
+
+  - id: extensions-and-hash-imports-finding
+    type: plan
+    date: 2026-09-05
+    summary: >
+      Расширения убраны из всех импортов (относительных и алиаса #/*). При проверке обнаружено:
+      moduleResolution "bundler" даёт мягкое резолвление (без расширения, с авто-index папки)
+      только относительным путям и tsconfig.paths — package.json#imports остаётся строгим по
+      Node ESM независимо от bundler-режима (проверено эмпирически тремя прогонами tsc с одним и
+      тем же импортом: без расширения — падает, с явным /index без расширения — падает, с явным
+      /index.tsx — резолвится). Починено зеркальным compilerOptions.paths в apps/skin/tsconfig.json,
+      общий @web-core/build/tsconfig не тронут.
+
+  - id: fake-generator-v1-schema-and-hints
+    type: plan
+    date: 2026-09-06
+    summary: >
+      Первая версия generateFakeData принимала имя компонента и сама тянула io-схему — по
+      результату разговора переделано: генератор принимает схему напрямую, компонент — только
+      ключ подсказок. zocker остаётся единственным и общим движком (зод-теги — email/телефон/имя
+      и т.д. читает сам). Для полей без зод-тегов (обычный z.string(), например label кнопки, для
+      которого нужна конкретная длина, а не случайный текст любой длины) заведена точечная таблица
+      подсказок (hints.ts) — применяется через supply() по ссылке на схему конкретного поля, не
+      override() по типу, чтобы не задеть остальные строковые поля. Пока одна запись — button.label
+      = 10, тест самой механики, не полный охват кита. Подсказки на количество для полей-массивов
+      (меню, аккордеон) — тем же приёмом, но отдельным заходом (см. категорию "Не сделано").
+
+  - id: readme-app-template-first-pilot
+    type: plan
+    date: 2026-09-06
+    summary: >
+      apps/skin — первое приложение, заполнившее общий шаблон README ("Главное → Анатомия →
+      Использование → Настройки → Состояния → IO → Сборки → Рецепт"), заведённый user поверх
+      шаблонов "component" (packages/ui) и "engine" (packages/store, первый пилот). genus "app" —
+      новый, устоявшейся группы/таксономии для apps/* ещё не было — выбрано "витрина" по смыслу
+      этого конкретного приложения, не факт, что подойдёт будущим apps/* без вопроса. Наблюдения по
+      адаптации шаблона: "Анатомия" у приложения без импортируемой поверхности — за "адрес" части
+      взят URL маршрута, а не импорт-спецификатор (как у движка) и не CSS-селектор (как у
+      компонента); "Использование" показывает команды/адреса вместо кода-потребителя — приложение
+      никто не импортирует; "Сборки" честно помечены как проверенные только вручную — тестов пока
+      нет вообще (см. категорию "Не сделано").

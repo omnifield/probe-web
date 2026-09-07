@@ -75,7 +75,7 @@ export const parts: Readonly<Record<TreeViewPart, PassportPartEditorInfo<TreeVie
       focus: { means: "фокус стоит на этом узле" },
       loading: { means: "узел — ветка, подгружает своих потомков" },
     },
-    accepts: [{ kind: "content", genus: "icon" }],
+    accepts: [{ kind: "content", genus: "icon" }, { kind: "component" }],
   },
   content: {
     means: "открытый слот узла — своего вида не несёт, содержимое (в том числе ещё узлы) решает потребитель",

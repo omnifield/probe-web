@@ -122,7 +122,7 @@ export const parts: Readonly<Record<MenuPart, PassportPartEditorInfo<MenuPart>>>
   itemIndicator: {
     means: "слот галочки/точки внутри чекбоксного/радио-пункта — кит прячет его, пока не отмечен",
     states: { ...itemFamilyMeans, ...optionMeans },
-    accepts: [{ kind: "content", genus: "icon" }],
+    accepts: [{ kind: "content", genus: "icon" }, { kind: "component" }],
   },
   itemText: {
     means: "собственная подпись пункта",

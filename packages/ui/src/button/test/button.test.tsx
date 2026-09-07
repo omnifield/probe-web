@@ -3,21 +3,27 @@ import {
   type AssemblyTree,
   type ReadableComponent,
   type Registry,
-  type SelfAssembly,
 } from "@web-core/assembly";
 import { RenderTree } from "@web-core/assembly/render";
 import { admits, baseAssemblyOf } from "@web-core/skin/editor";
-import type { PassportAssembly } from "@web-core/skin/editor";
+import type { PassportAssembly, PassportEditorInfo } from "@web-core/skin/editor";
+import type { ComponentPassport } from "@web-core/skin/model";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Button, kit } from "../components/index.js";
 import { Toggle } from "../../toggle/components/root.js";
 import { passport } from "../entity/passport.js";
 import { editorInfo } from "../playground/index.js";
+import { kit as iconKit } from "../../icon/components/index.js";
+import { passport as iconPassport } from "../../icon/entity/passport.js";
+import { editorInfo as iconEditorInfo } from "../../icon/playground/index.js";
 
-const readableButton: ReadableComponent = {
-  passport: {
+function readable<Part extends string, Data = unknown>(
+  passport: ComponentPassport<Part>,
+  editorInfo: PassportEditorInfo<Part, string, Data>,
+): ReadableComponent["passport"] {
+  return {
     component: passport.component,
     genus: editorInfo.genus,
     anatomy: passport.anatomy,
@@ -26,13 +32,22 @@ const readableButton: ReadableComponent = {
       name: part.name,
       accepts: editorInfo.parts[part.name]?.accepts,
     })),
-    selfAssembly: passport.selfAssembly as SelfAssembly | undefined,
-  },
+    selfAssembly: passport.selfAssembly as any,
+  };
+}
+
+const readableButton: ReadableComponent = {
+  passport: readable(passport, editorInfo),
   parts: kit.parts,
 };
 
+const readableIcon: ReadableComponent = {
+  passport: readable(iconPassport, iconEditorInfo),
+  parts: iconKit.parts,
+};
+
 const REGISTRY: Registry = createRegistry({
-  components: { button: readableButton },
+  components: { button: readableButton, icon: readableIcon },
   admits,
 });
 
@@ -197,6 +212,49 @@ describe('playground assembly "base" — shows the label from data (PWEB-187/191
 
     const button = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
     expect(button?.textContent).toBe("Оформить заказ");
+  });
+});
+
+describe('playground assembly "with-icon" — a real Icon node before the label', () => {
+  it("renders the icon's own svg address plus the label text, in that order", async () => {
+    const assembly = editorInfo.assemblies.find((candidate) => candidate.name === "with-icon")!;
+    const tree = baseAssemblyOf(passport, assembly as PassportAssembly, "button", { label: "Готово" });
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{ label: "Готово" }} />, host);
+
+    const button = await vi.waitFor(() => {
+      const found = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
+      if (!found?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+        throw new Error("button/icon not resolved yet");
+      }
+      return found;
+    });
+
+    expect(button.textContent).toBe("Готово");
+  });
+});
+
+describe('playground assembly "icon-only" — no visible label, aria-label carries it instead', () => {
+  it("renders just the icon and puts the label on aria-label, not in text content", async () => {
+    const assembly = editorInfo.assemblies.find((candidate) => candidate.name === "icon-only")!;
+    const tree = baseAssemblyOf(passport, assembly as PassportAssembly, "button", { label: "Удалить" });
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{ label: "Удалить" }} />, host);
+
+    const button = await vi.waitFor(() => {
+      const found = host.querySelector('[data-scope="button"]') as HTMLButtonElement | null;
+      if (!found?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+        throw new Error("button/icon not resolved yet");
+      }
+      return found;
+    });
+
+    expect(button.getAttribute("aria-label")).toBe("Удалить");
+    expect(button.textContent).toBe("");
   });
 });
 

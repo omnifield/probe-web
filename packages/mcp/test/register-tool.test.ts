@@ -3,7 +3,7 @@ import { z } from "@web-core/io";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { err, ok, registerTool } from "../src/index.js";
+import { err, ok, registerTool } from "../src";
 
 async function connectedClient(register: (server: McpServer) => void): Promise<Client> {
   const server = new McpServer({ name: "test-server", version: "0.0.0" });

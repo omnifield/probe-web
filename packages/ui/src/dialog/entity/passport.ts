@@ -22,10 +22,10 @@ const buttonPseudos: readonly PassportState[] = [
 
 export const passport = definePassport({
   anatomy,
-  root: "positioner",
+  root: "content",
   parts: [
     {
-      name: "trigger",
+      name: "control",
       states: [
         ...openClosed,
         { name: "current", mark: { kind: "attribute", name: "data-current" } },
@@ -33,10 +33,7 @@ export const passport = definePassport({
       ],
     },
     { name: "backdrop", states: openClosed },
-    { name: "positioner", states: [] },
     { name: "content", states: openClosed },
-    { name: "title", states: [] },
-    { name: "description", states: [] },
     { name: "closeTrigger", states: buttonPseudos },
   ],
   variantAxis: {

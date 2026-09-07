@@ -120,15 +120,16 @@
     "@zag-js/switch": "^1.43.1",
     "@zag-js/tabs": "^1.43.1",
     "@zag-js/toggle": "^1.43.1",
-    "@zag-js/toggle-group": "^1.43.1"
+    "@zag-js/toggle-group": "^1.43.1",
+    "lucide-solid": "^1.41.0"
   },
   "peerDependencies": {
-    "@ark-ui/solid": "^5.38.2",
+    "@ark-ui/solid": "^5.39.1",
     "@kobalte/core": "^0.13.12",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@ark-ui/solid": "^5.38.2",
+    "@ark-ui/solid": "^5.39.1",
     "@kobalte/core": "^0.13.12",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
