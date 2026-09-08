@@ -12,7 +12,8 @@
   // докер не даёт, и первый девбокс на чистой машине без этой строки не встаёт. Команда
   // идемпотентна — сеть уже есть, значит не сделано ничего. Внутри контейнера здесь ещё
   // нет ничего: его самого нет.
-  "initializeCommand": "docker network create web-core-gateway 2>/dev/null || true",
+  "initializeCommand": "docker network inspect web-core-gateway >nul 2>&1 || docker network create web-core-gateway",
+
 
   // Инварианты сети: peer-alias в общей сети web-core-gateway (соседи видят контейнер по
   // имени), host-gateway, НОЛЬ host-портов — наружу ничего не публикуем; verdaccio :4873
