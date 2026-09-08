@@ -239,9 +239,6 @@ importers:
       '@web-core/skin':
         specifier: workspace:*
         version: link:../skin
-      '@web-core/ui':
-        specifier: workspace:*
-        version: link:../ui
       eslint:
         specifier: ^10.8.1
         version: 10.8.1(jiti@2.7.0)(supports-color@8.1.1)
