@@ -11,6 +11,9 @@ export interface ComponentHandle {
   readonly ready: () => boolean;
   /** Сгенерировать заново фейковые данные ТЕКУЩЕГО компонента, записать в `componentDataAtom`. */
   readonly generate: () => void;
+  /** Положить готовые данные напрямую в `componentDataAtom`, минуя фейк-генератор — второй
+   *  источник наполнения показа (сохранённый content), рядом с `generate()`. */
+  readonly setData: (data: unknown) => void;
   /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
   readonly info: () => ComponentInfo | undefined;
   /** Дописать событие в историю ТЕКУЩЕГО компонента (`componentEventsAtom`) — сброс при смене компонента. */
@@ -38,21 +41,25 @@ export function componentHandle(): ComponentHandle {
     componentEventsAtom.set((events) => [...events, event]);
   }
 
-  const ready = createMemo(() => {
-    const state = info();
-    return state.status === "done" && state.data !== undefined;
-  });
-
-  function generate(): void {
-    const state = info();
-    if (state.status !== "done" || state.data === undefined) return;
-    componentDataAtom.set(generateFakeData(state.data.io?.schema, state.data.component));
-  }
-
+  // `createResourceAtom` (packages/store) несёт последнее известное `data` и в "pending" —
+  // читаем его напрямую, без своего буфера: до этой правки в общем пакете `pending` был голым
+  // (без `data`), и без локального сглаживания тут `ready`/`info` мигали на каждый клик по дереву.
   const componentInfo = createMemo(() => {
     const state = info();
-    return state.status === "done" ? state.data : undefined;
+    return state.status === "error" ? undefined : state.data;
   });
 
-  return { ready, generate, info: componentInfo, recordEvent };
+  const ready = createMemo(() => componentInfo() !== undefined);
+
+  function generate(): void {
+    const data = componentInfo();
+    if (data === undefined) return;
+    componentDataAtom.set(generateFakeData(data.io?.schema, data.component));
+  }
+
+  function setData(data: unknown): void {
+    componentDataAtom.set(data);
+  }
+
+  return { ready, generate, setData, info: componentInfo, recordEvent };
 }

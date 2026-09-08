@@ -4,7 +4,7 @@ import { createEffect, createRoot } from "solid-js";
 import type { Accessor } from "solid-js";
 
 export type ResourceState<Data, Err = unknown> =
-  | { status: "pending" }
+  | { status: "pending"; data?: Data }
   | { status: "done"; data: Data }
   | { status: "error"; error: Err };
 
@@ -39,6 +39,7 @@ export function createResourceAtom<Key, Data>(
   const atom = createAtom<ResourceState<Data>>({ status: "pending" }, options);
   let currentController: AbortController | undefined;
   let currentRunId = 0;
+  let lastData: Data | undefined;
 
   createRoot(() => {
     createEffect(() => {
@@ -57,14 +58,16 @@ export function createResourceAtom<Key, Data>(
       }
 
       if (!(result instanceof Promise)) {
+        lastData = result;
         atom.set({ status: "done", data: result });
         return;
       }
 
-      atom.set({ status: "pending" });
+      atom.set({ status: "pending", data: lastData });
       result.then(
         (data) => {
           if (runId !== currentRunId || controller.signal.aborted) return;
+          lastData = data;
           atom.set({ status: "done", data });
         },
         (error: unknown) => {

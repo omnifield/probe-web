@@ -22,5 +22,10 @@ export const passport = definePassport({
       byDefault: false,
       mark: { kind: "attribute", name: "data-outlined" },
     },
+    filled: {
+      values: { kind: "flag" },
+      byDefault: true,
+      mark: { kind: "attribute", name: "data-filled" },
+    },
   }),
 });

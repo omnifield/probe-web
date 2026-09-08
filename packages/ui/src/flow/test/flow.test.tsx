@@ -79,20 +79,3 @@ describe("flow — the tag is the consumer's choice", () => {
     expect(host.querySelector('[data-testid="item"]')?.tagName).toBe("SPAN");
   });
 });
-
-describe("flow item — stretch is a plain presence attribute, not set by default", () => {
-  it("carries data-stretch only when stretch is passed", () => {
-    const host = document.createElement("div");
-    document.body.append(host);
-
-    dispose = render(() => (
-      <Flow>
-        <FlowItem data-testid="plain">Первый</FlowItem>
-        <FlowItem stretch data-testid="stretched">Второй</FlowItem>
-      </Flow>
-    ), host);
-
-    expect(host.querySelector('[data-testid="plain"]')?.hasAttribute("data-stretch")).toBe(false);
-    expect(host.querySelector('[data-testid="stretched"]')?.getAttribute("data-stretch")).toBe("");
-  });
-});

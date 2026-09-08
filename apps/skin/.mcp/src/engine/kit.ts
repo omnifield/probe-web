@@ -8,6 +8,23 @@ export function exampleDataFor(component: string): unknown {
   return input ? zocker(input).generate() : undefined;
 }
 
+// Наши собственные, реалистичные данные (kind:"content" в службе пресетов) наполняют компонент
+// куда честнее, чем случайный zocker — но должны реально подходить под io-схему компонента, иначе
+// сами станут источником непонятных багов вместо инструмента их поиска. Компонент без io-схемы
+// (например table — своя игра с props.data, не bind по IO) — проверять нечем, не отказ.
+export function checkContentData(component: string, data: unknown): { ok: boolean; flaws: string[] } {
+  const input = IO[component]?.input;
+  if (!input) return { ok: true, flaws: [] };
+
+  const result = input.safeParse(data);
+  if (result.success) return { ok: true, flaws: [] };
+
+  return {
+    ok: false,
+    flaws: result.error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`),
+  };
+}
+
 export function listComponents() {
   return Object.keys(PASSPORTS)
     .toSorted()

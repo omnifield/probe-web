@@ -1,16 +1,17 @@
 import {
   Workspace,
-  WorkspaceFooter,
   WorkspaceHeader,
   WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
-  Surface,
   Flow,
+  FlowItem,
+  Toast,
 } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
-
-import { Info, Input, Output, Tree } from "#/widgets/component";
+import { layoutSelf } from "@web-core/skin";
+import { Chat } from "#/entities/chat";
+import { Info, Input, Tree } from "#/widgets/component";
 import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
@@ -20,32 +21,32 @@ export function WorkspaceLayout() {
       outlined
       style={{ "block-size": "100dvh" }}
     >
+      <Toast />
+
       <WorkspaceSidebar>
-        <Surface data-variant="filled">
-          <Tree />
-        </Surface>
+        <Tree />
       </WorkspaceSidebar>
 
       <WorkspaceHeader>
-        <Flow>
-          <Header />
-        </Flow>
+        <Header />
       </WorkspaceHeader>
 
       <WorkspaceMain>
-        <Surface data-variant="filled">
-          <Outlet />
-        </Surface>
+        <Outlet />
       </WorkspaceMain>
 
       <WorkspaceRightbar>
-        <Surface data-variant="filled">
-          <Flow data-variant="column-center">
-            <Info />
+        <Flow data-variant="column-center">
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            {/* <Info /> */}
+          </FlowItem>
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
             <Input />
-            <Output />
-          </Flow>
-        </Surface>
+          </FlowItem>
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            <Chat />
+          </FlowItem>
+        </Flow>
       </WorkspaceRightbar>
     </Workspace>
   );

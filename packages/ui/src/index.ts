@@ -48,6 +48,7 @@ export * from "./switch/index.js";
 export * from "./table/index.js";
 export * from "./tabs/index.js";
 export * from "./timer/index.js";
+export * from "./toast/index.js";
 export * from "./toc/index.js";
 export * from "./toggle/index.js";
 export * from "./toggle-group/index.js";

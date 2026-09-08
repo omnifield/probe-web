@@ -63,6 +63,9 @@ const routes = {
   '/workspaces/:id/pages/:pageId': 'workspace-pages',
   // Chrome-free print/PDF view for a single page (opened in a new tab).
   '/workspaces/:id/pages/:pageId/print': 'page-print',
+  // Chrome-free embed view for a single page — for embedding a Windshift
+  // page inside another product's UI (e.g. an iframe), no transform hacks.
+  '/workspaces/:id/pages/:pageId/embed': 'page-embed',
   // Routes with collection ID filtering
   '/workspaces/:id/collections/:collectionId/board': 'workspace-board',
   '/workspaces/:id/collections/:collectionId/board/configure': 'workspace-board-config',

@@ -10,14 +10,16 @@ import {
   FlowItem,
   Flow,
 } from "@web-core/ui";
+import { layoutGroup } from "@web-core/skin";
 import { useLocation, useNavigate } from "@web-core/router";
 import { createMemo, For } from "solid-js";
 
 import { ThemeSwitch } from "#/shared/ui/theme-switch";
+import { Auth } from "#/entities/user";
 
 const SCREENS = [
-  { value: "showcase", label: "Showcase", to: "/showcase" },
   { value: "lab", label: "Lab", to: "/lab" },
+  { value: "showcase", label: "Showcase", to: "/showcase" },
   { value: "playground", label: "Playground", to: "/playground" },
 ] as const;
 
@@ -37,27 +39,31 @@ export function Header() {
   };
 
   return (
-    <Surface>
-      <Flow>
-        <FlowItem>
-          <SegmentGroup
-            value={screen()}
-            onValueChange={onValueChange}
-            orientation="horizontal"
-          >
-            <SegmentGroupIndicator />
-            <For each={SCREENS}>
-              {(item) => (
-                <SegmentGroupItem value={item.value}>
-                  <SegmentGroupItemControl />
-                  <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
-                </SegmentGroupItem>
-              )}
-            </For>
-          </SegmentGroup>
-        </FlowItem>
-        <ThemeSwitch />
-      </Flow>
-    </Surface>
+    <Flow style={layoutGroup({ justify: "space-between" })}>
+      <FlowItem>LOGO</FlowItem>
+      <FlowItem>
+        <SegmentGroup
+          value={screen()}
+          onValueChange={onValueChange}
+          orientation="horizontal"
+        >
+          <SegmentGroupIndicator />
+          <For each={SCREENS}>
+            {(item) => (
+              <SegmentGroupItem value={item.value}>
+                <SegmentGroupItemControl />
+                <SegmentGroupItemText>{item.label}</SegmentGroupItemText>
+              </SegmentGroupItem>
+            )}
+          </For>
+        </SegmentGroup>
+      </FlowItem>
+      <FlowItem>
+        <Flow>
+          <ThemeSwitch />
+          <Auth />
+        </Flow>
+      </FlowItem>
+    </Flow>
   );
 }

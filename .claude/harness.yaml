@@ -46,6 +46,9 @@ zones:
   assembly:
     paths: [packages/assembly]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
+  store:
+    paths: [packages/store]
+    description: оснастка сборки — подпути /vite, /tsconfig, /vitest
   build:
     paths: [packages/build]
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest
@@ -74,7 +77,7 @@ zones:
     paths: [products/map, canons/map]
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера
   skin:
-    paths: [apps/skin, canons/ui-skin]
+    paths: [apps/skin, canons/ui-skin, packages/skin, packages/style]
     description: "производство оформлений для безголового кита — своя логика, кит остаётся голым. У продукта СВОЙ архитектор: заявки сюда приходят от него, а не ставятся ему."
   chat:
     paths: [products/chat, canons/chat]

@@ -17,6 +17,14 @@
     "./pagination": {
       "types": "./dist/pagination/index.d.ts",
       "default": "./dist/pagination/index.js"
+    },
+    "./peer": {
+      "types": "./dist/peer/index.d.ts",
+      "default": "./dist/peer/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
     }
   },
   "files": [

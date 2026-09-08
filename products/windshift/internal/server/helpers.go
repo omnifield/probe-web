@@ -293,18 +293,31 @@ func isDefaultPort(scheme, port string) bool {
 
 const excalidrawFontCDNOrigin = "https://esm.sh"
 
-func createSecurityHeaders(enableHTTPS, useProxy bool, additionalProxies []net.IP, jiraOrigins func() []string, externalImagesAllowed func() bool) func(http.Handler) http.Handler {
+// isPageEmbedPath matches the chrome-free single-page embed route
+// (/workspaces/:id/pages/:pageId/embed) — for iframing an authenticated
+// knowledge-base page into another product's UI. Unlike public forms this is
+// authorized content, so it never gets a blanket "*" — only origins named in
+// PAGE_EMBED_ORIGINS.
+func isPageEmbedPath(path string) bool {
+	return strings.HasPrefix(path, "/workspaces/") && strings.HasSuffix(path, "/embed")
+}
+
+func createSecurityHeaders(enableHTTPS, useProxy bool, additionalProxies []net.IP, jiraOrigins func() []string, externalImagesAllowed func() bool, pageEmbedOrigins []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
-			// Public form pages and the embed widget must be loadable cross-origin
-			// so customers can iframe them into their own websites. All other routes
-			// keep strict frame protection via CSP frame-ancestors.
+			// Public form pages must be loadable cross-origin so customers can
+			// iframe them into their own websites. The page-embed route is
+			// authenticated content — it only relaxes frame-ancestors for
+			// origins explicitly configured via PAGE_EMBED_ORIGINS, never "*".
+			// All other routes keep strict frame protection.
 			frameAncestors := "'self'"
 			if strings.HasPrefix(r.URL.Path, "/forms/") {
 				frameAncestors = "*"
+			} else if len(pageEmbedOrigins) > 0 && isPageEmbedPath(r.URL.Path) {
+				frameAncestors = "'self' " + strings.Join(pageEmbedOrigins, " ")
 			}
 
 			// Generate a per-request cryptographic nonce for CSP script-src

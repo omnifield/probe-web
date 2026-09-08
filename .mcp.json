@@ -24,8 +24,8 @@
       "args": ["-y", "chrome-devtools-mcp@latest", "--executablePath", "/usr/bin/chromium", "--chromeArg=--no-sandbox"]
     },
     "skin": {
-      "command": "node",
-      "args": ["apps/skin/.mcp/src/server.js"]
+      "command": "apps/skin/.mcp/node_modules/.bin/web-core-node",
+      "args": ["apps/skin/.mcp/src/index.ts"]
     }
   }
 }

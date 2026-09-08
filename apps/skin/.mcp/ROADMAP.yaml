@@ -5,6 +5,195 @@
 categories:
   - category: Тулы
     items:
+      - id: browser-proxy-tools
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: browser_navigate/browser_screenshot — прокси через chrome-devtools-mcp
+        description: |
+          Означает: два новых read-тула — единственный способ в этой зоне реально УВИДЕТЬ вид
+          (не только CSS-текст assemble_preview). engine/browser.ts держит ОДИН общий процесс
+          chrome-devtools-mcp (headless, --isolated — свой профиль, не мешает ничьему
+          интерактивному браузеру), подключён своим MCP-клиентом (@modelcontextprotocol/sdk).
+          Изоляция — на уровне ВКЛАДКИ, не процесса: своя вкладка на MCP-сессию через замыкание в
+          registerTools (оно и так зовётся заново на каждую сессию — packages/mcp/src/transport) —
+          отдельная карта сессия→вкладка не понадобилась. pageId — числовой индекс страницы у
+          chrome-devtools-mcp, тулы не отдают его отдельным полем, только текст со списком страниц
+          и пометкой [selected] — newPage() разбирает регуляркой. Причина: готовим сервер к
+          настоящему внешнему агенту без браузера на своей стороне — user сформулировал прямо
+          (агент "либо ничего не сможет, либо будет раскачиваться пол дня" без визуальной
+          обратной связи); прокси решает это без дублирования чужой рендер-механики. Найдено
+          живьём: в этом контейнере chrome-devtools-mcp не нашёл Chrome по дефолтному пути —
+          заведена SKIN_MCP_CHROME_EXECUTABLE (см. FAQ.md), плюс --chromeArg=--no-sandbox
+          обязателен в контейнере (стандартная практика, не наш security-даунгрейд). Проверено
+          живьём: navigate+screenshot на реальную витрину (button/default) вернул настоящий PNG,
+          две ПАРАЛЛЕЛЬНЫЕ сессии на разные URL (button/checkbox) получили разные скриншоты без
+          пересечения вкладок.
+
+      - id: browser-click-and-snapshot-tools
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "browser_snapshot/browser_click — настоящий клик мышью, не переход по URL"
+        description: |
+          Означает: два новых read-тула поверх packages/mcp/src/browser's snapshot()/click().
+          browser_snapshot — текстовое a11y-дерево своей вкладки, каждый узел с uid. browser_click —
+          клик мышью по uid из СВЕЖЕГО снимка (uid может смениться после клика, если DOM
+          обновился — снимать заново перед следующим кликом). chrome-devtools-mcp's click адресует
+          только по uid, не по CSS-селектору — snapshot добавлен ВМЕСТЕ с click одной заявкой, не
+          отдельно: без него click нечем было бы адресовать.
+          Причина: живая заявка от внешнего агента — цитата: "Через нынешний browser_navigate я
+          физически не могу повторить именно ту последовательность событий, где ловится баг" (баг с
+          миганием ловится на клике по дереву внутри SPA — переход роутером, другой код-путь и
+          таймінг, чем жёсткий browser_navigate). Заявка нашла и указала точную цепь (tools/index.ts
+          → engine/browser.ts → packages/mcp/src/browser/index.ts, с номерами строк) — не абстрактная
+          жалоба. Второй пункт заявки (трейсы производительности для ловли переходного кадра)
+          сознательно НЕ реализован — сама заявка пометила это опциональным, более дешёвый путь
+          (серия browser_screenshot без ожидания settle сразу после browser_click) уже доступен без
+          единой новой строки существующими тулами; трейсы — только если этого не хватит на практике
+          (см. FAQ.md).
+          Проверено живьём: полный цикл navigate→snapshot→click→snapshot через реальный pnpm start —
+          вторая a11y-снимка несёт текст, который выставил обработчик клика реальной кнопки. 21 тул
+          (было 19), 18 read/3 write.
+
+  - category: Документация
+    items:
+      - id: glossary-and-examples-first-technique
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Словарь + техника «сначала пример» — README/FAQ канон, instructions выжимка
+        description: |
+          Означает: новый раздел README.md «Словарь» (Palette/Form/Outfit/Assembly/Tag человеческим
+          языком, не терминологией паспорта) плюс техника поиска примера через footprint/group
+          (list_components) и variantTags (get_preset) перед тем, как писать recipe с нуля.
+          `instructions` в server/index.ts — сжатая выжимка ИЗ README/FAQ, не отдельный текст:
+          источник один, чтобы не разъехались. Причина: готовим сервер к настоящему внешнему
+          агенту без доступа к репозиторию/Ark UI MCP/браузеру — единственный дешёвый способ дать
+          ему опору есть уже готовые 27+ форм omnifield-*, просто раньше никто не говорил агенту
+          явно "посмотри туда сначала". Ручки одни и те же у агента и у ручного пульта (тоже
+          MCP-клиент) — значит и источник знаний должен быть один, не два текста, которые могут
+          разойтись. Проверено живьём: client.getInstructions() после рестарта отдаёт актуальный
+          текст.
+
+  - category: Тулы
+    items:
+      - id: author-admin-guard
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: author + adminToken — единственная жёсткая граница в зоне
+        description: |
+          Означает: save_preset получил необязательные author/adminToken. По умолчанию — свободно,
+          любой агент пишет с любым author. Защита срабатывает, только если author запроса ИЛИ
+          author уже существующей записи с этим именем совпадает с SKIN_MCP_ADMIN_AUTHOR — тогда
+          без верного SKIN_MCP_ADMIN_TOKEN отказ до записи (isError:true, служба не тронута).
+          Причина: готовим сервер к настоящему внешнему агенту — нужна хотя бы одна граница, чтобы
+          эталоны (omnifield-*) случайно не переписали, пока остальное остаётся полностью открытым
+          (осознанно — "пока все учатся", по словам user, не финальная модель прав). Проверено
+          живьём всеми шестью сценариями (без author / чужой author без токена / чужой author с
+          неверным токеном / свой author с верным токеном / чужая перезапись уже защищённой записи
+          даже без указания author / повторная запись с верным токеном) — каждый ведёт себя ровно
+          так, как задумано. Все 30 omnifield-* записей (палитра, наряд, 2 тега, 27 форм) реально
+          проставлены author:"Egor Raybul" через сам этот механизм — попытка переписать
+          omnifield-button без токена живьём отказана.
+          ЗАМЕНЕНО — см. author-ownership-model ниже: сам этот пункт честно предупреждал "не
+          финальная модель прав", ADMIN_AUTHOR/ADMIN_TOKEN больше не существуют в коде.
+
+      - id: author-ownership-model
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "author — владение, не админ: SKIN_MCP_ADMIN_AUTHOR/TOKEN убраны целиком"
+        description: |
+          Означает: authorGuard(kind, name, nextAuthor) сравнивает СТРОКИ — author запроса против
+          author уже существующей записи. Совпадают (или у записи ещё нет author) — пишет. Не
+          совпадают (включая запрос вовсе без author на занятой записи) — отказ, тот же isError:true,
+          что раньше. Ни одного секрета (SKIN_MCP_ADMIN_TOKEN, adminToken-параметр save_preset/
+          save_content) в коде и доке больше нет. Защита симметрична всем author, не одному
+          хардкоженному "суперюзеру".
+          Причина: живая заявка от внешнего агента (см. list_feedback) прямым текстом назвала слом
+          старой модели — "агенту нельзя держать секреты, поэтому adminToken как аргумент ручки для
+          него недоступен в принципе — если под защищённые имена ему писать нужно, это должно
+          приезжать заголовком от нашей стороны, а не через него". User объяснил реальную модель:
+          "имя автора будет передоваться с запросом... защищённого имени нет... юзер зашёл, зарегался,
+          написал агенту, агент видит с кем он общается и работает только с ресурсами этого юзера" —
+          identity приезжает С ЗАПРОСОМ от платформы (которая уже аутентифицировала своего юзера), не
+          секретом, который держит агент.
+          push-to-prod.mjs починен тем же духом: несёт author ИЗ КАЖДОЙ конкретной локальной записи
+          (entry.state.author), не единый SKIN_MCP_ADMIN_AUTHOR/TOKEN из окружения оператора на весь
+          прогон — так повторный пуш той же записи проходит владельческую проверку на проде.
+          Проверено живьём шестью сценариями (новая запись без author открыта / кто угодно её потом
+          правит / новая запись с author:"alice" занята / alice правит своё / bob получает отказ /
+          запрос совсем без author получает тот же отказ) плюс контрольная проверка — попытка
+          переписать omnifield-palette чужим author (без какого-либо токена, токена больше не
+          существует) по-прежнему отказана. Реальные omnifield-*/amethyst-* остались защищены без
+          единой миграции данных — поле author в них уже было.
+
+      - id: report-feedback-tool
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: report_feedback — сырой репорт по любой ручке, отдельный kind
+        description: |
+          Означает: одиннадцатый тул, write, без проверки и без анализа на этой стороне —
+          {tool, action, expected?, actual} кладётся как есть в службу пресетов, kind:"feedback"
+          (шестой вид, backend/presets по-прежнему не толкует kind — бесплатно, как и tag раньше).
+          Не смешивается с palette/form/outfit/assembly/tag в list_presets (тот KIND-enum не
+          трогали). Причина заводить именно здесь, не в "Затыки" платформы внешнего агента: репорт
+          про эту MCP-зону должен пережить смену агента/сессии/платформы, а не жить в чужой базе,
+          которая завтра может уехать вместе с самим агентом. Проверено живьём реальным вызовом —
+          {"saved":{"kind":"feedback",...}}, annotations {readOnlyHint:false,destructiveHint:false}.
+
+      - id: list-feedback-tool
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: list_feedback — прочитать report_feedback обратно, постранично
+        description: |
+          Означает: четырнадцатый тул, read, читает kind:"feedback" (cursor/limit, по умолчанию
+          50), каждый элемент сразу с содержимым (tool/action/expected/actual/at) — не только
+          id/label, второй проход get_preset не нужен. get_preset/list_presets не годятся —
+          feedback намеренно вне их KIND-enum (см. report-feedback-tool). Причина: план user —
+          прод-инстанс (внешний агент, отдельная служба пресетов на VPS) копит заявки, локальная
+          разработка их периодически стягивает для разбора через httpPeer (@web-core/mcp/peer);
+          без своей ручки чтения это было бы сырым REST по чужой службе пресетов в обход MCP,
+          нарушая тот же принцип "тулы, не сырой API", по которому сюда же попал report_feedback.
+          Проверено живьём реальным round-trip (report_feedback → list_feedback через stdioPeer):
+          сохранённая запись вернулась с полным state, заодно нашёлся настоящий старый репорт
+          (check_form молча игнорирует variantTags без соответствующего recipe.variants вместо
+          флава — отдельная, ещё не решённая находка).
+
+      - id: push-to-prod-script
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "scripts/push-to-prod.mjs — перенос эталонов на прод-инстанс"
+        description: |
+          Означает: pnpm run push-to-prod читает локальную службу пресетов и пересохраняет
+          tag→palette→form→outfit (в этом порядке — form сверяется с palette по имени, outfit
+          резолвит form по имени) на прод-адрес из SKIN_MCP_PROD_URL, тем же author/adminToken, что
+          и обычный save_preset. Обе стороны — через MCP-тулы (list_presets/get_preset локально,
+          save_preset на проде через httpPeer), не сырой REST по backend/presets: прямой REST
+          обошёл бы валидацию save_preset и мог бы записать битую форму на прод молча. Локальный
+          конец скрипт поднимает сам (stdioPeer("pnpm",["start"])) — прод только адресуется.
+          Причина: план user — прод-VPS раскатывается с нуля, эталоны толкаются туда точечно по
+          мере готовности, обратный путь (заявки) — list_feedback. Проверено живьём: второй, полностью
+          пустой backend/presets + второй apps/skin/.mcp в http-режиме на соседнем порту — все 30
+          записей (2 тега, палитра, 27 форм, наряд) перенесены без единого отказа; отдельно
+          проверена защита — неавторизованная перезапись omnifield-palette на этом «проде» без
+          adminToken отказана тем же isError:true, что и локально.
+          ОБНОВЛЕНО — см. author-ownership-model: adminToken из этой цепочки убран, скрипт несёт
+          author ИЗ КАЖДОЙ записи (entry.state.author), не единый env-параметр.
+
       - id: migrated-to-web-core-mcp
         type: feature
         status: Done
@@ -97,6 +286,170 @@ categories:
           сервер, видный снаружи контейнера (тот же довод, что у server.host у packages/build) —
           используется внешним агентом, который делает скины через этот сервер. Concurrent-сессии,
           host/origin allowlist, instructions — из @web-core/mcp, здесь не переоткрывается.
+
+  - category: Наполнение
+    items:
+      - id: content-kind-and-tools
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "save_content/list_content/get_content — реальные данные вместо zocker-мока"
+        description: |
+          Означает: kind:"content" (седьмой вид, backend/presets по-прежнему не толкует kind —
+          бесплатно) хранит {component, data} — реальные, curated данные для наполнения компонента
+          при живом просмотре (browser_navigate), не абстрактный лорем-ипсум. save_content сверяет
+          data с io-схемой компонента (get_passport().io.input, через zod safeParse) ДО записи —
+          несовпадение отказывает флавом с адресом поля (не тихая запись мусора), у компонента без
+          entity/io.ts (table — свои props, не bind по IO) сверять нечем, проходит без проверки.
+          list_content — постранично, сразу с содержимым, необязательный фильтр по component.
+          Причина: живая стилизация компонентов показала, что часть визуальных багов (переносы,
+          обрезки при разной длине текста, кириллица) не ловится случайным zocker-значением — нужны
+          настоящие, в нашем контексте, данные, и хранить их в службе пресетов дешевле, чем таскать
+          с собой пакет с текстовым контентом (тот же довод, что уже был у tag/feedback — не плодить
+          npm-пакеты ради данных). Осознанно ЛЁГКИЙ первый заход, не модель движка — см. FAQ.md,
+          развилка "kind+тулы сейчас / Content в packages/skin/model сразу" решена в пользу первого.
+          Проверено живьём: валидные данные (avatar, {fallback,alt}) сохранены и прочитаны обратно,
+          невалидные (avatar без обязательного fallback) отказаны флавом с точным полем, компонент
+          без io-схемы (table) прошёл без проверки, list_content с фильтром по component отдал
+          только нужное — все тестовые записи после проверки удалены из службы.
+
+      - id: content-replaces-zocker-in-check-assembly
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: "content вместо zocker внутри check_assembly/assemble_preview (когда appears нужным)"
+        description: |
+          Означает: exampleDataFor (engine/kit.ts) сначала ищет сохранённый content по компоненту,
+          и только не найдя — падает на zocker, как сегодня. НЕ сделано сейчас осознанно: сама
+          функция и checkAssembly/assemble_preview синхронные, поход в службу пресетов потребовал
+          бы сделать всю цепочку асинхронной — цена реальная, а structural-проверка bind-путей не
+          обязана видеть РЕАЛЬНЫЕ данные (ей важна форма, не содержание). Ждём, пока накопится
+          content-записей достаточно, чтобы увидеть, действительно ли не хватает — не додумываем
+          заранее. См. FAQ.md.
+
+      - id: content-in-showcase-preview
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: Витрина (apps/skin/src) читает content напрямую из backend/presets для живого превью
+        description: |
+          Означает: apps/skin/src/entities/component (fake-generator/generate.ts, handle.ts,
+          componentDataAtom) получает способ подставить сохранённый content компонента ВМЕСТО
+          собственного generateFakeData — тем же путём, каким витрина уже читает tag/palette/form
+          напрямую из backend/presets, минуя MCP (см. FAQ.md — «Побочная находка про packages/io» и
+          более ранний разбор про tags). Не сделано: сначала должно накопиться содержимое
+          (content-записи для реально стилизуемых сейчас компонентов), UI-переключатель
+          "случайно/реально" — отдельная небольшая задача поверх уже готовых тулов, не блокер MVP.
+
+      - id: content-promoted-to-packages-skin
+        type: feature
+        status: Backlog
+        priority: null
+        milestone: null
+        name: "Content как тип модели @web-core/skin (общак) — когда дорастёт"
+        description: |
+          Означает: если content-replaces-zocker-in-check-assembly и/или content-in-showcase-preview
+          закрыты и механика доказала пользу — формализовать Content как тип модели в
+          packages/skin/model (рядом с Palette/Form/Outfit/ComponentAssembly), со своей проверкой
+          по io-схеме компонента как часть общей механики skin, не завязанной именно на MCP-зону.
+          НЕ делать заранее — user явно попросил вести этот пункт через ROADMAP, чтобы не забыть про
+          перенос в общак, а не строить его сразу (тот же принцип, что уже сработал: httpPeer/
+          createBrowser сначала жили в apps/skin/.mcp, переехали в packages/mcp только когда
+          понадобился второй потребитель/явный запрос user, не заранее).
+
+  - category: Цвет наряда
+    items:
+      - id: accent-vs-neutral-outfit-request-guidance
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Канон «свой аутфит» — accent-only vs neutral-тоже, таблица сочетаний с radix-ui.com/colors"
+        description: |
+          Означает: README.md/FAQ.md/server/index.ts's instructions теперь различают два разных
+          запроса, которые раньше смешивались в один: "как X, но бренд-цвет другой" (менять только
+          scales.accent, +dark.accent-9/10 той же дельтой) и "хочу свою тему/скин/аутфит" (обязана
+          смениться scales.neutral — ВЕСЬ фон/поверхности/бордеры/приглушённый текст считает движок
+          из НЕЁ одной, OKLCH-рэмп в packages/style/src/engine/scale.ts, accent тут ни при чём).
+          README получил таблицу из семи готовых сочетаний accent+neutral (индиго/фиолет/бирюза/
+          трава/апельсин/малина/небо) — значения и пары не выдуманы, взяты с radix-ui.com/colors
+          (шаг 9, официальная рекомендация пары в "Composing a palette"; наш dark.accent-9/10 и так
+          повторяет их нумерацию шага, packages/style/FAQ.md уже объявлял lineage: "взята МОДЕЛЬ, а
+          не пакет"). warning — amber-11 (#ab6400), не amber-9 (#ffc53d, слишком светлый для заливки)
+          — явно названо правилом, не угадывается каждый раз заново.
+          Причина: живой инцидент — построил amethyst-palette (см. следующую запись), поменял только
+          accent, user поймал словами "поменялось только цвет бренда... всё остальное в том же
+          цвете" — и явно попросил не давать агенту ни изобретать сочетания самому, ни гуглить
+          модные палитры на каждый запрос, а завести один раз собранный канон. Проверено живьём:
+          amethyst-palette's neutral переставлен на #8e8c99 (mauve, родная пара violet по таблице
+          Radix) тем же save_preset, check_palette/assemble_preview прошли чисто (232 gaps, то же
+          число, что и раньше — палитра не единственный источник непокрытых мест), instructions
+          на реальном initialize несут новое правило текстом (проверено client.getInstructions()).
+
+      - id: amethyst-second-outfit
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: "amethyst/amethyst-palette — второй наряд, чтобы было на что переключиться"
+        description: |
+          Означает: kind:"outfit" впервые перестал быть единственной записью — amethyst-palette
+          (тот же набор ролей/размеров/типографики, что у omnifield-palette, только accent/neutral
+          фиолетовые) + amethyst (те же 26 форм, что у omnifield) дают честное сравнение "тот же
+          кит, другой цвет" в переключателе тем apps/skin/src (ThemeSwitch читает SOURCE.names() из
+          службы динамически — код трогать не пришлось, второй наряд просто появился в списке).
+          Причина: user — "у нас только омнифилд, даже нельзя переключиться посмотреть". Первый
+          заход (только accent) вскрыл настоящий пробел в каноне — см. предыдущую запись; neutral
+          донастроен по её результату, не оставлен как ошибочный пример.
+
+      - id: neutral-chroma-proportional-to-background
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "neutral по таблице Radix (mauve-9) недостаточно насыщен — фон всё равно неотличим"
+        description: |
+          Означает: значения из docs/color.md — это ХЬЮ (какой оттенок), не насыщенность. Фон
+          каждого шага получает лишь ДОЛЮ насыщенности seed'а (packages/style/src/engine/scale.ts,
+          CHROMA_FACTOR["1"]=0.04, ["2"]=0.09) — mauve-9 в OKLCH (c:0.019) даже МЕНЕЕ насыщен, чем
+          нейтральный omnifield (c:0.023), 4% от такого числа остаётся почти нулём.
+          Причина: user поймал ВТОРОЙ раз подряд — после первой правки (neutral → mauve-9 по
+          таблице) попросил "поменяй цвета для фона... для наглядности", фон всё ещё не читался
+          другим. Посчитал реальные OKLCH-хромы (parseColor из packages/style/dist) ДО правки,
+          не на глаз — подобрал #6b5b8a (c:0.075, та же хью-семья, что фиолетовый accent), заранее
+          посчитал производные шаги 1-3 через buildScale() (#f9f7fc/#f4f1fb вместо почти-белого
+          #f8f8fa/#f2f3f6), убедился числом, только потом save_preset. Правило (ориентир c≥~0.06)
+          вписано в docs/color.md — не только починена одна запись, но и закрыт следующий такой же
+          вопрос заранее.
+
+  - category: Доки по темам
+    items:
+      - id: docs-folder-and-tools
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "docs/*.md + list_docs/get_doc — прогрессивное раскрытие вместо раздутого README"
+        description: |
+          Означает: объёмный разбор ОДНОЙ темы (первая — docs/color.md, весь разбор accent/neutral
+          + таблица сочетаний + правило по насыщенности) живёт отдельным файлом, не внутри README —
+          README держит только костяк с коротким указателем. list_docs отдаёт заголовки (первая
+          строка `# ...` каждого файла — фронт-маттер не заводили), get_doc — сырой markdown одной
+          темы по topic. Topic проверяется тем же slug-паттерном, что name/kind любой записи службы
+          пресетов (^[a-z0-9][a-z0-9-]{0,63}$) — traversal (`../../../etc/passwd`, `..%2f`) отсеян
+          регуляркой ДО readFile, не второй проверкой резолвленного пути.
+          Причина: user завёл apps/skin/.mcp/docs/ и спросил, можно ли вместо ручного сжатия слать
+          агенту весь README теперь, когда он короче — вместо статического дампа выбран тот же
+          принцип прогрессивного раскрытия, что уже работает у list_components→get_passport: агент
+          тянет ИМЕННО нужную тему (get_doc("color") перед тем, как строить Palette), не платит
+          токенами на instructions за темы, которые в конкретной сессии не понадобятся. instructions
+          теперь только НАЗЫВАЕТ, что list_docs/get_doc существуют — не пересказывает ни одной темы.
+          Проверено живьём: list_docs видит реальный docs/color.md с верным заголовком, get_doc по
+          несуществующей теме и по двум traversal-строкам (буквальной и percent-encoded) — все три
+          isError:true до похода на диск. 19 тулов (было 17), 16 read/3 write.
 
   - category: Пресеты
     items:

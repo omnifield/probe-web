@@ -26,6 +26,7 @@
     mobile: () => import('./lib/mobile/MobileShell.svelte'),
     publicBoard: () => import('./lib/pages/PublicBoard.svelte'),
     pagePrint: () => import('./lib/features/pages/PagePrintView.svelte'),
+    pageEmbed: () => import('./lib/features/pages/PageEmbedView.svelte'),
     timeReportPrint: () => import('./lib/features/time/TimeReportPrintView.svelte'),
     testRunSummaryPrint: () => import('./lib/features/testing/TestRunSummaryPrintView.svelte'),
   };
@@ -330,6 +331,17 @@
     <LazyRootView
       loader={ROOT_VIEW_LOADERS.pagePrint}
       label="print view"
+      componentProps={{
+        workspaceId: resolveWorkspaceIdParam($currentRoute.params.id),
+        pageId: $currentRoute.params.pageId || null,
+      }}
+    />
+  <!-- Chrome-free embed view for a single page (authenticated, no app shell) — for
+       embedding a Windshift page inside another product's UI, e.g. an iframe. -->
+  {:else if $authStore.isAuthenticated && appInitialized && $currentRoute.view === 'page-embed'}
+    <LazyRootView
+      loader={ROOT_VIEW_LOADERS.pageEmbed}
+      label="embed view"
       componentProps={{
         workspaceId: resolveWorkspaceIdParam($currentRoute.params.id),
         pageId: $currentRoute.params.pageId || null,

@@ -1,9 +1,16 @@
 export { ScrollArea, type ScrollAreaProps } from "./root.js";
+export { ScrollAreaRootProvider, type ScrollAreaRootProviderProps } from "./root-provider.js";
 export { ScrollAreaViewport, type ScrollAreaViewportProps } from "./viewport.js";
 export { ScrollAreaContent, type ScrollAreaContentProps } from "./content.js";
 export { ScrollAreaScrollbar, type ScrollAreaScrollbarProps } from "./scrollbar.js";
 export { ScrollAreaThumb, type ScrollAreaThumbProps } from "./thumb.js";
 export { ScrollAreaCorner, type ScrollAreaCornerProps } from "./corner.js";
+export {
+  useScrollArea,
+  useScrollAreaContext,
+  type UseScrollAreaProps,
+  type UseScrollAreaReturn,
+} from "@ark-ui/solid/scroll-area";
 
 import { defineKitComponent } from "../../kit-form.js";
 import { passport } from "../entity/passport.js";

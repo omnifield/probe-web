@@ -10,9 +10,17 @@ export const PRESET_KIND = {
   form: "form",
   outfit: "outfit",
   assembly: "assembly",
+  content: "content",
 } as const;
 
 export type PresetKind = (typeof PRESET_KIND)[keyof typeof PRESET_KIND];
+
+/** Готовые данные компонента — второй источник наполнения показа, рядом с фейк-генератором. */
+export interface ContentState {
+  readonly component: string;
+  readonly data: unknown;
+  readonly author?: string;
+}
 
 /** Содержимое по ярлыку — то, что действительно лежит под `state`. */
 interface PresetKindState {
@@ -20,6 +28,7 @@ interface PresetKindState {
   form: Form;
   outfit: Outfit;
   assembly: ComponentAssembly;
+  content: ContentState;
 }
 
 /** Запись службы ЦЕЛИКОМ — то же самое, что несёт `GET {base}/{id}`, типизированное содержимым. */

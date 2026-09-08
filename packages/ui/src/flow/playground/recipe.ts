@@ -12,7 +12,6 @@ export const recipe: SlotRecipe = {
     },
     item: {
       props: { display: "block", minWidth: "0" },
-      states: { stretch: { props: { flexGrow: "1" } } },
     },
   },
   variants: {

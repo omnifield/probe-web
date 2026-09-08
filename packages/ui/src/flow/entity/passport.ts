@@ -7,10 +7,7 @@ export const passport = definePassport({
   root: "root",
   parts: [
     { name: "root", states: [] },
-    {
-      name: "item",
-      states: [{ name: "stretch", mark: { kind: "attribute", name: "data-stretch" } }],
-    },
+    { name: "item", states: [] },
   ],
   variantAxis: {
     mark: { kind: "attribute", name: "data-variant" },
