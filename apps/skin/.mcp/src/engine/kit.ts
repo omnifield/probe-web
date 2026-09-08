@@ -1,6 +1,7 @@
 import { EDITOR_INFOS, PASSPORTS } from "@web-core/ui/passport";
 import { IO } from "@web-core/ui/io";
 import { z } from "@web-core/io";
+import { footprintOf, groupOf, type ComponentFootprint, type ComponentGroup } from "@web-core/skin/editor";
 import { zocker } from "zocker";
 
 export function exampleDataFor(component: string): unknown {
@@ -25,7 +26,14 @@ export function checkContentData(component: string, data: unknown): { ok: boolea
   };
 }
 
-export function listComponents() {
+/** Чем сузить перечень. Пусто — весь кит. */
+export interface ComponentFilter {
+  readonly group?: ComponentGroup;
+  readonly footprint?: ComponentFootprint;
+}
+
+/** Карточка на выбор компонента; части и описания сборок — в `getPassport`. Разбор — FAQ.md. */
+export function listComponents(filter: ComponentFilter = {}) {
   return Object.keys(PASSPORTS)
     .toSorted()
     .map((name) => {
@@ -33,13 +41,18 @@ export function listComponents() {
       return {
         component: name,
         genus: editor?.genus,
-        group: editor?.group,
-        footprint: editor?.footprint,
+        group: editor ? groupOf(editor) : undefined,
+        footprint: editor ? footprintOf(editor) : undefined,
         package: editor?.package,
-        parts: PASSPORTS[name]?.anatomy.keys() ?? [],
-        assemblies: (editor?.assemblies ?? []).map((a) => ({ name: a.name, means: a.means })),
+        partsCount: PASSPORTS[name]?.anatomy.keys().length ?? 0,
+        assemblies: (editor?.assemblies ?? []).map((a) => a.name),
       };
-    });
+    })
+    .filter(
+      (card) =>
+        (filter.group === undefined || card.group === filter.group) &&
+        (filter.footprint === undefined || card.footprint === filter.footprint),
+    );
 }
 
 export function getPassport(component: string) {

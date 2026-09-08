@@ -1,5 +1,6 @@
-import { datePickerAnatomy } from "@ark-ui/solid/anatomy";
+import { anatomy as datePickerAnatomy } from "@zag-js/date-picker/anatomy";
 
-export const anatomy = datePickerAnatomy;
+// `valueText` в анатомии Zag нет — часть придумана китом, `.extendWith(...)` даёт ей адрес.
+export const anatomy = datePickerAnatomy.extendWith("valueText");
 
 export const anatomyParts = anatomy.build();

@@ -705,6 +705,9 @@ importers:
       '@zag-js/avatar':
         specifier: ^1.43.1
         version: 1.43.1
+      '@zag-js/carousel':
+        specifier: ^1.43.1
+        version: 1.43.1
       '@zag-js/checkbox':
         specifier: ^1.43.1
         version: 1.43.1
@@ -718,6 +721,9 @@ importers:
         specifier: ^1.43.1
         version: 1.43.1
       '@zag-js/file-upload':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/listbox':
         specifier: ^1.43.1
         version: 1.43.1
       '@zag-js/menu':
@@ -751,6 +757,9 @@ importers:
         specifier: ^1.43.1
         version: 1.43.1
       '@zag-js/toast':
+        specifier: ^1.43.1
+        version: 1.43.1
+      '@zag-js/toc':
         specifier: ^1.43.1
         version: 1.43.1
       '@zag-js/toggle':
@@ -2263,6 +2272,9 @@ packages:
   '@zag-js/avatar@1.43.3':
     resolution: {integrity: sha512-cAQFzmZRBoV8M2oGUMHYiBlF2hiwwSJOzmRLjz/yCElK2EHs63O9BzhRk05EZeFqJLvQXoz6bpZ/ug5YX48cRg==}
 
+  '@zag-js/carousel@1.43.1':
+    resolution: {integrity: sha512-Ksm4TiuozoqwL9yn6Jc2qRxPM+T1o/nVfGHPcSCTwZtCylshjgVJncgNAa3wMeHzxnVWlA4cAuL3+L2gH6iuhw==}
+
   '@zag-js/carousel@1.43.3':
     resolution: {integrity: sha512-hXnG0XL/mpBPCJ3a+H88CZMSCzVsKnOLY7i1Fza+hKxUiGovxojCAitoASeg6ETd7bOzAbz0pvfGgwJPCdnGTQ==}
 
@@ -2408,6 +2420,9 @@ packages:
   '@zag-js/json-tree-utils@1.43.3':
     resolution: {integrity: sha512-Fal5YYy3+E+eHIreqZtrS8s6o+8+tiq02z2FsmQNRz/txOKb0rgMiP81C//dGLH0eVJK8GUBvj5moeJ1ueRN7A==}
 
+  '@zag-js/listbox@1.43.1':
+    resolution: {integrity: sha512-AK1L+pWCkwGiqTsUweeEQKBmqHqNY3zL8bqWYG2pY8J7EI4w9ILBEmYmYe9XVy06cAnfa+WJ3OEjqJ5Q9MWhpw==}
+
   '@zag-js/listbox@1.43.3':
     resolution: {integrity: sha512-1u1O002M5hXuJSQmiaWgG2isdaJwqyLe/5F6Uv6ApOcl7i0GjO4fIF0aGCDrHfGki98A9TWn4ioaU0ExL3SeUw==}
 
@@ -2489,6 +2504,9 @@ packages:
   '@zag-js/scroll-area@1.43.3':
     resolution: {integrity: sha512-qJpVs70vGM+Ogl8rQCG0iuZ7oliKlk6ZwzJMPQXnoRGeG6NzwIR0S3O+lJGmgR+xBul1gXkaAJzlyxGQr82bmA==}
 
+  '@zag-js/scroll-snap@1.43.1':
+    resolution: {integrity: sha512-y2GJ+5z66P2f85+xv+PmsOzw/AQeNsyZK1TgxnKyVSleX0D3ekJHgmKuqmQHgdIuamVKGr6sxdFY3gywti80SQ==}
+
   '@zag-js/scroll-snap@1.43.3':
     resolution: {integrity: sha512-izT8eXvwqZMEKNM3lLcAWz9MpUwvZ0UCjBnfQX2JLHLcjYxLOytMd6rfGM2hE1erD0CBYlBUi5bIqstwQFLmCA==}
 
@@ -2550,6 +2568,9 @@ packages:
 
   '@zag-js/toast@1.43.3':
     resolution: {integrity: sha512-XBDewuymsIzZy23xrcx1v6F/HeDlk3NAfZ2C02P+DHiNKdj+a53PpqUGZg2e2FX7ZGibag+aywWG4pnvKaSQWg==}
+
+  '@zag-js/toc@1.43.1':
+    resolution: {integrity: sha512-+3CAznlV66qY5/xukht2hq951FgVSTzbbALRlnhS1CCXZJmA7Ufz0ItFZOQ2dRdVQYCyODyay1UHKpKZwvSEkw==}
 
   '@zag-js/toc@1.43.3':
     resolution: {integrity: sha512-ciIs9byITgsziuGdXKTVnAP3oYd4Nti2hsI0a5VqFMBslWiU/jO6pqRAPTj5V+e2z+Z7gM1RzzMNs8di5HuUFQ==}
@@ -5647,6 +5668,15 @@ snapshots:
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
 
+  '@zag-js/carousel@1.43.1':
+    dependencies:
+      '@zag-js/anatomy': 1.43.1
+      '@zag-js/core': 1.43.1
+      '@zag-js/dom-query': 1.43.1
+      '@zag-js/scroll-snap': 1.43.1
+      '@zag-js/types': 1.43.1
+      '@zag-js/utils': 1.43.1
+
   '@zag-js/carousel@1.43.3':
     dependencies:
       '@zag-js/anatomy': 1.43.3
@@ -5968,6 +5998,16 @@ snapshots:
 
   '@zag-js/json-tree-utils@1.43.3': {}
 
+  '@zag-js/listbox@1.43.1':
+    dependencies:
+      '@zag-js/anatomy': 1.43.1
+      '@zag-js/collection': 1.43.1
+      '@zag-js/core': 1.43.1
+      '@zag-js/dom-query': 1.43.1
+      '@zag-js/focus-visible': 1.43.1
+      '@zag-js/types': 1.43.1
+      '@zag-js/utils': 1.43.1
+
   '@zag-js/listbox@1.43.3':
     dependencies:
       '@zag-js/anatomy': 1.43.3
@@ -6172,6 +6212,10 @@ snapshots:
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
 
+  '@zag-js/scroll-snap@1.43.1':
+    dependencies:
+      '@zag-js/dom-query': 1.43.1
+
   '@zag-js/scroll-snap@1.43.3':
     dependencies:
       '@zag-js/dom-query': 1.43.3
@@ -6340,6 +6384,14 @@ snapshots:
       '@zag-js/dom-query': 1.43.3
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
+
+  '@zag-js/toc@1.43.1':
+    dependencies:
+      '@zag-js/anatomy': 1.43.1
+      '@zag-js/core': 1.43.1
+      '@zag-js/dom-query': 1.43.1
+      '@zag-js/types': 1.43.1
+      '@zag-js/utils': 1.43.1
 
   '@zag-js/toc@1.43.3':
     dependencies:

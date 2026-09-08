@@ -1,5 +1,6 @@
 {
   "$comment": "Раздел работы продукта — Windshift (знания и задачи). Регистрируется НА ПРОЕКТ, чтобы его видела каждая сессия в этом репозитории: и архитектор, и овнеры зон. Токен сюда НЕ кладётся — он подставляется из окружения, а само значение живёт в .claude/settings.local.json (файл машины конкретного человека, закрыт от учёта). Файл без токена в окружении просто не поднимет сервер — это заметная поломка, а не тихая.",
+  "$comment-skin": "Зона skin подключается по http к УЖЕ поднятой службе (`pnpm --filter @web-core/skin-mcp serve`), а не поднимает свой процесс на каждую сессию — разбор в apps/skin/.mcp/FAQ.md.",
   "mcpServers": {
     "windshift": {
       "type": "http",
@@ -24,8 +25,8 @@
       "args": ["-y", "chrome-devtools-mcp@latest", "--executablePath", "/usr/bin/chromium", "--chromeArg=--no-sandbox"]
     },
     "skin": {
-      "command": "apps/skin/.mcp/node_modules/.bin/web-core-node",
-      "args": ["apps/skin/.mcp/src/index.ts"]
+      "type": "http",
+      "url": "http://127.0.0.1:3000/mcp"
     }
   }
 }
