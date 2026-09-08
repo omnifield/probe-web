@@ -69,7 +69,7 @@ recipe с нуля по одной схеме паспорта.
 |---|---|---|
 | `list_docs` | `read` | Перечень тематических доков `docs/*.md` — заголовки, без содержимого |
 | `get_doc` | `read` | Сырой markdown одного `docs/<topic>.md` — тянуть, только когда тема реально нужна |
-| `list_components` | `read` | Перечень компонентов кита с паспортом — что вообще можно одеть |
+| `list_components` | `read` | Карточки компонентов кита с паспортом — что вообще можно одеть; фильтры `group`/`footprint`, пагинация |
 | `get_passport` | `read` | Паспорт одного компонента: части, состояния, настройки, io-схема, means |
 | `list_presets` | `read` | Перечень сохранённого по виду (палитра/форма/наряд/сборка/тег), с пагинацией |
 | `get_preset` | `read` | Содержимое одной сохранённой записи по имени |
@@ -80,7 +80,8 @@ recipe с нуля по одной схеме паспорта.
 | `assemble_preview` | `read` | Собрать наряд и увидеть CSS-текст + покрытие, без сохранения |
 | `save_preset` | `write` | Сохранить палитру/форму/наряд/сборку/тег — после той же проверки, что и `check_*` |
 | `report_feedback` | `write` | Сырой сигнал «тут не так» по любой ручке — без проверки, отдельным `kind:"feedback"` |
-| `list_feedback` | `read` | Прочитать репорты обратно, постранично, сразу с содержимым (не только id/label) |
+| `list_feedback` | `read` | Прочитать репорты обратно, постранично, сразу с содержимым; по умолчанию только неразобранные |
+| `resolve_feedback` | `write` | Пометить репорт разобранным — `status`, `resolvedAt` и заметка, `id` прежний |
 | `save_content` | `write` | Сохранить реальные данные наполнения компонента, сверив с io-схемой |
 | `list_content` | `read` | Перечень сохранённых данных наполнения, постранично, с фильтром по компоненту |
 | `get_content` | `read` | Один набор данных наполнения по имени |
@@ -89,8 +90,9 @@ recipe с нуля по одной схеме паспорта.
 | `browser_click` | `read` | Настоящий клик мышью по узлу из `browser_snapshot` — не переход по URL |
 | `browser_screenshot` | `read` | PNG текущей страницы своей вкладки — реальный вид, не только CSS-текст |
 
-📂 Восемнадцать `read`, три `write` (`save_preset`, `report_feedback`, `save_content`) — итого двадцать один,
-размечено через `access` `@web-core/mcp`, отображается в нативные `readOnlyHint`/`destructiveHint` спеки MCP.
+📂 Восемнадцать `read`, четыре `write` (`save_preset`, `report_feedback`, `resolve_feedback`, `save_content`) —
+итого двадцать два, размечено через `access` `@web-core/mcp`, отображается в нативные
+`readOnlyHint`/`destructiveHint` спеки MCP.
 
 📚 **Доки по темам (`docs/*.md`)** — README держит только костяк (что есть, как вызывать), объёмный
 разбор ОДНОЙ темы (сегодня — цвет наряда, `docs/color.md`) живёт отдельным файлом и не раздувает
@@ -137,6 +139,12 @@ identity не проверяет вообще, только сверяет ст�
 (`cursor`/`limit`), каждый элемент сразу с содержимым, второй проход (`get_preset`) не нужен — это
 и есть та ручка, которой прод-инстанс отдаёт накопленные заявки локально при разборе (см. план
 прод-синка в FAQ.md).
+
+✅ **Разобранное закрывается `resolve_feedback`** — по имени заявки из `list_feedback`. В `state`
+появляются `status: "resolved"`, `resolvedAt` и `note` (чем кончился разбор), сам текст заявки не
+меняется, `id` остаётся прежним. `list_feedback` по умолчанию отдаёт только `open`, разобранное
+показывает по `status: "resolved"` или `"all"`. Заявка без поля `status` (записанная до появления
+разбора) считается открытой. Удаления заявок нет вовсе — закрытая остаётся историей разбора.
 
 🧺 **Наполнение (`save_content`/`list_content`/`get_content`)** — реальные данные вместо
 абстрактного мока. `check_assembly`/`assemble_preview` сегодня сверяют `bind`/`repeat.path` со
@@ -278,6 +286,7 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 
 | Тул | Принимает |
 |---|---|
+| `list_components` | `{ group?, footprint?, cursor?, limit? }` — `group` из словаря кита (`actions`, `inputs`, `navigation`, `overlays`, `disclosure`, `iteration`, `feedback`, `layout`, `other`), `footprint` — `compact`/`regular`/`wide` |
 | `get_passport` | `{ component }` |
 | `list_presets` | `{ kind?, cursor?, limit? }` |
 | `get_preset` | `{ kind, name }` |
@@ -286,17 +295,21 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 | `check_assembly` | `{ component, assembly }` — `PassportAssembly` |
 | `check_outfit` / `assemble_preview` | `{ outfit }` — `{ name, palette, forms[], tags? }` |
 | `save_preset` | `{ kind, state, label?, paletteName? }` |
+| `list_feedback` | `{ status?, cursor?, limit? }` — `status` это `open` (по умолчанию), `resolved` или `all` |
+| `resolve_feedback` | `{ name, note? }` — имя заявки из `list_feedback` |
 
 <h3>📤 Выход</h3>
 
 | Тул | Отдаёт (успех) |
 |---|---|
-| `list_components` | массив `{ component, genus, group, footprint, package, parts, assemblies }` |
+| `list_components` | `{ items: [{ component, genus, group, footprint, package, partsCount, assemblies: [имена] }], nextCursor? }` — сами части и `means` сборок берутся `get_passport` |
 | `get_passport` | `{ component, passport, editor, io }` |
 | `list_presets`/`get_preset` | `{ items, nextCursor? }` / конверт записи (`{id,label,...,state}`) |
 | `check_*` | отчёт с флавами (форма своя у каждого — см. `packages/skin` README); `check_form` при `ok:true` дополнительно отдаёт `tagGroups` (`variantTags` наоборот — тег → варианты, из `@web-core/skin/tags`) — готовая раскладка под свайперы витрины |
 | `assemble_preview` | `{ report, gaps, css }` |
 | `save_preset` | `{ saved }` — сохранённый конверт |
+| `list_feedback` | `{ items: [конверт записи с `state`], nextCursor? }` |
+| `resolve_feedback` | `{ resolved }` — конверт закрытой заявки |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 

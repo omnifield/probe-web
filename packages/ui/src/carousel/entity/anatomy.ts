@@ -1,5 +1,6 @@
-import { carouselAnatomy } from "@ark-ui/solid/anatomy";
+import { anatomy as carouselAnatomy } from "@zag-js/carousel/anatomy";
 
-export const anatomy = carouselAnatomy;
+// `autoplayIndicator` в анатомии Zag нет — часть придумана китом, `.extendWith(...)` даёт ей адрес.
+export const anatomy = carouselAnatomy.extendWith("autoplayIndicator");
 
 export const anatomyParts = anatomy.build();

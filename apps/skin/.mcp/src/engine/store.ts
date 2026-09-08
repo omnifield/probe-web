@@ -67,6 +67,16 @@ export async function remove(id: string): Promise<void> {
   await ask(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
+/** Замена содержимого С СОХРАНЕНИЕМ id, одним вызовом — в отличие от `replace`. Разбор — FAQ.md. */
+export async function update(id: string, kind: string, name: string, state: unknown, label?: string) {
+  const response = await ask(`${BASE}/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ kind, name, label: label ?? name, state }),
+  });
+  return await response.json();
+}
+
 export async function replace(kind: string, name: string, state: unknown, label?: string) {
   const existing = await findByName(kind, name);
   if (existing) await remove(existing.id);

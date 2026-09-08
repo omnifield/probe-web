@@ -3,6 +3,7 @@ import { z } from "@web-core/io";
 import { err, ok, registerTool } from "@web-core/mcp";
 import { paginate } from "@web-core/mcp/pagination";
 import { OutfitRefused } from "@web-core/skin";
+import { GROUPS, type ComponentGroup } from "@web-core/skin/editor";
 import { DEFAULT_TAG, groupByTag, sortTags } from "@web-core/skin/tags";
 import {
   browser,
@@ -21,7 +22,17 @@ import {
 } from "../engine";
 
 const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
+// Список групп берётся у кита, не переписывается здесь: разойдись они — фильтр молча пустеет.
+const GROUP = z.enum(Object.keys(GROUPS) as [ComponentGroup, ...ComponentGroup[]]);
+const FOOTPRINT = z.enum(["compact", "regular", "wide"]);
+const STATUS_FILTER = z.enum(["open", "resolved", "all"]);
 const looseRecord = z.looseObject({ name: z.string() });
+
+// Заявка без поля status — та, что записана до появления разбора: она открыта, а не «непонятно».
+function statusOf(state: unknown): string {
+  const said = (state as { status?: unknown } | null)?.status;
+  return said === "resolved" ? "resolved" : "open";
+}
 
 // Владение, не админ: у записи уже есть author — трогать её может только запрос с ТЕМ ЖЕ author,
 // не отдельный секрет и не одно защищённое имя на всех. Нет author у существующей записи — никем
@@ -81,10 +92,20 @@ export function registerTools(server: McpServer) {
     name: "list_components",
     title: "Компоненты кита",
     description:
-      "Перечень компонентов, у которых есть паспорт — то, что вообще можно одеть. По каждому: род, группа, " +
-      "части анатомии, готовые сборки-образцы кита (не хранимые, кодовые).",
+      "Перечень компонентов, у которых есть паспорт — то, что вообще можно одеть. Карточка на каждый: род, " +
+      "группа, размерность (footprint), пакет, СКОЛЬКО частей и имена готовых сборок-образцов (кодовых, не " +
+      "хранимых). Сами части, состояния и описания сборок — в get_passport по выбранному компоненту: там они " +
+      "стоят одного компонента, здесь стоили бы всех сразу. Сужайте group/footprint — так ответ короче " +
+      "выборки глазами; страница по cursor/limit (по умолчанию 50), как у list_presets.",
     access: "read",
-    handler: () => ok(listComponents()),
+    input: z.object({
+      group: GROUP.optional().describe("группа компонента; не названа — все группы"),
+      footprint: FOOTPRINT.optional().describe("размерность компонента; не названа — все"),
+      cursor: z.string().optional().describe("курсор из предыдущей страницы"),
+      limit: z.number().int().positive().optional(),
+    }),
+    handler: ({ group, footprint, cursor, limit }) =>
+      ok(paginate(listComponents({ group, footprint }), { cursor, limit })),
   });
 
   registerTool(server, {
@@ -352,7 +373,7 @@ export function registerTools(server: McpServer) {
     }),
     handler: async ({ tool, action, expected, actual }) => {
       const name = `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const state = { tool, action, expected, actual, at: new Date().toISOString() };
+      const state = { tool, action, expected, actual, at: new Date().toISOString(), status: "open" };
       return ok({ saved: await store.save("feedback", name, state, `${tool}: ${actual.slice(0, 60)}`) });
     },
   });
@@ -362,18 +383,51 @@ export function registerTools(server: McpServer) {
     title: "Прочитать репорты",
     description:
       "Читает report_feedback обратно — постранично (cursor/limit, по умолчанию 50), каждый элемент уже с " +
-      "содержимым (tool/action/expected/actual/at), не только id/label: репорт мал, второй шаг (get_preset) " +
-      "тут не нужен. kind:\"feedback\" не входит в list_presets/get_preset по той же причине, по которой не " +
+      "содержимым (tool/action/expected/actual/at/status), не только id/label: репорт мал, второй шаг " +
+      "(get_preset) тут не нужен. По умолчанию отдаются только НЕРАЗОБРАННЫЕ (status:\"open\") — разобранное " +
+      "закрывает resolve_feedback и из списка уходит; status:\"resolved\" или \"all\" — если нужно увидеть " +
+      "его тоже. kind:\"feedback\" не входит в list_presets/get_preset по той же причине, по которой не " +
       "смешивается с palette/form/outfit/assembly/tag там — своя ручка на чтение, своя на запись.",
     access: "read",
     input: z.object({
+      status: STATUS_FILTER.optional().describe("что показывать; по умолчанию только open"),
       cursor: z.string().optional().describe("курсор из предыдущей страницы"),
       limit: z.number().int().positive().optional(),
     }),
-    handler: async ({ cursor, limit }) => {
-      const page = paginate(await store.list("feedback"), { cursor, limit });
-      const items = await Promise.all(page.items.map((record) => store.read(record.id)));
-      return ok({ items, nextCursor: page.nextCursor });
+    handler: async ({ status = "open", cursor, limit }) => {
+      const records = await store.list("feedback");
+      const entries = await Promise.all(records.map((record) => store.read(record.id)));
+      const wanted = status === "all" ? entries : entries.filter((entry) => statusOf(entry.state) === status);
+      const page = paginate(wanted, { cursor, limit });
+      return ok({ items: page.items, nextCursor: page.nextCursor });
+    },
+  });
+
+  registerTool(server, {
+    name: "resolve_feedback",
+    title: "Закрыть репорт",
+    description:
+      "Помечает заявку разобранной: status становится \"resolved\", проставляется resolvedAt и note — чем " +
+      "кончился разбор. Имя берите из list_feedback. Запись переписывается на месте, id прежний — ссылка на " +
+      "заявку остаётся рабочей, а сам текст заявки не трогается. Закрытая уходит из list_feedback по " +
+      "умолчанию, но никуда не пропадает: status:\"resolved\" покажет её снова. Заявки не удаляются вовсе — " +
+      "история разбора остаётся.",
+    access: "write",
+    input: z.object({
+      name: z.string().describe("имя заявки из list_feedback (report-…)"),
+      note: z.string().optional().describe("чем кончился разбор — своими словами"),
+    }),
+    handler: async ({ name, note }) => {
+      const existing = await store.findByName("feedback", name);
+      if (!existing) return err(`заявки "${name}" нет — имя берётся из list_feedback`);
+
+      const entry = await store.read(existing.id);
+      const state = entry.state as Record<string, unknown>;
+
+      if (statusOf(state) === "resolved") return err(`заявка "${name}" уже разобрана`);
+
+      const next = { ...state, status: "resolved", resolvedAt: new Date().toISOString(), ...(note ? { note } : {}) };
+      return ok({ resolved: await store.update(existing.id, "feedback", name, next, entry.label) });
     },
   });
 
