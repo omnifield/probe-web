@@ -41,11 +41,24 @@
       "optional": true
     }
   },
+  "//devDependencies": [
+    "@web-core/ui ЗДЕСЬ БЫТЬ НЕ МОЖЕТ, и это не вкус (PWEB — цикл в графе Nx).",
+    "",
+    "Кит зависит от механики сборки (`@web-core/ui` → `dependencies` → `@web-core/assembly`).",
+    "Обратная запись, даже в devDependencies, замыкает граф проектов: Nx строит его по ВСЕМ",
+    "зависимостям и на `ui → assembly → ui` отказывается выполнять что-либо вообще — падают",
+    "`pnpm build|test|lint|dev` из корня, все сразу, с `Could not execute command because the",
+    "task graph has a circular dependency`.",
+    "",
+    "Запись стояла здесь мёртвой: ни одного вхождения `@web-core/ui` в `src/`, `test/` и",
+    "конфигах зоны. Понадобится кит в тестах — это сигнал, что проверяется не механика:",
+    "механика своего вида не приносит и о ките не знает (см. описание зоны в harness.yaml).",
+    "Нужен подопытный компонент — заводится фикстурой здесь, а не зависимостью на кит."
+  ],
   "devDependencies": {
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
     "@web-core/skin": "workspace:*",
-    "@web-core/ui": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
