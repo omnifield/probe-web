@@ -6,9 +6,6 @@ if (!PROD_URL) {
   process.exit(1);
 }
 
-const author = process.env["SKIN_MCP_ADMIN_AUTHOR"];
-const adminToken = process.env["SKIN_MCP_ADMIN_TOKEN"];
-
 // Локальный сервер поднимается тем же способом, что и разработчик (pnpm start) — свой процесс на
 // время скрипта, не подключение к уже запущенному. Прод — по HTTP, адресом из env. env: process.env
 // обязателен — по умолчанию SDK передаёт дочернему процессу обрезанный набор переменных (PATH/HOME/
@@ -39,8 +36,16 @@ for (const { kind, isReference } of PLAN) {
 
   for (const record of toPush) {
     const entry = await readJson(await local.callTool("get_preset", { kind, name: record.name }));
+    // author — владение, не секрет: несём тот же author, что уже стоит на локальной записи (или
+    // никакой, если его и не было), чтобы повторный пуш прошёл владельческую проверку на проде —
+    // не свой отдельный env-параметр вроде прежнего adminToken.
     const result = await readJson(
-      await prod.callTool("save_preset", { kind, state: entry.state, label: entry.label, author, adminToken }),
+      await prod.callTool("save_preset", {
+        kind,
+        state: entry.state,
+        label: entry.label,
+        author: entry.state?.author,
+      }),
     );
 
     if (result.saved) console.log(`✓ ${kind}/${record.name}`);

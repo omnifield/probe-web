@@ -23,29 +23,20 @@ import {
 const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 const looseRecord = z.looseObject({ name: z.string() });
 
-const ADMIN_AUTHOR = process.env["SKIN_MCP_ADMIN_AUTHOR"];
-const ADMIN_TOKEN = process.env["SKIN_MCP_ADMIN_TOKEN"];
-
-// Единственная жёсткая граница в этой зоне — эталоны (author защищённого имени) не переписывает
-// никто, кроме владельца токена. Всё остальное — свободно, любой агент пишет с любым author.
-async function authorGuard(
-  kind: string,
-  name: string,
-  nextAuthor: string | undefined,
-  adminToken: string | undefined,
-): Promise<string | undefined> {
-  if (!ADMIN_AUTHOR) return undefined;
-
+// Владение, не админ: у записи уже есть author — трогать её может только запрос с ТЕМ ЖЕ author,
+// не отдельный секрет и не одно защищённое имя на всех. Нет author у существующей записи — никем
+// не занята, пишет кто угодно. author приезжает с запросом от платформы, которая уже знает, с каким
+// залогиненным юзером говорит — сама эта зона identity не проверяет (см. FAQ.md), только сверяет
+// строки, поэтому здесь никогда не было и не будет отдельного секрета вида adminToken.
+async function authorGuard(kind: string, name: string, nextAuthor: string | undefined): Promise<string | undefined> {
   const existing = await store.findByName(kind, name);
-  const currentAuthor = existing
-    ? ((await store.read(existing.id)).state as { author?: unknown })["author"]
-    : undefined;
+  if (!existing) return undefined;
 
-  const touchesAdmin = nextAuthor === ADMIN_AUTHOR || currentAuthor === ADMIN_AUTHOR;
-  if (!touchesAdmin) return undefined;
+  const currentAuthor = ((await store.read(existing.id)).state as { author?: unknown })["author"];
+  if (typeof currentAuthor !== "string") return undefined;
 
-  if (adminToken !== ADMIN_TOKEN) {
-    return `only "${ADMIN_AUTHOR}" may create or modify records authored as "${ADMIN_AUTHOR}" — missing or wrong adminToken`;
+  if (nextAuthor !== currentAuthor) {
+    return `"${kind}/${name}" is owned by "${currentAuthor}" — only requests with that author may modify it`;
   }
 
   return undefined;
@@ -287,9 +278,9 @@ export function registerTools(server: McpServer) {
       "на двух уровнях (наряд целиком / значение варианта формы): пусто считается [\"default\"], неизвестный " +
       "тег — флав unknown-tag той же формы, что unknown-palette. Флав — отказ до записи, служба не тронута. " +
       "Кладёт вместо прежней записи с тем же именем (снять-положить), не плодит дубли по имени. " +
-      "author — просто атрибуция (кто сохранил), ни на что не влияет, ЕСЛИ не совпадает с защищённым " +
-      "именем этой службы — тогда без верного adminToken отказ до записи (единственная жёсткая " +
-      "граница в этой зоне: эталоны своего автора не переписывает никто чужой).",
+      "author — атрибуция И владение разом: у записи уже есть author — переписать её может только " +
+      "запрос с ТЕМ ЖЕ author (не отдельный секрет, не одно защищённое имя на всех — каждый владеет " +
+      "своим). Без author у существующей записи — никем не занята, пишет кто угодно.",
     access: "write",
     input: z.object({
       kind: KIND,
@@ -301,14 +292,10 @@ export function registerTools(server: McpServer) {
         ),
       label: z.string().optional(),
       paletteName: z.string().optional().describe("для kind=form — какую палитру сверять, см. check_form"),
-      author: z.string().optional().describe("кто сохранил — атрибуция; см. adminToken про защищённое имя"),
-      adminToken: z
-        .string()
-        .optional()
-        .describe("нужен, только если author (свой или уже существующей записи) — защищённое имя службы"),
+      author: z.string().optional().describe("кто сохранил — атрибуция И владение, см. описание тула"),
     }),
-    handler: async ({ kind, state, label, paletteName, author, adminToken }) => {
-      const guardFlaw = await authorGuard(kind, state.name, author, adminToken);
+    handler: async ({ kind, state, label, paletteName, author }) => {
+      const guardFlaw = await authorGuard(kind, state.name, author);
       if (guardFlaw) return err(guardFlaw);
 
       let stateToSave: typeof state = author !== undefined ? { ...state, author } : state;
@@ -399,7 +386,7 @@ export function registerTools(server: McpServer) {
       "Перед записью сверяет data с io-схемой компонента (get_passport().io.input) — несовпадение отказывает " +
       "флавом, не тихой записью мусора; у компонента без io-схемы (например table — свои props, не bind по " +
       "IO) сверять нечем, проходит без проверки. kind:\"content\" — ещё один бесплатный вид (backend/presets " +
-      "не толкует kind), отдельно от palette/form/outfit/assembly/tag/feedback. author/adminToken — та же " +
+      "не толкует kind), отдельно от palette/form/outfit/assembly/tag/feedback. author — та же владельческая " +
       "граница, что и у save_preset.",
     access: "write",
     input: z.object({
@@ -407,11 +394,10 @@ export function registerTools(server: McpServer) {
       name: z.string().describe("имя ЭТОГО набора данных, не компонента — можно завести несколько на компонент"),
       data: z.unknown().describe("данные вида, ожидаемого io-схемой компонента"),
       label: z.string().optional(),
-      author: z.string().optional().describe("кто сохранил — атрибуция; см. adminToken про защищённое имя"),
-      adminToken: z.string().optional(),
+      author: z.string().optional().describe("кто сохранил — атрибуция И владение, см. save_preset"),
     }),
-    handler: async ({ component, name, data, label, author, adminToken }) => {
-      const guardFlaw = await authorGuard("content", name, author, adminToken);
+    handler: async ({ component, name, data, label, author }) => {
+      const guardFlaw = await authorGuard("content", name, author);
       if (guardFlaw) return err(guardFlaw);
 
       const check = checkContentData(component, data);
@@ -472,6 +458,39 @@ export function registerTools(server: McpServer) {
     handler: async ({ url }) => {
       const id = await ensurePage();
       return ok({ report: await browser.navigate(id, url) });
+    },
+  });
+
+  registerTool(server, {
+    name: "browser_snapshot",
+    title: "Снимок доступности текущей страницы",
+    description:
+      "Текстовое a11y-дерево своей вкладки (см. browser_navigate — сначала туда перейти) — каждый узел с " +
+      "uid, например `uid=1_1 button \"Сохранить\"`. Источник uid для browser_click: кликнуть можно ТОЛЬКО " +
+      "по узлу из САМОГО СВЕЖЕГО снимка — DOM меняется, старый uid может уже не существовать, снимайте заново " +
+      "после click, если собираетесь кликать ещё раз.",
+    access: "read",
+    handler: async () => {
+      if (pageId === undefined) return err("no page yet — call browser_navigate first");
+      return ok({ snapshot: await browser.snapshot(pageId) });
+    },
+  });
+
+  registerTool(server, {
+    name: "browser_click",
+    title: "Клик по элементу своей страницы",
+    description:
+      "Настоящий клик мышью по узлу из browser_snapshot (не переход по URL — это ДРУГОЙ код-путь: клик по " +
+      "пункту дерева/меню внутри SPA идёт через роутер приложения, browser_navigate такой переход не " +
+      "воспроизводит). Нужен uid из СВЕЖЕГО browser_snapshot той же страницы.",
+    access: "read",
+    input: z.object({
+      uid: z.string().describe("узел из browser_snapshot"),
+      dblClick: z.boolean().optional(),
+    }),
+    handler: async ({ uid, dblClick }) => {
+      if (pageId === undefined) return err("no page yet — call browser_navigate first");
+      return ok({ report: await browser.click(pageId, uid, { dblClick }) });
     },
   });
 

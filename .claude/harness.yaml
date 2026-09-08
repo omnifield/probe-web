@@ -46,6 +46,9 @@ zones:
   assembly:
     paths: [packages/assembly]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
+  store:
+    paths: [packages/store]
+    description: оснастка сборки — подпути /vite, /tsconfig, /vitest
   build:
     paths: [packages/build]
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest

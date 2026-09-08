@@ -8,4 +8,6 @@ const browser = createBrowser({ executablePath: process.env["SKIN_MCP_CHROME_EXE
 export const newPage = browser.newPage;
 export const navigate = browser.navigate;
 export const screenshot = browser.screenshot;
+export const snapshot = browser.snapshot;
+export const click = browser.click;
 export type { Screenshot } from "@web-core/mcp/browser";

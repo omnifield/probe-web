@@ -14,10 +14,18 @@ export interface Screenshot {
   readonly base64: string;
 }
 
+export interface ClickOptions {
+  readonly dblClick?: boolean;
+}
+
 export interface Browser {
   readonly newPage: () => Promise<number>;
   readonly navigate: (pageId: number, url: string) => Promise<string>;
   readonly screenshot: (pageId: number) => Promise<Screenshot>;
+  /** Текстовый снимок доступности страницы (a11y-дерево) — источник `uid` для `click`. */
+  readonly snapshot: (pageId: number) => Promise<string>;
+  /** Клик по элементу из последнего `snapshot()` — НЕ переход по URL, настоящий клик мышью. */
+  readonly click: (pageId: number, uid: string, options?: ClickOptions) => Promise<string>;
 }
 
 interface ToolContent {
@@ -87,6 +95,22 @@ export function createBrowser(options: BrowserOptions = {}): Browser {
       if (!image?.data) throw new Error("browser: take_screenshot did not return an image part");
 
       return { mimeType: image.mimeType ?? "image/png", base64: image.data };
+    },
+
+    async snapshot(pageId: number): Promise<string> {
+      const result = await peer.callTool("take_snapshot", { pageId });
+      const content = result.content as readonly ToolContent[];
+
+      if (result.isError) throw new Error(`browser: take_snapshot failed — ${textOf(content)}`);
+      return textOf(content);
+    },
+
+    async click(pageId: number, uid: string, options: ClickOptions = {}): Promise<string> {
+      const result = await peer.callTool("click", { pageId, uid, dblClick: options.dblClick });
+      const content = result.content as readonly ToolContent[];
+
+      if (result.isError) throw new Error(`browser: click failed — ${textOf(content)}`);
+      return textOf(content);
     },
   };
 }

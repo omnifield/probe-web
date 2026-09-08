@@ -25,8 +25,11 @@ interface ContentItem {
 export function Input() {
   const component = componentHandle();
 
+  // Триггер — само появление/смена `info()`, не `ready()`: после сглаживания в `componentHandle`
+  // `ready()` остаётся true при переходе между компонентами (старое значение видно, пока грузится
+  // новое) и на переключение больше не переключается false→true — эффект на неё бы не перезвался.
   createEffect(() => {
-    if (!component.ready()) return;
+    if (!component.info()) return;
     component.generate();
   });
 

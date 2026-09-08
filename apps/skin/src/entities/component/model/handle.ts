@@ -41,21 +41,21 @@ export function componentHandle(): ComponentHandle {
     componentEventsAtom.set((events) => [...events, event]);
   }
 
-  const ready = createMemo(() => {
-    const state = info();
-    return state.status === "done" && state.data !== undefined;
-  });
-
-  function generate(): void {
-    const state = info();
-    if (state.status !== "done" || state.data === undefined) return;
-    componentDataAtom.set(generateFakeData(state.data.io?.schema, state.data.component));
-  }
-
+  // `createResourceAtom` (packages/store) несёт последнее известное `data` и в "pending" —
+  // читаем его напрямую, без своего буфера: до этой правки в общем пакете `pending` был голым
+  // (без `data`), и без локального сглаживания тут `ready`/`info` мигали на каждый клик по дереву.
   const componentInfo = createMemo(() => {
     const state = info();
-    return state.status === "done" ? state.data : undefined;
+    return state.status === "error" ? undefined : state.data;
   });
+
+  const ready = createMemo(() => componentInfo() !== undefined);
+
+  function generate(): void {
+    const data = componentInfo();
+    if (data === undefined) return;
+    componentDataAtom.set(generateFakeData(data.io?.schema, data.component));
+  }
 
   function setData(data: unknown): void {
     componentDataAtom.set(data);

@@ -140,6 +140,11 @@ const browser = createBrowser({ executablePath: process.env["CHROME_EXECUTABLE"]
 const pageId = await browser.newPage(); // один вызов — одна вкладка; своя карта сессия→вкладка на стороне зоны
 await browser.navigate(pageId, "http://127.0.0.1:5174/showcase/button/default");
 const { mimeType, base64 } = await browser.screenshot(pageId);
+
+// navigate — жёсткий переход по адресу, не клик. Переход, который происходит ВНУТРИ SPA (роутер,
+// не полная загрузка) — другой код-путь, snapshot+click его воспроизводит по-настоящему:
+const tree = await browser.snapshot(pageId); // текстовое a11y-дерево, каждый узел с uid
+await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ этого снимка, не по URL
 ```
 
 <h2 id="настройки">🎚️ Настройки</h2>
@@ -206,12 +211,12 @@ const { mimeType, base64 } = await browser.screenshot(pageId);
 | `createServer` | `ZoneServer` (`{ listen(port?), close() }`) — сырой `McpServer` наружу не отдаётся, он свой на каждую HTTP-сессию |
 | `paginate` | `{ items, nextCursor? }` |
 | `Peer.callTool`/`.close` | `CallToolResult` настоящего чужого MCP-сервера / ничего |
-| `Browser.newPage`/`.navigate`/`.screenshot` | номер вкладки / текстовый отчёт / `{mimeType, base64}` |
+| `Browser.newPage`/`.navigate`/`.screenshot`/`.snapshot`/`.click` | номер вкладки / текстовый отчёт / `{mimeType, base64}` / текстовое a11y-дерево / текстовый отчёт |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
 ✅ Настоящий round-trip через MCP SDK, не имитация — каждая строка ниже доказана тестом
-(`vitest run`, 27/27 зелёных).
+(`vitest run`, 28/28 зелёных).
 
 | Проверено | Как | Результат |
 |---|---|---|
@@ -235,6 +240,7 @@ const { mimeType, base64 } = await browser.screenshot(pageId);
 | `stdioPeer` не отдаёт своё окружение по умолчанию | фикстура читает свою переменную из `process.env`, `env` не передан | пусто — переменная не долетела до дочернего процесса |
 | `stdioPeer` передаёт `env`, когда его дали явно | тот же тест, `stdioPeer(..., {env: process.env})` | значение переменной долетело неизменным |
 | `createBrowser` — реальный headless Chromium | `newPage`→`navigate`→`screenshot` на настоящем `chrome-devtools-mcp` | реальный PNG (`data:` URL, без сети) |
+| `createBrowser` — клик по элементу, не переход по URL | `newPage`→`navigate`→`snapshot` (найти `uid` реальной кнопки)→`click`→`snapshot` | текст страницы после клика меняется ровно так, как ждал обработчик клика |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

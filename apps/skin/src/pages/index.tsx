@@ -38,7 +38,7 @@ export function WorkspaceLayout() {
       <WorkspaceRightbar>
         <Flow data-variant="column-center">
           <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <Info />
+            {/* <Info /> */}
           </FlowItem>
           <FlowItem style={layoutSelf({ align: "stretch" })}>
             <Input />
