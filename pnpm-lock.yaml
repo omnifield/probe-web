@@ -510,6 +510,9 @@ importers:
 
   packages/skin:
     dependencies:
+      '@web-core/query':
+        specifier: workspace:*
+        version: link:../query
       '@web-core/trace':
         specifier: workspace:*
         version: link:../trace
