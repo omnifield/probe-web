@@ -24,10 +24,11 @@ import (
 )
 
 var (
-	bucketMeta  = []byte("meta")  // id -> Meta (JSON)
-	bucketState = []byte("state") // id -> State (сырые байты, как приехали)
-	bucketNames = []byte("names") // kind\x00name -> id
-	bucketStats = []byte("stats") // служебные счётчики: totalBytes, size\x00{id}
+	bucketMeta     = []byte("meta")     // id -> Meta (JSON)
+	bucketState    = []byte("state")    // id -> State (сырые байты, как приехали)
+	bucketNames    = []byte("names")    // kind\x00name -> id
+	bucketStats    = []byte("stats")    // служебные счётчики: totalBytes, size\x00{id}
+	bucketFeedback = []byte("feedback") // id -> FeedbackEntry (JSON) — своя сущность, не Preset
 )
 
 // statsTotalBytesKey — ключ в bucketStats, под которым лежит текущий занятый объём.
@@ -48,7 +49,7 @@ func Open(path string, lim limits.Limits) (*Store, error) {
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
-		for _, name := range [][]byte{bucketMeta, bucketState, bucketNames, bucketStats} {
+		for _, name := range [][]byte{bucketMeta, bucketState, bucketNames, bucketStats, bucketFeedback} {
 			if _, err := tx.CreateBucketIfNotExists(name); err != nil {
 				return err
 			}

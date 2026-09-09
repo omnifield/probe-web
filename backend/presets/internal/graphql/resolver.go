@@ -6,6 +6,8 @@ package graphql
 // here.
 
 import (
+	"encoding/json"
+
 	"presets/internal/graphql/loaders"
 	"presets/internal/limits"
 	presetsmodel "presets/internal/model"
@@ -20,6 +22,13 @@ type Store interface {
 	Create(input presetsmodel.Input) (*presetsmodel.Record, error)
 	Replace(id string, input presetsmodel.Input) (*presetsmodel.Record, error)
 	Remove(id string) (bool, error)
+
+	// Фидбэк — своя сущность, свой бакет (internal/store/feedback.go), не через
+	// Create/Replace/Remove выше (feedback-bucket-and-type, ROADMAP.yaml).
+	ListFeedback() ([]*presetsmodel.FeedbackEntry, error)
+	GetFeedback(id string) (*presetsmodel.FeedbackEntry, error)
+	CreateFeedback(state json.RawMessage) (*presetsmodel.FeedbackEntry, error)
+	ReplaceFeedbackState(id string, state json.RawMessage) (*presetsmodel.FeedbackEntry, error)
 }
 
 // Resolver держит открытое хранилище и пределы — резолверы читают/пишут через тот же store, что

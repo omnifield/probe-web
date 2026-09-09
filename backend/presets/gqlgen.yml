@@ -1,5 +1,6 @@
 schema:
   - internal/graphql/schema.graphql
+  - internal/graphql/feedback.graphql
 
 exec:
   filename: internal/graphql/generated/generated.go
@@ -36,3 +37,5 @@ models:
     model: presets/internal/graphql/model.Tag
   Assembly:
     model: presets/internal/graphql/model.Assembly
+  FeedbackEntry:
+    model: presets/internal/graphql/model.FeedbackEntry

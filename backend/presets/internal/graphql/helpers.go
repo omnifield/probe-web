@@ -40,6 +40,8 @@ func derefString(s *string) string {
 	return *s
 }
 
+func ptrString(s string) *string { return &s }
+
 // firstFatal разбирает ошибку dataloadgen.LoadAll: dataloadgen.ErrNotFound по отдельным ключам —
 // законный пропуск (dangling-ссылка на удалённую запись), не отказ всего списка; любая другая
 // ошибка внутри батча — настоящий сбой хранилища, его глушить нельзя.

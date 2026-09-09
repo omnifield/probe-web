@@ -2,6 +2,15 @@
 
 package model
 
+type FeedbackInput struct {
+	Tool     string  `json:"tool"`
+	Action   string  `json:"action"`
+	Expected *string `json:"expected,omitempty"`
+	Actual   string  `json:"actual"`
+	// issue (по умолчанию) — что-то не так; praise — сработало хорошо.
+	Sign *string `json:"sign,omitempty"`
+}
+
 type Mutation struct {
 }
 

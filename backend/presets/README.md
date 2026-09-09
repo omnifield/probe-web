@@ -26,6 +26,12 @@
 по-прежнему у владельца вида, не у этой службы — просто теперь у каждого вида есть Go-структура на
 границе API, а не голый blob.
 
+📢 Сервис — не только про пресеты скина. Второй, независимый смысл — фидбэк: сигнал по любой
+ручке любого продукта ("сработало"/"не сработало"), не дизайн-настройка. У фидбэка своя причина
+жить именно здесь — не общая модель с пресетами, а общая инфраструктура (bbolt уже поднят, том уже
+смонтирован, заводить второй под ту же задачу незачем). Своя схема, свой bbolt-бакет, свой путь —
+подробности в «Анатомии» и FAQ.md, раздел «Почему фидбэк не вид Preset».
+
 Это `genus: service` — не библиотека, которую импортируют в свой процесс, а самостоятельный
 сервис: у него есть свой бинарник, свой порт, свой сетевой контракт (GraphQL, было REST). 
 Потребитель не собирает из него механизм внутри себя (как с `engine`) — он ходит к уже поднятой
@@ -49,19 +55,36 @@
 чтение; `Mutation.createPreset`/`replacePreset`/`deletePreset` — запись, конверт (`PresetInput`) по
 смыслу тот же, что раньше нёс REST-конверт (`kind`/`label`/`name`/`description`/`state`).
 
+🗳️ Вторая, независимая схема (`internal/graphql/feedback.graphql`) — тип `FeedbackEntry`, НЕ
+реализует `Preset`, не смешивается с шестью видами выше. `Query.feedback(status?, sign?)` —
+перечень (фильтр по значению полей, не по `kind` — у заявки его нет); `Mutation.reportFeedback` —
+создание (`status`/`at` всегда серверные, не из входа), `Mutation.resolveFeedback` — подмешивает
+`status:"resolved"`+`resolvedAt`(+`note`) поверх существующей заявки, отказ, если уже разобрана.
+
 📦 Внутри: `cmd/presets` — точка входа (окружение → база → GraphQL-сервер → сигналы).
-`internal/model` — форма записи. `internal/limits` — числовые пределы. `internal/store` —
-bbolt-хранилище, вся логика атомарности и пределов (byte in, byte out — не в курсе типизации).
-`internal/kinds` — реестр видов: по файлу на вид, Go-структура `state` + запись в карте
+`internal/model` — форма записи Preset (`Meta`/`Record`/`Input`) и отдельно `FeedbackEntry`
+(`feedback.go` в том же пакете — своя структура, не расширение `Meta`: у заявки нет `label`/
+`name`/`kind`). `internal/limits` — числовые пределы, общие на пресеты и фидбэк (диск один
+физический ресурс). `internal/store` — bbolt-хранилище, вся логика атомарности и пределов (byte
+in, byte out — не в курсе типизации); `internal/store/feedback.go` — третий бакет
+(`bucketFeedback`), свои методы (`ListFeedback`/`GetFeedback`/`CreateFeedback`/
+`ReplaceFeedbackState`), ничего общего с `bucketMeta`/`bucketState`/`bucketNames` Preset'а — у
+заявки нет ни `kind`, ни машинного имени, нечего адресовать по имени.
+`internal/kinds` — реестр видов Preset: по файлу на вид, Go-структура `state` + запись в карте
 `kind → тип`, точка расширения для новых владельцев (`tables` заведёт свой `filter` тут же).
-`internal/graphql` — схема, резолверы, конвертация `store.Record → типизированная модель`
-(`convert.go`), проверка конверта на запись (`envelope.go`); хранилище резолверам и лоадерам видно
-не как конкретный `*store.Store`, а как узкий интерфейс (`graphql.Store`, встраивающий
-`loaders.Store`) — граница, через которую тест подставляет считающую обёртку и ИЗМЕРЯЕТ батчинг
-(`batching_test.go`), а не верит чтению кода на слово. `internal/graphql/loaders` — дата-лоадеры
-(батч связей на запрос); `internal/graphql/model` — рукописные Go-модели GraphQL-схемы;
-`internal/graphql/generated` — кодоген `gqlgen`, не редактируется руками. Публичного пакета для
-импорта нет вовсе — вся поверхность фичи это сетевой контракт, а не Go-экспорт.
+Фидбэк мимо этого реестра — своя форма (`internal/graphql/feedback_convert.go`), не Go-структура
+канона.
+`internal/graphql` — схема (`schema.graphql` + `feedback.graphql`), резолверы, конвертация
+`store.Record → типизированная модель` (`convert.go` для Preset, `feedback_convert.go` для
+`FeedbackEntry` — раздельно, тем же принципом раздельности, что и бакеты), проверка конверта на
+запись (`envelope.go`); хранилище резолверам и лоадерам видно не как конкретный `*store.Store`, а
+как узкий интерфейс (`graphql.Store`, встраивающий `loaders.Store`) — граница, через которую тест
+подставляет считающую обёртку и ИЗМЕРЯЕТ батчинг (`batching_test.go`), а не верит чтению кода на
+слово. `internal/graphql/loaders` — дата-лоадеры (батч связей на запрос, только Preset — у
+`FeedbackEntry` нет связей на другие записи); `internal/graphql/model` — рукописные Go-модели
+GraphQL-схемы (`preset.go` + `feedback.go`); `internal/graphql/generated` — кодоген `gqlgen`, не
+редактируется руками. Публичного пакета для импорта нет вовсе — вся поверхность фичи это сетевой
+контракт, а не Go-экспорт.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -105,6 +128,25 @@ curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
 curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
   "query": "mutation($id: ID!, $input: PresetInput!) { replacePreset(id: $id, input: $input) { id } }",
   "variables": { "id": "<id>", "input": { "kind": "palette", "label": "Бренд v2", "name": "brand", "state": {"name":"brand","author":"...","light":{"bg":"#fff"}} } }
+}'
+```
+
+**Оставить и закрыть фидбэк** — своя мутация, мимо `PresetInput`/`kind`:
+
+```sh
+curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
+  "query": "mutation($input: FeedbackInput!) { reportFeedback(input: $input) { id status at } }",
+  "variables": { "input": { "tool": "save_preset", "action": "позвал с кривым конвертом", "actual": "упало 500-кой", "sign": "issue" } }
+}'
+# → status:"open", at выставляет служба — их нельзя передать во входе
+
+curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
+  "query": "{ feedback(status: \"open\") { id tool action actual sign at } }"
+}'
+
+curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
+  "query": "mutation($id: ID!) { resolveFeedback(id: $id, note: \"починили\") { status resolvedAt } }",
+  "variables": { "id": "<id>" }
 }'
 ```
 
@@ -185,20 +227,22 @@ curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
 <h2 id="сборки">🏗️ Сборки</h2>
 
 🧪 Своих потребителей у службы нет — она их не знает. Доказывается пробами на реальном GraphQL-слое,
-bbolt-хранилище и реальной сети (43 теста, 5 файлов, зелёные под `-race`), плюс двумя мутациями,
+bbolt-хранилище и реальной сети (54 теста, 7 файлов, зелёные под `-race`), плюс двумя мутациями,
 снятыми руками на предыдущей (REST) версии контракта — сама логика пределов, которую они стерегли,
 не изменилась при переезде.
 
 | Сборка | Что доказывает |
 |---|---|
 | `internal/store/store_test.go` | CRUD, атомарность `Replace`, пределы (запись/вид/объём целиком), opaque-проход `state`, `GetMany`-батч (пропуск отсутствующего id, не отказ), конкурентные создания под гонкой (`-race`) |
+| `internal/store/feedback_test.go` | Свой бакет: create/get/list (новые сверху), `ReplaceFeedbackState` держит id и обновляет `savedAt`, отказ на несуществующую заявку, фидбэк считается в ОБЩИЙ `TotalBytes` (диск общий с пресетами) |
 | `internal/kinds/kinds_test.go` | Все шесть видов зарегистрированы, каждый разбирается по своей форме (включая `tag` — по форме живой записи прода, не выдумке), двойная регистрация одного `kind` паникует |
 | `internal/graphql/resolver_test.go` | Типизация по видам вперемешку, отказ на незарегистрированный/неверной формы `state`, резолв связей `Outfit.palette/forms/tags` с тихим пропуском dangling-ссылки, `create`/`replace`/`delete`-роундтрип, проверка конверта (label/name/description), проход store-ошибки (`NameTakenError`) через резолвер не глотается |
+| `internal/graphql/feedback_test.go` | `sign`/`status` по умолчанию на создании, фильтр `Query.feedback` по status/sign, `resolveFeedback` не трогает остальные поля и отказывает на повторный резолв, фидбэк НЕ появляется среди `Query.presets` (свой бакет — не Preset) |
 | `internal/graphql/batching_test.go` | **Измерено, не прочитано по коду**: реальный GraphQL-запрос (`generated.NewExecutableSchema` + `handler.NewDefaultServer`, тот же стек, что в `cmd/presets`) через `httptest`-сервер со считающей обёрткой (`countingStore`) поверх `internal/graphql.Store`/`loaders.Store` — число вызовов `store.List`/`GetMany` ОДИНАКОВОЕ при N=5 и N=50 нарядов, каждый со своей формой и общей палитрой. Доказывает O(1), не просто «мало при одном N» |
 | `cmd/presets/main_test.go` | `/healthz`-ответ, CORS-preflight (204 без похода до GraphQL-обработчика) и что не-preflight запрос доходит |
 | Мутация: изоляция предела по виду | Снял фильтр по `kind` в счётчике — проба `TestRecordsPerKindLimitDoesNotStarveOtherKinds` покраснела |
 | Мутация: изоляция имени по виду | Снял `kind` из ключа индекса имён — проба `TestNameUniquePerKindNotGlobal` покраснела |
-| Живой прогон | `go run ./cmd/presets` + `curl` по `/graphql` — create→query (точечный и с резолвом связей)→CORS→playground проходят по-настоящему, не только под тестом |
+| Живой прогон | `go run ./cmd/presets` + `curl` по `/graphql` — create→query (точечный и с резолвом связей)→CORS→playground→report/list/resolve-фидбэк проходят по-настоящему, не только под тестом |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

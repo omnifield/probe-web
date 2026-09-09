@@ -61,6 +61,20 @@ type ComplexityRoot struct {
 		SavedAt     func(childComplexity int) int
 	}
 
+	FeedbackEntry struct {
+		Action     func(childComplexity int) int
+		Actual     func(childComplexity int) int
+		At         func(childComplexity int) int
+		Expected   func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Note       func(childComplexity int) int
+		ResolvedAt func(childComplexity int) int
+		SavedAt    func(childComplexity int) int
+		Sign       func(childComplexity int) int
+		Status     func(childComplexity int) int
+		Tool       func(childComplexity int) int
+	}
+
 	Form struct {
 		Author      func(childComplexity int) int
 		Component   func(childComplexity int) int
@@ -76,9 +90,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreatePreset  func(childComplexity int, input model.PresetInput) int
-		DeletePreset  func(childComplexity int, id string) int
-		ReplacePreset func(childComplexity int, id string, input model.PresetInput) int
+		CreatePreset    func(childComplexity int, input model.PresetInput) int
+		DeletePreset    func(childComplexity int, id string) int
+		ReplacePreset   func(childComplexity int, id string, input model.PresetInput) int
+		ReportFeedback  func(childComplexity int, input model.FeedbackInput) int
+		ResolveFeedback func(childComplexity int, id string, note *string) int
 	}
 
 	Outfit struct {
@@ -110,8 +126,9 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Preset  func(childComplexity int, id string) int
-		Presets func(childComplexity int, kind *string) int
+		Feedback func(childComplexity int, status *string, sign *string) int
+		Preset   func(childComplexity int, id string) int
+		Presets  func(childComplexity int, kind *string) int
 	}
 
 	Tag struct {
@@ -134,6 +151,8 @@ type MutationResolver interface {
 	CreatePreset(ctx context.Context, input model.PresetInput) (model.Preset, error)
 	ReplacePreset(ctx context.Context, id string, input model.PresetInput) (model.Preset, error)
 	DeletePreset(ctx context.Context, id string) (bool, error)
+	ReportFeedback(ctx context.Context, input model.FeedbackInput) (*model.FeedbackEntry, error)
+	ResolveFeedback(ctx context.Context, id string, note *string) (*model.FeedbackEntry, error)
 }
 type OutfitResolver interface {
 	Palette(ctx context.Context, obj *model.Outfit) (*model.Palette, error)
@@ -143,6 +162,7 @@ type OutfitResolver interface {
 type QueryResolver interface {
 	Presets(ctx context.Context, kind *string) ([]model.Preset, error)
 	Preset(ctx context.Context, id string) (model.Preset, error)
+	Feedback(ctx context.Context, status *string, sign *string) ([]*model.FeedbackEntry, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -273,6 +293,73 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Content.SavedAt(childComplexity), true
 
+	case "FeedbackEntry.action":
+		if e.ComplexityRoot.FeedbackEntry.Action == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Action(childComplexity), true
+	case "FeedbackEntry.actual":
+		if e.ComplexityRoot.FeedbackEntry.Actual == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Actual(childComplexity), true
+	case "FeedbackEntry.at":
+		if e.ComplexityRoot.FeedbackEntry.At == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.At(childComplexity), true
+	case "FeedbackEntry.expected":
+		if e.ComplexityRoot.FeedbackEntry.Expected == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Expected(childComplexity), true
+	case "FeedbackEntry.id":
+		if e.ComplexityRoot.FeedbackEntry.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.ID(childComplexity), true
+	case "FeedbackEntry.note":
+		if e.ComplexityRoot.FeedbackEntry.Note == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Note(childComplexity), true
+	case "FeedbackEntry.resolvedAt":
+		if e.ComplexityRoot.FeedbackEntry.ResolvedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.ResolvedAt(childComplexity), true
+	case "FeedbackEntry.savedAt":
+		if e.ComplexityRoot.FeedbackEntry.SavedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.SavedAt(childComplexity), true
+	case "FeedbackEntry.sign":
+		if e.ComplexityRoot.FeedbackEntry.Sign == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Sign(childComplexity), true
+	case "FeedbackEntry.status":
+		if e.ComplexityRoot.FeedbackEntry.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Status(childComplexity), true
+	case "FeedbackEntry.tool":
+		if e.ComplexityRoot.FeedbackEntry.Tool == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FeedbackEntry.Tool(childComplexity), true
+
 	case "Form.author":
 		if e.ComplexityRoot.Form.Author == nil {
 			break
@@ -373,6 +460,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ReplacePreset(childComplexity, args["id"].(string), args["input"].(model.PresetInput)), true
+	case "Mutation.reportFeedback":
+		if e.ComplexityRoot.Mutation.ReportFeedback == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportFeedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReportFeedback(childComplexity, args["input"].(model.FeedbackInput)), true
+	case "Mutation.resolveFeedback":
+		if e.ComplexityRoot.Mutation.ResolveFeedback == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolveFeedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ResolveFeedback(childComplexity, args["id"].(string), args["note"].(*string)), true
 
 	case "Outfit.author":
 		if e.ComplexityRoot.Outfit.Author == nil {
@@ -508,6 +617,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Palette.Scales(childComplexity), true
 
+	case "Query.feedback":
+		if e.ComplexityRoot.Query.Feedback == nil {
+			break
+		}
+
+		args, err := ec.field_Query_feedback_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Feedback(childComplexity, args["status"].(*string), args["sign"].(*string)), true
+
 	case "Query.preset":
 		if e.ComplexityRoot.Query.Preset == nil {
 			break
@@ -588,6 +709,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputFeedbackInput,
 		ec.unmarshalInputPresetInput,
 	)
 	first := true
@@ -794,12 +916,82 @@ type Mutation {
   deletePreset(id: ID!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../feedback.graphql", Input: `# Фидбэк — отдельная сущность, не вид пресета (feedback-bucket-and-type, ROADMAP.yaml). НЕ
+# implements Preset, свой Query/Mutation, свой резолвер, свой bbolt-бакет (internal/store/
+# feedback.go) — ничего общего с kinds-registry/internal/kinds.
+#
+# Форма — по живому коду потребителя (apps/skin/.mcp/src/tools/feedback.ts), канона в TS нет —
+# тем же приёмом, что раньше Tag (internal/kinds/tag.go).
+
+type FeedbackEntry {
+  id: ID!
+  savedAt: String!
+  tool: String!
+  action: String!
+  expected: String
+  actual: String!
+  sign: String!
+  status: String!
+  at: String!
+  resolvedAt: String
+  note: String
+}
+
+input FeedbackInput {
+  tool: String!
+  action: String!
+  expected: String
+  actual: String!
+  """issue (по умолчанию) — что-то не так; praise — сработало хорошо."""
+  sign: String
+}
+
+extend type Query {
+  """Заявки; status/sign не заданы — все. Список читают вручную, не программно — без пагинации,
+  как у Preset."""
+  feedback(status: String, sign: String): [FeedbackEntry!]!
+}
+
+extend type Mutation {
+  reportFeedback(input: FeedbackInput!): FeedbackEntry!
+  """Ставит status:"resolved" (+resolvedAt, +note?) поверх заявки — отказ, если уже resolved."""
+  resolveFeedback(id: ID!, note: String): FeedbackEntry!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // childFields_* functions provide shared child field context lookups.
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_FeedbackEntry(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_FeedbackEntry_id(ctx, field)
+	case "savedAt":
+		return ec.fieldContext_FeedbackEntry_savedAt(ctx, field)
+	case "tool":
+		return ec.fieldContext_FeedbackEntry_tool(ctx, field)
+	case "action":
+		return ec.fieldContext_FeedbackEntry_action(ctx, field)
+	case "expected":
+		return ec.fieldContext_FeedbackEntry_expected(ctx, field)
+	case "actual":
+		return ec.fieldContext_FeedbackEntry_actual(ctx, field)
+	case "sign":
+		return ec.fieldContext_FeedbackEntry_sign(ctx, field)
+	case "status":
+		return ec.fieldContext_FeedbackEntry_status(ctx, field)
+	case "at":
+		return ec.fieldContext_FeedbackEntry_at(ctx, field)
+	case "resolvedAt":
+		return ec.fieldContext_FeedbackEntry_resolvedAt(ctx, field)
+	case "note":
+		return ec.fieldContext_FeedbackEntry_note(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FeedbackEntry", field.Name)
+}
 
 func (ec *executionContext) childFields_Form(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
@@ -1045,6 +1237,42 @@ func (ec *executionContext) field_Mutation_replacePreset_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_reportFeedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
+		func(ctx context.Context, v any) (model.FeedbackInput, error) {
+			return ec.unmarshalNFeedbackInput2presetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveFeedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNID2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "note",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["note"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1056,6 +1284,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_feedback_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "status",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["status"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sign",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sign"] = arg1
 	return args, nil
 }
 
@@ -1561,6 +1811,259 @@ func (ec *executionContext) fieldContext_Content_author(_ context.Context, field
 	return graphql.NewScalarFieldContext("Content", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _FeedbackEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_savedAt(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_savedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SavedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_savedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_tool(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_tool(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Tool, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_tool(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_action(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_action(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Action, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_expected(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_expected(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Expected, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_expected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_actual(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_actual(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Actual, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_actual(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_sign(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_sign(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Sign, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_sign(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_status(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_at(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_at(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.At, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_at(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_resolvedAt(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_resolvedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResolvedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_resolvedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FeedbackEntry_note(ctx context.Context, field graphql.CollectedField, obj *model.FeedbackEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FeedbackEntry_note(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Note, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FeedbackEntry_note(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FeedbackEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Form_id(ctx context.Context, field graphql.CollectedField, obj *model.Form) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1940,6 +2443,94 @@ func (ec *executionContext) fieldContext_Mutation_deletePreset(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deletePreset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reportFeedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_reportFeedback(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReportFeedback(ctx, fc.Args["input"].(model.FeedbackInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.FeedbackEntry) graphql.Marshaler {
+			return ec.marshalNFeedbackEntry2ᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntry(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_reportFeedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FeedbackEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reportFeedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resolveFeedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_resolveFeedback(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ResolveFeedback(ctx, fc.Args["id"].(string), fc.Args["note"].(*string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.FeedbackEntry) graphql.Marshaler {
+			return ec.marshalNFeedbackEntry2ᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntry(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_resolveFeedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FeedbackEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveFeedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2561,6 +3152,50 @@ func (ec *executionContext) fieldContext_Query_preset(ctx context.Context, field
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_preset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_feedback(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_feedback(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Feedback(ctx, fc.Args["status"].(*string), fc.Args["sign"].(*string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FeedbackEntry) graphql.Marshaler {
+			return ec.marshalNFeedbackEntry2ᚕᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntryᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_feedback(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FeedbackEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_feedback_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3886,6 +4521,64 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputFeedbackInput(ctx context.Context, obj any) (model.FeedbackInput, error) {
+	var it model.FeedbackInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tool", "action", "expected", "actual", "sign"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tool":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tool"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tool = data
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Action = data
+		case "expected":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expected"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Expected = data
+		case "actual":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("actual"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Actual = data
+		case "sign":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sign"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Sign = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPresetInput(ctx context.Context, obj any) (model.PresetInput, error) {
 	var it model.PresetInput
 	if obj == nil {
@@ -4163,6 +4856,94 @@ func (ec *executionContext) _Content(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var feedbackEntryImplementors = []string{"FeedbackEntry"}
+
+func (ec *executionContext) _FeedbackEntry(ctx context.Context, sel ast.SelectionSet, obj *model.FeedbackEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, feedbackEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FeedbackEntry")
+		case "id":
+			out.Values[i] = ec._FeedbackEntry_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savedAt":
+			out.Values[i] = ec._FeedbackEntry_savedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tool":
+			out.Values[i] = ec._FeedbackEntry_tool(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "action":
+			out.Values[i] = ec._FeedbackEntry_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expected":
+			out.Values[i] = ec._FeedbackEntry_expected(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "actual":
+			out.Values[i] = ec._FeedbackEntry_actual(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sign":
+			out.Values[i] = ec._FeedbackEntry_sign(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._FeedbackEntry_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "at":
+			out.Values[i] = ec._FeedbackEntry_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolvedAt":
+			out.Values[i] = ec._FeedbackEntry_resolvedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "note":
+			out.Values[i] = ec._FeedbackEntry_note(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var formImplementors = []string{"Form", "Preset"}
 
 func (ec *executionContext) _Form(ctx context.Context, sel ast.SelectionSet, obj *model.Form) graphql.Marshaler {
@@ -4288,6 +5069,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deletePreset":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deletePreset(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reportFeedback":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportFeedback(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolveFeedback":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveFeedback(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -4641,6 +5436,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}()
 				res = ec._Query_preset(ctx, field)
 				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "feedback":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_feedback(ctx, field)
+				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res
@@ -5166,6 +5983,37 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNFeedbackEntry2ᚕᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FeedbackEntry) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFeedbackEntry2ᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntry(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFeedbackEntry2ᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackEntry(ctx context.Context, sel ast.SelectionSet, v *model.FeedbackEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FeedbackEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFeedbackInput2presetsᚋinternalᚋgraphqlᚋmodelᚐFeedbackInput(ctx context.Context, v any) (model.FeedbackInput, error) {
+	res, err := ec.unmarshalInputFeedbackInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNForm2ᚕᚖpresetsᚋinternalᚋgraphqlᚋmodelᚐFormᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Form) graphql.Marshaler {

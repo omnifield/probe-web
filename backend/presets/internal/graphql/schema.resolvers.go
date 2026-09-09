@@ -9,13 +9,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/vikstrous/dataloadgen"
-
 	"presets/internal/graphql/generated"
 	"presets/internal/graphql/loaders"
 	"presets/internal/graphql/model"
 	"presets/internal/kinds"
+
+	"github.com/vikstrous/dataloadgen"
 )
 
 // CreatePreset is the resolver for the createPreset field.
