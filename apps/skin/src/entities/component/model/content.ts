@@ -14,3 +14,9 @@ export async function listContentFor(component: string): Promise<PresetRecord<Co
   const records = await presets.list(PRESET_KIND.content);
   return records.filter((record) => record.state.component === component);
 }
+
+/** Одна content-запись по машинному имени — источник данных `/embed/...?content=<name>`, аналог
+ *  MCP-инструмента `get_content`, только с фронта. */
+export async function getContentByName(name: string): Promise<PresetRecord<ContentState> | undefined> {
+  return presets.get(PRESET_KIND.content, name);
+}

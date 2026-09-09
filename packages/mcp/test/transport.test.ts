@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { z } from "@web-core/io";
 import { ok, registerTool } from "../src";
 import { createServer, type ZoneServer } from "../src/transport";
 
@@ -29,6 +30,14 @@ describe("createServer — transport: http", () => {
 
     expect(result.isError).toBe(false);
     await client.close();
+  });
+
+  it("rejects listen() with a clear error instead of crashing when the port is already taken", async () => {
+    server = createServer({ name: "test-http", version: "0.0.0", transport: "http", registerTools: registerPing });
+    await server.listen(PORT);
+
+    const second = createServer({ name: "test-http-2", version: "0.0.0", transport: "http", registerTools: registerPing });
+    await expect(second.listen(PORT)).rejects.toThrow(/already in use|занят/i);
   });
 
   it("rejects with 401 before the request reaches the tool when auth fails", async () => {
@@ -181,6 +190,71 @@ describe("createServer — transport: http", () => {
     await client.connect(new StreamableHTTPClientTransport(URL_));
 
     expect(client.getInstructions()).toBe("call check_* before assemble_preview");
+    await client.close();
+  });
+
+  it("passes real request headers to a tool handler with input", async () => {
+    const port = PORT + 1;
+    let seen: string | string[] | undefined;
+    server = createServer({
+      name: "test-http-headers",
+      version: "0.0.0",
+      transport: "http",
+      registerTools: (mcp) =>
+        registerTool(mcp, {
+          name: "whoami",
+          description: "reads a header",
+          access: "read",
+          input: z.object({}),
+          handler: (_args, context) => {
+            seen = context.headers["x-user-login"];
+            return ok("checked");
+          },
+        }),
+    });
+    await server.listen(port);
+
+    const client = new Client({ name: "test-client", version: "0.0.0" });
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
+        requestInit: { headers: { "X-User-Login": "alice" } },
+      }),
+    );
+    await client.callTool({ name: "whoami", arguments: {} });
+
+    expect(seen).toBe("alice");
+    await client.close();
+  });
+
+  it("passes real request headers to a tool handler with no input", async () => {
+    const port = PORT + 2;
+    let seen: string | string[] | undefined;
+    server = createServer({
+      name: "test-http-headers-no-input",
+      version: "0.0.0",
+      transport: "http",
+      registerTools: (mcp) =>
+        registerTool(mcp, {
+          name: "whoami",
+          description: "reads a header, no args",
+          access: "read",
+          handler: (context) => {
+            seen = context.headers["x-user-login"];
+            return ok("checked");
+          },
+        }),
+    });
+    await server.listen(port);
+
+    const client = new Client({ name: "test-client", version: "0.0.0" });
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
+        requestInit: { headers: { "X-User-Login": "bob" } },
+      }),
+    );
+    await client.callTool({ name: "whoami", arguments: {} });
+
+    expect(seen).toBe("bob");
     await client.close();
   });
 });

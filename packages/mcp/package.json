@@ -41,11 +41,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@web-core/io": "workspace:*"
   },
   "devDependencies": {
     "@web-core/build": "workspace:*",
-    "@web-core/io": "workspace:*",
     "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",

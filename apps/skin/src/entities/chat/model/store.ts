@@ -1,5 +1,7 @@
 import { createSignal } from "solid-js";
 
+import { sendChatMessage } from "./api";
+
 export interface ChatMessage {
   readonly id: string;
   readonly author: string;
@@ -7,34 +9,36 @@ export interface ChatMessage {
   readonly timestamp: string;
 }
 
-// Мок — куда сообщения реально полетят (и откуда возьмётся история), скажут позже.
-const MOCK_MESSAGES: readonly ChatMessage[] = [
-  {
-    id: "1",
-    author: "Ева",
-    text: "Привет! Как продвигается скин кнопки?",
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    author: "Архитектор",
-    text: "Почти готово, тестирую карусель.",
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    author: "Ева",
-    text: "Огонь, погнали дальше.",
-    timestamp: new Date().toISOString(),
-  },
-];
+const AGENT_AUTHOR = "Агент";
 
-export const [messages, setMessages] = createSignal<readonly ChatMessage[]>(MOCK_MESSAGES);
+export const [messages, setMessages] = createSignal<readonly ChatMessage[]>([]);
+/** Ждём ли ответ агента — сессия per-компонент синхронная, второе сообщение до ответа на первое
+ *  не имеет смысла (`ChatControl` дизейблит форму по этому флагу). */
+export const [pending, setPending] = createSignal(false);
 
-/** Пока просто дописывает в локальный список — куда реально улетит, скажут позже. */
-export function sendMessage(author: string, text: string): void {
+function appendMessage(author: string, text: string): void {
   setMessages((current) => [
     ...current,
     { id: crypto.randomUUID(), author, text, timestamp: new Date().toISOString() },
   ]);
+}
+
+/**
+ * Дописывает сообщение юзера сразу (оптимистично), затем ждёт ответ агента (`sendChatMessage`,
+ * `run-finished`) и дописывает его следом. `refusal` — тоже полноценный ответ агента, просто
+ * отрицательный, показывается тем же путём, что `reply`. Сетевая ошибка/отказ службы — тоже
+ * оседает в чат, а не проглатывается молча.
+ */
+export async function sendMessage(author: string, text: string): Promise<void> {
+  appendMessage(author, text);
+  setPending(true);
+  try {
+    const result = await sendChatMessage(text);
+    const reply = result.refusal ?? result.reply;
+    if (reply) appendMessage(AGENT_AUTHOR, reply);
+  } catch (error) {
+    appendMessage(AGENT_AUTHOR, error instanceof Error ? error.message : String(error));
+  } finally {
+    setPending(false);
+  }
 }

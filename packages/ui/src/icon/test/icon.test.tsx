@@ -11,6 +11,15 @@ import { passport as iconPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as iconEditorInfo } from "../playground/index.js";
 
+// Резолв иконки — НАСТОЯЩИЙ динамический импорт, и его бюджет времени задаёт машина, а не код.
+// Умолчание `vi.waitFor` — 1000 мс, и на полном наборе зоны (66 файлов, каждый со своим jsdom)
+// его не хватает: три пробы этого файла падали `svg not resolved yet` на загруженной машине и
+// проходили в одиночку. Проверено на ЧИСТОМ дереве — падало и до перехода на словарь иконок,
+// то есть это не следствие правки, а тот же самый долг, что зона уже закрывала однажды, заменив
+// угаданный `setTimeout(resolve, 0)` на поллинг (см. `ROADMAP.yaml`, `waitfor-not-fixed-timeout`):
+// тогда убрали угаданное число миллисекунд из ожидания, здесь — из его предела.
+const RESOLVE_TIMEOUT = { timeout: 10_000 };
+
 function readable<Part extends string, Data = unknown>(
   passport: ComponentPassport<Part>,
   editorInfo: PassportEditorInfo<Part, string, Data>,
@@ -54,7 +63,7 @@ describe("Icon — resolves a real lucide icon by name", () => {
       const found = host.querySelector('svg[data-scope="icon"][data-part="root"]');
       if (!found) throw new Error("svg not resolved yet");
       return found;
-    });
+    }, RESOLVE_TIMEOUT);
 
     expect(svg.querySelector("path")).not.toBeNull();
   });
@@ -69,7 +78,7 @@ describe("Icon — resolves a real lucide icon by name", () => {
       const found = host.querySelector('svg[data-scope="icon"][data-part="root"]');
       if (!found) throw new Error("svg not resolved yet");
       return found;
-    });
+    }, RESOLVE_TIMEOUT);
 
     expect(svg.innerHTML).toContain("path");
   });
@@ -89,6 +98,6 @@ describe('icon "basic" assembly — one icon by fixed name, through the real eng
       if (!host.querySelector('svg[data-scope="icon"][data-part="root"]')) {
         throw new Error("svg not resolved yet");
       }
-    });
+    }, RESOLVE_TIMEOUT);
   });
 });

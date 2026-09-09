@@ -37,6 +37,29 @@ export function checkAssembly(component: string, assembly: unknown) {
   return { ok: dataFlaws.length === 0, dataCheck: "checked against an io-schema example", dataFlaws };
 }
 
-export function skinGaps(skinRecord: Skin) {
-  return skinGapsRaw(skinRecord, allPassports(), allEditorInfos());
+function addressOf(gap: ReturnType<typeof skinGapsRaw>[number]): string {
+  if (gap.kind === "component") return gap.component;
+  if (gap.kind === "part") return `${gap.component}.${gap.part}`;
+  return `${gap.component}.${gap.part}.${gap.state}`;
+}
+
+export interface GroupedGap {
+  readonly means: string;
+  readonly addresses: readonly string[];
+}
+
+// Один и тот же means-текст на настоящем наряде повторяется сотнями записей (232 адреса на реальном
+// omnifield — одна и та же фраза, разный адрес) — группируем по тексту, адреса списком под ним, а
+// не фраза на каждую запись.
+export function skinGaps(skinRecord: Skin): readonly GroupedGap[] {
+  const raw = skinGapsRaw(skinRecord, allPassports(), allEditorInfos());
+  const byMeans = new Map<string, string[]>();
+
+  for (const gap of raw) {
+    const addresses = byMeans.get(gap.means) ?? [];
+    addresses.push(addressOf(gap));
+    byMeans.set(gap.means, addresses);
+  }
+
+  return [...byMeans].map(([means, addresses]) => ({ means, addresses }));
 }

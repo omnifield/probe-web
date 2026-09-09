@@ -3,16 +3,17 @@ import type { ComponentInfo } from "@web-core/ui/component-info";
 import { useAtom } from "@web-core/store";
 import { createEffect, createMemo, on } from "solid-js";
 
-import { generateFakeData } from "../utils/fake-generator";
 import { componentDataAtom, componentEventsAtom, componentInfoAtom, currentComponent } from "./store";
 
 export interface ComponentHandle {
-  /** Готовы ли данные компонента (инфо и io-схема пришли) — раньше генерировать/показывать нечего. */
+  /** Готовы ли данные компонента (инфо и io-схема пришли) — раньше показывать нечего. */
   readonly ready: () => boolean;
-  /** Сгенерировать заново фейковые данные ТЕКУЩЕГО компонента, записать в `componentDataAtom`. */
-  readonly generate: () => void;
-  /** Положить готовые данные напрямую в `componentDataAtom`, минуя фейк-генератор — второй
-   *  источник наполнения показа (сохранённый content), рядом с `generate()`. */
+  /** Данные компонента ЕДУТ прямо сейчас. Не противоположность `ready`: на смене компонента
+   *  ресурс держит последнее известное `info` (значит `ready` остаётся true), но показывать по
+   *  нему уже нельзя — оно от ПРЕДЫДУЩЕГО компонента. Кто рисует показ, ждёт по этому флагу. */
+  readonly loading: () => boolean;
+  /** Положить готовые данные напрямую в `componentDataAtom` — источник наполнения показа,
+   *  сохранённый content. */
   readonly setData: (data: unknown) => void;
   /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
   readonly info: () => ComponentInfo | undefined;
@@ -51,15 +52,11 @@ export function componentHandle(): ComponentHandle {
 
   const ready = createMemo(() => componentInfo() !== undefined);
 
-  function generate(): void {
-    const data = componentInfo();
-    if (data === undefined) return;
-    componentDataAtom.set(generateFakeData(data.io?.schema, data.component));
-  }
+  const loading = createMemo(() => info().status === "pending");
 
   function setData(data: unknown): void {
     componentDataAtom.set(data);
   }
 
-  return { ready, generate, setData, info: componentInfo, recordEvent };
+  return { ready, loading, setData, info: componentInfo, recordEvent };
 }

@@ -112,6 +112,9 @@ createEffect(() => {
 | Параметры маршрута            | `{ component: string, assembly?: string }`       |
 | `VITE_PRESETS_URL`             | адрес службы пресетов (`@web-core/skin/presets`) |
 | Io-схема компонента            | `componentInfo(component).io?.schema` — вход фейк-генератора |
+| `VITE_CHAT_URL` / `VITE_CHAT_TOKEN` | адрес бокса агента и общий токен витрины (`Authorization: Bearer`) |
+| `VITE_CHAT_RECIPE` / `VITE_CHAT_PASSPORT` / `VITE_CHAT_AGENT` | чем заводится сессия агента; дефолты `сборка-скинов` / `опус-5` / `claude-code` |
+| Логин и id сессии (`entities/user`) | заводятся на входе юзера и лежат рядом; логин едет в `X-User-Login` (без него 401), id — в адресе каждого запроса к боксу |
 
 ### 📤 Выход
 
