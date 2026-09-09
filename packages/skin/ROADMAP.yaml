@@ -144,6 +144,39 @@ categories:
           Означает: list/get/save/replace/remove по палитре/форме/наряду/сборке одним клиентом;
           имя — довод операции, не поле содержимого (у сборки своего имени нет).
 
+      - id: canon-missing-author-and-tags
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "author и Outfit.tags — реально пишутся, но не объявлены в TS-канона видов"
+        description: |
+          Найдено овнером backend/presets (2026-09-09) при сверке плана типизации службы с тем, что
+          реально лежит в проде — до́лжно быть починено ЗДЕСЬ, ПЕРЕД тем как backend заведёт
+          Go-структуры один-в-один по этим интерфейсам (см. `canon-drift-author-tags-assembly` в
+          `backend/presets/ROADMAP.yaml` — типизированная валидация на запись иначе начнёт бить
+          существующие живые записи, у которых эти поля реально есть).
+
+          Два расхождения в `src/engine/look/types.ts`:
+          1. `author` — сквозной атрибут владения (см. `authorGuard`,
+             `apps/skin/.mcp/src/tools/shared.ts`). MCP подмешивает его в `state` ЛЮБОГО вида при
+             сохранении (`{...state, author}`), но явно объявлен только в `ContentState`
+             (`apps/skin/.mcp/src/tools/shared.ts`) — `Palette`, `Form`, `Outfit`,
+             `ComponentAssembly` о нём молчат, хотя реальные записи (проверено живьём: `tag/status`)
+             несут `{name, label, author}`.
+          2. `Outfit.tags` — MCP подмешивает `tags: string[]` при сохранении наряда
+             (`resolveTags`, `shared.ts`), а интерфейс `Outfit` этого поля не объявляет вовсе.
+
+          Решение user дословно: "давай ничего не обходить! все делаем нормально!" — значит
+          `author?: string` добавляется явным полем в `Palette`/`Form`/`Outfit`/
+          `ComponentAssembly` (по образцу уже объявленного в `ContentState`), `tags?: readonly
+          string[]` — явным полем в `Outfit`. Канон должен описывать то, что реально пишет MCP, не
+          наоборот.
+
+          Блокирует: `kinds-registry`/`canon-drift-author-tags-assembly` в
+          `backend/presets/ROADMAP.yaml` — Go-структуры там пишутся зеркально к ЭТОМУ, исправленному
+          канону, не к сегодняшнему.
+
       - id: wear-switch-moved
         type: feature
         status: Done

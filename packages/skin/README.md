@@ -169,6 +169,12 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `skinContrast` | перечень пар, не прошедших норму читаемости, и пар, которые посчитать нечем |
 | `PresetsClient.list/get` | `PresetRecord<T>` — запись целиком, с содержимым |
 
+`author?: string` — сквозной атрибут владения на КАЖДОМ виде (`Palette`/`Form`/`Outfit`/
+`ComponentAssembly`, как и у `ContentState`): MCP подмешивает его в `state` при сохранении
+(`{...state, author}`), канон обязан нести то же поле, иначе живые записи с `author` не проходят
+типизацию. У `Outfit` — ещё `tags?: readonly string[]`, тоже подмешивается MCP (`resolveTags`) и
+добавлено в канон по той же причине.
+
 <h2 id="сборки">🏗️ Сборки</h2>
 
 🧪 Своих сборок компонентов у механики нет — она их не знает. Доказывается голыми, синтетическими
