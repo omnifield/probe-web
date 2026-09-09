@@ -1,0 +1,129 @@
+# Схема службы пресетов. Формируется по решениям ROADMAP.yaml:
+#   - component-graph-scope / kinds-registry — шесть видов сегодняшнего кода, не то, чего ещё нет.
+#   - gqlgen-schema-preset-interface — общий интерфейс Preset + шесть конкретных типов.
+#   - recipe-assembly-json-scalar-boundary — граница по связям, не по глубине: связи и плоские
+#     скаляры — типизированные поля, рекурсивные деревья и открытые словари — именованный JSON.
+#   - no-server-side-n-plus-one — связи (Outfit.palette/forms/tags) резолвятся отдельным заходом
+#     через dataloader; здесь только форма схемы.
+
+"""Именованный JSON-скаляр — для полей, которым нет смысла раскладываться на GraphQL-поля:
+рекурсивные деревья (Form.recipe, Assembly.assembly) и открытые словари произвольной формы
+(Palette.scales/dimensions/light/dark, Outfit.overrides, Form.variantTags, Content.data)."""
+scalar JSON
+
+"""Общие поля любой записи службы — не зависят от kind."""
+interface Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+}
+
+type Palette implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  author: String
+  scales: JSON
+  dimensions: JSON
+  light: JSON
+  dark: JSON
+}
+
+type Form implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  component: String!
+  recipe: JSON!
+  keyframes: JSON
+  variantTags: JSON
+  author: String
+}
+
+"""palette/forms/tags — связи на другие записи службы, резолвятся по имени. Батчинг — отдельный
+заход (no-server-side-n-plus-one, ROADMAP.yaml), эта схема только называет форму."""
+type Outfit implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  palette: Palette
+  forms: [Form!]!
+  tags: [Tag!]!
+  overrides: JSON
+  author: String
+}
+
+type Content implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  component: String!
+  data: JSON!
+  author: String
+}
+
+"""tagLabel — человеческое имя тега (packages/skin/src/tags), отдельное от Preset.label верхнего
+уровня: на живой записи прода (tag/status) это два разных значения ("status" / "Статусы")."""
+type Tag implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  tagLabel: String
+  author: String
+}
+
+"""Сборка ОДНОГО компонента — не то же самое, что будущие сборки-композиции (kinds-registry,
+ROADMAP.yaml). На проде сегодня 0 записей, вид уже подключён у потребителя (apps/skin/.mcp)."""
+type Assembly implements Preset {
+  id: ID!
+  label: String!
+  name: String
+  description: String
+  kind: String!
+  savedAt: String!
+  component: String!
+  assembly: JSON!
+  author: String
+}
+
+"""Конверт записи/замены — тот же смысл, что у сегодняшнего REST-конверта (label/name/description/
+kind/state), state валидируется по kinds-registry вида."""
+input PresetInput {
+  kind: String!
+  label: String!
+  name: String
+  description: String
+  state: JSON!
+}
+
+type Query {
+  """Перечень записей; kind не задан — все виды разом (см. mcp-surgical-reads/showcase-page-batch
+  профили в ROADMAP.yaml — сама схема не решает, сколько тянуть за раз, решает клиент выбором
+  полей)."""
+  presets(kind: String): [Preset!]!
+  preset(id: ID!): Preset
+}
+
+type Mutation {
+  createPreset(input: PresetInput!): Preset!
+  replacePreset(id: ID!, input: PresetInput!): Preset!
+  deletePreset(id: ID!): Boolean!
+}

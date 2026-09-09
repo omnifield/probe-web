@@ -124,6 +124,37 @@ func (s *Store) Get(id string) (*model.Record, error) {
 	return &record, nil
 }
 
+// GetMany — то же, что Get, но для нескольких id ОДНОЙ транзакцией: чтение, размеченное на
+// батч (GraphQL-резолвер через dataloader — no-server-side-n-plus-one в ROADMAP.yaml), а не N
+// отдельных вызовов Get, каждый со своей View-транзакцией. Отсутствующий id просто не попадает в
+// карту — не ошибка, дозвон решает вызывающий (пробел могла оставить гонка с Remove).
+func (s *Store) GetMany(ids []string) (map[string]*model.Record, error) {
+	records := make(map[string]*model.Record, len(ids))
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		metaBucket := tx.Bucket(bucketMeta)
+		stateBucket := tx.Bucket(bucketState)
+
+		for _, id := range ids {
+			metaBytes := metaBucket.Get([]byte(id))
+			if metaBytes == nil {
+				continue
+			}
+			var record model.Record
+			if err := json.Unmarshal(metaBytes, &record.Meta); err != nil {
+				continue // испорченная запись пропускается, а не роняет весь батч
+			}
+			record.State = append(json.RawMessage(nil), stateBucket.Get([]byte(id))...)
+			records[id] = &record
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
 // nameKey — ключ индекса имён: пара (kind, name), не одно только имя — уникальность держится
 // В ПРЕДЕЛАХ вида.
 func nameKey(kind, name string) []byte {

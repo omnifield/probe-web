@@ -92,6 +92,37 @@ func TestNameUniquePerKindNotGlobal(t *testing.T) {
 	}
 }
 
+func TestGetManyBatchesAndSkipsMissing(t *testing.T) {
+	s := open(t, limits.Default)
+
+	a, err := s.Create(input("form", "a", `{"a":1}`))
+	if err != nil {
+		t.Fatalf("Create a: %v", err)
+	}
+	b, err := s.Create(input("form", "b", `{"b":2}`))
+	if err != nil {
+		t.Fatalf("Create b: %v", err)
+	}
+
+	records, err := s.GetMany([]string{a.ID, "нет-такого", b.ID})
+	if err != nil {
+		t.Fatalf("GetMany: %v", err)
+	}
+
+	if len(records) != 2 {
+		t.Fatalf("ожидалось 2 найденные записи (отсутствующий id пропускается, не отказ), получено %d: %+v", len(records), records)
+	}
+	if got := records[a.ID]; got == nil || string(got.State) != `{"a":1}` {
+		t.Fatalf("запись a разошлась: %+v", got)
+	}
+	if got := records[b.ID]; got == nil || string(got.State) != `{"b":2}` {
+		t.Fatalf("запись b разошлась: %+v", got)
+	}
+	if _, found := records["нет-такого"]; found {
+		t.Fatalf("отсутствующий id не должен попадать в карту")
+	}
+}
+
 func TestRecordsPerKindLimitDoesNotStarveOtherKinds(t *testing.T) {
 	lim := limits.Default
 	lim.RecordsPerKind = 2
