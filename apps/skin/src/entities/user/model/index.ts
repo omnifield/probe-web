@@ -1,1 +1,1 @@
-export { currentUser, login, logout } from "./store";
+export { currentSession, currentUser, login, logout, renewSession } from "./store";
