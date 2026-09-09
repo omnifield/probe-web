@@ -16,6 +16,7 @@ export const PRESET_KIND = {
   outfit: "outfit",
   assembly: "assembly",
   content: "content",
+  tag: "tag",
 } as const;
 
 export type PresetKind = (typeof PRESET_KIND)[keyof typeof PRESET_KIND];
@@ -27,6 +28,17 @@ export interface ContentState {
   readonly author?: string;
 }
 
+/** Словарная запись тега (`packages/skin/src/tags`). Канона для неё в `engine/look/types.ts` нет
+ *  и не заводился — форма только по живой записи (`tag/status`), другие модули её типом не берут,
+ *  `checkTags`/`groupByTag` работают со строками имён, не с записью. Тип inline, не в каноне. */
+export interface Tag {
+  readonly name: string;
+  /** Человеческое имя тега — ОТДЕЛЬНО от `PresetRecord.label` (на живой записи это два разных
+   *  значения: "status" / "Статусы"). */
+  readonly label?: string;
+  readonly author?: string;
+}
+
 /** Содержимое по ярлыку — то, что действительно лежит под `state`. */
 interface PresetKindState {
   palette: Palette;
@@ -34,6 +46,7 @@ interface PresetKindState {
   outfit: Outfit;
   assembly: ComponentAssembly;
   content: ContentState;
+  tag: Tag;
 }
 
 /** Запись службы ЦЕЛИКОМ — то же самое, что несёт `GET {base}/{id}`, типизированное содержимым. */
@@ -74,6 +87,8 @@ interface WirePreset {
   data?: unknown;
   // Assembly
   assembly?: unknown;
+  // Tag — tagLabel, НЕ верхнеуровневый label (тот самой записи, этот — самого тега).
+  tagLabel?: unknown;
 }
 
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -121,6 +136,10 @@ const LIST_QUERY = gql`
       ... on Assembly {
         component
         assembly
+        author
+      }
+      ... on Tag {
+        tagLabel
         author
       }
     }
@@ -187,6 +206,10 @@ function toState<T>(kind: PresetKind, item: WirePreset): T {
 
   if (kind === "assembly") {
     return { component: item.component, assembly: item.assembly, author: item.author } as T;
+  }
+
+  if (kind === "tag") {
+    return { label: item.tagLabel, author: item.author } as T;
   }
 
   // content

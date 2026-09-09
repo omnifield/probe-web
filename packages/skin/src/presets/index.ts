@@ -9,5 +9,6 @@ export {
   type PresetRecord,
   type PresetsClient,
   type PresetsClientOptions,
+  type Tag,
 } from "./client.js";
 export { PresetsDown, PresetsRefused } from "./wire.js";

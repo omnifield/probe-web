@@ -110,6 +110,28 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
     ]);
   });
 
+  it("list('tag') несёт tagLabel как state.label — отдельно от верхнеуровневого record.label", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: {
+          presets: [{ id: "3", label: "status", name: "status", tagLabel: "Статусы", author: "egor" }],
+        },
+      }),
+    );
+
+    const client = createPresetsClient({ url: URL });
+    const items = await client.list(PRESET_KIND.tag);
+
+    expect(items).toEqual([
+      {
+        id: "3",
+        label: "status",
+        name: "status",
+        state: { name: "status", label: "Статусы", author: "egor" },
+      },
+    ]);
+  });
+
   it("get() фильтрует список на клиенте одним запросом — второго чтения по id не делает", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, {

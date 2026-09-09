@@ -206,11 +206,44 @@ categories:
              эту зону. Не добавлять `PRESET_KIND.tag` — этим клиентом сегодня никто его не зовёт,
              заводить видом "на будущее" незачем.
 
+             УСЛОВИЕ ИЗМЕНИЛОСЬ (2026-09-09): `apps/skin/.mcp` собирается перейти на этот клиент
+             (см. `apps/skin/.mcp/ROADMAP.yaml`'s `store-client-dedup`) и реально зовёт `kind:"tag"`
+             — см. `tag-kind-support` ниже.
+
           8. Тесты — тем же приёмом, что `batching_test.go` в бэке: не верить чтению кода, гонять
              `list`/`get`/`save`/`replace`/`remove` против ЛИБО настоящего дев-бэка, ЛИБО мока
              `fetch` с реальной формой ответа GraphQL (`{data: {...}}`), и сверять, что
              `componentInfo`/`source.ts` на выходе видят ТУ ЖЕ форму `PresetRecord<T>`, что и
              раньше — не только что запрос ушёл.
+
+      - id: tag-kind-support
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createPresetsClient — добавить `tag`, реальный потребитель появился"
+        description: |
+          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (см. `store-client-dedup`
+          в `apps/skin/.mcp/ROADMAP.yaml`): та зона хранит словари тегов как обычный пресет
+          (`kind:"tag"` — валидный вариант в её `shared.ts`'s `KIND`-enum, реально зовётся
+          `save_preset`/`list_presets`/`get_preset`). `client-graphql-transport` сознательно НЕ
+          завёл `tag` — на тот момент клиентом никто его не звал. Теперь звёт.
+
+          Три места, зеркально тому, что уже сделано для остальных пяти видов:
+          1. `PRESET_KIND.tag = "tag"` + запись в `PresetKindState`.
+          2. `LIST_QUERY` — фрагмент `... on Tag { tagLabel author }` (схема —
+             `backend/presets/internal/graphql/schema.graphql`, поле называется `tagLabel`, НЕ
+             `label` — тот верхнеуровневый у `Preset`, разные значения на живой записи).
+          3. `toState()` — ветка `kind === "tag"`, форма `{ name, label: tagLabel, author }` (не
+             падать в `content`-ветку по умолчанию, как сегодня).
+
+          Канона TS для `Tag` в `src/engine/look/types.ts` НЕТ (см. `internal/kinds/tag.go`'s
+          комментарий на бэке — форма взята с живой записи, не с кода, которого не было). Значит
+          здесь тот же вопрос, что уже решали для `author`/`tags` у остальных видов: заводить
+          интерфейс `Tag` в каноне (`{name, label?, author?}`) или оставить тип inline в
+          `client.ts`, раз канона для него никогда не было и другие модули его не импортируют.
+          Решать по факту, не гадать — что реально нужно `checkTags`/`resolveTags`
+          (`packages/skin/src/tags`), которые с этим видом соседствуют.
 
       - id: canon-missing-author-and-tags
         type: bug
