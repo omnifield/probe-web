@@ -381,7 +381,7 @@ categories:
 
       - id: store-client-dedup
         type: bug
-        status: Open
+        status: Done
         priority: Medium
         milestone: null
         name: "engine/store.ts дублирует низкоуровневый провод @web-core/skin/presets — не drop-in"
@@ -396,12 +396,138 @@ categories:
           движка, которой они не принадлежат. Сама `ask()` — приватная (`./wire.js`, не
           реэкспортирована в `@web-core/skin/presets`), тянуть её напрямую в обход публичной
           границы пакета — тоже неверно.
-          Реальный путь: вынести общий паттерн («fetch + двухуровневая ошибка на границе 500») в
-          `packages/mcp` как HTTP-клиент общего назначения — это ИНФРАСТРУКТУРНЫЙ примитив (нужен
-          любой MCP-зоне, говорящей с JSON-службой), не специфика presets; `packages/skin/wire.ts`
-          мог бы потом тоже на него перейти, отдельным заходом, не блокером здесь. Не сделано сейчас
-          осознанно — тот же принцип, что и у `httpPeer`/`createBrowser`: не строить примитив под
-          единственного потребителя, дождаться второго реального случая.
+          ПЕРЕСМОТРЕНО (2026-09-09): вывод про "не drop-in" был верен на момент записи, но обе
+          названные причины с тех пор закрыты в `packages/skin` — `tag` (`tag-kind-support`) и
+          `content` уже в `PRESET_KIND`. `feedback` вообще ушёл из presets отдельной сущностью
+          (`feedback-bucket-and-type`, `backend/presets/ROADMAP.yaml`) — раздувать `PresetKind`
+          больше не нужно вовсе. Значит верный путь — НЕ строить второй HTTP-примитив в
+          `packages/mcp`, а звать `createPresetsClient` прямо (drop-in ЕСТЬ теперь) — см.
+          `retire-engine-store` и `feedback-tools-migration` ниже, план заменяет этот пункт.
+
+      - id: retire-engine-store
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "engine/store.ts — выкинуть, звать createPresetsClient прямо (пресеты/контент)"
+        description: |
+          Полный список мест, где `store` реально зовётся (сверено grep'ом по всей зоне, не по
+          памяти) — `tools/presets.ts`, `tools/shared.ts`, `tools/content.ts`,
+          `engine/validate.ts` (последний — напрямую из `./store`, не через барель `../engine`,
+          легко упустить). `tools/feedback.ts` — отдельный пункт (`feedback-tools-migration`),
+          `store` там относится к другой сущности, не presets.
+
+          Один клиент на всю зону: `const presets = createPresetsClient({url})` — заменяет
+          сегодняшний экспорт `store` из `engine/index.ts`. `url` — тот же `/graphql`, что
+          резолвит `resolveBase()` в сегодняшнем `store.ts` (переносится, меняется только путь:
+          `API_PATH = "/api/presets"` → `/graphql`, тем же приёмом, что `apps/skin`'s
+          `shared-api-presets-single-endpoint`), окружение (`SKIN_MCP_PRESETS_URL`/`PRESETS_URL`,
+          загрузка `.env` воркспейса) не трогать — работает как есть.
+
+          Соответствие вызовов один-в-один:
+          - `store.list(kind)` (без state, для листинга) → `presets.list(kind)`, но результат
+            НАДО резать до `{id,label,name,kind,savedAt}` перед отдачей агенту — `list_presets`
+            сегодня осознанно без `state` (история `api-response-shape-rework`, бюджет токенов),
+            `presets.list()` всегда тащит state. НЕ форвардить `PresetRecord` как есть в этой
+            ветке.
+          - `store.findByName(kind,name)` + `store.read(id)` (два вызова) → `presets.get(kind,
+            name)` (один). Используется в `get_preset`, `authorGuard` (`shared.ts`).
+          - `store.readPalettes()`/`store.readForms()` → `presets.list("palette").then(rs =>
+            rs.map(r => r.state))` / то же для `"form"` — используется в `check_outfit`,
+            `assemble_preview`, `save_preset`'s outfit-ветка, `validate.ts`'s `checkPalette`/
+            `checkForm`.
+          - `validate.ts`'s `checkTags`: `list("tag")` брал только `.name` каждой записи —
+            `presets.list("tag").then(rs => rs.map(r => r.name))`, `.state` не нужен, не
+            запрашивать зря то, что не читается (не проблема самого клиента — просто не звать
+            лишнее в этой конкретной ветке).
+          - `store.replace(kind,name,state,label)` → `presets.replace(kind,name,state,label)` —
+            прямое соответствие, используется в `save_preset`, `save_content`.
+          - `store.save`/`store.update` — не остаётся вызовов на presets-видах после переноса
+            (только `save_preset`/`save_content`, оба уже зовут `replace`, не `save`/`update`
+            напрямую) — не переносить их, у presets-клиента `save` для чистого create, здесь не
+            нужен.
+
+          `PresetsDown`/`PresetsRefused` (`@web-core/skin/presets`) заменяют `StoreRefused`/
+          `StoreDown` — те же два класса отказа, другое имя, `err()`-обёртки тулов ловят по факту
+          отказа (`instanceof Error`), не по конкретному классу, менять их не придётся.
+
+          Типовая деталь: `authorGuard(kind: string, ...)` и `KIND`-enum (`shared.ts`) дают
+          `kind` как широкий `string`/union из zod — `presets.get<K extends PresetKind>(kind: K,
+          ...)` хочет узкий литерал. Понадобится либо сузить тип `authorGuard`'s параметра до
+          `PresetKind`, либо привести на вызове — решать по месту, не гадать сигнатуру заранее.
+
+          Сделано ровно по плану: `engine/store.ts` удалён, `engine/presets.ts` — тот же
+          `resolveUrl()`/`loadWorkspaceEnv()`, но путь `/graphql`, клиент — `createPresetsClient`.
+          `authorGuard` сужен до `PresetKind` (все вызовы совместимы — `KIND`-схема и литерал
+          `"content"` оба входят в союз). `list_presets`/`get_preset` — `presets.list`/`.get`
+          напрямую, заголовки режутся своей `headersOf()`. `readPalettes`/`readForms` — тонкие
+          обёртки в `engine/presets.ts`, используются в `validate.ts` и `tools/presets.ts` (4
+          места). `list_content`/`get_content` заодно упростились — `presets.list("content")` уже
+          несёт `state`, отдельный `store.read` на каждую запись (было `Promise.all`) не нужен.
+          Проверено живьём (2026-09-09) реальным HTTP-клиентом (`@web-core/mcp/peer`) на
+          свежепересобранном `backend/presets` (порт 8787, GraphQL): `list_presets({kind:"tag"})`
+          — только заголовки, `get_preset` — полный `state`, `list_presets({kind:"palette",
+          limit:2})` — `nextCursor` работает.
+
+      - id: feedback-tools-migration
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "tools/feedback.ts — на @web-core/mcp/feedback, три ломающих отличия от старой формы"
+        description: |
+          Не перенос 1:1 — новая схема (`backend/presets/internal/graphql/feedback.graphql`,
+          `packages/mcp/src/feedback/index.ts`) устроена иначе, три вещи меняются НЕ по вкусу, а
+          потому что так устроены реальные типы:
+
+          1. АДРЕСАЦИЯ ЛОМАЕТСЯ: `FeedbackEntry` не несёт имени, только `id`. `get_feedback`/
+             `resolve_feedback` меняют аргумент `name` → `id`. `list_feedback`'s сводки должны
+             отдавать `id`, не `name` — агент берёт оттуда, чем адресовать следующий вызов.
+          2. ДЕФОЛТЫ — КОНВЕНЦИЯ ТУЛА, НЕ БЭКА: сегодня `status` по умолчанию `"open"`, `sign` —
+             `"all"`. `listFeedback(url, {status?, sign?})` без параметра отдаёт ВСЁ (бэк не
+             знает слова "open" как умолчание) — резолвить дефолт `status ?? "open"` в хендлере
+             ДО вызова, не рассчитывать на бэк. `sign:"all"` — сентинел ЭТОГО тула, означает "не
+             передавать sign вовсе", не строка для бэка (нет значения `sign="all"` в схеме).
+          3. НЕТ `label`: `FeedbackEntry` не несёт человеческого ярлыка (фидбэк не `Preset`, у
+             него нет envelope-`label`). Раньше ярлык (`${mark}${tool}: ${actual.slice(0,60)}`)
+             считался в `report_feedback` и хранился. Теперь либо считать его НА ЧТЕНИИ в
+             `list_feedback` тем же приёмом (дешёво, чисто отображение), либо убрать понятие
+             ярлыка из ответа вовсе — решить явно, не потерять молча.
+
+          Остальное — чистое упрощение, не только перенос:
+          - `report_feedback`: `status`/`at` больше не выставляются тулом — бэк ставит их сам
+            (`ReportFeedback`-резолвер). Хендлер просто зовёт `reportFeedback(url, {tool, action,
+            expected, actual, sign})`.
+          - `list_feedback`: фильтрация по `status`/`sign` теперь на бэке (`Query.feedback`) — но
+            результат всё равно нужно резать до заголовков (`id`/`tool`/`sign`/`status`/`at`
+            [+вычисленный ярлык]) перед отдачей: `listFeedback()` всегда тащит `action`/
+            `expected`/`actual` целиком, а `list_feedback` сознательно лёгкий
+            (`feedback-header-body-split` — на восьми заявках уже 2500 токенов, резать НАДО).
+          - `resolve_feedback`: повторное закрытие теперь отказывает НА БЭКЕ
+            (`resolveFeedback`'s резолвер) — хендлер зовёт функцию и транслирует
+            `FeedbackRefused` в `err()`, свою проверку `statusOf(state)==="resolved"` до вызова
+            убрать, дублирует то, что бэк уже проверит.
+
+          Мелкая косметика, не блокер: текст отказа от бэка на "уже разобрана" несёт префикс
+          `"presets: "` (см. `backend/presets/internal/graphql/feedback.resolvers.go`) — служба
+          называет себя чужим именем в сообщении агенту. Можно оставить как есть (не критично,
+          читаемо) или зачистить префикс в `wire()`-обёртке `packages/mcp/feedback` — не эта
+          заявка, если чистить, то отдельным маленьким заходом там.
+
+          Сделано ровно по плану, три ломающих отличия учтены как описано: `id` вместо `name` в
+          `get_feedback`/`resolve_feedback` и в сводках `list_feedback`; дефолты `status:"open"`/
+          `sign:"all"` резолвятся в хендлере (сентинел `"all"` — не передавать фильтр бэку вовсе);
+          `label` считается на чтении в `labelOf()` (тот же приём `${mark}${tool}: ${actual.slice(
+          0,60)}`, что раньше был на записи). `get_feedback(id)` — своей ручки под один id на бэке
+          нет (только `Query.feedback(status?, sign?)`), берёт из `listFeedback()` без фильтра и
+          ищет по `id` на стороне тула — соответствует форме бэка, не выдуманная ручка.
+          `resolve_feedback` ловит `FeedbackRefused` и транслирует в `err()`, свою проверку статуса
+          до вызова убрал — бэк проверяет сам.
+          Косметика с префиксом `"presets: "` не тронута — не эта заявка.
+          Проверено живьём (2026-09-09): `report_feedback(sign:"praise")` → `list_feedback({sign:
+          "praise"})` отдаёт заголовок с `id` и вычисленным `👍`-label → `get_feedback(id)` — полное
+          тело → `resolve_feedback(id)` — `status:"resolved"` → повторный `resolve_feedback` тем же
+          `id` — `isError:true`, текст «заявка "…" уже разобрана» (тот самый префикс `presets: `).
 
   - category: Backlog
     items:
@@ -467,6 +593,22 @@ categories:
           измерить качество тула по гайду Anthropic, сегодня не заведён.
 
 log:
+  - id: env-presets-url-points-to-rest-only-stand
+    type: finding
+    date: 2026-09-09
+    summary: >
+      Живая проверка retire-engine-store/feedback-tools-migration нашла: корневой `.env`'s
+      `PRESETS_URL` (`https://150.251.145.87:9787`) отвечает REST-совместимым `{"error":
+      "not_found",...}` на `POST /graphql` — 404, служба на этом адресе ещё не несёт GraphQL,
+      хотя и `packages/skin/src/presets/client.ts`, и эта зона уже целиком на GraphQL. Не
+      находка про мой код: тот же адрес раньше так же обслуживал REST, просто раньше этой зоне
+      GraphQL не был нужен. Затронуто шире одной зоны — сама витрина `apps/skin` тоже ходит через
+      `createPresetsClient`, значит и ей на этом стенде должно быть так же плохо. Не моя зона
+      чинить (инфраструктура/деплой стенда), эскалирую находку, не обхожу молча. Для живой проверки
+      здесь поднят локальный `backend/presets` (порт 8787, свежая пересборка) и `skin-mcp` временно
+      запущен с явным `SKIN_MCP_PRESETS_URL=http://127.0.0.1:8787` поверх `.env`'s значения —
+      только для проверки этой сессии, не постоянная правка окружения.
+
   - id: api-shape-rework-decided
     type: plan
     date: 2026-09-08

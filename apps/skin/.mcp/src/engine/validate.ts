@@ -1,12 +1,12 @@
 import type { Form, Palette } from "@web-core/skin/model";
 import { checkTags as checkTagsPure, type TagFlaw } from "@web-core/skin/tags";
 import { skin } from "./mechanics";
-import { list, readPalettes } from "./store";
+import { presets, readPalettes } from "./presets";
 
 export type { TagFlaw };
 
 export async function checkTags(tags: readonly string[], where = "tags"): Promise<TagFlaw[]> {
-  const known = new Set((await list("tag")).map((record) => record.name).filter((name): name is string => name !== undefined));
+  const known = new Set((await presets.list("tag")).map((record) => record.name));
   return checkTagsPure(tags, known, where);
 }
 

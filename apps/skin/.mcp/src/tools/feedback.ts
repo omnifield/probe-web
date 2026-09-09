@@ -1,24 +1,19 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
 import { err, ok, registerTool } from "@web-core/mcp";
+import { FeedbackRefused, listFeedback, reportFeedback, resolveFeedback, type FeedbackEntry } from "@web-core/mcp/feedback";
 import { limitSchema, paginate } from "@web-core/mcp/pagination";
-import { store } from "../engine";
+import { presetsServiceUrl } from "../engine";
 
 const STATUS_FILTER = z.enum(["open", "resolved", "all"]);
 const SIGN = z.enum(["issue", "praise"]);
 const SIGN_FILTER = z.enum(["issue", "praise", "all"]);
 
-// Заявка без поля status — та, что записана до появления разбора: она открыта, а не «непонятно».
-function statusOf(state: unknown): string {
-  const said = (state as { status?: unknown } | null)?.status;
-  return said === "resolved" ? "resolved" : "open";
-}
-
-// Заявка без поля sign — та, что записана до появления знака: считаем issue (старое поведение —
-// форма и так была только про расхождение), не "непонятно какое".
-function signOf(state: unknown): string {
-  const said = (state as { sign?: unknown } | null)?.sign;
-  return said === "praise" ? "praise" : "issue";
+// FeedbackEntry не несёт человеческого ярлыка (не Preset, envelope-label неоткуда взять) —
+// считаем его на чтении, тем же приёмом, что раньше делал report_feedback перед записью.
+function labelOf(entry: FeedbackEntry): string {
+  const mark = entry.sign === "praise" ? "👍 " : "";
+  return `${mark}${entry.tool}: ${entry.actual.slice(0, 60)}`;
 }
 
 export function registerFeedbackTools(server: McpServer): void {
@@ -34,12 +29,8 @@ export function registerFeedbackTools(server: McpServer): void {
       actual: z.string().describe("что получили на самом деле — плохое или хорошее, по sign"),
       sign: SIGN.optional().describe("issue (по умолчанию) — что-то не так; praise — сработало хорошо"),
     }),
-    handler: async ({ tool, action, expected, actual, sign = "issue" }) => {
-      const name = `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const state = { tool, action, expected, actual, sign, at: new Date().toISOString(), status: "open" };
-      const mark = sign === "praise" ? "👍 " : "";
-      return ok({ saved: await store.save("feedback", name, state, `${mark}${tool}: ${actual.slice(0, 60)}`) });
-    },
+    handler: async ({ tool, action, expected, actual, sign }) =>
+      ok({ saved: await reportFeedback(presetsServiceUrl, { tool, action, expected, actual, sign }) }),
   });
 
   registerTool(server, {
@@ -54,22 +45,19 @@ export function registerFeedbackTools(server: McpServer): void {
       limit: limitSchema.optional(),
     }),
     handler: async ({ status = "open", sign = "all", cursor, limit }) => {
-      const records = await store.list("feedback");
-      const entries = await Promise.all(records.map((record) => store.read(record.id)));
-      const byStatus = status === "all" ? entries : entries.filter((entry) => statusOf(entry.state) === status);
-      const wanted = sign === "all" ? byStatus : byStatus.filter((entry) => signOf(entry.state) === sign);
-
-      const summaries = wanted.map((entry) => {
-        const state = entry.state as Record<string, unknown>;
-        return {
-          name: entry.name,
-          label: entry.label,
-          tool: state["tool"],
-          sign: signOf(state),
-          status: statusOf(state),
-          at: state["at"],
-        };
+      const entries = await listFeedback(presetsServiceUrl, {
+        status: status === "all" ? undefined : status,
+        sign: sign === "all" ? undefined : sign,
       });
+
+      const summaries = entries.map((entry) => ({
+        id: entry.id,
+        label: labelOf(entry),
+        tool: entry.tool,
+        sign: entry.sign,
+        status: entry.status,
+        at: entry.at,
+      }));
 
       const page = paginate(summaries, { cursor, limit });
       return ok({ items: page.items, nextCursor: page.nextCursor });
@@ -79,36 +67,33 @@ export function registerFeedbackTools(server: McpServer): void {
   registerTool(server, {
     name: "get_feedback",
     title: "Содержимое репорта",
-    description: "Полный tool/action/expected/actual одной заявки по имени (см. list_feedback).",
+    description: "Полный tool/action/expected/actual одной заявки по id (см. list_feedback).",
     access: "read",
-    input: z.object({ name: z.string().describe("имя заявки из list_feedback (report-…)") }),
-    handler: async ({ name }) => {
-      const record = await store.findByName("feedback", name);
-      if (!record) return err(`заявки "${name}" нет — имя берётся из list_feedback`);
-      return ok(await store.read(record.id));
+    input: z.object({ id: z.string().describe("id заявки из list_feedback") }),
+    handler: async ({ id }) => {
+      const entries = await listFeedback(presetsServiceUrl);
+      const entry = entries.find((candidate) => candidate.id === id);
+      if (!entry) return err(`заявки "${id}" нет — id берётся из list_feedback`);
+      return ok(entry);
     },
   });
 
   registerTool(server, {
     name: "resolve_feedback",
     title: "Закрыть репорт",
-    description: "Ставит status:\"resolved\" на заявке по имени (не удаляет) — уходит из list_feedback по умолчанию.",
+    description: "Ставит status:\"resolved\" на заявке по id (не удаляет) — уходит из list_feedback по умолчанию.",
     access: "write",
     input: z.object({
-      name: z.string().describe("имя заявки из list_feedback (report-…)"),
+      id: z.string().describe("id заявки из list_feedback"),
       note: z.string().optional().describe("чем кончился разбор — своими словами"),
     }),
-    handler: async ({ name, note }) => {
-      const existing = await store.findByName("feedback", name);
-      if (!existing) return err(`заявки "${name}" нет — имя берётся из list_feedback`);
-
-      const entry = await store.read(existing.id);
-      const state = entry.state as Record<string, unknown>;
-
-      if (statusOf(state) === "resolved") return err(`заявка "${name}" уже разобрана`);
-
-      const next = { ...state, status: "resolved", resolvedAt: new Date().toISOString(), ...(note ? { note } : {}) };
-      return ok({ resolved: await store.update(existing.id, "feedback", name, next, entry.label) });
+    handler: async ({ id, note }) => {
+      try {
+        return ok({ resolved: await resolveFeedback(presetsServiceUrl, id, note) });
+      } catch (cause) {
+        if (cause instanceof FeedbackRefused) return err(cause.message);
+        throw cause;
+      }
     },
   });
 }
