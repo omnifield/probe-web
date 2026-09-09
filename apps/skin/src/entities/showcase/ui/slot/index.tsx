@@ -19,11 +19,10 @@ import {
   Typography,
   type CarouselProps,
   Surface,
-  FlowItem,
 } from "@web-core/ui";
-import { createEffect, createSignal, For } from "solid-js";
-import { layoutGroup } from "@web-core/skin";
+import { createEffect, createSignal, For, Show } from "solid-js";
 import { Control } from "./control";
+import { Loader } from "./loader";
 
 export function Slot(props: {
   component: string;
@@ -31,6 +30,10 @@ export function Slot(props: {
   assemblies: readonly PassportAssembly[];
   variants: readonly string[];
   data?: unknown;
+  /** Данные компонента ещё едут — на месте показываемого стоит `Loader`, всё остальное в слоте
+   *  (контрол сборок, карусель, её размер) остаётся на экране. Кто ждёт — знает вызывающий
+   *  (`componentHandle().loading()`), слот сам в стор не ходит. */
+  loading?: boolean;
   dispatch?: (event: DispatchedEvent) => void;
   defaultPage?: number;
   page?: CarouselProps["page"];
@@ -84,13 +87,15 @@ export function Slot(props: {
             <For each={props.variants}>
               {(variant, index) => (
                 <CarouselItem index={index()}>
-                  <Renderer
-                    component={props.component}
-                    assembly={currentAssembly()}
-                    variant={variant}
-                    data={props.data}
-                    dispatch={props.dispatch}
-                  />
+                  <Show when={props.loading !== true} fallback={<Loader />}>
+                    <Renderer
+                      component={props.component}
+                      assembly={currentAssembly()}
+                      variant={variant}
+                      data={props.data}
+                      dispatch={props.dispatch}
+                    />
+                  </Show>
                 </CarouselItem>
               )}
             </For>

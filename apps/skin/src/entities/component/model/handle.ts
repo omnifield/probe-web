@@ -8,6 +8,10 @@ import { componentDataAtom, componentEventsAtom, componentInfoAtom, currentCompo
 export interface ComponentHandle {
   /** Готовы ли данные компонента (инфо и io-схема пришли) — раньше показывать нечего. */
   readonly ready: () => boolean;
+  /** Данные компонента ЕДУТ прямо сейчас. Не противоположность `ready`: на смене компонента
+   *  ресурс держит последнее известное `info` (значит `ready` остаётся true), но показывать по
+   *  нему уже нельзя — оно от ПРЕДЫДУЩЕГО компонента. Кто рисует показ, ждёт по этому флагу. */
+  readonly loading: () => boolean;
   /** Положить готовые данные напрямую в `componentDataAtom` — источник наполнения показа,
    *  сохранённый content. */
   readonly setData: (data: unknown) => void;
@@ -48,9 +52,11 @@ export function componentHandle(): ComponentHandle {
 
   const ready = createMemo(() => componentInfo() !== undefined);
 
+  const loading = createMemo(() => info().status === "pending");
+
   function setData(data: unknown): void {
     componentDataAtom.set(data);
   }
 
-  return { ready, setData, info: componentInfo, recordEvent };
+  return { ready, loading, setData, info: componentInfo, recordEvent };
 }

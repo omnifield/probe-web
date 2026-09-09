@@ -48,6 +48,7 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
               tag={tag.tag}
               variants={tag.variants}
               data={data()}
+              loading={component.loading()}
               dispatch={onDispatch}
             />
           </FlowItem>
