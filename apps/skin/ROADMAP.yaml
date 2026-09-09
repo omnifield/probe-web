@@ -55,29 +55,29 @@ categories:
           зеркальным compilerOptions.paths в apps/skin/tsconfig.json, локально для этого
           приложения. Разбор — FAQ.md.
 
-  - category: Фейк-генератор
+  - category: Фейк-генератор (удалён)
     items:
       - id: schema-only-generator
         type: feature
-        status: Done
+        status: Removed
         priority: Medium
         milestone: null
         name: generateFakeData принимает io-схему, не компонент целиком
         description: |
-          Означает: движок один и общий — zocker, читает зод-теги (email/телефон/имя и т.д.) прямо
-          из схемы. Второй параметр (component) — только ключ таблицы подсказок, не источник
-          знаний о паспорте/ките.
+          Было сделано так (движок один и общий — zocker, читает зод-теги прямо из схемы; второй
+          параметр component — только ключ таблицы подсказок). Выпилено целиком решением user —
+          см. `zocker-removed` в категории "Наполнение данными показа": наполнение теперь только
+          из presets, зодер как источник данных показа больше не существует в этом приложении.
 
       - id: hints-per-field
         type: feature
-        status: Done
+        status: Removed
         priority: Medium
         milestone: null
         name: Таблица подсказок длины текста (component → field → length)
         description: |
-          Означает: применяется точечно — zocker(schema).supply(схема-конкретного-поля, генератор)
-          по ссылке, не глобальный override() по типу — не задевает другие строковые поля той же
-          или соседних схем. Пока одна запись — button.label = 10, первый тест механики.
+          Было сделано так (supply() по ссылке на схему конкретного поля, не override() по типу).
+          Выпилено вместе со всем `fake-generator/` — см. `zocker-removed`.
 
   - category: Документация
     items:
@@ -106,6 +106,85 @@ categories:
           Означает: FAQ.md сгруппирован по темам (структура каталогов / импорты / фейк-генератор /
           тесты), каждый ответ со ссылкой на проверку. ROADMAP.yaml — по образцу packages/store
           (Done-пункты сразу с описанием, log — датированный журнал решений).
+
+  - category: Наполнение данными показа
+    items:
+      - id: zocker-removed
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Фейк-генератор (zocker) выпилен — единственный источник данных теперь presets"
+        description: |
+          Означает: `entities/component/utils/fake-generator/` (generate.ts/hints.ts/payload.ts/
+          text.ts) и неиспользуемый враппер `shared/utils/zocker/` удалены целиком, `zocker` убран
+          из `package.json` и лок-файла этого приложения (в `apps/skin/.mcp` остаётся — отдельный
+          пакет, отдельная зависимость, не трогали). `componentHandle.generate()` и его вызовы
+          (кнопка "GENERATE FAKE DATA" в `Input`, fallback в `pages/embed/index.tsx` без
+          `?content=`) убраны — компонент без сохранённого content теперь остаётся без данных
+          (`embed`) или получает мок-строку (витрина, см. `input-content-select` ниже), не
+          выдуманный зодером объект. Решение user: наполнение — только из наших пресетов.
+
+      - id: input-content-select
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Input — выбор сохранённого content, дефолт на пункт 0, реакция на смену компонента"
+        description: |
+          Означает: `widgets/component/input` — контролируемый `Select` (`value={selected()}`, не
+          отдан на откуп внутреннему стейту Ark) поверх `listContentFor(component)`. Эффект на
+          `items()` сам выставляет пункт `0` и грузит его `state.data` через `component.setData`
+          при каждой смене списка — в т.ч. при переключении компонента в дереве (баг: раньше
+          подпись на триггере оставалась от предыдущего компонента, Select не реагировал). Список
+          пуст → выбор сброшен, данные — литерал `"-мок-"`, не пустота и не зодер.
+
+  - category: Чат
+    items:
+      - id: chat-ui-split
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "entities/chat/ui/chat — разбит на control/ и content/"
+        description: |
+          Означает: `control/index.tsx` — форма (инпут+кнопка отправки, весь стейт `text`/
+          `onSubmit`); `content/item.tsx` — одно сообщение (аватар+бабл, свой/чужой); `content/
+          container.tsx` — скролл-область и `For` по `messages()`. `chat/index.tsx` — тонкая
+          сборка `ChatContent`+`ChatControl` внутри `Flow`, без своей логики. По ходу (решение
+          user): имя автора и время сообщения убраны из `ChatItem` — остался только текст и
+          аватар для выравнивания.
+
+      - id: chat-real-backend
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Чат шлёт сообщения в реальную сессию агента, не в локальный мок"
+        description: |
+          Означает: новый `entities/chat/model/api.ts`'s `sendChatMessage(text)` —
+          `POST {VITE_CHAT_URL}/sessions/{component}/messages` (дефолт URL —
+          `https://150.251.145.87/api`), `Authorization: Bearer {VITE_CHAT_TOKEN}` (билд-тайм env,
+          общий на всю витрину), `X-User-Login: {currentUser()}` (`entities/user`), тело
+          `{text, context: {component}}`. Session id = имя ТЕКУЩЕГО компонента
+          (`currentComponent`, `entities/component`) — по словам user, у агента чат хранится
+          per-session, и сессия должна быть в рамках компонента; нет выбранного компонента → явный
+          отказ, не запрос в никуда. Ответ — один синхронный JSON (`event: "run-finished"`), без
+          стрима/поллинга.
+
+          `store.ts`'s `sendMessage` пишет сообщение юзера в историю сразу (оптимистично), потом
+          ждёт ответ и дописывает `reply` (или `refusal`, если он есть — тоже полноценный ответ
+          агента, тем же путём). Сетевая ошибка/отказ службы тоже оседает в чат текстом, не
+          проглатывается. Новый сигнал `pending` — `ChatControl` дизейблит форму на время запроса
+          (сессия синхронная, второе сообщение до ответа на первое не имеет смысла). Моковая
+          затравка (`MOCK_MESSAGES`, три сообщения "Ева"/"Архитектор") убрана — история теперь
+          только из реальной переписки.
+
+          Сознательно не сделано (не было источника во фронте на момент разговора): `variant`/
+          `outfit` в `context` — их пока нигде не выбирают, context несёт только `component`;
+          загрузка истории чата при заходе на компонент — эндпоинт на это не называли, `messages`
+          стартует пустым; рендер `did` (списка вызовов MCP-тулов из ответа) — в UI сейчас виден
+          только `reply`/`refusal`, `did` из ответа не читается вовсе.
 
   - category: Embed-маршруты
     items:
@@ -159,11 +238,13 @@ categories:
         status: Backlog
         priority: Medium
         milestone: null
-        name: Input — реальная форма ввода данных компонента
+        name: Input — редактирование отдельных полей данных, не только выбор целого набора
         description: |
-          Означает: сейчас плейсхолдер в WorkspaceRightbar — параграф-заглушка, эффектом дёргающий
-          generateFakeData и логирующий результат в консоль. Реальный UI редактирования
-          пропов/данных показываемого компонента не построен.
+          Означает: выбор ГОТОВОГО набора данных (сохранённый content, дефолт на пункт 0) уже
+          сделан — см. `input-content-select`. Не сделано — редактирование ОТДЕЛЬНЫХ полей
+          выбранного набора (форма по io-схеме компонента, поле за полем); сейчас единица
+          изменения — весь набор целиком, точечная правка одного поля невозможна без ухода в
+          службу пресетов напрямую.
 
       - id: array-count-hints
         type: feature
@@ -267,3 +348,50 @@ log:
       версию `__root.tsx` через `autoCodeSplitting` роутер-плагина (парсер падал на файле, который
       при чтении с диска был синтаксически корректен) — вылечено полным рестартом dev-сервера с
       очисткой `node_modules/.vite`, не правкой кода.
+
+  - id: chat-ui-split-and-content-trim
+    type: plan
+    date: 2026-09-08
+    summary: >
+      `entities/chat/ui/chat` разбит на `control/` (форма — инпут+кнопка одним файлом) и `content/`
+      (`item.tsx` — одно сообщение, `container.tsx` — скролл+`For`), `chat/index.tsx` стал тонкой
+      сборкой. По ходу решением user из `ChatItem` убраны имя автора и время — в бабле остался
+      только текст, аватар держит выравнивание своё/чужое.
+
+  - id: zocker-removed-input-content-select
+    type: plan
+    date: 2026-09-08
+    summary: >
+      Зодер выпилен из витрины целиком по прямому решению user ("данные будем юзать только из
+      наших пресетов"): `entities/component/utils/fake-generator/`, неиспользуемый
+      `shared/utils/zocker/`, зависимость в `package.json`/лок-файле, кнопка "GENERATE FAKE DATA" и
+      эффект-автогенерация в `Input`, fallback на `generate()` в `pages/embed/index.tsx` — всё
+      удалено. `apps/skin/.mcp` зодер не трогали (отдельный пакет, отдельная зависимость).
+      Следом найден и починен баг: `Select` в `Input` был неконтролируемым и не реагировал на
+      смену компонента (подпись на триггере залипала от предыдущего) — заведён `value`+сигнал
+      `selected`, эффект на `items()` сам ставит пункт `0` по умолчанию или сбрасывает выбор и шлёт
+      мок-строку `"-мок-"`, если сохранённых записей для компонента нет.
+
+  - id: chat-real-session-api
+    type: plan
+    date: 2026-09-09
+    summary: >
+      Чат подключён к реальной сессии агента вместо локального мока. Контракт от user: `POST
+      /sessions/{id}/messages` (`Authorization: Bearer <общий токен>`, `X-User-Login: <логин>`,
+      тело `{text, context: {component, variant, outfit}}`), ответ — один синхронный JSON
+      (`event: "run-finished"`, `reply`/`refusal`/`did`), без стрима/поллинга. Уточнено с user перед
+      реализацией: session id = имя ТЕКУЩЕГО компонента (агент хранит чат per-session, сессия
+      должна быть в рамках компонента); токен — билд-тайм env `VITE_CHAT_TOKEN`, тем же приёмом,
+      что `VITE_PRESETS_URL`; `variant`/`outfit` в `context` пока не шлём — их нет ни в роутинге,
+      ни в каком-либо сторе фронта; базовый адрес — `VITE_CHAT_URL`, дефолт
+      `https://150.251.145.87/api` (назван user, отдельный сервис, не служба пресетов).
+
+      Новый `entities/chat/model/api.ts`'s `sendChatMessage`; `store.ts`'s `sendMessage` стал
+      асинхронным (оптимистичная запись сообщения юзера → ожидание → дозапись `reply`/`refusal`
+      единым путём → ошибка сети тоже текстом в чат, не проглатывается) и завёл сигнал `pending`,
+      которым `ChatControl` дизейблит форму на время запроса. Моковая затравка сообщений
+      (`MOCK_MESSAGES`) убрана — история пуста до первой реальной переписки.
+
+      Не сделано осознанно (нет источника/эндпоинта на момент разговора): `variant`/`outfit` в
+      context; загрузка истории чата при заходе на компонент (нет GET-эндпоинта); рендер `did`
+      (вызовов MCP-тулов из ответа) в UI — виден только `reply`/`refusal`.

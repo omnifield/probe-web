@@ -1,15 +1,16 @@
-import { Button, Field, FieldInput, Flow, FlowItem } from "@web-core/ui";
+import { Button, Field, FieldInput, Flow } from "@web-core/ui";
+import { layoutGroup, layoutSelf } from "@web-core/skin";
 import { createSignal, type JSX } from "solid-js";
 
-import { sendMessage } from "../../../model";
-import { layoutGroup, layoutSelf } from "@web-core/skin";
+import { pending, sendMessage } from "../../../model";
+
 export function ChatControl() {
   const [text, setText] = createSignal("");
 
   const onSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = (event) => {
     event.preventDefault();
-    if (!text().trim()) return;
-    sendMessage("Вы", text());
+    if (!text().trim() || pending()) return;
+    void sendMessage("Вы", text());
     setText("");
   };
 
@@ -26,9 +27,12 @@ export function ChatControl() {
             value={text()}
             onInput={(event) => setText(event.currentTarget.value)}
             placeholder="Сообщение"
+            disabled={pending()}
           />
         </Field>
-        <Button type="submit">Отправить</Button>
+        <Button type="submit" disabled={pending()}>
+          Отправить
+        </Button>
       </Flow>
     </form>
   );
