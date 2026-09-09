@@ -26,19 +26,21 @@
 <h2 id="анатомия">🧩 Анатомия</h2>
 
 🗺️ У движка нет DOM-узлов — «часть» означает подпуть поставки, «адрес» — импорт-спецификатор,
-которым эта часть достаётся. Три подпути: корень — весь `@tanstack/solid-query`, `./devtools` и
-`./persist` — отдельными дверьми, чтобы приложение импортировало ровно то, что использует.
+которым эта часть достаётся. Четыре подпути: корень — весь `@tanstack/solid-query`, `./devtools`,
+`./persist` и `./graphql` — отдельными дверьми, чтобы приложение импортировало ровно то, что
+использует.
 
 | Часть          | Адрес                    | Экспортирует                                                                                                                                                                                                                    |
 | -------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Данные из сети | `@web-core/query`         | весь `@tanstack/solid-query` (`useQuery`/`createQuery`, `useMutation`/`createMutation`, `useInfiniteQuery`/`createInfiniteQuery`, `useQueries`/`createQueries`, `QueryClient`, `QueryClientProvider`, `queryOptions`, `infiniteQueryOptions`, `mutationOptions`, `useIsFetching`, `useIsMutating`, …), весь `@tanstack/query-core` реэкспортом |
 | Devtools       | `@web-core/query/devtools` | `SolidQueryDevtools`, `SolidQueryDevtoolsPanel`                                                                                                                                                                               |
 | Persist        | `@web-core/query/persist`  | `persistQueryClient`, `createSyncStoragePersister`, весь `@tanstack/query-persist-client-core` (`persistQueryClientRestore`, `persistQueryClientSave`, `persistQueryClientSubscribe`, ретрай-стратегии, `createPersister`)  |
+| GraphQL        | `@web-core/query/graphql`  | `graphqlRequest` (`graphql-request`'s `request`, БЕЗ своего кэша), `gql`, `ClientError` — только транспорт, ни одного поля схемы конкретного бэка                                                                            |
 
 📦 Внутри `@web-core/query`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реальный
 `export * from "@tanstack/solid-query"` вместе с обоснованием полноты реэкспорта),
-`src/devtools/index.ts`, `src/persist/index.ts` — каждый подпуть в своей папке, по образцу
-`@web-core/store`'s `./machine`.
+`src/devtools/index.ts`, `src/persist/index.ts`, `src/graphql/index.ts` — каждый подпуть в своей
+папке, по образцу `@web-core/store`'s `./machine`.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -105,6 +107,25 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 {import.meta.env.DEV && <SolidQueryDevtools />}
 ```
 
+**GraphQL — `graphqlRequest` как `queryFn`, эндпоинт и заголовки передаёт приложение:**
+
+```tsx
+import { gql, graphqlRequest } from "@web-core/query/graphql";
+
+const todoQuery = gql`
+  query Todo($id: Int!) {
+    todo(id: $id) {
+      title
+    }
+  }
+`;
+
+const query = createQuery(() => ({
+  queryKey: ["todo", id()],
+  queryFn: () => graphqlRequest<{ todo: { title: string } }>("/graphql", todoQuery, { id: id() }),
+}));
+```
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У пакета нет своей сущности настроек — это опции конструкторов вендора, реэкспортированных как
@@ -153,6 +174,7 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 | `new QueryClient(config?)`        | `QueryClientConfig` — `{ defaultOptions?, queryCache?, mutationCache? }`                         |
 | `persistQueryClient(options)`     | `{ queryClient, persister, buster?, maxAge?, dehydrateOptions?, hydrateOptions? }`                |
 | `createSyncStoragePersister(options)` | `{ storage, key?, throttleTime?, serialize?, deserialize?, retry? }`                          |
+| `graphqlRequest(url, document, variables?, headers?)` | `url: string`, `document: RequestDocument \| TypedDocumentNode`, `variables?: Variables`, `headers?: HeadersInit` — эндпоинт и заголовки не хранятся в клиенте, передаются на каждый вызов |
 
 ### 📤 Выход
 
@@ -162,6 +184,7 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 | `createMutation(...)`               | `MutationObserverResult` + `mutate`/`mutateAsync`                                                |
 | `persistQueryClient(...)`           | `[unsubscribe: () => void, restorePromise: Promise<void>]`                                       |
 | `createSyncStoragePersister(...)`   | `Persister` — `{ persistClient, restoreClient, removeClient }`                                    |
+| `graphqlRequest(...)`               | `Promise<TResult>` — данные из `data` ответа; на GraphQL-ошибках/не-2xx кидает `ClientError`      |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -171,6 +194,7 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 | -------------------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
 | `QueryClientProvider` + `createQuery`         | реальный рендер, `loading` → `hi` после резолва `queryFn`, `queryFn` вызван 1 раз | `test/query.test.tsx` |
 | `QueryClientProvider` + `createMutation`      | реальный рендер, `save` → `saved` после клика и резолва `mutationFn`   | `test/query.test.tsx` |
+| `QueryClientProvider` + `createQuery` + `graphqlRequest` | реальный рендер, `loading` → `hi` через мок `fetch`; тело запроса (`query`+`variables`) проверено byte-level | `test/graphql.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
