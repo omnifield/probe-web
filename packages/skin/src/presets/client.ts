@@ -57,6 +57,10 @@ export interface PresetRecord<T> {
   readonly label: string;
   /** Имя для машины — им запись зовут наряд и источник. */
   readonly name: string;
+  /** Вид записи — то же, чем её адресовали (`PRESET_KIND`). */
+  readonly kind: PresetKind;
+  /** Когда записана — ставит служба, не клиент. */
+  readonly savedAt: string;
   /** Содержимое: Palette/Form/Outfit/ComponentAssembly — по ярлыку. */
   readonly state: T;
 }
@@ -66,6 +70,8 @@ interface WirePreset {
   id?: unknown;
   label?: unknown;
   name?: unknown;
+  kind?: unknown;
+  savedAt?: unknown;
   // Palette/Form/Content/Assembly — общий сквозной атрибут.
   author?: unknown;
   // Palette
@@ -101,6 +107,8 @@ const LIST_QUERY = gql`
       id
       label
       name
+      kind
+      savedAt
       ... on Palette {
         author
         scales
@@ -152,6 +160,8 @@ const CREATE_MUTATION = gql`
       id
       label
       name
+      kind
+      savedAt
     }
   }
 `;
@@ -162,6 +172,8 @@ const REPLACE_MUTATION = gql`
       id
       label
       name
+      kind
+      savedAt
     }
   }
 `;
@@ -222,6 +234,8 @@ function toRecord<K extends PresetKind>(kind: K, item: WirePreset): PresetRecord
     id: text(item.id),
     label: text(item.label) === "" ? name : text(item.label),
     name,
+    kind: text(item.kind) as PresetKind,
+    savedAt: text(item.savedAt),
     state: { name, ...toState<PresetKindState[K]>(kind, item) },
   };
 }
@@ -288,6 +302,8 @@ interface ListResponse {
 
 interface MutateResponse {
   id?: unknown;
+  kind?: unknown;
+  savedAt?: unknown;
 }
 
 /** Заводит клиент службы раздачи по одному адресу; общего состояния между экземплярами нет. */
@@ -323,7 +339,14 @@ export function createPresetsClient(options: PresetsClientOptions): PresetsClien
       }),
     );
 
-    return { id: text(body.createPreset.id), label: label ?? name, name, state };
+    return {
+      id: text(body.createPreset.id),
+      label: label ?? name,
+      name,
+      kind: text(body.createPreset.kind) as PresetKind,
+      savedAt: text(body.createPreset.savedAt),
+      state,
+    };
   }
 
   async function replace<K extends PresetKind>(
@@ -342,7 +365,14 @@ export function createPresetsClient(options: PresetsClientOptions): PresetsClien
       }),
     );
 
-    return { id: text(body.replacePreset.id), label: label ?? name, name, state };
+    return {
+      id: text(body.replacePreset.id),
+      label: label ?? name,
+      name,
+      kind: text(body.replacePreset.kind) as PresetKind,
+      savedAt: text(body.replacePreset.savedAt),
+      state,
+    };
   }
 
   async function remove(kind: PresetKind, name: string): Promise<void> {

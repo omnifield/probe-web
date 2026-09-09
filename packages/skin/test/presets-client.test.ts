@@ -36,6 +36,8 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
               id: "1",
               label: "Бренд",
               name: "brand",
+              kind: "outfit",
+              savedAt: "2026-09-09T12:00:00Z",
               palette: { name: "base" },
               forms: [{ name: "f1" }, { name: "f2" }],
               tags: [{ name: "t1" }],
@@ -57,6 +59,8 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
         id: "1",
         label: "Бренд",
         name: "brand",
+        kind: "outfit",
+        savedAt: "2026-09-09T12:00:00Z",
         state: {
           name: "brand",
           palette: "base",
@@ -78,6 +82,8 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
               id: "2",
               label: "",
               name: "twitter",
+              kind: "palette",
+              savedAt: "2026-09-09T12:00:00Z",
               scales: { accent: "blue" },
               dimensions: null,
               light: { bg: "#fff" },
@@ -98,6 +104,8 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
         id: "2",
         label: "twitter",
         name: "twitter",
+        kind: "palette",
+        savedAt: "2026-09-09T12:00:00Z",
         state: {
           name: "twitter",
           scales: { accent: "blue" },
@@ -114,7 +122,17 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, {
         data: {
-          presets: [{ id: "3", label: "status", name: "status", tagLabel: "Статусы", author: "egor" }],
+          presets: [
+            {
+              id: "3",
+              label: "status",
+              name: "status",
+              kind: "tag",
+              savedAt: "2026-09-09T12:00:00Z",
+              tagLabel: "Статусы",
+              author: "egor",
+            },
+          ],
         },
       }),
     );
@@ -127,6 +145,8 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
         id: "3",
         label: "status",
         name: "status",
+        kind: "tag",
+        savedAt: "2026-09-09T12:00:00Z",
         state: { name: "status", label: "Статусы", author: "egor" },
       },
     ]);
@@ -161,7 +181,11 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
 
   it("save() шлёт createPreset с переданным state как есть и берёт id из ответа", async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(200, { data: { createPreset: { id: "9", label: "Новый", name: "new" } } }),
+      jsonResponse(200, {
+        data: {
+          createPreset: { id: "9", label: "Новый", name: "new", kind: "content", savedAt: "2026-09-09T12:00:00Z" },
+        },
+      }),
     );
 
     const client = createPresetsClient({ url: URL });
@@ -175,13 +199,26 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
       variables: { input: unknown };
     };
     expect(body.variables.input).toEqual({ kind: "content", label: "Новый", name: "new", state });
-    expect(saved).toEqual({ id: "9", label: "Новый", name: "new", state });
+    expect(saved).toEqual({
+      id: "9",
+      label: "Новый",
+      name: "new",
+      kind: "content",
+      savedAt: "2026-09-09T12:00:00Z",
+      state,
+    });
   });
 
   it("replace() при найденной записи шлёт ОДНУ атомарную replacePreset, не delete+create", async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse(200, { data: { presets: [{ id: "5", label: "L", name: "brand" }] } }))
-      .mockResolvedValueOnce(jsonResponse(200, { data: { replacePreset: { id: "5", label: "L", name: "brand" } } }));
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          data: {
+            replacePreset: { id: "5", label: "L", name: "brand", kind: "outfit", savedAt: "2026-09-09T12:05:00Z" },
+          },
+        }),
+      );
 
     const client = createPresetsClient({ url: URL });
     const state = { name: "brand", palette: "base", forms: ["f1"] };
@@ -194,7 +231,14 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
       variables: { id: unknown };
     };
     expect(body.variables.id).toBe("5");
-    expect(replaced).toEqual({ id: "5", label: "L", name: "brand", state });
+    expect(replaced).toEqual({
+      id: "5",
+      label: "L",
+      name: "brand",
+      kind: "outfit",
+      savedAt: "2026-09-09T12:05:00Z",
+      state,
+    });
   });
 
   it("replace() без прежней записи падает на save() — не отказывает", async () => {

@@ -245,6 +245,38 @@ categories:
           Решать по факту, не гадать — что реально нужно `checkTags`/`resolveTags`
           (`packages/skin/src/tags`), которые с этим видом соседствуют.
 
+      - id: record-envelope-kind-and-saved-at
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "PresetRecord<T> — добавить kind/savedAt, реальный потребитель их теряет"
+        description: |
+          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (тот же заход, что
+          `tag-kind-support`, следующий слой того же аудита). `PresetRecord<T>` сегодня —
+          `{id, label, name, state}`. Схема (`Preset`-интерфейс) несёт `kind`/`savedAt` тоже, но
+          `LIST_QUERY` их не запрашивает, а три мутации (`CREATE_MUTATION`/`REPLACE_MUTATION`)
+          запрашивают только `{id label name}` — оба поля терялись уже в `client-graphql-transport`
+          для `componentInfo`/`source.ts`, просто там их никто не читал, поэтому пропало незаметно.
+
+          `apps/skin/.mcp` их читает: `get_preset`/`list_presets(kind)`/`get_content` сегодня
+          отдают агенту `kind`+`savedAt` (старый `store.read()` тащил их с бэка), `save_preset`
+          тоже показывает их в ответе. Прямой переход на этот клиент молча срежет оба поля из
+          того, что видит агент — не потому что кто-то решил, а потому что клиент их не просил у
+          схемы.
+
+          Фикс — тем же приёмом, что `tag`, аддитивно, старым потребителям всё равно:
+          1. `PresetRecord<T>` — `+kind: PresetKind`, `+savedAt: string`.
+          2. `LIST_QUERY` — `savedAt`/`kind` рядом с сегодняшними `id label name` верхнего уровня
+             (уже есть в схеме на `Preset`, ничего не менять на бэке).
+          3. `toRecord()` — прокинуть оба поля из `WirePreset` в `PresetRecord`.
+          4. `CREATE_MUTATION`/`REPLACE_MUTATION` — та же пара полей в selection set рядом с
+             `id label name`; `save()`/`replace()` берут `kind`/`savedAt` из ОТВЕТА мутации, не
+             реконструируют сами (мутация возвращает реальный `Preset`, значения оттуда, не из
+             аргументов вызова — `savedAt`, например, ставит бэк, а не клиент).
+
+          `DELETE_MUTATION`/`remove()` не трогать — там нет записи на выходе, нечего возвращать.
+
       - id: canon-missing-author-and-tags
         type: bug
         status: Done
