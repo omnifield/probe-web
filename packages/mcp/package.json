@@ -25,6 +25,10 @@
     "./browser": {
       "types": "./dist/browser/index.d.ts",
       "default": "./dist/browser/index.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback/index.d.ts",
+      "default": "./dist/feedback/index.js"
     }
   },
   "files": [
@@ -42,7 +46,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@web-core/io": "workspace:*"
+    "@web-core/io": "workspace:*",
+    "@web-core/query": "workspace:*"
   },
   "devDependencies": {
     "@web-core/build": "workspace:*",

@@ -297,6 +297,59 @@ categories:
           (не только сам пакет) — текст страницы после клика меняется ровно так, как задал
           обработчик. 28/28 в packages/mcp (было 27).
 
+  - category: Фидбэк
+    items:
+      - id: feedback-subpath
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`@web-core/mcp/feedback` — тонкий GraphQL-клиент к фидбэку, product-agnostic"
+        description: |
+          Контекст: `apps/skin/.mcp/src/tools/feedback.ts` сегодня зовёт СВОЙ отдельный REST-клиент
+          (`engine/store.ts`, `save`/`list`/`read`/`update` на `kind:"feedback"`) — мёртв против
+          нового бэка (REST снят). Фидбэк решением user — сущность общая на все продукты, не скина
+          вид пресета: `backend/presets` завёл под неё отдельный кусок схемы, НЕ `Preset`
+          (`feedback-bucket-and-type`, `backend/presets/ROADMAP.yaml`). Этот пакет — общий тулинг
+          для ЛЮБОГО будущего MCP-сервера зоны, значит транспорт живёт здесь, не в apps/skin/.mcp.
+
+          Своя папка `src/feedback/`, свой подпуть `@web-core/mcp/feedback` — тот же приём, что у
+          `/peer`/`/browser` (независимая тема, не через корневой барель). Реальная схема бэка
+          (`backend/presets/internal/graphql/feedback.graphql`, уже реализована и принята):
+
+          ```graphql
+          type FeedbackEntry { id savedAt tool action expected actual sign status at resolvedAt note }
+          input FeedbackInput { tool action expected actual sign }
+          extend type Query { feedback(status: String, sign: String): [FeedbackEntry!]! }
+          extend type Mutation {
+            reportFeedback(input: FeedbackInput!): FeedbackEntry!
+            resolveFeedback(id: ID!, note: String): FeedbackEntry!
+          }
+          ```
+
+          Три функции — зеркало трёх операций, не больше: `reportFeedback(url, input)`,
+          `listFeedback(url, {status?, sign?})`, `resolveFeedback(url, id, note?)`. Транспорт —
+          `graphqlRequest`/`gql` из `@web-core/query/graphql` (пакет становится настоящей
+          dependency, не только у `packages/skin`) — тот же приём, каким `packages/skin/src/
+          presets/client.ts` уже обёрнут в `PresetsRefused`/`PresetsDown` (`client-graphql-
+          transport`), здесь — свой минимальный аналог отказов, не общий с пресетами тип ошибки
+          (фидбэк не пресет, делить контракт ошибок незачем).
+
+          `url` — параметр вызова, не константа пакета: этот адрес совпадает с адресом службы
+          пресетов ТОЛЬКО потому, что сегодня это один и тот же процесс backend/presets — пакет
+          об этом ничего не знает и не должен, вызывающий (`apps/skin/.mcp`) сам решает, какой
+          адрес передать.
+
+          Типы (`FeedbackEntry`/`FeedbackInput` на TS-стороне) — рукописные, тем же приёмом, что
+          `packages/skin/client.ts`'s `WirePreset` (кодоген из `packages/query/ROADMAP.yaml`'s
+          `graphql-codegen-types` по-прежнему Backlog, откладывать этот подпуть до него не нужно).
+
+          НЕ входит в объём: тулы `report_feedback`/`list_feedback`/`get_feedback`/
+          `resolve_feedback` в `apps/skin/.mcp/src/tools/feedback.ts` — это вайринг конкретной
+          зоны поверх этих трёх функций, отдельное ТЗ, не этот файл. Поле "какой продукт/сервер"
+          в форме записи — открытый вопрос со стороны backend/presets, этот пакет зеркалит схему
+          как она есть, не добавляет полей, которых там нет.
+
   - category: Не в этом пакете
     items:
       - id: concrete-auth-verification
@@ -333,6 +386,29 @@ categories:
           зоне (например skin-mcp), не часть общего тулинга.
 
 log:
+  - id: feedback-subpath-shipped
+    type: plan
+    date: 2026-09-09
+    summary: >
+      Реализован ровно по ТЗ user: своя папка `src/feedback/`, свой подпуть `@web-core/mcp/feedback`
+      (тот же приём, что `/peer`/`/browser` — независимая тема, не через корневой барель), три
+      функции — зеркало трёх операций `backend/presets`'s `feedback.graphql`
+      (`reportFeedback`/`listFeedback`/`resolveFeedback`), ни поля сверх того, что несёт схема
+      (`FeedbackEntry`/`FeedbackInput` — рукописные типы тем же приёмом, что `packages/skin/
+      src/presets/client.ts`'s `WirePreset`). Транспорт — `graphqlRequest`/`gql` из `@web-core/
+      query/graphql` (пакет стал настоящей `dependency`, не только у `packages/skin`), `url` —
+      параметр каждого вызова, не константа модуля: пакет не знает и не должен знать, что сегодня
+      это тот же процесс, что у пресетов. Свой минимальный набор отказов (`FeedbackDown`/
+      `FeedbackRefused`) — тот же `wire()`-приём, что у `PresetsDown`/`PresetsRefused`
+      (`packages/skin/src/presets/wire.ts`), но НЕ общий с ними тип: фидбэк не пресет, делить
+      контракт ошибок незачем (сама заявка это явно оговорила). Тулы конкретной зоны
+      (`apps/skin/.mcp/src/tools/feedback.ts`) сознательно не входят в объём — отдельное ТЗ.
+      Проверено тестом (реальный `graphql-request` через фикстуру `fetch`, тот же приём, что
+      `packages/skin/test/presets-client.test.ts`): верная операция/переменные на проводе,
+      `listFeedback()` без фильтра шлёт `status`/`sign` как `undefined`, сетевой обрыв/HTTP 500 —
+      `FeedbackDown`, HTTP < 500 с GraphQL-`errors` (в т.ч. «уже resolved» от бэка) —
+      `FeedbackRefused` с текстом бэка. 42/42 в пакете (было 34).
+
   - id: browser-mechanic-moved-from-skin-mcp
     type: plan
     date: 2026-09-05

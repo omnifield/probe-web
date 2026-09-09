@@ -393,6 +393,9 @@ importers:
       '@web-core/io':
         specifier: workspace:*
         version: link:../io
+      '@web-core/query':
+        specifier: workspace:*
+        version: link:../query
     devDependencies:
       '@types/node':
         specifier: ^24.10.1
