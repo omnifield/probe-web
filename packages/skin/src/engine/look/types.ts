@@ -55,6 +55,9 @@ export interface OutfitFlaw {
   readonly name: OutfitFlawName;
   readonly where: string;
   readonly means: string;
+  /** `palette-incomplete` — ПОЛНЫЙ список незакрытых ролей. `means` резюмирует прозой (может
+   * усечь для читаемости) — почини по этому полю, не по прозе, где длинный список обрезан "…". */
+  readonly missing?: readonly string[];
 }
 
 export interface OutfitReport {

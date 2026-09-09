@@ -1,1 +1,0 @@
-export { generateFakeData } from "./generate";

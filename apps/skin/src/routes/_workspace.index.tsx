@@ -6,7 +6,7 @@
 // настраивается никакой опцией плагина (замерено 2026-08-29, заявка architect → framework).
 import { createFileRoute, redirect } from "@tanstack/solid-router";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_workspace/")({
   beforeLoad: () => {
     throw redirect({ to: "/showcase" });
   },

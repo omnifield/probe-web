@@ -38,7 +38,7 @@ HTTP или stdio (`/peer`), headless-браузер как MCP-клиент ч�
 |---|---|---|
 | Регистрация тула + конверт ответа | `@web-core/mcp` | `registerTool`, `ok`, `err` |
 | Бутстрап транспорта | `@web-core/mcp/transport` | `createServer` |
-| Пагинация листингов | `@web-core/mcp/pagination` | `paginate` |
+| Пагинация листингов | `@web-core/mcp/pagination` | `paginate`, `limitSchema` |
 | Обмен с другим MCP-инстансом | `@web-core/mcp/peer` | `httpPeer`, `stdioPeer` |
 | Headless-браузер | `@web-core/mcp/browser` | `createBrowser` |
 
@@ -67,6 +67,20 @@ registerTool(server, {
   access: "write", // "read" | "write" | "destructive" — определяет readOnlyHint/destructiveHint
   input: z.object({ kind: KIND, state: z.looseObject({ name: z.string() }) }),
   handler: async ({ kind, state }) => ok(await store.replace(kind, state.name, state)),
+});
+```
+
+**Заголовки запроса в хендлере (`ToolContext`)** — вторым параметром у тулов с `input`, единственным
+у тулов без него (та же вилка, что и у самой SDK):
+
+```ts
+registerTool(server, {
+  name: "save_preset",
+  // ...
+  handler: async ({ kind, state }, context) => {
+    const author = context.headers["x-user-login"]; // реальный HTTP-заголовок, пусто на stdio
+    return ok(await store.replace(kind, state.name, { ...state, author }));
+  },
 });
 ```
 
@@ -104,14 +118,17 @@ await server.listen(); // stdio в деве, Streamable HTTP в проде — �
 
 ```ts
 import { registerTool, ok } from "@web-core/mcp";
-import { paginate } from "@web-core/mcp/pagination";
+import { paginate, limitSchema } from "@web-core/mcp/pagination";
+
+// limitSchema — не голый z.number().positive(): без верхней границы Zod печатает в JSON Schema
+// предельное целое языка (9007199254740991), а не осмысленный потолок (limitSchema уже max(100)).
 
 registerTool(server, {
   name: "list_presets",
   description: "Перечень сохранённого.",
   access: "read",
-  input: z.object({ kind: KIND.optional(), cursor: z.string().optional() }),
-  handler: async ({ kind, cursor }) => ok(paginate(await store.list(kind), { cursor })),
+  input: z.object({ kind: KIND.optional(), cursor: z.string().optional(), limit: limitSchema.optional() }),
+  handler: async ({ kind, cursor, limit }) => ok(paginate(await store.list(kind), { cursor, limit })),
 });
 ```
 
@@ -121,7 +138,7 @@ registerTool(server, {
 import { httpPeer, stdioPeer } from "@web-core/mcp/peer";
 
 const prod = httpPeer(process.env["PROD_SKIN_MCP_URL"]!); // подключение — лениво, на первый вызов
-await prod.callTool("save_preset", { kind: "form", state, author: "you", adminToken: "..." });
+await prod.callTool("save_preset", { kind: "form", state }); // identity — заголовком (ToolContext), не аргументом
 
 const chrome = stdioPeer("npx", ["chrome-devtools-mcp@1.8.0", "--headless"]);
 await chrome.callTool("navigate_page", { pageId: 1, type: "url", url: "https://example.com" });
@@ -163,7 +180,7 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | `allowedHosts` | `createServer`, `options.allowedHosts` (только `"http"`) | `readonly string[]` | не задан — заголовок `Host` не проверяется |
 | `allowedOrigins` | `createServer`, `options.allowedOrigins` (только `"http"`) | `readonly string[]` | не задан — заголовок `Origin` не проверяется |
 | `instructions` | `createServer`, `options.instructions` | `string` | не задан |
-| `limit` | `paginate`, `options.limit` | `number` | `50` |
+| `limit` | `paginate`, `options.limit` | `number` | `20` |
 | `info` | `httpPeer`, второй аргумент | `{ name?, version? }` | `{name:"web-core-mcp-peer", version:"0.0.0"}` |
 | `env` | `stdioPeer`, третий аргумент (`StdioPeerOptions`, наравне с `name?`/`version?`) | `Record<string,string\|undefined>` | не задан — SDK сам даёт обрезанный безопасный набор (PATH/HOME/...), НЕ весь `process.env` |
 | `executablePath`/`headless`/`isolated`/`chromeArgs`/`version` | `createBrowser`, `options` | см. `BrowserOptions` | `headless/isolated: true`, `chromeArgs: ["--no-sandbox", "--disable-dev-shm-usage"]`, `version: "1.8.0"` |
@@ -185,6 +202,7 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | Host не в allowlist | `400`, транспорт не вызывается | `createServer` |
 | Origin не в allowlist | `400`, транспорт не вызывается | `createServer` |
 | Auth-хук отказал | `401`, транспорт не вызывается | `createServer` |
+| Порт занят (`listen()`, транспорт `http`) | промис `listen()` отклоняется понятной причиной (`EADDRINUSE` — «порт N уже занят»), не сырое необработанное исключение | `createServer` |
 | Страница листинга не последняя | `nextCursor` в ответе | `paginate` |
 | Страница листинга последняя | `nextCursor` отсутствует | `paginate` |
 
@@ -194,11 +212,12 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 
 | Функция | Принимает |
 |---|---|
-| `registerTool(server, definition)` | `ToolDefinition` (`name`, `title?`, `description`, `access`, `idempotent?`, `openWorld?`, `input?`, `output?`, `handler`) — `input`/`output` настоящие Zod-схемы |
+| `registerTool(server, definition)` | `ToolDefinition` (`name`, `title?`, `description`, `access`, `idempotent?`, `openWorld?`, `input?`, `output?`, `handler`) — `input`/`output` настоящие Zod-схемы, `handler` получает вторым (или единственным, без `input`) параметром `ToolContext` (`{headers, sessionId?}`) |
 | `ok(value?)` / `err(message)` | значение под `output`-схему тула / текст отказа |
 | `createServer(options)` | `{ name, version, instructions?, registerTools, transport?, auth?, host?, allowedHosts?, allowedOrigins? }` |
 | `server.listen(port?)` / `server.close()` | ничего / ничего |
 | `paginate(items, options)` | массив + `{ cursor?, limit? }` |
+| `limitSchema` | не функция — Zod-схема (`z.number().int().positive().max(100)`) для поля `limit` во входе тула |
 | `httpPeer(url, info?)` / `stdioPeer(command, args?, options?)` | адрес/команда чужого MCP-сервера (`options` — `{name?, version?, env?}`) |
 | `createBrowser(options?)` | `BrowserOptions` (все поля необязательны) |
 
@@ -216,7 +235,7 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 <h2 id="сборки">🏗️ Сборки</h2>
 
 ✅ Настоящий round-trip через MCP SDK, не имитация — каждая строка ниже доказана тестом
-(`vitest run`, 28/28 зелёных).
+(`vitest run`, 33/33 зелёных).
 
 | Проверено | Как | Результат |
 |---|---|---|
@@ -232,6 +251,9 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | Origin не в allowlist | `fetch` с несовпадающим заголовком `Origin` | `400`, тул не вызван |
 | Неизвестный `mcp-session-id` не строит сервер | `fetch` с выдуманным `mcp-session-id`, счётчик вызовов `registerTools` | `404`, счётчик остался `0` |
 | `instructions` доезжают клиенту | `client.getInstructions()` после `connect()` | совпадает с переданной строкой |
+| Порт занят — `listen()` отклоняется, не роняет процесс | два `createServer({transport:"http"})` на один порт подряд | второй `listen()` отклоняется понятной причиной, тестовый процесс жив |
+| `ToolContext.headers` доходит до хендлера (тул с `input`) | реальный клиент шлёт `X-User-Login`, хендлер читает `context.headers` | значение заголовка совпадает |
+| `ToolContext.headers` доходит до хендлера (тул БЕЗ `input`) | тот же тест, тул без `input`-схемы (другая ветка вызова у самой SDK) | значение заголовка совпадает |
 | Пагинация — полный обход | `paginate` в цикле по `nextCursor` до его исчезновения | ни одного пропуска/повтора элемента |
 | `httpPeer` — реальный тул на реальном сервере | `createServer({transport:"http"})` + `httpPeer(url).callTool(...)` | тот же ответ, что и у настоящего `Client` |
 | `httpPeer` — ленивое подключение | `httpPeer` на порт, где никто не слушает, без вызова `callTool` | конструктор не падает и не виснет |
@@ -241,6 +263,8 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | `stdioPeer` передаёт `env`, когда его дали явно | тот же тест, `stdioPeer(..., {env: process.env})` | значение переменной долетело неизменным |
 | `createBrowser` — реальный headless Chromium | `newPage`→`navigate`→`screenshot` на настоящем `chrome-devtools-mcp` | реальный PNG (`data:` URL, без сети) |
 | `createBrowser` — клик по элементу, не переход по URL | `newPage`→`navigate`→`snapshot` (найти `uid` реальной кнопки)→`click`→`snapshot` | текст страницы после клика меняется ровно так, как ждал обработчик клика |
+| `limitSchema` — реальный потолок в JSON Schema | `z.toJSONSchema(limitSchema)` | `{"maximum":100}`, не `Number.MAX_SAFE_INTEGER` |
+| `limitSchema` — отклоняет значение выше потолка | `limitSchema.safeParse(101)` vs `safeParse(100)` | первое `success:false`, второе `success:true` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

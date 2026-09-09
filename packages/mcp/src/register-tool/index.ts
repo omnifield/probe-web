@@ -1,8 +1,18 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AnySchema, SchemaOutput } from "@modelcontextprotocol/sdk/server/zod-compat.js";
-import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, IsomorphicHeaders, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 
 export type Access = "read" | "write" | "destructive";
+
+/**
+ * То, что реально пришло с запросом, помимо аргументов — заголовки транспорта (пусто на stdio,
+ * реальные на HTTP — `extra.requestInfo.headers` у SDK) и id сессии. НЕ весь `RequestHandlerExtra`
+ * SDK (там ещё signal/sendNotification/taskStore — служебное для транспорта, не для хендлера тула).
+ */
+export interface ToolContext {
+  readonly headers: IsomorphicHeaders;
+  readonly sessionId?: string;
+}
 
 export interface ToolDefinition<Input extends AnySchema | undefined = undefined> {
   readonly name: string;
@@ -14,8 +24,8 @@ export interface ToolDefinition<Input extends AnySchema | undefined = undefined>
   readonly input?: Input;
   readonly output?: AnySchema;
   readonly handler: Input extends AnySchema
-    ? (args: SchemaOutput<Input>) => CallToolResult | Promise<CallToolResult>
-    : () => CallToolResult | Promise<CallToolResult>;
+    ? (args: SchemaOutput<Input>, context: ToolContext) => CallToolResult | Promise<CallToolResult>
+    : (context: ToolContext) => CallToolResult | Promise<CallToolResult>;
 }
 
 type RawRegisterToolConfig = {
@@ -26,11 +36,23 @@ type RawRegisterToolConfig = {
   annotations?: ToolAnnotations;
 };
 
+// Форма ровно та, которую реально шлёт SDK (server/mcp.js's executeToolHandler): при наличии
+// inputSchema — handler(args, extra), без неё — handler(extra) ОДНИМ аргументом. Различать по
+// definition.input, не пытаться скрыть за одной сигнатурой — SDK сама так ветвится, не наша выдумка.
+interface RawExtra {
+  readonly requestInfo?: { readonly headers?: IsomorphicHeaders };
+  readonly sessionId?: string;
+}
+
 type RawRegisterTool = (
   name: string,
   config: RawRegisterToolConfig,
-  handler: (args: unknown) => CallToolResult | Promise<CallToolResult>,
+  handler: (a: unknown, b?: unknown) => CallToolResult | Promise<CallToolResult>,
 ) => unknown;
+
+function contextOf(extra: RawExtra): ToolContext {
+  return { headers: extra.requestInfo?.headers ?? {}, sessionId: extra.sessionId };
+}
 
 export function registerTool<Input extends AnySchema | undefined = undefined>(
   server: McpServer,
@@ -60,7 +82,16 @@ export function registerTool<Input extends AnySchema | undefined = undefined>(
       outputSchema: definition.output,
       annotations,
     },
-    (args: unknown) => (definition.handler as (args: unknown) => CallToolResult | Promise<CallToolResult>)(args),
+    definition.input
+      ? (args: unknown, extra?: unknown) =>
+          (definition.handler as (args: unknown, context: ToolContext) => CallToolResult | Promise<CallToolResult>)(
+            args,
+            contextOf((extra ?? {}) as RawExtra),
+          )
+      : (extra: unknown) =>
+          (definition.handler as (context: ToolContext) => CallToolResult | Promise<CallToolResult>)(
+            contextOf(extra as RawExtra),
+          ),
   );
 }
 

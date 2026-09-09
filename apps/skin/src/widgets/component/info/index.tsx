@@ -12,9 +12,5 @@ export function Info() {
     return component === undefined ? undefined : docsUrlOf(component);
   });
 
-  return (
-    <Surface>
-      <Docs url={url()} />
-    </Surface>
-  );
+  return <Docs url={url()} />;
 }

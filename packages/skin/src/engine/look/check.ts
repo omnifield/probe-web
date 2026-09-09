@@ -63,6 +63,7 @@ export function checkOutfit(outfit: Outfit, parts: LookParts, lookup: PassportLo
           `palette "${palette.name}" did not close the vocabulary: ${missing.length} role(s) not ` +
           `set — ${summarizeByFamily(missing)}. A form written for a different palette would ` +
           "silently lose part of its values on this one",
+        missing,
       });
     }
   }

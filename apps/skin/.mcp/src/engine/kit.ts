@@ -55,30 +55,56 @@ export function listComponents(filter: ComponentFilter = {}) {
     );
 }
 
+/** Паспорт компонента — ровно то, что называет имя тула, ничего сверх: не анатомия (дублирует
+ * parts[].name), не сборки, не io, не editor-слайс (тот уже есть в listComponents). */
 export function getPassport(component: string) {
   const passport = PASSPORTS[component];
   if (!passport) return undefined;
 
-  const editor = EDITOR_INFOS[component];
-  const io = IO[component];
-
   return {
     component,
-    passport: {
-      root: passport.root,
-      anatomyKeys: passport.anatomy.keys(),
-      parts: passport.parts,
-      variantAxis: passport.variantAxis,
-      settings: passport.settings,
-      selfAssembly: passport.selfAssembly,
-    },
-    editor,
-    io: io
-      ? {
-          input: io.input ? z.toJSONSchema(io.input) : undefined,
-          output: io.output ? z.toJSONSchema(io.output) : undefined,
-        }
-      : undefined,
+    root: passport.root,
+    parts: passport.parts,
+    variantAxis: passport.variantAxis,
+    settings: passport.settings,
+    selfAssembly: passport.selfAssembly,
+  };
+}
+
+export interface AssemblyCard {
+  readonly name: string;
+  readonly means: string;
+}
+
+/** Список сборок компонента — карточка (дёшево), не полное дерево. `undefined` — компонента нет. */
+export function getAssemblies(component: string): readonly AssemblyCard[] | undefined {
+  if (!PASSPORTS[component]) return undefined;
+  return (EDITOR_INFOS[component]?.assemblies ?? []).map((assembly) => ({
+    name: assembly.name,
+    means: assembly.means,
+  }));
+}
+
+export type GetAssemblyResult =
+  | { readonly ok: true; readonly assembly: unknown }
+  | { readonly ok: false; readonly reason: "unknown-component" | "unknown-assembly" };
+
+/** Полное дерево ОДНОЙ сборки по имени — дорого, по запросу, не в списке. */
+export function getAssembly(component: string, name: string): GetAssemblyResult {
+  if (!PASSPORTS[component]) return { ok: false, reason: "unknown-component" };
+
+  const assembly = EDITOR_INFOS[component]?.assemblies.find((candidate) => candidate.name === name);
+  return assembly ? { ok: true, assembly } : { ok: false, reason: "unknown-assembly" };
+}
+
+/** io-схема компонента — своя сущность, не часть паспорта. `undefined` — компонента нет. */
+export function getIoSchema(component: string) {
+  if (!PASSPORTS[component]) return undefined;
+
+  const io = IO[component];
+  return {
+    input: io?.input ? z.toJSONSchema(io.input) : undefined,
+    output: io?.output ? z.toJSONSchema(io.output) : undefined,
   };
 }
 

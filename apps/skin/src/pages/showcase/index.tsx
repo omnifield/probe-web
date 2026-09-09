@@ -12,12 +12,6 @@ import {
 } from "#/entities/component";
 import { Slot } from "#/entities/showcase";
 
-// ВРЕМЕННЫЙ ФИЛЬТР (тот же приём, что `entities/component/model/list.ts`) — витрина показывает
-// только доведённые компоненты, у остальных пока "не доступно". Список пуст → все отключены;
-// готов скин — имя добавляется сюда одной строкой. Убрать вместе с фильтром списка, когда
-// доведены все.
-const ENABLED: readonly string[] = ["button"];
-
 export function ShowcasePage(props: { component: string; tag?: string }) {
   createEffect(() => setCurrentComponent(props.component));
 
@@ -32,8 +26,6 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
   );
   const tagGroups = createMemo(() => component.info()?.skin?.tags ?? []);
 
-  const available = createMemo(() => ENABLED.includes(props.component));
-
   function onDispatch(event: DispatchedEvent) {
     component.recordEvent(event);
     // event.timestamp — ISO-строка (`new Date().toISOString()`), формат уже несёт всё — берём
@@ -46,23 +38,21 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
   }
 
   return (
-    <Show when={available()} fallback={<p>не доступно</p>}>
-      <Flow data-variant="column-center">
-        <For each={tagGroups()}>
-          {(tag) => (
-            <FlowItem style={layoutSelf({ align: "stretch" })}>
-              <Slot
-                component={props.component}
-                assemblies={assemblies()}
-                tag={tag.tag}
-                variants={tag.variants}
-                data={data()}
-                dispatch={onDispatch}
-              />
-            </FlowItem>
-          )}
-        </For>
-      </Flow>
-    </Show>
+    <Flow data-variant="column-center">
+      <For each={tagGroups()}>
+        {(tag) => (
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            <Slot
+              component={props.component}
+              assemblies={assemblies()}
+              tag={tag.tag}
+              variants={tag.variants}
+              data={data()}
+              dispatch={onDispatch}
+            />
+          </FlowItem>
+        )}
+      </For>
+    </Flow>
   );
 }

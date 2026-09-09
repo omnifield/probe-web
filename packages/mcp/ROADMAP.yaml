@@ -67,6 +67,51 @@ categories:
           решения (HTTP + auth-мидлварь), не буквальной настройки транспорта (тот Stateless: true
           — другой SDK, другого вендора, не совпадает).
 
+      - id: listen-error-handling
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "listen() ловит ошибку старта HTTP-сервера явно, не валит процесс сырым исключением"
+        description: |
+          Означает: `server.once("error", cause => reject(...))` рядом с `server.listen(port, host,
+          resolve)` — без этого ошибка старта (порт занят) была необработанным событием
+          `EventEmitter`, Node валил весь процесс сырым стектрейсом, а промис `listen()` не
+          резолвился и не отклонялся, просто зависал. Теперь `await server.listen(port)` либо
+          резолвится, либо отклоняется понятной причиной («MCP HTTP-транспорт не смог подняться на
+          HOST:PORT — порт N уже занят другим процессом»).
+          Причина: найдено живьём — `apps/skin/.mcp` в реальном dev-контейнере падал `EADDRINUSE`
+          на каждом старте `pnpm run serve`, порт по умолчанию (`3000`) был занят сторонней
+          инфраструктурой контейнера, не web-core.
+          Проверено тестом: два `createServer({transport:"http"})` на один порт подряд — второй
+          `listen()` отклоняется этим сообщением, не роняет тестовый процесс. 29/29 (было 28).
+
+      - id: tool-handler-request-context
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "registerTool прокидывает ToolContext (заголовки, sessionId) — раньше терялся вторым аргументом"
+        description: |
+          Означает: хендлер тула теперь получает `ToolContext` (`{headers, sessionId?}`) — вторым
+          параметром у тулов с `input`, единственным — у тулов без него (та же вилка, которой сама
+          SDK зовёт хендлер: `server/mcp.js`'s `executeToolHandler`, `handler(args, extra)` при
+          `inputSchema`, `handler(extra)` без неё). `headers` — реальные HTTP-заголовки запроса
+          (`extra.requestInfo.headers` SDK, пусто на stdio), не весь `RequestHandlerExtra` SDK
+          (там ещё `signal`/`sendNotification`/`taskStore` — служебное для транспорта, не для
+          автора тула).
+          Причина: НАШ баг, не ограничение MCP — `RawRegisterTool`'s хендлер был типизирован как
+          `(args: unknown) => ...`, ОДИН параметр, `server.registerTool.bind(server) as unknown as
+          RawRegisterTool` кастом прятал урезку: SDK реально зовёт хендлер с `extra` (несёт
+          `requestInfo.headers` на КАЖДЫЙ вызов, не только `initialize`) — обёртка его отбрасывала.
+          Найдено живой заявкой внешнего агента, которому нужен был способ доказать серверу, чей
+          запрос — заголовком `X-User-Login`, не аргументом тула (аргумент агент печатает сам,
+          заголовок — нет, транспортом управляет платформа перед ним). Реакция на реплику user
+          «подцепить хедеры — самая тривиальная задача, что не так с архитектурой» — оказалось, не
+          с архитектурой MCP, а с нашей же обёрткой; починено на месте, не обойдено сбоку.
+          Проверено тестом на реальном HTTP (оба ветвления — тул с `input` и без): клиентский
+          заголовок `X-User-Login` доходит до хендлера неизменным. 31/31 (было 29).
+
   - category: Листинги
     items:
       - id: cursor-pagination
@@ -79,6 +124,63 @@ categories:
           Означает: любой list_x-тул (list_presets в skin-mcp, будущие list_x в других зонах)
           отдаёт страницу с nextCursor, а не весь список разом — сегодня list_presets в
           apps/skin/.mcp отдаёт всё по виду без лимита.
+
+      - id: bounded-limit-schema
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "limitSchema — общий потолок поля limit, не language max в JSON Schema"
+        description: |
+          Означает: `z.number().int().positive()` без верхней границы печатает в JSON Schema
+          предельное целое языка (`9007199254740991`) — не бизнес-правило, а утечка типа.
+          `limitSchema` (`max(100)`) — общая экспортируемая схема рядом с `paginate()`, не
+          переизобретается в каждой ручке каждой зоны. `@web-core/io` стала настоящей (не dev-)
+          зависимостью пакета — `z` теперь используется в исходнике, не только в тестах.
+          Причина: живая заявка на `apps/skin/.mcp` — то же число повторялось в описании ЧЕТЫРЁХ
+          разных ручек (`list_components`/`list_presets`/`list_feedback`/`list_content`), каждая
+          сама набирала себе схему `limit` с нуля.
+          Проверено тестом: `z.toJSONSchema(limitSchema).maximum === 100`, не
+          `Number.MAX_SAFE_INTEGER`; `safeParse(101)` отказывает, `safeParse(100)` проходит.
+
+      - id: default-limit-lowered
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "paginate()'s DEFAULT_LIMIT 50 → 20 — потолок был выше любого реального набора"
+        description: |
+          Означает: `paginate(items)` без явного `limit` режет на 20, не на 50. Затрагивает КАЖДЫЙ
+          list_x любой зоны, который не передаёт свой `limit`.
+          Причина: живая заявка на `apps/skin/.mcp` — точечная правка одной ветки (`list_presets`
+          без `kind`, свой `OVERVIEW_LIMIT`) оставила СОСЕДНИЕ вызовы того же общего `paginate()`
+          дырявыми: `list_components()` (35 записей) и `list_presets(kind:"form")` (28 записей) оба
+          отдавали всё целиком без `nextCursor`, потому что 50 не было пройдено НИ НА ОДНОМ реальном
+          наборе во всей зоне — default был мёртвым правилом везде, не только там, где заметили
+          первым. «Закрыть это правилом, а не точечно»: правка одна, в общем движке, не по ручке.
+          20 — планка ниже обоих известных счётчиков (28, 35), проверяема прямо сейчас.
+          Проверено тестом: набор из 25 элементов без `limit` — 20 в странице, `nextCursor` есть.
+          34/34 (было 33).
+
+      - id: transport-test-port-race
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "transport.test.ts — гонка порта между соседними тестами, найдена не по этой правке"
+        description: |
+          Означает: два теста на заголовки (`ToolContext`) в конце `transport.test.ts` получили
+          свои номера портов (`PORT+1`, `PORT+2`), не общий `PORT` с остальными десятью тестами
+          файла — `server.close()` не гарантирует, что предыдущий сервер полностью освободил порт
+          к моменту, когда следующий тест того же файла начинает `listen()` на ТОМ ЖЕ числе.
+          Причина: обнаружено СЛУЧАЙНО при добавлении bounded-limit-schema — правка в СОСЕДНЕМ
+          файле (`pagination.test.ts`) не должна была задеть `transport.test.ts`, но полный прогон
+          пакета внезапно словил `SocketError: other side closed` именно там, стабильно. Изолировано
+          проверкой: тест отдельно (`vitest run transport.test.ts -t "no input"`) — зелёный; весь
+          файл целиком — падает на этом же тесте 3 раза подряд. Гонка была латентной с самого
+          добавления этих двух тестов, просто раньше не всплывала на конкретном порядке выполнения.
+          Проверено: 3 прогона всего пакета подряд после починки, без единого падения. 33/33 (было
+          31, плюс 2 теста limitSchema).
 
   - category: Документация
     items:

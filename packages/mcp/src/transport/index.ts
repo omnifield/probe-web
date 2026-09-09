@@ -54,10 +54,22 @@ export function createServer(options: CreateServerOptions): ZoneServer {
       return;
     }
 
-    await new Promise<void>((resolve) => {
-      httpServer = createHttpServer((req, res) => {
+    await new Promise<void>((resolve, reject) => {
+      const server = createHttpServer((req, res) => {
         void handle(req, res);
-      }).listen(port, host, resolve);
+      });
+      httpServer = server;
+
+      // Без этого слушателя ошибка старта (порт занят и т.п.) — необработанное событие EventEmitter:
+      // Node валит весь процесс сырым стектрейсом, а listen() зависает, ничего не решив. once — сюда
+      // же прилетело бы и после успешного старта событие 'error' у уже слушающего сервера, но тогда
+      // reject() на уже подтверждённый (через resolve) промис — просто no-op, второй раз он не сработает.
+      server.once("error", (cause: NodeJS.ErrnoException) => {
+        const why = cause.code === "EADDRINUSE" ? `порт ${port} уже занят другим процессом` : cause.message;
+        reject(new Error(`MCP HTTP-транспорт не смог подняться на ${host}:${port} — ${why}`, { cause }));
+      });
+
+      server.listen(port, host, resolve);
 
       async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
         try {

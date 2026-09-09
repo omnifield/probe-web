@@ -26,8 +26,7 @@
     "@web-core/style": "workspace:*",
     "@web-core/ui": "workspace:*",
     "@tanstack/solid-router": "^1.170.30",
-    "solid-js": "^1.9.14",
-    "zocker": "^3.0.0"
+    "solid-js": "^1.9.14"
   },
   "devDependencies": {
     "@web-core/build": "workspace:*",

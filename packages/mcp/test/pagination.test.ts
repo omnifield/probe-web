@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { paginate } from "../src/pagination";
+import { z } from "@web-core/io";
+import { limitSchema, paginate } from "../src/pagination";
 
 describe("paginate", () => {
   const items = Array.from({ length: 5 }, (_, i) => i);
@@ -32,9 +33,29 @@ describe("paginate", () => {
     expect(page.items).toEqual([0, 1]);
   });
 
-  it("defaults to a limit of 50 when none is given", () => {
+  it("defaults to a limit of 20 when none is given", () => {
     const page = paginate(items);
     expect(page.items).toEqual(items);
     expect(page.nextCursor).toBeUndefined();
+  });
+
+  it("the default actually bites on a set bigger than the default", () => {
+    const big = Array.from({ length: 25 }, (_, i) => i);
+    const page = paginate(big);
+    expect(page.items).toHaveLength(20);
+    expect(page.nextCursor).toBeDefined();
+  });
+});
+
+describe("limitSchema", () => {
+  it("prints a real ceiling in JSON Schema, not the language's max safe integer", () => {
+    const jsonSchema = z.toJSONSchema(limitSchema) as { maximum?: number };
+    expect(jsonSchema.maximum).toBe(100);
+    expect(jsonSchema.maximum).not.toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  it("rejects a value above the ceiling", () => {
+    expect(limitSchema.safeParse(101).success).toBe(false);
+    expect(limitSchema.safeParse(100).success).toBe(true);
   });
 });
