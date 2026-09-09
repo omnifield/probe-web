@@ -1,15 +1,12 @@
 import { z } from "@web-core/io";
+import { fields } from "../../shared/data/fields.js";
 
-const item = z.object({ value: z.string(), label: z.string() });
-
-const section = z.object({
-  id: z.string(),
-  title: z.string(),
-  items: z.array(item).optional(),
+const item = z.object({
+  ...fields.item,
   activeValues: z.array(z.string()).optional(),
 });
 
-export const input = z.object({ sections: z.array(section) });
+export const input = z.object({ items: z.array(item) });
 
 export const output = z.object({ value: z.array(z.string()) });
 

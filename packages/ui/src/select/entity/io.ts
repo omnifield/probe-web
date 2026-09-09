@@ -1,9 +1,7 @@
 import { z } from "@web-core/io";
+import { fields } from "../../shared/data/fields.js";
 
-const item = z.object({
-  value: z.string(),
-  label: z.string(),
-});
+const item = z.object({ ...fields.item });
 
 export const input = z.object({
   label: z.string(),

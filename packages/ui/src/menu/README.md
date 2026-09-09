@@ -106,9 +106,21 @@ positioner
 
 <h2 id="io">🔌 IO</h2>
 
-У меню нет входа/выхода — состав пунктов и текст на них структурные, не данные: меню собирается
-руками (JSX-композицией или сборкой), а не заполняется по JSON-схеме, та же категория, что у
-диалога/поповера.
+Только для плоского списка (сборка `list`) — канонический `item` (`value`/`label`, как у всех
+остальных компонентов кита со списком), без вложенных `children`. Группы, разделители, чекбоксные и
+радио-пункты, подменю по-прежнему собираются руками (JSX-композицией или статической сборкой
+`basic`), не по JSON-схеме — та же категория, что у диалога/поповера, канон их пока не покрывает.
+
+```json
+{ "items": [{ "value": "string", "label": "string" }] }
+```
+
+```tsx
+const onDispatch = (event: DispatchedEvent) => {
+  // Клик по пункту, возвращает данные пункта целиком.
+  // event.context.payload = { value: "rename", label: "Переименовать" }
+};
+```
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -142,6 +154,17 @@ positioner
 `providerProps: { defaultOpen: true }` — монтирование `positioner` нуждается в невидимом контексте
 `Menu` вокруг себя (провайдер кита, `components/index.ts`); `defaultOpen` делает плавающую половину
 видимой без настоящего клика по `trigger`, которого эта сборка не содержит вовсе.
+
+<h3 id="сборка-list">🧱 list</h3>
+
+Плоский список пунктов из данных — без групп/разделителей/подменю, те собираются вручную.
+
+```
+positioner
+  content 📋
+    item[]  · repeat: /items · bind: value · on: click → select
+      itemText · text: {label}
+```
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
@@ -193,6 +216,15 @@ positioner
 const tree = instanceOf("menu", { defaultOpen: true }, "basic", {});
 
 <RenderTree tree={tree} registry={registry} data={{}} />;
+```
+
+**Рендер через движок, из данных** — сборка `list`, плоский список без ручной JSX-композиции.
+
+```tsx
+const data = { items: [{ value: "rename", label: "Переименовать" }] };
+const tree = instanceOf("menu", { defaultOpen: true }, "list", data);
+
+<RenderTree tree={tree} registry={registry} data={data} />;
 ```
 
 **Чекбоксные пункты.**

@@ -59,7 +59,7 @@ root
 **Рендер через движок** — та же композиция, но по схеме (сборка `base`), которую рисует `RenderTree`.
 
 ```tsx
-const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const data = { items: [{ value: "shipping", label: "Shipping" }] };
 const tree = instanceOf("accordion", {}, "base", data);
 
 <RenderTree tree={tree} registry={registry} data={data} />;
@@ -69,7 +69,7 @@ const tree = instanceOf("accordion", {}, "base", data);
 `content` подменён живым компонентом из кода, а не тем, что объявлено в схеме.
 
 ```tsx
-const data = { sections: [{ id: "shipping", title: "Shipping" }] };
+const data = { items: [{ value: "shipping", label: "Shipping" }] };
 const tree = instanceOf("accordion", {}, "base", data);
 
 <RenderTree
@@ -131,19 +131,21 @@ const [value, setValue] = createSignal<string[]>(["shipping"]);
 
 <h2 id="io">🔌 IO</h2>
 
-Собранный по схеме аккордеон ждёт список секций с заголовком и, если нужно, вложенным списком
-пунктов — обычный сценарий FAQ или настроек с подпунктами. Сам он ничего не решает и никуда
-данные не отправляет — только сообщает, по какой секции кликнули, целиком, тем, кто слушает.
+Собранный по схеме аккордеон ждёт список секций (канонический `item` — `value`/`label`/
+`children?`, как и у всех остальных компонентов кита, работающих со списком) и, если нужно,
+вложенным списком пунктов — обычный сценарий FAQ или настроек с подпунктами. Сам он ничего не
+решает и никуда данные не отправляет — только сообщает, по какой секции кликнули, целиком, тем,
+кто слушает.
 
 <h3 id="io-вход">📥 Вход</h3>
 
 ```json
 {
-  "sections": [
+  "items": [
     {
-      "id": "string",
-      "title": "string",
-      "items": [{ "value": "string", "label": "string" }],
+      "value": "string",
+      "label": "string",
+      "children": [{ "value": "string", "label": "string" }],
       "activeValues": ["string"]
     }
   ]
@@ -154,8 +156,8 @@ const [value, setValue] = createSignal<string[]>(["shipping"]);
 
 ```tsx
 const onDispatch = (event: DispatchedEvent) => {
-  // Клик по кнопке раздела, возвращает данные раздела целиком, кроме вложенных items.
-  // event.context.payload = { id: "a", title: "Alpha" }
+  // Клик по кнопке раздела, возвращает данные раздела целиком, кроме вложенных children.
+  // event.context.payload = { value: "a", label: "Alpha" }
 };
 
 <RenderTree
@@ -177,9 +179,9 @@ const onDispatch = (event: DispatchedEvent) => {
 
 ```
 root
-  item[]              · repeat: /sections · bind: value
+  item[]              · repeat: /items · bind: value
     control ▶️         · on: click → triggerClick
-      🏷️ text: {title}
+      🏷️ text: {label}
       controlIndicator 🔽
     content 📂         · bind: variant
 ```
@@ -188,14 +190,14 @@ root
 
 ```
 root
-  item[]              · repeat: /sections · bind: value
+  item[]              · repeat: /items · bind: value
     control ▶️         · on: click → triggerClick
-      🏷️ text: {title}
+      🏷️ text: {label}
       controlIndicator 🔽
     content 📂
-      listbox           · bind: items, value
+      listbox           · bind: items ← children, value ← activeValues
         listbox.content
-          listbox.item[] · repeat: items · bind: item · on: click → select
+          listbox.item[] · repeat: children · bind: item · on: click → select
             listbox.itemText
               🏷️ text: {label}
             listbox.itemIndicator
