@@ -1,6 +1,64 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
 import type { Form, Palette } from "@web-core/skin/model";
 
-const BASE = process.env["SKIN_MCP_PRESETS_URL"] ?? "http://127.0.0.1:8787/api/presets";
+/** Путь ручки у службы — держит сам бэк константой (`root` в
+ *  `backend/presets/internal/api/handler.go`). Не настройка. */
+const API_PATH = "/api/presets";
+
+/** Служба на этой же машине — когда снаружи не сказано ничего. */
+const LOCAL = "http://127.0.0.1:8787";
+
+/** Корень воркспейса по маркеру, вверх от места запуска. Тот же приём и тот же довод, что в
+ *  `packages/build` (`vite/app.ts`): считать `../..` от файла нельзя — пакет резолвится
+ *  симлинком, а сервер запускают из разных папок. */
+function workspaceRoot(from: string = process.cwd()): string | undefined {
+  let dir = resolve(from);
+
+  for (;;) {
+    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+
+    const up = dirname(dir);
+    if (up === dir) return undefined;
+    dir = up;
+  }
+}
+
+/** Подтягивает корневой `.env` воркспейса в `process.env`.
+ *
+ *  Фронту его читает Vite, а этот сервер — отдельный процесс, до него Vite не дотягивается: без
+ *  этого шага витрина уже ходила бы на стенд, а MCP молча остался бы на службе своей машины, и
+ *  агент правил бы НЕ ТЕ пресеты, которые человек видит в браузере. Файла нет — не беда, дальше
+ *  работают умолчания. Заданное в окружении сильнее файла: так стенд переопределяют на одну
+ *  команду, не трогая общий файл. */
+function loadWorkspaceEnv(): void {
+  const root = workspaceRoot();
+  if (root === undefined) return;
+
+  const file = resolve(root, ".env");
+  if (!existsSync(file)) return;
+
+  try {
+    process.loadEnvFile(file);
+  } catch {
+    // Нечитаемый или битый файл — не повод не подняться: адрес возьмётся из умолчаний.
+  }
+}
+
+loadWorkspaceEnv();
+
+/** Адрес службы. `SKIN_MCP_PRESETS_URL` — ручка именно этого процесса, `PRESETS_URL` — общий
+ *  адрес воркспейса из корневого `.env`, тот же, что читает витрина. Путь дописываем сами, если
+ *  дали только адрес службы: в `.env` естественно записать `https://host:port`. */
+function resolveBase(): string {
+  const given = process.env["SKIN_MCP_PRESETS_URL"] ?? process.env["PRESETS_URL"];
+  const base = (given ?? "").trim().replace(/\/+$/, "") || LOCAL;
+
+  return base.endsWith(API_PATH) ? base : base + API_PATH;
+}
+
+const BASE = resolveBase();
 
 export class StoreRefused extends Error {}
 export class StoreDown extends Error {}
