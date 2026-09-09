@@ -22,11 +22,18 @@
     },
     "chrome-devtools": {
       "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp@latest", "--executablePath", "/usr/bin/chromium", "--chromeArg=--no-sandbox"]
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--executablePath",
+        "/usr/bin/chromium",
+        "--chromeArg=--no-sandbox"
+      ]
     },
     "skin": {
       "type": "http",
-      "url": "http://127.0.0.1:8788/mcp"
+      "url": "http://127.0.0.1:8788/mcp",
+      "headers": { "X-User-Login": "Egor Raybul" }
     }
   }
 }

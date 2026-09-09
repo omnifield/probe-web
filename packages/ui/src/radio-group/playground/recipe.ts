@@ -100,7 +100,7 @@ export const recipe: SlotRecipe = {
     indicator: {
       props: {
         position: "absolute",
-        left: "calc(var(--left) + (var(--width) - " + dotSize + ") / 2)",
+        left: "calc(var(--left) + (var(--control-height-sm) - " + dotSize + ") / 2)",
         top: "calc(var(--top) + (var(--height) - " + dotSize + ") / 2)",
         width: dotSize,
         height: dotSize,
