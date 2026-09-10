@@ -144,6 +144,172 @@ categories:
           Означает: list/get/save/replace/remove по палитре/форме/наряду/сборке одним клиентом;
           имя — довод операции, не поле содержимого (у сборки своего имени нет).
 
+      - id: client-graphql-transport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createPresetsClient — REST → GraphQL внутри, PresetsClient/PresetRecord<T> наружу без изменений"
+        description: |
+          Backend/presets REST удалён (`internal/api`, см. `backend/presets/ROADMAP.yaml`) — этот
+          клиент сейчас ходит в никуда. Чинится ЗДЕСЬ и только здесь: `packages/ui/src/
+          component-info.ts` (`createComponentInfo`) и `./source.ts` (`createPresetsSkinSource`,
+          рантайм `wear`) стоят целиком на публичном интерфейсе `PresetsClient` — ничего не знают
+          про REST/`?kind=` под ним. Сохрани форму — `PresetRecord<T>` (`{id, label, name, state}`)
+          и сигнатуры `list`/`get`/`save`/`replace`/`remove` — и обе зоны получат фикс бесплатно,
+          без своей правки. Это НЕ рефакторинг ради чистоты — старый клиент уже сломан против
+          нового бэка.
+
+          По шагам:
+
+          1. `options.url` — теперь адрес `/graphql` целиком (тот же, что `apps/skin`'s
+             `shared/api/presets` резолвит для `PRESETS_URL`), не REST-`{base}` для `?kind=`/`/id`.
+             Транспорт — `graphqlRequest`/`gql` из `@web-core/query/graphql` (пакет уже готов,
+             `packages/query/ROADMAP.yaml`'s `graphql-subpath-no-second-cache`).
+
+          2. `wireList`+`wireRead` (индекс + N GET, тот самый N+1 из `finding-n-plus-one` в
+             корневом ROADMAP.yaml) выкидываются целиком. `list(kind)` — ОДИН GraphQL-запрos:
+             `{ presets(kind: $kind) { id label name savedAt ... on Form { component recipe
+             keyframes variantTags author } ... on Outfit { palette { name } forms { name } tags
+             { name } overrides author } ... }}` (фрагмент по нужному типу — kind уже известен
+             вызывающему, схема — `backend/presets/internal/graphql/schema.graphql`).
+
+          3. Ответ конвертируется в СЕГОДНЯШНИЙ `PresetRecord<T>` — `state` собирается из полей
+             фрагмента ОДИН В ОДИН с `packages/skin/src/engine/look/types.ts`: для `Outfit`
+             — `state.palette = palette?.name`, `state.forms = forms.map(f => f.name)`,
+             `state.tags = tags.map(t => t.name)` (связи GraphQL резолвятся в объекты, канон
+             `Outfit` хочет строки имён — переходник именно здесь, не выше). Потребитель не должен
+             отличить старый ответ от нового ни по одному полю.
+
+          4. `get(kind, name)` — тот же список, фильтр по `name` на клиенте (схема не даёт
+             get-by-name, только `preset(id)` — не регрессия, `finding-n-plus-one` уже описывал
+             это как "два обращения там, где по смыслу одно", осталось так же, поменялся транспорт).
+
+          5. `save`/`replace`/`remove` — мутации `createPreset`/`replacePreset`/`deletePreset`.
+             `replace` найдёт id тем же списком, потом ОДНА атомарная `replacePreset(id, ...)` —
+             попутно чинит корректность, не только скорость: раньше `replace` был DELETE+POST
+             (`finding-n-plus-one` #2), гонка между ними реально могла потерять запись, новая
+             мутация атомарна на бэке (`store.Replace`, одна bbolt-транзакция).
+
+          6. `wire.ts`'s `ask`/`PresetsRefused`/`PresetsDown` — контракт (два класса отказа)
+             сохраняется, `source.ts`'s `@throws` на них уже завязан. Разбор ошибок GraphQL другой:
+             сетевой обрыв/5xx → `PresetsDown` как и было; `errors` в теле 200-ответа (занятое
+             имя, неизвестный kind, кривой конверт) → `PresetsRefused`. `ClientError` от
+             `graphql-request` (уже реэкспортирован `@web-core/query/graphql`) — источник, из
+             которого этот разбор строится, не факт, что 1-в-1 по коду ошибки, сверить нужно
+             живьём, не угадывать по типам.
+
+          7. НЕ делать в этом заходе: сводить `list("form")`+`list("outfit")` из `componentInfo` в
+             один алиасированный запрос (`forms: presets(kind:"form"){...} outfits: presets(kind:
+             "outfit"){...}` — GraphQL это позволяет одним HTTP-вызовом) — заметная, но отдельная
+             оптимизация ПОВЕРХ этого фикса, не блокирует его, и трогает `packages/ui`, а не только
+             эту зону. Не добавлять `PRESET_KIND.tag` — этим клиентом сегодня никто его не зовёт,
+             заводить видом "на будущее" незачем.
+
+             УСЛОВИЕ ИЗМЕНИЛОСЬ (2026-09-09): `apps/skin/.mcp` собирается перейти на этот клиент
+             (см. `apps/skin/.mcp/ROADMAP.yaml`'s `store-client-dedup`) и реально зовёт `kind:"tag"`
+             — см. `tag-kind-support` ниже.
+
+          8. Тесты — тем же приёмом, что `batching_test.go` в бэке: не верить чтению кода, гонять
+             `list`/`get`/`save`/`replace`/`remove` против ЛИБО настоящего дев-бэка, ЛИБО мока
+             `fetch` с реальной формой ответа GraphQL (`{data: {...}}`), и сверять, что
+             `componentInfo`/`source.ts` на выходе видят ТУ ЖЕ форму `PresetRecord<T>`, что и
+             раньше — не только что запрос ушёл.
+
+      - id: tag-kind-support
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createPresetsClient — добавить `tag`, реальный потребитель появился"
+        description: |
+          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (см. `store-client-dedup`
+          в `apps/skin/.mcp/ROADMAP.yaml`): та зона хранит словари тегов как обычный пресет
+          (`kind:"tag"` — валидный вариант в её `shared.ts`'s `KIND`-enum, реально зовётся
+          `save_preset`/`list_presets`/`get_preset`). `client-graphql-transport` сознательно НЕ
+          завёл `tag` — на тот момент клиентом никто его не звал. Теперь звёт.
+
+          Три места, зеркально тому, что уже сделано для остальных пяти видов:
+          1. `PRESET_KIND.tag = "tag"` + запись в `PresetKindState`.
+          2. `LIST_QUERY` — фрагмент `... on Tag { tagLabel author }` (схема —
+             `backend/presets/internal/graphql/schema.graphql`, поле называется `tagLabel`, НЕ
+             `label` — тот верхнеуровневый у `Preset`, разные значения на живой записи).
+          3. `toState()` — ветка `kind === "tag"`, форма `{ name, label: tagLabel, author }` (не
+             падать в `content`-ветку по умолчанию, как сегодня).
+
+          Канона TS для `Tag` в `src/engine/look/types.ts` НЕТ (см. `internal/kinds/tag.go`'s
+          комментарий на бэке — форма взята с живой записи, не с кода, которого не было). Значит
+          здесь тот же вопрос, что уже решали для `author`/`tags` у остальных видов: заводить
+          интерфейс `Tag` в каноне (`{name, label?, author?}`) или оставить тип inline в
+          `client.ts`, раз канона для него никогда не было и другие модули его не импортируют.
+          Решать по факту, не гадать — что реально нужно `checkTags`/`resolveTags`
+          (`packages/skin/src/tags`), которые с этим видом соседствуют.
+
+      - id: record-envelope-kind-and-saved-at
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "PresetRecord<T> — добавить kind/savedAt, реальный потребитель их теряет"
+        description: |
+          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (тот же заход, что
+          `tag-kind-support`, следующий слой того же аудита). `PresetRecord<T>` сегодня —
+          `{id, label, name, state}`. Схема (`Preset`-интерфейс) несёт `kind`/`savedAt` тоже, но
+          `LIST_QUERY` их не запрашивает, а три мутации (`CREATE_MUTATION`/`REPLACE_MUTATION`)
+          запрашивают только `{id label name}` — оба поля терялись уже в `client-graphql-transport`
+          для `componentInfo`/`source.ts`, просто там их никто не читал, поэтому пропало незаметно.
+
+          `apps/skin/.mcp` их читает: `get_preset`/`list_presets(kind)`/`get_content` сегодня
+          отдают агенту `kind`+`savedAt` (старый `store.read()` тащил их с бэка), `save_preset`
+          тоже показывает их в ответе. Прямой переход на этот клиент молча срежет оба поля из
+          того, что видит агент — не потому что кто-то решил, а потому что клиент их не просил у
+          схемы.
+
+          Фикс — тем же приёмом, что `tag`, аддитивно, старым потребителям всё равно:
+          1. `PresetRecord<T>` — `+kind: PresetKind`, `+savedAt: string`.
+          2. `LIST_QUERY` — `savedAt`/`kind` рядом с сегодняшними `id label name` верхнего уровня
+             (уже есть в схеме на `Preset`, ничего не менять на бэке).
+          3. `toRecord()` — прокинуть оба поля из `WirePreset` в `PresetRecord`.
+          4. `CREATE_MUTATION`/`REPLACE_MUTATION` — та же пара полей в selection set рядом с
+             `id label name`; `save()`/`replace()` берут `kind`/`savedAt` из ОТВЕТА мутации, не
+             реконструируют сами (мутация возвращает реальный `Preset`, значения оттуда, не из
+             аргументов вызова — `savedAt`, например, ставит бэк, а не клиент).
+
+          `DELETE_MUTATION`/`remove()` не трогать — там нет записи на выходе, нечего возвращать.
+
+      - id: canon-missing-author-and-tags
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "author и Outfit.tags — реально пишутся, но не объявлены в TS-канона видов"
+        description: |
+          Найдено овнером backend/presets (2026-09-09) при сверке плана типизации службы с тем, что
+          реально лежит в проде — до́лжно быть починено ЗДЕСЬ, ПЕРЕД тем как backend заведёт
+          Go-структуры один-в-один по этим интерфейсам (см. `canon-drift-author-tags-assembly` в
+          `backend/presets/ROADMAP.yaml` — типизированная валидация на запись иначе начнёт бить
+          существующие живые записи, у которых эти поля реально есть).
+
+          Два расхождения в `src/engine/look/types.ts`:
+          1. `author` — сквозной атрибут владения (см. `authorGuard`,
+             `apps/skin/.mcp/src/tools/shared.ts`). MCP подмешивает его в `state` ЛЮБОГО вида при
+             сохранении (`{...state, author}`), но явно объявлен только в `ContentState`
+             (`apps/skin/.mcp/src/tools/shared.ts`) — `Palette`, `Form`, `Outfit`,
+             `ComponentAssembly` о нём молчат, хотя реальные записи (проверено живьём: `tag/status`)
+             несут `{name, label, author}`.
+          2. `Outfit.tags` — MCP подмешивает `tags: string[]` при сохранении наряда
+             (`resolveTags`, `shared.ts`), а интерфейс `Outfit` этого поля не объявляет вовсе.
+
+          Решение user дословно: "давай ничего не обходить! все делаем нормально!" — значит
+          `author?: string` добавляется явным полем в `Palette`/`Form`/`Outfit`/
+          `ComponentAssembly` (по образцу уже объявленного в `ContentState`), `tags?: readonly
+          string[]` — явным полем в `Outfit`. Канон должен описывать то, что реально пишет MCP, не
+          наоборот.
+
+          Блокирует: `kinds-registry`/`canon-drift-author-tags-assembly` в
+          `backend/presets/ROADMAP.yaml` — Go-структуры там пишутся зеркально к ЭТОМУ, исправленному
+          канону, не к сегодняшнему.
+
       - id: wear-switch-moved
         type: feature
         status: Done

@@ -17,7 +17,6 @@ import { createSkinConnection } from "@web-core/skin/solid";
 import { passportOf } from "@web-core/ui/passport";
 import {
   Select,
-  SelectClearTrigger,
   SelectContent,
   SelectControl,
   SelectHiddenSelect,
@@ -25,7 +24,6 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
-  SelectLabel,
   SelectPositioner,
   SelectTrigger,
   SelectValueText,
@@ -34,10 +32,7 @@ import {
 } from "@web-core/ui";
 import { createMemo, createResource, For, onMount, Show } from "solid-js";
 
-/** Адрес службы раздачи — задаётся снаружи, умолчание — служба на этой машине. */
-const PRESETS_URL =
-  (import.meta.env["VITE_PRESETS_URL"] as string | undefined) ??
-  "http://127.0.0.1:8787/api/presets";
+import { PRESETS_URL } from "#/shared/api/presets";
 
 /** Наряд, который надеваем на первом заходе, если запомненного нет — единственный сегодня в службе. */
 const DEFAULT_SKIN = "omnifield";

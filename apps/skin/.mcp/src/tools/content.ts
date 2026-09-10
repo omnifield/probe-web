@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
 import { err, ok, registerTool } from "@web-core/mcp";
 import { limitSchema, paginate } from "@web-core/mcp/pagination";
-import { checkContentData, store } from "../engine";
+import { checkContentData, presets } from "../engine";
 import { authorGuard, resolveAuthor } from "./shared";
 
 export function registerContentTools(server: McpServer): void {
@@ -27,7 +27,7 @@ export function registerContentTools(server: McpServer): void {
       if (!check.ok) return ok(check);
 
       const state = author !== undefined ? { component, data, author } : { component, data };
-      return ok({ saved: await store.replace("content", name, state, label) });
+      return ok({ saved: await presets.replace("content", name, state, label) });
     },
   });
 
@@ -42,11 +42,8 @@ export function registerContentTools(server: McpServer): void {
       limit: limitSchema.optional(),
     }),
     handler: async ({ component, cursor, limit }) => {
-      const records = await store.list("content");
-      const entries = await Promise.all(records.map((record) => store.read(record.id)));
-      const matching = component
-        ? entries.filter((entry) => (entry.state as { component?: unknown })["component"] === component)
-        : entries;
+      const entries = await presets.list("content");
+      const matching = component ? entries.filter((entry) => entry.state.component === component) : entries;
       return ok(paginate(matching, { cursor, limit }));
     },
   });
@@ -58,9 +55,9 @@ export function registerContentTools(server: McpServer): void {
     access: "read",
     input: z.object({ name: z.string() }),
     handler: async ({ name }) => {
-      const record = await store.findByName("content", name);
+      const record = await presets.get("content", name);
       if (!record) return err(`no content record named "${name}"`);
-      return ok(await store.read(record.id));
+      return ok(record);
     },
   });
 }

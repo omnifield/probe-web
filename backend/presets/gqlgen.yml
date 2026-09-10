@@ -1,0 +1,41 @@
+schema:
+  - internal/graphql/schema.graphql
+  - internal/graphql/feedback.graphql
+
+exec:
+  filename: internal/graphql/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/graphql/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/graphql
+  package: graphql
+
+# Автобинд выключен: конкретные виды — рукописные структуры в internal/graphql/model (Preset
+# встроен через model.Meta, kind-специфичные поля — под GraphQL-именами), не internal/kinds.*
+# напрямую — те не несут общих полей Preset (id/label/description/savedAt), а несут только state.
+autobind: []
+
+models:
+  JSON:
+    model: presets/internal/graphql/model.JSON
+  Preset:
+    model: presets/internal/graphql/model.Preset
+  Palette:
+    model: presets/internal/graphql/model.Palette
+  Form:
+    model: presets/internal/graphql/model.Form
+  Outfit:
+    model: presets/internal/graphql/model.Outfit
+  Content:
+    model: presets/internal/graphql/model.Content
+  Tag:
+    model: presets/internal/graphql/model.Tag
+  Assembly:
+    model: presets/internal/graphql/model.Assembly
+  FeedbackEntry:
+    model: presets/internal/graphql/model.FeedbackEntry

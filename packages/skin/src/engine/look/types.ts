@@ -5,6 +5,7 @@ import type { Keyframes, Skin, SkinVariables, SlotRecipe } from "../recipe/index
 
 export interface Palette extends SkinVariables {
   readonly name: string;
+  readonly author?: string;
 }
 
 export interface Form {
@@ -14,6 +15,7 @@ export interface Form {
   readonly keyframes?: Keyframes;
   /** Имя варианта → его теги (`@web-core/skin/tags`), для группировки в свайперах/витрине. */
   readonly variantTags?: Readonly<Record<string, readonly string[]>>;
+  readonly author?: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export interface Form {
 export interface ComponentAssembly {
   readonly component: string;
   readonly assembly: PassportAssembly;
+  readonly author?: string;
 }
 
 export interface Outfit {
@@ -34,6 +37,8 @@ export interface Outfit {
   readonly palette: string;
   readonly forms: readonly string[];
   readonly overrides?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  readonly tags?: readonly string[];
+  readonly author?: string;
 }
 
 export interface LookParts {

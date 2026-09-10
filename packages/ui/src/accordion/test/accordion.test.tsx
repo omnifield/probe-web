@@ -56,11 +56,11 @@ afterEach(() => {
 describe('accordion "action-list" — real Listbox per section, trigger dispatches the whole node', () => {
   it("shows section titles on triggers, item labels in the listbox, carrying its own skin variant", async () => {
     const data = {
-      sections: [
+      items: [
         {
-          id: "s1",
-          title: "Section 1",
-          items: [
+          value: "s1",
+          label: "Section 1",
+          children: [
             { value: "i1", label: "Item 1" },
             { value: "i2", label: "Item 2" },
           ],
@@ -113,7 +113,7 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
     expect(dispatched).toEqual([
       expect.objectContaining({
         name: "triggerClick",
-        context: { payload: { id: "s1", title: "Section 1", items: data.sections[0]!.items } },
+        context: { payload: { value: "s1", label: "Section 1", children: data.items[0]!.children } },
       }),
       expect.objectContaining({
         name: "select",
@@ -127,9 +127,9 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
 
 describe('accordion "base" — sections from data, the content spot left for whoever renders it', () => {
   const data = {
-    sections: [
-      { id: "контурная", title: "контурная" },
-      { id: "сплошная", title: "сплошная" },
+    items: [
+      { value: "контурная", label: "контурная" },
+      { value: "сплошная", label: "сплошная" },
     ],
   };
 

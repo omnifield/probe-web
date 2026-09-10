@@ -50,8 +50,14 @@
 
 📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (девять файлов —
 дерево/правки/целостность/реестр/вложенность/координата/образец/self-assembly/паспорт, ноль
-Solid), `src/render/index.tsx` (`RenderTree`/`RenderNode`, единственный сегодняшний потребитель
-`engine/`), `src/shared/trace.ts` (перф-трасса, общая на оба).
+Solid), `src/render/` (двенадцать файлов, единственный сегодняшний потребитель `engine/`;
+`index.tsx` — тонкий реэкспорт по тому же образцу, что корневой `src/index.ts`; `render-tree.tsx`
+— провайдер/`Suspense`/`checkTree`; `render-node.tsx` — сборка ОДНОГО узла, точка входа рекурсии;
+`content-of.tsx` — дети узла, самая тонкая часть Solid-реактивности; `composition.ts`/
+`self-assembly-branch.ts` — ЧЕМ рисовать узел; `props.ts` — пропы/события/`bind` из данных;
+`content-value.ts` — значение content-узла; `edit-overlay.tsx` — украшение путей отрисовки;
+`takes-content.ts` — структурный вопрос реестра; `defaults.tsx` — запасные виды; `types.ts` —
+проп-контракты), `src/shared/trace.ts` (перф-трасса, общая на оба).
 
 🔤 `genus:"text"`/`genus:"icon"` у `AssemblyContent` — это уровень строки, не уровень компонента:
 `{ genus: "text", value: { path: "title" } }` рисуется как нативное значение (строка либо
@@ -208,6 +214,8 @@ const slots: Record<string, SlotEntry> = {
 | `rootProps` на корне | смена динамического состояния показа доезжает до живого пропа корня, дерево не трогает, ребёнок не пересобирается | `test/root-props.test.tsx` |
 | `slots` на узле | живой контент сверху рисуется на месте узла, узел резолвится как обычно | `test/slots.test.tsx` |
 | Настоящий `createContext`/`useContext` через `RenderNode`/`RenderTree` | owner-цепочка Solid не рвётся ни `<For>`, ни `<ErrorBoundary>`, ни `<Dynamic>`, ни самим `RenderTree` — на двух уровнях дерева | `test/context-repro.test.tsx` |
+| Дерево пересобирается на каждую смену `data` (новый объект `AssemblyTree`, те же id) | байндинг доезжает и на первой, и на второй, и на любой следующей пересборке — не только на первой | `test/rebuild-reactivity-repro.test.tsx` |
+| `repeat`: 0 items → N items ПОСЛЕ монтирования, без потери Ark-дефолтов на пустом контенте | узел, структурно принимающий контент, подхватывает детей, добавленных позже, — плоский случай и вложенный (через `Portal`, как `select`'s `positioner`); часть, контент не принимающая (`trigger`), остаётся `null`; часть, принимающая контент по реестру, но без детей навсегда (`field`'s `requiredIndicator`), тоже остаётся `null` — Ark-паттерн `props.children ?? "*"` срабатывает | `test/contentof-null-vs-for.test.tsx` |
 
 ✅ Живая проверка на настоящем ките — транзитивно, через тесты пакетов, что реально зовут
 `RenderTree`/`baseAssemblyOf`: `packages/ui/src/button/test/button.test.tsx`,

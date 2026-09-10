@@ -141,3 +141,36 @@ web-core сейчас, а `@tanstack/query-async-storage-persister` не уст�
 
 Проверено чтением `@tanstack/query-sync-storage-persister@5.102.8/src/index.ts`, JSDoc над
 `createSyncStoragePersister` (2026-09-04).
+
+---
+
+## GraphQL
+
+### Почему `graphql-request`, а не `urql`/Apollo Client — оба тоже умеют GraphQL?
+
+**Коротко: у обоих свой нормализованный кэш поверх данных, а кэш в приложении уже есть —
+`@tanstack/solid-query`, смонтированный через `QueryClientProvider`. Второй кэш поверх первого не
+даёт выгоды, только источник рассинхрона (какая копия свежая после мутации).**
+
+`graphql-request` сам себя позиционирует как "minimal GraphQL client" — синглтон `fetch` с телом
+`{query, variables}`, без стора и без кэша. Это ровно то, что нужно на роль
+`queryFn`/`mutationFn`: вся механика загрузки/повторов/протухания остаётся на TanStack Query,
+GraphQL-клиент — только транспорт до байт ответа. Реэкспортирован под именем `graphqlRequest`
+(вендорское имя `request` слишком общее для верхнего уровня пакета, где уже есть чужой `fetch`).
+
+---
+
+### Почему `graphql` — `peerDependencies`, а не только `devDependencies` для типов?
+
+**Коротко: это не только типы — `graphql-request` реально дёргает `parse`/`print`/`Kind` из
+`graphql` в рантайме (разбор строки документа при отправке запроса), значит без пакета `graphql`
+рядом в `node_modules` приложения будет ошибка резолва модуля в проде, а не ошибка типов в
+редакторе.**
+
+Диапазон версий (`"14 - 16"`) — тот же, что объявляет сам `graphql-request@7.4.0` в своих
+`peerDependencies` (`graphql@17` не входит в диапазон, поэтому в `devDependencies` этого пакета —
+`^16.14.2`, не последняя мажорная). `gql`-тег того же вендора рантайм-зависимости от `graphql` не
+несёт — это чистый passthrough по строке для подсветки синтаксиса в редакторах/prettier, без
+парсинга в AST.
+
+Проверено чтением `graphql-request@7.4.0/build/legacy/helpers/analyzeDocument.js` (`import { parse, print } from 'graphql'`) и `graphql-request@7.4.0/package.json` (2026-09-09).

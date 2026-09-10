@@ -6,12 +6,11 @@ import {
   SegmentGroupItem,
   SegmentGroupItemControl,
   SegmentGroupItemText,
-  Surface,
   FlowItem,
   Flow,
 } from "@web-core/ui";
 import { layoutGroup } from "@web-core/skin";
-import { useLocation, useNavigate } from "@web-core/router";
+import { useLocation, useNavigate, useParams } from "@web-core/router";
 import { createMemo, For } from "solid-js";
 
 import { ThemeSwitch } from "#/shared/ui/theme-switch";
@@ -25,6 +24,9 @@ const SCREENS = [
 
 export function Header() {
   const pathname = useLocation({ select: (location) => location.pathname });
+  // `strict: false` — тот же приём, что у `Tree`'s `activeValue`: `$component` объявлен то у
+  // showcase, то у lab, читаем его независимо от того, в каком из двух сейчас находимся.
+  const component = useParams({ strict: false, select: (params) => params.component });
   const navigate = useNavigate();
 
   const screen = createMemo(
@@ -33,9 +35,20 @@ export function Header() {
       "showcase",
   );
 
+  // Переключение showcase↔lab несёт имя ТЕКУЩЕГО компонента дальше (ТЗ user: "чтобы при переходе
+  // осталось название компонента") — обе стороны умеют путь `/<экран>/$component`. Playground
+  // компонент не выбирает, ему параметр нести некуда — идёт голым путём, как раньше.
   const onValueChange = (details: { value: string | null }) => {
     const target = SCREENS.find((screen) => screen.value === details.value);
-    if (target) void navigate({ to: target.to });
+    if (!target) return;
+
+    const active = component();
+    if (active !== undefined && (target.value === "lab" || target.value === "showcase")) {
+      void navigate({ to: `${target.to}/$component`, params: { component: active } });
+      return;
+    }
+
+    void navigate({ to: target.to });
   };
 
   return (

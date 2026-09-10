@@ -99,11 +99,24 @@ export const recipe: SlotRecipe = {
     },
     indicator: {
       props: {
+        // Zag меряет `--left`/`--top`/`--width`/`--height` по ВСЕМУ `item` (кружок+подпись —
+        // `getRectById` в @zag-js/radio-group меряет узел `item`, не `itemControl`), а для оси,
+        // которая едет между пунктами (`top` в vertical, `left` в horizontal), сам же прописывает
+        // инлайном сырой `var(--top)`/`var(--left)` без центрирования — инлайн-стиль перебивает
+        // любое наше правило по той же оси через класс/атрибут-селектор, так что центрирование
+        // нельзя класть в `left`/`top` напрямую. `left`/`top` здесь — те же сырые значения (для
+        // "свободной" оси это единственный работающий способ её позиционировать, для "занятой"
+        // Zag'ом — то же самое значение, что и так возьмёт инлайн, поэтому конфликта нет), а
+        // центровка внутрь кружка (control — первый flex-child `item`, по вертикали всегда
+        // отцентрован через `align-items:center`) — отдельным `transform`, который Zag не трогает
+        // вообще ни для одной оси.
         position: "absolute",
-        left: "calc(var(--left) + (var(--control-height-sm) - " + dotSize + ") / 2)",
-        top: "calc(var(--top) + (var(--height) - " + dotSize + ") / 2)",
+        left: "var(--left)",
+        top: "var(--top)",
         width: dotSize,
         height: dotSize,
+        transform:
+          "translate(calc((var(--control-height-sm) - " + dotSize + ") / 2), calc((var(--height) - " + dotSize + ") / 2))",
         borderRadius: "var(--radius-full)",
         background: "var(--accent-9)",
         pointerEvents: "none",

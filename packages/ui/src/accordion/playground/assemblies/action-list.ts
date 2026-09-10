@@ -1,12 +1,11 @@
 import type { PassportAssembly } from "@web-core/skin/editor";
 import type { ComponentPassport } from "@web-core/skin/model";
 
-import type { Data } from "../../entity/io.js";
 import { passport } from "../../entity/passport.js";
 
 type AccordionPart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-export const actionList: PassportAssembly<AccordionPart, string, Data> = {
+export const actionList: PassportAssembly<AccordionPart> = {
   name: "action-list",
   means: "разделы, а в контенте каждого — настоящий Listbox из общего реестра, не своя копия",
   tree: {
@@ -14,8 +13,8 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
     children: [
       {
         node: "item",
-        repeat: { path: "/sections" },
-        bind: { value: "id" },
+        repeat: { path: "/items" },
+        bind: { value: "value" },
         children: [
           {
             node: "control",
@@ -29,7 +28,7 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
               },
             },
             children: [
-              { genus: "text", value: { path: "title" } },
+              { genus: "text", value: { path: "label" } },
               { node: "controlIndicator", children: [] },
             ],
           },
@@ -38,7 +37,7 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
             children: [
               {
                 node: "listbox",
-                bind: { items: "items", value: "activeValues" },
+                bind: { items: "children", value: "activeValues" },
                 props: { "data-variant": "compact" },
                 children: [
                   {
@@ -46,7 +45,7 @@ export const actionList: PassportAssembly<AccordionPart, string, Data> = {
                     children: [
                       {
                         node: "listbox.item",
-                        repeat: { path: "items" },
+                        repeat: { path: "children" },
                         bind: { item: "" },
                         on: {
                           click: {

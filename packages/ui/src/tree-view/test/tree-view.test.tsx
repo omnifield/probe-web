@@ -71,7 +71,7 @@ function mount(
 describe('tree view "base" — one level, every item labeled and clickable, click dispatches the whole item', () => {
   it("labels each item from data and dispatches controlClick with the whole item as payload", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "base")!;
-    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+    const data: Data = { items: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }] };
 
     const dispatched: DispatchedEvent[] = [];
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
@@ -101,13 +101,13 @@ describe('tree view "base" — recur grows the same node again from its own data
     const data: Data = {
       items: [
         {
-          id: "a",
+          value: "a",
           label: "Alpha",
           children: [
             {
-              id: "a1",
+              value: "a1",
               label: "Alpha One",
-              children: [{ id: "a1x", label: "Alpha One X" }],
+              children: [{ value: "a1x", label: "Alpha One X" }],
             },
           ],
         },
@@ -149,7 +149,7 @@ describe('tree view "base" — recur grows the same node again from its own data
 
   it("stops on its own where the data stops — no children means no deeper nodes, not an error", () => {
     const assembly = assemblies.find((candidate) => candidate.name === "base")!;
-    const data: Data = { items: [{ id: "a", label: "Alpha" }] };
+    const data: Data = { items: [{ value: "a", label: "Alpha" }] };
 
     const host = mount(assembly as PassportAssembly, data);
 
@@ -159,9 +159,9 @@ describe('tree view "base" — recur grows the same node again from its own data
 });
 
 describe('tree view "base" — externally driven activeValue overrides Zag\'s own click-driven selection', () => {
-  it("highlights exactly the given id, and a real click elsewhere does not move it", async () => {
+  it("highlights exactly the given value, and a real click elsewhere does not move it", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "base")!;
-    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+    const data: Data = { items: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }] };
 
     const host = mount(assembly as PassportAssembly, data, undefined, { activeValue: "a" });
 
@@ -180,7 +180,7 @@ describe('tree view "base" — externally driven activeValue overrides Zag\'s ow
 
   it("without activeValue, native click-driven selection works exactly as before", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "base")!;
-    const data: Data = { items: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+    const data: Data = { items: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }] };
 
     const host = mount(assembly as PassportAssembly, data);
 

@@ -44,7 +44,7 @@ zones:
     paths: [packages/skin, packages/skin-reference]
     description: "МЕХАНИКА скина — модель, сборка рецепта по частям, адресация из анатомии, порождение CSS, служба раздачи (`./presets`), надевание и снятие (`./wear`, `./solid` — переехало из `packages/runtime`, PWEB-221). Рядом `skin-reference`, эталонный скин фреймворка: отдельная поставка, потому что механика не знает ни одного скина. Зависимость односторонняя: эталон знает механику, механика о нём нет. Один овнер у обоих: предмет соседний, компетенция та же."
   assembly:
-    paths: [packages/assembly]
+    paths: [packages/assembly, apps/skin]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
   store:
     paths: [packages/store]
@@ -57,11 +57,13 @@ zones:
     description: пресет eslint-plugin-solid — канон Solid, выраженный машиной
   mcp:
     paths: [packages/mcp]
-    description: "тонкий переиспользуемый MCP-сервер (`PWEB-117`) — каркас, которым ЛЮБОЙ продукт на фреймворке подключает агента: фреймворк отдаёт готовые интроспекционные инструменты (паспорта кита, пресеты), продукт добавляет свои поверх одним вызовом. Не про одного конкретного агента (скин-генератор — свой отдельный вопрос, PWEB-115/116) — про общий протокол подключения."
+    description: "тонкий переиспользуемый MCP-сервер  — каркас, которым ЛЮБОЙ продукт на фреймворке подключает агента: фреймворк отдаёт готовые интроспекционные инструменты (паспорта кита, пресеты), продукт добавляет свои поверх одним вызовом. Не про одного конкретного агента  — про общий протокол подключения."
   generators:
     paths: [packages/generators]
     description: ""
-
+  query:
+    paths: [packages/query]
+    description: "универсальны пакет для запросов для  rest и graphQl"
   # Зоны products/ стоят здесь ВРЕМЕННО и уедут отдельными продуктами. В packages/ им нельзя:
   # там база.
   tables:
@@ -76,12 +78,15 @@ zones:
   map:
     paths: [products/map, canons/map]
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера
+  skin-app:
+    paths: [apps/skin]
+    description: "приложение для просмотра и создания компонентов и композиций из них"
+  skin-mcp:
+    paths: [canons/ui-skin, apps/skin/.mcp]
+    description: "mcp для работы со скинами"
   skin:
-    paths: [apps/skin, canons/ui-skin, packages/skin, packages/style]
+    paths: [canons/ui-skin, packages/skin]
     description: "производство оформлений для безголового кита — своя логика, кит остаётся голым. У продукта СВОЙ архитектор: заявки сюда приходят от него, а не ставятся ему."
-  chat:
-    paths: [products/chat, canons/chat]
-    description: чат — каркас фонда уже стоит (canons/chat)
 
 # Git-доступ по роли — РАМКА, выключить нельзя: architect=full; owner=commit-only (gate);
 # layer=none. Право архитектора даёт маркер `.claude/.main-session-id`.

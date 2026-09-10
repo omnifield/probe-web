@@ -20,12 +20,13 @@
 первый, дальше другие зоны) и не хотите каждый раз заново решать одни и те же вопросы: как
 обязать `annotations` на каждом туле, как правильно завернуть отказ по спеке (`isError`), как
 поднять сервер локально (stdio), а потом на сервере (Streamable HTTP, с отдельной сессией на
-каждого клиента и безопасным умолчанием по адресу) без переписывания зоны с нуля. Пять точек
+каждого клиента и безопасным умолчанием по адресу) без переписывания зоны с нуля. Шесть точек
 поверхности закрывают путь целиком: регистрация тула с обязательными annotations и конвертом
 ответа (`@web-core/mcp`), бутстрап транспорта с точкой расширения под auth (`/transport`),
 курсорная пагинация листингов (`/pagination`), точечный обмен данными с ДРУГИМ MCP-инстансом по
 HTTP или stdio (`/peer`), headless-браузер как MCP-клиент чужого сервера, не своя реализация
-рендера (`/browser`). Output-схема тула — не отдельная функция: SDK
+рендера (`/browser`), тонкий GraphQL-клиент к общему фидбэку — `reportFeedback`/`listFeedback`/
+`resolveFeedback` (`/feedback`). Output-схема тула — не отдельная функция: SDK
 (`@modelcontextprotocol/sdk`) сам принимает настоящую Zod-схему и для входа, и для выхода, сам
 валидирует и сам строит JSON Schema для протокола.
 
@@ -41,15 +42,17 @@ HTTP или stdio (`/peer`), headless-браузер как MCP-клиент ч�
 | Пагинация листингов | `@web-core/mcp/pagination` | `paginate`, `limitSchema` |
 | Обмен с другим MCP-инстансом | `@web-core/mcp/peer` | `httpPeer`, `stdioPeer` |
 | Headless-браузер | `@web-core/mcp/browser` | `createBrowser` |
+| Фидбэк | `@web-core/mcp/feedback` | `reportFeedback`, `listFeedback`, `resolveFeedback` |
 
-📂 Пять независимых инструментов (регистрация тула ничего не знает о транспорте, пагинация не знает
+📂 Шесть независимых инструментов (регистрация тула ничего не знает о транспорте, пагинация не знает
 ни о том, ни о другом — общая у них только тема, не механизм). В корне `src/` лежит только
 `index.ts` — тонкий барель (`export * from "./register-tool/index.js"`), сам он ни строки логики
 не несёт. Общее (то, чем пользуется буквально каждый MCP-сервер зоны) едет через этот барель —
 `register-tool/` поэтому переиспользуется корневым адресом. Тяжёлое и опциональное — своим
 каталогом и своим подпутём, не через барель: `transport/` тянет `node:http`/`node:crypto` и нужен
 не всегда (тул можно регистрировать и на сервере, поднятом снаружи), `pagination/` — отдельная
-маленькая тема, не про регистрацию тула вовсе. Тот же приём, что у `packages/store`
+маленькая тема, не про регистрацию тула вовсе, `feedback/` тянет `@web-core/query/graphql` и
+нужен только зонам, которые вообще заводят фидбэк-тулы. Тот же приём, что у `packages/store`
 (`engine/` → `.`, `machine/`/`addons/` → свои подпути).
 
 <h2 id="использование">🚀 Использование</h2>
@@ -164,6 +167,22 @@ const tree = await browser.snapshot(pageId); // текстовое a11y-дере
 await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ этого снимка, не по URL
 ```
 
+**Фидбэк (`feedback`):** зеркало трёх операций общей схемы `backend/presets`'s `feedback.graphql`
+(`FeedbackEntry`/`FeedbackInput`), не вид пресета. `url` — параметр КАЖДОГО вызова, не константа
+пакета: он не знает и не должен знать, тот же это адрес, что у пресетов, или другой.
+
+```ts
+import { FeedbackDown, FeedbackRefused, listFeedback, reportFeedback, resolveFeedback } from "@web-core/mcp/feedback";
+
+const url = process.env["PRESETS_URL"]! + "/graphql";
+
+const entry = await reportFeedback(url, { tool: "save_preset", action: "click", actual: "миганием" });
+const open = await listFeedback(url, { status: "open" }); // status/sign не заданы — все заявки
+await resolveFeedback(url, entry.id, "починено"); // уже resolved — бросает FeedbackRefused
+
+// FeedbackDown — служба физически недоступна (обрыв/5xx); FeedbackRefused — ответила и отказала.
+```
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🎛️ У оснастки нет одной сущности с общим списком настроек — опции у каждой функции свои.
@@ -220,6 +239,9 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | `limitSchema` | не функция — Zod-схема (`z.number().int().positive().max(100)`) для поля `limit` во входе тула |
 | `httpPeer(url, info?)` / `stdioPeer(command, args?, options?)` | адрес/команда чужого MCP-сервера (`options` — `{name?, version?, env?}`) |
 | `createBrowser(options?)` | `BrowserOptions` (все поля необязательны) |
+| `reportFeedback(url, input)` | адрес `/graphql`, `FeedbackInput` (`tool`, `action`, `expected?`, `actual`, `sign?`) |
+| `listFeedback(url, filter?)` | адрес `/graphql`, `{status?, sign?}` — не заданы, отдаёт все заявки |
+| `resolveFeedback(url, id, note?)` | адрес `/graphql`, id заявки, заметка |
 
 <h3>📤 Выход</h3>
 
@@ -231,11 +253,12 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | `paginate` | `{ items, nextCursor? }` |
 | `Peer.callTool`/`.close` | `CallToolResult` настоящего чужого MCP-сервера / ничего |
 | `Browser.newPage`/`.navigate`/`.screenshot`/`.snapshot`/`.click` | номер вкладки / текстовый отчёт / `{mimeType, base64}` / текстовое a11y-дерево / текстовый отчёт |
+| `reportFeedback`/`listFeedback`/`resolveFeedback` | `FeedbackEntry` / `readonly FeedbackEntry[]` / `FeedbackEntry` — либо бросает `FeedbackDown`/`FeedbackRefused` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
 ✅ Настоящий round-trip через MCP SDK, не имитация — каждая строка ниже доказана тестом
-(`vitest run`, 33/33 зелёных).
+(`vitest run`, 42/42 зелёных).
 
 | Проверено | Как | Результат |
 |---|---|---|
@@ -265,6 +288,10 @@ await browser.click(pageId, "1_1"); // клик мышью по узлу ИЗ э
 | `createBrowser` — клик по элементу, не переход по URL | `newPage`→`navigate`→`snapshot` (найти `uid` реальной кнопки)→`click`→`snapshot` | текст страницы после клика меняется ровно так, как ждал обработчик клика |
 | `limitSchema` — реальный потолок в JSON Schema | `z.toJSONSchema(limitSchema)` | `{"maximum":100}`, не `Number.MAX_SAFE_INTEGER` |
 | `limitSchema` — отклоняет значение выше потолка | `limitSchema.safeParse(101)` vs `safeParse(100)` | первое `success:false`, второе `success:true` |
+| `reportFeedback`/`listFeedback`/`resolveFeedback` — реальный GraphQL-запрос (`ReportFeedback`/`ListFeedback`/`ResolveFeedback`) | `graphqlRequest` через `@web-core/query/graphql`, `fetch` подставлен фикстурой | тело запроса несёт верную операцию и переменные, ответ распакован без искажений |
+| `listFeedback()` без фильтра | вызов без второго аргумента | `status`/`sign` уходят в переменных как `undefined` — служба отдаёт все заявки |
+| Сетевой обрыв/HTTP 500 — `FeedbackDown`, не `FeedbackRefused` | `fetch` отклоняется / отвечает `500` | `rejects.toBeInstanceOf(FeedbackDown)` |
+| HTTP < 500 с GraphQL-`errors` (в т.ч. «уже resolved») — `FeedbackRefused` с текстом бэка | `resolveFeedback` на уже разобранную заявку | `rejects.toThrow(FeedbackRefused)` с сообщением бэка |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

@@ -1,4 +1,6 @@
 import {
+  Flow,
+  FlowItem,
   Select,
   SelectContent,
   SelectControl,
@@ -12,9 +14,13 @@ import {
   SelectValueText,
   Surface,
 } from "@web-core/ui";
+import { layoutSelf } from "@web-core/skin";
 import { createEffect, createMemo, createResource, createSignal, For } from "solid-js";
 
 import { componentHandle, listContentFor } from "#/entities/component";
+
+import { DataFields } from "./fields";
+import { fieldsOf, withValue, type FieldPath } from "./schema";
 
 const MOCK_DATA = "-мок-";
 
@@ -68,34 +74,54 @@ export function Input() {
     if (record) component.setData(record.state.data);
   };
 
+  // Поля выбранного набора, по io-схеме — первый заход `input-widget-real-ui`: скаляры верхнего
+  // уровня и одного уровня вложенности, массивы не рендерятся (см. `schema.ts`). Правка кладётся
+  // ПОВЕРХ того, что уже лежит в `componentDataAtom` (`component.data()`), не поверх записи из
+  // `records` — так правки не теряются при повторном рендере до следующего выбора набора.
+  const fields = createMemo(() => {
+    const schema = component.info()?.io?.schema;
+    return schema ? fieldsOf(schema) : [];
+  });
+
+  const onFieldChange = (path: FieldPath, value: unknown) => {
+    component.setData(withValue(component.data(), path, value));
+  };
+
   return (
     <Surface>
-      <Select
-        items={items()}
-        value={selected()}
-        onValueChange={onValueChange}
-        disabled={items().length === 0}
-      >
-        <SelectControl>
-          <SelectTrigger>
-            <SelectValueText placeholder="Наши данные" />
-          </SelectTrigger>
-          <SelectIndicator>▾</SelectIndicator>
-        </SelectControl>
-        <SelectPositioner>
-          <SelectContent>
-            <For each={items()}>
-              {(item) => (
-                <SelectItem item={item}>
-                  <SelectItemText>{item.label}</SelectItemText>
-                  <SelectItemIndicator>✓</SelectItemIndicator>
-                </SelectItem>
-              )}
-            </For>
-          </SelectContent>
-        </SelectPositioner>
-        <SelectHiddenSelect />
-      </Select>
+      <Flow data-variant="column-center">
+        <FlowItem style={layoutSelf({ align: "stretch" })}>
+          <Select
+            items={items()}
+            value={selected()}
+            onValueChange={onValueChange}
+            disabled={items().length === 0}
+          >
+            <SelectControl>
+              <SelectTrigger>
+                <SelectValueText placeholder="Наши данные" />
+              </SelectTrigger>
+              <SelectIndicator>▾</SelectIndicator>
+            </SelectControl>
+            <SelectPositioner>
+              <SelectContent>
+                <For each={items()}>
+                  {(item) => (
+                    <SelectItem item={item}>
+                      <SelectItemText>{item.label}</SelectItemText>
+                      <SelectItemIndicator>✓</SelectItemIndicator>
+                    </SelectItem>
+                  )}
+                </For>
+              </SelectContent>
+            </SelectPositioner>
+            <SelectHiddenSelect />
+          </Select>
+        </FlowItem>
+        <FlowItem style={layoutSelf({ align: "stretch" })}>
+          <DataFields fields={fields()} data={component.data()} onChange={onFieldChange} />
+        </FlowItem>
+      </Flow>
     </Surface>
   );
 }

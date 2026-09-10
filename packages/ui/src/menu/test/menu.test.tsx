@@ -7,6 +7,7 @@ import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Menu, kit as menuKit } from "../components/index.js";
+import type { Data } from "../entity/io.js";
 import { passport as menuPassport } from "../entity/passport.js";
 import { assemblies } from "../playground/assemblies/index.js";
 import { editorInfo as menuEditorInfo } from "../playground/index.js";
@@ -84,5 +85,33 @@ describe('menu "basic" — a labeled group, a separator, a checked item, open by
       '[data-scope="menu"][data-part="item-indicator"] svg[data-scope="icon"][data-part="root"]',
     );
     expect(indicatorIcon).not.toBeNull();
+  });
+});
+
+describe('menu "list" — flat item list from data, canonical value/label item, click dispatches the whole item', () => {
+  it("labels each item from data and dispatches select with the whole item as payload", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "list")!;
+    const data: Data = { items: [{ value: "rename", label: "Переименовать" }, { value: "delete", label: "Удалить" }] };
+    const tree = baseAssemblyOf(menuPassport, assembly as PassportAssembly, "menu", data);
+
+    const dispatched: unknown[] = [];
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => <RenderTree registry={REGISTRY} tree={tree} data={data} dispatch={(event) => dispatched.push(event)} />,
+      host,
+    );
+
+    const texts = [...host.querySelectorAll('[data-scope="menu"][data-part="item-text"]')];
+    expect(texts.map((text) => text.textContent)).toEqual(["Переименовать", "Удалить"]);
+
+    const items = [...host.querySelectorAll('[data-scope="menu"][data-part="item"]')] as HTMLElement[];
+    items[1]!.click();
+    await Promise.resolve();
+
+    expect(dispatched).toEqual([
+      expect.objectContaining({ name: "select", context: { payload: { value: "delete", label: "Удалить" } } }),
+    ]);
   });
 });

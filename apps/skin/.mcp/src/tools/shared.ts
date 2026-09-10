@@ -1,7 +1,7 @@
 import type { ToolContext } from "@web-core/mcp";
 import { z } from "@web-core/io";
 import { DEFAULT_TAG, sortTags } from "@web-core/skin/tags";
-import { checkTags, store } from "../engine";
+import { checkTags, presets, type PresetKind } from "../engine";
 
 export const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 export const looseRecord = z.looseObject({ name: z.string() });
@@ -21,11 +21,11 @@ export function resolveAuthor(context: ToolContext, argumentAuthor: string | und
 // не занята, пишет кто угодно. author приезжает с запросом от платформы, которая уже знает, с каким
 // залогиненным юзером говорит — сама эта зона identity не проверяет (см. FAQ.md), только сверяет
 // строки, поэтому здесь никогда не было и не будет отдельного секрета вида adminToken.
-export async function authorGuard(kind: string, name: string, nextAuthor: string | undefined): Promise<string | undefined> {
-  const existing = await store.findByName(kind, name);
+export async function authorGuard(kind: PresetKind, name: string, nextAuthor: string | undefined): Promise<string | undefined> {
+  const existing = await presets.get(kind, name);
   if (!existing) return undefined;
 
-  const currentAuthor = ((await store.read(existing.id)).state as { author?: unknown })["author"];
+  const currentAuthor = (existing.state as { author?: unknown })["author"];
   if (typeof currentAuthor !== "string") return undefined;
 
   if (nextAuthor !== currentAuthor) {

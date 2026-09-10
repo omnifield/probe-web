@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +17,12 @@ import (
 	"syscall"
 	"time"
 
-	"presets/internal/api"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
+
+	presetsgraphql "presets/internal/graphql"
+	"presets/internal/graphql/generated"
+	"presets/internal/graphql/loaders"
 	"presets/internal/limits"
 	"presets/internal/store"
 )
@@ -58,15 +64,29 @@ func main() {
 	}
 	defer db.Close()
 
-	handler := api.New(db, lim)
+	resolver := presetsgraphql.New(db, lim)
+	graphqlServer := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /graphql", playground.Handler("Presets GraphQL", "/graphql"))
+	mux.Handle("POST /graphql", graphqlServer)
+	mux.HandleFunc("GET /healthz", healthzHandler(db, lim))
+
+	// Дата-лоадеры — свежие на каждый запрос (loaders.Middleware), CORS — на весь mux разом:
+	// GraphQL сюда так же ходят из браузера (packages/query, следующий шаг по ROADMAP.yaml), как
+	// раньше ходил REST-клиент.
+	var apiHandler http.Handler = mux
+	apiHandler = loaders.Middleware(db)(apiHandler)
+	apiHandler = withCORS(apiHandler)
+
 	server := &http.Server{
 		Addr:    host + ":" + port,
-		Handler: handler,
+		Handler: apiHandler,
 	}
 
 	go func() {
 		records, bytesUsed, _ := db.Stats()
-		log.Printf("[presets] слушаю %s, база %s, записей %d, занято %d Б", server.Addr, dbPath, records, bytesUsed)
+		log.Printf("[presets] слушаю %s (GraphQL: /graphql), база %s, записей %d, занято %d Б", server.Addr, dbPath, records, bytesUsed)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("[presets] сервер упал: %v", err)
 		}
@@ -82,6 +102,42 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("[presets] остановка не завершилась чисто: %v", err)
 	}
+}
+
+// healthzHandler — та же форма ответа, что была у REST-обвязки (internal/api до переезда на
+// GraphQL): не проксируется наружу, только докеру и тому, кто разворачивает.
+func healthzHandler(db *store.Store, lim limits.Limits) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		records, bytesUsed, err := db.Stats()
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"ok":      true,
+			"presets": records,
+			"bytes":   bytesUsed,
+			"limits":  lim,
+		})
+	}
+}
+
+// withCORS — тот же контракт, что раньше несла каждая REST-ручка сама (internal/api/handler.go):
+// открыто для любого источника, преflight отвечает 204 без похода до GraphQL-сервера.
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "content-type")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // env читает переменную окружения; пустая или отсутствующая — берётся запасное значение.

@@ -6,7 +6,7 @@ import { err, ok, registerTool } from "@web-core/mcp";
 import { limitSchema, paginate } from "@web-core/mcp/pagination";
 import { OutfitRefused } from "@web-core/skin";
 import { groupByTag } from "@web-core/skin/tags";
-import { checkAssembly, checkForm, checkPalette, checkTags, skin, skinGaps, store } from "../engine";
+import { checkAssembly, checkForm, checkPalette, checkTags, presets, readForms, readPalettes, skin, skinGaps } from "../engine";
 import { authorGuard, KIND, looseRecord, resolveAuthor, resolveTags } from "./shared";
 
 async function resolveVariantTags(form: Record<string, unknown>) {
@@ -38,6 +38,14 @@ async function resolveVariantTags(form: Record<string, unknown>) {
   return { variantTags, tagGroups: groupByTag(variantTags), flaws };
 }
 
+// list_presets сознательно без state (бюджет токенов, api-response-shape-rework) — presets.list()
+// всегда тащит state, режем до заголовков перед отдачей агенту.
+function headersOf<T extends { id: string; label: string; name: string; kind: string; savedAt: string }>(
+  records: readonly T[],
+) {
+  return records.map((r) => ({ id: r.id, label: r.label, name: r.name, kind: r.kind, savedAt: r.savedAt }));
+}
+
 export function registerPresetTools(server: McpServer): void {
   // CSS сгенерированного наряда — ресурс, не инлайн: полотно легко весит больше клиентского среза
   // ответа тула. Своя карта на СЕССИЮ (как и вкладка браузера) — замыкание, не общий на все сессии.
@@ -65,7 +73,7 @@ export function registerPresetTools(server: McpServer): void {
       limit: limitSchema.optional(),
     }),
     handler: async ({ kind, cursor, limit }) => {
-      if (kind) return ok(paginate(await store.list(kind), { cursor, limit }));
+      if (kind) return ok(paginate(headersOf(await presets.list(kind)), { cursor, limit }));
 
       // Без kind — та же ловушка, что была у list_components: самый первый, необученный вызов не
       // должен быть самым тяжёлым. Общий DEFAULT_LIMIT paginate() (50) не годится сюда: цель этой
@@ -78,7 +86,7 @@ export function registerPresetTools(server: McpServer): void {
       const kinds = ["palette", "form", "outfit", "assembly", "tag"] as const;
       const byKind = Object.fromEntries(
         await Promise.all(
-          kinds.map(async (k) => [k, paginate(await store.list(k), { limit: limit ?? OVERVIEW_LIMIT }).items]),
+          kinds.map(async (k) => [k, paginate(headersOf(await presets.list(k)), { limit: limit ?? OVERVIEW_LIMIT }).items]),
         ),
       );
       return ok(byKind);
@@ -92,9 +100,9 @@ export function registerPresetTools(server: McpServer): void {
     access: "read",
     input: z.object({ kind: KIND, name: z.string() }),
     handler: async ({ kind, name }) => {
-      const record = await store.findByName(kind, name);
+      const record = await presets.get(kind, name);
       if (!record) return err(`no "${kind}" record named "${name}"`);
-      return ok(await store.read(record.id));
+      return ok(record);
     },
   });
 
@@ -147,8 +155,8 @@ export function registerPresetTools(server: McpServer): void {
     access: "read",
     input: z.object({ outfit: looseRecord.extend({ palette: z.string(), forms: z.array(z.string()) }) }),
     handler: async ({ outfit }) => {
-      const palettes = await store.readPalettes();
-      const forms = await store.readForms();
+      const palettes = await readPalettes();
+      const forms = await readForms();
       const flaws = skin.checkOutfit(outfit as never, { palettes, forms });
       const { flaws: tagFlaws } = await resolveTags((outfit as Record<string, unknown>)["tags"]);
       const allFlaws = [...flaws, ...tagFlaws];
@@ -163,8 +171,8 @@ export function registerPresetTools(server: McpServer): void {
     access: "read",
     input: z.object({ outfit: looseRecord.extend({ palette: z.string(), forms: z.array(z.string()) }) }),
     handler: async ({ outfit }) => {
-      const palettes = await store.readPalettes();
-      const forms = await store.readForms();
+      const palettes = await readPalettes();
+      const forms = await readForms();
       const parts = { palettes, forms };
 
       try {
@@ -236,8 +244,8 @@ export function registerPresetTools(server: McpServer): void {
         if (tagFlaws.length > 0) return ok({ ok: false, flaws: tagFlaws });
         stateToSave = { ...stateToSave, tags };
 
-        const palettes = await store.readPalettes();
-        const forms = await store.readForms();
+        const palettes = await readPalettes();
+        const forms = await readForms();
         const flaws = skin.checkOutfit(stateToSave as never, { palettes, forms });
         if (flaws.length > 0) return ok({ ok: false, flaws });
       } else if (kind === "assembly") {
@@ -250,7 +258,7 @@ export function registerPresetTools(server: McpServer): void {
         if (!result.ok) return ok(result);
       }
 
-      return ok({ saved: await store.replace(kind, stateToSave.name, stateToSave, label) });
+      return ok({ saved: await presets.replace(kind, stateToSave.name, stateToSave as never, label) });
     },
   });
 }

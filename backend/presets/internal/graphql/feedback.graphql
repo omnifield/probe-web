@@ -1,0 +1,41 @@
+# Фидбэк — отдельная сущность, не вид пресета (feedback-bucket-and-type, ROADMAP.yaml). НЕ
+# implements Preset, свой Query/Mutation, свой резолвер, свой bbolt-бакет (internal/store/
+# feedback.go) — ничего общего с kinds-registry/internal/kinds.
+#
+# Форма — по живому коду потребителя (apps/skin/.mcp/src/tools/feedback.ts), канона в TS нет —
+# тем же приёмом, что раньше Tag (internal/kinds/tag.go).
+
+type FeedbackEntry {
+  id: ID!
+  savedAt: String!
+  tool: String!
+  action: String!
+  expected: String
+  actual: String!
+  sign: String!
+  status: String!
+  at: String!
+  resolvedAt: String
+  note: String
+}
+
+input FeedbackInput {
+  tool: String!
+  action: String!
+  expected: String
+  actual: String!
+  """issue (по умолчанию) — что-то не так; praise — сработало хорошо."""
+  sign: String
+}
+
+extend type Query {
+  """Заявки; status/sign не заданы — все. Список читают вручную, не программно — без пагинации,
+  как у Preset."""
+  feedback(status: String, sign: String): [FeedbackEntry!]!
+}
+
+extend type Mutation {
+  reportFeedback(input: FeedbackInput!): FeedbackEntry!
+  """Ставит status:"resolved" (+resolvedAt, +note?) поверх заявки — отказ, если уже resolved."""
+  resolveFeedback(id: ID!, note: String): FeedbackEntry!
+}

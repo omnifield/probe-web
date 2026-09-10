@@ -17,18 +17,18 @@
 // маршрут (`routes/__root.tsx`), `app/app.tsx` снят как избыточный слой между ними (его работу —
 // строить `browse`/`wearing`/консоль и рисовать `WorkspaceLayout` — делает `routes/
 // _workspace.tsx`). `QueryClientProvider` стоит СНАРУЖИ `RouterProvider`, как и показывает README
-// `@web-core/query` — данных по сети витрина сегодня не тянет ни одной, клиент заведён
-// как стандартный скелет, на будущее.
+// `@web-core/query`. Сам инстанс — `#/shared/api/query-client`, не заводится тут же: нужен
+// снаружи Solid-дерева тоже (`entities/component/model/content.ts` кэширует им ответы службы
+// пресетов, `content-graphql-migration`), а `useQueryClient()` вне дерева не работает.
 
 import "@web-core/style/base.css";
 
 import { mountApp } from "@web-core/solid/mount";
-import { QueryClient, QueryClientProvider } from "@web-core/query";
+import { QueryClientProvider } from "@web-core/query";
 import { RouterProvider } from "@web-core/router";
 
+import { queryClient } from "#/shared/api/query-client";
 import { router } from "../router";
-
-const queryClient = new QueryClient();
 
 mountApp(() => (
   <QueryClientProvider client={queryClient}>

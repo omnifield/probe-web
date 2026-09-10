@@ -5,8 +5,23 @@
 // Тот же приём, что у PRESETS_URL (`entities/component/model/content.ts`) — билд-тайм env, свой
 // адрес у каждого продукта. Токен — общий для всех юзеров витрины (`X-User-Login` несёт личность
 // поверх него), поэтому он тоже билд-тайм, не за юзером.
-const BOX_URL = (import.meta.env["VITE_CHAT_URL"] as string | undefined) ?? "https://150.251.145.87/api";
-const BOX_TOKEN = import.meta.env["VITE_CHAT_TOKEN"] as string | undefined;
+// `NEUROBOX_URL` — общий адрес бокса из корневого `.env` воркспейса, `VITE_CHAT_URL` — прежняя
+// ручка этой зоны (переопределить на одну команду, не трогая общий файл). Путь `/api` дописываем
+// сами: в `.env` записан АДРЕС БОКСА, а тут нужна готовая база — к ней лепятся `/sessions` и
+// остальные ручки. Полный адрес с путём тоже принимаем.
+const BOX_URL = ((): string => {
+  const given = (import.meta.env["NEUROBOX_URL"] ?? import.meta.env["VITE_CHAT_URL"]) as string | undefined;
+  const base = (given ?? "").trim().replace(/\/+$/, "") || "https://150.251.145.87";
+
+  return base.endsWith("/api") ? base : base + "/api";
+})();
+// Токен доступа к боксу. Без него бокс отвечает 401 «нужен токен доступа» на ВСЁ, включая
+// заведение сессии на входе юзера, — то есть чат молчит целиком, а не «сообщения не доходят».
+// `NEUROBOX_TOKEN` — из корневого `.env`, рядом с `NEUROBOX_URL`; `VITE_CHAT_TOKEN` — прежняя
+// ручка зоны.
+const BOX_TOKEN = (import.meta.env["NEUROBOX_TOKEN"] ?? import.meta.env["VITE_CHAT_TOKEN"]) as
+  | string
+  | undefined;
 
 // Чем заводится сессия. Имена не выдумываются: бокс на неизвестный рецепт/паспорт/агента отвечает
 // 400 с текстом, актуальные списки — `GET /api/catalog/recipes`, `/api/catalog/passports`,
