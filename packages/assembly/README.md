@@ -50,8 +50,14 @@
 
 📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (девять файлов —
 дерево/правки/целостность/реестр/вложенность/координата/образец/self-assembly/паспорт, ноль
-Solid), `src/render/index.tsx` (`RenderTree`/`RenderNode`, единственный сегодняшний потребитель
-`engine/`), `src/shared/trace.ts` (перф-трасса, общая на оба).
+Solid), `src/render/` (двенадцать файлов, единственный сегодняшний потребитель `engine/`;
+`index.tsx` — тонкий реэкспорт по тому же образцу, что корневой `src/index.ts`; `render-tree.tsx`
+— провайдер/`Suspense`/`checkTree`; `render-node.tsx` — сборка ОДНОГО узла, точка входа рекурсии;
+`content-of.tsx` — дети узла, самая тонкая часть Solid-реактивности; `composition.ts`/
+`self-assembly-branch.ts` — ЧЕМ рисовать узел; `props.ts` — пропы/события/`bind` из данных;
+`content-value.ts` — значение content-узла; `edit-overlay.tsx` — украшение путей отрисовки;
+`takes-content.ts` — структурный вопрос реестра; `defaults.tsx` — запасные виды; `types.ts` —
+проп-контракты), `src/shared/trace.ts` (перф-трасса, общая на оба).
 
 🔤 `genus:"text"`/`genus:"icon"` у `AssemblyContent` — это уровень строки, не уровень компонента:
 `{ genus: "text", value: { path: "title" } }` рисуется как нативное значение (строка либо

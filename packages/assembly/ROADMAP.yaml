@@ -323,6 +323,67 @@ categories:
           0→2 item, регрессии на исходный баг нет.
           тест-потребитель — так и было пропущено оба раза.
 
+      - id: content-of-for-freezes-after-first-nonempty
+        type: bug
+        status: Done
+        priority: Critical
+        milestone: null
+        name: "contentOf() — <For> замирал НАВСЕГДА на первом непустом состоянии, дальнейший рост игнорировался"
+        description: |
+          Заявка user'а напрямую (2026-09-10, живой репро — `select` внутри `apps/skin`'s `Slot`
+          открывался с пустым списком, хотя данные есть). Изолировано до ГОЛОГО движка (без
+          `apps/skin`, без `Slot`/`Renderer` — только `kitComponentRenderer()`+`RenderTree`):
+          `items` растут по одному (`setData` с реальной паузой между вызовами — как клик
+          «Добавить» девять раз подряд), а не одним прыжком 0→N.
+
+          Наблюдение: 0→1 (первая непустая запись) подхватывался корректно — список показывал 1
+          item. Все ДАЛЬНЕЙШИЕ шаги (1→2, 2→3, ..., 8→9) — список оставался замороженным на 1,
+          сколько данных потом ни приезжай. Один прыжок 0→9 (без промежуточных состояний) работал
+          штатно — ломался именно ПОСЛЕДОВАТЕЛЬНЫЙ рост через несколько отдельных пересборок ПОСЛЕ
+          первого перехода null→`<For>`.
+
+          Механизм — СОСЕДНИЙ с `content-of-rebuild-freeze`, но не тот же: `declared` (`<For>`)
+          строится ОДИН РАЗ вне тела `contentCache.memo` (фикс `content-of-rebuild-freeze`),
+          усыновляясь реактивным владельцем, что жив НА МОМЕНТ первого вызова `contentOf()` — а это
+          ТРАНЗИТНЫЙ эффект-потребитель (`props.children`'а читателя, то есть эффект `insert()`,
+          что вставляет детей в DOM у `content`), не сам `RenderNode`. Пока `contentCache.memo()`
+          отдаёт `null` (0 items), этот потребительский эффект не имеет причин перезапускаться. Как
+          только `children.length` впервые становится > 0, `memo()`'s выход меняется (`null` →
+          `declared`, РЕАЛЬНАЯ смена ссылки) — потребительский эффект ОБЯЗАН перезапуститься, чтобы
+          вставить `declared` в DOM. Solid ПЕРЕД повторным запуском эффекта диспоузит всё, что было
+          усыновлено ИМ ЖЕ на ПРЕДЫДУЩЕМ заходе — а `<For>` был создан именно на этом (первом)
+          заходе этого же эффекта (тот же вызов `contentOf()`, тот же владелец). `<For>` умирал
+          вместе с чисткой; ссылка `declared` переживала (используется дальше как обычный
+          неизменный JSX), но её внутренняя реактивность была уже мертва — дальнейшие изменения
+          `node().children` никто не слушал.
+
+          ПЕРВАЯ попытка — `runWithOwner(getOwner_из_тела_createContentOf, () => <For>...)`,
+          усыновить `<For>` владельцем самого `RenderNode`. СЛОМАЛА контекст: этот `getOwner()`
+          захвачен ДО того, как `rendered()` вообще построит `Comp` (`Select.RootProvider` и
+          подобное) — `runWithOwner` туда перепривязывает не только диспоуз, но и РАЗРЕШЕНИЕ
+          КОНТЕКСТА (`useContext` идёт по цепочке владельцев, не по DOM), поймано сразу же полным
+          прогоном `pnpm --filter @web-core/ui test` — `useSelectContext() === undefined` у
+          `label`/`control`/`positioner` (детей ROOT'а, не только `content`).
+
+          ПОЧИНЕНО: `createRoot((dispose) => <For>...)` вместо `runWithOwner`. Solid: root с
+          АРНОСТЬЮ-1 колбэком (`dispose` явным параметром) — не «unowned», наследует `context` от
+          ТЕКУЩЕГО владельца на момент вызова (`dev.js`'s `createRoot`, `root.context = current ?
+          current.context : null`) — то есть выполняется ТАМ ЖЕ, где выполнялся раньше (внутри
+          того самого первого вызова `contentOf()`, внутри контекста `Comp`), но с СОБСТВЕННОЙ,
+          независимой от родителя, границей диспоуза — родительский (транзитный) эффект больше не
+          может утащить `<For>` за собой при повторном запуске. Ручной `dispose` пристёгнут через
+          `onCleanup` к ДРУГОМУ, долгоживущему владельцу (`getOwner()` из тела `createContentOf`,
+          тело `RenderNode`) — ТОЛЬКО как получатель «узел размонтирован НАВСЕГДА», не как владелец
+          рендера/контекста.
+
+          Проверено: `test/select-incremental-growth.test.tsx` (голый движок, новый файл) — рост
+          по одному 0→1→...→9 подхватывается на КАЖДОМ шаге, не только на первом и последнем.
+          `apps/skin/test/select-in-slot-repro.test.tsx` — то же самое через РЕАЛЬНЫЙ `Slot`+
+          `Carousel`, включая «клик до конца роста, потом items дорастают». Полные прогоны без
+          выборки: `pnpm --filter @web-core/assembly test` 21/21, `pnpm --filter @web-core/ui
+          test` 275/275 (тот самый набор, что ловил предыдущую регрессию field/table), `pnpm
+          --filter @web-core/skin-app test` 27/27. Ни одного красного.
+
   - category: Не сделано
     items:
       - id: two-way-binding
@@ -389,6 +450,23 @@ categories:
           Означает: package.json exports — `.` (engine, без Solid) + `./render` (RenderTree,
           solid-js — опциональный peer). По образцу store's `.`/`./machine`. Задело ~30
           потребителей в packages/ui/apps/skin — RenderTree теперь отдельным импортом.
+
+      - id: render-index-split-into-twelve-files
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "render/index.tsx (543 строки) разложен на 12 файлов по темам — тот же довод, что развёл engine/"
+        description: |
+          Означает: провайдер/`Suspense`/`checkTree` (`render-tree.tsx`), сборка ОДНОГО узла
+          (`render-node.tsx`), дети узла — самая тонкая часть Solid-реактивности
+          (`content-of.tsx`), ЧЕМ рисовать узел (`composition.ts`/`self-assembly-branch.ts`),
+          пропы/события/`bind` из данных (`props.ts`), значение content-узла (`content-value.ts`),
+          украшение путей отрисовки (`edit-overlay.tsx`), структурный вопрос реестра
+          (`takes-content.ts`), запасные виды (`defaults.tsx`), проп-контракты (`types.ts`) — по
+          файлу на тему, `index.tsx` стал тонким реэкспортом, тем же приёмом, каким корневой
+          `src/index.ts` уже реэкспортирует `engine/`. Публичная поверхность подпути `./render` не
+          изменилась ни на символ. Разбор — FAQ.md.
 
       - id: readme-engine-template
         type: feature
