@@ -17,7 +17,6 @@ import { createSkinConnection } from "@web-core/skin/solid";
 import { passportOf } from "@web-core/ui/passport";
 import {
   Select,
-  SelectClearTrigger,
   SelectContent,
   SelectControl,
   SelectHiddenSelect,
@@ -25,7 +24,6 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
-  SelectLabel,
   SelectPositioner,
   SelectTrigger,
   SelectValueText,

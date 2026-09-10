@@ -9,7 +9,9 @@ export function Docs(props: { url?: string }) {
   return (
     <Dialog lazyMount unmountOnExit>
       <DialogControl style={{ width: "100%" }}>DOCS</DialogControl>
-      <DialogContent style={{ width: cardVar("card-xxxl") }}>
+      <DialogContent
+        style={{ width: cardVar("card-xxxl"), height: cardVar("card-xxxl") }}
+      >
         <Show when={props.url} fallback={<p>URL не задан.</p>}>
           {(url) => (
             <iframe

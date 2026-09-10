@@ -50,7 +50,11 @@ export function Auth() {
   };
 
   return (
-    <Dialog open={open()} onOpenChange={(details) => setOpen(details.open)}>
+    <Dialog
+      data-variant="sheet"
+      open={open()}
+      onOpenChange={(details) => setOpen(details.open)}
+    >
       <Show when={currentUser()} fallback={<DialogControl>Auth</DialogControl>}>
         <Button onClick={() => logout()}>Logout</Button>
       </Show>

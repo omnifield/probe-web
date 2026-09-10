@@ -161,6 +161,97 @@ categories:
           подпись на триггере оставалась от предыдущего компонента, Select не реагировал). Список
           пуст → выбор сброшен, данные — литерал `"-мок-"`, не пустота и не зодер.
 
+      - id: repeat-items-empty-on-embed
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "Компоненты с repeat/items (select, radio-group и другие) рендерят ПУСТО через /embed"
+        description: |
+          Найдено user живьём (2026-09-10): `select` с реальным сохранённым content'ом
+          (`select-currencies`, 9 валют) открывает список — пустой, ноль пунктов. Сначала
+          заподозрили сам `select`/движок сборки — проверено живьём через chrome-devtools (не
+          снимок, реальный DOM+сеть), это НЕ ТО:
+
+          1. НЕ select-специфично. `radio-group` с реальным content'ом (`radio-group-delivery`)
+             через тот же `/embed`-путь — та же картина: контейнер есть, 0 радиокнопок внутри.
+             Разные Zag-машины, один симптом.
+          2. НЕ голый `createListCollection` без аксесоров (гипотеза, которую первой назвал
+             овнер `packages/ui`) — дефолтные аксесоры `@zag-js/collection` и так читают
+             `.value`/`.label` (проверено чтением исходника vendor'а, `list-collection.mjs`),
+             работали бы и без явных `itemToValue`/`itemToString`.
+          3. НЕ общий движок разворота (`packages/skin/engine/passport/assembly/expand.ts`). У
+             `menu` есть тест на реальном DOM с реальным кликом (`menu.test.tsx`,
+             `unified-item-collection-engine`) — тот же приём `repeat`/`bind`, зелёный.
+          4. Данные долетают корректно — сетевой запрос (`kind:"content"`) в devtools содержит
+             `select-currencies` с полными 9 записями, витрина корректно показывает `label`
+             (`"Валюта счёта"`) и `placeholder` (`"Не выбрана"`) из ТОГО ЖЕ объекта данных — то
+             есть `data` дошли до рендера, просто REPEAT по ним не сработал.
+
+          Направление, не готовый диагноз: `entities/component/model/handle.ts:57`'s `ready()`
+          смотрит ТОЛЬКО на `componentInfoAtom` (паспорт/форма), не на `componentDataAtom`
+          (контент). `pages/embed/index.tsx`'s `<Show when={component.ready()}>` монтирует
+          `Renderer` по этому флагу — значит `Renderer` может смонтироваться РАНЬШЕ, чем контент
+          вообще приехал. Тот же класс дыры уже ловили и чинили один раз для `loading()`
+          (`slot-loader-around-renderer`: "данные показа едут отдельно от info и этим флагом не
+          покрыты") — но там правили спиннер в витрине, `ready()` в `embed` не трогали.
+
+          НЕ доказано статическим чтением: должно ли это давать именно ПОСТОЯННЫЙ 0 (не временный
+          на один кадр) — `Renderer`'s `createMemo` читает `props.data` реактивно, по теории
+          обязан пересобраться, когда `componentDataAtom` обновится. Если пересборка реально не
+          происходит — причина глубже, в реактивной цепочке между `EmbedPage`'s
+          `component.setData(...)` и `Renderer`'s `createMemo(() => instanceOf(...))`, не
+          обязательно в самом `ready()`. Проверять живым `console.log`/брейкпоинтом на пересборке
+          дерева, не гадать дальше.
+
+          ПРОВЕРЕНО (owner-skin-app, 2026-09-10): гипотеза `ready()` НЕ подтвердилась. Написан
+          изолированный repro — голый `kitComponentRenderer()`+`RenderTree`, БЕЗ `apps/skin`
+          вообще (`ready`/`EmbedPage`/`Renderer` не участвуют), `data` меняется через `createSignal`
+          напрямую (`test/render-tree-repeat-reactivity.test.tsx`). Значит дело не в том, КОГДА
+          `apps/skin` монтирует показ.
+
+          Найдено фактическим наблюдением (не полным диагнозом — до конца механизм не вскрыт, см.
+          файл теста): переход 0 items → N items ПОСЛЕ монтирования у `radio-group` (`item` —
+          прямой потомок `root`) отрабатывает корректно. У `select` (`item` — потомок `content`,
+          который сам внутри `positioner`, открытого сразу через `rootProps.open`) — НЕТ: `content`
+          есть в DOM (портал в `document.body`, `data-state="open"` честный), но `item`-узлов внутри
+          ноль, сколько `data` потом ни меняй. Рост УЖЕ НЕПУСТОГО списка (1→2) у `select` при этом
+          работает — ломается конкретно переход 0→N, не repeat вообще (тест зафиксирован как
+          `it.fails`, известный баг движка, а не `apps/skin`).
+
+          Подозрение (НЕ доказано — читать/трогать `packages/assembly` не в периметре этой роли):
+          `RenderNode`'s `contentOf()` (`packages/assembly/src/render/index.tsx`) — кэш детей узла
+          строится один раз на инстанс компонента, и пустая ветка (`current.children.length === 0`
+          на первом чтении) кладёт в кэш голый `null`, а не реактивный `<For>` — только `<For>` мог
+          бы потом подхватить детей, добавленных `repeat`'ом. НЕ объясняет, почему `radio-group` не
+          ломается тем же путём при том же переходе 0→N — открытый вопрос, отдельного взгляда
+          заслуживает именно тот, кто владеет `packages/assembly`.
+
+          ПОЧИНЕНО (owner packages/assembly, 2026-09-10, `4b5ce9a`+`d496e96`): подозрение
+          подтвердилось, но точнее — критерий был не `children.length === 0` вообще, а СНИМОК
+          `children.length` на момент первого чтения (кэш `contentCache.memo` ленивый синглтон,
+          решение null-vs-`<For>` больше не пересчитывается). Почему `radio-group` не ломался тем
+          же путём — оказалось случайностью момента монтирования (`root`, прямой родитель `item`,
+          чаще успевает получить детей до первого чтения `props.children`, чем `select`'s `content`
+          внутри `positioner`/`Portal`), не структурным отличием — старая проверка была уязвима к
+          ЛЮБОМУ порядку монтирования. Критерий заменён на `takesContent(registry, type)` —
+          структурное свойство адреса из реестра, не значение на момент первого чтения. Полный
+          разбор — `packages/assembly/ROADMAP.yaml`'s `content-of-null-vs-for-by-structure`,
+          `packages/assembly/FAQ.md`.
+          Ревью architect (2026-09-10): `pnpm --filter @web-core/assembly test` — 20/20 зелёных
+          (включая новый `test/contentof-null-vs-for.test.tsx`, голый реестр без кита, доказывает
+          и починку, и то, что закрытые по реестру части — `trigger` и т.п. — как получали `null`,
+          так и получают); `pnpm --filter @web-core/assembly build`+`lint` — сборка чистая, линт
+          зелёный (один pre-existing `solid/reactivity` на строке 195 — сверен по `eslint` ДО
+          этого фикса тем же правилом, эта правка его не касается и не вносит).
+          ХВОСТ, НЕ ЗАКРЫТ: `apps/skin/test/render-tree-repeat-reactivity.test.tsx`'s select-кейс
+          (строка 91) всё ещё обёрнут в `it.fails(...)` — сам файл предупреждал об этом («тест
+          покраснеет, если баг вдруг пропадёт — сигнал обновить тест на `expect`»), и это ровно
+          сейчас произошло: `pnpm --filter @web-core/skin-app exec vitest run
+          test/render-tree-repeat-reactivity.test.tsx` красный (`Error: Expect test to fail`, тело
+          теста реально проходит). Файл untracked, зона apps/skin — не трогаю сам, нужен один
+          владелец на снятие `it.fails` → `it`/`expect`.
+
   - category: Слот показа
     items:
       - id: slot-loader-around-renderer
@@ -401,7 +492,7 @@ categories:
 
       - id: input-nested-fields-engine
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "Input — движок для вложенности: массивы и глубина >1 в io-схеме"
@@ -422,22 +513,118 @@ categories:
           разрешён и там, где до сих пор не запрещался явно).
 
           Полноценный редактор массива — это не «ещё один `kind`» в существующем списке: нужно
-          добавлять/убирать/переставлять элементы, у каждого элемента — своя вложенная форма (та же
-          `fieldsOf`, рекурсивно по `children`), значит другая архитектура компонента (список форм,
-          не строка полей), не расширение `DataField`'а. Компоненты кита СВЕРХ канона (`tabs`'s
-          `content`, `accordion`'s `activeValues`) — та же рекурсивная форма `fieldsOf` для полей
-          ОДНОГO элемента массива, отдельная задача не нужна, это уже покрыто `input-widget-real-ui`
-          на уровне одного элемента — новое здесь только сам список (add/remove/reorder) и
-          рекурсия в `children`.
+          добавлять/убирать элементы, у каждого элемента — своя вложенная форма (та же `fieldsOf`,
+          рекурсивно по `children`), значит другая архитектура компонента (список форм, не строка
+          полей), не расширение `DataField`'а. Компоненты кита СВЕРХ канона (`tabs`'s `content`,
+          `accordion`'s `activeValues`) — та же рекурсивная форма `fieldsOf` для полей ОДНОГО
+          элемента массива, отдельная задача не нужна, это уже покрыто `input-widget-real-ui` на
+          уровне одного элемента — новое здесь только сам список (add/remove) и рекурсия в
+          `children`.
+
+          ОБЪЁМ (согласовано с user 2026-09-09): реордер элементов — ОТДЕЛЬНЫЙ заход, в этот не
+          входит. Первая версия — add/remove + рекурсия, порядок элементов фиксирован (как ввели/
+          как пришли в data).
+
+          Сделано: `schema.ts`'s `fieldsOf`/`fieldsOfNode` теперь узнают поле-массив ОБЪЕКТОВ
+          (`prop.type === "array" && item.type === "object"`) как `kind: "list"` с `element:
+          {root, node}` — узел элемента ПЛЮС корень JSON Schema документа, нужен для разрешения
+          `$ref` (канонический `item` рекурсивен через `z.lazy`, `children` в JSON Schema — это
+          `$ref` на тот же `$defs`-узел, не отдельная копия). Новый `resolve(root, prop)` — единая
+          точка разыменования `$ref`, зовётся и на скалярах, и на `items`, и внутри `blankValue`.
+          `fieldsOfElement(element)` — те же поля, что дал бы `fieldsOf`, только для узла ОДНОГО
+          элемента (реэкспорт `fieldsOfNode` под именем для внешнего употребления, сырые JSON-
+          Schema типы (`JsonProp`/`JsonRoot`) наружу схемы не текут). `blankElement(element)` —
+          новый элемент по умолчанию (`""`/`0`/`false`/`[]`/первый вариант enum по типу поля,
+          рекурсивно по вложенным объектам) — то, что кладёт кнопка "Добавить".
+
+          `withValue`/`valueAt` НЕ трогал — путь в них никогда не проходит ЧЕРЕЗ индекс массива
+          (см. обновлённый докблок `FieldPath`): `list`-поле меняется ЦЕЛИКОМ (весь массив разом),
+          точечная правка ОДНОГО элемента списка бьётся из `ListField` вручную (`.map`/`.filter` по
+          индексу из `<For>`), не путём `withValue`. Опасались было спреда `{...array}` (превратил
+          бы массив в объект с числовыми ключами) — оказалось не нужно вовсе при таком разделении
+          ответственности, ничего в существующей, уже протестированной логике менять не пришлось.
+
+          `fields.tsx`'s новый `ListField` — рекурсивен С `DataFields` (не сам с собой): список
+          карточек-элементов, каждая карточка — вложенная `DataFields` для полей ЭТОГО элемента
+          (если у элемента есть свой `list`-field типа `children` — внутри окажется свой
+          `ListField`, глубина реальных данных решает, не глубина схемы, та рекурсивна всегда).
+          "Удалить" на каждой карточке, "Добавить" — снизу списка.
+
+          Проверено живьём (свой dev-сервер 5175, боевой удалённый GraphQL-бэк без переопределений
+          — `witrina-remote-graphql-live` уже подключил): `/showcase/tree-view`
+          (`items: Item[]`, канонический `item`, реальный компонент кита, не тестовая заглушка) —
+          "Добавить" породил карточку `value`/`label`/`children`, "Добавить" внутри `children`
+          породил ВТОРОЙ уровень (свои `value`/`label`/`children`), "Удалить" на втором уровне
+          корректно убрал только его, первый уровень и общий "Добавить" внизу остались на месте.
+          Рекурсия неограниченной глубины подтверждена кликом, не только юнит-тестом.
+
+          Плюс юнит-тест на чистую логику (`test/input-fields-schema.test.ts`, 7 тестов) —
+          `fieldsOf` находит `list`-поле и не путает с примитивным массивом (`tags: string[]` не
+          рендерится никак), `fieldsOfElement` даёт скаляры элемента И его `children` снова
+          `list`, рекурсия не обрывается на втором уровне, `blankElement` даёт верные умолчания
+          (включая пустой `children: []`), `withValue`/`valueAt` не задевают форму массива.
 
       - id: lab-page-purpose
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: "/lab — назначение решено, райтбар разведён по маршруту"
+        description: |
+          Было: маршрут жив ("Лаборатория (мок)"), что там будет показано — не решено.
+
+          РЕШЕНО (user, 2026-09-09): разделение по смыслу двух экранов, не по техническому наполнению.
+
+          `/showcase` остаётся ВИТРИНОЙ — выставочный интерактив по готовым сборкам/вариантам, без
+          чата. Сайдбар — простые настройки: переключить готовый вариант, задать текст лейбла и
+          подобное точечное. Ничего не создаётся, только переключается между уже существующим.
+
+          `/lab` — страница СОЗДАНИЯ компонента: чат с агентом ЖИВЁТ здесь (не в витрине), гибкие
+          настройки в ДВА уровня — быстрые (border/padding/размер и т.п., частые точечные правки) и
+          глубокие (когда нужно "сильно поковыряться", полный охват). Интерфейс создания ДАННЫХ
+          (не только вида) тоже сюда, но ОТДЕЛЬНЫМ заходом позже — сначала разобраться с самой
+          витриной и отрисовкой данных (`input-widget-real-ui`/`input-nested-fields-engine`).
+
+          Сделано (2026-09-10, ТЗ user): новый `widgets/rightbar` (`showcase.tsx`/`lab.tsx`,
+          `RightbarShowcase`/`RightbarLab`) — `RightbarShowcase` несёт `Info`+`Input` (поля данных,
+          без чата), `RightbarLab` несёт `Info`+`Chat` (чат, без полей). `WorkspaceRightbar` —
+          позиционный слот `Workspace` (CSS grid-area самого компонента, не портал/контекст) —
+          недостижим из `<Outlet/>` (`pages/showcase`/`pages/lab` рендерятся ВНУТРИ
+          `WorkspaceMain`, соседний слот), значит выбор варианта решается в `WorkspaceLayout`
+          (`pages/index.tsx`) через `useLocation().pathname.startsWith("/lab")`, не в самих
+          страницах. Проверено живьём: `/showcase/button` — поля есть, чата нет; `/lab` — чат есть,
+          полей нет.
+
+          Не решено (следующий заход, не сейчас, заведено `lab-settings-levels`): точный список
+          "быстрых" настроек и граница быстрые/глубокие внутри `/lab`.
+
+      - id: lab-settings-levels
         type: feature
         status: Backlog
         priority: Low
         milestone: null
-        name: "/lab — назначение экрана не объявлено"
+        name: "/lab — два уровня настроек вида (быстрые/глубокие), не решено"
         description: |
-          Означает: маршрут жив ("Лаборатория (мок)"), что там будет показано — не решено.
+          Отложено из `lab-page-purpose` — маршрутный/виджетный каркас (`RightbarLab`) готов, но
+          сам `/lab` сегодня — только чат, гибких настроек вида нет вовсе (ни быстрых, ни глубоких).
+          Не решено: точный список "быстрых" настроек (border/padding/размер — по словам user,
+          пример, не исчерпывающий список), где проходит граница быстрые/глубокие, как это
+          технически ложится рядом с уже готовым `Input`-движком (`input-widget-real-ui`/
+          `input-nested-fields-engine`) — те про ДАННЫЕ показа, это про НАСТРОЙКИ ВИДА (другая ось).
+
+      - id: input-list-reorder
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "ListField — переупорядочивание элементов (отложено из input-nested-fields-engine)"
+        description: |
+          Отложено намеренно (согласовано с user 2026-09-09) при первой версии `ListField`
+          (`input-nested-fields-engine`): add/remove + рекурсия в `children` есть, порядок
+          элементов зафиксирован (как ввели/как пришли в data) — переставить элемент местами
+          нельзя. Отдельный заход, когда дойдём: нужен UI-паттерн (drag или кнопки вверх/вниз на
+          карточке) и решение, тянуть ли что-то из кита (в `packages/ui` на момент письма готового
+          drag-примитива для этого кейса не было — сверить заново на момент захода).
 
       - id: no-tests
         type: feature
@@ -477,6 +664,39 @@ categories:
           `componentInfo`/`Input`/`Slot` — без изменений, граница мока — ровно на сетевом клиенте.
           `queryClient.clear()` в `afterEach` — кэш `content-graphql-migration` иначе пережил бы
           между двумя `it` в одном файле и второй тест видел бы данные первого.
+
+  - category: Дерево компонентов
+    items:
+      - id: tree-item-value-not-id
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "Sidebar-дерево: активный узел не подсвечивался, раскрытие одного узла двигало все разом"
+        description: |
+          Регресс от миграции ДРУГОЙ зоны (`unified-item-collection-engine`, `packages/ui`,
+          2026-09-09) — не моя правка этой сессии, но чинить нужно здесь. `packages/ui/src/shared/
+          utils/collection.ts`'s `createItemTreeCollection` строит identity узла zag-коллекции
+          строго по `node.value` (`nodeToValue: (node) => node.value`) — так было решено каноном
+          `item` (`value`/`label`/`children?`). `entities/component/model/tree.ts`'s `TreeItemData`
+          несла только `id` (старый контракт, до канона) — `.value` не было вовсе, значит
+          `nodeToValue` возвращал `undefined` ДЛЯ ЛЮБОГО узла: identity всех узлов схлопывалась в
+          один и тот же `undefined`, отсюда оба симптома — раскрытие/закрытие ОДНОГО узла двигало
+          состояние, разделяемое ВСЕМИ (баг user: "узлы открываются/закрываются все разом"), и
+          `activeValue` (тоже сравнение по `value`) не совпадал ни с одним узлом (баг user:
+          "активный элемент не выделяется").
+
+          Починено: `TreeItemData.id` → `TreeItemData.value` (`entities/component/model/tree.ts`),
+          два места чтения в `widgets/component/tree/index.tsx` (`payload.id`→`payload.value` в
+          обработчике клика, `item.id`→`item.value` в `defaultExpandedValue`) — переименование, не
+          новое поле: строковое значение (имя группы/имя компонента) то же самое, что раньше несло
+          `id`, просто под именем, которое ждёт кит.
+
+          Проверено живьём (MCP-браузер, `/showcase/button` → `/showcase/checkbox`): свернул
+          "Actions" кликом — свернулась ТОЛЬКО она, остальные пять групп остались раскрыты; клик по
+          листу "checkbox" — навигация прошла, лист подсветился синим, группа "Inputs" сама
+          раскрылась, "Actions" осталась свёрнутой. Раньше (по словам user) оба эффекта были
+          разбиты — один клик двигал всё дерево разом.
 
   - category: GraphQL-переезд (третий шаг цепи backend/presets → packages/query → потребители)
     items:
@@ -669,6 +889,74 @@ categories:
           нужна такая страховка.
 
 log:
+  - id: repeat-items-empty-on-embed-ready-hypothesis-ruled-out
+    type: plan
+    date: 2026-09-10
+    summary: >
+      `repeat-items-empty-on-embed`: гипотеза про `handle.ts`'s `ready()` (Renderer монтируется
+      раньше контента) не подтвердилась — написан голый repro (`kitComponentRenderer`+`RenderTree`,
+      без `apps/skin`, `data` меняется через `createSignal` напрямую,
+      `test/render-tree-repeat-reactivity.test.tsx`), баг воспроизводится и там. Найдено фактом, не
+      полным диагнозом: `radio-group` (repeat — прямой потомок `root`) корректно подхватывает
+      items, добавленные ПОСЛЕ монтирования (переход 0→N); `select` (repeat — потомок `content`
+      внутри открытого `positioner`) — нет, `content` в DOM есть (портал, `data-state="open"`),
+      `item`-узлов внутри ноль. Рост уже непустого списка (1→2) у `select` работает — ломается
+      именно 0→N. Подозрение на `RenderNode`'s `contentOf()` (`packages/assembly/src/render/
+      index.tsx`, кэш детей на пустой ветке не заводит реактивный `<For>`) — не доказано, чинить не
+      в периметре `apps/skin`. Провальный кейс зафиксирован тестом как `it.fails` (известный баг
+      движка), чтобы не потерять знание и не красить CI за чужой периметр.
+
+  - id: rightbar-showcase-lab-split
+    type: plan
+    date: 2026-09-10
+    summary: >
+      Техническая реализация решения `lab-page-purpose`: райтбар разведён по маршруту. Новый
+      `widgets/rightbar/{showcase,lab}.tsx` — `RightbarShowcase` (`Info`+`Input`, без чата) и
+      `RightbarLab` (`Info`+`Chat`, без полей данных). `WorkspaceRightbar` — позиционный слот
+      `Workspace` (CSS grid-area, не портал), недостижим из `<Outlet/>`, значит выбор варианта —
+      в `WorkspaceLayout` (`pages/index.tsx`) через `useLocation().pathname.startsWith("/lab")`.
+      Проверено живьём в MCP-браузере на обоих маршрутах. Настройки вида для `/lab` (быстрые/
+      глубокие) — отдельным пунктом, `lab-settings-levels`, объём не решён.
+
+  - id: tree-item-value-not-id-fix
+    type: plan
+    date: 2026-09-09
+    summary: >
+      User сообщил регресс: в sidebar-дереве активный компонент перестал подсвечиваться, клик по
+      одному узлу раскрывал/закрывал все разом. Причина — миграция ДРУГОЙ зоны
+      (`unified-item-collection-engine`, `packages/ui`): кит перевёл коллекцию tree-view на
+      identity по `node.value` (канонический `item`), а `entities/component/model/tree.ts`'s
+      `TreeItemData` всё ещё несла только `id` — `nodeToValue` возвращал `undefined` на любом
+      узле, identity всех узлов схлопывалась в одну. Переименовал `id`→`value` в `TreeItemData` и
+      двух местах чтения (`widgets/component/tree/index.tsx`) — то же строковое значение, другое
+      имя поля. Проверено живьём в MCP-браузере: сворачивание одного узла не трогает остальные,
+      клик по листу подсвечивает и переключает витрину корректно.
+
+  - id: input-nested-fields-engine-shipped
+    type: plan
+    date: 2026-09-09
+    summary: >
+      `input-nested-fields-engine` — единый рекурсивный редактор списков вместо задуманной ранее
+      связки реализаций под каждый компонент: пока писал ТЗ, `packages/ui` перевёл весь кит на
+      канонический `item` (`value`/`label`/`children?`, `unified-item-collection-engine`), значит
+      достаточно ОДНОГО движка над этой формой. Объём с user: реордер — отдельным заходом
+      (`input-list-reorder`, заведён в Backlog), эта версия — add/remove + рекурсия в `children`.
+
+      `schema.ts`: `fieldsOf`/`fieldsOfNode` узнают поле-массив объектов как `kind: "list"` с
+      `element: {root, node}` (узел элемента + корень JSON Schema — нужен `resolve()` для `$ref`,
+      канонический `item` самоссылается через `z.lazy`). `fieldsOfElement`/`blankElement` — новые
+      публичные функции для UI-слоя, сырые JSON-Schema типы наружу не текут. `withValue`/`valueAt`
+      не потребовали правки: путь никогда не проходит через индекс массива (список меняется
+      целиком), опасавшийся баг со спредом массива в объект оказался неприменим при таком
+      разделении ответственности.
+
+      `fields.tsx`: новый `ListField`, рекурсивен С `DataFields` (список карточек-элементов, у
+      каждой — вложенная `DataFields`, если там снова `list` — свой `ListField`). Проверено живьём
+      на РЕАЛЬНОМ компоненте (`tree-view`, боевой удалённый GraphQL-бэк): add/remove на двух
+      уровнях вложенности кликом в MCP-браузере, плюс юнит-тест на чистую логику
+      (`test/input-fields-schema.test.ts`, 7 тестов) — рекурсия, `blankElement`, отсев примитивных
+      массивов.
+
   - id: array-count-hints-obsolete
     type: plan
     date: 2026-09-09

@@ -1,6 +1,5 @@
 import type { DispatchedEvent } from "@web-core/assembly";
-import { useNavigate, useParams } from "@web-core/router";
-import { DEFAULT_TAG } from "@web-core/skin/tags";
+import { useLocation, useNavigate, useParams } from "@web-core/router";
 import { useAtom } from "@web-core/store";
 import { createMemo } from "solid-js";
 
@@ -18,6 +17,7 @@ export function Tree() {
   });
 
   const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
 
   const params = useParams({
     strict: false,
@@ -31,12 +31,12 @@ export function Tree() {
     const payload = event.context["payload"] as TreeItemData | undefined;
     if (payload === undefined || payload.children !== undefined) return;
 
-    // Тег в дереве не выбирается — клик по компоненту всегда ведёт на дефолтный, листать
-    // остальные теги/сборки — дело витрины показа (`entities/showcase/ui/slot`).
-    void navigate({
-      to: "/showcase/$component/$tag",
-      params: { component: payload.id, tag: DEFAULT_TAG },
-    });
+    // Один сегмент — имя компонента, без тега: тег/вариант листает сама витрина
+    // (`entities/showcase/ui/slot`), дерево его не выбирает. Экран (showcase/lab) не меняем —
+    // остаёмся там, где кликнули (`/lab/$component`, если были на `/lab`, иначе `/showcase/
+    // $component`), не тащим юзера обратно на витрину.
+    const screen = pathname().startsWith("/lab") ? "/lab/$component" : "/showcase/$component";
+    void navigate({ to: screen, params: { component: payload.value } });
   };
 
   return (
@@ -46,7 +46,7 @@ export function Tree() {
       rootProps={{
         items: items(),
         selectionMode: "single",
-        defaultExpandedValue: items().map((item) => item.id),
+        defaultExpandedValue: items().map((item) => item.value),
         activeValue: activeValue(),
       }}
       data={{ items: items() }}

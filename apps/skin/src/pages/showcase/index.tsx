@@ -1,9 +1,8 @@
 import type { DispatchedEvent } from "@web-core/assembly";
-import { Flow, FlowItem, Toc, Surface, Typography, toast } from "@web-core/ui";
+import { Flow, FlowItem, toast } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
-import { useNavigate } from "@web-core/router";
 import { useAtom } from "@web-core/store";
-import { createEffect, createMemo, For, Show } from "solid-js";
+import { createEffect, createMemo, For } from "solid-js";
 
 import {
   componentDataAtom,
@@ -24,7 +23,9 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
   const assemblies = createMemo(
     () => component.info()?.editorInfo?.assemblies ?? [],
   );
-  const tagGroups = createMemo(() => component.info()?.skin?.tags ?? []);
+  const tagGroups = createMemo(() =>
+    (component.info()?.skin?.forms ?? []).flatMap((formInfo) => formInfo.tags),
+  );
 
   function onDispatch(event: DispatchedEvent) {
     component.recordEvent(event);

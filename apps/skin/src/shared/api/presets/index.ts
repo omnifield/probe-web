@@ -5,9 +5,10 @@
 // нарядов в интерфейсе. Живёт в shared по тому же доводу, что и соседний `api/box`: за адресом
 // приходят и сущности, и виджет, и никто из них не должен импортировать другого ради него.
 
-/** Путь ручки у службы. Не настройка: его держит сам бэк константой (`root` в
- *  `backend/presets/internal/api/handler.go`), и врозь они разъезжаются. */
-const API_PATH = "/api/presets";
+/** Путь ручки у службы. Не настройка: его держит сам бэк константой (`mux.Handle("POST /graphql", ...)`
+ *  в `backend/presets/cmd/presets/main.go`), и врозь они разъезжаются. REST (`/api/presets`) снят —
+ *  один путь на всё, не сборка `?kind=`/`/{id}` поверх базы. */
+const GRAPHQL_PATH = "/graphql";
 
 /** Куда ходим, когда снаружи не сказано ничего — служба на этой же машине (`backend/presets`,
  *  порт по умолчанию 8787). Так витрина поднимается без единой переменной. */
@@ -20,13 +21,13 @@ const LOCAL = "http://127.0.0.1:8787";
  *  на одну команду, не трогая общий файл.
  *
  *  Путь дописываем сами, если его не дали: в `.env` естественно записать АДРЕС СЛУЖБЫ
- *  (`https://host:port`), а клиенту (`@web-core/skin/presets`) нужна готовая база — он лепит
- *  `?kind=` и `/{id}` прямо к ней. Полный адрес с путём тоже принимаем: тогда не трогаем. */
+ *  (`https://host:port`), а клиенту (`@web-core/skin/presets`) нужен готовый `/graphql` целиком.
+ *  Полный адрес с путём тоже принимаем: тогда не трогаем. */
 function resolveUrl(): string {
   const given = (import.meta.env["PRESETS_URL"] ?? import.meta.env["VITE_PRESETS_URL"]) as string | undefined;
   const base = (given ?? "").trim().replace(/\/+$/, "") || LOCAL;
 
-  return base.endsWith(API_PATH) ? base : base + API_PATH;
+  return base.endsWith(GRAPHQL_PATH) ? base : base + GRAPHQL_PATH;
 }
 
 /** База службы пресетов, готовая для `createPresetsClient({ url })`. */

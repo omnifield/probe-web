@@ -43,7 +43,6 @@ export function Control(props: {
           )}
         </For>
       </SegmentGroup>
-      <Typography>menu</Typography>
     </Flow>
   );
 }

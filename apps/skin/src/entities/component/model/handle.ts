@@ -15,6 +15,9 @@ export interface ComponentHandle {
   /** Положить готовые данные напрямую в `componentDataAtom` — источник наполнения показа,
    *  сохранённый content. */
   readonly setData: (data: unknown) => void;
+  /** Данные ТЕКУЩЕГО компонента как они лежат в `componentDataAtom` сейчас — читает `Input` для
+   *  точечной правки одного поля (`withValue` от `schema.ts` кладёт правку поверх этого значения). */
+  readonly data: () => unknown;
   /** Паспорт/срез редактора/io ТЕКУЩЕГО компонента — не готово или компонент не выбран → `undefined`. */
   readonly info: () => ComponentInfo | undefined;
   /** Дописать событие в историю ТЕКУЩЕГО компонента (`componentEventsAtom`) — сброс при смене компонента. */
@@ -30,6 +33,7 @@ export interface ComponentHandle {
  */
 export function componentHandle(): ComponentHandle {
   const info = useAtom(componentInfoAtom);
+  const data = useAtom(componentDataAtom);
 
   createEffect(
     on(currentComponent, () => {
@@ -58,5 +62,5 @@ export function componentHandle(): ComponentHandle {
     componentDataAtom.set(data);
   }
 
-  return { ready, loading, setData, info: componentInfo, recordEvent };
+  return { ready, loading, setData, data, info: componentInfo, recordEvent };
 }
