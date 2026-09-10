@@ -8,14 +8,23 @@
 // СТРУКТУРЕ. Если узел монтируется раньше, чем `repeat` успевает развернуть детей (данные ещё не
 // приехали), `children.length` на этот момент — 0, решение «null» кэшируется НАВСЕГДА (кэш —
 // ленивый синглтон, `if (!contentCache.memo)`), и `<For>` — единственный, кто мог бы подхватить
-// детей позже, — просто никогда не создаётся. Голая структура ниже (без кита, без Ark) доказывает:
-// дело не в глубине вложенности и не в Portal — оба варианта ловят баг ОДИНАКОВО при старой
-// проверке (см. git-историю правки, `current.children.length === 0`).
+// детей позже, — просто никогда не создаётся.
 //
-// Починка: решение null-vs-`<For>` теперь смотрит на `takesContent(registry, type)` —
-// СТРУКТУРНОЕ свойство адреса из реестра (может ли эта ЧАСТЬ компонента вообще принимать
-// контент), не на то, сколько детей у НЕЁ есть ПРЯМО СЕЙЧАС. Живой select (`apps/skin`,
-// `@web-core/ui`) проверен после пересборки `packages/assembly`: 0→2 item подхватывается.
+// ПЕРВАЯ версия фикса (коммит 4b5ce9a) заменила критерий целиком на `takesContent(registry,
+// type)` — СТРУКТУРНОЕ свойство (может ли часть вообще принимать контент). Чинила select, но
+// ломала реальный кит: `field`'s `requiredIndicator`/`table`'s заголовки — части, которые ПО
+// РЕЕСТРУ принимают контент, но у конкретного узла нет ни одного ребёнка НИКОГДА (не `repeat`,
+// просто по условию — необязательное поле, невключённая сортировка), раньше получали `null`
+// (Ark-паттерн `props.children ?? "*"` срабатывал), стали получать пустой truthy `<For>` (дефолт
+// молча не срабатывает). Найдено architect'ом ревью (`pnpm --filter @web-core/ui test`,
+// 270/275) — см. `content-of-null-vs-for-breaks-ark-native-defaults` в ROADMAP.yaml.
+//
+// ИТОГОВЫЙ фикс — ДВА критерия разом, не один: `takesContent` решает, строить ли `<For>` ВООБЩЕ
+// (закрытые по реестру части как получали `null`, так и получают); `children.length === 0`,
+// проверяемый РЕАКТИВНО (внутри тела `createMemo`, не при первом чтении снаружи) — решает,
+// отдавать ли его на ЭТОМ проходе. Часть, всегда пустая, — стабильный `null`. Часть, пустая
+// СЕЙЧАС но получающая детей позже (`repeat`), — `null`→`<For>` по мере прихода данных, не
+// кэшируется навсегда. Разбор — `src/render/index.tsx`'s докблок над `contentOf`, FAQ.md.
 import { createMemo, createSignal } from "solid-js";
 import { Portal, render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
@@ -35,6 +44,12 @@ const Content = (props: { children?: unknown }) => (
 const Item = (props: { children?: unknown }) => <div data-testid="item">{props.children as never}</div>;
 const Closed = (props: { children?: unknown }) => (
   <div data-testid="closed">{(props.children as never) ?? "дефолт"}</div>
+);
+// Как `field`'s `requiredIndicator` — ПО РЕЕСТРУ принимает контент, но у конкретного узла нет
+// ни одного ребёнка НИКОГДА (не `repeat`, просто условие не сработало) — Ark-паттерн
+// `props.children ?? "*"` обязан сработать так же, как у `Closed`, несмотря на другой критерий.
+const OpenButEmpty = (props: { children?: unknown }) => (
+  <div data-testid="open-but-empty">{(props.children as never) ?? "дефолт"}</div>
 );
 
 function openPart(name: string) {
@@ -88,6 +103,18 @@ const REGISTRY: Registry = createRegistry({
       },
       parts: { root: Closed },
     },
+    // "openButEmpty" структурно ПРИНИМАЕТ контент (takesContent=true, как field/table), но узел
+    // ниже объявлен без единого ребёнка — не временно, навсегда.
+    openButEmpty: {
+      passport: {
+        component: "openButEmpty",
+        genus: "component",
+        anatomy: { keys: () => ["root"] },
+        root: "root",
+        parts: [openPart("root")],
+      },
+      parts: { root: OpenButEmpty },
+    },
   },
   admits: () => true,
 });
@@ -127,6 +154,15 @@ function closedTree(): AssemblyTree {
     components: {
       root: "root",
       nodes: { root: { id: "root", type: "closed", parentId: null, children: [] } },
+    },
+  };
+}
+
+function openButEmptyTree(): AssemblyTree {
+  return {
+    components: {
+      root: "root",
+      nodes: { root: { id: "root", type: "openButEmpty", parentId: null, children: [] } },
     },
   };
 }
@@ -173,5 +209,13 @@ describe("RenderNode.contentOf — null-vs-<For> по takesContent, не по ch
     dispose = render(() => <RenderTree registry={REGISTRY} tree={closedTree()} />, host);
 
     expect(host.querySelector('[data-testid="closed"]')?.textContent).toBe("дефолт");
+  });
+
+  it("часть, ПРИНИМАЮЩАЯ контент по реестру, но реально без детей НИКОГДА (как field's requiredIndicator) — тоже null, не пустой truthy <For>", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={openButEmptyTree()} />, host);
+
+    expect(host.querySelector('[data-testid="open-but-empty"]')?.textContent).toBe("дефолт");
   });
 });
