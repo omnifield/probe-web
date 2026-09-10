@@ -250,12 +250,26 @@ const RenderNode: Component<RenderNodeProps> = (props) => {
   // потребитель `props.children` не видит «мемо поменялся» на каждую пересборку и не диспоузит
   // сам мемо. Пусто — `null`, не пустой `<For>`: чужие компоненты различают их (Ark-паттерн
   // `props.children ?? "*"` — пустой `<For>` truthy, дефолт молча не срабатывает).
+  //
+  // Ветка null-vs-`<For>` решается по `takesContent(registry, type)` — СТРУКТУРНОМУ свойству
+  // адреса из реестра (тот же тест, что уже стоит на строке ниже для оверлея), не по
+  // `current.children.length` на момент первого чтения. Раньше было наоборот — и это ломало
+  // `repeat`: узел монтируется, когда данные ещё не приехали (`children.length === 0`), решение
+  // «null» кэшируется В `contentCache.memo` НАВСЕГДА (см. `if (!contentCache.memo)` ниже) — сам
+  // `<For>`, единственный, кто мог бы подхватить детей ПОЗЖЕ, просто никогда не создаётся. Баг
+  // найден овнером `apps/skin` (2026-09-10, `render-tree-repeat-reactivity.test.tsx`): переход
+  // `select`'s `content` 0 items → N items после монтирования не подхватывался, рост уже
+  // непустого списка (1→2) — работал (там `declared` с первого чтения уже был `<For>`). Цена
+  // фикса: часть, которая ПРИНИМАЕТ контент по реестру, но реально осталась без единого ребёнка
+  // навсегда (не временно, не repeat) — раньше получала `null` (Ark-дефолт срабатывал), теперь
+  // получает пустой, но truthy `<For>` (дефолт молча не сработает). Закрытые по реестру части
+  // (`takesContent` = false, например trigger) как получали `null`, так и получают.
   const contentCache: { memo?: () => JSX.Element | null } = {};
   const contentOf = (): JSX.Element | null => {
     if (!contentCache.memo) {
       const current = untrack(node);
       const declared =
-        !current || current.children.length === 0 ? null : (
+        !current || isContent(current) || !takesContent(props.registry, current.type) ? null : (
           <For each={(node()?.children ?? []) as readonly NodeId[]}>
             {(childId) => (
               <RenderNode
