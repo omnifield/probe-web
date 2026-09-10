@@ -7,7 +7,6 @@ export {
   applyFieldRules,
   collectFieldRuleReport,
   convertRecord,
-  fieldRulesCodec,
   type ExtraPolicy,
   type FieldRule,
   type FieldRuleIssue,

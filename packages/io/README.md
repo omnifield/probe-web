@@ -37,7 +37,7 @@
 | Zod (через пакет)         | `src/engine/index.ts`      | `z` — реэкспорт `zod`, единая точка объявления схем для всего кита                                    |
 | Реестр паспортов          | `src/engine/registry.ts`   | `createIoRegistry`, `IoRegistry`, `IoEntry`, `IoMeta`, `IoDirection`                                   |
 | L0/L1 — кодеки            | `src/engine/codecs.ts`     | `identityCodec`, `renameKeysCodec`                                                                     |
-| L2 — правила полей        | `src/engine/field-rules.ts`| `applyFieldRules`, `collectFieldRuleReport`, `convertRecord`, `fieldRulesCodec`, `FieldRule`, `OnFail`, `ExtraPolicy`, `FieldRuleIssue`, `FieldRuleReport`, `RecordIssue` |
+| L2 — правила полей        | `src/engine/field-rules.ts`| `applyFieldRules`, `collectFieldRuleReport`, `convertRecord`, `FieldRule`, `OnFail`, `ExtraPolicy`, `FieldRuleIssue`, `FieldRuleReport`, `RecordIssue` |
 | Действия над значением    | `src/engine/steps.ts`      | `runStep`, `runSteps`, `isBlank`, `MAX_STEPS`, `Step` и 13 его вариантов (`TrimStep`, `DateStep`, …)   |
 | Пути (JSON Pointer)       | `src/engine/paths.ts`      | `discoverPaths`, `lookup`, `pointerOf`, `FieldRef`, `Lookup` (`assign` — внутренний, не в поверхности) |
 | Подбор совместимых записей| `src/engine/compatible.ts` | `compatibleItems`                                                                                      |
@@ -139,7 +139,7 @@ packs.require("status-colors");
 | Настройка                | Где                                                          | Тип                                     | По умолчанию |
 | ------------------------- | ------------------------------------------------------------ | ---------------------------------------- | ------------- |
 | `direction`               | `registry.register(component, schema, direction?)`           | `IoDirection` (`"input"\|"output"\|"io"`) | `"io"`        |
-| `extra`                   | `applyFieldRules`/`collectFieldRuleReport`/`fieldRulesCodec`  | `ExtraPolicy` (`"drop"\|"keep"`)         | `"drop"`      |
+| `extra`                   | `applyFieldRules`/`collectFieldRuleReport`                    | `ExtraPolicy` (`"drop"\|"keep"`)         | `"drop"`      |
 | `onFail`                  | `FieldRule.onFail`                                            | `OnFail` (`"skip"\|"default"\|"reject"`) | `"skip"`      |
 | `fallback`                | `FieldRule.fallback` (используется при `onFail: "default"`)   | `string`                                 | —             |
 | `MAX_STEPS`               | `runSteps` — предел длины цепочки шагов в одном правиле       | `number` (константа)                     | `32`          |
@@ -176,7 +176,7 @@ packs.require("status-colors");
 | `registry.register`                                            | `(component: string, schema: Schema, direction?: IoDirection)`             |
 | `identityCodec`                                                 | `(schema: Schema)`                                                          |
 | `renameKeysCodec`                                               | `(input: A, output: B, mapping: Record<string, string>)`                   |
-| `applyFieldRules` / `collectFieldRuleReport` / `fieldRulesCodec`| `(source(s): Record<string, unknown>[], fields: FieldRule[], extra?)`      |
+| `applyFieldRules` / `collectFieldRuleReport`                    | `(source(s): Record<string, unknown>[], fields: FieldRule[], extra?)`      |
 | `runStep` / `runSteps`                                          | `(step(s): Step, value: unknown, source: unknown)`                         |
 | `lookup` / `assign` / `pointerOf`                               | `(source/row, pointer: FieldRef, ...)`                                     |
 | `discoverPaths`                                                 | `(sample: unknown, depth?: number)`                                        |
@@ -188,7 +188,7 @@ packs.require("status-colors");
 | Источник                                     | Отдаёт                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------------ |
 | `registry.get` / `.require`                    | `IoEntry { schema, meta }` \| `undefined` / `IoEntry`                    |
-| `identityCodec` / `renameKeysCodec` / `fieldRulesCodec` | `z.ZodCodec` (`decode`/`encode`)                                 |
+| `identityCodec` / `renameKeysCodec`            | `z.ZodCodec` (`decode`/`encode`)                                          |
 | `applyFieldRules`                              | `{ row: Record<string, unknown> \| null, issues: RecordIssue[] }`        |
 | `collectFieldRuleReport`                       | `{ rows: Record<string, unknown>[], report: FieldRuleReport }`           |
 | `runStep` / `runSteps`                         | `StepResult`                                                              |
@@ -206,7 +206,7 @@ packs.require("status-colors");
 | `runSteps` — цепочка нескольких `Step` подряд         | обрыв на первой неудаче с указанием номера шага; длиннее `MAX_STEPS` — явный отказ | `test/steps.test.ts`            |
 | `applyFieldRules` (`from` + `steps` + `onFail`)       | канон собирается по правилам; `extra: "keep"` проносит чужое; `onFail: "reject"` бракует запись целиком, не только поле | `test/field-rules.test.ts` |
 | `collectFieldRuleReport` по множеству записей         | `converted`/`rejected` считаются; одинаковые беды агрегируются в один `issue` с `count`; `unmapped` называет непойманные чужие поля | `test/field-rules.test.ts` |
-| `fieldRulesCodec` (правила поля + output-схема)       | `decode` собирает канон и проверяет его схемой; бракованная запись — явный `throw`, не тихий `null`; `encode` явно бросает («не реализован») | `test/field-rules.test.ts` |
+| `applyFieldRules` в обе стороны — приём и отдача как два НЕЗАВИСИМЫХ списка `FieldRule[]` | отдача не выводится разворотом приёма, пишется руками отдельно; тот же движок, другой список правил | `test/field-rules.test.ts` |
 | `renameKeysCodec` round-trip (`decode∘encode`, `encode∘decode`) | обратный словарь строится сам из прямого; round-trip восстанавливает исходное | `test/codecs.test.ts` |
 | `compatibleItems` по смешанной теме                   | из записей разной формы — только реально проходящие схему, в исходном порядке      | `test/compatible.test.ts`       |
 

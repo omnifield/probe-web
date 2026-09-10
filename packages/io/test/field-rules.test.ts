@@ -2,9 +2,8 @@
 // что не легло.
 
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 
-import { applyFieldRules, collectFieldRuleReport, fieldRulesCodec, type FieldRule } from "../src/index.js";
+import { applyFieldRules, collectFieldRuleReport, type FieldRule } from "../src/index.js";
 
 const fields: FieldRule[] = [
   { target: "/id", from: "/code" },
@@ -70,29 +69,21 @@ describe("collectFieldRuleReport — множество записей", () => {
   });
 });
 
-describe("fieldRulesCodec", () => {
-  const input = z.record(z.string(), z.unknown());
-  const output = z.object({ id: z.string(), amount: z.number(), status: z.string() });
+describe("приём и отдача — два независимых списка FieldRule[]", () => {
+  // Отдача НЕ выведена разворотом `fields` (приём) — написана руками отдельно, тем же движком.
+  const back: FieldRule[] = [
+    { target: "/code", from: "/id" },
+    { target: "/sum_kop", from: "/amount", steps: [{ kind: "multiply", by: 100 }, { kind: "round" }] },
+    { target: "/state", from: "/status", steps: [{ kind: "dictionary", values: { active: "A" }, otherwise: "fail" }] },
+  ];
 
-  it("decode собирает канон и проверяет его output-схемой", () => {
-    const codec = fieldRulesCodec(input, output, fields);
-
-    expect(codec.decode({ code: "s1", sum_kop: "12345", state: "A" })).toEqual({
-      id: "s1",
-      amount: 123.45,
-      status: "active",
-    });
+  it("applyFieldRules с `fields` — приём (их формат → канон)", () => {
+    const { row } = applyFieldRules({ code: "s1", sum_kop: "12345", state: "A" }, fields);
+    expect(row).toEqual({ id: "s1", amount: 123.45, status: "active" });
   });
 
-  it("decode бросает явно на забракованную запись — не тихий null", () => {
-    const codec = fieldRulesCodec(input, output, fields);
-
-    expect(() => codec.decode({ code: "s1", sum_kop: "100", state: "неизвестно" })).toThrow(/status/);
-  });
-
-  it("encode сегодня явно не реализован — бросает, а не притворяется", () => {
-    const codec = fieldRulesCodec(input, output, fields);
-
-    expect(() => codec.encode({ id: "s1", amount: 1, status: "active" })).toThrow(/не реализован/);
+  it("applyFieldRules с `back` — отдача (канон → их формат), тот же движок, другой список", () => {
+    const { row } = applyFieldRules({ id: "s1", amount: 123.45, status: "active" }, back);
+    expect(row).toEqual({ code: "s1", sum_kop: 12345, state: "A" });
   });
 });

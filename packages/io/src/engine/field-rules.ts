@@ -1,7 +1,5 @@
 // см. README.md / FAQ.md — L2: правила полей ОДНОЙ записи (набор записей — предмет L3).
 
-import { z } from "zod";
-
 import { assign, discoverPaths, lookup, type FieldRef } from "./paths.js";
 import { isBlank, runSteps, type Step } from "./steps.js";
 
@@ -161,28 +159,4 @@ export function collectFieldRuleReport(
       unmapped,
     },
   };
-}
-
-/** L2 как `codec`: decode собирает канон по правилам, бракованная запись — явный throw. encode не реализован (см. FAQ.md). */
-export function fieldRulesCodec<A extends z.ZodType, B extends z.ZodType>(
-  input: A,
-  output: B,
-  fields: readonly FieldRule[],
-  extra: ExtraPolicy = "drop",
-): z.ZodCodec<A, B> {
-  return z.codec(input, output, {
-    decode: (theirs) => {
-      const { row, issues } = applyFieldRules(theirs as Record<string, unknown>, fields, extra);
-      if (row === null) {
-        const [first] = issues;
-        throw new Error(
-          `запись забракована правилом «${first?.rule.target ?? "?"}»: ${first?.reason ?? "причина не названа"}`,
-        );
-      }
-      return row as z.input<B>;
-    },
-    encode: () => {
-      throw new Error("fieldRulesCodec: encode не реализован — L2 сегодня однонаправленный (decode)");
-    },
-  });
 }
