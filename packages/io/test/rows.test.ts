@@ -44,6 +44,10 @@ describe("discoverRowPaths — пути ВНУТРИ первой записи �
   it("путь пустой — сами данные целиком уже набор", () => {
     expect(discoverRowPaths(feed.data.items, "")).toEqual(["/code", "/sum_kop", "/state"]);
   });
+
+  it("путь не найден — пустой список, а не поля входа целиком по ошибке", () => {
+    expect(discoverRowPaths(feed, "/data/missing")).toEqual([]);
+  });
 });
 
 describe("collectRowsReport — путь до набора + правила поля → канон целиком", () => {
@@ -65,5 +69,17 @@ describe("collectRowsReport — путь до набора + правила по
   it("путь пустой, а вход — не массив — тоже структурная ошибка", () => {
     const result = collectRowsReport(feed, "", fields);
     expect(result.error).toMatch(/ожидался массив записей/);
+  });
+
+  it("не-объектные записи набора (null, строка) считаются, а не выбрасываются молча", () => {
+    const messy = { data: { items: [{ code: "s1", sum_kop: "100", state: "A" }, null, "junk"] } };
+    const { rows, report, error } = collectRowsReport(messy, "/data/items", fields);
+
+    expect(error).toBeNull();
+    expect(rows).toEqual([{ id: "s1", amount: 1, status: "active" }]);
+    expect(report).toMatchObject({ total: 3, converted: 1, rejected: 2 });
+    expect(report.issues).toEqual([
+      expect.objectContaining({ target: "/data/items", reason: "запись — не объект", count: 2, examples: ["junk"] }),
+    ]);
   });
 });

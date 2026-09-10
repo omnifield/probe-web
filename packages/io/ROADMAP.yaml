@@ -273,6 +273,23 @@ categories:
           не забыто. Разбор — FAQ.md.
 
 log:
+  - id: l3-rows-review-fixes
+    type: plan
+    date: 2026-09-10
+    summary: >
+      Ревью [[l3-restructuring]] нашло три вещи в `rows.ts`, все подтверждены чтением кода и
+      тестов и исправлены: (1) `discoverRowPaths` при ненайденном пути `rows` молча брала весь
+      входной объект вместо явной «пути нет» — ломало Lab-флоу (устаревший путь-кандидат из
+      `discoverRowSets` подсовывал бы не те поля для маппинга без сигнала об ошибке); теперь
+      явный `[]` на `!found.found`, тем же приёмом, что уже был у `collectRowsReport`. (2)
+      `collectRowsReport` тихо выбрасывала не-объектные записи набора (`null`, строки) ДО
+      подсчёта — прямое нарушение принципа пакета «ничего не выбрасываем молча»; теперь считаются
+      в `total`/`rejected`, попадают отдельным `issue` (`target: rows`, `reason: "запись — не
+      объект"`, `count`, примеры). (3) Мёртвая ветка `rows === "" ? input : ...` в
+      `collectRowsReport` — `lookup(input, "")` и так возвращает `found: true, value: input`
+      (`paths.ts`), ветка была равна остальной части выражения без себя — снята. Тесты добавлены
+      на оба бага (`test/rows.test.ts`). Typecheck/тесты/lint/build зелёные.
+
   - id: l3-rows-added
     type: plan
     date: 2026-09-10
