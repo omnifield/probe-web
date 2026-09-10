@@ -157,8 +157,12 @@ export interface ComponentInfoSources extends Partial<ComponentProviderFields> {
   readonly presets: PresetsClient;
 }
 
-/** Что известно о компоненте на стороне СЛУЖБЫ — `undefined`, если форму ещё не сохраняли. */
-export interface ComponentSkinInfo {
+/**
+ * Что известно об ОДНОЙ сохранённой форме компонента — variants/outfits/tags считаются на эту
+ * форму конкретно, не на компонент целиком (у компонента их может быть несколько, см.
+ * {@link ComponentSkinInfo}).
+ */
+export interface ComponentSkinFormInfo {
   /** Сохранённая запись формы целиком — id/label/name службы плюс само содержимое. */
   readonly form: PresetRecord<Form>;
   /** Имена стилевых вариантов, объявленных формой (`Form.recipe.variants`, ключи объекта). */
@@ -167,6 +171,18 @@ export interface ComponentSkinInfo {
   readonly outfits: readonly string[];
   /** `Form.variantTags`, перевёрнутые в тег→варианты (`@web-core/skin/tags`, отсортировано). */
   readonly tags: readonly TagGroup[];
+}
+
+/**
+ * Что известно о компоненте на стороне СЛУЖБЫ — `undefined`, если форму ещё не сохраняли.
+ *
+ * `forms` — СПИСОК, не одна запись: несколько именованных форм на один компонент (`Form.name`
+ * разное, `Form.component` одно и то же) такая же законная часть модели, как несколько нарядов —
+ * у наряда нет понятия "текущая форма компонента", выбор ОДНОЙ был бы произвольным и терял
+ * остальные молча (PWEB — заявка `component-info-multiple-forms-per-component`, 2026-09-10).
+ */
+export interface ComponentSkinInfo {
+  readonly forms: readonly ComponentSkinFormInfo[];
 }
 
 /** Всё известное об одном компоненте — из кита и из службы, одной записью. */
@@ -197,18 +213,20 @@ export function createComponentInfo(sources: ComponentInfoSources): (component: 
 
   return async function componentInfo(component: string): Promise<ComponentInfo> {
     const [forms, outfits] = await Promise.all([presets.list(PRESET_KIND.form), presets.list(PRESET_KIND.outfit)]);
-    const form = forms.find((record) => record.state.component === component);
+    const componentForms = forms.filter((record) => record.state.component === component);
 
     const skin: ComponentSkinInfo | undefined =
-      form === undefined
+      componentForms.length === 0
         ? undefined
         : {
-            form,
-            variants: Object.keys(form.state.recipe.variants ?? {}),
-            outfits: outfits
-              .filter((record) => record.state.forms.includes(form.name))
-              .map((record) => record.name),
-            tags: groupByTag(form.state.variantTags ?? {}),
+            forms: componentForms.map((form) => ({
+              form,
+              variants: Object.keys(form.state.recipe.variants ?? {}),
+              outfits: outfits
+                .filter((record) => record.state.forms.includes(form.name))
+                .map((record) => record.name),
+              tags: groupByTag(form.state.variantTags ?? {}),
+            })),
           };
 
     return {
