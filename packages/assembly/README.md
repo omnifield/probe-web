@@ -208,6 +208,8 @@ const slots: Record<string, SlotEntry> = {
 | `rootProps` на корне | смена динамического состояния показа доезжает до живого пропа корня, дерево не трогает, ребёнок не пересобирается | `test/root-props.test.tsx` |
 | `slots` на узле | живой контент сверху рисуется на месте узла, узел резолвится как обычно | `test/slots.test.tsx` |
 | Настоящий `createContext`/`useContext` через `RenderNode`/`RenderTree` | owner-цепочка Solid не рвётся ни `<For>`, ни `<ErrorBoundary>`, ни `<Dynamic>`, ни самим `RenderTree` — на двух уровнях дерева | `test/context-repro.test.tsx` |
+| Дерево пересобирается на каждую смену `data` (новый объект `AssemblyTree`, те же id) | байндинг доезжает и на первой, и на второй, и на любой следующей пересборке — не только на первой | `test/rebuild-reactivity-repro.test.tsx` |
+| `repeat`: 0 items → N items ПОСЛЕ монтирования | узел, структурно принимающий контент, подхватывает детей, добавленных позже, — плоский случай и вложенный (через `Portal`, как `select`'s `positioner`); часть, контент не принимающая, остаётся `null` | `test/contentof-null-vs-for.test.tsx` |
 
 ✅ Живая проверка на настоящем ките — транзитивно, через тесты пакетов, что реально зовут
 `RenderTree`/`baseAssemblyOf`: `packages/ui/src/button/test/button.test.tsx`,
