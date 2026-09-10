@@ -224,7 +224,7 @@ categories:
     items:
       - id: l3-restructuring
         type: feature
-        status: Open
+        status: Done
         priority: High
         milestone: null
         name: "L3 — реструктуризация формы (путь + повтор)"
@@ -235,23 +235,31 @@ categories:
           Поиск «где в чужом ответе лежит массив записей» (`discoverRowSets` из снятого адаптера
           таблиц) в L2 сознательно не перенесён — это предмет L3.
 
-          Начинается ПОСЛЕ стабилизации [[field-rules-two-way]] (фундамент прежде следующего
-          слоя, решение user 2026-09-10). Конкретика — прямой перенос трёх функций из
-          `products/tables/src/adapter/paths.ts` (снят `ae8b4f1`, до переноса ещё на `Row` таблиц,
-          не на `Record<string, unknown>`), тем же приёмом, каким сюда уже переехал `steps.ts`:
+          Начато ПОСЛЕ стабилизации [[field-rules-two-way]] (фундамент прежде следующего слоя,
+          решение user 2026-09-10). Перенесены три функции из `products/tables/src/adapter/
+          paths.ts`/`apply.ts` (сняты `ae8b4f1`, до переноса ещё на `Row` таблиц, не на
+          `Record<string, unknown>`), новый файл `src/engine/rows.ts`, тем же приёмом, каким
+          сюда уже переехал `steps.ts`:
 
-            - `discoverRowSets(input, depth?)` — обход дерева, ищет места похожие на массив
+            - `discoverRowSets(input, depth = 4)` — обход дерева, ищет места похожие на массив
               записей (`[0]` — объект), отдаёт список путей-кандидатов; не выбирает сам, только
               предлагает — путь выбирает человек, настраивающий адаптер.
-            - `discoverRowPaths(input, rows, depth?)` — взяв выбранный путь до набора, показывает
-              пути ВНУТРИ первой записи — то, из чего собираются `FieldRule` в L2.
-            - обёртка вокруг `collectFieldRuleReport`, принимающая путь до набора (`rows: FieldRef`)
-              плюс `fields: FieldRule[]` — по сути старый `AdapterSpec`/`apply.ts` таблиц,
-              обобщённый до `Record<string, unknown>`, как и весь остальной пакет.
+            - `discoverRowPaths(input, rows, depth = 6)` — взяв выбранный путь до набора,
+              показывает пути ВНУТРИ первой записи — то, из чего собираются `FieldRule` в L2.
+            - `collectRowsReport(input, rows, fields, extra?)` — тонкая обёртка вокруг
+              `collectFieldRuleReport` (старый `AdapterSpec`/`apply.ts` таблиц, обобщённый до
+              `Record<string, unknown>`): достаёт массив по пути и передаёт дальше без изменений;
+              путь мимо набора — отдельный `error: string`, не тот же отчёт, что «запись не
+              собралась» (структурная беда ≠ беда данных).
 
           Обе стороны (приём/отдача) симметричны тому же приёму, что в [[field-rules-two-way]]:
           `rows` для приёма и `rows` для отдачи — тоже два независимых пути, второй не выводится
-          из первого.
+          из первого (`collectRowsReport` вызывается дважды с разными `rows`/`fields`, как и
+          `applyFieldRules` на слое L2).
+
+          README (Анатомия/Использование — 8-й сценарий/Настройки/Состояния/IO/Сборки) и FAQ.md
+          (раздел «L3 — форма целиком») обновлены. Тесты — `test/rows.test.ts`. Typecheck/тесты/
+          lint зелёные, примеры README прогнаны через собранный `dist/`.
 
       - id: field-rules-codec-encode
         type: feature
@@ -265,6 +273,23 @@ categories:
           не забыто. Разбор — FAQ.md.
 
 log:
+  - id: l3-rows-added
+    type: plan
+    date: 2026-09-10
+    summary: >
+      [[l3-restructuring]] закрыт: новый `src/engine/rows.ts` — `discoverRowSets` (кандидаты на
+      «набор записей» в чужом ответе, только предлагает), `discoverRowPaths` (пути внутри первой
+      записи выбранного набора), `collectRowsReport` (путь до набора + `FieldRule[]` →
+      `collectFieldRuleReport`, структурная ошибка «набора нет» отдельно от отчёта по полям).
+      Прямой перенос трёх функций из `products/tables/src/adapter/paths.ts`/`apply.ts` (сняты
+      `ae8b4f1`), обобщённых с `Row` таблиц до `Record<string, unknown>` — тем же приёмом, каким
+      уже переехали `steps.ts`/`field-rules.ts`. Тест `test/rows.test.ts` — конверт `/data/items`,
+      путь мимо набора даёт `error`, а не тихий пустой отчёт. README получил 8-й сценарий
+      «Использования» и строки в Анатомии/Настройках/Состояниях/IO/Сборках; FAQ.md — раздел
+      «L3 — форма целиком (повторы)» (три «почему»: грубый критерий кандидата, тонкая обёртка
+      вместо своей реализации, свой обход вместо переиспользования `discoverPaths` целиком).
+      Typecheck/тесты/lint зелёные, examples README прогнаны через собранный `dist/`.
+
   - id: field-rules-codec-removed
     type: plan
     date: 2026-09-10

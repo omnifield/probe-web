@@ -38,6 +38,7 @@
 | Реестр паспортов          | `src/engine/registry.ts`   | `createIoRegistry`, `IoRegistry`, `IoEntry`, `IoMeta`, `IoDirection`                                   |
 | L0/L1 — кодеки            | `src/engine/codecs.ts`     | `identityCodec`, `renameKeysCodec`                                                                     |
 | L2 — правила полей        | `src/engine/field-rules.ts`| `applyFieldRules`, `collectFieldRuleReport`, `convertRecord`, `FieldRule`, `OnFail`, `ExtraPolicy`, `FieldRuleIssue`, `FieldRuleReport`, `RecordIssue` |
+| L3 — форма целиком (повторы) | `src/engine/rows.ts`    | `discoverRowSets`, `discoverRowPaths`, `collectRowsReport`, `RowsResult`                                |
 | Действия над значением    | `src/engine/steps.ts`      | `runStep`, `runSteps`, `isBlank`, `MAX_STEPS`, `Step` и 13 его вариантов (`TrimStep`, `DateStep`, …)   |
 | Пути (JSON Pointer)       | `src/engine/paths.ts`      | `discoverPaths`, `lookup`, `pointerOf`, `FieldRef`, `Lookup` (`assign` — внутренний, не в поверхности) |
 | Подбор совместимых записей| `src/engine/compatible.ts` | `compatibleItems`                                                                                      |
@@ -48,7 +49,7 @@
 
 <h2 id="использование">🚀 Использование</h2>
 
-✅ Семь сценариев покрывают весь путь от объявления паспорта до отчёта по чужим данным.
+✅ Восемь сценариев покрывают весь путь от объявления паспорта до отчёта по чужим данным.
 
 **Паспорт формы — регистрация и чтение:**
 
@@ -112,6 +113,20 @@ const { rows, report } = collectFieldRuleReport(rawRecords, fields);
 // report.converted / report.rejected / report.issues (сгруппированные беды) / report.unmapped
 ```
 
+**L3 — форма целиком: набор записей завёрнут где-то внутри чужого ответа:**
+
+```ts
+import { collectRowsReport, discoverRowPaths, discoverRowSets } from "@web-core/io";
+
+const feed = { data: { items: [{ code: "s1", sum_kop: "12345", state: "A" }] } };
+
+discoverRowSets(feed); // ["/data/items"] — предлагает, не выбирает
+discoverRowPaths(feed, "/data/items"); // ["/code", "/sum_kop", "/state"]
+
+const { rows, report, error } = collectRowsReport(feed, "/data/items", fields);
+// error: null, rows/report — как у collectFieldRuleReport; путь мимо набора → error вместо пустого отчёта
+```
+
 **Подбор совместимых заготовок:**
 
 ```ts
@@ -146,7 +161,8 @@ packs.require("status-colors");
 | `DateStep.from`           | `steps.ts`, шаг `date`                                        | `"iso"\|"dmy"\|"unix"\|"unix-ms"`        | `"iso"`       |
 | `RoundStep.digits`        | `steps.ts`, шаг `round`                                       | `number`                                 | `0`           |
 | `DictionaryStep.otherwise`| `steps.ts`, шаг `dictionary`                                  | `"keep"\|"fail"`                         | `"keep"`      |
-| `depth`                   | `discoverPaths(sample, depth?)`                               | `number`                                 | `6`           |
+| `depth`                   | `discoverPaths(sample, depth?)` / `discoverRowPaths(input, rows, depth?)` | `number`               | `6`           |
+| `depth`                   | `discoverRowSets(input, depth?)`                              | `number`                                 | `4`           |
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -160,6 +176,7 @@ packs.require("status-colors");
 | Шаг выполнен / провалился    | `{ ok: true, value }` \| `{ ok: false, reason }` | `StepResult`, `runStep`/`runSteps`               |
 | Запись собрана / забракована | `Record<string, unknown>` \| `null`             | `convertRecord`, `applyFieldRules.row`           |
 | Итог по множеству записей    | `{ total, converted, rejected, issues, unmapped }` | `FieldRuleReport`, `collectFieldRuleReport`   |
+| Набор записей найден / не найден (структурная ошибка, отдельно от отчёта по полям) | `RowsResult.error: string \| null` | `collectRowsReport`     |
 | Паспорт есть / нет           | `IoEntry` \| `undefined` (или явный throw у `require`) | `IoRegistry.get`/`.require`               |
 | Тема есть / нет              | `readonly unknown[]` \| `undefined` (или явный throw у `require`) | `PackRegistry.get`/`.require`      |
 
@@ -177,6 +194,9 @@ packs.require("status-colors");
 | `identityCodec`                                                 | `(schema: Schema)`                                                          |
 | `renameKeysCodec`                                               | `(input: A, output: B, mapping: Record<string, string>)`                   |
 | `applyFieldRules` / `collectFieldRuleReport`                    | `(source(s): Record<string, unknown>[], fields: FieldRule[], extra?)`      |
+| `collectRowsReport`                                             | `(input: unknown, rows: FieldRef, fields: FieldRule[], extra?)`            |
+| `discoverRowSets`                                               | `(input: unknown, depth?: number)`                                         |
+| `discoverRowPaths`                                              | `(input: unknown, rows: FieldRef, depth?: number)`                         |
 | `runStep` / `runSteps`                                          | `(step(s): Step, value: unknown, source: unknown)`                         |
 | `lookup` / `assign` / `pointerOf`                               | `(source/row, pointer: FieldRef, ...)`                                     |
 | `discoverPaths`                                                 | `(sample: unknown, depth?: number)`                                        |
@@ -191,6 +211,8 @@ packs.require("status-colors");
 | `identityCodec` / `renameKeysCodec`            | `z.ZodCodec` (`decode`/`encode`)                                          |
 | `applyFieldRules`                              | `{ row: Record<string, unknown> \| null, issues: RecordIssue[] }`        |
 | `collectFieldRuleReport`                       | `{ rows: Record<string, unknown>[], report: FieldRuleReport }`           |
+| `collectRowsReport`                            | `RowsResult { rows, report, error: string \| null }`                     |
+| `discoverRowSets` / `discoverRowPaths`         | `FieldRef[]`                                                              |
 | `runStep` / `runSteps`                         | `StepResult`                                                              |
 | `lookup`                                       | `Lookup`                                                                  |
 | `discoverPaths`                                | `FieldRef[]`                                                              |
@@ -207,6 +229,7 @@ packs.require("status-colors");
 | `applyFieldRules` (`from` + `steps` + `onFail`)       | канон собирается по правилам; `extra: "keep"` проносит чужое; `onFail: "reject"` бракует запись целиком, не только поле | `test/field-rules.test.ts` |
 | `collectFieldRuleReport` по множеству записей         | `converted`/`rejected` считаются; одинаковые беды агрегируются в один `issue` с `count`; `unmapped` называет непойманные чужие поля | `test/field-rules.test.ts` |
 | `applyFieldRules` в обе стороны — приём и отдача как два НЕЗАВИСИМЫХ списка `FieldRule[]` | отдача не выводится разворотом приёма, пишется руками отдельно; тот же движок, другой список правил | `test/field-rules.test.ts` |
+| `discoverRowSets` → `discoverRowPaths` → `collectRowsReport` — L3 целиком | путь до завёрнутого набора находится по образцу, пути внутри записи — по выбранному пути, дальше работает L2; путь мимо набора — явная структурная ошибка, не пустой отчёт | `test/rows.test.ts` |
 | `renameKeysCodec` round-trip (`decode∘encode`, `encode∘decode`) | обратный словарь строится сам из прямого; round-trip восстанавливает исходное | `test/codecs.test.ts` |
 | `compatibleItems` по смешанной теме                   | из записей разной формы — только реально проходящие схему, в исходном порядке      | `test/compatible.test.ts`       |
 
