@@ -26,7 +26,10 @@ export function Header() {
   const pathname = useLocation({ select: (location) => location.pathname });
   // `strict: false` — тот же приём, что у `Tree`'s `activeValue`: `$component` объявлен то у
   // showcase, то у lab, читаем его независимо от того, в каком из двух сейчас находимся.
-  const component = useParams({ strict: false, select: (params) => params.component });
+  const component = useParams({
+    strict: false,
+    select: (params) => params.component,
+  });
   const navigate = useNavigate();
 
   const screen = createMemo(
@@ -43,8 +46,14 @@ export function Header() {
     if (!target) return;
 
     const active = component();
-    if (active !== undefined && (target.value === "lab" || target.value === "showcase")) {
-      void navigate({ to: `${target.to}/$component`, params: { component: active } });
+    if (
+      active !== undefined &&
+      (target.value === "lab" || target.value === "showcase")
+    ) {
+      void navigate({
+        to: `${target.to}/$component`,
+        params: { component: active },
+      });
       return;
     }
 
@@ -73,7 +82,7 @@ export function Header() {
       </FlowItem>
       <FlowItem>
         <Flow>
-          <ThemeSwitch />
+          {/* <ThemeSwitch /> */}
           <Auth />
         </Flow>
       </FlowItem>

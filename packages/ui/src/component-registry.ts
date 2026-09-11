@@ -37,7 +37,7 @@ import {
 } from "@web-core/assembly";
 
 import { admits, baseAssemblyOf } from "./passport.js";
-import { kitComponentProvider, type ComponentProvider } from "./component-info.js";
+import { kitComponentProvider, lazy, type ComponentProvider } from "./component-info.js";
 import type { KitComponent } from "./kit-form.js";
 import { KIT } from "./kit.js";
 
@@ -46,19 +46,13 @@ export interface ComponentRendererProvider extends ComponentProvider {
   readonly kitOf: (component: string) => KitComponent | undefined;
 }
 
-let kitRendererProvider: ComponentRendererProvider | undefined;
-
 /**
  * Поставщик этого кита, ГОТОВЫЙ для реестра механики сборки — тот же {@link kitComponentProvider},
  * плюс `kitOf`, читающий реальную карту частей (`./kit.js`).
  */
-function ownKitRendererProvider(): ComponentRendererProvider {
-  if (kitRendererProvider === undefined) {
-    kitRendererProvider = { ...kitComponentProvider(), kitOf: (component) => KIT[component] };
-  }
-
-  return kitRendererProvider;
-}
+const ownKitRendererProvider = lazy(
+  (): ComponentRendererProvider => ({ ...kitComponentProvider(), kitOf: (component) => KIT[component] }),
+);
 
 function readable(component: string, provider: ComponentRendererProvider): ReadableComponent {
   const kit = provider.kitOf(component);

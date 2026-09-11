@@ -70,7 +70,16 @@ export interface ComponentProvider extends ComponentProviderFields {
   readonly components: readonly string[];
 }
 
-let kitProvider: ComponentProvider | undefined;
+/**
+ * Ленивая инициализация модульного синглтона — тот же приём нужен и {@link kitComponentProvider}
+ * здесь, и `ownKitRendererProvider` в `component-registry.ts`; вынесено сюда, а не продублировано
+ * во втором файле, по той же причине, что и у `mergeComponentProviders` чуть ниже — повторно
+ * написанное второй раз разъезжается с первым молча.
+ */
+export function lazy<T>(factory: () => T): () => T {
+  let value: T | undefined;
+  return () => (value ??= factory());
+}
 
 /**
  * Поставщик этого кита (`packages/ui`) — паспорт/срез редактора из `PASSPORTS`/`EDITOR_INFOS`
@@ -80,23 +89,19 @@ let kitProvider: ComponentProvider | undefined;
  * Построен ОДИН РАЗ и переиспользуется: перечень кита статический, второй экземпляр реестра на
  * тот же перечень не несёт ничего нового.
  */
-export function kitComponentProvider(): ComponentProvider {
-  if (kitProvider === undefined) {
-    const io = createIoRegistry();
-    for (const [component, entry] of Object.entries(KIT_IO)) {
-      if (entry.input) io.register(component, entry.input, entry.output ? "io" : "input");
-    }
-
-    kitProvider = {
-      components: Object.keys(PASSPORTS),
-      passportOf: kitPassportOf,
-      editorInfoOf: kitEditorInfoOf,
-      io,
-    };
+export const kitComponentProvider = lazy((): ComponentProvider => {
+  const io = createIoRegistry();
+  for (const [component, entry] of Object.entries(KIT_IO)) {
+    if (entry.input) io.register(component, entry.input, entry.output ? "io" : "input");
   }
 
-  return kitProvider;
-}
+  return {
+    components: Object.keys(PASSPORTS),
+    passportOf: kitPassportOf,
+    editorInfoOf: kitEditorInfoOf,
+    io,
+  };
+});
 
 /**
  * Складывает N поставщиков одной формы в один. Имя компонента, встреченное у двух поставщиков
