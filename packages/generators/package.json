@@ -21,6 +21,10 @@
       "types": "./dist/engine/index.d.ts",
       "default": "./dist/engine/index.js"
     },
+    "./mapping": {
+      "types": "./dist/mapping/index.d.ts",
+      "default": "./dist/mapping/index.js"
+    },
     "./plugins/kit": {
       "types": "./dist/plugins/kit/index.d.ts",
       "default": "./dist/plugins/kit/index.js"

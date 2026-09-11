@@ -34,6 +34,7 @@
 | Часть | Адрес | Экспортирует |
 |---|---|---|
 | Раннер и API плагина | `@web-core/generators/engine` | `defineConfig`, `run`, `hasFile`, `EntryContext`, `toEntryContext`, `AggregatePlugin`, `PerEntryPlugin`, `GeneratorPlugin`, `isAggregatePlugin`, `discoverEntries`, `writeGeneratedFiles`, `fromTemplate`, `fromEntryTemplate`, `identifierFromEntryName`, `Entry`, `GeneratedFile` |
+| Dispatch-раннер под сырой текст, браузер-безопасный | `@web-core/generators/mapping` | `run`, `MappingTemplate` |
 | Чтение TS-модуля исполнением | `@web-core/generators/extract` | `importModule` |
 | Сохранение ручных правок | `@web-core/generators/preserve` | `mergeMarkedRegions`, `MarkedRegionMarkers`, `extractMarkedRegion` |
 | Готовый плагин под «кит»-раскладку | `@web-core/generators/plugins/kit` | `kitBarrelPlugins`, `KitBarrelOptions` |
@@ -46,7 +47,9 @@
 (Handlebars-обёртка), `identifier.ts` (`kebab-case` → `camelCase`), `predicates.ts` (`hasFile`).
 `src/extract/module.ts` и `src/preserve/regions.ts` — однофайловые, `src/plugins/kit/barrels.ts` —
 единственный сегодня готовый плагин, `src/cli.ts` — точка входа без папки, как и `bin.mjs` у
-`build`.
+`build`. `src/mapping/` — отдельный раннер (`types.ts`+`runner.ts`), без `node:fs`/Vite вообще, под
+один сырой текст на входе (пример потребителя — `apps/skin`, файл спеки через `<input
+type=file>`), не под скан папок — см. FAQ.md, почему это не тот же `run()`, что у `engine`.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -103,6 +106,24 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 }
 ```
 
+**Маппинг одного сырого текста** (браузер, без `node:fs`/Vite) — один или несколько
+`MappingTemplate`, `run` сам находит первый, чей `isEntry` сказал true, и падает явно, если ни
+один не подошёл:
+
+```ts
+import { run } from "@web-core/generators/mapping";
+import type { MappingTemplate } from "@web-core/generators/mapping";
+
+const swagger2: MappingTemplate<RawOperation, Endpoint[]> = {
+  name: "swagger-2.0",
+  isEntry: (raw) => JSON.parse(raw).swagger?.startsWith("2."),
+  collect: (raw) => /* paths → RawOperation[] */,
+  render: (items) => /* RawOperation[] → Endpoint[] */,
+};
+
+const endpoints = await run(rawSpecText, [swagger2]);
+```
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У раннера нет одной сущности с общим списком настроек — конфиг раннера, плагин и готовый
@@ -118,6 +139,8 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 | `zones` | `AggregatePlugin`/`PerEntryPlugin` | `readonly string[]` | не задан — регенерация без сохранения |
 | `outputDir`, `templatesDir` | `kitBarrelPlugins`, `KitBarrelOptions` | `string` | обязательные |
 | Второй аргумент | `importModule(path, config?)` | `InlineConfig` (Vite) | `{}` |
+| `isEntry` (шаблона mapping) | `MappingTemplate.isEntry` | `(raw: string) => boolean` | обязательное — guard диалекта, не фильтр по всем entries |
+| `validate` (шаблона mapping) | `MappingTemplate.validate` | `(items) => void \| Promise<void>` | не задан |
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -132,6 +155,8 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 | Прогон прерван, ничего не записано | исключение из `collect`/`validate` до единой записи всех файлов | `run()` |
 | Карта частей кита — `.tsx` или `.ts` | читается с диска, не выбирается заранее | `kitBarrelPlugins`, `kitFileOf` |
 | `io.ts` пуст, но существует | ни один entry не объявил `entity/io.ts` | `kitBarrelPlugins`, `ioPlugin` |
+| Ни один шаблон mapping не подошёл | explicit throw с именами всех проверенных шаблонов | `mapping/runner.ts` |
+| Шаблон mapping подошёл | только его `collect`/`validate`/`render` вызваны — остальные шаблоны не тронуты (dispatch, не fan-out) | `mapping/runner.ts` |
 
 <h2 id="io">🔌 IO</h2>
 
@@ -145,6 +170,7 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 | `importModule(path, config?)` | абсолютный путь к `.ts`-модулю, необязательный `InlineConfig` |
 | `mergeMarkedRegions(fresh, existing, markers)` | свежий текст, текущий текст файла (или `undefined`), пара маркеров |
 | `kitBarrelPlugins(options)` | `KitBarrelOptions` (`outputDir`, `templatesDir`) |
+| `run(raw, templates)` (`mapping`) | сырой текст (`string`) + `readonly MappingTemplate[]` |
 
 <h3>📤 Выход</h3>
 
@@ -154,6 +180,7 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 | `importModule` | реальный, исполненный модуль — типизируется явно вызывающим (`importModule<T>`) |
 | `mergeMarkedRegions` | итоговая строка — свежий текст с зонами, взятыми из старого файла |
 | `kitBarrelPlugins` | `readonly AggregatePlugin[]` — четыре плагина, один общий скан |
+| `run` (`mapping`) | `TOutput` того шаблона, что подошёл — типизированные данные, не файл |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -166,6 +193,7 @@ const { passport } = await importModule<typeof import("./entity/passport.js")>("
 | `run()` с `PerEntryPlugin` + `zones` | файл на каждый entry, ручная правка переживает повторный прогон | `test/engine/runner.test.ts` |
 | `runCli` | настоящий TS-конфиг грузится исполнением и гонит раннер, конфиг без `default`-экспорта — понятная ошибка | `test/cli/cli.test.ts` |
 | `kitBarrelPlugins` | `.tsx`/`.ts`-разводка карты кита, `io.ts` фильтруется по `entity/io.ts`, обе ошибки валидации не пишут ничего на диск | `test/plugins/kit/barrels.test.ts` |
+| `mapping.run` | dispatch на первый подошедший шаблон, остальные не тронуты, `validate` останавливает до `render`, ни один guard не подошёл — explicit throw с именами шаблонов | `test/mapping/runner.test.ts` |
 | `importModule` + шаблон против настоящего паспорта | реальный `passport.ts` (копия `accordion`) исполняется и превращается в таблицы README | `test/engine/component-readme.test.ts` |
 | Настоящий потребитель | `packages/ui` — `generate.config.ts` порождает `passport.ts`/`kit.ts`/`io.ts`/`index.ts`, кит целиком собирается и типчекается на результате | `packages/ui/generators/generate.config.ts` |
 

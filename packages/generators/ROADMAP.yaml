@@ -170,6 +170,27 @@ categories:
           `kit.tsx`) в один файл для агента, который потом дописывает прозу — тоже готовый плагин,
           не рукописный скрипт в `packages/ui`.
 
+  - category: Маппинг спеки в браузере
+    items:
+      - id: mapping-dispatch-runner
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: mapping/run — dispatch-раннер под один сырой текст, без node:fs/Vite
+        description: |
+          Означает: продукт в браузере (`apps/skin`, загрузка OpenAPI/Swagger-файла через
+          `<input type=file>`) получает свой раннер под подпуть `./mapping` — та же тройка
+          `collect(шаблон)→validate?→render`, что у `AggregatePlugin`, но источник — один сырой
+          текст, не скан папок, и результат — типизированные данные в памяти, не файл на диск.
+          `MappingTemplate.isEntry(raw)` — guard диалекта (та же роль, что `isEntry` у
+          `AggregatePlugin`/`PerEntryPlugin`, другая сигнатура). `run(raw, templates)` — dispatch,
+          не fan-out: берёт РОВНО ОДИН первый подходящий шаблон, остальные не трогает; ни один
+          guard не подошёл — explicit throw с именами всех проверенных шаблонов, не попытка
+          угадать поля. Отдельный подпуть, не переработка `engine/runner.ts` — см. журнал
+          `mapping-separate-from-disk-engine` про то, почему это не общий `run()` с подключаемым
+          источником/приёмником.
+
   - category: Не сделано
     items:
       - id: scaffold-write-read-tags
@@ -195,6 +216,37 @@ categories:
           которое никогда не перечитывается обратно (обвязка файла, части без тега).
 
 log:
+  - id: mapping-separate-from-disk-engine
+    type: plan
+    date: 2026-09-11
+    summary: >
+      Запрос от `apps/skin` (owner-app): юзер грузит файл спеки (OpenAPI/Swagger) через `<input
+      type=file>` в уже собранном браузерном SPA, из него нужно завести `Endpoint[]`/`Service` —
+      механика уровня пакета, не одноразовый скрипт внутри аппы, по диалекту спеки (Swagger 2.0
+      сегодня) заводится свой шаблон. На обсуждение вынесено два варианта: (1) отдельный
+      браузер-безопасный подпуть `./mapping` со своим маленьким раннером той же формы, без
+      `node:fs`/Vite вообще; (2) переработка самого `engine/runner.ts` так, чтобы источник записей
+      и приёмник результата были подключаемыми, один `run()` обслуживал бы и дисковый кодген кита,
+      и браузерный маппинг спеки. Первый довод против (2) — «не трогай, там живой потребитель
+      (`packages/ui`)» — user поправил: реального потребителя сегодня нет, `pnpm generate` никто не
+      гоняет, всё правится руками, `kitBarrelPlugins` — по факту артефакт. Второй довод — устоял:
+      верхний цикл СЕГОДНЯ у дискового раннера — fan-out (гоняет ВСЕ плагины конфига, каждый сам
+      фильтрует свои entries через свой `isEntry`, непопадание под фильтр — не ошибка), а нужный
+      для спеки цикл — dispatch (среди нескольких шаблонов-диалектов должен сработать РОВНО ОДИН,
+      чей guard сказал true, ни один не подошёл — explicit throw). Это разная логика верхнего
+      уровня, не «тот же цикл с другим источником/приёмником» — общий `run()` для обоих потребовал
+      бы режима/ветвления внутри, то есть костыль, а не переиспользование. Плюс `Source`
+      (`EntryContext[]` со скана папок vs один сырой текст) и `Output` (`GeneratedFile{path,
+      content}` для записи на диск vs типизированные данные в памяти) — разные типы по сути, не
+      варианты одного. Решение: отдельный подпуть `./mapping`, переиспользуется идея тройки
+      `guard(isEntry)/collect/validate?/render`, не общий TS-тип и не общий раннер. User также
+      указал на `packages/io` (`codecs.ts` — `identityCodec`/`renameKeysCodec` поверх zod,
+      `paths.ts` — `describeSchema`/`describeSample`, `field-rules.ts`) как источник готовых
+      кирпичей для САМОГО шаблона (нормализация чужих полей в наш `Endpoint`) — не для раннера, тот
+      кирпичей `io` не использует. Дальше: `apps/skin` сама пишет ровно один шаблон под Swagger 2.0
+      (пример спеки — `apps/skin/src/entities/openapi/model/sources/swagger_example_v2.0.yaml`) и
+      подключает через `./mapping` — это уже не зона `generators`.
+
   - id: engine-consolidated-from-barrel-scaffold-plugin
     type: plan
     date: 2026-09-04
