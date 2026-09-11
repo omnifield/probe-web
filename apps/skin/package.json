@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@web-core/assembly": "workspace:*",
+    "@web-core/generators": "workspace:*",
     "@web-core/io": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/router": "workspace:*",
@@ -26,7 +27,8 @@
     "@web-core/style": "workspace:*",
     "@web-core/ui": "workspace:*",
     "@tanstack/solid-router": "^1.170.30",
-    "solid-js": "^1.9.14"
+    "solid-js": "^1.9.14",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@web-core/build": "workspace:*",

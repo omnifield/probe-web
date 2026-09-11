@@ -131,6 +131,9 @@ importers:
       '@web-core/assembly':
         specifier: workspace:*
         version: link:../../packages/assembly
+      '@web-core/generators':
+        specifier: workspace:*
+        version: link:../../packages/generators
       '@web-core/io':
         specifier: workspace:*
         version: link:../../packages/io
@@ -158,6 +161,9 @@ importers:
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
+      yaml:
+        specifier: ^2.8.1
+        version: 2.9.0
     devDependencies:
       '@types/node':
         specifier: ^24.10.1
