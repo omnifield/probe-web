@@ -2,7 +2,7 @@ import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMutation, createQuery, QueryClient, QueryClientProvider } from "../src/index.js";
-import { createRestClient, HTTPError, restRequest } from "../src/rest/index.js";
+import { createRestClient, HTTPError, rawRestRequest, restRequest } from "../src/rest/index.js";
 
 let dispose: (() => void) | undefined;
 
@@ -91,6 +91,22 @@ describe("@web-core/query/rest", () => {
     });
   });
 
+  it("rawRestRequest на успехе отдаёт response и data — статус/заголовки не теряются", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ title: "hi" }), {
+        status: 200,
+        headers: { "content-type": "application/json", "x-request-id": "42" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await rawRestRequest<{ title: string }>("https://api.example/todos/1");
+
+    expect(result.data).toEqual({ title: "hi" });
+    expect(result.response.status).toBe(200);
+    expect(result.response.headers.get("x-request-id")).toBe("42");
+  });
+
   it("createRestClient конфигурируется один раз, baseUrl/headers не повторяются на вызов, per-call headers перекрывают клиентские", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ title: "hi" }), {
@@ -121,5 +137,23 @@ describe("@web-core/query/rest", () => {
     const headers = init.headers as Headers;
     expect(headers.get("authorization")).toBe("Bearer t");
     expect(headers.get("x-app")).toBe("override");
+  });
+
+  it("<restApi>.raw даёт response+data с конфигом клиента — тот же постман-путь, что и rawRestRequest", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ title: "hi" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const api = createRestClient({ baseUrl: "https://api.example/" });
+    const result = await api.raw<{ title: string }>("/todos/1");
+
+    expect(result.data).toEqual({ title: "hi" });
+    expect(result.response.status).toBe(200);
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toBe("https://api.example/todos/1");
   });
 });

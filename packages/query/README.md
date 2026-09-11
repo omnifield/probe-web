@@ -41,7 +41,7 @@
 | Devtools       | `@web-core/query/devtools` | `SolidQueryDevtools`, `SolidQueryDevtoolsPanel`                                                                                                                                                                               |
 | Persist        | `@web-core/query/persist`  | `persistQueryClient`, `createSyncStoragePersister`, весь `@tanstack/query-persist-client-core` (`persistQueryClientRestore`, `persistQueryClientSave`, `persistQueryClientSubscribe`, ретрай-стратегии, `createPersister`)  |
 | GraphQL        | `@web-core/query/graphql`  | `createGraphQLClient` (основной способ) + `graphqlRequest`/`gql`/`ClientError` (внутренности движка — см. ниже)                                                                                                               |
-| REST           | `@web-core/query/rest`     | `createRestClient` (основной способ) + `restRequest`/`HTTPError` (внутренности движка — см. ниже)                                                                                                                              |
+| REST           | `@web-core/query/rest`     | `createRestClient` (основной способ) + `restRequest`/`rawRestRequest`/`HTTPError`/`RestResult` (внутренности движка — см. ниже)                                                                                                |
 
 ⚠️ **`graphqlRequest`/`restRequest` — внутренности движка, не рекомендуемый способ.** Оба берут
 url/эндпоинт параметром на КАЖДЫЙ вызов, а не один раз при старте — значит вызывающий код либо
@@ -182,6 +182,15 @@ const mutation = createMutation(() => ({
 }));
 ```
 
+**REST — `.raw`/`rawRestRequest`, когда статус/заголовки ответа нужны и на успехе** (не только на
+ошибке через `HTTPError.response`): инструмент-«постман», которому важно показать `response.status`
+и `response.headers`, а не только тело.
+
+```tsx
+const { data, response } = await restApi.raw<{ title: string }>(`/todos/${id()}`);
+console.log(response.status, response.headers.get("x-request-id"), data);
+```
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У пакета нет своей сущности настроек — это опции конструкторов вендора, реэкспортированных как
@@ -234,8 +243,10 @@ const mutation = createMutation(() => ({
 | `createRestClient(config)`        | `{ baseUrl: string, headers?: HeadersInit }` — один раз при старте, дальше держит их сам          |
 | `<graphqlApi>.request(document, variables?)` | результат `createGraphQLClient(...)`'s поле — url/headers уже внутри клиента               |
 | `<restApi>.request(path, init?)`  | результат `createRestClient(...)`'s поле — `init?: RequestInit & { json?: unknown }`, per-call `headers` перекрывают клиентские по имени |
+| `<restApi>.raw(path, init?)`      | тот же вход, что и `.request`, но отдаёт `response`+`data` и на успехе тоже — см. "Выход"          |
 | `graphqlRequest(url, document, variables?, headers?)` ⚠️ внутренности | `url: string`, `document: RequestDocument \| TypedDocumentNode`, `variables?: Variables`, `headers?: HeadersInit` — url/headers на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
 | `restRequest(input, init?)` ⚠️ внутренности | `input: string \| URL`, `init?: RequestInit & { json?: unknown }` — url на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
+| `rawRestRequest(input, init?)` ⚠️ внутренности | тот же вход, что и `restRequest` — url/`init` на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
 
 ### 📤 Выход
 
@@ -246,9 +257,10 @@ const mutation = createMutation(() => ({
 | `persistQueryClient(...)`           | `[unsubscribe: () => void, restorePromise: Promise<void>]`                                       |
 | `createSyncStoragePersister(...)`   | `Persister` — `{ persistClient, restoreClient, removeClient }`                                    |
 | `createGraphQLClient(...)`          | `{ request }` — тот же `Promise<TResult>`/`ClientError`, что и `graphqlRequest`, но без url/headers на вызове |
-| `createRestClient(...)`             | `{ request }` — тот же `Promise<TResult>`/`HTTPError`, что и `restRequest`, но без baseUrl/headers на вызове |
+| `createRestClient(...)`             | `{ request, raw }` — `request` тот же `Promise<TResult>`/`HTTPError`, что и `restRequest`; `raw` тот же `Promise<RestResult<TResult>>`, что и `rawRestRequest` — оба без baseUrl/headers на вызове |
 | `graphqlRequest(...)` ⚠️ внутренности | `Promise<TResult>` — данные из `data` ответа; на GraphQL-ошибках/не-2xx кидает `ClientError`      |
 | `restRequest(...)` ⚠️ внутренности  | `Promise<TResult>` — JSON или текст тела по `content-type`, `undefined` на `204`/пустом теле; на не-2xx кидает `HTTPError` (несёт `response`+разобранное `data`) |
+| `rawRestRequest(...)` ⚠️ внутренности | `Promise<RestResult<TResult>>` — `{ response, data }`, ТА ЖЕ форма на успехе, что несёт `HTTPError` на ошибке (`response`+`data`); тело разобрано так же, как у `restRequest` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -262,6 +274,7 @@ const mutation = createMutation(() => ({
 | `QueryClientProvider` + `createQuery` + `createGraphQLClient` | основной способ: url/headers заданы один раз в клиенте, реальный рендер `loading` → `hi`, заголовок из клиента доехал до `fetch` | `test/graphql.test.tsx` |
 | `QueryClientProvider` + `createQuery`/`createMutation` + `restRequest` | внутренности: реальный рендер (`queryFn` и `mutationFn`), `json`-шорткат проверен byte-level (`body`+`content-type`), не-2xx доезжает до `HTTPError` | `test/rest.test.tsx` |
 | `QueryClientProvider` + `createQuery` + `createRestClient` | основной способ: `baseUrl`+путь соединены, per-call `headers` перекрывают клиентские по имени | `test/rest.test.tsx` |
+| `rawRestRequest`/`<restApi>.raw` | на успехе `{ response, data }` не теряет статус/заголовки — постман-путь, симметричный `HTTPError` на ошибке | `test/rest.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
