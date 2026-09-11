@@ -72,6 +72,15 @@ export { coordinateOfType, nodesByCoordinate, nodesSharingCoordinate } from "./c
 export type { SketchNaming } from "./sketch.js";
 export { sketchOf } from "./sketch.js";
 
+export type {
+  CompositionContent,
+  CompositionElement,
+  CompositionRefusal,
+  CompositionResult,
+  CompositionSpec,
+} from "./compose.js";
+export { composeTree, rootNode } from "./compose.js";
+
 export type { TreeFlaw, TreeFlawName } from "./integrity.js";
 export { checkTree } from "./integrity.js";
 

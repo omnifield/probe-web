@@ -11,6 +11,7 @@ import {
   type AssemblyElement,
   type AssemblyNode,
   type AssemblyTree,
+  type DispatchAction,
   type NodeId,
 } from "./tree.js";
 
@@ -33,6 +34,8 @@ export interface NewElement {
   readonly type: string;
   readonly composedInto?: string;
   readonly props?: Readonly<Record<string, unknown>>;
+  readonly bind?: Readonly<Record<string, string>>;
+  readonly on?: Readonly<Record<string, DispatchAction>>;
   readonly meta?: Readonly<Record<string, unknown>>;
 }
 
@@ -143,6 +146,8 @@ export function insertNode(
         parentId,
         children: [],
         ...(node.props ? { props: node.props } : {}),
+        ...(node.bind ? { bind: node.bind } : {}),
+        ...(node.on ? { on: node.on } : {}),
         ...(node.meta ? { meta: node.meta } : {}),
       };
 

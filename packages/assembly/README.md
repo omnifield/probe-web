@@ -44,13 +44,14 @@
 | Вложенность | `@web-core/assembly` | `allowedInside`, `canAdmit`, `canContain`, `possibleOwnersOf`, `ownersAdmitting`, `AllowedInside`, `NestingVerdict`, `NestingRefusal`, `PossibleOwner` |
 | Координата | `@web-core/assembly` | `coordinateOfType`, `nodesByCoordinate`, `nodesSharingCoordinate`, `NodeCoordinate` |
 | Образец | `@web-core/assembly` | `sketchOf`, `SketchNaming` |
+| Композиция | `@web-core/assembly` | `composeTree`, `rootNode`, `CompositionElement`, `CompositionContent`, `CompositionSpec`, `CompositionRefusal`, `CompositionResult` |
 | Своё поведение | `@web-core/assembly` | `growSelfAssembly`, `SelfAssembly`, `SelfAssemblyElement`, `SelfAssemblyContent`, `SelfAssemblyNode` |
 | Паспорт (читаемый срез) | `@web-core/assembly` | `partOf`, `ReadablePassport`, `ReadablePart`, `Admission`, `AdmissionRule`, `Genus`, `ComponentGenus` |
 | Отрисовка | `@web-core/assembly/render` | `RenderTree`, `RenderTreeProps`, `FallbackProps`, `ErrorFallbackProps`, `EditOverlayProps`, `SlotEntry`, `SlotPlacement`, `DispatchedEvent` |
 
-📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (девять файлов —
-дерево/правки/целостность/реестр/вложенность/координата/образец/self-assembly/паспорт, ноль
-Solid), `src/render/` (двенадцать файлов, единственный сегодняшний потребитель `engine/`;
+📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (десять файлов —
+дерево/правки/целостность/реестр/вложенность/координата/образец/композиция/self-assembly/паспорт,
+ноль Solid), `src/render/` (двенадцать файлов, единственный сегодняшний потребитель `engine/`;
 `index.tsx` — тонкий реэкспорт по тому же образцу, что корневой `src/index.ts`; `render-tree.tsx`
 — провайдер/`Suspense`/`checkTree`; `render-node.tsx` — сборка ОДНОГО узла, точка входа рекурсии;
 `content-of.tsx` — дети узла, самая тонкая часть Solid-реактивности; `composition.ts`/
@@ -124,6 +125,22 @@ import { growSelfAssembly } from "@web-core/assembly";
 const behaviorTree = growSelfAssembly(passport.selfAssembly, "button", passport.root);
 ```
 
+**Композиция из целых компонентов (модуль — не один паспорт, а несколько адресов реестра сразу):**
+
+```ts
+import { composeTree } from "@web-core/assembly";
+
+const result = composeTree(registry, {
+  type: "grid",
+  children: [
+    { type: "grid.cell", children: [{ type: "card", bind: { title: "/product/name" } }] },
+    { type: "grid.cell", children: [{ type: "button", props: { "data-variant": "primary" } }] },
+  ],
+});
+
+if (!result.ok) console.warn(result.refusals);
+```
+
 **Слот живого контента на месте узла:**
 
 ```tsx
@@ -189,6 +206,8 @@ const slots: Record<string, SlotEntry> = {
 | `RenderTree` | `RenderTreeProps` (см. «Настройки») |
 | `growSelfAssembly(assembly, address, rootPart)` | `SelfAssembly` компонента + куда он смотрит в реестре |
 | `sketchOf(registry, address, naming?)` | адрес компонента и (опционально) свои имена узлов образца |
+| `rootNode(registry, address, id?)` | адрес компонента — первый узел дерева, родителя проверять не у чего |
+| `composeTree(registry, spec, rootId?)` | вложенная спека целых компонентов (`CompositionSpec`) — модуль собирается тем же `insertNode`, что и ручная правка |
 
 <h3 id="io-выход">📤 Выход</h3>
 
@@ -200,6 +219,8 @@ const slots: Record<string, SlotEntry> = {
 | `allowedInside`/`canAdmit`/`canContain` | `NestingVerdict = { allowed: true } \| { allowed: false, refusal, means }` |
 | `possibleOwnersOf`/`ownersAdmitting` | `readonly PossibleOwner[]` |
 | `coordinateOfType` | `NodeCoordinate \| undefined` |
+| `rootNode` | `AssemblyTree \| undefined` |
+| `composeTree` | `CompositionResult = {ok:true, tree} \| {ok:false, refusals}` — все отказы сразу, не по одному |
 | `RenderTree` + `dispatch` | `DispatchedEvent = { name, nodeId, address, timestamp, context }` наружу на каждое `on` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
