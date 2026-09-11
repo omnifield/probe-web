@@ -7,6 +7,11 @@ export interface EndpointHeader {
 
 export interface Endpoint {
   readonly id: string;
+  /** Сервис-владелец (`../service`) — жёсткая связь, в отличие от `Schema.providers`: ручка не
+   *  существует сама по себе, она всегда часть какого-то сервиса. */
+  readonly serviceId: string;
+  /** Группа внутри сервиса — как `tags` у операции в Swagger/OpenAPI. Без группы — "Без группы" в UI. */
+  readonly tag?: string;
   readonly method: HttpMethod;
   readonly url: string;
   readonly headers: readonly EndpointHeader[];

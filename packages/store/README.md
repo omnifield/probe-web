@@ -34,7 +34,7 @@ sync/async не нужно.
 | ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
 | Стейт-машины      | `@web-core/store/machine`  | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef`                                                      |
-| Persist-аддон     | `@web-core/store/persist`  | `persist`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                                   |
+| Persist-аддон     | `@web-core/store/persist`  | `persist`, `persistAtom`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                    |
 | Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                |
 | Reset-аддон       | `@web-core/store/reset`    | `reset`                                                                                                                                                                                                   |
 | Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                 |
@@ -154,6 +154,25 @@ export const settingsStore = createStore({
 }).with(persist({ name: "settings" }));
 ```
 
+**`persistAtom` — то же самое, но для атома** (у `createAtom` нет `.with()`, поэтому это отдельная
+функция, не аддон стора):
+
+```ts
+import { createAtom } from "@web-core/store";
+import { persistAtom } from "@web-core/store/persist";
+
+export const countAtom = persistAtom(createAtom(0), { name: "count" }); // localStorage по умолчанию
+```
+
+```ts
+import { createJSONStorage, persistAtom } from "@web-core/store/persist";
+
+export const draftAtom = persistAtom(createAtom(""), {
+  name: "draft",
+  storage: createJSONStorage(() => sessionStorage), // локал → сешн — только эта опция и меняется
+});
+```
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У движка нет одной сущности с общим списком настроек, как у компонента, — опции у каждого
@@ -173,6 +192,9 @@ export const settingsStore = createStore({
 | `skipHydration`                                    | `persist`, `options.skipHydration`                               | `boolean`                                         | `false`                |
 | `filter`/`pick`/`migrate`/`merge`                  | `persist` (`strategy: "snapshot"`)                               | функции                                           | —                      |
 | `maxEvents`                                        | `persist` (`strategy: "event"`)                                  | `number`                                          | `Infinity`             |
+| `name`                                             | `persistAtom`, `options.name`                                    | `string`                                          | обязательное           |
+| `storage`                                          | `persistAtom`, `options.storage`                                 | `StateStorage` (синхронный)                       | `localStorage`         |
+| `serialize`/`deserialize`                          | `persistAtom`, `options`                                         | функции                                           | `JSON.stringify`/`.parse` |
 | `strategy`                                         | `undoRedo`, `options.strategy`                                   | `"event" \| "snapshot"`                           | `"event"`              |
 | `historyLimit`                                     | `undoRedo` (`strategy: "snapshot"`)                              | `number`                                          | `Infinity`             |
 | `getTransactionId`/`skipEvent`/`compare`/`restore` | `undoRedo`                                                       | функции                                           | —                      |
@@ -243,6 +265,8 @@ export const settingsStore = createStore({
 | `createResourceAtom` с ключом        | реагирует на смену ключа ПОСЛЕ резолва предыдущего запроса       | `test/resource.test.tsx` |
 | `createResourceAtom` с ключом, гонка | устаревший ответ игнорируется, если ключ сменился до его резолва | `test/resource.test.tsx` |
 | `createResourceAtom` + `useAtom`     | реальный рендер компонента, `pending` → `done` по смене ключа    | `test/resource.test.tsx` |
+| `persistAtom` + localStorage         | гидратация при вызове, запись при `.set()`                       | `test/persist.test.tsx`  |
+| `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются  | `test/persist.test.tsx`  |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

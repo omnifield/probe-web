@@ -42,6 +42,36 @@ categories:
           Означает: реэкспорт @xstate/store/{persist,undo,reset,validate} отдельными подпутями —
           @xstate/store НАША зависимость, без реэкспорта её подпути недостижимы строгим pnpm.
 
+      - id: persist-atom
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: persistAtom — persist для createAtom (localStorage/sessionStorage)
+        description: |
+          Означает: @web-core/store/persist экспортирует persistAtom(atom, {name, storage?,
+          serialize?, deserialize?}) — гидратация из storage при вызове + подписка на .set() для
+          записи. Закрывает дыру: upstream persist() из @xstate/store — StoreExtension, вешается
+          через .with() на createStore, у createAtom .with нет вовсе. До этого пункта потребители
+          (apps/skin/entities/openapi/model/endpoint/store.ts) вручную писали
+          localStorage.getItem/setItem + JSON.parse/stringify на каждый персистентный атом.
+          Local/session переключаются готовым createJSONStorage(() => sessionStorage) из того же
+          подпути — новой опции под них не заводили. 5 тестов в test/persist.test.tsx.
+
+      - id: persist-atom-indexeddb
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: persistAtom — асинхронный storage (IndexedDB)
+        description: |
+          Означает: persist-atom сегодня читает storage.getItem синхронно — если он вернёт
+          Promise (async-адаптер вроде IndexedDB), гидратация молча не происходит (typeof raw
+          === "string" не пропускает Promise). Когда IndexedDB понадобится реально — либо
+          persistAtom научится await'ить getItem и гидрировать асинхронно (сигнатура персиста
+          при этом меняется — вызывающий код должен знать, что атом не готов сразу), либо рядом
+          появится отдельный helper по образцу rehydrateStore у @xstate/store/persist.
+
   - category: Ресурс — синхронно и асинхронно
     items:
       - id: create-async-atom-broken
@@ -134,6 +164,20 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: persist-atom-scope
+    type: plan
+    date: 2026-09-11
+    summary: >
+      Запрошено user по конкретному кейсу: apps/skin/entities/openapi/model/endpoint/store.ts
+      вручную гидрирует и пишет атом в localStorage (STORAGE_KEY + JSON.parse/stringify руками)
+      — потому что upstream persist() из @xstate/store работает только с createStore (.with()),
+      у createAtom этого метода нет. Решено добавить persistAtom в тот же подпуть
+      @web-core/store/persist (не новый подпуть — переиспользует StateStorage/createJSONStorage
+      оттуда же, один словарь опций на persist store и persist atom). Скоуп явно ограничен по
+      просьбе user: localStorage/sessionStorage сейчас (через уже существующий
+      createJSONStorage), IndexedDB — Backlog (persist-atom-indexeddb), не строить асинхронную
+      гидратацию заранее без реального потребителя.
+
   - id: create-async-atom-confirmed-broken
     type: plan
     date: 2026-09-04

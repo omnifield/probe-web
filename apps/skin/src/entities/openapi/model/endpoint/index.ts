@@ -5,10 +5,13 @@ export {
   setCurrentEndpointId,
   createEndpoint,
   removeEndpoint,
+  removeEndpointsOfService,
+  endpointsOfService,
   updateEndpoint,
   setEndpointMethod,
   setEndpointUrl,
   setEndpointBody,
   setEndpointHeaders,
+  setEndpointTag,
 } from "./store";
 export { callEndpoint, type EndpointCallResult } from "./call";

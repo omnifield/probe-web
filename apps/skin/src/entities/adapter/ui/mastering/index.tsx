@@ -2,9 +2,11 @@ import { Flow, FlowItem, Typography } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 import { useAtom } from "@web-core/store";
 import { componentHandle, currentComponent, schemaOutline } from "#/entities/component";
+import { currentEndpointId, endpointsAtom } from "#/entities/openapi";
+import { fieldsOfSkeleton, schemasAtom } from "#/entities/schema";
 import { createEffect, createMemo } from "solid-js";
 
-import { currentEndpointId, endpointsAtom, fieldsOfSkeleton, getOrCreateAdapter, schemasAtom } from "../../model";
+import { getOrCreateAdapter } from "../../model";
 import { MappingBlock } from "./block";
 
 export function AdapterMastering() {

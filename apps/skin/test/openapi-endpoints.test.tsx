@@ -1,7 +1,8 @@
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { endpointsAtom, OpenApi, schemasAtom } from "#/entities/adapter";
+import { endpointsAtom, OpenApi } from "#/entities/openapi";
+import { schemasAtom } from "#/entities/schema";
 
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
   observe() {}
@@ -120,21 +121,18 @@ describe("OpenApi — аккордеон ручек, настройка внут
     expect(sendIndex).toBeGreaterThanOrEqual(0);
     expect(sendIndex).toBeLessThan(addHeaderIndex);
 
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      status: 200,
-      ok: true,
-      headers: new Headers({ "content-type": "application/json" }),
-      text: async () => '{"ok":true}',
-    } as Response);
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response('{"ok":true}', { status: 200, headers: { "content-type": "application/json" } }));
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     buttons[sendIndex]!.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.com/orders",
-      expect.objectContaining({ method: "GET", headers: { "X-Test": "1" } }),
-    );
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(requestUrl).toBe("https://api.example.com/orders");
+    expect(requestInit.method).toBe("GET");
+    expect((requestInit.headers as Headers).get("X-Test")).toBe("1");
     expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 200, ok: true, body: { ok: true } }));
 
     fetchMock.mockRestore();
@@ -149,12 +147,12 @@ describe("OpenApi — аккордеон ручек, настройка внут
     url.value = "https://jsonplaceholder.typicode.com/todos/1";
     url.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      status: 200,
-      ok: true,
-      headers: new Headers({ "content-type": "application/json" }),
-      text: async () => '{"userId":1,"id":1,"title":"delectus aut autem","completed":false}',
-    } as Response);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response('{"userId":1,"id":1,"title":"delectus aut autem","completed":false}', {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     const saveButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Сохранить как схему")!;

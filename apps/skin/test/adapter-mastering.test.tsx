@@ -1,5 +1,5 @@
 // Мастеринг — зона, где создаётся АДАПТЕР (схема↔компонент). Он не знает о настройке ручки
-// (метод/адрес/хедеры/тело — зона `entities/adapter/ui/openapi`, DBP.md): читает уже готовую
+// (метод/адрес/хедеры/тело — своя сущность `entities/openapi`, DBP.md): читает уже готовую
 // схему и io-схему компонента, только показывает их парой и заводит `Adapter`-запись.
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -23,14 +23,9 @@ vi.mock("@web-core/skin/presets", async () => {
 });
 
 import { setCurrentComponent } from "#/entities/component";
-import {
-  adaptersAtom,
-  AdapterMastering,
-  endpointsAtom,
-  schemasAtom,
-  setCurrentEndpointId,
-  type Endpoint,
-} from "#/entities/adapter";
+import { adaptersAtom, AdapterMastering } from "#/entities/adapter";
+import { endpointsAtom, setCurrentEndpointId, type Endpoint } from "#/entities/openapi";
+import { schemasAtom } from "#/entities/schema";
 
 let dispose: (() => void) | undefined;
 

@@ -2,7 +2,7 @@
 import { Flow, FlowItem } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 
-import { OpenApi } from "#/entities/adapter";
+import { OpenApi } from "#/entities/openapi";
 
 export function RightbarLab() {
   return (

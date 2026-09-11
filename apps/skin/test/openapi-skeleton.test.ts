@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { skeletonOf } from "#/entities/adapter";
+import { skeletonOf } from "#/entities/schema";
 
 describe("skeletonOf — ключи и типы, без значений", () => {
   it("примитивы", () => {
