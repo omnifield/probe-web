@@ -22,7 +22,16 @@ export {
   type IoRegistry,
 } from "./registry.js";
 export { createPackRegistry, type PackRegistry } from "./packs.js";
-export { discoverPaths, lookup, pointerOf, type FieldRef, type Lookup } from "./paths.js";
+export {
+  describeSample,
+  describeSchema,
+  discoverPaths,
+  lookup,
+  pointerOf,
+  type FieldRef,
+  type Lookup,
+  type PathType,
+} from "./paths.js";
 export { collectRowsReport, discoverRowPaths, discoverRowSets, type RowsResult } from "./rows.js";
 export {
   isBlank,

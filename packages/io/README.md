@@ -40,7 +40,7 @@
 | L2 — правила полей        | `src/engine/field-rules.ts`| `applyFieldRules`, `collectFieldRuleReport`, `convertRecord`, `FieldRule`, `OnFail`, `ExtraPolicy`, `FieldRuleIssue`, `FieldRuleReport`, `RecordIssue` |
 | L3 — форма целиком (повторы) | `src/engine/rows.ts`    | `discoverRowSets`, `discoverRowPaths`, `collectRowsReport`, `RowsResult`                                |
 | Действия над значением    | `src/engine/steps.ts`      | `runStep`, `runSteps`, `isBlank`, `MAX_STEPS`, `Step` и 13 его вариантов (`TrimStep`, `DateStep`, …)   |
-| Пути (JSON Pointer)       | `src/engine/paths.ts`      | `discoverPaths`, `lookup`, `pointerOf`, `FieldRef`, `Lookup` (`assign` — внутренний, не в поверхности) |
+| Пути (JSON Pointer)       | `src/engine/paths.ts`      | `discoverPaths`, `describeSample`, `describeSchema`, `lookup`, `pointerOf`, `FieldRef`, `Lookup`, `PathType` (`assign` — внутренний, не в поверхности) |
 | Подбор совместимых записей| `src/engine/compatible.ts` | `compatibleItems`                                                                                      |
 | Реестр заготовок по теме  | `src/engine/packs.ts`      | `createPackRegistry`, `PackRegistry`                                                                    |
 
@@ -127,6 +127,23 @@ const { rows, report, error } = collectRowsReport(feed, "/data/items", fields);
 // error: null, rows/report — как у collectFieldRuleReport; путь мимо набора → error вместо пустого отчёта
 ```
 
+**Плоский список полей — сэмпл данных и zod-схема одной формой:**
+
+```ts
+import { describeSample, describeSchema, z } from "@web-core/io";
+
+describeSample({ id: "1", items: [{ title: "x", views: 5 }] });
+// [{ path: "/id", type: "string" }, { path: "/items/0/title", type: "string" }, { path: "/items/0/views", type: "number" }]
+
+describeSchema(z.object({ id: z.string(), items: z.array(z.object({ title: z.string() })) }));
+// [{ path: "/id", type: "string" }, { path: "/items/0/title", type: "string" }]
+```
+
+Только СКАЛЯРНЫЕ листья (в отличие от `discoverPaths`, который отдаёт узлы промежуточных объектов
+тоже — для `unmapped` в `collectFieldRuleReport`, это его законная задача). Путь — тот же JSON
+Pointer, что у `FieldRule.from`/`.target`: значение из дропдауна поля сразу валидный `FieldRef`,
+без конвертации формата туда-обратно.
+
 **Подбор совместимых заготовок:**
 
 ```ts
@@ -161,7 +178,7 @@ packs.require("status-colors");
 | `DateStep.from`           | `steps.ts`, шаг `date`                                        | `"iso"\|"dmy"\|"unix"\|"unix-ms"`        | `"iso"`       |
 | `RoundStep.digits`        | `steps.ts`, шаг `round`                                       | `number`                                 | `0`           |
 | `DictionaryStep.otherwise`| `steps.ts`, шаг `dictionary`                                  | `"keep"\|"fail"`                         | `"keep"`      |
-| `depth`                   | `discoverPaths(sample, depth?)` / `discoverRowPaths(input, rows, depth?)` | `number`               | `6`           |
+| `depth`                   | `discoverPaths(sample, depth?)` / `discoverRowPaths(input, rows, depth?)` / `describeSample(sample, depth?)` / `describeSchema(schema, depth?)` | `number` | `6` |
 | `depth`                   | `discoverRowSets(input, depth?)`                              | `number`                                 | `4`           |
 
 <h2 id="состояния">🎛️ Состояния</h2>
@@ -200,6 +217,8 @@ packs.require("status-colors");
 | `runStep` / `runSteps`                                          | `(step(s): Step, value: unknown, source: unknown)`                         |
 | `lookup` / `assign` / `pointerOf`                               | `(source/row, pointer: FieldRef, ...)`                                     |
 | `discoverPaths`                                                 | `(sample: unknown, depth?: number)`                                        |
+| `describeSample`                                                | `(sample: unknown, depth?: number)`                                        |
+| `describeSchema`                                                | `(schema: z.ZodType, depth?: number)`                                      |
 | `compatibleItems`                                               | `(schema: Schema, items: readonly unknown[])`                              |
 | `packs.register`                                                | `(theme: string, items: readonly unknown[])`                               |
 
@@ -216,6 +235,7 @@ packs.require("status-colors");
 | `runStep` / `runSteps`                         | `StepResult`                                                              |
 | `lookup`                                       | `Lookup`                                                                  |
 | `discoverPaths`                                | `FieldRef[]`                                                              |
+| `describeSample` / `describeSchema`            | `PathType[]`                                                              |
 | `compatibleItems`                              | `z.infer<Schema>[]`                                                       |
 | `packs.get` / `.require`                       | `readonly unknown[]` \| `undefined` / `readonly unknown[]`               |
 
@@ -232,6 +252,7 @@ packs.require("status-colors");
 | `discoverRowSets` → `discoverRowPaths` → `collectRowsReport` — L3 целиком | путь до завёрнутого набора находится по образцу, пути внутри записи — по выбранному пути, дальше работает L2; путь мимо набора — явная структурная ошибка, не пустой отчёт | `test/rows.test.ts` |
 | `renameKeysCodec` round-trip (`decode∘encode`, `encode∘decode`) | обратный словарь строится сам из прямого; round-trip восстанавливает исходное | `test/codecs.test.ts` |
 | `compatibleItems` по смешанной теме                   | из записей разной формы — только реально проходящие схему, в исходном порядке      | `test/compatible.test.ts`       |
+| `describeSample` / `describeSchema` — сэмпл и схема одной формой | результат содержит только скалярные листья (объекты/массивы не появляются сами по себе); путь — JSON Pointer с индексом (`/a/0`, не голое `[]`); `$ref`-цикл схемы → `"recursive"`, не бесконечный обход; `depth` глушит обход молча, как у `discoverPaths` | `test/paths.test.ts` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

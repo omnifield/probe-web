@@ -145,6 +145,24 @@ categories:
           пакета. Кандидат `json-ptr` отклонён — все версии помечены `deprecated`, признак
           отзыва пакета. Разбор — FAQ.md.
 
+      - id: describe-sample-schema
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`describeSample`/`describeSchema` — плоский список СКАЛЯРНЫХ листьев (сэмпл/zod-схема), JSON Pointer"
+        description: |
+          Означает: перенос из `apps/skin` — `entities/schema` (`skeletonOf`+`fieldsOfSkeleton`,
+          сырой JSON-сэмпл) и `entities/component/utils/schema-outline` (`schemaOutline`,
+          zod-схема через `z.toJSONSchema`) были ДВУМЯ независимыми обходчиками одной задачи, на
+          своём формате пути (`a.b[]`). Здесь — один общий тип результата (`PathType`) и путь в
+          формате JSON Pointer (`/a/b/0`), тот же, что у `FieldRule.from`/`.target` — значение из
+          дропдауна мастера сведения сразу валидный `FieldRef`, без конвертации туда-обратно.
+          Leaf-only (в отличие от `discoverPaths`, который отдаёт узлы промежуточных объектов
+          тоже — для `unmapped`, трогать не стал). Эджкейсы `schemaOutline` (`$ref`-цикл →
+          `"recursive"`, сериализация схемы падает → `[]`) сохранены как были — порт поведения, не
+          переосмысление. ТЗ — от owner apps/skin, 2026-09-11. Разбор — FAQ.md.
+
   - category: Подбор и заготовки
     items:
       - id: compatible-items
