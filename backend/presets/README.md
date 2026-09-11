@@ -51,7 +51,7 @@
 
 🔌 Схема (`internal/graphql/schema.graphql`) — интерфейс `Preset` (общие поля: `id`/`label`/`name`/
 `description`/`kind`/`savedAt`) и шесть конкретных типов по видам реестра —
-`Palette`/`Form`/`Outfit`/`Content`/`Tag`/`Assembly`. `Query.presets(kind)`/`Query.preset(id)` —
+`Palette`/`Form`/`Outfit`/`Content`/`Tag`/`Assembly`. `Query.presets(kind, component)`/`Query.preset(id)` —
 чтение; `Mutation.createPreset`/`replacePreset`/`deletePreset` — запись, конверт (`PresetInput`) по
 смыслу тот же, что раньше нёс REST-конверт (`kind`/`label`/`name`/`description`/`state`).
 
@@ -214,7 +214,7 @@ curl -s http://127.0.0.1:8787/graphql -H 'content-type: application/json' -d '{
 
 | Запрос | Отдаёт |
 |---|---|
-| `Query.presets(kind)` | `[Preset!]!` — записи целиком, типизированные по виду (не `Meta` без `state`, как раньше отдавал индекс REST) |
+| `Query.presets(kind, component)` | `[Preset!]!` — записи целиком, типизированные по виду (не `Meta` без `state`, как раньше отдавал индекс REST). `component: [String!]` — доп. сужение по ЛЮБОМУ (OR) из списка, смысл только у видов с полем `component` (`Form`/`Assembly`/`Content`) — записи `Palette`/`Outfit`/`Tag` при заданном фильтре в выдачу не попадают |
 | `Query.preset(id)` | `Preset` — запись или `null`, если такой нет |
 | `Mutation.createPreset`/`replacePreset` | `Preset!` — только что созданная/делённая запись |
 | `Mutation.deletePreset` | `Boolean!` — было ли что удалять |

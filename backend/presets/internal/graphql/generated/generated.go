@@ -128,7 +128,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Feedback func(childComplexity int, status *string, sign *string) int
 		Preset   func(childComplexity int, id string) int
-		Presets  func(childComplexity int, kind *string) int
+		Presets  func(childComplexity int, kind *string, component []string) int
 	}
 
 	Tag struct {
@@ -160,7 +160,7 @@ type OutfitResolver interface {
 	Tags(ctx context.Context, obj *model.Outfit) ([]*model.Tag, error)
 }
 type QueryResolver interface {
-	Presets(ctx context.Context, kind *string) ([]model.Preset, error)
+	Presets(ctx context.Context, kind *string, component []string) ([]model.Preset, error)
 	Preset(ctx context.Context, id string) (model.Preset, error)
 	Feedback(ctx context.Context, status *string, sign *string) ([]*model.FeedbackEntry, error)
 }
@@ -650,7 +650,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.Presets(childComplexity, args["kind"].(*string)), true
+		return e.ComplexityRoot.Query.Presets(childComplexity, args["kind"].(*string), args["component"].([]string)), true
 
 	case "Tag.author":
 		if e.ComplexityRoot.Tag.Author == nil {
@@ -905,8 +905,11 @@ input PresetInput {
 type Query {
   """Перечень записей; kind не задан — все виды разом (см. mcp-surgical-reads/showcase-page-batch
   профили в ROADMAP.yaml — сама схема не решает, сколько тянуть за раз, решает клиент выбором
-  полей)."""
-  presets(kind: String): [Preset!]!
+  полей). component — доп. сужение (presets-component-filter, ROADMAP.yaml): совпадение по ЛЮБОМУ
+  компоненту из списка (OR). Смысл только у видов, несущих поле component (Form/Assembly/Content)
+  — записи остальных видов (Palette/Outfit/Tag) при заданном component в выдачу не попадают, это
+  не ошибка. kind и component независимы, комбинируются или задаются по отдельности."""
+  presets(kind: String, component: [String!]): [Preset!]!
   preset(id: ID!): Preset
 }
 
@@ -1334,6 +1337,14 @@ func (ec *executionContext) field_Query_presets_args(ctx context.Context, rawArg
 		return nil, err
 	}
 	args["kind"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "component",
+		func(ctx context.Context, v any) ([]string, error) {
+			return ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["component"] = arg1
 	return args, nil
 }
 
@@ -3080,7 +3091,7 @@ func (ec *executionContext) _Query_presets(ctx context.Context, field graphql.Co
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Presets(ctx, fc.Args["kind"].(*string))
+			return ec.Resolvers.Query().Presets(ctx, fc.Args["kind"].(*string), fc.Args["component"].([]string))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []model.Preset) graphql.Marshaler {
@@ -6357,6 +6368,41 @@ func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.S
 	_ = ctx
 	res := graphql.MarshalString(v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

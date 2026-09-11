@@ -52,7 +52,7 @@ func TestPresetsListReturnsTypedRecordsAcrossKinds(t *testing.T) {
 	resolver := New(s, limits.Default)
 	ctx := ctxWithLoaders(s)
 
-	presets, err := resolver.Query().Presets(ctx, nil)
+	presets, err := resolver.Query().Presets(ctx, nil, nil)
 	if err != nil {
 		t.Fatalf("Presets: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestPresetsListFilteredByUnknownKindErrors(t *testing.T) {
 	ctx := ctxWithLoaders(s)
 
 	unknown := "filter" // будущий вид tables — сегодня ещё не зарегистрирован
-	if _, err := resolver.Query().Presets(ctx, &unknown); err == nil {
+	if _, err := resolver.Query().Presets(ctx, &unknown, nil); err == nil {
 		t.Fatal("ожидалась ошибка на незарегистрированный вид")
 	}
 }
@@ -297,7 +297,7 @@ func TestPresetsListFilteredByKindReturnsOnlyThatKind(t *testing.T) {
 	ctx := ctxWithLoaders(s)
 
 	form := "form"
-	presets, err := resolver.Query().Presets(ctx, &form)
+	presets, err := resolver.Query().Presets(ctx, &form, nil)
 	if err != nil {
 		t.Fatalf("Presets: %v", err)
 	}
@@ -306,6 +306,77 @@ func TestPresetsListFilteredByKindReturnsOnlyThatKind(t *testing.T) {
 	}
 	if _, ok := presets[0].(*model.Form); !ok {
 		t.Fatalf("ожидался *model.Form, получено %T", presets[0])
+	}
+}
+
+// TestPresetsFilteredByComponentMatchesAnyOfList — presets-component-filter (ROADMAP.yaml):
+// OR по списку компонентов, только у видов, несущих поле component (Form/Assembly/Content).
+func TestPresetsFilteredByComponentMatchesAnyOfList(t *testing.T) {
+	s := openTestStore(t)
+	create(t, s, "form", "button/primary", `{"name":"button/primary","component":"button","recipe":{}}`)
+	create(t, s, "form", "input/primary", `{"name":"input/primary","component":"input","recipe":{}}`)
+	create(t, s, "form", "table/primary", `{"name":"table/primary","component":"table","recipe":{}}`)
+
+	resolver := New(s, limits.Default)
+	ctx := ctxWithLoaders(s)
+
+	presets, err := resolver.Query().Presets(ctx, nil, []string{"button", "input"})
+	if err != nil {
+		t.Fatalf("Presets: %v", err)
+	}
+	if len(presets) != 2 {
+		t.Fatalf("ожидались формы button+input, получено %d: %+v", len(presets), presets)
+	}
+	seen := map[string]bool{}
+	for _, p := range presets {
+		form, ok := p.(*model.Form)
+		if !ok {
+			t.Fatalf("ожидался *model.Form, получено %T", p)
+		}
+		seen[form.Component] = true
+	}
+	if !seen["button"] || !seen["input"] {
+		t.Fatalf("не оба ожидаемых компонента присутствуют: %+v", seen)
+	}
+}
+
+// TestPresetsFilteredByComponentSkipsKindsWithoutComponentField — Palette/Outfit/Tag не несут
+// component: при заданном фильтре они молча исключаются, это не ошибка (см. описание пункта).
+func TestPresetsFilteredByComponentSkipsKindsWithoutComponentField(t *testing.T) {
+	s := openTestStore(t)
+	create(t, s, "palette", "brand", `{"name":"brand"}`)
+	create(t, s, "form", "button/primary", `{"name":"button/primary","component":"button","recipe":{}}`)
+
+	resolver := New(s, limits.Default)
+	ctx := ctxWithLoaders(s)
+
+	presets, err := resolver.Query().Presets(ctx, nil, []string{"button"})
+	if err != nil {
+		t.Fatalf("Presets: %v", err)
+	}
+	if len(presets) != 1 {
+		t.Fatalf("ожидалась ровно одна форма (палитра без component исключена), получено %d: %+v", len(presets), presets)
+	}
+	if _, ok := presets[0].(*model.Form); !ok {
+		t.Fatalf("ожидался *model.Form, получено %T", presets[0])
+	}
+}
+
+// TestPresetsFilteredByComponentEmptyListYieldsEmptyResult — пустой []component (не nil) — это
+// осознанный "ничего не подошло", не то же самое, что "фильтр не задан".
+func TestPresetsFilteredByComponentEmptyListYieldsEmptyResult(t *testing.T) {
+	s := openTestStore(t)
+	create(t, s, "form", "button/primary", `{"name":"button/primary","component":"button","recipe":{}}`)
+
+	resolver := New(s, limits.Default)
+	ctx := ctxWithLoaders(s)
+
+	presets, err := resolver.Query().Presets(ctx, nil, []string{})
+	if err != nil {
+		t.Fatalf("Presets: %v", err)
+	}
+	if len(presets) != 0 {
+		t.Fatalf("ожидалась пустая выдача на пустой список компонентов, получено %+v", presets)
 	}
 }
 

@@ -117,8 +117,11 @@ input PresetInput {
 type Query {
   """Перечень записей; kind не задан — все виды разом (см. mcp-surgical-reads/showcase-page-batch
   профили в ROADMAP.yaml — сама схема не решает, сколько тянуть за раз, решает клиент выбором
-  полей)."""
-  presets(kind: String): [Preset!]!
+  полей). component — доп. сужение (presets-component-filter, ROADMAP.yaml): совпадение по ЛЮБОМУ
+  компоненту из списка (OR). Смысл только у видов, несущих поле component (Form/Assembly/Content)
+  — записи остальных видов (Palette/Outfit/Tag) при заданном component в выдачу не попадают, это
+  не ошибка. kind и component независимы, комбинируются или задаются по отдельности."""
+  presets(kind: String, component: [String!]): [Preset!]!
   preset(id: ID!): Preset
 }
 

@@ -104,7 +104,7 @@ func (r *outfitResolver) Tags(ctx context.Context, obj *model.Outfit) ([]*model.
 }
 
 // Presets is the resolver for the presets field.
-func (r *queryResolver) Presets(ctx context.Context, kind *string) ([]model.Preset, error) {
+func (r *queryResolver) Presets(ctx context.Context, kind *string, component []string) ([]model.Preset, error) {
 	if kind != nil && !kinds.Known(*kind) {
 		return nil, fmt.Errorf("presets: неизвестный вид %q", *kind)
 	}
@@ -128,6 +128,8 @@ func (r *queryResolver) Presets(ctx context.Context, kind *string) ([]model.Pres
 		return nil, err
 	}
 
+	wanted := componentSet(component)
+
 	presets := make([]model.Preset, 0, len(records))
 	for _, record := range records {
 		if record == nil {
@@ -137,9 +139,42 @@ func (r *queryResolver) Presets(ctx context.Context, kind *string) ([]model.Pres
 		if err != nil {
 			return nil, err
 		}
+		if wanted != nil && !matchesComponent(preset, wanted) {
+			continue
+		}
 		presets = append(presets, preset)
 	}
 	return presets, nil
+}
+
+// componentSet — nil, если фильтр не задан (presets-component-filter, ROADMAP.yaml): отличает
+// "фильтра нет" от "список компонентов пуст" (пустой присланный список — пустая выдача, не всё).
+func componentSet(component []string) map[string]bool {
+	if component == nil {
+		return nil
+	}
+	set := make(map[string]bool, len(component))
+	for _, c := range component {
+		set[c] = true
+	}
+	return set
+}
+
+// matchesComponent — совпадение по ЛЮБОМУ компоненту из фильтра (OR). Виды без поля component
+// (Palette/Outfit/Tag) при заданном фильтре в выдачу не попадают — это не ошибка, а часть контракта.
+func matchesComponent(preset model.Preset, wanted map[string]bool) bool {
+	var component string
+	switch p := preset.(type) {
+	case *model.Form:
+		component = p.Component
+	case *model.Assembly:
+		component = p.Component
+	case *model.Content:
+		component = p.Component
+	default:
+		return false
+	}
+	return wanted[component]
 }
 
 // Preset is the resolver for the preset field.
