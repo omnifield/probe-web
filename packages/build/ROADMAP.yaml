@@ -132,6 +132,24 @@ categories:
           Реализация: `test.server.deps.inline: [/\.[jt]sx(\?|$)/]` — правило по расширению
           файла, не по списку имён пакетов.
 
+      - id: vitest-workspace-source-alias
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: Алиас соседа-исходника — тоже в /vitest
+        description: |
+          Означает: `defineTestConfig()` резолвит соседей по воркспейсу тем же машинным
+          признаком симлинка, что и дев-сервер `defineConfig()` — правка исходника соседа
+          (`ui`/`skin`/`assembly` и т.п.) видна тестам потребителя сразу, без пересборки его
+          `dist`.
+          Реализация: `findWorkspaceSources()` (`src/vite/workspace-source.ts`) была уже
+          самодостаточной функцией, не завязанной на хук Vite — `defineTestConfig()` зовёт её
+          напрямую с `resolve(process.cwd())` и подключает `aliases` в свой `resolve.alias`,
+          второй раз логика не переписана. `test.server.deps.inline` по расширению
+          продолжает ловить JSX соседа и через алиас на исходник — второе условие не
+          потребовалось.
+
   - category: TS для серверов
     items:
       - id: tsconfig-node-profile
@@ -213,7 +231,43 @@ categories:
           Означает: инструмент (профиль + раннер) готов, серверы ещё не переведены — это задача
           владельцев тех зон, не `build`.
 
+      - id: typecheck-workspace-source-alias
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: Типы соседа-исходника — `tsc --noEmit`/IDE ещё смотрят в `dist`
+        description: |
+          Означает: `vitest-workspace-source-alias` (см. выше) чинит РАНТАЙМ-резолв — dev-сервер
+          и тесты теперь видят исходник соседа. Но `tsc --noEmit`/IDE резолвят типы соседа через
+          его `dist/*.d.ts`: декларации не подменяются алиасом Vite (`resolve.alias`) в принципе —
+          это механизм бандлера, не компилятора TS. Правка типа в исходнике соседа (новое поле
+          пропса и т.п.) не будет видна тайпчеку потребителя, пока сосед не пересобран.
+          Замечено архитектором по ходу починки `vitest-workspace-source-alias`, за рамки той
+          задачи не входило.
+
 log:
+  - id: vitest-workspace-source-alias
+    type: plan
+    date: 2026-09-11
+    summary: >
+      `defineTestConfig()` (`src/vitest/index.ts`) подключает `resolve.alias` через
+      `findWorkspaceSources(resolve(process.cwd()))` — ту же функцию, что дев-сервер
+      `defineConfig()` зовёт из `workspaceSourcePlugin` (`src/vite/app.ts`). Извлекать общую
+      часть заново не потребовалось: `findWorkspaceSources()` уже была самодостаточной функцией
+      в `src/vite/workspace-source.ts`, не привязанной к хуку Vite `config()` — только читала
+      `projectRoot` внутри плагина. Проверено: `apps/reference` (19 alias-записей найдено,
+      каждая ведёт в `packages/<сосед>/src/...`, не в `dist`), живой пробник — временный экспорт
+      в `packages/trace/src/index.ts`, отсутствующий в `dist`, тест потребителя увидел его без
+      пересборки соседа, пробник убран. `test.server.deps.inline` (правило по расширению
+      `.jsx`/`.tsx`) продолжает ловить JSX соседа и через алиас на исходник — второе условие не
+      потребовалось. `tsc`/typecheck и `vite build` пакета зелёные, регрессий в существующих
+      прогонах `apps/reference`/`apps/skin` не внесено (замер до и после правки — идентичные
+      14 упавших/18 прошедших тестов, причина упавших не в этой правке — отдельный
+      pre-existing дефект вне зоны `build`). Резолв типов соседа через `dist/*.d.ts` в
+      `tsc --noEmit`/IDE этой правкой не затронут — заведён отдельно
+      (`typecheck-workspace-source-alias`).
+
   - id: genus-tooling-not-engine
     type: plan
     date: 2026-09-04
