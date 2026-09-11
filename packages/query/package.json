@@ -21,6 +21,10 @@
     "./graphql": {
       "types": "./dist/graphql/index.d.ts",
       "default": "./dist/graphql/index.js"
+    },
+    "./rest": {
+      "types": "./dist/rest/index.d.ts",
+      "default": "./dist/rest/index.js"
     }
   },
   "files": [

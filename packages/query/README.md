@@ -26,21 +26,35 @@
 <h2 id="анатомия">🧩 Анатомия</h2>
 
 🗺️ У движка нет DOM-узлов — «часть» означает подпуть поставки, «адрес» — импорт-спецификатор,
-которым эта часть достаётся. Четыре подпути: корень — весь `@tanstack/solid-query`, `./devtools`,
-`./persist` и `./graphql` — отдельными дверьми, чтобы приложение импортировало ровно то, что
-использует.
+которым эта часть достаётся. Пять подпутей, две несемейные группы:
+
+- **Движок** — корень (весь `@tanstack/solid-query`), `./devtools`, `./persist`. Все трое реально
+  работают с `QueryClient`/кэшем: devtools его подсматривает, persist сохраняет между
+  перезагрузками.
+- **Транспорт** — `./graphql`, `./rest`. Ни один не знает про `QueryClient` вообще — это функции
+  «сходить в сеть, получить типизированный `Promise<T>`», которые ПОДСТАВЛЯЮТСЯ в `queryFn`/
+  `mutationFn` движка. Разный протокол внутри (GraphQL/HTTP+JSON), но одна роль.
 
 | Часть          | Адрес                    | Экспортирует                                                                                                                                                                                                                    |
 | -------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Данные из сети | `@web-core/query`         | весь `@tanstack/solid-query` (`useQuery`/`createQuery`, `useMutation`/`createMutation`, `useInfiniteQuery`/`createInfiniteQuery`, `useQueries`/`createQueries`, `QueryClient`, `QueryClientProvider`, `queryOptions`, `infiniteQueryOptions`, `mutationOptions`, `useIsFetching`, `useIsMutating`, …), весь `@tanstack/query-core` реэкспортом |
 | Devtools       | `@web-core/query/devtools` | `SolidQueryDevtools`, `SolidQueryDevtoolsPanel`                                                                                                                                                                               |
 | Persist        | `@web-core/query/persist`  | `persistQueryClient`, `createSyncStoragePersister`, весь `@tanstack/query-persist-client-core` (`persistQueryClientRestore`, `persistQueryClientSave`, `persistQueryClientSubscribe`, ретрай-стратегии, `createPersister`)  |
-| GraphQL        | `@web-core/query/graphql`  | `graphqlRequest` (`graphql-request`'s `request`, БЕЗ своего кэша), `gql`, `ClientError` — только транспорт, ни одного поля схемы конкретного бэка                                                                            |
+| GraphQL        | `@web-core/query/graphql`  | `createGraphQLClient` (основной способ) + `graphqlRequest`/`gql`/`ClientError` (внутренности движка — см. ниже)                                                                                                               |
+| REST           | `@web-core/query/rest`     | `createRestClient` (основной способ) + `restRequest`/`HTTPError` (внутренности движка — см. ниже)                                                                                                                              |
+
+⚠️ **`graphqlRequest`/`restRequest` — внутренности движка, не рекомендуемый способ.** Оба берут
+url/эндпоинт параметром на КАЖДЫЙ вызов, а не один раз при старте — значит вызывающий код либо
+повторяет url/headers в каждом `queryFn`, либо сам заворачивает пакет в свой клиент. Это ровно то,
+чего движок должен избавлять: взяв эти функции напрямую вместо `createGraphQLClient`/
+`createRestClient`, приложение СОЗНАТЕЛЬНО отказывается от механики движка и берёт конфигурацию
+транспорта на себя. Оставлены как есть (уже используются, могут пригодиться для одноразового
+запроса без клиента) — но это осознанный побег из движка, не витрина API.
 
 📦 Внутри `@web-core/query`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реальный
 `export * from "@tanstack/solid-query"` вместе с обоснованием полноты реэкспорта),
-`src/devtools/index.ts`, `src/persist/index.ts`, `src/graphql/index.ts` — каждый подпуть в своей
-папке, по образцу `@web-core/store`'s `./machine`.
+`src/devtools/index.ts`, `src/persist/index.ts`, `src/graphql/index.ts`, `src/rest/index.ts` —
+каждый подпуть в своей папке, по образцу `@web-core/store`'s `./machine`.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -107,22 +121,64 @@ import { SolidQueryDevtools } from "@web-core/query/devtools";
 {import.meta.env.DEV && <SolidQueryDevtools />}
 ```
 
-**GraphQL — `graphqlRequest` как `queryFn`, эндпоинт и заголовки передаёт приложение:**
+**GraphQL — клиент конфигурируется ОДИН раз при старте, дальше только документ+переменные:**
 
 ```tsx
-import { gql, graphqlRequest } from "@web-core/query/graphql";
+// src/api.ts — один раз на приложение
+import { createGraphQLClient, gql } from "@web-core/query/graphql";
 
-const todoQuery = gql`
+export const graphqlApi = createGraphQLClient({
+  url: "/graphql",
+  headers: { authorization: `Bearer ${getToken()}` },
+});
+
+export const todoQuery = gql`
   query Todo($id: Int!) {
     todo(id: $id) {
       title
     }
   }
 `;
+```
+
+```tsx
+// в компоненте — url/headers уже внутри graphqlApi, каждый вызов только документ+переменные
+import { graphqlApi, todoQuery } from "../api.js";
 
 const query = createQuery(() => ({
   queryKey: ["todo", id()],
-  queryFn: () => graphqlRequest<{ todo: { title: string } }>("/graphql", todoQuery, { id: id() }),
+  queryFn: () => graphqlApi.request<{ todo: { title: string } }>(todoQuery, { id: id() }),
+}));
+```
+
+**REST — та же схема, `json` сериализует тело сам:**
+
+```tsx
+// src/api.ts
+import { createRestClient } from "@web-core/query/rest";
+
+export const restApi = createRestClient({
+  baseUrl: "/api",
+  headers: { authorization: `Bearer ${getToken()}` },
+});
+```
+
+```tsx
+import { HTTPError } from "@web-core/query/rest";
+import { restApi } from "../api.js";
+
+const query = createQuery(() => ({
+  queryKey: ["todo", id()],
+  queryFn: () => restApi.request<{ title: string }>(`/todos/${id()}`),
+}));
+
+const mutation = createMutation(() => ({
+  mutationFn: (title: string) => restApi.request("/todos", { method: "POST", json: { title } }),
+  onError: (error) => {
+    if (error instanceof HTTPError && error.response.status === 409) {
+      /* … */
+    }
+  },
 }));
 ```
 
@@ -174,7 +230,12 @@ const query = createQuery(() => ({
 | `new QueryClient(config?)`        | `QueryClientConfig` — `{ defaultOptions?, queryCache?, mutationCache? }`                         |
 | `persistQueryClient(options)`     | `{ queryClient, persister, buster?, maxAge?, dehydrateOptions?, hydrateOptions? }`                |
 | `createSyncStoragePersister(options)` | `{ storage, key?, throttleTime?, serialize?, deserialize?, retry? }`                          |
-| `graphqlRequest(url, document, variables?, headers?)` | `url: string`, `document: RequestDocument \| TypedDocumentNode`, `variables?: Variables`, `headers?: HeadersInit` — эндпоинт и заголовки не хранятся в клиенте, передаются на каждый вызов |
+| `createGraphQLClient(config)`     | `{ url: string, headers?: HeadersInit }` — один раз при старте, дальше держит их сам             |
+| `createRestClient(config)`        | `{ baseUrl: string, headers?: HeadersInit }` — один раз при старте, дальше держит их сам          |
+| `<graphqlApi>.request(document, variables?)` | результат `createGraphQLClient(...)`'s поле — url/headers уже внутри клиента               |
+| `<restApi>.request(path, init?)`  | результат `createRestClient(...)`'s поле — `init?: RequestInit & { json?: unknown }`, per-call `headers` перекрывают клиентские по имени |
+| `graphqlRequest(url, document, variables?, headers?)` ⚠️ внутренности | `url: string`, `document: RequestDocument \| TypedDocumentNode`, `variables?: Variables`, `headers?: HeadersInit` — url/headers на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
+| `restRequest(input, init?)` ⚠️ внутренности | `input: string \| URL`, `init?: RequestInit & { json?: unknown }` — url на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
 
 ### 📤 Выход
 
@@ -184,7 +245,10 @@ const query = createQuery(() => ({
 | `createMutation(...)`               | `MutationObserverResult` + `mutate`/`mutateAsync`                                                |
 | `persistQueryClient(...)`           | `[unsubscribe: () => void, restorePromise: Promise<void>]`                                       |
 | `createSyncStoragePersister(...)`   | `Persister` — `{ persistClient, restoreClient, removeClient }`                                    |
-| `graphqlRequest(...)`               | `Promise<TResult>` — данные из `data` ответа; на GraphQL-ошибках/не-2xx кидает `ClientError`      |
+| `createGraphQLClient(...)`          | `{ request }` — тот же `Promise<TResult>`/`ClientError`, что и `graphqlRequest`, но без url/headers на вызове |
+| `createRestClient(...)`             | `{ request }` — тот же `Promise<TResult>`/`HTTPError`, что и `restRequest`, но без baseUrl/headers на вызове |
+| `graphqlRequest(...)` ⚠️ внутренности | `Promise<TResult>` — данные из `data` ответа; на GraphQL-ошибках/не-2xx кидает `ClientError`      |
+| `restRequest(...)` ⚠️ внутренности  | `Promise<TResult>` — JSON или текст тела по `content-type`, `undefined` на `204`/пустом теле; на не-2xx кидает `HTTPError` (несёт `response`+разобранное `data`) |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -194,7 +258,10 @@ const query = createQuery(() => ({
 | -------------------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
 | `QueryClientProvider` + `createQuery`         | реальный рендер, `loading` → `hi` после резолва `queryFn`, `queryFn` вызван 1 раз | `test/query.test.tsx` |
 | `QueryClientProvider` + `createMutation`      | реальный рендер, `save` → `saved` после клика и резолва `mutationFn`   | `test/query.test.tsx` |
-| `QueryClientProvider` + `createQuery` + `graphqlRequest` | реальный рендер, `loading` → `hi` через мок `fetch`; тело запроса (`query`+`variables`) проверено byte-level | `test/graphql.test.tsx` |
+| `QueryClientProvider` + `createQuery` + `graphqlRequest` | внутренности: реальный рендер, `loading` → `hi` через мок `fetch`; тело запроса (`query`+`variables`) проверено byte-level | `test/graphql.test.tsx` |
+| `QueryClientProvider` + `createQuery` + `createGraphQLClient` | основной способ: url/headers заданы один раз в клиенте, реальный рендер `loading` → `hi`, заголовок из клиента доехал до `fetch` | `test/graphql.test.tsx` |
+| `QueryClientProvider` + `createQuery`/`createMutation` + `restRequest` | внутренности: реальный рендер (`queryFn` и `mutationFn`), `json`-шорткат проверен byte-level (`body`+`content-type`), не-2xx доезжает до `HTTPError` | `test/rest.test.tsx` |
+| `QueryClientProvider` + `createQuery` + `createRestClient` | основной способ: `baseUrl`+путь соединены, per-call `headers` перекрывают клиентские по имени | `test/rest.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
