@@ -37,7 +37,7 @@
 | Срез редактора | `@web-core/skin/editor` | `admits`, `defineEditorInfo`, `checkAssembly`, `checkAssemblyData`, `footprintOf`, `GROUPS`, `groupOf`, `baseAssemblyOf`, `isAssemblyContent`, `isAssemblyRepeat`, `isContentNode`, `isDataBinding`, `resolveDataBinding`, `PassportAssembly`, `PassportEditorInfo` и её срез-типы |
 | Служба раздачи | `@web-core/skin/presets` | `createPresetsClient`, `createPresetsSkinSource`, `PRESET_KIND`, `PresetsDown`, `PresetsRefused`, `PresetRecord` |
 | Надевание | `@web-core/skin/wear` | `makeSkinSwitch`, `checkStyleOrder`, `SkinSwitch`, `SkinSource`, `SkinWorn`, `SkinMode`, `StyleMarker`, `StyleOrderReport` |
-| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection` |
+| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection`, `SkinProvider`, `useSkin`, `SkinContextValue`, `SkinProviderProps` |
 | Теги | `@web-core/skin/tags` | `sortTags`, `checkTags`, `groupByTag`, `DEFAULT_TAG`, `TagFlaw`, `TagGroup` |
 
 📦 Внутри пакета: `src/index.ts` — тонкий барель поверх `src/engine/` (та же форма, что у
@@ -127,6 +127,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `makeSkinSwitch(source, options)` | `storageKey` | `"web-core:skin"` |
 | | `fallback: { skin?, mode? }` | не задан — голый кит, если ничего не запомнено |
 | `createSkinConnection(source, options)` | те же, что у `makeSkinSwitch` | те же |
+| `SkinProvider` (`source`, `options?`) | `options` — те же, что у `makeSkinSwitch` | восстановление на монтировании включено всегда |
 | `createPresetsClient({ url })` | `url` | обязательное |
 | `generateSkinCss(skin, lookup, vocabulary?)` | `vocabulary` | пустой словарь — сверх словаря ролей ничего не проверяется |
 | `SkinWearOptions.remember` | запоминать ли выбор | `true` |
@@ -154,6 +155,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `assemble(outfit, parts)` | `Outfit` + `{ palettes: Palette[], forms: Form[] }` |
 | `generateSkinCss(skin, vocabulary?)` | собранный `Skin` |
 | `makeSkinSwitch(source, options)` | `SkinSource` — `names()`/`css(name)` |
+| `SkinProvider` | тот же `SkinSource`/`options`, что и `createSkinConnection`, — заводится один раз при монтировании |
 | `createPresetsClient({ url })` | адрес службы раздачи |
 | `checkStyleOrder({ marker })` | пара «свойство → значение», которую база обязана поставить |
 
@@ -165,6 +167,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `checkOutfit`/`checkSkin` | перечень изъянов значением, не исключением |
 | `generateSkinCss` | текст CSS, вложенная форма |
 | `SkinSwitch.worn()`/`SkinConnection.worn` | `SkinWorn | null` — синхронно и сигналом соответственно |
+| `useSkin()` | `SkinContextValue` — `SkinConnection` плюс `names: Resource<readonly string[]>` |
 | `skinGaps` | перечень непокрытых координат |
 | `skinContrast` | перечень пар, не прошедших норму читаемости, и пар, которые посчитать нечем |
 | `PresetsClient.list/get` | `PresetRecord<T>` — запись целиком, с содержимым |
@@ -199,6 +202,31 @@ import { createSkinConnection } from "@web-core/skin/solid";
 function ThemeSwitch() {
   const skin = createSkinConnection(source, { fallback: { skin: "brutal", mode: "light" } });
   onMount(() => void skin.restore());
+
+  return (
+    <button onClick={() => skin.setMode(skin.worn()?.mode === "dark" ? "light" : "dark")}>
+      {skin.worn()?.mode ?? "без скина"}
+    </button>
+  );
+}
+```
+
+🔌 Нескольким потребителям одного приложения (переключатель темы, витрина, что угодно ещё, кому
+нужно знать надетую половину) соединение раздаёт `SkinProvider` — заводится один раз на корне,
+восстанавливает запомненный выбор сам, а `useSkin()` отдаёт то же самое соединение плюс общий
+`names` из источника:
+
+```tsx
+import { SkinProvider, useSkin } from "@web-core/skin/solid";
+
+// один раз на корне приложения
+<SkinProvider source={source} options={{ fallback: { skin: "brutal", mode: "light" } }}>
+  <App />
+</SkinProvider>;
+
+// в любом потребителе поддерева
+function ThemeSwitch() {
+  const skin = useSkin();
 
   return (
     <button onClick={() => skin.setMode(skin.worn()?.mode === "dark" ? "light" : "dark")}>

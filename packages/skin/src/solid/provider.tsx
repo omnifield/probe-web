@@ -1,8 +1,4 @@
-// `SkinProvider` — общая обвязка на приложение вокруг `createSkinConnection`, чтобы каждый
-// продукт не писал контекст/restore-на-старте/резолв доступных скинов заново. Продукт даёт
-// СВОЙ `SkinSource` (адрес и разбор своей службы раздачи — `createPresetsSkinSource` или другой),
-// провайдер — реактивную обвязку сверху: соединение в контексте, восстановление запомненного
-// выбора при монтировании, список имён одним общим `Resource` вместо своего в каждом потребителе.
+// Контекст на приложение вокруг `createSkinConnection`. Разбор — FAQ.md.
 import {
   createContext,
   createResource,
@@ -17,9 +13,8 @@ import {
 import { createSkinConnection, type SkinConnection } from "./connection.js";
 import type { SkinSource, SkinSwitchOptions } from "../wear/switch.js";
 
-/** То, что видит потребитель внутри `SkinProvider` — соединение плюс общий список имён. */
+/** `SkinConnection` плюс общий на приложение список имён источника. */
 export interface SkinContextValue extends SkinConnection {
-  /** Имена скинов источника — один `Resource` на приложение, не по компоненту-потребителю. */
   names: Resource<readonly string[]>;
 }
 
@@ -30,15 +25,9 @@ export interface SkinProviderProps extends ParentProps {
   readonly options?: SkinSwitchOptions;
 }
 
-/**
- * Заводит `SkinConnection` на всё поддерево и сам восстанавливает запомненный выбор при
- * монтировании (тот же приём, что раньше каждый потребитель повторял через `onMount` руками).
- * Отказ восстановления — не авария приложения, только `console.debug`; узнать причину точнее —
- * дело потребителя источника (он один знает форму своих ошибок), через ручной `restore()`.
- */
+/** Заводит `SkinConnection` на всё поддерево и сам восстанавливает запомненный выбор при
+ *  монтировании. Источник и опции берутся один раз, как и у `createSkinConnection`. */
 export function SkinProvider(props: SkinProviderProps): JSX.Element {
-  // Источник и опции берутся ОДИН раз при заведении — как и сам `createSkinConnection`, провайдер
-  // не следит за их сменой на лету (сменить источник — значит перемонтировать провайдер).
   const source = untrack(() => props.source);
   const skin = createSkinConnection(source, untrack(() => props.options) ?? {});
   const [names] = createResource(() => source.names());
@@ -52,7 +41,7 @@ export function SkinProvider(props: SkinProviderProps): JSX.Element {
   );
 }
 
-/** Соединение и список имён из ближайшего `SkinProvider`. Вне него — отказ, не тихий `null`. */
+/** Значение ближайшего `SkinProvider`. Вне него — отказ, не тихий `undefined`. */
 export function useSkin(): SkinContextValue {
   const value = useContext(SkinContext);
   if (value === undefined) {
