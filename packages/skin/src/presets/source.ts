@@ -34,16 +34,19 @@ export function createPresetsSkinSource(options: PresetsSkinSourceOptions): Skin
         throw new PresetsRefused(`наряда «${name}» в службе раздачи нет — надевать нечего`);
       }
 
-      const [palettes, forms] = await Promise.all([
-        client.list(PRESET_KIND.palette),
-        client.list(PRESET_KIND.form),
-      ]);
+      const palettes = await client.list(PRESET_KIND.palette);
 
+      // Формы сюда больше не едут — компонент, вызывающий `useComponentSkin`, приносит СВОЮ форму
+      // сам, лениво (`component-skin-on-demand`). `forms: []` симметрично с обеих сторон вызова —
+      // тот же приём, что `checkForm`: наряд, ссылающийся РОВНО на то, что в `parts` (здесь —
+      // ни на что), самосогласован, `checkOutfit` не флагует отсутствующее как изъян. Разбор,
+      // включая известный пробел (компонент, не вызывающий `useComponentSkin`, — без CSS вовсе), —
+      // FAQ.md.
       return generateSkinCss(
-        assemble(outfit.state, {
-          palettes: palettes.map((record) => record.state),
-          forms: forms.map((record) => record.state),
-        }).skin,
+        assemble(
+          { ...outfit.state, forms: [] },
+          { palettes: palettes.map((record) => record.state), forms: [] },
+        ).skin,
       );
     },
     components: createLazyComponentSkin({ client, lookup }),
