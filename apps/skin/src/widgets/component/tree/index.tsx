@@ -3,11 +3,8 @@ import { useLocation, useNavigate, useParams } from "@web-core/router";
 import { useAtom } from "@web-core/store";
 import { createMemo } from "solid-js";
 
-import {
-  componentTreeAtom,
-  Renderer,
-  type TreeItemData,
-} from "#/entities/component";
+import { componentTreeAtom, type TreeItemData } from "#/entities/component";
+import { Renderer } from "#/shared/ui/renderer";
 
 export function Tree() {
   const tree = useAtom(componentTreeAtom);

@@ -1,0 +1,18 @@
+{
+  "type": "surface",
+  "children": [
+    {
+      "type": "flow",
+      "children": [
+        {
+          "type": "flow.item",
+          "children": [{ "genus": "text", "value": "Привет! Это тестовый модуль." }]
+        },
+        {
+          "type": "flow.item",
+          "children": [{ "genus": "text", "value": "Собран из целых компонентов через composeTree." }]
+        }
+      ]
+    }
+  ]
+}

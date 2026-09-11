@@ -5,9 +5,9 @@ import {
   componentDataAtom,
   componentHandle,
   getContentByName,
-  Renderer,
   setCurrentComponent,
 } from "#/entities/component";
+import { Renderer } from "#/shared/ui/renderer";
 
 /**
  * Изолированный показ ОДНОГО компонента+сборки, без хрома витрины (`Header`/сайдбар/чат) —

@@ -44,7 +44,8 @@ vi.mock("@web-core/skin/presets", async () => {
   };
 });
 
-import { componentDataAtom, componentHandle, Renderer, setCurrentComponent } from "#/entities/component";
+import { componentDataAtom, componentHandle, setCurrentComponent } from "#/entities/component";
+import { Renderer } from "#/shared/ui/renderer";
 import { Slot } from "#/entities/showcase";
 import { queryClient } from "#/shared/api/query-client";
 

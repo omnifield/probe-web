@@ -3,8 +3,8 @@
 import type { DispatchedEvent } from "@web-core/assembly";
 import { layoutSelf } from "@web-core/skin";
 import type { PassportAssembly } from "@web-core/skin/editor";
-import { Renderer } from "#/entities/component";
 import { slotSizeOf } from "#/entities/component/utils/slot-size";
+import { Renderer } from "#/shared/ui/renderer";
 import {
   Carousel,
   CarouselControl,
