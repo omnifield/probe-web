@@ -152,6 +152,18 @@ describe("createPresetsClient — GraphQL транспорт, PresetRecord<T> н
     ]);
   });
 
+  it("list(kind, { component }) шлёт $component в переменных запроса", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { data: { presets: [] } }));
+
+    const client = createPresetsClient({ url: URL });
+    await client.list(PRESET_KIND.form, { component: ["Button", "Card"] });
+
+    const body = JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body)) as {
+      variables: { kind: unknown; component: unknown };
+    };
+    expect(body.variables).toEqual({ kind: "form", component: ["Button", "Card"] });
+  });
+
   it("get() фильтрует список на клиенте одним запросом — второго чтения по id не делает", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, {

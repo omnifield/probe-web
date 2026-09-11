@@ -102,8 +102,8 @@ const text = (value: unknown): string => (typeof value === "string" ? value : ""
 /** Одно и то же тело запроса для любого вида — фрагмент по нужному типу резолвится сам, `kind`
  *  фильтрует уже на бэке. Единый текст запроса на весь клиент, а не собранный под каждый вызов. */
 const LIST_QUERY = gql`
-  query ListPresets($kind: String) {
-    presets(kind: $kind) {
+  query ListPresets($kind: String, $component: [String!]) {
+    presets(kind: $kind, component: $component) {
       id
       label
       name
@@ -264,8 +264,15 @@ async function wire<T>(op: () => Promise<T>): Promise<T> {
 
 /** Клиент службы раздачи: по каждому виду — перечень, чтение, запись, замена, удаление. */
 export interface PresetsClient {
-  /** Перечень записей вида со содержимым — один GraphQL-запрос, без отдельного чтения на запись. */
-  list<K extends PresetKind>(kind: K): Promise<readonly PresetRecord<PresetKindState[K]>[]>;
+  /** Перечень записей вида со содержимым — один GraphQL-запрос, без отдельного чтения на запись.
+   *  `component` сужает выдачу до ЛЮБОГО из перечисленных (OR) — смысл несёт только у видов,
+   *  содержащих поле `component` (`form`/`assembly`/`content`); у прочих видов (`palette`/`outfit`/
+   *  `tag`) записи такого поля не несут и при заданном `component` в выдачу не попадают —
+   *  см. `schema.graphql`. */
+  list<K extends PresetKind>(
+    kind: K,
+    options?: { readonly component?: readonly string[] },
+  ): Promise<readonly PresetRecord<PresetKindState[K]>[]>;
 
   /** Запись по имени, либо `undefined` — такой в службе нет. */
   get<K extends PresetKind>(kind: K, name: string): Promise<PresetRecord<PresetKindState[K]> | undefined>;
@@ -310,13 +317,16 @@ interface MutateResponse {
 export function createPresetsClient(options: PresetsClientOptions): PresetsClient {
   const client = createGraphQLClient({ url: options.url });
 
-  async function wireList(kind: PresetKind): Promise<WirePreset[]> {
-    const body = await wire(() => client.request<ListResponse>(LIST_QUERY, { kind }));
+  async function wireList(kind: PresetKind, component?: readonly string[]): Promise<WirePreset[]> {
+    const body = await wire(() => client.request<ListResponse>(LIST_QUERY, { kind, component }));
     return body.presets.filter((item) => text(item.name) !== "" && text(item.id) !== "");
   }
 
-  async function list<K extends PresetKind>(kind: K): Promise<readonly PresetRecord<PresetKindState[K]>[]> {
-    return (await wireList(kind)).map((item) => toRecord(kind, item));
+  async function list<K extends PresetKind>(
+    kind: K,
+    options?: { readonly component?: readonly string[] },
+  ): Promise<readonly PresetRecord<PresetKindState[K]>[]> {
+    return (await wireList(kind, options?.component)).map((item) => toRecord(kind, item));
   }
 
   async function get<K extends PresetKind>(

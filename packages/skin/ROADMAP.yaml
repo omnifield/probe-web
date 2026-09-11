@@ -320,6 +320,42 @@ categories:
           Означает: `./wear` (framework-agnostic) + `./solid` (реактивный плагин) — тот же приём,
           что `@web-core/style/solid`. Гонка source.css() гасится счётчиком последнего действия.
 
+      - id: presets-client-component-filter
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createPresetsClient.list() — принять фильтр по компоненту, не только по kind"
+        description: |
+          Вторая половина заявки `presets-component-filter` в `backend/presets/ROADMAP.yaml` —
+          та же цепь (слова user, разбор `runtime-wear-once`), сюда не повторяются, см. бэковый
+          файл. Коротко: `source.ts`'s `css()` сегодня зовёт `client.list(PRESET_KIND.form)` без
+          фильтра — тянет формы ВСЕХ компонентов аутфита, хотя странице нужна часть. Движок
+          (`generateSkinCss`/`assemble`) уже принимает произвольное подмножество `forms` — упирается
+          только в клиент, который сегодня не умеет попросить подмножество у бэка.
+
+          Зависит от бэка: контракт (скорее всего `presets(kind: String, component: [String!])`,
+          список компонентов, совпадение — ЛЮБОЙ из списка) выбирает овнер `backend/presets` по
+          факту реализации — его форму здесь ждать, не угадывать заранее по этому файлу.
+
+          По шагам (ориентир, не жёсткий рецепт):
+          1. `LIST_QUERY` (`client.ts`) — добавить переменную `$component: [String!]` рядом с
+             `$kind`, прокинуть в `presets(kind: $kind, component: $component)`.
+          2. `wireList`/`list()` — новый необязательный параметр (например второй аргумент
+             `{ component?: readonly string[] }`), пробрасывается в переменные запроса. Имеет
+             смысл только для `form`/`assembly`/`content` (те виды, у которых есть `component` в
+             схеме) — как типизировать это ограничение (отдельная перегрузка `list()` для трёх
+             видов или общий необязательный параметр без строгого ограничения типом) — решить по
+             месту, посмотрев на реальных вызывающих.
+          3. `get()`/`save()`/`replace()`/`remove()` фильтр по компоненту не нужен — они уже
+             адресуют ОДНУ запись по имени, не список.
+
+          В объём ЭТОЙ заявки НЕ входит: `source.ts`'s `createPresetsSkinSource`/`css()` — то,
+          ОТКУДА взять список нужных странице компонентов, и прокидывание его в
+          `client.list(PRESET_KIND.form, { component })`. Это следующий шаг той же цепи
+          (`runtime-wear-once` либо отдельная заявка), не эта правка — здесь только сама
+          СПОСОБНОСТЬ клиента попросить подмножество.
+
   - category: Структура пакета
     items:
       - id: engine-folder-reshape
