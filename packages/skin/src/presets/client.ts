@@ -4,7 +4,7 @@
 // зоны-потребителя (`packages/ui/component-info.ts`, `./source.ts`) получают фикс без своей правки.
 // Разбор — FAQ.md.
 
-import { ClientError, gql, graphqlRequest } from "@web-core/query/graphql";
+import { ClientError, createGraphQLClient, gql } from "@web-core/query/graphql";
 
 import type { ComponentAssembly, Form, Outfit, Palette } from "../engine/look/index.js";
 import { PresetsDown, PresetsRefused } from "./wire.js";
@@ -308,10 +308,10 @@ interface MutateResponse {
 
 /** Заводит клиент службы раздачи по одному адресу; общего состояния между экземплярами нет. */
 export function createPresetsClient(options: PresetsClientOptions): PresetsClient {
-  const { url } = options;
+  const client = createGraphQLClient({ url: options.url });
 
   async function wireList(kind: PresetKind): Promise<WirePreset[]> {
-    const body = await wire(() => graphqlRequest<ListResponse>(url, LIST_QUERY, { kind }));
+    const body = await wire(() => client.request<ListResponse>(LIST_QUERY, { kind }));
     return body.presets.filter((item) => text(item.name) !== "" && text(item.id) !== "");
   }
 
@@ -334,7 +334,7 @@ export function createPresetsClient(options: PresetsClientOptions): PresetsClien
     label?: string,
   ): Promise<PresetRecord<PresetKindState[K]>> {
     const body = await wire(() =>
-      graphqlRequest<{ createPreset: MutateResponse }>(url, CREATE_MUTATION, {
+      client.request<{ createPreset: MutateResponse }>(CREATE_MUTATION, {
         input: { kind, label: label ?? name, name, state },
       }),
     );
@@ -359,7 +359,7 @@ export function createPresetsClient(options: PresetsClientOptions): PresetsClien
     if (existing === undefined) return save(kind, name, state, label);
 
     const body = await wire(() =>
-      graphqlRequest<{ replacePreset: MutateResponse }>(url, REPLACE_MUTATION, {
+      client.request<{ replacePreset: MutateResponse }>(REPLACE_MUTATION, {
         id: text(existing.id),
         input: { kind, label: label ?? name, name, state },
       }),
@@ -381,7 +381,7 @@ export function createPresetsClient(options: PresetsClientOptions): PresetsClien
     // не отказ, идемпотентность держится смыслом, а не только HTTP-методом.
     if (existing === undefined) return;
 
-    await wire(() => graphqlRequest<{ deletePreset: boolean }>(url, DELETE_MUTATION, { id: text(existing.id) }));
+    await wire(() => client.request<{ deletePreset: boolean }>(DELETE_MUTATION, { id: text(existing.id) }));
   }
 
   return { list, get, save, replace, remove };
