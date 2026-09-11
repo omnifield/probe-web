@@ -52,16 +52,20 @@ export function useSkin(): SkinContextValue {
   return value;
 }
 
-/** Компонент кита сам просит свой CSS — по значению `variant`/каждой `setting` c атрибутной меткой,
- *  реактивно. Без `SkinProvider` в дереве — тихий no-op. Разбор — FAQ.md
- *  (`component-skin-on-demand`). */
-export function useComponentSkin(
-  passport: ComponentPassport,
-  props: Readonly<Record<string, unknown>>,
-): void {
+/**
+ * Компонент кита сам просит свой CSS — по значению `variant`/каждой `setting` c атрибутной меткой,
+ * реактивно. Без `SkinProvider` в дереве — тихий no-op. `props` принимается как `object`, не
+ * `Record<string, unknown>`: реальные пропсы кита (`AccordionRootProps`, `DialogRootProps`, …) —
+ * обычные интерфейсы от Kobalte/Ark без индексной сигнатуры, и `Record<string, unknown>` их
+ * структурно не принял бы без `as` на стороне КАЖДОГО вызывающего. Чтение по неизвестному заранее
+ * ключу — задача этой функции, а не 30+ мест, которые её зовут: один `as` внутри, а не тридцать
+ * снаружи. Разбор — FAQ.md (`component-skin-on-demand`).
+ */
+export function useComponentSkin(passport: ComponentPassport, props: object): void {
   const value = useContext(SkinContext);
   if (value === undefined) return;
 
+  const record = props as Readonly<Record<string, unknown>>;
   const variantMark = passport.variantAxis.mark;
   const variantAttr = variantMark.kind === "attribute" ? variantMark.name : undefined;
 
@@ -71,7 +75,7 @@ export function useComponentSkin(
     const outfitName = value.worn()?.name;
     if (outfitName === undefined) return;
 
-    const attrValue = variantAttr === undefined ? undefined : (props[variantAttr] as string | undefined);
+    const attrValue = variantAttr === undefined ? undefined : (record[variantAttr] as string | undefined);
     value
       .ensureComponentSkin(passport.component, { kind: "variant", value: attrValue })
       .catch((cause: unknown) => console.debug(`скин компонента «${passport.component}» не допечатан`, cause));
@@ -85,7 +89,7 @@ export function useComponentSkin(
       const outfitName = value.worn()?.name;
       if (outfitName === undefined) return;
 
-      const attrValue = props[settingAttr] as string | undefined;
+      const attrValue = record[settingAttr] as string | undefined;
       if (attrValue === undefined) return;
 
       value

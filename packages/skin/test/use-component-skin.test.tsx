@@ -32,6 +32,20 @@ function stubSource(ensure: EnsureMock): SkinSource {
   return { names: () => ["brand"], css: () => "/* base */", components: { ensure } };
 }
 
+// Обычный интерфейс БЕЗ индексной сигнатуры — так типизированы реальные пропсы кита
+// (AccordionRootProps/DialogRootProps и т.д. от Kobalte/Ark). Если бы `useComponentSkin` принимала
+// `Record<string, unknown>` вместо `object`, эта строка не скомпилировалась бы без `as` на стороне
+// вызывающего — ровно баг, который поймал owner кита на 24 из 32 компонентов.
+interface KobalteLikeRootProps {
+  readonly "data-variant"?: string;
+  readonly disabled?: boolean;
+}
+
+function typesAcceptPlainInterfaceProps(props: KobalteLikeRootProps): void {
+  useComponentSkin(passport, props);
+}
+void typesAcceptPlainInterfaceProps;
+
 let dispose: (() => void) | undefined;
 
 beforeEach(() => {
