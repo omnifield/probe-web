@@ -28,7 +28,8 @@ import {
 import { createSignal, splitProps, type JSX } from "solid-js";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 import { anatomyParts } from "../entity/anatomy.js";
 import { DefaultTableBody } from "./default-body.js";
 
@@ -108,7 +109,7 @@ export type TableRootProps<TData extends RowData> = Omit<
 };
 
 export function TableRoot<TData extends RowData>(props: TableRootProps<TData>) {
-  traceLife("ui.table");
+  useKitLife(passport, props);
 
   const [uncontrolledSorting, setUncontrolledSorting] =
     createSignal<readonly TableSort[]>(props.defaultSorting ?? []);

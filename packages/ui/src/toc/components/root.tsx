@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/toc";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type TocProps = ArkRootProps;
 
 export function Toc(props: TocProps) {
-  traceLife("ui.toc");
+  useKitLife(passport, props);
 
   return <ArkRoot {...dropAddress(props)} />;
 }

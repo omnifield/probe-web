@@ -9,7 +9,8 @@ import {
   type CollectionItem,
 } from "../../shared/utils/collection.js";
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export interface SelectProps<T extends CollectionItem = CollectionItem>
   extends Omit<ArkRootProps<T>, "collection"> {
@@ -17,7 +18,7 @@ export interface SelectProps<T extends CollectionItem = CollectionItem>
 }
 
 export function Select<T extends CollectionItem = CollectionItem>(props: SelectProps<T>) {
-  traceLife("ui.select");
+  useKitLife(passport, props);
 
   const [local, rest] = splitProps(props, ["items"]);
   const collection = createMemo(() => createListCollection<T>({ items: local.items ?? [] }));

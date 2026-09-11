@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/accordion";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type AccordionProps = ArkRootProps;
 
 export function Accordion(props: AccordionProps) {
-  traceLife("ui.accordion");
+  useKitLife(passport, props);
 
   return <ArkRoot {...dropAddress(props)} />;
 }

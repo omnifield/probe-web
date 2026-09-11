@@ -10,7 +10,8 @@ import {
   useSlot,
   slotAware,
 } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
@@ -21,7 +22,7 @@ export type ButtonProps<T extends ValidComponent = "button"> = PolymorphicProps<
 export const Button = slotAware(function Button<
   T extends ValidComponent = "button",
 >(props: ButtonProps<T>) {
-  traceLife("ui.button");
+  useKitLife(passport, props);
 
   const [slot, rest] = useSlot(props, "button");
   const [address, clean] = useAddress(rest, anatomyParts.root.attrs);

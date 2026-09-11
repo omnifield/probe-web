@@ -2,7 +2,8 @@ import { createResource, Show, splitProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 import { anatomyParts } from "../entity/anatomy.js";
 import { catalog, type IconName } from "../entity/catalog.js";
 import type { IconLoader, ResolvedIcon } from "../entity/model.js";
@@ -30,7 +31,7 @@ async function resolveIcon(name: string): Promise<ResolvedIcon> {
 }
 
 export function Icon(props: IconProps) {
-  traceLife("ui.icon");
+  useKitLife(passport, props);
 
   const [local] = splitProps(dropAddress(props), ["name"]);
   const [resolved] = createResource(() => local.name, resolveIcon);

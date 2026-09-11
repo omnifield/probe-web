@@ -209,6 +209,83 @@ categories:
           список из данных, сборка `playground/assemblies/list.ts`) остаются как есть, не трогать
           при реализации — это уже сделано.
 
+  - category: Скин
+    items:
+      - id: component-skin-wiring
+        type: feature
+        status: Done
+        priority: High
+        name: "Каждый компонент кита сам себя одевает — useComponentSkin(passport, props) вместо RenderNode"
+        description: |
+          План владельца packages/skin, обсуждён с user 2026-09-11, ждём отмашку архитектора —
+          в коде ничего не менялось, только согласование.
+
+          Правки только в двух местах — packages/skin (владелец) и packages/ui (эта зона, ~35
+          файлов). Бэк (backend/presets) и packages/assembly не трогаются вообще: бэк уже отдаёт
+          presets(kind, component) — резать по значению variant/setting нужно ВНУТРИ одного JSON-
+          рецепта (весь компонент приезжает одним небольшим объектом), это задача клиента, не
+          сети. assembly не звонит assemble()/checkOutfit() ни разу (подтверждено владельцем) —
+          вызов теперь на стороне кита, не через RenderNode.
+
+          На стороне packages/skin (не моя работа, для контекста цепи):
+          1. Узкая печать в engine/rules/engine/generate — берёт провалидированный на wear()
+             рецепт компонента и печатает (а) base+defaultVariant ОБЯЗАТЕЛЬНО вместе при первом
+             обращении (иначе движок ложно решит, что дефолта нет), (б) одно значение variant по
+             запросу, (в) одно значение одной настройки по запросу, (г) compoundVariants, полностью
+             покрытые уже загруженными значениями — только по variant, у settings пересечений с
+             variant в модели нет (CompoundVariant не знает про settings).
+          2. ensureComponentSkin(component, axis, value) — кеш+оркестрация (сеть/печать/доклейка в
+             лист), в wear/switch.ts либо новый модуль рядом.
+          3. useComponentSkin(passport, props) в solid/ — реактивный хук: следит за
+             props[passport.variantAxis.mark.name] и props[каждый settings[name].mark.name], на
+             каждое НОВОЕ значение зовёт ensureComponentSkin. Без <SkinProvider> в дереве — не
+             падает, просто ничего не делает (отличие от useSkin(), который кидает throw вне
+             провайдера — осознанно: кит обязан жить и без скина вообще).
+
+          На стороне packages/ui (моя работа):
+          - В каждый components/root.tsx (~35 компонентов) — новый импорт
+            `import { passport } from "../entity/passport.js"` (значение, не только тип) и вызов
+            `useKitLife(passport, props)` сразу после сигнатуры функции, до useSlot/useAddress.
+          - Риск рантайм-цикла (root.tsx → entity/passport.ts → type ButtonProps из
+            components/index.js) проверен и закрыт: tsconfig везде `verbatimModuleSyntax: true` +
+            `isolatedModules: true`, и ВСЕ ~35 entity/passport.ts уже берут пропсы через
+            `import type` (не просто договорённость — компилятор обязан стереть это на сборке).
+            Направление components → entity уже существует (root.tsx и так тянет anatomy.js из
+            entity/), новый импорт passport — тот же вектор, не новый паттерн.
+          - Вместо двух строк на файл (traceLife("ui.<component>") + useComponentSkin(passport,
+            props)) — одна утилита `useKitLife(passport, props)` в
+            packages/ui/src/shared/utils/skin-life.ts (рядом с trace.ts/slot-chain.ts), внутри
+            зовёт обе. Метка трейса выводится как `ui.${passport.component}`, не хардкодится
+            руками в каждом файле — passport.component берётся из data-scope, который сама
+            анатомия задаёт через `.rename("segment-group")` и т.п. (engine/passport/form/
+            passport.ts:40,78) — это ТА ЖЕ строка, что сейчас руками вбита в traceLife("ui.segment-
+            group"), просто без риска расхождения при будущем переименовании компонента.
+          - Button как образец: entity/passport.ts уже импортирует `type ButtonProps` из
+            components/index.js, settings пустые (defineSettings<ButtonProps>()({})) — хук будет
+            следить только за variantAxis, алгоритм не ломается на пустом списке настроек.
+
+          Сделано (2026-09-11): владелец packages/skin выкатил свою часть тем же днём
+          (component-skin-on-demand, отдельная запись в его ROADMAP) — `useComponentSkin`
+          реально экспортирован из `@web-core/skin/solid`, дист пересобран. На стороне packages/ui
+          — `useKitLife(passport, props)` в `shared/utils/skin-life.ts`, добавлен в 32 из 33
+          root.tsx (импорт `passport` как значение + вызов сразу после сигнатуры функции). `toast`
+          сознательно пропущен — известный архитектурный аутсайдер (`_props: Record<string,
+          never>`, ни variant, ни settings передать некуда), трогать без отдельного решения не
+          стал.
+
+          Найден и закрыт реальный (не мой) баг на стыке: первая версия `useComponentSkin`
+          требовала `props: Readonly<Record<string, unknown>>` — индексную сигнатуру, которой НЕТ
+          у обычных интерфейсов пропсов (`AccordionRootProps`, `DialogRootProps` и т.п. от
+          `@kobalte/core`/`@ark-ui/solid`), только у полиморфных (`PolymorphicProps<T, ...>`).
+          typecheck падал на 24 из 32 файлов. Не обходил `as`-кастом на своей стороне (это чужая
+          сигнатура, костыль спрятал бы реальный гап) — эскалировал владельцу packages/skin;
+          починка пришла как `props: object` в `useComponentSkin` (фактический каст внутри самой
+          функции). `useKitLife` под это же поправлен.
+
+          Проверено: `pnpm run generate && pnpm run typecheck && pnpm run build && pnpm run test
+          && pnpm run lint` — всё зелёное, 275/275 тестов кита, build без новых ошибок (только
+          штатные предупреждения rollup про внешние зависимости, не новые).
+
   - category: Информация о компоненте
     items:
       - id: component-info-multiple-forms-per-component

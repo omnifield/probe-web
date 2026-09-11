@@ -2,7 +2,8 @@ import { Polymorphic, type PolymorphicProps } from "@kobalte/core/polymorphic";
 import { splitProps, type ValidComponent } from "solid-js";
 
 import { useAddress, slotAware } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 export type WorkspaceProps<T extends ValidComponent = "div"> = PolymorphicProps<T> & {
@@ -11,7 +12,7 @@ export type WorkspaceProps<T extends ValidComponent = "div"> = PolymorphicProps<
 };
 
 export const Workspace = slotAware(function Workspace<T extends ValidComponent = "div">(props: WorkspaceProps<T>) {
-  traceLife("ui.workspace");
+  useKitLife(passport, props);
 
   const [local, others] = splitProps(props, ["outlined", "filled"]);
   const [address, rest] = useAddress(others, anatomyParts.root.attrs);

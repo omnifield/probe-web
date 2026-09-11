@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/carousel";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type CarouselProps = ArkRootProps;
 
 export function Carousel(props: CarouselProps) {
-  traceLife("ui.carousel");
+  useKitLife(passport, props);
 
   return <ArkRoot {...dropAddress(props)} />;
 }

@@ -14,7 +14,8 @@ import {
 import type { Item } from "../../shared/data/fields.js";
 import { createItemTreeCollection } from "../../shared/utils/collection.js";
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export interface TreeRootProps extends Omit<
   ArkRootProps<Item>,
@@ -67,7 +68,7 @@ export function activeOverride(
 }
 
 export function TreeRoot(props: TreeRootProps) {
-  traceLife("ui.tree-view");
+  useKitLife(passport, props);
 
   const [local, rest] = splitProps(props, ["children", "activeValue", "items"]);
 

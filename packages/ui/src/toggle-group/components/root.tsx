@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/toggle-group";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type ToggleGroupProps = ArkRootProps;
 
 export function ToggleGroup(props: ToggleGroupProps) {
-  traceLife("ui.toggle-group");
+  useKitLife(passport, props);
 
   return <ArkRoot {...dropAddress(props)} />;
 }

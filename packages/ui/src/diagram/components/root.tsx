@@ -1,7 +1,8 @@
 import { splitProps, type JSX } from "solid-js";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 import { anatomyParts } from "../entity/anatomy.js";
 
 export type DiagramRootProps = Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "width" | "height"> & {
@@ -10,7 +11,7 @@ export type DiagramRootProps = Omit<JSX.SvgSVGAttributes<SVGSVGElement>, "width"
 };
 
 export function DiagramRoot(props: DiagramRootProps) {
-  traceLife("ui.diagram");
+  useKitLife(passport, props);
 
   const [local, rest] = splitProps(props, ["width", "height"]);
 

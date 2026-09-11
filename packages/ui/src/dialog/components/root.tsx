@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/dialog";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type DialogProps = ArkRootProps;
 
 export function Dialog(props: DialogProps) {
-  traceLife("ui.dialog");
+  useKitLife(passport, props);
 
   return <ArkRoot {...dropAddress(props)} />;
 }
