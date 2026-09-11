@@ -3,6 +3,7 @@
 export { createSkinConnection, type SkinConnection } from "./connection.js";
 export {
   SkinProvider,
+  useComponentSkin,
   useSkin,
   type SkinContextValue,
   type SkinProviderProps,

@@ -4,6 +4,7 @@ import type { SkinSource } from "../wear/switch.js";
 import type { PassportLookup } from "../engine/address/index.js";
 import { withPassports } from "../engine/generate/index.js";
 import { createPresetsClient, PRESET_KIND } from "./client.js";
+import { createLazyComponentSkin } from "./lazy.js";
 import { PresetsRefused } from "./wire.js";
 
 /** Чем заводится источник: адрес службы и паспорта своего кита. */
@@ -45,5 +46,6 @@ export function createPresetsSkinSource(options: PresetsSkinSourceOptions): Skin
         }).skin,
       );
     },
+    components: createLazyComponentSkin({ client, lookup }),
   };
 }

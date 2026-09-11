@@ -11,14 +11,16 @@ export interface SkinSheet {
   attached(): boolean;
 }
 
-/** Заводит владельца одного листа стилей. */
-export function makeSkinSheet(): SkinSheet {
+/** Заводит владельца одного листа стилей. `component` — метка на теге для отладки в devtools,
+ *  когда листов несколько (по одному на компонент, `component-skin-on-demand`); значение самого
+ *  атрибута ни на что не влияет, кроме читаемости разметки. */
+export function makeSkinSheet(component?: string): SkinSheet {
   let el: HTMLStyleElement | undefined;
 
   function sheet(): HTMLStyleElement {
     if (el === undefined || !el.isConnected) {
       el = document.createElement("style");
-      el.setAttribute(OWNER_ATTR, "");
+      el.setAttribute(OWNER_ATTR, component ?? "");
       document.head.append(el);
     }
     return el;

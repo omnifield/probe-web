@@ -4,6 +4,8 @@
 export {
   checkStyleOrder,
   makeSkinSwitch,
+  type ComponentSkinAxis,
+  type ComponentSkinSource,
   type SkinMode,
   type SkinSource,
   type SkinSwitch,

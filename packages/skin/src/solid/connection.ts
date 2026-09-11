@@ -2,7 +2,15 @@
 
 import { createSignal, onCleanup, type Accessor } from "solid-js";
 
-import { makeSkinSwitch, type SkinMode, type SkinSource, type SkinSwitchOptions, type SkinWearOptions, type SkinWorn } from "../wear/switch.js";
+import {
+  makeSkinSwitch,
+  type ComponentSkinAxis,
+  type SkinMode,
+  type SkinSource,
+  type SkinSwitchOptions,
+  type SkinWearOptions,
+  type SkinWorn,
+} from "../wear/switch.js";
 
 /** То же самое, что `SkinSwitch`, но `worn` — сигнал, а не функция по запросу. */
 export interface SkinConnection {
@@ -12,6 +20,9 @@ export interface SkinConnection {
   restore(): Promise<SkinWorn | null>;
   /** Надевает тот же скин в другой половине. Ничего не надето — не действует. */
   setMode(mode: SkinMode): void;
+  /** Прямой доступ к `SkinSwitch.ensureComponentSkin` — `useComponentSkin` зовёт его сама, руками
+   *  дёргать незачем, но наружу не скрыт. */
+  ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void>;
 }
 
 /**
@@ -50,5 +61,5 @@ export function createSkinConnection(
     void wear(current.name, { mode });
   }
 
-  return { worn, wear, takeOff, restore, setMode };
+  return { worn, wear, takeOff, restore, setMode, ensureComponentSkin: skin.ensureComponentSkin };
 }

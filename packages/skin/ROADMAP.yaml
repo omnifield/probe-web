@@ -358,7 +358,7 @@ categories:
 
       - id: component-skin-on-demand
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "ensureComponentSkin — компонент сам просит свой CSS, по значению variant/setting, аддитивно"

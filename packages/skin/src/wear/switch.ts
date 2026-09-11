@@ -3,7 +3,7 @@
 
 import { DEFAULT_STORAGE_KEY, recall, remember, type Remembered } from "./memory.js";
 import { readDark, readToken, readWorn, writeDark, writeWorn } from "./root.js";
-import { makeSkinSheet } from "./sheet.js";
+import { makeSkinSheet, type SkinSheet } from "./sheet.js";
 import { trace } from "../trace/index.js";
 
 /** Режим: светлая или тёмная пара. */
@@ -69,12 +69,34 @@ export function checkStyleOrder(options: StyleOrderOptions): StyleOrderReport {
   return { status, marker, seen, skin, message };
 }
 
+/** Одно значение одной оси рецепта — `variant` (значение оси variant) либо `setting` (значение
+ *  именованной настройки). Компонент сам называет то, что у него сейчас на разметке. `variant` без
+ *  `value` — на разметке нет атрибута вовсе (сегодняшний рендер не назвал вариант явно): всё равно
+ *  бутстрапит `base`+`defaultVariant`, просто не добавляет НИКАКОГО конкретного значения сверху. */
+export type ComponentSkinAxis =
+  | { readonly kind: "variant"; readonly value?: string }
+  | { readonly kind: "setting"; readonly name: string; readonly value: string };
+
+/** Необязательная способность источника: печатать CSS ОДНОГО компонента лениво, по значению
+ *  variant/setting, а не всего наряда сразу. Источники без ленивой загрузки её не реализуют —
+ *  `ensureComponentSkin` тогда молча ничего не делает (`component-skin-on-demand`, ROADMAP.yaml). */
+export interface ComponentSkinSource {
+  /**
+   * Печатает НОВОЕ значение оси компонента, аддитивно к уже увиденным для него значениям под этим
+   * же нарядом — возвращает актуальный ПОЛНЫЙ текст CSS этого компонента (база + всё увиденное на
+   * сегодня), который надевание целиком кладёт в СВОЙ тег компонента.
+   */
+  ensure(outfitName: string, component: string, axis: ComponentSkinAxis): Promise<string>;
+}
+
 /** То, что приложение сообщает механике о своих скинах. */
 export interface SkinSource {
   /** Имена доступных скинов. */
   names(): readonly string[] | Promise<readonly string[]>;
   /** Текст стилей скина по имени. */
   css(name: string): string | Promise<string>;
+  /** Ленивая печать по компоненту — необязательная способность, см. {@link ComponentSkinSource}. */
+  readonly components?: ComponentSkinSource;
 }
 
 /** Чем настраивается переключатель при заведении. */
@@ -112,7 +134,13 @@ export interface SkinSwitch {
   takeOff(options?: SkinWearOptions): void;
   /** Восстанавливает запомненный выбор — и скин, и половину. */
   restore(): Promise<SkinWorn | null>;
-  /** Снимает свой лист стилей. Опознание на корне не трогает. */
+  /**
+   * Допечатывает CSS одного компонента под ОДНО новое значение оси — источник без ленивой
+   * способности (`SkinSource.components`) или ничего не надето — тихий no-op, не отказ: кит
+   * обязан жить без presets/провайдера вовсе.
+   */
+  ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void>;
+  /** Снимает свой лист стилей и листы всех допечатанных компонентов. Опознание на корне не трогает. */
   dispose(): void;
 }
 
@@ -129,6 +157,7 @@ function checkedName(name: string): string {
 export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = {}): SkinSwitch {
   const key = options.storageKey ?? DEFAULT_STORAGE_KEY;
   const sheet = makeSkinSheet();
+  const componentSheets = new Map<string, SkinSheet>();
 
   /** Номер последнего начатого действия — против гонки с асинхронным источником. */
   let turn = 0;
@@ -171,12 +200,36 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
     turn += 1;
 
     sheet.drop();
+    for (const compSheet of componentSheets.values()) compSheet.drop();
+    componentSheets.clear();
     writeWorn(null);
     writeDark(false);
 
     if (wearOptions.remember !== false) remember(key, { skin: null });
 
     done();
+  }
+
+  /**
+   * Тихий no-op без ленивой способности источника или без надетого наряда — кит обязан жить без
+   * presets/провайдера вовсе. Против гонки с чужим `wear()` — не общий `turn` (тот бы отбросил и
+   * безобидный `setMode()` того же наряда), а сверка ИМЕНИ наряда до и после ожидания сети: сменил
+   * наряд кто-то другой — результат для старого наряда не годится, дописывать нечего.
+   */
+  async function ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void> {
+    const components = source.components;
+    const startedFor = worn()?.name;
+    if (components === undefined || startedFor === undefined) return;
+
+    const css = await components.ensure(startedFor, component, axis);
+    if (worn()?.name !== startedFor) return;
+
+    let compSheet = componentSheets.get(component);
+    if (compSheet === undefined) {
+      compSheet = makeSkinSheet(component);
+      componentSheets.set(component, compSheet);
+    }
+    compSheet.put(css);
   }
 
   async function restore(): Promise<SkinWorn | null> {
@@ -202,12 +255,19 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
     return result;
   }
 
+  function dispose(): void {
+    sheet.drop();
+    for (const compSheet of componentSheets.values()) compSheet.drop();
+    componentSheets.clear();
+  }
+
   return {
     names: async () => source.names(),
     worn,
     wear,
     takeOff,
     restore,
-    dispose: sheet.drop,
+    ensureComponentSkin,
+    dispose,
   };
 }
