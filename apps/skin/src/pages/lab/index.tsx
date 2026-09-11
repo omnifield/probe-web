@@ -1,5 +1,5 @@
 import { setCurrentComponent } from "#/entities/component";
-import { AdapterMastering } from "#/entities/adapter";
+
 import { createEffect } from "solid-js";
 
 // `component` необязателен — прямой заход на голый "/lab" (ничего ещё не выбирали) существует
@@ -11,5 +11,5 @@ export function LabPage(props: { component?: string }) {
     if (props.component !== undefined) setCurrentComponent(props.component);
   });
 
-  return <AdapterMastering />;
+  return "";
 }

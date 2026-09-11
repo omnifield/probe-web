@@ -2,14 +2,10 @@
 import { Flow, FlowItem } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 
-import { OpenApi } from "#/entities/openapi";
-
 export function RightbarLab() {
   return (
     <Flow data-variant="column-center">
-      <FlowItem style={layoutSelf({ align: "stretch" })}>
-        <OpenApi />
-      </FlowItem>
+      <FlowItem style={layoutSelf({ align: "stretch" })}>вц</FlowItem>
     </Flow>
   );
 }
