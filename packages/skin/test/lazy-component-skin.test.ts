@@ -37,7 +37,29 @@ const undressedPassport = definePassport({
   settings: {},
 });
 
-const lookup = passportLookup([passport, undressedPassport]);
+const accordionAnatomy = createAnatomy("accordion").parts("root", "content");
+const accordionPassport = definePassport({
+  anatomy: accordionAnatomy,
+  root: "root",
+  parts: [
+    { name: "root", states: [] },
+    // Переменную и анимацию держит ОДНА и та же часть ("content") — так же, как в реальном
+    // Accordion (`--height`/`--width`, `setBy: "kit"`): checkOutfit находит их согласованными
+    // (та же часть), a skinRules — нет, потому что не находит применяющее правило в урезанном
+    // scope (оно не в этом запросе), а не потому что переменная где-то не там.
+    { name: "content", states: [], variables: [{ name: "--grow-size", setBy: "kit" }] },
+  ],
+  variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
+  settings: {
+    orientation: {
+      values: { kind: "choice", options: [{ value: "vertical" }, { value: "horizontal" }] },
+      byDefault: "vertical",
+      mark: { kind: "attribute", name: "data-orientation" },
+    },
+  },
+});
+
+const lookup = passportLookup([passport, undressedPassport, accordionPassport]);
 
 const PALETTE: Palette = {
   name: "test-palette",
@@ -94,7 +116,7 @@ const PALETTE: Palette = {
   },
 };
 
-const OUTFIT: Outfit = { name: "brand", palette: PALETTE.name, forms: ["button-form", "other-form"] };
+const OUTFIT: Outfit = { name: "brand", palette: PALETTE.name, forms: ["button-form", "other-form", "accordion-form"] };
 const SECOND_OUTFIT: Outfit = { name: "second-brand", palette: PALETTE.name, forms: ["button-form", "other-form"] };
 
 const BUTTON_FORM: Form = {
@@ -118,13 +140,34 @@ const BUTTON_FORM: Form = {
 
 const OTHER_FORM: Form = { name: "other-form", component: "other", recipe: { base: { root: { props: {} } } } };
 
+// Живой баг: keyframes объявлены на форму ЦЕЛИКОМ (обе стороны orientation в одном Form.keyframes),
+// а применяет каждую — только СВОЁ значение settings.orientation. Запрос "vertical" (byDefault) не
+// должен видеть "grow-inline-size" вовсе — оно принадлежит "horizontal", которое никто не просил.
+const ACCORDION_FORM: Form = {
+  name: "accordion-form",
+  component: "accordion",
+  recipe: {
+    base: { root: { props: {} } },
+    settings: {
+      orientation: {
+        vertical: { content: { props: { animation: "grow-block-size" } } },
+        horizontal: { content: { props: { animation: "grow-inline-size" } } },
+      },
+    },
+  },
+  keyframes: {
+    "grow-block-size": { from: { blockSize: "0" }, to: { blockSize: "10px" } },
+    "grow-inline-size": { from: { inlineSize: "0" }, to: { inlineSize: "var(--grow-size)" } },
+  },
+};
+
 function record<K extends PresetKind, T>(kind: K, name: string, state: T): PresetRecord<T> {
   return { id: name, label: name, name, kind, savedAt: "now", state };
 }
 
 function fakeClient(): PresetsClient & { readonly listForm: ReturnType<typeof vi.fn> } {
   const listForm = vi.fn(async (component?: readonly string[]) => {
-    const all = [BUTTON_FORM, OTHER_FORM];
+    const all = [BUTTON_FORM, OTHER_FORM, ACCORDION_FORM];
     const filtered = component === undefined ? all : all.filter((form) => component.includes(form.component));
     return filtered.map((form) => record("form", form.name, form));
   });
@@ -210,6 +253,18 @@ describe("createLazyComponentSkin", () => {
     await skin.ensure("second-brand", "button", { kind: "variant", value: "primary" });
 
     expect(client.listForm).toHaveBeenCalledTimes(2);
+  });
+
+  it("кейфрейм, применённый ТОЛЬКО неспрошенным значением setting, — не печатается и не бросает SkinRefused", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    // Живой баг: запрашиваем "vertical" — grow-inline-size (со ссылкой на несуществующую
+    // переменную) принадлежит "horizontal", никто его не просил. Раньше это бросало SkinRefused
+    // ("not applied by any rule"), потому что keyframes формы печатались ЦЕЛИКОМ, без оглядки на
+    // накопленный scope.
+    const css = await skin.ensure("brand", "accordion", { kind: "setting", name: "orientation", value: "vertical" });
+
+    expect(css).toContain("@keyframes grow-block-size");
+    expect(css).not.toContain("grow-inline-size");
   });
 
   it("наряд не одевает компонент (форма отсутствует, паспорт есть) — легитимно, пустой CSS, не отказ", async () => {

@@ -5,7 +5,8 @@
 import type { PassportLookup } from "../engine/address/index.js";
 import { withPassports } from "../engine/generate/index.js";
 import type { Outfit, Palette } from "../engine/look/index.js";
-import { scopeRecipe, type Keyframes, type SkinVariables, type SlotRecipe } from "../engine/recipe/index.js";
+import { motionsIn } from "../engine/motion/index.js";
+import { scopeRecipe, type Keyframes, type SkinVariables, type SlotRecipe, type StyleObject } from "../engine/recipe/index.js";
 import type { ComponentSkinAxis, ComponentSkinSource } from "../wear/switch.js";
 import { PRESET_KIND, type PresetsClient } from "./client.js";
 import { PresetsRefused } from "./wire.js";
@@ -26,6 +27,22 @@ interface ComponentAccumulator {
 }
 
 const EMPTY_RECIPE: SlotRecipe = {};
+
+/**
+ * Кейфреймы формы объявлены на неё ЦЕЛИКОМ, не по variant/setting (`grow-inline-size`/
+ * `grow-block-size` — обе стороны одной оси orientation, в одном `Form.keyframes`) — а сценарий,
+ * ссылающийся на них через `animation`, лежит ВНУТРИ конкретного значения оси. Печатать имя,
+ * которое сегодня не накоплено ни в одном значении, — заведомо "не применено ни одним правилом"
+ * для проверки (`skinRules`), даже когда оно легитимно появится следующим `ensure()`. Разбор — FAQ.md.
+ */
+function keyframesUsedBy(recipe: SlotRecipe, declared: Keyframes | undefined): Keyframes | undefined {
+  if (declared === undefined) return undefined;
+
+  const used = motionsIn(recipe as unknown as StyleObject, new Set(Object.keys(declared)));
+  if (used.size === 0) return undefined;
+
+  return Object.fromEntries(Object.entries(declared).filter(([name]) => used.has(name)));
+}
 
 export interface LazyComponentSkinOptions {
   readonly client: PresetsClient;
@@ -112,7 +129,7 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
     return generateComponentSkinCss({
       name: outfitName,
       recipes: { [component]: scoped },
-      keyframes: acc.keyframes,
+      keyframes: keyframesUsedBy(scoped, acc.keyframes),
       variables: acc.variables,
     });
   }
