@@ -31,6 +31,7 @@
       "default": "./dist/wear.js"
     },
     "./solid": {
+      "solid": "./dist/solid.jsx",
       "types": "./dist/solid.d.ts",
       "default": "./dist/solid.js"
     },

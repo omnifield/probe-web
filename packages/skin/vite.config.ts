@@ -8,7 +8,7 @@ export default defineLibraryConfig({
     { name: "editor", source: "src/editor/index.ts" },
     { name: "presets", source: "src/presets/index.ts" },
     { name: "wear", source: "src/wear/index.ts" },
-    { name: "solid", source: "src/solid/index.ts" },
+    { name: "solid", source: "src/solid/index.ts", solid: true },
     { name: "tags", source: "src/tags/index.ts" },
   ],
 });
