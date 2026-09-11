@@ -2,20 +2,9 @@ import { Flow, FlowItem, Typography } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 import { useAtom } from "@web-core/store";
 import { componentHandle, currentComponent, schemaOutline } from "#/entities/component";
-import { createEffect, createMemo, Show } from "solid-js";
+import { createEffect, createMemo } from "solid-js";
 
-import {
-  currentEndpointId,
-  endpointsAtom,
-  fieldsOfSkeleton,
-  getOrCreateAdapter,
-  schemasAtom,
-  setEndpointBody,
-  setEndpointHeaders,
-  setEndpointMethod,
-  setEndpointUrl,
-} from "../../model";
-import { EndpointForm } from "../openapi/form";
+import { currentEndpointId, endpointsAtom, fieldsOfSkeleton, getOrCreateAdapter, schemasAtom } from "../../model";
 import { MappingBlock } from "./block";
 
 export function AdapterMastering() {
@@ -58,19 +47,6 @@ export function AdapterMastering() {
       <FlowItem style={layoutSelf({ align: "stretch" })}>
         <Typography>{title()}</Typography>
       </FlowItem>
-      <Show when={endpoint()}>
-        {(current) => (
-          <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <EndpointForm
-              endpoint={current()}
-              onChangeMethod={(method) => setEndpointMethod(current().id, method)}
-              onChangeUrl={(url) => setEndpointUrl(current().id, url)}
-              onChangeBody={(body) => setEndpointBody(current().id, body)}
-              onChangeHeaders={(headers) => setEndpointHeaders(current().id, headers)}
-            />
-          </FlowItem>
-        )}
-      </Show>
       <FlowItem style={layoutSelf({ align: "stretch" })}>
         <MappingBlock title="Приём (ручка → компонент)" componentFields={componentFields()} apiFields={apiFields()} />
       </FlowItem>

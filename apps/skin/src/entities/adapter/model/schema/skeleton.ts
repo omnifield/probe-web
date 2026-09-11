@@ -46,7 +46,8 @@ function walk(skeleton: Skeleton, path: string): SkeletonField[] {
 }
 
 /** Скелет, разложенный в плоский список путей+типов — та же форма показа, что у полей компонента
- *  (`widgets/component/input/schema.ts`'s `fieldsOf`), для парного отображения в мастеринге. */
+ *  (`entities/component/utils/schema-outline`'s `schemaOutline`), для парного отображения в
+ *  мастеринге. */
 export function fieldsOfSkeleton(skeleton: Skeleton): readonly SkeletonField[] {
   return walk(skeleton, "");
 }

@@ -13,7 +13,7 @@ function loadAdapters(): readonly Adapter[] {
 // Хранение как персистентного ресурса (CRUD на `backend/presets`) — явно ЗА границей `apps/skin`
 // (ROADMAP.yaml, `adapter-schema-resource`/`adapter-child-of-schema`), отдельный трек после того,
 // как движок `packages/io` и этот UI устаканятся. Пока — localStorage, тот же приём, что у
-// `endpointsAtom`/`schemasAtom`.
+// `endpoint/store.ts`/`schema/store.ts`.
 export const adaptersAtom = createAtom<readonly Adapter[]>(loadAdapters());
 
 adaptersAtom.subscribe((adapters) => localStorage.setItem(STORAGE_KEY, JSON.stringify(adapters)));

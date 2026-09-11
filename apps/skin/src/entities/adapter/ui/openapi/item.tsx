@@ -1,24 +1,46 @@
-import { Button, Flow, FlowItem } from "@web-core/ui";
+import { AccordionContent, AccordionControl, AccordionControlIndicator, AccordionItem, Button, Flow, FlowItem, Typography } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 
-import { currentEndpointId, removeEndpoint, setCurrentEndpointId, type Endpoint } from "../../model";
+import {
+  removeEndpoint,
+  setCurrentEndpointId,
+  setEndpointBody,
+  setEndpointHeaders,
+  setEndpointMethod,
+  setEndpointUrl,
+  type Endpoint,
+} from "../../model";
+import { EndpointForm } from "./form";
 
 export interface EndpointItemProps {
   readonly endpoint: Endpoint;
 }
 
 export function EndpointItem(props: EndpointItemProps) {
-  const label = () => `${props.endpoint.method} ${props.endpoint.url === "" ? "(без адреса)" : props.endpoint.url}`;
-  const selected = () => currentEndpointId() === props.endpoint.id;
-
   return (
-    <Flow data-variant="row">
-      <FlowItem style={layoutSelf({ align: "stretch" })}>
-        <Button onClick={() => setCurrentEndpointId(props.endpoint.id)}>{selected() ? `→ ${label()}` : label()}</Button>
-      </FlowItem>
-      <FlowItem>
-        <Button onClick={() => removeEndpoint(props.endpoint.id)}>Удалить</Button>
-      </FlowItem>
-    </Flow>
+    <AccordionItem value={props.endpoint.id}>
+      <AccordionControl onClick={() => setCurrentEndpointId(props.endpoint.id)}>
+        <Typography>
+          {props.endpoint.method} {props.endpoint.url === "" ? "(без адреса)" : props.endpoint.url}
+        </Typography>
+        <AccordionControlIndicator>▾</AccordionControlIndicator>
+      </AccordionControl>
+      <AccordionContent>
+        <Flow data-variant="column-center">
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            <EndpointForm
+              endpoint={props.endpoint}
+              onChangeMethod={(method) => setEndpointMethod(props.endpoint.id, method)}
+              onChangeUrl={(url) => setEndpointUrl(props.endpoint.id, url)}
+              onChangeBody={(body) => setEndpointBody(props.endpoint.id, body)}
+              onChangeHeaders={(headers) => setEndpointHeaders(props.endpoint.id, headers)}
+            />
+          </FlowItem>
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            <Button onClick={() => removeEndpoint(props.endpoint.id)}>Удалить эндпоинт</Button>
+          </FlowItem>
+        </Flow>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

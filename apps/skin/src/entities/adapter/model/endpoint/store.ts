@@ -1,8 +1,8 @@
 import { createAtom } from "@web-core/store";
 import { createSignal } from "solid-js";
 
+import { removeSchemasOfEndpoint } from "../schema";
 import type { Endpoint, EndpointHeader, HttpMethod } from "./endpoint";
-import { removeSchemasOfEndpoint } from "./schemas";
 
 const STORAGE_KEY = "adapter:endpoints";
 

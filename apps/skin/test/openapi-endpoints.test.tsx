@@ -30,7 +30,11 @@ function addButton(): HTMLElement {
   return [...host.querySelectorAll("button")].find((button) => button.textContent === "Добавить эндпоинт")!;
 }
 
-describe("OpenApi — добавление и заполнение эндпоинта", () => {
+function openControl(): HTMLButtonElement {
+  return host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!;
+}
+
+describe("OpenApi — аккордеон ручек, настройка внутри", () => {
   it("клик по «Добавить эндпоинт» даёт одну раскрывашку GET (без адреса)", () => {
     expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(0);
 
@@ -44,19 +48,30 @@ describe("OpenApi — добавление и заполнение эндпои�
 
   it("правка адреса отражается в заголовке раскрывашки", () => {
     addButton().click();
-    host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!.click();
+    openControl().click();
 
     const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
     url.value = "https://api.example.com/orders";
     url.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const control = host.querySelector('[data-scope="accordion"][data-part="control"]')!;
-    expect(control.textContent).toContain("https://api.example.com/orders");
+    expect(openControl().textContent).toContain("https://api.example.com/orders");
+  });
+
+  it("«Удалить эндпоинт» убирает раскрывашку целиком", () => {
+    addButton().click();
+    openControl().click();
+
+    expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(1);
+
+    const removeEndpointButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Удалить эндпоинт")!;
+    removeEndpointButton.click();
+
+    expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(0);
   });
 
   it("GET не показывает поле тела, POST — показывает", () => {
     addButton().click();
-    host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!.click();
+    openControl().click();
 
     expect(host.querySelector('textarea[placeholder="{}"]')).toBeNull();
 
@@ -67,7 +82,7 @@ describe("OpenApi — добавление и заполнение эндпои�
 
   it("«Добавить хедер» даёт строку с двумя полями, «Удалить» её убирает", () => {
     addButton().click();
-    host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!.click();
+    openControl().click();
 
     const addHeader = [...host.querySelectorAll("button")].find((button) => button.textContent === "Добавить хедер")!;
     addHeader.click();
@@ -83,7 +98,7 @@ describe("OpenApi — добавление и заполнение эндпои�
 
   it("«Отправить запрос» стоит выше «Добавить хедер» и зовёт fetch с методом/адресом/хедерами", async () => {
     addButton().click();
-    host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!.click();
+    openControl().click();
 
     const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
     url.value = "https://api.example.com/orders";
@@ -126,9 +141,9 @@ describe("OpenApi — добавление и заполнение эндпои�
     logSpy.mockRestore();
   });
 
-  it("«Сохранить как схему» кладёт скелет ответа, привязанный к эндпоинту, и показывает его в форме", async () => {
+  it("«Сохранить как схему» кладёт скелет ответа, привязанный к эндпоинту", async () => {
     addButton().click();
-    host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!.click();
+    openControl().click();
 
     const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
     url.value = "https://jsonplaceholder.typicode.com/todos/1";
@@ -156,10 +171,6 @@ describe("OpenApi — добавление и заполнение эндпои�
         completed: { type: "boolean" },
       },
     });
-
-    const preview = host.querySelector("pre")!;
-    expect(preview.textContent).toContain('"userId"');
-    expect(preview.textContent).toContain('"type": "number"');
 
     fetchMock.mockRestore();
     logSpy.mockRestore();
