@@ -83,14 +83,21 @@ export function useComponentSkin(passport: ComponentPassport, props: object): vo
 
   for (const [name, setting] of Object.entries(passport.settings)) {
     if (setting.mark?.kind !== "attribute") continue;
-    const settingAttr = setting.mark.name;
 
     createEffect(() => {
       const outfitName = value.worn()?.name;
       if (outfitName === undefined) return;
 
-      const attrValue = record[settingAttr] as string | undefined;
-      if (attrValue === undefined) return;
+      // Пропс называется по имени НАСТРОЙКИ (`name` — ключ в `passport.settings`, тип у него из
+      // `defineSettings<Props>()`), а не по имени атрибута (`setting.mark.name`) — тот компонент
+      // проставляет на разметку сам, своей формулой (`outlined ? "true" : undefined`, у другой
+      // настройки — своя, необязательно симметричная). Прочитать, что реально ляжет в атрибут, без
+      // повторения формулы каждого компонента нельзя — но эффективное значение (пропс или, если не
+      // назван, `byDefault`) совпадает с ней в единственном месте, которое имеет значение: там, где
+      // компонент отрисован БЕЗ явного пропса. Разбор — FAQ.md.
+      const raw = record[name] as string | boolean | undefined;
+      const effective = raw ?? setting.byDefault;
+      const attrValue = typeof effective === "boolean" ? String(effective) : effective;
 
       value
         .ensureComponentSkin(passport.component, { kind: "setting", name, value: attrValue })

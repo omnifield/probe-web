@@ -20,10 +20,19 @@ const passport = definePassport({
   parts: [{ name: "root", states: [] }],
   variantAxis: { mark: { kind: "attribute", name: "data-variant" } },
   settings: {
+    // flag, не choice — реальный баг был именно на flag-настройке (`Workspace`'s `outlined`):
+    // компонент передаёт пропс по ИМЕНИ НАСТРОЙКИ ("outlined": boolean), а на разметку сам
+    // проставляет атрибут ("data-outlined": "true"/отсутствует) — это две разные строки, путать их
+    // нельзя.
     outlined: {
-      values: { kind: "choice", options: [{ value: "sm" }, { value: "lg" }] },
-      byDefault: "sm",
+      values: { kind: "flag" },
+      byDefault: false,
       mark: { kind: "attribute", name: "data-outlined" },
+    },
+    filled: {
+      values: { kind: "flag" },
+      byDefault: true,
+      mark: { kind: "attribute", name: "data-filled" },
     },
   },
 });
@@ -95,11 +104,14 @@ describe("useComponentSkin — внутри SkinProvider", () => {
     expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "variant", value: "primary" });
   });
 
-  it("зовёт ensureComponentSkin с setting из props, когда значение есть", async () => {
+  it("зовёт ensureComponentSkin с setting по ИМЕНИ НАСТРОЙКИ, не по имени атрибута", async () => {
     const ensure = vi.fn().mockResolvedValue("/* css */");
 
     function Probe() {
-      useComponentSkin(passport, { "data-variant": "primary", "data-outlined": "lg" });
+      // Пропс — "outlined" (имя настройки в passport.settings), НЕ "data-outlined" (то, что
+      // компонент сам проставит на разметку своей формулой). Баг был ровно в путанице этих двух —
+      // Workspace's `outlined?: boolean` пришёл как `outlined={true}`, не `data-outlined="true"`.
+      useComponentSkin(passport, { "data-variant": "primary", outlined: true });
       return null;
     }
 
@@ -117,7 +129,37 @@ describe("useComponentSkin — внутри SkinProvider", () => {
     await tick();
     await tick();
 
-    expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "setting", name: "outlined", value: "lg" });
+    expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "setting", name: "outlined", value: "true" });
+  });
+
+  it("настройка не названа в props — эффективное значение берётся из byDefault, не пропускается", async () => {
+    const ensure = vi.fn().mockResolvedValue("/* css */");
+
+    function Probe() {
+      // Ни "outlined", ни "filled" не переданы вовсе — как рендерится большинство реальных
+      // экземпляров. byDefault у "filled" — true: то самое значение, которое компонент САМ
+      // проставит на разметку без явного пропса (`local.filled === false ? undefined : "true"`) —
+      // пропустить его значило бы не подгрузить стиль для состояния, которое реально на экране.
+      useComponentSkin(passport, { "data-variant": "primary" });
+      return null;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <SkinProvider source={stubSource(ensure)} options={{ fallback: { skin: "brand" } }}>
+          <Probe />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+    await tick();
+
+    expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "setting", name: "outlined", value: "false" });
+    expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "setting", name: "filled", value: "true" });
   });
 
   it("изменение variant на разметке — повторный вызов с НОВЫМ значением", async () => {
