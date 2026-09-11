@@ -30,7 +30,14 @@ import {
 import { layoutSelf } from "@web-core/skin";
 import { createMemo, For, Index, Match, Switch } from "solid-js";
 
-import { blankElement, fieldsOfElement, valueAt, withValue, type FieldDescriptor, type FieldPath } from "./schema";
+import {
+  blankElement,
+  fieldsOfElement,
+  valueAt,
+  withValue,
+  type FieldDescriptor,
+  type FieldPath,
+} from "./schema";
 
 interface DataFieldProps {
   readonly field: FieldDescriptor;
@@ -40,7 +47,10 @@ interface DataFieldProps {
 
 function BooleanField(props: DataFieldProps) {
   return (
-    <Checkbox checked={props.value === true} onCheckedChange={(details) => props.onChange(details.checked)}>
+    <Checkbox
+      checked={props.value === true}
+      onCheckedChange={(details) => props.onChange(details.checked)}
+    >
       <CheckboxControl>
         <CheckboxIndicator>✓</CheckboxIndicator>
       </CheckboxControl>
@@ -50,13 +60,21 @@ function BooleanField(props: DataFieldProps) {
 }
 
 function EnumField(props: DataFieldProps) {
-  const options = createMemo(() => (props.field.options ?? []).map((value) => ({ value, label: value })));
-  const current = createMemo(() => (typeof props.value === "string" ? [props.value] : []));
+  const options = createMemo(() =>
+    (props.field.options ?? []).map((value) => ({ value, label: value })),
+  );
+  const current = createMemo(() =>
+    typeof props.value === "string" ? [props.value] : [],
+  );
 
   return (
     <Field>
       <FieldLabel>{props.field.label}</FieldLabel>
-      <Select items={options()} value={current()} onValueChange={(details) => props.onChange(details.value[0])}>
+      <Select
+        items={options()}
+        value={current()}
+        onValueChange={(details) => props.onChange(details.value[0])}
+      >
         <SelectControl>
           <SelectTrigger>
             <SelectValueText placeholder="—" />
@@ -83,7 +101,11 @@ function EnumField(props: DataFieldProps) {
 
 function ScalarField(props: DataFieldProps) {
   const isNumber = () => props.field.kind === "number";
-  const text = createMemo(() => (props.value === undefined || props.value === null ? "" : String(props.value)));
+  const text = createMemo(() =>
+    props.value === undefined || props.value === null
+      ? ""
+      : String(props.value),
+  );
 
   return (
     <Field>
@@ -93,7 +115,9 @@ function ScalarField(props: DataFieldProps) {
         value={text()}
         onInput={(event) => {
           const raw = event.currentTarget.value;
-          props.onChange(isNumber() ? (raw === "" ? undefined : Number(raw)) : raw);
+          props.onChange(
+            isNumber() ? (raw === "" ? undefined : Number(raw)) : raw,
+          );
         }}
       />
     </Field>
@@ -103,8 +127,13 @@ function ScalarField(props: DataFieldProps) {
 /** Заголовок раскрывашки — `label` элемента (канонический `item` кита его несёт), нет строки или
  *  она пустая (произвольный массив объектов, свой `label` не обязан быть) — порядковый номер. */
 function headingOf(item: unknown, index: number, fieldLabel: string): string {
-  const label = item !== null && typeof item === "object" ? (item as Record<string, unknown>)["label"] : undefined;
-  return typeof label === "string" && label !== "" ? label : `${fieldLabel} ${index + 1}`;
+  const label =
+    item !== null && typeof item === "object"
+      ? (item as Record<string, unknown>)["label"]
+      : undefined;
+  return typeof label === "string" && label !== ""
+    ? label
+    : `${fieldLabel} ${index + 1}`;
 }
 
 /** Список элементов-объектов (канонический `item` кита — `value`/`label`/`children?` — и любой
@@ -123,12 +152,16 @@ function headingOf(item: unknown, index: number, fieldLabel: string): string {
  *  на месте. `value` раскрывашки — сам индекс: свой лицевой id элементы не несут. */
 function ListField(props: DataFieldProps) {
   const element = () => {
-    if (props.field.element === undefined) throw new Error(`поле "${props.field.label}": kind=list без element`);
+    if (props.field.element === undefined)
+      throw new Error(`поле "${props.field.label}": kind=list без element`);
     return props.field.element;
   };
-  const items = createMemo(() => (Array.isArray(props.value) ? props.value : []));
+  const items = createMemo(() =>
+    Array.isArray(props.value) ? props.value : [],
+  );
 
-  const removeAt = (index: number) => props.onChange(items().filter((_, i) => i !== index));
+  const removeAt = (index: number) =>
+    props.onChange(items().filter((_, i) => i !== index));
   const add = () => props.onChange([...items(), blankElement(element())]);
 
   return (
@@ -137,12 +170,14 @@ function ListField(props: DataFieldProps) {
         <Typography>{props.field.label}</Typography>
       </FlowItem>
       <FlowItem style={layoutSelf({ align: "stretch" })}>
-        <Accordion multiple collapsible>
+        <Accordion data-variant="cards" multiple collapsible>
           <Index each={items()}>
             {(item, index) => (
               <AccordionItem value={String(index)}>
                 <AccordionControl>
-                  <Typography>{headingOf(item(), index, props.field.label)}</Typography>
+                  <Typography>
+                    {headingOf(item(), index, props.field.label)}
+                  </Typography>
                   <AccordionControlIndicator>▾</AccordionControlIndicator>
                 </AccordionControl>
                 <AccordionContent>
@@ -152,7 +187,13 @@ function ListField(props: DataFieldProps) {
                         fields={fieldsOfElement(element())}
                         data={item()}
                         onChange={(subpath, value) => {
-                          props.onChange(items().map((row, i) => (i === index ? withValue(row, subpath, value) : row)));
+                          props.onChange(
+                            items().map((row, i) =>
+                              i === index
+                                ? withValue(row, subpath, value)
+                                : row,
+                            ),
+                          );
                         }}
                       />
                     </FlowItem>
@@ -207,7 +248,11 @@ export function DataFields(props: DataFieldsProps) {
       <For each={props.fields}>
         {(field) => (
           <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <DataField field={field} value={valueAt(props.data, field.path)} onChange={(value) => props.onChange(field.path, value)} />
+            <DataField
+              field={field}
+              value={valueAt(props.data, field.path)}
+              onChange={(value) => props.onChange(field.path, value)}
+            />
           </FlowItem>
         )}
       </For>

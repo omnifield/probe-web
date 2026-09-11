@@ -26,12 +26,16 @@ import "@web-core/style/base.css";
 import { mountApp } from "@web-core/solid/mount";
 import { QueryClientProvider } from "@web-core/query";
 import { RouterProvider } from "@web-core/router";
+import { SkinProvider } from "@web-core/skin/solid";
 
+import { DEFAULT_SKIN, SKIN_SOURCE } from "#/shared/api/skin";
 import { queryClient } from "#/shared/api/query-client";
 import { router } from "../router";
 
 mountApp(() => (
   <QueryClientProvider client={queryClient}>
-    <RouterProvider router={router} />
+    <SkinProvider source={SKIN_SOURCE} options={{ fallback: { skin: DEFAULT_SKIN, mode: "light" } }}>
+      <RouterProvider router={router} />
+    </SkinProvider>
   </QueryClientProvider>
 ));

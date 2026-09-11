@@ -1,20 +1,10 @@
-// ТЕМА — подключение скина продукта, выбор наряда по имени (`Select`) и переключатель половины
-// (`Toggle`, светлая/тёмная) — в одном компоненте: одно не имеет смысла без другого, скин
-// подключаем ровно затем, чтобы было чем управлять (`createSkinConnection`,
-// `@web-core/skin/solid`, PWEB-213, переехала из `@web-core/runtime` — PWEB-221).
-//
-// ИСТОЧНИК — НАСТОЯЩАЯ СЛУЖБА РАЗДАЧИ (`createPresetsSkinSource`, `@web-core/skin/
-// presets`, PWEB-215): продукт отдаёт адрес и паспорта СВОЕГО кита, HTTP/разбор/сборку/
-// порождение CSS фабрика берёт на себя целиком. `SOURCE.names()` уже читается через
-// `createResource` — список не литерал, `Select` не придётся переделывать, когда нарядов в
-// службе станет больше одного.
-import {
-  createPresetsSkinSource,
-  PresetsDown,
-  PresetsRefused,
-} from "@web-core/skin/presets";
-import { createSkinConnection } from "@web-core/skin/solid";
-import { passportOf } from "@web-core/ui/passport";
+// ТЕМА — выбор наряда по имени (`Select`) и переключатель половины (`Toggle`, светлая/тёмная).
+// Сам механизм одевания (соединение, восстановление запомненного выбора при старте, список имён
+// источника) заводит `SkinProvider` на уровне приложения (`app/index.tsx`, `#/shared/api/skin`) —
+// этот компонент только читает готовый контекст (`useSkin()`) и рисует UI поверх него, источником
+// сам не владеет.
+import { PresetsDown, PresetsRefused } from "@web-core/skin/presets";
+import { useSkin } from "@web-core/skin/solid";
 import {
   Select,
   SelectContent,
@@ -30,17 +20,7 @@ import {
   Toggle,
   ToggleIndicator,
 } from "@web-core/ui";
-import { createMemo, createResource, For, onMount, Show } from "solid-js";
-
-import { PRESETS_URL } from "#/shared/api/presets";
-
-/** Наряд, который надеваем на первом заходе, если запомненного нет — единственный сегодня в службе. */
-const DEFAULT_SKIN = "omnifield";
-
-const SOURCE = createPresetsSkinSource({
-  url: PRESETS_URL,
-  lookup: passportOf,
-});
+import { createMemo, For, Show } from "solid-js";
 
 /** Причина отказа — короткой строкой человеку, не в отладчик. */
 function reasonOf(cause: unknown): string {
@@ -56,26 +36,17 @@ interface SkinItem {
 }
 
 export function ThemeSwitch() {
-  const skin = createSkinConnection(SOURCE, {
-    fallback: { skin: DEFAULT_SKIN, mode: "light" },
-  });
+  const skin = useSkin();
 
-  const [names] = createResource(() => SOURCE.names());
   const items = createMemo((): SkinItem[] =>
-    (names() ?? []).map((name) => ({ value: name, label: name })),
+    (skin.names() ?? []).map((name) => ({ value: name, label: name })),
   );
-
-  onMount(() => {
-    skin
-      .restore()
-      .catch((cause: unknown) => console.debug("скин не надет", cause));
-  });
 
   const dark = createMemo(() => skin.worn()?.mode === "dark");
 
   const trouble = (): string | null => {
-    if (names.error !== undefined) return reasonOf(names.error);
-    return names() !== undefined && names()!.length === 0
+    if (skin.names.error !== undefined) return reasonOf(skin.names.error);
+    return skin.names() !== undefined && skin.names()!.length === 0
       ? "Нарядов в службе нет"
       : null;
   };
