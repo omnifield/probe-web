@@ -29,11 +29,7 @@ export interface LazyComponentSkinOptions {
   readonly lookup: PassportLookup;
 }
 
-/**
- * Заводит `ComponentSkinSource`. Состояние (контекст наряда + накопленные по компоненту значения)
- * живёт в закрытом состоянии — сбрасывается целиком, когда `ensure()` видит другое имя наряда:
- * старое накопление ни разу не годится для нового наряда, второй наряд одевает форму иначе.
- */
+/** Заводит `ComponentSkinSource`; состояние сбрасывается целиком при смене наряда. Разбор — FAQ.md. */
 export function createLazyComponentSkin(options: LazyComponentSkinOptions): ComponentSkinSource {
   const { client, lookup } = options;
   const { assemble, generateComponentSkinCss } = withPassports(lookup);
@@ -76,17 +72,14 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
       const matchedName = outfit.forms.find((name) => candidates.some((candidate) => candidate.name === name));
 
       if (matchedName === undefined) {
-        // Наряд просто не одевает этот компонент — легитимно (тот же смысл, что `report.dressed`
-        // у полного `assemble()`), не изъян: пустой рецепт печатает пустой лист, не бросает.
+        // Наряд не одевает этот компонент — легитимно, не изъян. Разбор — FAQ.md.
         return { recipe: EMPTY_RECIPE, keyframes: undefined, variants: new Set(), settings: new Map() };
       }
 
       const form = candidates.find((candidate) => candidate.name === matchedName)!;
 
-      // Тот же приём, что `checkForm` в `apps/skin/.mcp/src/engine/validate.ts`: наряд, ссылающийся
-      // РОВНО на то, что есть в `parts`, — самосогласованная пара. `checkOutfit`/`assemble()`
-      // требуют полноты относительно ЭТОЙ пары, не относительно всего наряда — внутри них ничего
-      // не меняется.
+      // Приём `checkForm` (`apps/skin/.mcp`) — самосогласованная пара, `checkOutfit`/`assemble()`
+      // не тронуты. Разбор — FAQ.md.
       const scopedOutfit: Outfit = { ...outfit, forms: [matchedName] };
       const { skin } = assemble(scopedOutfit, { palettes: [palette], forms: [form.state] });
 

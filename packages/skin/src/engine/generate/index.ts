@@ -31,14 +31,9 @@ export function generateSkinCss(skin: Skin, lookup: PassportLookup, vocabulary: 
   return css;
 }
 
-/**
- * Тот же вход, что `generateSkinCss`, но выход — только правила и кейфреймы ОДНОГО компонента
- * (`skin.recipes` несёт ровно одну запись), без переменных/шрифта/ответа о половине. Те печатает
- * `generateSkinCss` один раз при надевании наряда; печатать их же в каждом компонентном теге —
- * читать `skin.variables` для разрешения ролей рецепта здесь всё равно нужно, просто не эмитить
- * заново тем же текстом. Для `component-skin-on-demand` — компонент допечатывает CSS лениво, по
- * значению variant/setting, а не при первом надевании наряда целиком.
- */
+/** Тот же вход, что `generateSkinCss`, но выход — только правила и кейфреймы ОДНОГО компонента
+ *  (`skin.recipes` несёт ровно одну запись), без переменных/шрифта/ответа о половине — те печатает
+ *  `generateSkinCss` один раз при надевании наряда. Разбор — FAQ.md (`component-skin-on-demand`). */
 export function generateComponentSkinCss(skin: Skin, lookup: PassportLookup, vocabulary: ValueVocabulary = {}): string {
   const done = trace(`generateComponentSkinCss(${skin.name})`);
 

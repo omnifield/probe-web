@@ -210,12 +210,8 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
     done();
   }
 
-  /**
-   * Тихий no-op без ленивой способности источника или без надетого наряда — кит обязан жить без
-   * presets/провайдера вовсе. Против гонки с чужим `wear()` — не общий `turn` (тот бы отбросил и
-   * безобидный `setMode()` того же наряда), а сверка ИМЕНИ наряда до и после ожидания сети: сменил
-   * наряд кто-то другой — результат для старого наряда не годится, дописывать нечего.
-   */
+  /** Тихий no-op без ленивой способности источника или без надетого наряда. Гонка с чужим `wear()`
+   *  гасится сверкой имени наряда, не общим `turn` — разбор обоих решений в FAQ.md. */
   async function ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void> {
     const components = source.components;
     const startedFor = worn()?.name;

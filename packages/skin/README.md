@@ -36,8 +36,8 @@
 | Плоский CSS | `@web-core/skin/flat` | `flattenCss` |
 | Срез редактора | `@web-core/skin/editor` | `admits`, `defineEditorInfo`, `checkAssembly`, `checkAssemblyData`, `footprintOf`, `GROUPS`, `groupOf`, `baseAssemblyOf`, `isAssemblyContent`, `isAssemblyRepeat`, `isContentNode`, `isDataBinding`, `resolveDataBinding`, `PassportAssembly`, `PassportEditorInfo` и её срез-типы |
 | Служба раздачи | `@web-core/skin/presets` | `createPresetsClient`, `createPresetsSkinSource`, `PRESET_KIND`, `PresetsDown`, `PresetsRefused`, `PresetRecord` |
-| Надевание | `@web-core/skin/wear` | `makeSkinSwitch`, `checkStyleOrder`, `SkinSwitch`, `SkinSource`, `SkinWorn`, `SkinMode`, `StyleMarker`, `StyleOrderReport` |
-| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection`, `SkinProvider`, `useSkin`, `SkinContextValue`, `SkinProviderProps` |
+| Надевание | `@web-core/skin/wear` | `makeSkinSwitch`, `checkStyleOrder`, `SkinSwitch`, `SkinSource`, `SkinWorn`, `SkinMode`, `StyleMarker`, `StyleOrderReport`, `ComponentSkinAxis`, `ComponentSkinSource` |
+| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection`, `SkinProvider`, `useSkin`, `useComponentSkin`, `SkinContextValue`, `SkinProviderProps` |
 | Теги | `@web-core/skin/tags` | `sortTags`, `checkTags`, `groupByTag`, `DEFAULT_TAG`, `TagFlaw`, `TagGroup` |
 
 📦 Внутри пакета: `src/index.ts` — тонкий барель поверх `src/engine/` (та же форма, что у
@@ -154,8 +154,10 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `withPassports(lookup)` | `PassportLookup` — как найти паспорт компонента по имени |
 | `assemble(outfit, parts)` | `Outfit` + `{ palettes: Palette[], forms: Form[] }` |
 | `generateSkinCss(skin, vocabulary?)` | собранный `Skin` |
-| `makeSkinSwitch(source, options)` | `SkinSource` — `names()`/`css(name)` |
+| `makeSkinSwitch(source, options)` | `SkinSource` — `names()`/`css(name)`, необязательно `components` (ленивая печать по компоненту) |
+| `SkinSwitch.ensureComponentSkin(component, axis)` | `ComponentSkinAxis` — значение `variant` (может быть без `value` — на разметке нет атрибута) либо именованной `setting` |
 | `SkinProvider` | тот же `SkinSource`/`options`, что и `createSkinConnection`, — заводится один раз при монтировании |
+| `useComponentSkin(passport, props)` | `ComponentPassport` кита + его текущие props — реактивно читает variant/settings сама |
 | `createPresetsClient({ url })` | адрес службы раздачи |
 | `checkStyleOrder({ marker })` | пара «свойство → значение», которую база обязана поставить |
 
@@ -181,7 +183,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 <h2 id="сборки">🏗️ Сборки</h2>
 
 🧪 Своих сборок компонентов у механики нет — она их не знает. Доказывается голыми, синтетическими
-записями (58 тестов, 14 файлов) плюс живой проверкой на реальном наряде и реальном ките.
+записями (110 тестов, 20 файлов) плюс живой проверкой на реальном наряде и реальном ките.
 
 | Сборка | Что доказывает |
 |---|---|
@@ -189,6 +191,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `recipe.test.tsx` каждого компонента кита | `skinGaps`+`passportLookup` реально используются снаружи для проверки покрытия одного паспорта |
 | `apps/skin/.mcp` | `checkAssembly`/`checkAssemblyData`/`skinGaps` вызываются агентом на реальных данных |
 | Живой прогон против службы раздачи | `createPresetsSkinSource`/`createPresetsClient` — CRUD по всем четырём видам, различение «легла»/«отказала» |
+| `lazy-component-skin.test.ts`/`skin-switch-component.test.tsx`/`use-component-skin.test.tsx` | `ensureComponentSkin` от сети до листа: узкий фетч, накопление, гонка с чужим `wear()`, реактивный вызов из `useComponentSkin` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
@@ -235,3 +238,24 @@ function ThemeSwitch() {
   );
 }
 ```
+
+🐢 `wear()`/`SkinProvider` печатают вид наряда сразу: переменные палитры, шрифт, кейфреймы, ответ о
+половине — то, что нужно ВСЕГДА, независимо от того, какие компоненты страница реально рендерит.
+Правила КОНКРЕТНОГО компонента — другое дело: наряд может нести форму с сотней вариантов кнопки, а
+странице нужны два. `useComponentSkin` печатает их не при надевании наряда, а при монтировании
+самого компонента, по факту его текущих variant/settings — вызывает её сам компонент кита, не
+страница:
+
+```tsx
+import { useComponentSkin } from "@web-core/skin/solid";
+import { passport } from "../entity/passport.js";
+
+export function Button(props: ButtonProps) {
+  useComponentSkin(passport, props); // сама решает, что из props ей нужно (variantAxis/settings)
+  return <button {...props} />;
+}
+```
+
+Значение читается реактивно — новый `data-variant`/`data-*` на разметке допечатывает своё правило,
+не заменяя уже напечатанное для других значений. Без `SkinProvider` в дереве (голый кит, ручная
+стилизация, `recipe.test.tsx` без провайдера) — тихий no-op: кит обязан жить без presets вовсе.

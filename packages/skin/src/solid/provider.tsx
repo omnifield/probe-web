@@ -52,12 +52,9 @@ export function useSkin(): SkinContextValue {
   return value;
 }
 
-/**
- * Компонент кита сам просит свой CSS — по значению `variant`/каждой `setting` c атрибутной меткой,
- * реактивно (значение меняется на разметке — допечатка догоняет). Без `SkinProvider` в дереве —
- * тихий no-op, не отказ: кит обязан жить без presets/провайдера вовсе, это его базовое обещание, не
- * только этого хука (`component-skin-on-demand`, ROADMAP.yaml).
- */
+/** Компонент кита сам просит свой CSS — по значению `variant`/каждой `setting` c атрибутной меткой,
+ *  реактивно. Без `SkinProvider` в дереве — тихий no-op. Разбор — FAQ.md
+ *  (`component-skin-on-demand`). */
 export function useComponentSkin(
   passport: ComponentPassport,
   props: Readonly<Record<string, unknown>>,
@@ -69,10 +66,8 @@ export function useComponentSkin(
   const variantAttr = variantMark.kind === "attribute" ? variantMark.name : undefined;
 
   createEffect(() => {
-    // `value.worn()` — трекнутая зависимость: наряда ещё нет при монтировании (restore()
-    // асинхронный) — эффект обязан перезапуститься сам, когда он появится, а не молчать до
-    // следующего чужого триггера. Тот же сигнал перезапускает эффект и при смене наряда — переигрыш
-    // накопленного состояния решён реактивностью, а не отдельной памятью на стороне механики.
+    // `value.worn()` — трекнутая зависимость, не только значение: перезапускает эффект и когда
+    // наряд появляется (после асинхронного restore()), и когда меняется. Разбор — FAQ.md.
     const outfitName = value.worn()?.name;
     if (outfitName === undefined) return;
 
