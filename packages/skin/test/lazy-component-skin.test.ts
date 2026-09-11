@@ -101,7 +101,7 @@ const BUTTON_FORM: Form = {
   name: "button-form",
   component: "button",
   recipe: {
-    base: { root: { props: { background: "#fff" } } },
+    base: { root: { props: { background: "#fff", borderColor: "var(--accent-9)" } } },
     defaultVariant: "primary",
     variants: {
       primary: { root: { props: { color: "#111" } } },
@@ -159,6 +159,14 @@ describe("createLazyComponentSkin", () => {
     await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
 
     expect(client.listForm).toHaveBeenCalledWith(["button"]);
+  });
+
+  it("ссылка на переменную палитры (var(--accent-9)) не бросает SkinRefused — variables ПРИЗНАНЫ, не напечатаны", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    const css = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
+
+    expect(css).toContain("var(--accent-9)"); // ссылка признана известной, печатается как есть
+    expect(css).not.toContain(":root {"); // но сама переменная не печатается — это дело базы (css())
   });
 
   it("variant без value (на разметке нет атрибута) всё равно бутстрапит base+defaultVariant", async () => {

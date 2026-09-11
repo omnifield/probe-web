@@ -5,7 +5,7 @@
 import type { PassportLookup } from "../engine/address/index.js";
 import { withPassports } from "../engine/generate/index.js";
 import type { Outfit, Palette } from "../engine/look/index.js";
-import { scopeRecipe, type Keyframes, type SlotRecipe } from "../engine/recipe/index.js";
+import { scopeRecipe, type Keyframes, type SkinVariables, type SlotRecipe } from "../engine/recipe/index.js";
 import type { ComponentSkinAxis, ComponentSkinSource } from "../wear/switch.js";
 import { PRESET_KIND, type PresetsClient } from "./client.js";
 import { PresetsRefused } from "./wire.js";
@@ -18,6 +18,9 @@ interface OutfitContext {
 interface ComponentAccumulator {
   readonly recipe: SlotRecipe;
   readonly keyframes: Keyframes | undefined;
+  /** Переменные палитры — движку нужны, чтобы ПРИЗНАТЬ ссылку на них законной (они реально на
+   *  странице, напечатаны один раз базой), не печатать их здесь заново. Разбор — FAQ.md. */
+  readonly variables: SkinVariables;
   readonly variants: Set<string>;
   readonly settings: Map<string, Set<string>>;
 }
@@ -73,7 +76,7 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
 
       if (matchedName === undefined) {
         // Наряд не одевает этот компонент — легитимно, не изъян. Разбор — FAQ.md.
-        return { recipe: EMPTY_RECIPE, keyframes: undefined, variants: new Set(), settings: new Map() };
+        return { recipe: EMPTY_RECIPE, keyframes: undefined, variables: palette, variants: new Set(), settings: new Map() };
       }
 
       const form = candidates.find((candidate) => candidate.name === matchedName)!;
@@ -87,7 +90,7 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
       const variants = new Set<string>();
       if (recipe.defaultVariant !== undefined) variants.add(recipe.defaultVariant);
 
-      return { recipe, keyframes: skin.keyframes, variants, settings: new Map() };
+      return { recipe, keyframes: skin.keyframes, variables: skin.variables ?? palette, variants, settings: new Map() };
     })();
 
     accumulators.set(component, pending);
@@ -106,7 +109,12 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
     }
 
     const scoped = scopeRecipe(acc.recipe, { variants: acc.variants, settings: acc.settings });
-    return generateComponentSkinCss({ name: outfitName, recipes: { [component]: scoped }, keyframes: acc.keyframes });
+    return generateComponentSkinCss({
+      name: outfitName,
+      recipes: { [component]: scoped },
+      keyframes: acc.keyframes,
+      variables: acc.variables,
+    });
   }
 
   return { ensure };

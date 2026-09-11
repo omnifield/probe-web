@@ -407,6 +407,18 @@ validate.ts`'s `checkForm` — тот уже сегодня строит СИН�
 чтением и записью. Порядок промисов на один и тот же объект в JS — FIFO по подписке, поэтому
 значение, добавленное раньше, не может потеряться от того, что второй запрос завершился быстрее.
 
+**Почему `ComponentAccumulator` несёт `variables`, хотя `generateComponentSkinCss` их не печатает.**
+Найдено owner'ом `apps/skin`: любая ссылка на переменную палитры (`var(--accent-9)`, `railVar(...)`
+и т.п.) в рецепте компонента падала `unknown-value`, хотя эта же переменная реально приезжает на
+страницу — просто из БАЗЫ (`css()`), не отсюда. Причина: `skinRules`'s `vocabularyOf` строит список
+ИЗВЕСТНЫХ имён из `skin.variables` — не печатать переменную и не ЗНАТЬ о ней это разные вещи, а
+`assemble(scopedOutfit, {palettes: [palette], forms: [form.state]}).skin.variables` в
+`ComponentAccumulator` не сохранялся вовсе, только `recipe`/`keyframes`. Печать (`generateSkinCss`
+против `generateComponentSkinCss`) и распознавание ссылки (`vocabularyOf`) — разные шаги одного и
+того же `skinRules`, резать по печати нельзя было резать и по знанию: движок и без того умеет «знать,
+но не печатать» (сам `generateComponentSkinCss` не зовёт `variablesText`/`fontText`), просто на вход
+ему было нечего знать.
+
 **Почему `useComponentSkin(passport, props)` принимает `props: object`, а не `Record<string,
 unknown>`.** Найдено owner'ом `packages/ui` при переезде на 32 компонента: реальные пропсы кита
 (`AccordionRootProps`, `DialogRootProps`, …) — обычные интерфейсы от Kobalte/Ark БЕЗ индексной
