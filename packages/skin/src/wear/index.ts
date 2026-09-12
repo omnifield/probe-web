@@ -6,6 +6,7 @@ export {
   makeSkinSwitch,
   type ComponentSkinAxis,
   type ComponentSkinSource,
+  type EnsuredSkinData,
   type SkinMode,
   type SkinSource,
   type SkinSwitch,

@@ -206,7 +206,7 @@ describe("createLazyComponentSkin", () => {
 
   it("ссылка на переменную палитры (var(--accent-9)) не бросает SkinRefused — variables ПРИЗНАНЫ, не напечатаны", async () => {
     const skin = createLazyComponentSkin({ client, lookup });
-    const css = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
+    const { css } = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
 
     expect(css).toContain("var(--accent-9)"); // ссылка признана известной, печатается как есть
     expect(css).not.toContain(":root {"); // но сама переменная не печатается — это дело базы (css())
@@ -214,7 +214,7 @@ describe("createLazyComponentSkin", () => {
 
   it("variant без value (на разметке нет атрибута) всё равно бутстрапит base+defaultVariant", async () => {
     const skin = createLazyComponentSkin({ client, lookup });
-    const css = await skin.ensure("brand", "button", { kind: "variant", value: undefined });
+    const { css } = await skin.ensure("brand", "button", { kind: "variant", value: undefined });
 
     expect(css).toContain("background: #fff"); // base
     expect(css).toContain("color: #111"); // defaultVariant primary
@@ -223,7 +223,7 @@ describe("createLazyComponentSkin", () => {
 
   it("печатает base+defaultVariant даже когда просили другое значение — default не выпадает как unknown-variant", async () => {
     const skin = createLazyComponentSkin({ client, lookup });
-    const css = await skin.ensure("brand", "button", { kind: "variant", value: "secondary" });
+    const { css } = await skin.ensure("brand", "button", { kind: "variant", value: "secondary" });
 
     expect(css).toContain("background: #fff"); // base
     expect(css).toContain("color: #111"); // primary — default, грузится вместе с base
@@ -241,7 +241,7 @@ describe("createLazyComponentSkin", () => {
   it("накопленные значения сохраняются между вызовами — CSS второго вызова несёт и первое, и новое", async () => {
     const skin = createLazyComponentSkin({ client, lookup });
     await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
-    const css = await skin.ensure("brand", "button", { kind: "setting", name: "outlined", value: "lg" });
+    const { css } = await skin.ensure("brand", "button", { kind: "setting", name: "outlined", value: "lg" });
 
     expect(css).toContain("color: #111"); // выжило с первого вызова
     expect(css).toContain("padding: 8px"); // новое из второго
@@ -261,7 +261,7 @@ describe("createLazyComponentSkin", () => {
     // переменную) принадлежит "horizontal", никто его не просил. Раньше это бросало SkinRefused
     // ("not applied by any rule"), потому что keyframes формы печатались ЦЕЛИКОМ, без оглядки на
     // накопленный scope.
-    const css = await skin.ensure("brand", "accordion", { kind: "setting", name: "orientation", value: "vertical" });
+    const { css } = await skin.ensure("brand", "accordion", { kind: "setting", name: "orientation", value: "vertical" });
 
     expect(css).toContain("@keyframes grow-block-size");
     expect(css).not.toContain("grow-inline-size");
@@ -269,10 +269,58 @@ describe("createLazyComponentSkin", () => {
 
   it("наряд не одевает компонент (форма отсутствует, паспорт есть) — легитимно, пустой CSS, не отказ", async () => {
     const skin = createLazyComponentSkin({ client, lookup });
-    const css = await skin.ensure("brand", "undressed", { kind: "variant", value: "x" });
+    const { css, data } = await skin.ensure("brand", "undressed", { kind: "variant", value: "x" });
 
     expect(css.trim().length).toBeGreaterThan(0); // валидный, хоть и пустой @layer
     expect(css).not.toContain("color:");
+    expect(data).toBeUndefined(); // компонент не одет — формы нет, отдавать нечего
+  });
+
+  it("ensure() отдаёт наружу найденную запись формы — не только CSS (component-skin-data-passthrough)", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    const { data } = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
+
+    expect(data).toMatchObject({ name: "button-form", state: BUTTON_FORM });
+  });
+
+  it("второй ensure() того же компонента отдаёт ТУ ЖЕ запись формы — без повторного сетевого фетча", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    const first = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
+    const second = await skin.ensure("brand", "button", { kind: "setting", name: "outlined", value: "lg" });
+
+    expect(second.data).toBe(first.data);
+    expect(client.listForm).toHaveBeenCalledTimes(1);
+  });
+
+  it("ensure() отдаёт наружу записи наряда и палитры — не только CSS (outfit-data-passthrough)", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    const { outfit } = (await skin.ensure("brand", "button", { kind: "variant", value: "primary" })) as {
+      outfit: { outfit: PresetRecord<Outfit>; palette: PresetRecord<Palette> };
+    };
+
+    expect(outfit.outfit).toMatchObject({ name: "brand", state: OUTFIT });
+    expect(outfit.palette).toMatchObject({ name: PALETTE.name, state: PALETTE });
+  });
+
+  it("наряд не одевает компонент — outfit/palette всё равно приходят, форма нашлась или нет к делу не относится", async () => {
+    const skin = createLazyComponentSkin({ client, lookup });
+    const { outfit } = (await skin.ensure("brand", "undressed", { kind: "variant", value: "x" })) as {
+      outfit: { outfit: PresetRecord<Outfit>; palette: PresetRecord<Palette> };
+    };
+
+    expect(outfit.outfit).toMatchObject({ name: "brand" });
+  });
+
+  it("второй ensure() того же наряда отдаёт ТУ ЖЕ запись наряда — без повторного сетевого фетча", async () => {
+    const client2 = fakeClient();
+    const getOutfitSpy = vi.spyOn(client2, "get");
+    const skin = createLazyComponentSkin({ client: client2, lookup });
+
+    const first = await skin.ensure("brand", "button", { kind: "variant", value: "primary" });
+    const second = await skin.ensure("brand", "button", { kind: "setting", name: "outlined", value: "lg" });
+
+    expect(second.outfit).toBe(first.outfit);
+    expect(getOutfitSpy).toHaveBeenCalledTimes(1);
   });
 
   it("наряда нет в службе — PresetsRefused", async () => {

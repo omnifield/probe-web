@@ -77,6 +77,17 @@ export type ComponentSkinAxis =
   | { readonly kind: "variant"; readonly value?: string }
   | { readonly kind: "setting"; readonly name: string; readonly value: string };
 
+/** Побочный груз источника, отданный вместе с CSS — `unknown` сознательно на этом слое: он не знает
+ *  и не должен знать, что внутри (движок ничего не знает про `Form`/`Outfit`/`Palette` как типы,
+ *  это домен `presets/lazy.ts`, не `wear/*`). `data` — то, что источник нашёл про ОДИН компонент
+ *  (`component-skin-data-passthrough`); `outfit` — то же самое, но про наряд целиком, одно значение
+ *  на весь `ensureComponentSkin`, не по компоненту (`outfit-data-passthrough`). Оба независимо
+ *  необязательны — источник может не нести один из них, оба, или ни одного. */
+export interface EnsuredSkinData {
+  readonly data?: unknown;
+  readonly outfit?: unknown;
+}
+
 /** Необязательная способность источника: печатать CSS ОДНОГО компонента лениво, по значению
  *  variant/setting, а не всего наряда сразу. Источники без ленивой загрузки её не реализуют —
  *  `ensureComponentSkin` тогда молча ничего не делает (`component-skin-on-demand`, ROADMAP.yaml). */
@@ -84,9 +95,9 @@ export interface ComponentSkinSource {
   /**
    * Печатает НОВОЕ значение оси компонента, аддитивно к уже увиденным для него значениям под этим
    * же нарядом — возвращает актуальный ПОЛНЫЙ текст CSS этого компонента (база + всё увиденное на
-   * сегодня), который надевание целиком кладёт в СВОЙ тег компонента.
+   * сегодня), который надевание целиком кладёт в СВОЙ тег компонента, плюс {@link EnsuredSkinData}.
    */
-  ensure(outfitName: string, component: string, axis: ComponentSkinAxis): Promise<string>;
+  ensure(outfitName: string, component: string, axis: ComponentSkinAxis): Promise<{ css: string } & EnsuredSkinData>;
 }
 
 /** То, что приложение сообщает механике о своих скинах. */
@@ -138,8 +149,11 @@ export interface SkinSwitch {
    * Допечатывает CSS одного компонента под ОДНО новое значение оси — источник без ленивой
    * способности (`SkinSource.components`) или ничего не надето — тихий no-op, не отказ: кит
    * обязан жить без presets/провайдера вовсе.
+   *
+   * @returns {@link EnsuredSkinData} источника — пустой объект и когда источник ничего не дал, и
+   *   когда сработал no-op/устаревший ответ; различать эти случаи не входит в контракт.
    */
-  ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void>;
+  ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<EnsuredSkinData>;
   /** Снимает свой лист стилей и листы всех допечатанных компонентов. Опознание на корне не трогает. */
   dispose(): void;
 }
@@ -212,20 +226,21 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
 
   /** Тихий no-op без ленивой способности источника или без надетого наряда. Гонка с чужим `wear()`
    *  гасится сверкой имени наряда, не общим `turn` — разбор обоих решений в FAQ.md. */
-  async function ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<void> {
+  async function ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<EnsuredSkinData> {
     const components = source.components;
     const startedFor = worn()?.name;
-    if (components === undefined || startedFor === undefined) return;
+    if (components === undefined || startedFor === undefined) return {};
 
-    const css = await components.ensure(startedFor, component, axis);
-    if (worn()?.name !== startedFor) return;
+    const result = await components.ensure(startedFor, component, axis);
+    if (worn()?.name !== startedFor) return {};
 
     let compSheet = componentSheets.get(component);
     if (compSheet === undefined) {
       compSheet = makeSkinSheet(component);
       componentSheets.set(component, compSheet);
     }
-    compSheet.put(css);
+    compSheet.put(result.css);
+    return { data: result.data, outfit: result.outfit };
   }
 
   async function restore(): Promise<SkinWorn | null> {

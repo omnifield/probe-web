@@ -455,6 +455,128 @@ categories:
           сверку контракта между зонами, прежде чем начинать реализацию — решение user, не техническое
           ограничение.
 
+      - id: component-skin-data-passthrough
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "ensureComponentSkin отдаёт найденную форму наружу — витрина не перезапрашивает то, что уже спросил сам компонент"
+        description: |
+          Продолжение `component-skin-on-demand`: `accumulatorFor` (`presets/lazy.ts:99`) уже
+          находит `PresetRecord<Form>` компонента при первом `ensure()`, но использует её только
+          чтобы построить recipe/keyframes и выбрасывает — наружу едет только готовый CSS-текст.
+          Одновременно `packages/ui/src/component-info.ts`'s `createComponentInfo` (используется
+          витриной `apps/skin`, чтобы показать форму/вариант компонента рядом с ним) делает СВОЙ
+          отдельный `presets.list(PRESET_KIND.form)` — ровно за тем же, что компонент уже спросил
+          сам через `useComponentSkin`.
+
+          Слова user, откуда взялась заявка: "мне нужно получать данные компонента, который он сам
+          запрашивает... я не хочу делать отдельно запрос на то же самое, что уже запросил сам
+          компонент". Идею слоёв предложил owner ui-продукта (не видит нюансов границ этого
+          пакета — контракт ниже уточнён по факту чтения кода, не переписан с нуля):
+
+          1. `wear/switch.ts` — `ComponentSkinSource.ensure` возвращает `Promise<{ css: string;
+             data?: unknown }>` вместо `Promise<string>`; `SkinSwitch.ensureComponentSkin` —
+             `Promise<unknown>` вместо `Promise<void>`, тот же гейт от гонки с чужим `wear()`
+             (`worn()?.name !== startedFor`), что уже есть для CSS. `unknown`, не `Form` — движок
+             ничего не знает про `engine/*`-модель формы, это на слой ниже, ломать эту границу ради
+             единственного источника не нужно.
+          2. `presets/lazy.ts` — `ComponentAccumulator` получает поле `form: PresetRecord<Form> |
+             undefined` (та же запись, что уже находит `candidates.find(...)` в строке 99, просто
+             сегодня не сохраняется); `ensure()` возвращает `{ css: generateComponentSkinCss(...),
+             data: acc.form }`.
+          3. `solid/connection.ts`, НЕ `solid/provider.tsx` — здесь, а не в `useComponentSkin`,
+             заводится сигнал `componentData: Accessor<ReadonlyMap<string, unknown>>` и обёртка
+             `ensureComponentSkin`, которая пишет `data` в карту по имени компонента как побочный
+             эффект, тем же приёмом, что уже обёрнуты `wear`/`restore` вокруг `skin.wear`/
+             `skin.restore`. Так `useComponentSkin` в `provider.tsx` не меняется вовсе — карта
+             наполняется сама на каждый вызов, который он и так уже делает.
+          4. Чистка карты — по имени наряда, не на каждый `wear()`: `setMode()` зовёт
+             `wear(current.name, { mode })` с ТЕМ ЖЕ именем — форма от режима не зависит, чистить
+             не нужно. `restore()` в `connection.ts` сегодня зовёт `skin.restore()` НАПРЯМУЮ, в
+             обход локальной обёртки `wear` — если чистку зашить внутрь `wear()`, этот путь её не
+             увидит. Нужна одна точка (`applyWorn(result)` или похожая), сверяющая старое/новое имя
+             наряда, вызываемая одинаково из `wear`, `takeOff` и `restore`.
+          5. Новый хук рядом с `useSkin` в `provider.tsx`:
+             `useComponentSkinData<T>(component: string): Accessor<T | undefined>` — читает
+             `useSkin().componentData().get(component) as T | undefined`. Имя честнее по границам
+             типов, чем `useComponentForm` (источник данных сегодня один — presets с формами, но
+             тип на этом слое — `unknown`, не `Form`).
+
+          Что НЕ входит в объём: `packages/ui` не меняется вообще — ни `useKitLife`, ни пропсы
+          компонентов, колбэк никуда не прокидывается; данные читаются по ИМЕНИ компонента снаружи,
+          под `<SkinProvider>`, а не через явную связь с конкретным инстансом. `ComponentSkinInfo`/
+          `createComponentInfo` (`packages/ui/src/component-info.ts`) не трогается этой заявкой —
+          переключение витрины `apps/skin` на `useComponentSkinData` вместо своего `presets.list`
+          отдельный шаг, не эта правка.
+
+          Осознанно не решается здесь: `undefined` в карте перегружен — "компонент ещё не спросил"
+          и "спросил, форма не нашлась" неразличимы, как и сегодня у `ComponentSkinInfo`. Richer-
+          состояние (pending/resolved) — другой объём работы, не факт что нужен; не делаю, пока не
+          спросят отдельно.
+
+          Тесты, которые меняются (проверено чтением, не только заявкой owner ui — у него в оценке
+          не хватало самого нагруженного файла): `test/lazy-component-skin.test.ts` (~8 мест вида
+          `const css = await skin.ensure(...)`, ожидающих голую строку → `.css`), `test/skin-switch-
+          component.test.tsx` (моки `ensure` возвращают строку напрямую), `test/use-component-skin.
+          test.tsx` (стаб `components.ensure` в `stubSource` тоже возвращает голую строку). `test/
+          presets-source-css.test.ts` — НЕ задет, `.ensure()` там только в комментарии, не в коде.
+
+      - id: outfit-data-passthrough
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Тот же passthrough — но для наряда целиком (Outfit+Palette), не для одного компонента"
+        description: |
+          Прямое продолжение `component-skin-data-passthrough` — тот же довод, тот же приём, другой
+          уровень. Слова user: "мы можем отдавать аутфит инфу в том же флоу, мне нужна полная, я
+          сейчас делаю витрину и там нужна инфа и про аутфит, и про компоненты, компоненты мы сделали
+          а вот аутфит нет". "В том же флоу" — буквально: не новый метод `SkinSource`, не отдельный
+          сигнал мимо `ensureComponentSkin`, а то же самое действие, на котором уже висит `data`
+          компонента.
+
+          Где сегодня теряется. `presets/lazy.ts`'s `contextFor(outfitName)` УЖЕ фетчит и `Outfit`, и
+          подходящую `Palette` (`client.get(PRESET_KIND.outfit, ...)`  + `client.list(PRESET_KIND.
+          palette)`, поиск по `outfit.state.palette`) — один раз на наряд, кешируется `context`-
+          промисом. Но возвращает наружу (`OutfitContext`) только РАСПАКОВАННЫЕ `outfit.state`/
+          `palette.state` — сами записи (`PresetRecord<Outfit>`/`PresetRecord<Palette>`, с `name`/
+          `label`/`id`) нужны `assemble()` только для чтения содержимого и выбрасываются сразу после.
+          Ровно тот же паттерн, что был у `form` до `component-skin-data-passthrough`.
+
+          Контракт (тот же слой, что и у component-версии, продолжает её типы, не переизобретает):
+          1. `presets/lazy.ts` — `OutfitContext` получает два новых поля: `outfitRecord: PresetRecord
+             <Outfit>`, `paletteRecord: PresetRecord<Palette>` (те самые, что `contextFor` уже
+             получает от `client.get`/`client.list`, до `.state`-распаковки). `ensure()` довызывает
+             `contextFor(outfitName)` ПОСЛЕ `accumulatorFor` (тот уже вызвал его с тем же именем на
+             синхронном шаге внутри себя — `trackedOutfit` совпадает, это попадание в кеш, не второй
+             сетевой фетч) и кладёт `{ outfit: ctx.outfitRecord, palette: ctx.paletteRecord }` в
+             третье поле возврата.
+          2. `wear/switch.ts` — `ComponentSkinSource.ensure()` возвращает `{ css, data?, outfit? }`
+             (третье поле рядом с уже существующим `data`, тот же `unknown`, та же причина: этот
+             слой не знает про `Outfit`/`Palette` как тип). `SkinSwitch.ensureComponentSkin` — было
+             `Promise<unknown>` (голый `data`), становится `Promise<{ data?: unknown; outfit?:
+             unknown }>` — раз теперь два независимых куска, отдавать их одним неразличимым `unknown`
+             как раньше уже нельзя, значит меняется и этот контракт, не только внутренний.
+          3. `solid/connection.ts` — второй сигнал рядом с `componentData`: `outfitData: Accessor
+             <unknown>` (ЕДИНСТВЕННОЕ значение, не карта — наряд один на соединение, не по имени).
+             Обёртка `ensureComponentSkin` пишет туда `result.outfit` тем же приёмом (гейт по имени
+             наряда до/после await — тот же, что уже защищает `componentData` от того же класса
+             гонки). `applyWorn` чистит ОБА сигнала при смене имени наряда, не только `componentData`.
+          4. `solid/provider.tsx` — `useOutfitData<T>(): Accessor<T | undefined>`, рядом с
+             `useComponentSkinData`, тем же приёмом (`createMemo` поверх `useSkin().outfitData()`).
+
+          Что НЕ входит в объём: второй сетевой фетч наряда/палитры отдельно от `ensureComponentSkin`
+          не заводится — если ни один компонент на странице ни разу не позвал `useComponentSkin`,
+          `outfitData` останется `undefined` (та же ленивая природа, что и у `componentData`, и у
+          самого CSS — `component-skin-on-demand`). Явный отдельный «дай мне наряд, не спрашивая
+          компонент» — не эта заявка, отдельный кейс, если понадобится.
+
+          Тесты: `test/lazy-component-skin.test.ts` (новые кейсы на `outfit`/`palette` в возврате
+          `ensure()`, по образцу уже добавленных на `data`), `test/skin-switch-component.test.tsx`
+          (моки `ensure` меняют форму ответа, `ensureComponentSkin` теперь возвращает объект, не голый
+          `data`), `test/use-component-skin.test.tsx` (стаб источника туда же).
+
       - id: component-skin-cls-on-first-mount
         type: bug
         status: Backlog

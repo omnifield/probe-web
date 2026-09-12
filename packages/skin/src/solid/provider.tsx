@@ -2,10 +2,12 @@
 import {
   createContext,
   createEffect,
+  createMemo,
   createResource,
   onMount,
   untrack,
   useContext,
+  type Accessor,
   type JSX,
   type ParentProps,
   type Resource,
@@ -50,6 +52,38 @@ export function useSkin(): SkinContextValue {
     throw new Error("[web-core-skin] useSkin(): вне <SkinProvider>.");
   }
   return value;
+}
+
+/**
+ * Читает `data`, который источник отдал на последний `ensureComponentSkin` компонента с этим
+ * именем — тот же фетч, что уже сделал сам компонент через `useComponentSkin`, без второго запроса
+ * за тем же. Реактивно: обновляется и когда компонент допечатывает новое значение оси, и когда
+ * наряд сменился (карта чистится целиком, `component-skin-data-passthrough`).
+ *
+ * `T` — на совести вызывающего: контракт этого слоя — `unknown` (источники разные, форма не
+ * гарантирована никем ниже), а не `Form` конкретно. Компонента с этим именем ещё не было под
+ * `<SkinProvider>`, либо источник не дал `data`, либо ничего не надето — везде `undefined`,
+ * различать эти случаи не входит в контракт (см. {@link SkinConnection.componentData}).
+ */
+export function useComponentSkinData<T = unknown>(component: string): Accessor<T | undefined> {
+  const value = useSkin();
+  const data = createMemo(() => value.componentData().get(component) as T | undefined);
+  return data;
+}
+
+/**
+ * Читает `outfit`, который источник отдал вместе с `data` на последний `ensureComponentSkin` ЛЮБОГО
+ * компонента дерева — тот же вызов, тот же ответ, просто вторая его половина (про наряд целиком, не
+ * про конкретный компонент). Реактивно, тем же приёмом, что {@link useComponentSkinData}: обновляется
+ * на каждый допечатанный компонент и чистится при смене имени наряда (`outfit-data-passthrough`).
+ *
+ * Требует, чтобы ХОТЯ БЫ ОДИН компонент в дереве уже позвал `useComponentSkin` — сам по себе этот
+ * хук сеть не заводит и ничего не запрашивает, читает то, что уже нашлось попутно.
+ */
+export function useOutfitData<T = unknown>(): Accessor<T | undefined> {
+  const value = useSkin();
+  const data = createMemo(() => value.outfitData() as T | undefined);
+  return data;
 }
 
 /**

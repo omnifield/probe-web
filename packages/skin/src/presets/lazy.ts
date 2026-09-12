@@ -4,16 +4,21 @@
 
 import type { PassportLookup } from "../engine/address/index.js";
 import { withPassports } from "../engine/generate/index.js";
-import type { Outfit, Palette } from "../engine/look/index.js";
+import type { Form, Outfit, Palette } from "../engine/look/index.js";
 import { motionsIn } from "../engine/motion/index.js";
 import { scopeRecipe, type Keyframes, type SkinVariables, type SlotRecipe, type StyleObject } from "../engine/recipe/index.js";
 import type { ComponentSkinAxis, ComponentSkinSource } from "../wear/switch.js";
-import { PRESET_KIND, type PresetsClient } from "./client.js";
+import { PRESET_KIND, type PresetRecord, type PresetsClient } from "./client.js";
 import { PresetsRefused } from "./wire.js";
 
 interface OutfitContext {
   readonly outfit: Outfit;
   readonly palette: Palette;
+  /** Записи целиком (`id`/`label`/`name` службы плюс содержимое) — `outfit`/`palette` выше несут
+   *  только распакованное `.state`, движку больше ничего не нужно. Наружу отдаётся через `ensure()`'s
+   *  `outfit` (`outfit-data-passthrough`) — собрана ОДИН раз здесь же, не на каждый `ensure()`, чтобы
+   *  вызывающий видел ТУ ЖЕ ссылку между вызовами, а не новый объект-обёртку каждый раз. */
+  readonly outfitData: { readonly outfit: PresetRecord<Outfit>; readonly palette: PresetRecord<Palette> };
 }
 
 interface ComponentAccumulator {
@@ -24,6 +29,9 @@ interface ComponentAccumulator {
   readonly variables: SkinVariables;
   readonly variants: Set<string>;
   readonly settings: Map<string, Set<string>>;
+  /** Запись формы, из которой взят `recipe` — `undefined`, когда наряд не одевает компонент
+   *  вовсе. Наружу отдаётся через `ensure()`'s `data` (`component-skin-data-passthrough`). */
+  readonly form: PresetRecord<Form> | undefined;
 }
 
 const EMPTY_RECIPE: SlotRecipe = {};
@@ -74,7 +82,7 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
           throw new PresetsRefused(`палитры «${outfit.state.palette}» в службе раздачи нет`);
         }
 
-        return { outfit: outfit.state, palette: palette.state };
+        return { outfit: outfit.state, palette: palette.state, outfitData: { outfit, palette } };
       })();
     }
 
@@ -93,7 +101,14 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
 
       if (matchedName === undefined) {
         // Наряд не одевает этот компонент — легитимно, не изъян. Разбор — FAQ.md.
-        return { recipe: EMPTY_RECIPE, keyframes: undefined, variables: palette, variants: new Set(), settings: new Map() };
+        return {
+          recipe: EMPTY_RECIPE,
+          keyframes: undefined,
+          variables: palette,
+          variants: new Set(),
+          settings: new Map(),
+          form: undefined,
+        };
       }
 
       const form = candidates.find((candidate) => candidate.name === matchedName)!;
@@ -107,15 +122,29 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
       const variants = new Set<string>();
       if (recipe.defaultVariant !== undefined) variants.add(recipe.defaultVariant);
 
-      return { recipe, keyframes: skin.keyframes, variables: skin.variables ?? palette, variants, settings: new Map() };
+      return {
+        recipe,
+        keyframes: skin.keyframes,
+        variables: skin.variables ?? palette,
+        variants,
+        settings: new Map(),
+        form,
+      };
     })();
 
     accumulators.set(component, pending);
     return pending;
   }
 
-  async function ensure(outfitName: string, component: string, axis: ComponentSkinAxis): Promise<string> {
+  async function ensure(
+    outfitName: string,
+    component: string,
+    axis: ComponentSkinAxis,
+  ): Promise<{ css: string; data?: unknown; outfit?: unknown }> {
     const acc = await accumulatorFor(outfitName, component);
+    // Попадание в кеш `contextFor`, не второй сетевой фетч — `accumulatorFor` выше уже вызвала его
+    // синхронно с тем же `outfitName`. Разбор — FAQ.md (`outfit-data-passthrough`).
+    const ctx = await contextFor(outfitName);
 
     if (axis.kind === "variant") {
       if (axis.value !== undefined) acc.variants.add(axis.value);
@@ -126,12 +155,13 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
     }
 
     const scoped = scopeRecipe(acc.recipe, { variants: acc.variants, settings: acc.settings });
-    return generateComponentSkinCss({
+    const css = generateComponentSkinCss({
       name: outfitName,
       recipes: { [component]: scoped },
       keyframes: keyframesUsedBy(scoped, acc.keyframes),
       variables: acc.variables,
     });
+    return { css, data: acc.form, outfit: ctx.outfitData };
   }
 
   return { ensure };

@@ -37,7 +37,7 @@
 | Срез редактора | `@web-core/skin/editor` | `admits`, `defineEditorInfo`, `checkAssembly`, `checkAssemblyData`, `footprintOf`, `GROUPS`, `groupOf`, `baseAssemblyOf`, `isAssemblyContent`, `isAssemblyRepeat`, `isContentNode`, `isDataBinding`, `resolveDataBinding`, `PassportAssembly`, `PassportEditorInfo` и её срез-типы |
 | Служба раздачи | `@web-core/skin/presets` | `createPresetsClient`, `createPresetsSkinSource`, `PRESET_KIND`, `PresetsDown`, `PresetsRefused`, `PresetRecord` |
 | Надевание | `@web-core/skin/wear` | `makeSkinSwitch`, `checkStyleOrder`, `SkinSwitch`, `SkinSource`, `SkinWorn`, `SkinMode`, `StyleMarker`, `StyleOrderReport`, `ComponentSkinAxis`, `ComponentSkinSource` |
-| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection`, `SkinProvider`, `useSkin`, `useComponentSkin`, `SkinContextValue`, `SkinProviderProps` |
+| Solid-плагин | `@web-core/skin/solid` | `createSkinConnection`, `SkinConnection`, `SkinProvider`, `useSkin`, `useComponentSkin`, `useComponentSkinData`, `useOutfitData`, `SkinContextValue`, `SkinProviderProps` |
 | Теги | `@web-core/skin/tags` | `sortTags`, `checkTags`, `groupByTag`, `DEFAULT_TAG`, `TagFlaw`, `TagGroup` |
 
 📦 Внутри пакета: `src/index.ts` — тонкий барель поверх `src/engine/` (та же форма, что у
@@ -158,6 +158,8 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `SkinSwitch.ensureComponentSkin(component, axis)` | `ComponentSkinAxis` — значение `variant` (может быть без `value` — на разметке нет атрибута) либо именованной `setting` |
 | `SkinProvider` | тот же `SkinSource`/`options`, что и `createSkinConnection`, — заводится один раз при монтировании |
 | `useComponentSkin(passport, props)` | `ComponentPassport` кита + его текущие props — реактивно читает variant/settings сама |
+| `useComponentSkinData(component)` | имя компонента (то же, что в `passport.component`/`data-scope`) |
+| `useOutfitData()` | ничего — наряд один на соединение, не по имени |
 | `createPresetsClient({ url })` | адрес службы раздачи |
 | `checkStyleOrder({ marker })` | пара «свойство → значение», которую база обязана поставить |
 
@@ -170,6 +172,8 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | `generateSkinCss` | текст CSS, вложенная форма |
 | `SkinSwitch.worn()`/`SkinConnection.worn` | `SkinWorn | null` — синхронно и сигналом соответственно |
 | `useSkin()` | `SkinContextValue` — `SkinConnection` плюс `names: Resource<readonly string[]>` |
+| `useComponentSkinData(component)` | `Accessor<T | undefined>` — то, что источник отдал вместе с CSS этого компонента (у `presets`-источника — `PresetRecord<Form>`), без второго запроса за тем же |
+| `useOutfitData()` | `Accessor<T | undefined>` — то же самое, но про наряд целиком (у `presets`-источника — `{ outfit: PresetRecord<Outfit>, palette: PresetRecord<Palette> }`) |
 | `skinGaps` | перечень непокрытых координат |
 | `skinContrast` | перечень пар, не прошедших норму читаемости, и пар, которые посчитать нечем |
 | `PresetsClient.list/get` | `PresetRecord<T>` — запись целиком, с содержимым |
@@ -263,3 +267,58 @@ function Component(props: SomeKitProps) {
 ⚠️ Компонент, который не зовёт `useComponentSkin`, не получает CSS от `wear()` вообще: общий лист
 наряда правил компонентов больше не несёт (см. пункт выше). Чья это забота — решает уже потребитель
 пакета, не механика.
+
+🔍 Тот же вызов, которым `useComponentSkin` находит CSS компонента, заодно находит и его форму (у
+`presets`-источника — `PresetRecord<Form>`: имя, вариант-теги, всё содержимое). Второй раз спрашивать
+за этим сеть не нужно — `useComponentSkinData(component)` читает уже найденное, реактивно, по имени
+компонента (не по конкретному инстансу — сработает в ЛЮБОМ месте под тем же `<SkinProvider>`, не
+только рядом с самим компонентом):
+
+```tsx
+import { useComponentSkinData } from "@web-core/skin/solid";
+import type { PresetRecord } from "@web-core/skin/presets";
+import type { Form } from "@web-core/skin/model";
+
+// где угодно под <SkinProvider>, необязательно там же, где рендерится сама кнопка
+function ButtonFormLabel() {
+  const form = useComponentSkinData<PresetRecord<Form>>("button");
+  return <span>{form()?.name ?? "форма ещё не загружена"}</span>;
+}
+```
+
+Ловушки:
+- **Данные появляются, только если КТО-ТО в дереве реально смонтировал компонент с этим именем и
+  позвал `useComponentSkin(passport, props)` (кнопка сама, внутри себя).** Ленивая печать (см. выше)
+  остаётся ленивой и для данных — нет смонтированной кнопки, нечему было найти форму,
+  `useComponentSkinData` держит `undefined`.
+- **`undefined` ничего не говорит о ПРИЧИНЕ.** «Компонент ещё не спрашивал», «спросил, но источник не
+  дал данных» и «наряд не одет вовсе» — неразличимы одним `undefined`. Если нужно различать — ждать,
+  пока кнопка смонтирована (или явно самому дёрнуть `ensureComponentSkin`), и не полагаться на то, что
+  пустое значение однозначно значит «формы нет».
+- **Наряд сменился — карта чистится целиком**, пока эффекты компонентов не перезапросят её заново под
+  новым нарядом (тот же лаг, что и у самого CSS).
+- **Вариант компонента отдельно эта функция не отдаёт** — вариант, который реально на разметке, нужно
+  читать оттуда же, откуда его читает сам компонент (тот же проп/атрибут); `useComponentSkinData`
+  отдаёт ЗАПИСЬ формы целиком (в ней — список объявленных вариантов,
+  `Object.keys(form().state.recipe.variants ?? {})`), а не «какой из них применён сейчас».
+
+🎽 Та же половина того же ответа несёт и наряд целиком — не только форму компонента. `useSkin().worn()`
+называет наряд только по ИМЕНИ (`{ name, mode }`); саму запись (`PresetRecord<Outfit>` — палитра,
+полный список форм — и подобранную под неё `PresetRecord<Palette>`) отдаёт `useOutfitData()`, тем же
+приёмом, что и `useComponentSkinData`, но без параметра — наряд один на соединение, не по имени:
+
+```tsx
+import { useOutfitData } from "@web-core/skin/solid";
+import type { PresetRecord } from "@web-core/skin/presets";
+import type { Outfit, Palette } from "@web-core/skin/model";
+
+function OutfitLabel() {
+  const outfit = useOutfitData<{ outfit: PresetRecord<Outfit>; palette: PresetRecord<Palette> }>();
+  return <span>{outfit()?.outfit.name ?? "наряд ещё не загружен"}</span>;
+}
+```
+
+Те же ловушки, что у `useComponentSkinData` (лениво — нужен хотя бы один компонент, реально
+позвавший `useComponentSkin`; `undefined` не различает причину; чистится при смене наряда), плюс своя:
+**один и тот же наряд, не по имени** — если под одним `<SkinProvider>` за раз надет только один
+наряд, второго значения тут просто не бывает, `useOutfitData()` не принимает параметра.

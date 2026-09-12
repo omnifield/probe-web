@@ -30,7 +30,7 @@ describe("ensureComponentSkin — источник без ленивой спо�
   });
 
   it("ничего не надето — тихий no-op, ensure() у источника не звали вовсе", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* button */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* button */" });
     const skin = makeSkinSwitch(stubSource({ ensure }));
 
     await skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
@@ -40,7 +40,7 @@ describe("ensureComponentSkin — источник без ленивой спо�
 
 describe("ensureComponentSkin — допечатка в СВОЙ тег компонента", () => {
   it("первый вызов заводит тег компонента с полученным CSS", async () => {
-    const ensure = vi.fn().mockResolvedValue("[data-scope=\"button\"] { color: red; }");
+    const ensure = vi.fn().mockResolvedValue({ css: '[data-scope="button"] { color: red; }' });
     const skin = makeSkinSwitch(stubSource({ ensure }));
     await skin.wear("brand");
 
@@ -52,7 +52,7 @@ describe("ensureComponentSkin — допечатка в СВОЙ тег комп
   });
 
   it("второй вызов на тот же компонент кладёт в ТОТ ЖЕ тег, не заводит второй", async () => {
-    const ensure = vi.fn().mockResolvedValueOnce("/* v1 */").mockResolvedValueOnce("/* v1+v2 */");
+    const ensure = vi.fn().mockResolvedValueOnce({ css: "/* v1 */" }).mockResolvedValueOnce({ css: "/* v1+v2 */" });
     const skin = makeSkinSwitch(stubSource({ ensure }));
     await skin.wear("brand");
 
@@ -64,7 +64,7 @@ describe("ensureComponentSkin — допечатка в СВОЙ тег комп
   });
 
   it("разные компоненты получают разные теги", async () => {
-    const ensure = vi.fn().mockResolvedValueOnce("/* button */").mockResolvedValueOnce("/* input */");
+    const ensure = vi.fn().mockResolvedValueOnce({ css: "/* button */" }).mockResolvedValueOnce({ css: "/* input */" });
     const skin = makeSkinSwitch(stubSource({ ensure }));
     await skin.wear("brand");
 
@@ -76,25 +76,25 @@ describe("ensureComponentSkin — допечатка в СВОЙ тег комп
   });
 
   it("наряд сменился, пока источник ещё отвечал — устаревший результат не допечатывается", async () => {
-    let resolveFirst!: (css: string) => void;
+    let resolveFirst!: (result: { css: string }) => void;
     const ensure = vi
       .fn()
-      .mockImplementationOnce(() => new Promise<string>((resolve) => (resolveFirst = resolve)))
-      .mockResolvedValueOnce("/* second-brand button */");
+      .mockImplementationOnce(() => new Promise<{ css: string }>((resolve) => (resolveFirst = resolve)))
+      .mockResolvedValueOnce({ css: "/* second-brand button */" });
 
     const skin = makeSkinSwitch(stubSource({ ensure }));
     await skin.wear("brand");
 
     const pending = skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
     await skin.wear("second-brand");
-    resolveFirst("/* stale brand button */");
+    resolveFirst({ css: "/* stale brand button */" });
     await pending;
 
     expect(document.head.querySelector('[data-web-core-skin="button"]')).toBeNull();
   });
 
   it("takeOff() снимает и базовый лист, и все листы компонентов", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* button */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* button */" });
     const skin = makeSkinSwitch(stubSource({ ensure }));
     await skin.wear("brand");
     await skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
@@ -102,5 +102,46 @@ describe("ensureComponentSkin — допечатка в СВОЙ тег комп
     skin.takeOff();
 
     expect(document.head.querySelectorAll("[data-web-core-skin]")).toHaveLength(0);
+  });
+});
+
+describe("ensureComponentSkin — отдаёт наружу data/outfit источника (component-skin-data-passthrough, outfit-data-passthrough)", () => {
+  it("возвращает data, полученный от ensure()", async () => {
+    const form = { name: "button-form" };
+    const ensure = vi.fn().mockResolvedValue({ css: "/* button */", data: form });
+    const skin = makeSkinSwitch(stubSource({ ensure }));
+    await skin.wear("brand");
+
+    const ensured = await skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
+
+    expect(ensured.data).toBe(form);
+  });
+
+  it("возвращает outfit, полученный от ensure() — та же половина ответа, что и data", async () => {
+    const outfit = { outfit: { name: "brand-outfit" } };
+    const ensure = vi.fn().mockResolvedValue({ css: "/* button */", outfit });
+    const skin = makeSkinSwitch(stubSource({ ensure }));
+    await skin.wear("brand");
+
+    const ensured = await skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
+
+    expect(ensured.outfit).toBe(outfit);
+  });
+
+  it("устаревший результат (наряд сменился) не возвращает ни data, ни outfit наружу", async () => {
+    let resolveFirst!: (result: { css: string; data?: unknown; outfit?: unknown }) => void;
+    const ensure = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<{ css: string; data?: unknown; outfit?: unknown }>((resolve) => (resolveFirst = resolve)))
+      .mockResolvedValueOnce({ css: "/* second-brand button */", data: { name: "second-brand-form" } });
+
+    const skin = makeSkinSwitch(stubSource({ ensure }));
+    await skin.wear("brand");
+
+    const pending = skin.ensureComponentSkin("button", { kind: "variant", value: "primary" });
+    await skin.wear("second-brand");
+    resolveFirst({ css: "/* stale */", data: { name: "stale-form" }, outfit: { outfit: { name: "stale-outfit" } } });
+
+    expect(await pending).toEqual({});
   });
 });

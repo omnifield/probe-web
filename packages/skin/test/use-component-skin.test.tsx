@@ -3,15 +3,17 @@
 
 import { createAnatomy } from "@zag-js/anatomy";
 import { render } from "solid-js/web";
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { definePassport } from "../src/engine/passport/form/index.js";
 import { DEFAULT_STORAGE_KEY } from "../src/wear/memory.js";
 import type { ComponentSkinAxis, SkinSource } from "../src/wear/switch.js";
-import { SkinProvider, useComponentSkin } from "../src/solid/index.js";
+import { SkinProvider, useComponentSkin, useComponentSkinData, useOutfitData } from "../src/solid/index.js";
 
-type EnsureMock = ReturnType<typeof vi.fn<(outfitName: string, component: string, axis: ComponentSkinAxis) => Promise<string>>>;
+type EnsureMock = ReturnType<
+  typeof vi.fn<(outfitName: string, component: string, axis: ComponentSkinAxis) => Promise<{ css: string; data?: unknown }>>
+>;
 
 const anatomy = createAnatomy("button").parts("root");
 const passport = definePassport({
@@ -80,7 +82,7 @@ describe("useComponentSkin — без SkinProvider", () => {
 
 describe("useComponentSkin — внутри SkinProvider", () => {
   it("зовёт ensureComponentSkin с variant из props при первом эффекте", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* css */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */" });
 
     function Probe() {
       useComponentSkin(passport, { "data-variant": "primary" });
@@ -105,7 +107,7 @@ describe("useComponentSkin — внутри SkinProvider", () => {
   });
 
   it("зовёт ensureComponentSkin с setting по ИМЕНИ НАСТРОЙКИ, не по имени атрибута", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* css */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */" });
 
     function Probe() {
       // Пропс — "outlined" (имя настройки в passport.settings), НЕ "data-outlined" (то, что
@@ -133,7 +135,7 @@ describe("useComponentSkin — внутри SkinProvider", () => {
   });
 
   it("настройка не названа в props — эффективное значение берётся из byDefault, не пропускается", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* css */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */" });
 
     function Probe() {
       // Ни "outlined", ни "filled" не переданы вовсе — как рендерится большинство реальных
@@ -163,7 +165,7 @@ describe("useComponentSkin — внутри SkinProvider", () => {
   });
 
   it("изменение variant на разметке — повторный вызов с НОВЫМ значением", async () => {
-    const ensure = vi.fn().mockResolvedValue("/* css */");
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */" });
     const [variant, setVariant] = createSignal("primary");
 
     function Probe() {
@@ -199,5 +201,118 @@ describe("useComponentSkin — внутри SkinProvider", () => {
     await tick();
 
     expect(ensure).toHaveBeenCalledWith("brand", "button", { kind: "variant", value: "secondary" });
+  });
+});
+
+describe("useComponentSkinData — читает data, найденный тем же ensureComponentSkin (component-skin-data-passthrough)", () => {
+  it("видит data после того, как useComponentSkin допечатал компонент — без второго вызова ensure()", async () => {
+    const form = { name: "button-form" };
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */", data: form });
+    let seen: unknown;
+
+    function Probe() {
+      useComponentSkin(passport, { "data-variant": "primary" });
+      const data = useComponentSkinData("button");
+      createEffect(() => {
+        seen = data();
+      });
+      return null;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <SkinProvider source={stubSource(ensure)} options={{ fallback: { skin: "brand" } }}>
+          <Probe />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+    await tick();
+
+    expect(seen).toBe(form);
+    // variant + 2 settings (outlined, filled) — ровно те вызовы, что и так делает useComponentSkin;
+    // useComponentSkinData не добавляет ни одного своего.
+    expect(ensure).toHaveBeenCalledTimes(3);
+  });
+
+  it("компонент с этим именем ещё не спрашивал скин — undefined", () => {
+    let seen: unknown = "не тронуто";
+
+    function Probe() {
+      seen = useComponentSkinData("button")();
+      return null;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <SkinProvider source={stubSource(vi.fn())} options={{ fallback: { skin: "brand" } }}>
+          <Probe />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    expect(seen).toBeUndefined();
+  });
+});
+
+describe("useOutfitData — читает outfit, найденный тем же ensureComponentSkin (outfit-data-passthrough)", () => {
+  it("видит outfit после того, как useComponentSkin допечатал компонент — без своего запроса", async () => {
+    const outfitPayload = { outfit: { name: "brand-outfit" } };
+    const ensure = vi.fn().mockResolvedValue({ css: "/* css */", outfit: outfitPayload });
+    let seen: unknown;
+
+    function Probe() {
+      useComponentSkin(passport, { "data-variant": "primary" });
+      const outfit = useOutfitData();
+      createEffect(() => {
+        seen = outfit();
+      });
+      return null;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <SkinProvider source={stubSource(ensure)} options={{ fallback: { skin: "brand" } }}>
+          <Probe />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+    await tick();
+
+    expect(seen).toBe(outfitPayload);
+  });
+
+  it("ничего не спрашивало скин — undefined", () => {
+    let seen: unknown = "не тронуто";
+
+    function Probe() {
+      seen = useOutfitData()();
+      return null;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <SkinProvider source={stubSource(vi.fn())} options={{ fallback: { skin: "brand" } }}>
+          <Probe />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    expect(seen).toBeUndefined();
   });
 });
