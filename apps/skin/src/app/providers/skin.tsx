@@ -6,7 +6,7 @@ import { createPresetsSkinSource } from "@web-core/skin/presets";
 import { SkinProvider as SkinProviderBase } from "@web-core/skin/solid";
 import { passportOf } from "@web-core/ui/passport";
 
-import { PRESETS_URL } from "#/shared/api/presets";
+import { PRESETS_URL } from "#/shared/configs/urls";
 
 /** Наряд, который надеваем на первом заходе, если запомненного нет — единственный сегодня в службе. */
 const DEFAULT_SKIN = "omnifield";

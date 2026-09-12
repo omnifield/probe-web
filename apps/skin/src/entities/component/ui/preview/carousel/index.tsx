@@ -1,6 +1,5 @@
 import type { DispatchedEvent } from "@web-core/assembly";
 import { layoutSelf } from "@web-core/skin";
-import { slotSizeOf } from "../utils/slot-size";
 import { Renderer } from "#/shared/ui/renderer";
 import {
   Carousel,
@@ -16,7 +15,8 @@ import {
   type CarouselProps,
 } from "@web-core/ui";
 import { createSignal, For, Show } from "solid-js";
-import { Loader } from "./loader";
+import { Loader } from "../../loader";
+import { getSize } from "../utils";
 
 export function Preview(props: {
   component: string;
@@ -51,7 +51,7 @@ export function Preview(props: {
         </CarouselProgressText>
         <CarouselNextTrigger>›</CarouselNextTrigger>
       </CarouselControl>
-      <CarouselItemGroup style={slotSizeOf(props.component)}>
+      <CarouselItemGroup style={getSize(props.component)}>
         <For each={props.variants}>
           {(variant, index) => (
             <CarouselItem index={index()}>
