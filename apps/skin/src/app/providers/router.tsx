@@ -4,14 +4,18 @@
 // TypeScript выводит тип дерева маршрутов из аргумента и привязывает его к `Register`
 // (см. `@web-core/router`'s README, «Вайринг: src/router.ts»).
 
-import { createRouter, defaultRouterOptions } from "@web-core/router";
+import { createRouter, defaultRouterOptions, RouterProvider as RouterProviderBase } from "@web-core/router";
 
-import { routeTree } from "./routeTree.gen";
+import { routeTree } from "#/routeTree.gen";
 
-export const router = createRouter({ ...defaultRouterOptions, routeTree });
+const router = createRouter({ ...defaultRouterOptions, routeTree });
 
 declare module "@web-core/router" {
   interface Register {
     router: typeof router;
   }
+}
+
+export function RouterProvider() {
+  return <RouterProviderBase router={router} />;
 }

@@ -1,11 +1,8 @@
-import { createPresetsClient, PRESET_KIND, type ContentState, type PresetRecord } from "@web-core/skin/presets";
+import { PRESET_KIND, type ContentState, type PresetRecord } from "@web-core/skin/presets";
 
-import { PRESETS_URL } from "#/shared/api/presets";
 import { queryClient } from "#/shared/api/query-client";
 
-// Свой клиент, не общий синглтон: этот файл ничего не знает про componentInfo и наоборот, оба
-// ходят к одной службе независимо друг от друга. Общий у них ровно адрес — `shared/api/presets`.
-const presets = createPresetsClient({ url: PRESETS_URL });
+import { presets } from "./client";
 
 /** Сохранённые content-записи ИМЕННО этого компонента — служба сама по component не фильтрует
  *  (`state` для неё непрозрачен), фильтр — на клиенте, тот же приём, каким это уже делает
