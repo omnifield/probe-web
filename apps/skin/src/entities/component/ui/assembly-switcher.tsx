@@ -1,5 +1,3 @@
-// КОНТРОЛ СБОРОК — заголовок (тег) и переключатель между сборками компонента (Segment Group).
-// Управляемый: значение и его смену держит `Slot`, этот файл только рисует.
 import type { PassportAssembly } from "@web-core/skin/editor";
 import {
   Flow,

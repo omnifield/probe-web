@@ -8,8 +8,8 @@ import {
   componentDataAtom,
   componentHandle,
   setCurrentComponent,
+  Slot,
 } from "#/entities/component";
-import { Slot } from "#/entities/showcase";
 
 export function ShowcasePage(props: { component: string; tag?: string }) {
   createEffect(() => setCurrentComponent(props.component));

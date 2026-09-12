@@ -1,4 +1,4 @@
 export * from "./tree";
 export * from "./info";
 export * from "./input";
-export * from "./docs";
+export * from "../docs";
