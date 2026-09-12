@@ -8,21 +8,23 @@ import {
 import { Portal } from "solid-js/web";
 
 import { getToaster } from "../control.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
+import { anatomyParts } from "../entity/anatomy.js";
 
 export type ToastProps = Record<string, never>;
 
-export function Toast(_props: ToastProps) {
-  traceLife("ui.toast");
+export function Toast(props: ToastProps) {
+  useKitLife(passport, props);
 
   return (
     <Portal>
-      <ArkToaster toaster={getToaster()}>
+      <ArkToaster toaster={getToaster()} {...anatomyParts.group.attrs}>
         {(item) => (
-          <ArkRoot>
-            <ArkTitle>{item().title}</ArkTitle>
-            <ArkDescription>{item().description}</ArkDescription>
-            <ArkCloseTrigger>✕</ArkCloseTrigger>
+          <ArkRoot {...anatomyParts.root.attrs}>
+            <ArkTitle {...anatomyParts.title.attrs}>{item().title}</ArkTitle>
+            <ArkDescription {...anatomyParts.description.attrs}>{item().description}</ArkDescription>
+            <ArkCloseTrigger {...anatomyParts.closeTrigger.attrs}>✕</ArkCloseTrigger>
           </ArkRoot>
         )}
       </ArkToaster>

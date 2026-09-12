@@ -281,10 +281,13 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
 });
 ```
 
-**Исключение — `toast`.** У него нет собственных `variant`/`settings` пропсов (`ToastProps =
-Record<string, never>`) — кормить `useKitLife` там сейчас нечем, компонент остаётся на голом
-`traceLife`, пока для него не появится отдельное архитектурное решение (см. `FAQ.md` про
-`toast` как аутсайдера общей формы).
+**`useKitLife` не заменяет адресацию — только просит CSS.** Утилита читает `variant`/`settings` из
+пропсов, но чтобы напечатанное правило хоть что-то нашло в разметке, каждая часть ещё обязана
+физически нести `data-scope`/`data-part` — их ставит только `anatomyParts.<часть>.attrs`, ни Zag,
+ни Ark сами их не проставляют (проверено по `toast.connect.mjs` — там нет ни одного `data-scope`).
+На это нашли и починили живой пример: `toast` звал `useKitLife` последним из всей 33 компонентов
+(см. `FAQ.md`) именно потому, что до этого у него не было адресации ни на одной из пяти частей —
+`useKitLife` без неё напечатал бы CSS, которому попросту не за что было бы зацепиться в DOM.
 
 Устройство самого `useComponentSkin` (кеш по компоненту, single-flight на сеть, гонка с чужим
 `wear()`) — забота `packages/skin`, разбор там (`packages/skin/README.md`/`FAQ.md`). Здесь несём

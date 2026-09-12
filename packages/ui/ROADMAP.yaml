@@ -286,6 +286,70 @@ categories:
           && pnpm run lint` — всё зелёное, 275/275 тестов кита, build без новых ошибок (только
           штатные предупреждения rollup про внешние зависимости, не новые).
 
+      - id: toast-address-and-skin-hook
+        type: bug
+        status: Done
+        priority: High
+        name: "toast — ни одна из 5 частей не адресована (нет data-scope/data-part), поэтому скин не мог лечь физически"
+        description: |
+          Найдено user живьём (2026-09-12) после [[component-skin-wiring]]: «сейчас по стилям все
+          ок, и каждый запрашивает стили сам кроме тостера» — то есть у ВСЕХ остальных компонентов
+          скин реально лёг, у toast — нет.
+
+          Причина в ДВА слоя, не в одном:
+
+          1. `Toast` не звал `useKitLife`/`useComponentSkin` — печать CSS для него не запрашивалась
+             вообще (это и было названо при выкатке [[component-skin-wiring]] как «сознательный
+             пропуск», но там это объяснялось только отсутствием variant/settings пропсов —
+             объяснение оказалось НЕПОЛНЫМ, см. пункт 2).
+          2. Даже если бы звал — стили физически не могли бы совпасть ни с одним узлом DOM.
+             Проверено по исходнику `@zag-js/toast` (`toast.connect.mjs`): машина Zag НЕ ставит
+             `data-scope`/`data-part` сама, только `id`/`aria-*`. Эти атрибуты — целиком
+             ответственность кита, их даёт только `anatomyParts.<часть>.attrs`
+             (`@zag-js/anatomy`'s `.build()`, `create-anatomy.mjs:14-19`: селектор буквально
+             `&[data-scope="…"][data-part="…"]`). В `toast/components/root.tsx` этого не было НИ НА
+             ОДНОМ из 5 узлов (`ArkToaster`/`ArkRoot`/`ArkTitle`/`ArkDescription`/
+             `ArkCloseTrigger`) — они рисовались голыми пропсами. Для сравнения: `accordion`
+             (тоже без `useAddress` на своём root.tsx) не задет тем же образом, потому что там
+             ВЕСЬ реальный вид лежит на дочерних `item/control.tsx`/`content.tsx`/`indicator.tsx`,
+             которые адресуются отдельными файлами (`{...dropAddress(props)}
+             {...anatomyParts.control.attrs}`) — у toast ЖЕ вообще нет отдельных файлов на части,
+             всё рисует один `root.tsx`, и адреса не было вообще ни на одной.
+
+          Проверено, что `playground/recipe.ts` у toast полноценный и рабочий (доказан
+          `test/recipe.test.tsx`) — паспорт и рецепт готовы давно, не хватало только подключения
+          в живом компоненте. Проверено и то, что `ensureComponentSkin` печатает `base` ВСЕГДА,
+          независимо от того, накоплен ли хоть один variant (`scopeRecipe` копирует `base`
+          безусловно, `accumulatorFor` в `presets/lazy.ts` сеет `variants` дефолтным вариантом
+          формы, если он объявлен, но `base` не зависит от этого множества вовсе) — значит просто
+          вызов `useKitLife` уже дал бы печать, а вот совпадение в разметке без адреса — нет.
+
+          Фикс (обе части, в `packages/ui`, не трогая `packages/skin`):
+          - `useKitLife(passport, props)` в `Toast` (переименовать `_props` → `props`, тип
+            `ToastProps` не меняется).
+          - `{...anatomyParts.group.attrs}` на `ArkToaster`, `{...anatomyParts.root.attrs}` на
+            `ArkRoot`, `{...anatomyParts.title.attrs}` на `ArkTitle`,
+            `{...anatomyParts.description.attrs}` на `ArkDescription`,
+            `{...anatomyParts.closeTrigger.attrs}` на `ArkCloseTrigger` — прямой спред литералом,
+            как у `accordion/components/item/control.tsx`, без `dropAddress` (у `Toast` нет
+            внешних consumer-пропсов, которые могли бы принести чужой адрес, — `ToastProps` пуст).
+          - Проверено по типам Ark (`@ark-ui/solid/dist/components/toast/index.d.ts`): `Toaster`/
+            `ToastRoot`/`ToastTitle`/`ToastDescription`/`ToastCloseTrigger` — все `PolymorphicProps`
+            + `HTMLProps`, произвольные атрибуты долетают до DOM без проблем.
+
+          Не архитектурная правка, не новая механика — обычное подключение уже существующей
+          адресации, которого не было сделано при первой сборке toast. `control.ts`/`getToaster()`/
+          портал не трогаются.
+
+          Сделано (2026-09-12): `useKitLife(passport, props)` (переименован `_props` → `props`) +
+          `{...anatomyParts.<часть>.attrs}` на всех пяти узлах в `toast/components/root.tsx`.
+          Новый `test/toast.test.tsx` — реальный рендер `<Toast />` + живой `toast.create(...)`,
+          проверка `[data-scope="toast"][data-part="…"]` на все пять частей (не только рецепт на
+          бумаге, как раньше делал единственный `recipe.test.tsx`). README/FAQ поправлены — старое
+          объяснение «нечем кормить useKitLife» было неполным, реальная причина была в отсутствии
+          адресации (см. FAQ.md). `generate && typecheck && build && test && lint` — зелёные,
+          276/276 тестов кита (было 275, +1 новый).
+
   - category: Информация о компоненте
     items:
       - id: component-info-multiple-forms-per-component
