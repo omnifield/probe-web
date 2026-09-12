@@ -7,10 +7,12 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./eslint": {
+      "development": "./src/eslint/index.ts",
       "types": "./dist/eslint/index.d.ts",
       "default": "./dist/eslint/index.js"
     }

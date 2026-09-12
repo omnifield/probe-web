@@ -10,22 +10,27 @@
   },
   "exports": {
     "./extract": {
+      "development": "./src/extract/index.ts",
       "types": "./dist/extract/index.d.ts",
       "default": "./dist/extract/index.js"
     },
     "./preserve": {
+      "development": "./src/preserve/index.ts",
       "types": "./dist/preserve/index.d.ts",
       "default": "./dist/preserve/index.js"
     },
     "./engine": {
+      "development": "./src/engine/index.ts",
       "types": "./dist/engine/index.d.ts",
       "default": "./dist/engine/index.js"
     },
     "./mapping": {
+      "development": "./src/mapping/index.ts",
       "types": "./dist/mapping/index.d.ts",
       "default": "./dist/mapping/index.js"
     },
     "./plugins/kit": {
+      "development": "./src/plugins/kit/index.ts",
       "types": "./dist/plugins/kit/index.d.ts",
       "default": "./dist/plugins/kit/index.js"
     }

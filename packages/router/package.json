@@ -7,14 +7,17 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./vite": {
+      "development": "./src/vite/index.ts",
       "types": "./dist/vite/index.d.ts",
       "default": "./dist/vite/index.js"
     },
     "./devtools": {
+      "development": "./src/devtools/index.ts",
       "types": "./dist/devtools/index.d.ts",
       "default": "./dist/devtools/index.js"
     }

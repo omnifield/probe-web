@@ -10,23 +10,28 @@
   },
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "solid": "./dist/index.jsx",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./passport": {
+      "development": "./src/passport.ts",
       "types": "./dist/passport.d.ts",
       "default": "./dist/passport.js"
     },
     "./io": {
+      "development": "./src/io.ts",
       "types": "./dist/io.d.ts",
       "default": "./dist/io.js"
     },
     "./component-info": {
+      "development": "./src/component-info.ts",
       "types": "./dist/component-info.d.ts",
       "default": "./dist/component-info.js"
     },
     "./component-registry": {
+      "development": "./src/component-registry.ts",
       "solid": "./dist/component-registry.jsx",
       "types": "./dist/component-registry.d.ts",
       "default": "./dist/component-registry.js"

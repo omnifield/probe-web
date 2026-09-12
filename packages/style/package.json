@@ -7,15 +7,18 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./generate": {
+      "development": "./src/css/generate.ts",
       "types": "./dist/css/generate.d.ts",
       "default": "./dist/css/generate.js"
     },
     "./base.css": "./dist/css/base.css",
     "./solid": {
+      "development": "./src/solid/index.ts",
       "types": "./dist/solid/index.d.ts",
       "default": "./dist/solid/index.js"
     }

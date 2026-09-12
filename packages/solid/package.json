@@ -7,14 +7,17 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./web": {
+      "development": "./src/web/index.ts",
       "types": "./dist/web/index.d.ts",
       "default": "./dist/web/index.js"
     },
     "./mount": {
+      "development": "./src/mount/index.ts",
       "types": "./dist/mount/index.d.ts",
       "default": "./dist/mount/index.js"
     }

@@ -7,10 +7,12 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./solid": {
+      "development": "./src/solid.ts",
       "types": "./dist/solid.d.ts",
       "default": "./dist/solid.js"
     }

@@ -7,22 +7,27 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./devtools": {
+      "development": "./src/devtools/index.ts",
       "types": "./dist/devtools/index.d.ts",
       "default": "./dist/devtools/index.js"
     },
     "./persist": {
+      "development": "./src/persist/index.ts",
       "types": "./dist/persist/index.d.ts",
       "default": "./dist/persist/index.js"
     },
     "./graphql": {
+      "development": "./src/graphql/index.ts",
       "types": "./dist/graphql/index.d.ts",
       "default": "./dist/graphql/index.js"
     },
     "./rest": {
+      "development": "./src/rest/index.ts",
       "types": "./dist/rest/index.d.ts",
       "default": "./dist/rest/index.js"
     }

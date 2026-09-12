@@ -10,10 +10,12 @@
   },
   "exports": {
     "./vite": {
+      "development": "./src/vite/index.ts",
       "types": "./dist/vite/index.d.ts",
       "default": "./dist/vite/index.js"
     },
     "./vitest": {
+      "development": "./src/vitest/index.ts",
       "types": "./dist/vitest/index.d.ts",
       "default": "./dist/vitest/index.js"
     },

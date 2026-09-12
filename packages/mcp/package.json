@@ -7,26 +7,32 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./transport": {
+      "development": "./src/transport/index.ts",
       "types": "./dist/transport/index.d.ts",
       "default": "./dist/transport/index.js"
     },
     "./pagination": {
+      "development": "./src/pagination/index.ts",
       "types": "./dist/pagination/index.d.ts",
       "default": "./dist/pagination/index.js"
     },
     "./peer": {
+      "development": "./src/peer/index.ts",
       "types": "./dist/peer/index.d.ts",
       "default": "./dist/peer/index.js"
     },
     "./browser": {
+      "development": "./src/browser/index.ts",
       "types": "./dist/browser/index.d.ts",
       "default": "./dist/browser/index.js"
     },
     "./feedback": {
+      "development": "./src/feedback/index.ts",
       "types": "./dist/feedback/index.d.ts",
       "default": "./dist/feedback/index.js"
     }
