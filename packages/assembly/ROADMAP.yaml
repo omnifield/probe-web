@@ -427,6 +427,308 @@ categories:
           test` 275/275 (тот самый набор, что ловил предыдущую регрессию field/table), `pnpm
           --filter @web-core/skin-app test` 27/27. Ни одного красного.
 
+  - category: "Своя механика, найденная в packages/skin — вернуть домой"
+    items:
+      - id: repeat-grow-lives-in-wrong-package
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "`repeat-node` (выше, статус Done) на самом деле реализован НЕ в этом пакете"
+        description: |
+          Найдено architect'ом при разборе плана `@web-core/form` (`packages/form/ROADMAP.yaml`,
+          `array-path-projection`), user подтвердил вслух: «репит это не меха скина, это меха
+          сборки» — и то, что architect И owner-таблицы независимо друг от друга искали `repeat`
+          именно в этом пакете (не нашли), само по себе показывает, где эта механика ДОЛЖНА лежать
+          по интуиции любого, кто её ищет.
+
+          Факт: `repeat-node`-пункт этого же роадмапа прямо пишет «разворачивается ДО RenderTree,
+          в baseAssemblyOf» — но `baseAssemblyOf` физически лежит в
+          `packages/skin/src/engine/passport/assembly/expand.ts`, не здесь. Живой продовый путь
+          (`packages/ui/src/component-registry.ts:125`, `PWEB-220`, `instanceOf` — то, чем реально
+          материализуется сборка по имени с данными) зовёт `baseAssemblyOf` оттуда. Рядом
+          существует ВТОРОЙ, независимый разворачиватель — `growSelfAssembly` (этот пакет,
+          `engine/self-assembly.ts`), у которого `repeat` нет вообще (голый `SelfAssemblyElement`,
+          без данных), и его тоже реально зовут (`render/self-assembly-branch.ts:
+          createSelfAssemblyTree`, дёргается из `render-node.tsx` на каждый узел с
+          `passport.selfAssembly`). Оба живые одновременно, ни один не мёртвый код.
+
+          `packages/skin/package.json` при этом НЕ ИМЕЕТ `@web-core/assembly` ни в каком виде
+          зависимостей (сверено чтением файла целиком) — значит `packages/skin` физически не мог
+          использовать настоящие типы этого пакета, даже если бы захотел, и завёл свою копию (см.
+          `shadow-tree-types`/`shadow-data-binding` ниже).
+
+          Что решить: `baseAssemblyOf`+`scopedPath` (алгоритм разворота `repeat`/`recur` по
+          реальным данным, глубинный гвард `MAX_ASSEMBLY_DEPTH`) переезжают в этот пакет.
+          Отдельный вопрос, не решённый заранее — `merge-or-retire-self-assembly-grower` ниже:
+          что делать с уже существующим `growSelfAssembly`, у него та же роль, только без repeat.
+
+          Сделано: `engine/expand.ts` — тот же алгоритм, тот же набор веток (`repeat` как поле,
+          старая обёртка `{repeat, template}`, `recur`, глубинный гвард), но производит РЕАЛЬНЫЙ
+          `AssemblyTree`/`AssemblyElement`/`AssemblyContent` (`tree.ts`) и резолвит путь через
+          РЕАЛЬНЫЙ `resolveDataBinding`/`isDataBinding` (тоже `tree.ts`, `fast-json-patch`), не
+          копию. Вход — `ReadablePassport` (`passport-read.ts`), не полный `ComponentPassport`:
+          функции никогда не был нужен весь паспорт, только `component`/`root`/`anatomy.keys()` —
+          уже, не по-своему, а по образцу, каким узко читает паспорт весь остальной пакет.
+
+          Тип шаблона (`assembly: PassportAssembly`) — type-only импорт из `@web-core/skin/editor`
+          с дефолтными generic-параметрами (`Data = unknown`), локально переименован
+          (`AssemblyTemplate*`, не `PassportAssembly*`): тем же приёмом, каким `passport-read.ts`
+          уже сегодня берёт `Genus`/`ComponentGenus`/`Admission` оттуда же. `@web-core/skin` уже
+          был devDependency этого пакета — новой записи в package.json не потребовалось.
+          `import type` стирается компилятором целиком, рантайм-импорта из `packages/skin` в этом
+          пакете как не было, так и нет — важно, см. `skin-needs-real-assembly-dependency` ниже.
+
+          Предикаты `isAssemblyContent`/`isAssemblyRepeat` НЕ импортированы (это были бы уже
+          функции, не типы, — реальный рантайм-импорт из `packages/skin`) — переписаны локально
+          как те же однострочники, что и в оригинале (`"genus" in node`/`"template" in node"`).
+
+          Тесты (`test/expand.test.ts`, `model`-проект) — три сценария перенесены из
+          `packages/skin/test/{passport-assembly,repeat-field,assembly-depth-guard}.test.ts`
+          дословно по сути (пустой bind внутри repeat, repeat полем и старой обёрткой, вложенный
+          repeat, гвард глубины на recur/repeat), адаптированы под `ReadablePassport`-фикстуру
+          (не нужен `@zag-js/anatomy`/`definePassport` — то, что раньше требовало полного
+          паспорта, здесь не требует ничего, кроме трёх полей). `pnpm --filter @web-core/assembly
+          test` 39/39, `lint`/`typecheck` чистые. `packages/skin`/`packages/ui` не тронуты —
+          старый живой путь (`component-registry.ts` → `./passport.js` → `packages/skin`)
+          продолжает работать как раньше; переключение потребителей на новый дом — отдельная
+          работа не в этой зоне (см. `shadow-tree-types`, `skin-needs-real-assembly-dependency`).
+
+      - id: merge-or-retire-self-assembly-grower
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Один разворачиватель дерева, не два — `growSelfAssembly` vs переехавший `baseAssemblyOf`"
+        description: |
+          После переезда (`repeat-grow-lives-in-wrong-package`) в пакете окажутся ДВА алгоритма
+          «спека + данные → AssemblyTree»: старый `growSelfAssembly` (без repeat, живой путь у
+          `self-assembly-branch.ts`) и переехавший `baseAssemblyOf` (с repeat/recur, живой путь у
+          `component-registry.ts`). Не решено заранее, потому что это инженерный выбор владельца
+          пакета, не архитектора: слить в один (self-assembly тоже получает repeat бесплатно) или
+          оставить два с явной, названной причиной, почему self-assembly'ю repeat не нужен.
+          Смотреть по факту, куда реально смотрят оба живых потребителя, не по предположению.
+
+          Решение: оставить два, не сливать. Названная причина, не вкус — у `growSelfAssembly`
+          структурно нет ВХОДА для данных на момент роста: `createSelfAssemblyTree`
+          (`self-assembly-branch.ts`) — memo от `registry()`/`node()`, живых данных экземпляра там
+          нет вообще, `bind`-пути self-assembly резолвятся ПОЗЖЕ, на отрисовке (`render/props.ts`),
+          а не на этапе роста дерева. `repeat` — структурная развилка (сколько узлов вырастить),
+          её нельзя резолвить без данных в руках на момент вызова, в отличие от `bind` (значение
+          подставляется потом). Слияние означало бы тащить `data` через весь путь до
+          `self-assembly-branch.ts`/`render-node.tsx` ради возможности, которой сегодня не
+          попросил ни один self-assembly — не рефактор, а отдельная фича с непонятным спросом.
+          Если self-assembly когда-нибудь понадобится repeat — заводить отдельным пунктом с живым
+          сценарием в руках, не сейчас по аналогии.
+
+      - id: shadow-tree-types
+        type: bug
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "`BaseAssemblyElement/Content/Node/Tree` (packages/skin) — копия `AssemblyElement/Content/Node/Tree` этого пакета"
+        description: |
+          `packages/skin/src/engine/passport/assembly/output.ts` объявляет свою `BaseAssemblyTree`
+          (и `isContentNode`) — структурно один в один с `AssemblyElement`/`AssemblyContent`/
+          `AssemblyNode`/`AssemblyTree`/`isContent` этого пакета (`engine/tree.ts`), независимо
+          продублирован, не импортирован. Стык, где это аукается прямо сейчас:
+          `packages/ui/src/component-registry.ts:133` — `(sketch as AssemblyTree)`, сырой TS-каст
+          результата `baseAssemblyOf` (тип `BaseAssemblyTree`) к типу этого пакета, потому что
+          типы структурно совпадают, а не потому что один настоящий. Любое расхождение форм в
+          будущем (новое обязательное поле у `AssemblyElement`, например) молча не поймается
+          компилятором в этом месте.
+
+          Чинится сам собой, если `repeat-grow-lives-in-wrong-package` сделан по-настоящему
+          (переехавший код производит РЕАЛЬНЫЙ `AssemblyTree` этого пакета) — отдельным пунктом
+          назван, чтобы явно отметить в review: каст в `component-registry.ts:133` должен исчезнуть
+          целиком, не остаться «на всякий случай».
+
+      - id: shadow-data-binding
+        type: bug
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "`resolveDataBinding`/`isDataBinding`/`DynamicValue`/`DispatchAction` — своя реализация в packages/skin"
+        description: |
+          `packages/skin/src/engine/passport/assembly/binding.ts` реализует резолв JSON Pointer
+          ВРУЧНУЮ (split по `/`, свой разбор `~1`/`~0`, свой проход по массиву/объекту) — этот
+          пакет (`engine/tree.ts`) делает ТО ЖЕ САМОЕ через `getValueByPointer` вендора
+          (`fast-json-patch`, уже зависимость). Два независимых прочтения одной спеки (JSON
+          Pointer, RFC 6901) — реальный риск разъехаться на граничном случае (пустой сегмент,
+          экранирование), не гипотетический: `fast-json-patch` и рукописный разбор не обязаны
+          совпадать буква в букву на каждом углу.
+
+          НЕ то же самое, что `shadow-tree-types`: generic-обёртка `paths.ts`/`nodes.ts`
+          (`DataBinding<Data, AtRoot>`, типы `Paths<T>`/`ArrayPaths<T>` — проверка `bind`/
+          `repeat.path` на этапе автора компонента против его реальной io-схемы) — это настоящая
+          добавленная ценность, которой у плоского `Record<string, string>` этого пакета нет, и
+          НЕ обязана переезжать. Переезжает только РАНТАЙМ-поведение (сам резолв пути, сама форма
+          `DynamicValue`/`DispatchAction` без generic-обёртки) — на него типизированный слой
+          `packages/skin` должен лечь СВЕРХУ, не дублировать его заново.
+
+      - id: skin-needs-real-assembly-dependency
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "`packages/skin` — реальная зависимость на `@web-core/assembly`"
+        description: |
+          Сегодня `packages/skin/package.json` не содержит `@web-core/assembly` ни в dependencies,
+          ни в dev/peer — структурная причина, по которой там вообще завелась теневая копия типов
+          (`shadow-tree-types`/`shadow-data-binding`): пакет физически не мог сослаться на
+          настоящие типы. Без этой зависимости пункты выше нельзя закрыть по-настоящему — это не
+          отдельная работа ЭТОГО пакета, а предусловие для роадмапа `packages/skin`.
+
+          ⚠️ БЫЛО ПОДТВЕРЖДЕНО ЭМПИРИЧЕСКИ architect'ом (2026-09-12 — см.
+          `verified-real-cycle-with-skin` ниже): реальный (не type-only) `packages/skin →
+          @web-core/assembly` образовывал цикл с уже существовавшим `assembly → @web-core/skin`
+          (`devDependencies`, type-only). Блокер снят: `assembly-drop-skin-devdependency` (ниже,
+          Done) убрал `@web-core/skin` из `package.json` этого пакета целиком — граф Nx на паре
+          `assembly ⇄ skin` больше не имеет своей половины цикла, этот пункт безопасен без
+          дальнейших условий на СТОРОНЕ `assembly`. Не перепроверено заново прогоном (снятие
+          сделано этим же заходом, не отдельным тестом «теперь всё точно ок») — если решится
+          заводить эту зависимость, стоит перепрогнать `pnpm build` разок для очистки совести,
+          дёшево и уже есть прецедент, как это делается (`verified-real-cycle-with-skin`).
+
+      - id: verified-real-cycle-with-skin
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Цикл `assembly ⇄ skin` — не прецедент по аналогии с `ui`, а прогнанный факт"
+        description: |
+          Architect добавил `"@web-core/assembly": "workspace:*"` в `dependencies`
+          `packages/skin/package.json` (диагностика, не постоянная правка) и прогнал `pnpm build`
+          из корня — тот же тест, каким `//devDependencies`-комментарий этого пакета описывает
+          прецедент `ui`, но здесь прогнан по-настоящему, не по аналогии:
+
+          ```
+          NX   Could not execute command because the task graph has a circular dependency
+          @web-core/generators:build --> @web-core/skin:build --> @web-core/assembly:build --> @web-core/skin:build
+          ```
+
+          `pnpm install` тоже отдельно предупредил ДО билда: `[WARN] There are cyclic workspace
+          dependencies: packages/assembly, packages/skin`. Правка отменена сразу после теста
+          (`git diff` на `packages/skin/package.json` и `pnpm-lock.yaml` — пусто, состояние
+          восстановлено `pnpm install`). Вывод: type-only ничего не значит для графа задач Nx —
+          он считается по `package.json`, не по тому, что реально попадает в рантайм-бандл после
+          `tsc`. Направление починки — `assembly-drop-skin-devdependency` ниже, не «подтвердить,
+          что Nx не считает type-only рёбра» (эта гипотеза из предыдущей записи неверна, снята).
+
+      - id: assembly-drop-skin-devdependency
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Убрать `@web-core/skin` из devDependencies этого пакета — своя половина цикла"
+        description: |
+          `engine/passport-read.ts` и `engine/expand.ts` держат `import type ... from
+          "@web-core/skin/editor"` (`PassportGenus`/`PassportComponentGenus`/`PassportAdmission`/
+          `PassportAssembly*`) — единственная причина, по которой `@web-core/skin` вообще стоит в
+          `devDependencies` этого пакета (`package.json:63`). Это ровно тот же приём, которым
+          `ReadablePassport` (`passport-read.ts`) уже заменил нужду в целом `ComponentPassport`
+          скина — узкий структурный тип вместо импорта чужого пакета. Тот же приём применяется к
+          оставшимся импортам: `PassportGenus`/`PassportComponentGenus`/`PassportAdmission` —
+          локальные структурные алиасы (как уже сделано для `Genus`/`ComponentGenus`/`Admission`
+          в этом же файле, просто ИСТОЧНИК типа сегодня всё ещё `@web-core/skin/editor`, не своя
+          форма); `PassportAssembly*` (`expand.ts`) — своя структурная форма шаблона, этой функции
+          не нужны generic `Data`/`AtRoot` (уже отмечено в `repeat-grow-lives-in-wrong-package`:
+          дженерики стираются до `unknown`/`string` уже сегодня, генерик-слой не используется).
+
+          Как только `@web-core/skin` полностью пропадает из `package.json` этого пакета (не
+          только из рантайма — из ЗАПИСИ), граф Nx на паре `assembly ⇄ skin` перестаёт замыкаться
+          в принципе — `skin-needs-real-assembly-dependency` (выше) становится безопасным без
+          дальнейших условий.
+
+          Сделано: `passport-read.ts` объявляет `Genus`/`ComponentGenus`/`Admission` своими
+          литеральными формами (скопирована форма `PassportGenus`/`PassportComponentGenus`/
+          `PassportAdmission`, не импортирована); `expand.ts` объявляет `AssemblyTemplateContent`/
+          `AssemblyTemplateElement`/`AssemblyTemplateRepeat`/`AssemblyTemplateNode`/
+          `AssemblyTemplate` своей плоской структурной формой (без discriminated-union по
+          `RepeatPath<Data,AtRoot>` — он и раньше стирался в `string` дефолтным `Data = unknown`,
+          терять после стирания было нечего). `@web-core/skin` убран из `devDependencies`
+          (`package.json`), `//devDependencies`-комментарий расширен тем же прецедентом, что уже
+          был про `@web-core/ui`, только для skin — эмпирически подтверждённым, не по аналогии.
+          `pnpm install` из корня — единственная строка диффа лока: `@web-core/skin` пропало из
+          importer'а `packages/assembly` (сверено чтением диффа, ничего постороннего не задето).
+          `lint`/`typecheck`/`test` (39/39)/`build` — все чистые; сборка (`vite build`) больше не
+          печатает предупреждение «"@web-core/skin/editor" is imported… treating it as external» —
+          раньше оно было и для `passport-read.ts`, и для `expand.ts`, сейчас пропало полностью,
+          не осталось ни одного упоминания `@web-core/skin` вне комментариев (`grep` по `src/`).
+
+      - id: baseAssemblyOf-passport-type-too-wide
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "`baseAssemblyOf(passport: ReadablePassport, …)` — тип параметра шире, чем функция реально использует"
+        description: |
+          ⚠️ ДРУГОЙ КЛАСС ПРОБЛЕМЫ, чем пункты выше в этой категории — те были про код, физически
+          лежащий не в той зоне (`repeat` в `packages/skin`). Этот — про то, что ВНУТРИ этой зоны
+          один тип (`ReadablePassport`) навязан ДВУМ функциям с разными реальными потребностями.
+          Не путать одно с другим при разборе (прямое указание user, 2026-09-12: «это разные оси
+          и их не надо смешивать»).
+
+          Факт, проверенный чтением тела функции (`engine/expand.ts`, не по памяти): `baseAssemblyOf`
+          обращается РОВНО к трём полям параметра `passport` — `passport.component` (default для
+          `address`, `nameFor` корня), `passport.anatomy.keys()` (список объявленных частей),
+          `passport.root` (что считать корнем). `passport.genus`/`passport.parts`/`.accepts` — вообще
+          не читаются НИ РАЗУ во всём теле функции (`grep "passport\."` по файлу — три строки, все
+          три перечислены выше, других нет).
+
+          Тип параметра при этом — полный `ReadablePassport` (`passport-read.ts`), где `genus:
+          ComponentGenus` REQUIRED, а не опционально. Это тот же тип, что `Registry`/
+          `ReadableComponent`/`Address` (`engine/registry.ts`) — ИМ `genus`/`accepts` реально нужны
+          (нестинг/допуск), `createRegistry` их использует по-настоящему. `baseAssemblyOf` получил
+          тот же тип не потому что ему это нужно, а по инерции: architect (это моя собственная
+          ошибка, не owner'а) предложил построить `ReadablePassport` для `baseAssemblyOf` тем же
+          мержем `ComponentPassport`+`PassportEditorInfo`, каким `packages/ui/src/component-
+          registry.ts`'s `readable()` строит его для `Registry` — не проверив, что ВТОРОЙ функции
+          этот мёрж вообще не нужен.
+
+          Проверено эмпирически (не только прочитано): `ComponentPassport` (`packages/skin/src/
+          engine/passport/form/passport.ts`) УЖЕ структурно удовлетворяет узкому срезу `{ component:
+          string; anatomy: { keys(): string[] }; root: string }` — прогнан `tsc --strict --noEmit`
+          на изолированном файле с формой `ComponentPassport<Part>` (`anatomy.keys(): Part[]`,
+          `root: Part`) против такого среза, ноль ошибок. Совместимость не гипотеза.
+
+          Реальная цена того, что тип не сужен раньше: `packages/skin`'s `expand.ts` (переезжающий
+          на реэкспорт настоящей функции, `baseAssemblyOf-becomes-thin-reexport`) был вынужден
+          добавить НОВЫЙ параметр `editorInfo` своей публичной `baseAssemblyOf`, чтобы построить
+          `genus`/`accepts` для несуществующей у неё нужды — и это сломало типизацию у ВСЕХ 34
+          файлов `packages/ui`, которые зовут её старой 4-аргументной формой (`component-
+          registry.ts` + 33 тестовых файла кита, ~55 вызовов, `grep -rl "baseAssemblyOf("
+          packages/ui` — без фильтров, `.test.` в том числе, в отличие от первого захода
+          architect'а, который тесты по ошибке исключил). Все 34 файла сегодня передают ровно
+          `ComponentPassport`-форму (сверено выборкой: `toggle-group`/`table`/`select`/`dialog`
+          тестов — везде `<component>Passport` из `entity/passport.ts`, старой 4-арг формой).
+
+          Что решить (эта зона, не cross-zone): объявить `baseAssemblyOf`'s параметр `passport`
+          УЗКИМ структурным типом (по образцу самого `ReadablePassport`, который тем же приёмом
+          сузил нужду в целом `ComponentPassport` — просто на этот раз сузить нужно ЕЩЁ ОДИН шаг,
+          для ЭТОЙ конкретной функции) — НЕ трогать `ReadablePassport` саму (нужна `Registry`
+          такой, какая есть) и не ослаблять её. Разместить рядом с `ReadablePassport` в
+          `passport-read.ts` тем же стилем документирования (сравнение читателю, зачем узко) —
+          конкретное имя оставляю на усмотрение owner'а, `GrowablePassport` — рабочее название, не
+          мандат.
+
+          После этого пункта: `packages/skin`'s `baseAssemblyOf`-обёртка сможет вернуться к
+          старой 4-аргументной сигнатуре (без `editorInfo`) — передавать `ComponentPassport`
+          настоящей функции НАПРЯМУЮ, без мержа с `PassportEditorInfo`. Это делает ЭТОТ пункт
+          необходимым условием для правки в `packages/skin` (следующий заход, architect пишет
+          роадмап `skin` ПОСЛЕ того, как этот пункт закрыт и проверен здесь), а НЕ наоборот. Ни
+          один из 34 файлов `packages/ui` трогать не нужно вообще — они уже сегодня правильной
+          формы, ломает их временно только промежуточное состояние `skin`'s обёртки.
+
+          Сделано: `GrowablePassport` (`passport-read.ts`, рядом с `ReadablePassport`, с
+          комментарием-сравнением — тем же приёмом документирования) — три поля,
+          `component`/`anatomy.keys()`/`root`. `baseAssemblyOf`'s параметр `passport`
+          (`expand.ts`) типизирован им, не `ReadablePassport`. `ReadablePassport` саму не трогал —
+          `registry.ts` продолжает использовать её целиком. Тестовая фикстура
+          (`test/expand.test.ts`, `passportOf()`) обновлена на сам срез (без `genus`/`parts`) —
+          сужение проверено не только типом, но и тем, что проба реально собирается без лишних
+          полей. `lint`/`typecheck`/`test` (39/39)/`build` — чистые.
+
   - category: Не сделано
     items:
       - id: two-way-binding
@@ -533,6 +835,182 @@ categories:
           ROADMAP.yaml — Done-пункты с описанием, log — датированный журнал решений.
 
 log:
+  - id: growable-passport-narrowed
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Закрывает `baseAssemblyOf-passport-type-too-wide` по итогам `baseAssemblyOf-signature-
+      mistake-found` (ниже): `GrowablePassport` — новый узкий структурный тип
+      (`component`/`anatomy.keys()`/`root`), объявлен в `passport-read.ts` рядом с
+      `ReadablePassport`, с комментарием-сравнением зачем уже. `baseAssemblyOf`'s параметр
+      `passport` (`expand.ts`) типизирован им вместо полного `ReadablePassport`.
+
+      `ReadablePassport` не тронута — `registry.ts`'s `Registry`/`ReadableComponent` продолжают
+      использовать её целиком, `genus`/`parts`/`.accepts` им реально нужны. Существующие вызовы
+      `baseAssemblyOf` внутри пакета не задеты: любой `ReadablePassport` структурно удовлетворяет
+      `GrowablePassport` (сужение параметра — контравариантно безопасно, сужает то, что функция
+      ОБЯЗАНА прочитать, не то, что ей можно передать).
+
+      Тестовая фикстура (`test/expand.test.ts`) обновлена на сам срез (`passportOf()` больше не
+      строит `genus`/`parts`) — демонстрирует сужение в проверке, не только в объявлении типа.
+      `lint`/`typecheck`/`test` (39/39)/`build` — чистые. README/FAQ обновлены (таблица анатомии,
+      строка IO, пример использования, новый вопрос в FAQ рядом с self-assembly).
+
+      Дальше по цепи (не в этой зоне): `packages/skin`'s `baseAssemblyOf`-обёртка может вернуться
+      к старой 4-аргументной форме (без `editorInfo`, без мержа с `PassportEditorInfo`) — теперь
+      что передавать напрямую, `ComponentPassport` уже удовлетворяет `GrowablePassport`
+      структурно (подтверждено architect'ом `tsc --strict` прогоном на изолированном файле, см.
+      `baseAssemblyOf-signature-mistake-found`). Architect пишет роадмап `packages/skin` следующим
+      заходом.
+
+  - id: baseAssemblyOf-signature-mistake-found
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Owner `packages/skin` сделал `baseAssemblyOf-becomes-thin-reexport` (свой роадмап) по
+      направлению, которое architect записал раньше в `packages/skin/ROADMAP.yaml`: построить
+      `ReadablePassport` мержем `ComponentPassport`+`PassportEditorInfo`, тем же приёмом, каким
+      `packages/ui/src/component-registry.ts`'s `readable()` строит его для `Registry`. Owner
+      сделал это добросовестно и проверил в своей зоне (packages/skin: lint/typecheck/test/build
+      зелёные) — но не проверял, ломает ли новая сигнатура кого-то ЗА пределами своей зоны, что и
+      обнаружилось у потребителя.
+
+      Architect (при попытке принять пункт) допустил ДВЕ отдельные ошибки, обе исправлены только
+      после того, как owner нашёл реальный breakage:
+
+      1. Оценивая «кто вызывает baseAssemblyOf», architect'ов `grep` явно исключал `.test.` файлы
+         (`grep -v "\.test\.\|ROADMAP..."`) — вывод «единственный вызывающий» был буквально
+         результатом собственного фильтра, не фактом. Без фильтра — 34 файла, ~55 вызовов
+         (`packages/ui`, `component-registry.ts` + 33 теста кита).
+
+      2. Сама рекомендация («построй ReadablePassport мержем с editorInfo») была не нужна —
+         architect скопировал решение с `readable()` (которой `genus`/`accepts` РЕАЛЬНО нужны для
+         `Registry`) на `baseAssemblyOf` (которой не нужны вообще), не прочитав тело функции ПЕРЕД
+         тем как советовать. Тело трогает только `component`/`anatomy.keys()`/`root` — три строки
+         `grep "passport\."` по файлу.
+
+      User прямо назвал это (не смягчая): «в чём проблема? почему ты не можешь нормально дать ТЗ»
+      — и попросил тратить больше токенов на проверку ДО того, как ТЗ уходит owner'у, а не после
+      («лучше потратить токены на это, чем тратить токены на переписывание или тем более закладки
+      потенциальных багов»). Отдельно попросил впредь различать два разных класса находок: код,
+      физически лежащий не в той зоне (как `repeat` раньше), и тип/контракт, навязанный не по
+      делу внутри ОДНОЙ зоны (как здесь) — не смешивать разбор одного с другим.
+
+      Разбор в этот раз доведён до конца ИНСТРУМЕНТОМ, не рассуждением: `tsc --strict --noEmit`
+      на изолированном файле подтвердил, что `ComponentPassport`-форма реально assignable к
+      узкому срезу `{component; anatomy.keys(); root}`, которого одного хватает `baseAssemblyOf`.
+      Выборка из 3 дополнительных тестовых файлов (`table`/`select`/`dialog`, не только
+      `toggle-group`) подтвердила единообразие формы вызова по всем 34 файлам. Решение —
+      `baseAssemblyOf-passport-type-too-wide` выше: сузить тип параметра ЗДЕСЬ, `ReadablePassport`
+      саму не трогать (нужна `Registry` целиком). Роадмап `packages/skin` (откат `editorInfo`,
+      возврат к 4-аргументной форме) architect пишет СЛЕДУЮЩИМ заходом, после того как этот пункт
+      закрыт и проверен, не раньше — по прямой просьбе user: «пиши роадмап assembly, он делает, мы
+      ревьюим, потом скин пакет».
+
+  - id: assembly-skin-devdependency-dropped
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Закрывает `assembly-drop-skin-devdependency` по итогам `cycle-verified-empirically` (ниже):
+      `@web-core/skin` убран из `packages/assembly/package.json` целиком. `passport-read.ts`
+      объявляет `Genus`/`ComponentGenus`/`Admission` своими литеральными формами вместо
+      `import type` из `@web-core/skin/editor`; `expand.ts` объявляет `AssemblyTemplate*` своей
+      плоской структурной формой (не discriminated-union по `RepeatPath<Data,AtRoot>` — он и
+      раньше стирался дефолтным `Data = unknown` в голый `string`, терять было нечего).
+
+      Проверено: `grep -rn "@web-core/skin" src/ test/` — ноль вхождений вне комментариев.
+      `pnpm run lint`/`typecheck`/`test` (39/39)/`build` из пакета — все чистые; `vite build`
+      больше не печатает предупреждение про `"@web-core/skin/editor" is imported… treating it as
+      external` (было для обоих файлов, пропало полностью). `pnpm install` из корня — единственная
+      реальная строка диффа `pnpm-lock.yaml`: `@web-core/skin` пропало из importer'а
+      `packages/assembly` (сверено чтением диффа целиком, посторонние изменения лока —
+      предсуществующие, от `packages/form`, не эта работа).
+
+      `skin-needs-real-assembly-dependency` (категория выше) теперь безопасен со стороны
+      `assembly` без дальнейших условий — своя половина цикла снята. Со стороны `packages/skin`
+      условие не менялось (architect пишет роадмап `packages/skin` после ревью этой работы, как
+      решено раньше).
+
+  - id: cycle-verified-empirically
+    type: plan
+    date: 2026-09-12
+    summary: >
+      User, после приёмки `base-assembly-of-moved-home`: «согласен, го тест, потом роадмап по
+      факту» — эмпирически проверить `assembly ⇄ skin` цикл ДО того, как проектировать cutover
+      `packages/skin` на предположении. Architect завёл реальную (не type-only)
+      `"@web-core/assembly": "workspace:*"` в `packages/skin/package.json`, прогнал `pnpm exec
+      nx graph` (сразу `[WARN] There are cyclic workspace dependencies`) и затем `pnpm build` из
+      корня — жёсткий отказ Nx, тот же класс ошибки, что описывает `//devDependencies`-комментарий
+      этого пакета про `ui`, но теперь прогнанный, не пересказанный по аналогии. Правка отменена
+      сразу после теста, `git diff`/`pnpm install` подтвердили чистое состояние. Открытые пункты
+      `skin-needs-real-assembly-dependency`/`verified-real-cycle-with-skin`/
+      `assembly-drop-skin-devdependency` (выше, в категории «Своя механика, найденная в
+      packages/skin — вернуть домой») несут результат и направление починки. Роадмап
+      `packages/skin` architect пишет этим же заходом, cutover-пункт там ссылается на
+      `assembly-drop-skin-devdependency` как на блокер.
+
+  - id: base-assembly-of-moved-home
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Закрыто по итогам `repeat-grow-found-in-skin` (ниже): `baseAssemblyOf`+`scopedPath`+глубинный
+      гвард перенесены из `packages/skin/src/engine/passport/assembly/expand.ts` в новый
+      `packages/assembly/src/engine/expand.ts`, производят РЕАЛЬНЫЙ `AssemblyTree` этого пакета, не
+      копию (`BaseAssemblyTree`) — детали и решение по `growSelfAssembly` записаны прямо в пунктах
+      `repeat-grow-lives-in-wrong-package`/`merge-or-retire-self-assembly-grower` выше (оба Done).
+
+      Одна находка не влезла в описание пункта, важна отдельно: этот пакет уже держит
+      `@web-core/skin` в СВОИХ `devDependencies` (type-only, `passport-read.ts`), а
+      `package.json` прямо предупреждает про цикл Nx на паре `ui ⇄ assembly`, если `@web-core/ui`
+      когда-нибудь попадёт сюда обратной записью. Та же арифметика грозит паре `assembly ⇄ skin`,
+      если `skin-needs-real-assembly-dependency` заведёт РЕАЛЬНУЮ (не type-only) зависимость
+      `packages/skin → @web-core/assembly` поверх уже существующей `assembly → skin` (пусть и
+      dev, пусть и стирающейся компилятором) — записано предупреждением прямо в этом пункте, не
+      проверено прогоном (гипотетическая зависимость не заводилась, `pnpm build` с ней не гонялся).
+
+      Старые потребители (`packages/ui/src/component-registry.ts` → `./passport.js` →
+      `packages/skin`) не переключены — это чужая зона (`packages/ui`, `packages/skin`), не
+      трогалась. Переключение — отдельная работа после ревью этой, тем же порядком, что уже
+      записан в `skin-needs-real-assembly-dependency`.
+
+  - id: repeat-grow-found-in-skin
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Найдено не при работе над этим пакетом, а сбоку: architect проектировал план для нового
+      `@web-core/form` (движок валидации поверх `AssemblyTree`) и усомнился, что дерево вообще
+      умеет разворачивать массивы по данным (`array-path-projection` в `packages/form/
+      ROADMAP.yaml`) — проверил только `packages/assembly/src/engine/*.ts`, `repeat` там не
+      нашёл, сделал вывод «цикла нет». User резко поправил: «что значит в сборке нет цикла...
+      вот тут packages/ui/src/accordion/playground/assemblies/action-list.ts у нас repeat, это
+      не оно? если у нас асембл не умеет цикл, то это баг в движке и никаких валидаторов мы не
+      делаем — это баг в самом ядре инфры». По факту `repeat` нашёлся — но в
+      `packages/skin/src/engine/passport/assembly/expand.ts`, не здесь. User сверил зону сам:
+      «репит это не меха скина, это меха сборки. или я что-то путаю? при том что вы сами
+      смотрели и ты, и овнер таблицы в assembly пакет и искали repeat там» — то, что architect И
+      owner-таблицы (независимо, в разное время) оба инстинктивно искали `repeat` именно в этом
+      пакете, было явно принято аргументом самим по себе: если два разных человека ищут
+      механику в одном и том же месте и оба ошибаются, ошибается не человек, ошибается место.
+
+      Проверено чтением (не по памяти): `component-registry.ts:133` реально кастует
+      `BaseAssemblyTree` (тип `packages/skin`) `as AssemblyTree` (тип этого пакета) — структурно
+      совпадающие, независимо объявленные типы; `packages/skin`'s `binding.ts` реализует
+      `resolveDataBinding` вручную, тогда как этот пакет делает то же самое через
+      `fast-json-patch`; `packages/skin/package.json` не имеет `@web-core/assembly` вообще ни в
+      каком виде зависимостей. Одновременно с этим у ДВУХ живых потребителей (`component-
+      registry.ts` через `baseAssemblyOf`, `self-assembly-branch.ts` через `growSelfAssembly`) —
+      два разных разворачивателя дерева, ни один не мёртвый код.
+
+      Решение user, дословно: «пиши packages/assembly/ROADMAP.yaml — этамеха вообще не
+      относится к скину». Роадмап `packages/skin` НЕ пишется сейчас — только после того, как
+      owner этого пакета сделает переезд и architect с user вместе прогонят ревью; если ок,
+      тогда и появится соответствующий роадмап `packages/skin` (снять дубликаты, добавить
+      реальную зависимость на `@web-core/assembly`). Открытые пункты этого пакета — см. категорию
+      «Своя механика, найденная в packages/skin — вернуть домой» выше; работа над
+      `@web-core/form`, которая всё это вскрыла, ждёт результата (её собственный роадмап уже
+      отмечает `array-path-projection` как решённый чужой инфрой, но обходить нужно дерево
+      ПОСЛЕ этого переезда, не текущее раздвоенное состояние).
+
   - id: stale-dist-not-render-bug
     type: plan
     date: 2026-09-04

@@ -55,12 +55,21 @@
     "Запись стояла здесь мёртвой: ни одного вхождения `@web-core/ui` в `src/`, `test/` и",
     "конфигах зоны. Понадобится кит в тестах — это сигнал, что проверяется не механика:",
     "механика своего вида не приносит и о ките не знает (см. описание зоны в harness.yaml).",
-    "Нужен подопытный компонент — заводится фикстурой здесь, а не зависимостью на кит."
+    "Нужен подопытный компонент — заводится фикстурой здесь, а не зависимостью на кит.",
+    "",
+    "@web-core/skin — та же запись, тот же цикл, но здесь СТОЯЛА не мёртвой (type-only",
+    "`import type ... from \"@web-core/skin/editor\"` в passport-read.ts/expand.ts) и снята",
+    "(ROADMAP.yaml, assembly-drop-skin-devdependency): PassportGenus/PassportComponentGenus/",
+    "PassportAdmission/PassportAssembly* заменены узкими структурными формами, объявленными",
+    "здесь же (Genus/ComponentGenus/Admission/AssemblyTemplate*). Цикл `assembly ⇄ skin`",
+    "подтверждён прогоном (не по аналогии с ui): architect завёл реальную зависимость",
+    "`packages/skin → @web-core/assembly` для теста, `pnpm build` из корня упал тем же",
+    "`circular dependency`. Type-only ничего не значит для графа задач Nx — он считается по",
+    "package.json, не по тому, что реально попадает в собранный код после tsc."
   ],
   "devDependencies": {
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
-    "@web-core/skin": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",

@@ -33,11 +33,12 @@
 `engine/`, и все они собираются в дерево одним и тем же способом: у входа паспорта и правило
 допуска, на выходе — либо новое дерево/вердикт, либо именованный отказ. Отрисовка — единственная
 возможность, которой действительно нужен браузер, поэтому она одна вынесена в отдельный подпуть
-поставки (`./render`), а не смешана с остальными девятью файлами.
+поставки (`./render`), а не смешана с остальными десятью файлами.
 
 | Часть | Адрес | Экспортирует |
 |---|---|---|
 | Дерево | `@web-core/assembly` | `AssemblyTree`, `AssemblyNode`, `AssemblyElement`, `AssemblyContent`, `NodeId`, `DataBinding`, `DynamicValue`, `EMPTY_TREE`, `isContent`, `isDataBinding`, `resolveDataBinding`, `nodeOf`, `rootOf`, `subtreeOf`, `ancestorsOf`, `outerTypeOf` |
+| Разворот по данным | `@web-core/assembly` | `baseAssemblyOf`, `scopedPath`, `AssemblyTemplate`, `AssemblyTemplateElement`, `AssemblyTemplateContent`, `AssemblyTemplateNode`, `AssemblyTemplateRepeat` |
 | Правки | `@web-core/assembly` | `insertNode`, `removeNode`, `moveNode`, `updateNode`, `EditResult`, `EditRefusal`, `NewNode`, `NewElement`, `NewContent`, `NodePatch` |
 | Целостность | `@web-core/assembly` | `checkTree`, `TreeFlaw`, `TreeFlawName` |
 | Реестр | `@web-core/assembly` | `createRegistry`, `checkRegistry`, `knownComponents`, `readAddress`, `resolveComponent`, `Registry`, `RegistrySpec`, `ReadableComponent`, `Address`, `RegistryFlaw`, `RegistryFlawName` |
@@ -46,12 +47,13 @@
 | Образец | `@web-core/assembly` | `sketchOf`, `SketchNaming` |
 | Композиция | `@web-core/assembly` | `composeTree`, `rootNode`, `CompositionElement`, `CompositionContent`, `CompositionSpec`, `CompositionRefusal`, `CompositionResult` |
 | Своё поведение | `@web-core/assembly` | `growSelfAssembly`, `SelfAssembly`, `SelfAssemblyElement`, `SelfAssemblyContent`, `SelfAssemblyNode` |
-| Паспорт (читаемый срез) | `@web-core/assembly` | `partOf`, `ReadablePassport`, `ReadablePart`, `Admission`, `AdmissionRule`, `Genus`, `ComponentGenus` |
+| Паспорт (читаемый срез) | `@web-core/assembly` | `partOf`, `ReadablePassport`, `GrowablePassport`, `ReadablePart`, `Admission`, `AdmissionRule`, `Genus`, `ComponentGenus` |
 | Отрисовка | `@web-core/assembly/render` | `RenderTree`, `RenderTreeProps`, `FallbackProps`, `ErrorFallbackProps`, `EditOverlayProps`, `SlotEntry`, `SlotPlacement`, `DispatchedEvent` |
 
-📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (десять файлов —
-дерево/правки/целостность/реестр/вложенность/координата/образец/композиция/self-assembly/паспорт,
-ноль Solid), `src/render/` (двенадцать файлов, единственный сегодняшний потребитель `engine/`;
+📦 Внутри пакета: `src/index.ts` (тонкий реэкспорт `engine/`), `src/engine/` (одиннадцать файлов —
+дерево/правки/целостность/реестр/вложенность/координата/образец/композиция/self-assembly/
+разворот-по-данным/паспорт, ноль Solid), `src/render/` (двенадцать файлов, единственный сегодняшний
+потребитель `engine/`;
 `index.tsx` — тонкий реэкспорт по тому же образцу, что корневой `src/index.ts`; `render-tree.tsx`
 — провайдер/`Suspense`/`checkTree`; `render-node.tsx` — сборка ОДНОГО узла, точка входа рекурсии;
 `content-of.tsx` — дети узла, самая тонкая часть Solid-реактивности; `composition.ts`/
@@ -123,6 +125,19 @@ for (const flaw of checkTree(tree)) console.warn(flaw.flaw, flaw.nodeId, flaw.me
 import { growSelfAssembly } from "@web-core/assembly";
 
 const behaviorTree = growSelfAssembly(passport.selfAssembly, "button", passport.root);
+```
+
+**Разворот шаблона по данным (`repeat`/`recur`) — сколько узлов вырастить, решают сами данные:**
+
+```ts
+import { baseAssemblyOf } from "@web-core/assembly";
+
+const tree = baseAssemblyOf(
+  passport, // GrowablePassport — component/root/anatomy.keys(), больше ничего не читает
+  { name: "list", means: "список строк", tree: { node: "root", children: [/* … repeat/recur … */] } },
+  "list",
+  { rows: [{ id: "a" }, { id: "b" }] },
+);
 ```
 
 **Композиция из целых компонентов (модуль — не один паспорт, а несколько адресов реестра сразу):**
@@ -205,6 +220,7 @@ const slots: Record<string, SlotEntry> = {
 | `insertNode`/`removeNode`/`moveNode`/`updateNode` | `(tree, id, ...)` — дерево и координаты правки |
 | `RenderTree` | `RenderTreeProps` (см. «Настройки») |
 | `growSelfAssembly(assembly, address, rootPart)` | `SelfAssembly` компонента + куда он смотрит в реестре |
+| `baseAssemblyOf(passport, assembly, address?, data?)` | `GrowablePassport` (`component`/`anatomy.keys()`/`root` — не весь `ReadablePassport`) + шаблон `AssemblyTemplate` (`repeat`/`recur`) + реальные данные — сколько узлов вырастить, решают данные, не шаблон |
 | `sketchOf(registry, address, naming?)` | адрес компонента и (опционально) свои имена узлов образца |
 | `rootNode(registry, address, id?)` | адрес компонента — первый узел дерева, родителя проверять не у чего |
 | `composeTree(registry, spec, rootId?)` | вложенная спека целых компонентов (`CompositionSpec`) — модуль собирается тем же `insertNode`, что и ручная правка |
@@ -220,6 +236,7 @@ const slots: Record<string, SlotEntry> = {
 | `possibleOwnersOf`/`ownersAdmitting` | `readonly PossibleOwner[]` |
 | `coordinateOfType` | `NodeCoordinate \| undefined` |
 | `rootNode` | `AssemblyTree \| undefined` |
+| `baseAssemblyOf` | `AssemblyTree` — либо бросает именованной ошибкой (`assembly "…" grew past N levels…`) на зацикленный `repeat`/`recur` |
 | `composeTree` | `CompositionResult = {ok:true, tree} \| {ok:false, refusals}` — все отказы сразу, не по одному |
 | `RenderTree` + `dispatch` | `DispatchedEvent = { name, nodeId, address, timestamp, context }` наружу на каждое `on` |
 
@@ -237,6 +254,7 @@ const slots: Record<string, SlotEntry> = {
 | Настоящий `createContext`/`useContext` через `RenderNode`/`RenderTree` | owner-цепочка Solid не рвётся ни `<For>`, ни `<ErrorBoundary>`, ни `<Dynamic>`, ни самим `RenderTree` — на двух уровнях дерева | `test/context-repro.test.tsx` |
 | Дерево пересобирается на каждую смену `data` (новый объект `AssemblyTree`, те же id) | байндинг доезжает и на первой, и на второй, и на любой следующей пересборке — не только на первой | `test/rebuild-reactivity-repro.test.tsx` |
 | `repeat`: 0 items → N items ПОСЛЕ монтирования, без потери Ark-дефолтов на пустом контенте | узел, структурно принимающий контент, подхватывает детей, добавленных позже, — плоский случай и вложенный (через `Portal`, как `select`'s `positioner`); часть, контент не принимающая (`trigger`), остаётся `null`; часть, принимающая контент по реестру, но без детей навсегда (`field`'s `requiredIndicator`), тоже остаётся `null` — Ark-паттерн `props.children ?? "*"` срабатывает | `test/contentof-null-vs-for.test.tsx` |
+| `baseAssemblyOf`: `repeat` полем и старой обёрткой `{repeat, template}`, вложенный `repeat`, пустой `bind` внутри `repeat` (весь текущий элемент, не `undefined`), `recur` с гвардом глубины на зацикленном шаблоне/данных | разворот шаблона по данным растит верное число узлов и не виснет на цикле — та же механика, что раньше жила в `packages/skin` | `test/expand.test.ts` |
 
 ✅ Живая проверка на настоящем ките — транзитивно, через тесты пакетов, что реально зовут
 `RenderTree`/`baseAssemblyOf`: `packages/ui/src/button/test/button.test.tsx`,

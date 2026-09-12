@@ -488,6 +488,105 @@ DOM, а Solid ПЕРЕД повторным запуском эффекта ди
 
 ---
 
+### Почему `baseAssemblyOf` (`repeat`/`recur` по реальным данным) — здесь, а не в `packages/skin`, где он жил раньше?
+
+**Коротко: он никогда не был скиновой механикой — «шаблон+данные → `AssemblyTree`» ровно та же
+работа, что уже делает `growSelfAssembly` в этом же пакете, просто с дополнительной структурной
+развилкой (сколько раз повторить узел). Жил не дома по историческому совпадению, не по замыслу.**
+
+Найдено сбоку, не в этом пакете (2026-09-12, разбор плана `@web-core/form`): user отследил цепь —
+«репит это не меха скина, это меха сборки» — и то, что architect и owner-таблицы независимо друг
+от друга искали `repeat` именно здесь и не находили, само по себе указывало на правильный дом.
+Проверено чтением, не на слово: `packages/skin/src/engine/passport/assembly/output.ts` объявлял
+свою `BaseAssemblyTree`, структурно один в один с `AssemblyElement`/`AssemblyContent`/
+`AssemblyTree` этого пакета (`engine/tree.ts`), независимо продублированную; `packages/ui/src/
+component-registry.ts` кастовал результат (`sketch as AssemblyTree`) ровно потому, что типы
+совпадают структурно, а не потому что один настоящий; `packages/skin/package.json` не имел
+`@web-core/assembly` вообще ни в каком виде зависимостей.
+
+Перенесённый `engine/expand.ts` производит РЕАЛЬНЫЙ `AssemblyTree` этого пакета (не копию) и
+резолвит путь через РЕАЛЬНЫЙ `resolveDataBinding` (`tree.ts`, `fast-json-patch`), не рукописный
+разбор JSON Pointer. На входе — уже существующий `ReadablePassport` (не полный `ComponentPassport`
+из `packages/skin`): функции никогда не был нужен весь паспорт, только `component`/`root`/
+`anatomy.keys()`. Тип шаблона (`assembly`) — своя структурная форма (`AssemblyTemplate*`),
+объявленная в этом же файле, не импортированная — см. следующий вопрос, почему не type-only
+импорт, каким это делалось первой версией переноса.
+
+Старые потребители (`packages/ui/src/component-registry.ts` → `./passport.js` →
+`packages/skin`) не переключены этим переносом — переключение и снятие дублей в `packages/skin`
+не в этой зоне, ждёт отдельного ревью (`packages/assembly/ROADMAP.yaml`,
+`shadow-tree-types`/`skin-needs-real-assembly-dependency`).
+
+---
+
+### Почему `Genus`/`Admission`/`AssemblyTemplate*` — свои структурные типы, а не `import type` из `@web-core/skin/editor`, как было в первой версии переноса?
+
+**Коротко: цикл `assembly ⇄ skin` — не гипотеза «type-only не считается», а прогнанный факт.
+Architect завёл реальную `packages/skin → @web-core/assembly` для теста и `pnpm build` упал тем
+же `circular dependency`, каким `//devDependencies`-комментарий пакета уже предупреждал про
+`ui`. Type-only ничего не значит для графа задач Nx — он считается по `package.json`, не по тому,
+что реально попадает в собранный код после `tsc`.**
+
+Первая версия переноса (`repeat-grow-lives-in-wrong-package`) брала `Genus`/`ComponentGenus`/
+`Admission`/`AssemblyTemplate*` type-only из `@web-core/skin/editor` — рабочее решение САМО ПО
+СЕБЕ (`import type` стирается компилятором, в собранном `dist/` этого пакета `@web-core/skin` не
+было и не будет), но `@web-core/skin` при этом стоял в `devDependencies` `package.json` — а Nx
+строит граф задач по ЗАПИСИ в `package.json`, не по тому, что реально идёт в рантайм-бандл.
+Пока `packages/skin` не зависел от `@web-core/assembly` реально — цикла не было. Как только
+`skin-needs-real-assembly-dependency` завёл бы `packages/skin → @web-core/assembly`, получилась
+бы пара `assembly ⇄ skin`, замкнутая тем же классом ошибки, что уже описан для `ui` — architect
+проверил это ЗАРАНЕЕ (2026-09-12, диагностика отменена сразу после теста), не постфактум.
+
+Починка: `Genus`/`ComponentGenus`/`Admission` (`passport-read.ts`) — те же литеральные
+объединения, что у `PassportGenus`/`PassportComponentGenus`/`PassportAdmission`, но объявлены
+здесь, не импортированы. `AssemblyTemplateContent`/`AssemblyTemplateElement`/
+`AssemblyTemplateRepeat`/`AssemblyTemplateNode`/`AssemblyTemplate` (`expand.ts`) — плоская
+структурная форма без discriminated-union по `RepeatPath<Data,AtRoot>` (он и раньше стирался в
+голый `string` дефолтным `Data = unknown` — терять после стирания было нечего). `@web-core/skin`
+убран из `devDependencies` целиком — граф Nx на паре `assembly ⇄ skin` перестаёт замыкаться в
+принципе, `skin-needs-real-assembly-dependency` становится безопасным без дальнейших условий.
+
+---
+
+### Почему `growSelfAssembly` и `baseAssemblyOf` — два разных разворачивателя, не один?
+
+**Коротко: у `growSelfAssembly` структурно нет входа для данных на момент роста дерева — `repeat`
+нельзя резолвить без данных в руках, а `bind` можно (резолвится позже, на отрисовке). Слияние
+означало бы тащить `data` через весь путь до self-assembly ради возможности, которую сегодня не
+попросил ни один self-assembly.**
+
+`createSelfAssemblyTree` (`render/self-assembly-branch.ts`) — `createMemo` от `registry()`/
+`node()`, живых данных экземпляра там нет вообще: `bind`-пути self-assembly резолвятся ПОЗЖЕ,
+внутри `render/props.ts`, на отрисовке, а не на этапе роста дерева. `repeat` — структурная
+развилка («сколько узлов вырастить»), а не значение пропа, — её нельзя отложить на потом тем же
+приёмом, каким откладывается `bind`. Если self-assembly когда-нибудь получит `repeat`, это
+отдельная фича (протянуть `data` через `self-assembly-branch.ts`/`render-node.tsx`), не слияние
+задним числом — заводится с живым сценарием в руках, не по аналогии с `baseAssemblyOf`.
+
+---
+
+### Почему `baseAssemblyOf`'s `passport` — `GrowablePassport` (три поля), а не `ReadablePassport` целиком?
+
+**Коротко: функция читает ровно `component`/`anatomy.keys()`/`root` — `genus`/`parts`/`.accepts`
+не трогает НИ РАЗУ. Полный `ReadablePassport` был навязан по инерции (скопирован с `readable()`'s
+приёма для `Registry`, которой эти поля реально нужны), не по факту нужды этой функции.**
+
+Найдено при разборе первой версии переноса (2026-09-12): `grep "passport\."` по `expand.ts` — три
+строки, все три перечислены выше, других нет. Цена того, что тип не был сужен сразу: у
+`packages/skin`'s `baseAssemblyOf`-реэкспорта не было под рукой готового `ReadablePassport`
+(`genus`/`parts` там взять физически неоткуда без мержа с `PassportEditorInfo`) — обёртка завела
+НОВЫЙ параметр `editorInfo` только ради формы, которая настоящей функции не нужна ни на грамм, и
+это сломало типизацию у 34 файлов `packages/ui`, звавших старую 4-аргументную сигнатуру.
+
+`GrowablePassport` (`passport-read.ts`, рядом с `ReadablePassport`) — структурный срез в три поля.
+Любой `ReadablePassport` уже удовлетворяет ему структурно (сужение параметра сужает то, что
+функция ОБЯЗАНА прочитать, не то, что ей можно передать) — существующие вызовы внутри этого
+пакета не задеты ни на символ. `ReadablePassport` сама не тронута: `Registry`/`ReadableComponent`
+(`registry.ts`) её используют целиком, `genus`/`parts`/`.accepts` им реально нужны для допуска и
+вложенности.
+
+---
+
 ## Совместимость с A2UI
 
 ### Почему форма данных/событий скопирована у A2UI (Google), а не придумана заново?

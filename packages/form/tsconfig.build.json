@@ -1,0 +1,10 @@
+{
+  "//": "Сборка dist: те же правила, но с эмитом и только по src.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

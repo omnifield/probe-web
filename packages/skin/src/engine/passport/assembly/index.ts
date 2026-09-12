@@ -21,7 +21,12 @@ export { isAssemblyContent, isAssemblyRepeat } from "./nodes.js";
 
 export type { DataPreset, PassportAssembly } from "./assembly.js";
 
-export type { BaseAssemblyContent, BaseAssemblyElement, BaseAssemblyNode, BaseAssemblyTree } from "./output.js";
-export { isContentNode } from "./output.js";
+export type {
+  AssemblyContent as BaseAssemblyContent,
+  AssemblyElement as BaseAssemblyElement,
+  AssemblyNode as BaseAssemblyNode,
+  AssemblyTree as BaseAssemblyTree,
+} from "@web-core/assembly";
+export { isContent as isContentNode } from "@web-core/assembly";
 
 export { baseAssemblyOf, scopedPath } from "./expand.js";

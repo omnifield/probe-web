@@ -620,6 +620,257 @@ categories:
           экспорт очищен от шестерёнок без своего глагола (семена/шкалы/адресные селекторы),
           оставлено то, что реально настраивает движок или названо контрактом для чужого кода.
 
+  - category: "Механика дерева переехала в packages/assembly — снять свою копию"
+    items:
+      - id: wait-for-assembly-drop-skin-devdependency
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Блокер снят: `packages/assembly`'s `assembly-drop-skin-devdependency` закрылся первым"
+        description: |
+          `baseAssemblyOf`+`scopedPath` (разворот `repeat`/`recur` по данным) переехали в
+          `packages/assembly/src/engine/expand.ts` — там же теперь и настоящие `AssemblyTree`/
+          `AssemblyElement`/`resolveDataBinding`, не копии. Живой продовый путь
+          (`packages/ui/src/component-registry.ts` → `./passport.js` → этот пакет) пока НЕ
+          переключён — так и должно быть, переключение потребителей ниже, не раньше.
+
+          Architect эмпирически проверил (2026-09-12, `packages/assembly/ROADMAP.yaml`'s
+          `verified-real-cycle-with-skin`): реальная зависимость этого пакета на
+          `@web-core/assembly` НА ТОТ МОМЕНТ образовывала цикл с `assembly → @web-core/skin`
+          (`devDependencies`, type-only) — `pnpm build` из корня падал жёстко (`NX Could not
+          execute command because the task graph has a circular dependency`).
+
+          Проверено заново (2026-09-12, тем же владельцем этого пакета): `assembly`'s
+          `assembly-drop-skin-devdependency` в `packages/assembly/ROADMAP.yaml` уже стоит `Done`,
+          `@web-core/skin` в `packages/assembly/package.json` вычищен целиком (только упоминания
+          в комментарии-заметке `//devDependencies`, ноль реальных строк). Блокер снят —
+          добавлена реальная `"@web-core/assembly": "workspace:*"` в `dependencies` этого пакета,
+          `pnpm install` и `pnpm build` из корня прошли без цикла (см. лог ниже).
+
+      - id: switch-to-real-assembly-types
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`output.ts`'s `BaseAssemblyElement/Content/Node/Tree` — снесено, взяты настоящие из `@web-core/assembly`"
+        description: |
+          `packages/skin/src/engine/passport/assembly/output.ts` объявлял `BaseAssemblyTree`
+          (и `isContentNode`) — структурная копия `AssemblyElement`/`AssemblyContent`/
+          `AssemblyNode`/`AssemblyTree`/`isContent` из `@web-core/assembly`, независимо
+          продублирован.
+
+          Сделано: `output.ts` удалён целиком. `engine/passport/assembly/index.ts` реэкспортирует
+          настоящие `AssemblyContent as BaseAssemblyContent` / `AssemblyElement as
+          BaseAssemblyElement` / `AssemblyNode as BaseAssemblyNode` / `AssemblyTree as
+          BaseAssemblyTree` / `isContent as isContentNode` прямо из `@web-core/assembly` — ИМЕНА
+          на границе пакета (`./editor`, и через неё `packages/ui/src/passport.ts`, генерируемый
+          файл) не изменились ни на бит, изменилось только то, ЧЕМУ они теперь буквально равны.
+          Внутри `expand.ts` используются настоящие имена (`AssemblyElement`/`AssemblyNode`/
+          `AssemblyTree`/`isContent`) без алиасов — там это не публичный контракт.
+
+          Стык, который это чинит по-настоящему: `packages/ui/src/component-registry.ts:133` —
+          `(sketch as AssemblyTree)`, сырой TS-каст, раньше нужный, потому что типы совпадали
+          СТРУКТУРНО, а не потому что один настоящий. Теперь `baseAssemblyOf`'s возвращаемый тип —
+          буквально `AssemblyTree` того же импорта, каст стал избыточным (но не убран — это не
+          работа этого пакета, `packages/ui`-owner проверяет и убирает каст сам, когда дойдёт
+          очередь).
+
+      - id: switch-to-real-data-binding
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`binding.ts`'s рантайм — на настоящий `resolveDataBinding`/`isDataBinding`/`DynamicValue`/`DispatchAction`"
+        description: |
+          `binding.ts` резолвил JSON Pointer ВРУЧНУЮ — `@web-core/assembly`'s `tree.ts` делает то
+          же самое через `fast-json-patch` (`getValueByPointer`), уже проверенный вендор, не
+          рукописный разбор `~1`/`~0`.
+
+          Сделано: ручная реализация `resolveDataBinding` в `binding.ts` удалена, заменена прямым
+          `export { resolveDataBinding } from "@web-core/assembly";`.
+
+          НЕ тронуты `paths.ts`/`nodes.ts`'s generic-обёртка (`DataBinding<Data, AtRoot>`,
+          `Paths<T>`/`ArrayPaths<T>`, `isDataBinding` — генерик-версия) — типовая проверка
+          `bind`/`repeat.path` на этапе автора компонента против его io-схемы, настоящая ценность
+          ЭТОГО пакета, которой у плоского `Record<string, string>` `@web-core/assembly` нет.
+          Генерик-версия `isDataBinding` осталась своя (не реэкспорт): её type predicate сужает до
+          `DataBinding<Data, AtRoot>` — если бы взяли реальную (не генерик) версию, предикат сузил
+          бы `path` до голого `string`, потеряв конкретный union путей ниже по коду.
+
+      - id: baseAssemblyOf-becomes-thin-reexport
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`expand.ts`'s `baseAssemblyOf`/`scopedPath` — тонкий реэкспорт `@web-core/assembly`, не вторая копия алгоритма"
+        description: |
+          После `switch-to-real-assembly-types`/`switch-to-real-data-binding` у `expand.ts` этого
+          пакета и `engine/expand.ts` `@web-core/assembly` — один и тот же алгоритм на одних и тех
+          же типах, продублированный текстом. План — заменить телом этого пакета на реэкспорт/
+          тонкую обёртку вокруг `@web-core/assembly`'s `baseAssemblyOf` (типизированный вход этого
+          пакета — `PassportAssembly<Part, Registry, Data, AtRoot>` с generic-проверкой пути, —
+          стирается в структурный `AssemblyTemplate`, которого ждёт настоящая функция, тем же
+          приёмом, каким `@web-core/assembly`'s `engine/expand.ts` уже сегодня стирает generic до
+          `unknown`).
+
+          НАЙДЕН БЛОКЕР (2026-09-12, при попытке сделать этот пункт), план выше на нём не учёл
+          ОДНО: второй параметр (`assembly`/шаблон) действительно стирается структурно без
+          проблем, но ПЕРВЫЙ параметр — нет. Настоящая `baseAssemblyOf` (`@web-core/assembly`)
+          принимает `passport: ReadablePassport`, который требует `genus: ComponentGenus`
+          (required) и `parts: readonly { name; accepts? }[]`. У `ComponentPassport` этого пакета
+          (`engine/passport/form/passport.ts`) `genus` не существует ВООБЩЕ (это понятие
+          `PassportAdmission`, свойство КАНДИДАТА на допуск в часть, а не атрибут самого паспорта),
+          и `PassportPart` (`form/part.ts`) не несёт `accepts` (это отдельный `PassportPartAdmission`,
+          не смешанный с `PassportPart` наследованием/интерсекцией). `ComponentPassport` НЕ
+          структурно совместим с `ReadablePassport` — просто `as unknown as ReadablePassport`
+          заглушит компилятор, но `genus`/`accepts` в рантайме будут `undefined` там, где
+          `ReadablePassport` их требует как required.
+
+          Смягчение: сама функция `baseAssemblyOf` (тело в `@web-core/assembly/engine/expand.ts`)
+          НЕ читает ни `passport.genus`, ни `passport.parts`/`accepts` — только `.component`,
+          `.anatomy.keys()`, `.root`. Рантайм-дыры без реального обращения к полям не будет, но
+          TS проверяет по ОБЪЯВЛЕННОМУ типу параметра, не по факту использования внутри тела.
+
+          РЕШЕНО architect'ом (2026-09-12, не одиночным предположением — сверено чтением кода):
+          не фейковый `genus`, не ослабление контракта `@web-core/assembly`. `genus`/`accepts`
+          физически СУЩЕСТВУЮТ уже сегодня — просто не на `ComponentPassport`, а на
+          `PassportEditorInfo` (`packages/skin/src/editor/types.ts:47` — `genus:
+          PassportComponentGenus`, ровно тот же тип, на который `ReadablePassport.genus:
+          ComponentGenus` ссылается через `passport-read.ts`'s алиас; `:31` —
+          `PassportPartEditorInfo.accepts?: readonly PassportAdmission[]`, тот же тип, что
+          `ReadablePart.accepts`). Это не совпадение — паспорт этого пакета НАРОЧНО режется на
+          срез рантайма (`ComponentPassport`) и срез редактора (`PassportEditorInfo`, см.
+          `passport-two-slices` выше в этом же роадмапе: «means, сборки и правило вложенности
+          живут в ./editor»), и `genus`/`accepts` — ровно то, что уехало во второй срез.
+
+          Прецедент уже живёт в этом же файле: `packages/ui/src/component-registry.ts`'s
+          `readable()` (строки 57-85) УЖЕ строит `genus: editorInfo.genus`/`accepts:
+          editorInfo.parts[part.name]?.accepts` для `Registry` — тем же самым мержем
+          `ComponentPassport`+`PassportEditorInfo`, который нужен и здесь. `instanceOf`
+          (строка 114) уже ЗОВЁТ `provider.editorInfoOf(component)` (строка 121) — сегодня только
+          ради `.assemblies`, остальное выбрасывает. Единственный живой вызов `baseAssemblyOf` во
+          всём репозитории (сверено `grep` — больше нигде с реальными аргументами не зовётся) —
+          вот этот, и всё нужное для моста УЖЕ в его руках, ничего нового доставать не надо.
+
+          Значит: тонкая обёртка этого пакета (`baseAssemblyOf-becomes-thin-reexport`) принимает
+          ВТОРЫМ параметром `editorInfo: PassportEditorInfo` (не только `passport:
+          ComponentPassport`), строит `ReadablePassport` тем же мержем, что `readable()`, и уже
+          его передаёт настоящей функции `@web-core/assembly`. Это меняет публичную сигнатуру
+          `baseAssemblyOf` этого пакета — единственный реальный вызывающий (`component-
+          registry.ts`) правится СИНХРОННО с этим пунктом, не отдельным заходом позже: он и так
+          уже держит `editorInfo` в скоупе на соседней строке, правка мелкая и мгновенная, разводить
+          её на «сначала здесь, потом когда-нибудь у ui» только развело бы момент, когда сигнатура
+          этого пакета не соответствует единственному потребителю.
+
+          СДЕЛАНО (2026-09-12) — половина этого пакета. `expand.ts` переписан целиком: `grow`/
+          `growAll`/`scopeTemplate`/`nameFor`/`addressOf`/`propsOf`/`MAX_ASSEMBLY_DEPTH` удалены,
+          `baseAssemblyOf` теперь — тонкая функция `(passport, editorInfo, assembly, address?,
+          data?) → AssemblyTree`: строит `ReadablePassport` мержем (`readablePassportOf`, тот же
+          приём, что `readable()`), стирает `assembly` до `AssemblyTemplate` (`as unknown as`,
+          структурная эрозия generic-типа, как и предполагал план выше) и зовёт настоящую функцию
+          `@web-core/assembly`. `scopedPath` — прямой `export { scopedPath } from
+          "@web-core/assembly"` (была буквально идентична). `PassportEditorInfo` импортирован
+          `import type` из `../../../editor/types.js` — цикл файлов (`editor/types.ts` типами
+          ссылается на `engine/passport/assembly/index.ts`, а тот теперь на `expand.ts`, а тот на
+          `editor/types.ts`) есть на уровне исходников, но ОБЕ стороны только `import type`
+          (`editor/types.ts` весь состоит из одних интерфейсов, ноль рантайма) — прецедент уже
+          живёт в этом же пакете (`engine/coverage/{index,component}.ts` уже делают ровно такой же
+          type-only импорт из `editor/types.ts`), не изобретение с нуля.
+
+          Тесты этого пакета (`passport-assembly`/`repeat-field`/`index-path`/`assembly-depth-
+          guard.test.ts`) правил синхронно — все звали `baseAssemblyOf(passport, assembly, …)`
+          без среза редактора, теперь строят `editorInfo` через `defineEditorInfo` и передают его
+          вторым аргументом. `pnpm run lint`/`typecheck`/`test` (141/141)/`build` — все зелёные;
+          `pnpm build` из корня — `@web-core/assembly:build`/`@web-core/skin:build` зелёные, цикла
+          нет (падают только предсуществующие `mcp`/`ewc`/`reference`/`skin-app`, из-за
+          незакоммиченного `./tree`-разрыва в `apps/skin`, не эта работа).
+
+          НЕ СДЕЛАНО (снято следующим пунктом, `revert-editorInfo-merge-now-unnecessary`) —
+          вторая половина, чужая зона, оказалась НЕ НУЖНА. `packages/ui/src/component-
+          registry.ts`'s `instanceOf` (строка 125) звал `baseAssemblyOf(passport, assembly,
+          undefined, data)` — старой сигнатурой, и план требовал править ЕГО (плюс 32 тестовых
+          файла кита) под пятиаргументную форму. Разбор architect'а после ревью
+          `baseAssemblyOf-passport-type-too-wide` (`@web-core/assembly/ROADMAP.yaml`, Done): весь
+          мёрж с `editorInfo` был не нужен ни этому пакету, ни `packages/ui` — см. пункт ниже.
+
+      - id: revert-editorInfo-merge-now-unnecessary
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "Откатить `editorInfo`-мёрж в `expand.ts` — `@web-core/assembly` больше не просит `genus`/`accepts`"
+        description: |
+          `baseAssemblyOf-becomes-thin-reexport` (выше) добавил `editorInfo: PassportEditorInfo`
+          вторым параметром `baseAssemblyOf` этого пакета и мёрж `readablePassportOf`
+          (`ComponentPassport`+`PassportEditorInfo` → `ReadablePassport`) — единственная причина
+          была: настоящая функция `@web-core/assembly` требовала `ReadablePassport` целиком
+          (`genus`/`accepts` required). Причина СНЯТА: `baseAssemblyOf-passport-type-too-wide`
+          (`@web-core/assembly/ROADMAP.yaml`, статус Done, architect проверил лично — 39/39 тестов,
+          `tsc --strict` на изолированном срезе) сузил параметр настоящей функции до
+          `GrowablePassport` (`component`/`anatomy.keys()`/`root` — три поля). `ComponentPassport`
+          этого пакета уже структурно удовлетворяет этому срезу БЕЗ мержа — сверено architect'ом
+          эмпирически, не на словах.
+
+          Откат, буквально:
+          1. `expand.ts` — удалить `readablePassportOf` (весь мёрж), убрать `editorInfo` из
+             сигнатуры и тела `baseAssemblyOf`, вернуть `(passport: ComponentPassport, assembly:
+             PassportAssembly, address?: string, data?: unknown) => AssemblyTree`, тело —
+             `return baseAssemblyOfReal(passport, assembly as unknown as AssemblyTemplate, address,
+             data);` (тот же приём стирания `assembly`, что уже был). Убрать `import type {
+             PassportEditorInfo } from "../../../editor/types.js"` — заодно снимает файловый цикл
+             `expand.ts` → `editor/types.ts` → `.../assembly/index.ts` → `expand.ts`, который
+             `baseAssemblyOf-becomes-thin-reexport` завёл ради ненужного в итоге мержа (был назван
+             там же безопасным как type-only — теперь его нет вовсе, безопаснее не бывает).
+          2. Тесты (`passport-assembly`/`repeat-field`/`index-path`/`assembly-depth-guard.test.ts`)
+             — откатить обратно к вызову `baseAssemblyOf(passport, assembly, …)` без
+             `editorInfo`/`defineEditorInfo`-фикстур, которые были добавлены именно под мёрж.
+          3. ПРОВЕРИТЬ (это условие закрытия пункта, не «и так сработает»): после отката —
+             `pnpm --filter @web-core/skin lint`/`typecheck`/`test`/`build` зелёные (как и было
+             ДО мержа), И ОТДЕЛЬНО `pnpm --filter @web-core/ui typecheck`/`build` — раньше
+             (`switch-consumers-to-assembly-home`) красные (`TS2740` в 33 файлах) — должны стать
+             зелёными БЕЗ единой правки в `packages/ui`: `component-registry.ts` и все 32 тестовых
+             файла кита уже сегодня зовут старой 4-аргументной формой, которая совпадёт с
+             откаченной сигнатурой этого пакета один в один. Если после отката `packages/ui`
+             всё ещё красный — откат сделан не полностью, не считать пункт закрытым.
+
+          СДЕЛАНО (2026-09-12). `expand.ts` — `readablePassportOf`/`editorInfo` убраны целиком,
+          сигнатура вернулась к `(passport: ComponentPassport, assembly: PassportAssembly,
+          address?, data?) => AssemblyTree`, тело — `baseAssemblyOfReal(passport, assembly as
+          unknown as AssemblyTemplate, address, data)`; `passport` теперь передаётся БЕЗ каста —
+          `ComponentPassport` структурно удовлетворяет `GrowablePassport` (3 поля), каст нужен
+          только на `assembly` (стирание generic-шаблона, как и было). Импорт `PassportEditorInfo`
+          из `../../../editor/types.js` убран — файловый цикл, который заводил предыдущий заход,
+          пропал вместе с причиной. Все 4 тестовых файла (`passport-assembly`/`repeat-field`/
+          `index-path`/`assembly-depth-guard.test.ts`) откачены к вызову `baseAssemblyOf(passport,
+          assembly, …)` без `editorInfo`/`defineEditorInfo`.
+
+          Проверено по всем трём пунктам условия закрытия: `pnpm --filter @web-core/skin lint`/
+          `typecheck`/`test` (141/141)/`build` — зелёные. `pnpm --filter @web-core/ui typecheck` —
+          зелёный БЕЗ единой правки в `packages/ui` (было красным на `TS2740` в 33 файлах ДО этого
+          отката). `pnpm build` из корня — `@web-core/assembly:build`/`@web-core/skin:build`/
+          `@web-core/ui:build` все зелёные, цикла нет; падают только предсуществующие `mcp`/
+          `ewc`/`reference`/`skin-app` (разрыв `./tree` в `apps/skin`, не эта работа).
+
+      - id: switch-consumers-to-assembly-home
+        type: decision
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "`packages/ui` — НЕ нужно трогать (отменено разбором, оставлено для истории)"
+        description: |
+          Прошлая версия этого пункта требовала владельцу `packages/ui` вручную догонять
+          пятиаргументную сигнатуру `baseAssemblyOf` в `component-registry.ts` и заводить
+          `editorInfo`-фикстуры для 32 тестовых файлов кита — реального объёма работы, найденного
+          самим владельцем `packages/ui` при попытке собрать пакет.
+
+          Отменено: `revert-editorInfo-merge-now-unnecessary` (выше) убирает саму причину, по
+          которой сигнатура вообще менялась — `packages/ui` не нужно трогать НИ СТРОКОЙ, все 33
+          файла уже сегодня зовут ровно ту форму, к которой возвращается этот пакет. Пункт закрыт
+          не выполнением, а тем, что задача, которую он описывал, перестала существовать —
+          оставлен в роадмапе как факт (что предполагалось, почему не понадобилось), не удалён
+          молча.
+
   - category: Открытое
     items:
       - id: agent-tooling-by-the-book
@@ -678,3 +929,88 @@ categories:
           Означает: когда появится редактор палитр/форм/нарядов, то, что ему реально понадобится
           из сегодняшних внутренних шестерёнок (семена, адресные селекторы), оформляется своим
           плагином — не раскрывается заранее вслепую.
+
+log:
+  - id: repeat-mechanic-handed-to-assembly
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Найдено сбоку, при проектировании `@web-core/form` (движка валидации): `repeat`/`recur`
+      (разворот дерева сборки по реальным данным массива) жил в этом пакете
+      (`engine/passport/assembly/expand.ts:baseAssemblyOf`), хотя это механика дерева сборки, не
+      скина — user сверил сам: «репит это не меха скина, это меха сборки». Решение user:
+      переезжает в `packages/assembly`, роадмап этого пакета architect пишет только ПОСЛЕ ревью
+      переезда — не раньше.
+
+      Owner `packages/assembly` перенёс `baseAssemblyOf`+`scopedPath` в `engine/expand.ts` того
+      пакета, на настоящих `AssemblyTree`/`resolveDataBinding`, тесты перенесены и зелёные
+      (39/39, сверено architect'ом прогоном, не по отчёту). Этот пакет НЕ тронут тем заходом —
+      `output.ts`'s `BaseAssemblyTree` (копия типов) и `binding.ts`'s ручной `resolveDataBinding`
+      (копия поведения) остаются как были, старый живой путь (`component-registry.ts` →
+      `./passport.js` → этот пакет) продолжает работать.
+
+      После ревью user сказал: «согласен, го тест, потом роадмап по факту» — проверить эмпирически,
+      можно ли этому пакету завести реальную зависимость на `@web-core/assembly` (нужна для
+      cutover), прежде чем писать план на предположении. Architect прогнал диагностику (реальная
+      `dependencies`-запись, `pnpm build` из корня) — цикл `assembly ⇄ skin` подтверждён жёстким
+      отказом Nx, правка тут же отменена. Результат и направление починки (assembly должен сперва
+      убрать СВОЮ type-only зависимость на этот пакет) записаны в `packages/assembly/ROADMAP.yaml`
+      (`verified-real-cycle-with-skin`/`assembly-drop-skin-devdependency`). Категория «Механика
+      дерева переехала в packages/assembly — снять свою копию» (выше) — cutover-план этого пакета,
+      первый пункт которого прямо блокирован на том, что assembly сделает первым.
+
+  - id: cutover-first-three-done-fourth-blocked
+    type: feature
+    date: 2026-09-12
+    summary: >
+      Пункты 1–3 категории «Механика дерева переехала в packages/assembly — снять свою копию»
+      сделаны этим заходом. Проверено `packages/assembly/ROADMAP.yaml` — `assembly-drop-skin-
+      devdependency` там уже `Done` (`@web-core/skin` вычищен из `package.json` того пакета
+      целиком), блокер `wait-for-assembly-drop-skin-devdependency` снят.
+
+      Заведена реальная `"@web-core/assembly": "workspace:*"` в `dependencies` этого пакета,
+      `pnpm install` — без предупреждения про цикл. `output.ts` (копия
+      `BaseAssemblyElement/Content/Node/Tree`+`isContentNode`) удалён, `engine/passport/
+      assembly/index.ts` реэкспортирует настоящие типы из `@web-core/assembly` под ТЕМИ ЖЕ
+      именами (`AssemblyElement as BaseAssemblyElement` и т.д.) — публичная граница
+      (`./editor`, `packages/ui/src/passport.ts`) не почувствовала переезда ни на бит.
+      `binding.ts`'s ручной `resolveDataBinding` заменён на `export { resolveDataBinding } from
+      "@web-core/assembly"`; generic-обёртка (`DataBinding`/`DynamicValue`/`isDataBinding` с
+      `Data`/`AtRoot`) оставлена своей — это была явная граница задачи, не тронута.
+
+      Проверено: `pnpm run lint`/`typecheck`/`test` (141/141) из этого пакета — все зелёные,
+      `pnpm run build` (vite) — собирается, новое предупреждение "@web-core/assembly ... treating
+      it as external" — тот же класс, что уже был у `@web-core/style` (peer), не ошибка (стандартное
+      поведение `externalizeDependencies` для любого bare-импорта в library-режиме). `pnpm build`
+      из корня — `@web-core/assembly:build`/`@web-core/skin:build` оба зелёные, цикла нет; упавший
+      `@web-core/skin-app:build` — предсуществующий разрыв в `apps/skin` (`./tree` не резолвится,
+      из незакоммиченного `wip(skin app)` рефактора), не эта работа и не эта зона.
+
+      Пункт 4 (`baseAssemblyOf-becomes-thin-reexport`) НЕ сделан — найден блокер, которого план не
+      предвидел: `ComponentPassport` этого пакета структурно НЕ совместим с `ReadablePassport`,
+      которого просит настоящая `baseAssemblyOf` (нет `genus`, нет `accepts` на `PassportPart`).
+      Подробности и мои соображения — в описании самого пункта 4 выше. Решение, как мостить (или
+      ослаблять контракт `@web-core/assembly` со стороны его owner'а), не принимал в одиночку —
+      сообщил через user, не стал городить `as unknown as` тайком. Пункт 5
+      (`switch-consumers-to-assembly-home`) не трогал — чужая зона (`packages/ui`).
+
+  - id: editorInfo-merge-was-a-detour
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Мост через `editorInfo` (пункт 4, сделан этим же владельцем по ТЗ architect'а) оказался
+      ненужным крюком. Architect (собственная ошибка, не владельца этого пакета) предложил мёрж
+      `ComponentPassport`+`PassportEditorInfo` в `ReadablePassport` по аналогии с
+      `readable()` (`packages/ui/src/component-registry.ts`), не проверив ПЕРЕД советом, нужны ли
+      `genus`/`accepts` самой функции `baseAssemblyOf` — не нужны, тело трогает только
+      `component`/`anatomy.keys()`/`root`. Владелец этого пакета честно реализовал мост и
+      обнаружил реальную цену — 33 файла `packages/ui` (не 1, как читался план) переставали
+      типа-проверяться. User прямо назвал происходящее и потребовал: проверять до конца ПЕРЕД
+      тем как ТЗ уходит владельцу, не после.
+
+      Разбор доведён architect'ом инструментом (`tsc --strict`), не рассуждением —
+      `@web-core/assembly/ROADMAP.yaml`'s `baseAssemblyOf-passport-type-too-wide` сузил параметр
+      настоящей функции до `GrowablePassport`, который `ComponentPassport` удовлетворяет без
+      мержа. Этот заход (`revert-editorInfo-merge-now-unnecessary`) откатывает мост — `packages/ui`
+      не трогается вообще, весь объём работы, который предвиделся `switch-consumers-to-assembly-
+      home`, испаряется вместе с причиной, а не переносится на владельца `packages/ui`.

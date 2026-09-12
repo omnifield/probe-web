@@ -1,0 +1,365 @@
+# Дорожная карта @web-core/form — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/router/packages/query/packages/store (categories → items, log — журнал решений).
+#
+# Пакет заведён 2026-09-12 архитектором по прямой просьбе user, повод был узкий: форма правки
+# данных компонента в `apps/skin/src/widgets/component/input` (`schema.ts`+`fields.tsx`) работает,
+# но "выглядит крайне плохо". РОЛЬ ПАКЕТА С ТЕХ ПОР ПЕРЕСМОТРЕНА — см. категорию «Роль пакета» и
+# `log` от 2026-09-12: узкий повод (один виджет) остался ЧАСТНЫМ СЛУЧАЕМ, а не назначением пакета.
+# Раздел ниже — рамка, с которой user идёт к architect на составление ADR/плана по зонам
+# (`packages/skin`, `packages/ui`) — сам `@web-core/form` эти зоны не трогает и не решает за них,
+# только называет, что ему от них нужно.
+
+categories:
+  - category: Роль пакета (пересмотрено 2026-09-12)
+    items:
+      - id: role-not-input-state
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Форма — не про инпуты/чекбоксы, а про дерево валидации целиком"
+        description: |
+          Первый заход рассматривал `@web-core/form` как обёртку над headless-состоянием одной
+          формы (`createForm` из `@tanstack/solid-form`: пути, dirty, touched, array-ops) — по
+          образцу `apps/skin/…/input`. Это НЕ то назначение, которое нужно: та боль — частный
+          случай, за пакетом видна более общая механика. Смотреть на `@web-core/assembly`
+          (`packages/assembly/src/engine/tree.ts`, `self-assembly.ts`, `registry.ts`) — движок,
+          которому всё равно, ЧТО он собирает: он даёт дерево+байндинг+реестр, а рисует чужой
+          компонент. `@web-core/form` — такая же механика, только вторая нога не «рендер», а
+          «валидатор»: не форма из инпутов, а параллельное дерево ВАЛИДАЦИИ поверх того, что уже
+          собрано и уже рисуется (assembly это уже умеет — компоновка, диспатч наружу, приём
+          данных — и умеет хорошо, трогать это не нужно).
+
+      - id: base-case-tree-to-validator
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Базовый кейс — tree → validator, а не schema → tree"
+        description: |
+          Разворот от первого предположения (главный сценарий — сгенерировать дерево полей ИЗ
+          io-схемы, `schema → tree`, по образцу `fieldsOf` в `apps/skin/…/input/schema.ts`).
+          Реальный кейс user: модуль уже собран assembly (`composeTree`/ручное дерево), внутри
+          инпуты/кнопки, диспатч наружу уже работает, данные внутрь уже идут — эта часть готова и
+          её трогать не нужно. Не решена именно ВАЛИДАЦИЯ: одно и то же дерево в разных местах
+          нужно валидировать по-разному, один и тот же инпут в разных сборках ведёт себя
+          по-разному (обязателен здесь, нет — там) — это нельзя прописать один раз в схеме рендера,
+          потому что рендер-дерево переиспользуемое, а правила валидации разные у разных
+          потребителей. Значит основной вход — уже готовое дерево (`AssemblyTree`), а не схема:
+          `schema → tree` (генерация дефолтных фрагментов валидатора из io-схемы) остаётся
+          законной, но вспомогательной операцией — см. `layer-default-from-io-schema`.
+
+      - id: layer-addressed-by-path
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Validator layer адресуется путём в данных, а не nodeId дерева"
+        description: |
+          Развилка, свёренная явно с user: слой валидации — плоская карта `путь (JSON Pointer,
+          та же форма, что `bind`/`value.path` в `AssemblyElement`/`AssemblyContent`,
+          `packages/assembly/src/engine/tree.ts`) → валидатор (Standard Schema, из `@web-core/io`)`.
+          НЕ карта `nodeId → валидатор`: валидность — свойство ДАННЫХ по пути, не свойство
+          конкретного узла, который их в данный момент показывает (один путь может быть
+          забинжен в двух разных узлах). Слой существует САМ ПО СЕБЕ, отдельно от дерева и его
+          схемы рендера — передаётся отдельно, как `registry` передаётся отдельно от `tree` для
+          рендера (`RenderTree registry={registry} tree={tree}`, README `@web-core/assembly`).
+
+      - id: validation-as-passport-axis
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Валидация — третья ось ComponentPassport, рядом со скином и self-assembly"
+        description: |
+          `ComponentPassport` (`packages/skin/src/engine/passport/form/passport.ts`) уже
+          мультиосевой: `variantAxis`+`settings` — ось скина (читает `useComponentSkin`,
+          `packages/skin/src/solid/provider.tsx`), `selfAssembly` — ось assembly (читает
+          `growSelfAssembly`). Каждый компонент кита объявляет паспорт один раз
+          (`entity/passport.ts`) и один раз зовёт `useKitLife(passport, props)` в корне
+          (`packages/ui/src/shared/utils/skin-life.ts`) — это и заводит скин на весь компонент,
+          без второго прокидывания. Решено: валидация — такая же ось на ТОМ ЖЕ паспорте, тем же
+          приёмом (свой хук рядом с `useKitLife`, компонент сам регистрируется). Двунаправленно:
+          компонент передаёт форме, что у него есть (значение, свою идентичность/путь), а если
+          сегодняшних пропсов для этого не хватает — это меняется НА СТОРОНЕ кита (новый пропс
+          компонента), не костылём внутри `@web-core/form`.
+
+          Конкретный, уже существующий крючок под это — `packages/ui/src/field/entity/passport.ts`:
+          у `Field` уже объявлены состояния `invalid`/`required`/`errorText`/`requiredIndicator` с
+          CSS-метками (`data-invalid`, `data-required`) — то есть «невалидное поле красное» скин
+          уже умеет рисовать, крючок стоит пустой: `<Field invalid required errorText>` — родные
+          пропы Ark (`FieldRootProps`), их просто НИКТО сегодня не выставляет по результату
+          валидации. Первая же нагрузка новой оси — начать выставлять их по-настоящему.
+
+          Явно решено НЕ строить дешёвый промежуточный вариант (слой сам по себе + потребитель
+          руками прокидывает `invalid`/`errorText` в `<Field>` без завязки на паспорт) —
+          полумера, которую всё равно придётся заменять осью, тестировать её отдельно смысла нет.
+          Сразу берём вариант с осью на паспорте.
+
+  - category: Механика (строит сам пакет, без чужой зоны)
+    items:
+      - id: validator-layer-projection
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "growValidatorLayer(tree, registry, layer) — проекция дерево × layer → валидатор"
+        description: |
+          Обход `AssemblyTree` (тот же обход, что делает рендер, — `bind` элементов и `value.path`
+          content-узлов, `packages/assembly/src/render/props.ts:resolveBind`) собирает множество
+          путей, РЕАЛЬНО забинженных в конкретной сборке. Пересечение с `layer` (путь → валидатор):
+          путь есть в дереве, но не назван в `layer` — не проверяется; путь назван в `layer`, но
+          не забинжен в этой сборке — не участвует. На выходе — валидатор, ограниченный ровно тем,
+          что в этой сборке живое, не вся схема компонента разом.
+
+          Результат валидации адресуется так же, как и весь остальной канал наружу у assembly
+          (`DispatchedEvent` — `nodeId`+`context` наружу): `путь → issues[]`, что с этим делать
+          (подсветить узел, заблокировать кнопку) — решает потребитель снаружи, не этот пакет
+          (та же линия «средство, не решение», что в README `@web-core/assembly`).
+
+      - id: reusable-validation-fragments
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Переиспользуемые фрагменты валидатора по типу узла — рост, а не копипаст"
+        description: |
+          Прямая параллель `selfAssembly` (`packages/assembly/src/engine/self-assembly.ts:
+          growSelfAssembly`): кнопка собрана один раз на паспорте, дальше растится по ссылке на
+          `type` в любом месте дерева — автору сборки копипастить нечего. Так же и с валидатором:
+          правило по умолчанию для типа узла (email-поле валидно вот так) объявляется ОДИН раз
+          (на оси валидации, `validation-as-passport-axis`), а `growValidatorLayer` при обходе
+          дерева сам подтягивает его в каждой точке, где узел этого типа встретился, перенося на
+          реальный `bind`-путь узла в этой сборке. Заявка с 5 одинаковыми email-полями не заставляет
+          автора слоя писать одно и то же правило 5 раз на 5 разных путей.
+
+          Проще, чем `growSelfAssembly`: там id рёбейзятся строковой конкатенацией
+          (`${address}.${node.node}`), здесь путь — JSON Pointer, он и так естественно
+          компонуется (`/shipping` + относительный `/street` = `/shipping/street`) — отдельная
+          схема ребейза не нужна.
+
+      - id: explicit-override-precedence
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Явный layer потребителя перебивает дефолт с типа узла"
+        description: |
+          Один и тот же узел в разных сборках ведёт себя по-разному (обязателен здесь, нет — там)
+          — дефолт с типа узла (`reusable-validation-fragments`) не должен быть финальным словом.
+          Приоритет: явный `layer`, переданный потребителем в конкретном использовании, > дефолт,
+          выросший с типа узла на паспорте. Порядок слияния и форма конфликта (частичная перезапись
+          одного правила поля vs замена целиком) — открытый вопрос дизайна, не решён.
+
+      - id: array-path-projection
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Пути внутри массивов — рантайм-сегменты, которых нет в статичном дереве"
+        description: |
+          `AssemblyTree` статичен (проверено чтением `packages/assembly/src/engine/*` целиком —
+          `coordinate.ts` про несколько узлов ОДНОГО типа в разных местах дерева, не про N
+          элементов одного массива данных; конструкции «повторить по длине массива» в движке нет).
+          Массивы объектов (`list`-поля в сегодняшнем `apps/skin/…/input/schema.ts`, канонический
+          `item` с рекурсивным `children`) — рантайм-факт про ДАННЫЕ, не про дерево сборки. Путь
+          `/items/2/name` появляется и исчезает вместе с длиной массива, дерево assembly этого не
+          знает и не обязано. Разобрать отдельно от статичной части `validator-layer-projection`:
+          как поверх фиксированного узла-списка (одна точка в дереве) считать индексируемые пути
+          по реальным данным на каждое изменение, и как туда же ложится реордер
+          (`insertValue`/`removeValue`/`moveValue`/`swapValues` у `@tanstack/solid-form` — уже
+          есть на `FieldApi`, не изобретён заново; сегодняшний ручной `ListField` в
+          `apps/skin/…/input/fields.tsx` реордер не умеет вовсе).
+
+      - id: layer-default-from-io-schema
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "layer из io-схемы — вспомогательная генерация, не основной вход"
+        description: |
+          Обход JSON Schema (`z.toJSONSchema` + рекурсивный обход `properties`/`items`/`$ref`,
+          сегодня руками сделан в `apps/skin/…/input/schema.ts`: `fieldsOfNode`/`resolve`/
+          `leafKind`) домен-независим — годится как ОДИН из способов получить дефолтный `layer`
+          (путь → валидатор) из готовой io-схемы компонента, без ручного перечисления путей. Это
+          наследник старого пункта `field-descriptors-bridge` — переосмыслен: раньше цель была
+          «список полей для своего рендера» (`FieldDescriptor[]` с `kind`), сейчас — «путь →
+          валидатор» без всякого kind/label/рендер-метаданных, рендер этим пакетом не производится
+          вообще (см. `render-was-never-ours`). Вспомогательный, не основной путь получения layer'а
+          — основной это `reusable-validation-fragments` (с оси паспорта).
+
+  - category: Ось валидации на ComponentPassport (cross-zone — ведёт architect)
+    items:
+      - id: passport-validation-field
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Новое поле на ComponentPassport — правка packages/skin, не наша зона"
+        description: |
+          `ComponentPassport`/`PassportSpec` (`packages/skin/src/engine/passport/form/
+          passport.ts`) — правка формы паспорта, симметрично тому, как там уже есть
+          `selfAssembly?: PassportSelfAssembly<Part>`. Владелец файла — зона `skin`, не `form`:
+          этот пакет только называет, какая форма поля ему нужна (черновая мысль — что-то вроде
+          `validate?: PassportValidation`, конкретная форма — предмет ТЗ, не решение этого файла).
+          ТЗ архитектор составляет и раздаёт владельцу `skin` сам.
+
+      - id: kit-life-validation-hook
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Хук рядом с useKitLife — правка packages/ui, не наша зона"
+        description: |
+          Компонент вызывает что-то рядом с `useKitLife(passport, props)`
+          (`packages/ui/src/shared/utils/skin-life.ts`) — свой хук из `@web-core/form`,
+          регистрирующий компонент в контексте валидации (по образцу `useComponentSkin`,
+          `packages/skin/src/solid/provider.tsx:98` — контекст на дерево, `no-op` вне провайдера).
+          Двунаправленность в деле: хук получает `props` компонента как есть — если для адресации
+          (путь) или значения не хватает существующего пропса, это новый пропс СО СТОРОНЫ
+          компонента (правка `packages/ui`), не подгонка чужих пропсов под себя внутри `form`.
+          Какие именно компоненты первыми получают хук (весь `field`-семейство — `Field`/
+          `FieldInput`/`Checkbox`/`Select`, или уже) — предмет ТЗ архитектора владельцу `ui`.
+
+      - id: field-invalid-errortext-wiring
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Первая нагрузка оси — реально выставить invalid/required/errorText у Field"
+        description: |
+          Крючок уже стоит пустой (`validation-as-passport-axis`): `packages/ui/src/field/entity/
+          passport.ts` объявляет состояния `invalid`/`required`/`errorText`/`requiredIndicator` с
+          CSS-метками, но `<Field invalid required errorText>` — родные пропы `FieldRootProps`
+          (Ark) — сегодня никто не ставит по результату валидации. Как только
+          `validator-layer-projection`+`kit-life-validation-hook` готовы — первый видимый эффект
+          новой оси: невалидное поле реально красное, без новой CSS-механики, той что уже есть.
+
+  - category: Открытое к architect (не решаю сам, называю)
+    items:
+      - id: tanstack-form-role-recheck
+        type: decision
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Роль @tanstack/solid-form при новой раскладке — пересверить, не решено единолично"
+        description: |
+          Изначальное обоснование пакета (`FAQ.md`, `package-scaffolded` в `log`) — headless
+          состояние ОДНОЙ формы целиком (`createForm`: пути, dirty, array-ops). При новом чтении
+          роли (`role-not-input-state`) главная поверхность пакета — проекция дерево×layer→валидатор
+          и рост фрагментов по паспорту, это НЕ то, что даёт `createForm`. Вендор может остаться
+          полезным локально (state одного компонента с динамическим списком внутри себя —
+          `array-path-projection` не обязана изобретать это заново, если `insertValue`/`moveValue`
+          у `FieldApi` подходит на уровне одного узла), но уже не главная точка входа пакета —
+          `full-vendor-reexport` (Done, `src/engine/index.ts`) технически ничего не ломает, вопрос
+          в другом: не тянем ли зависимость под роль, которая пакету больше не нужна целиком.
+          Не мой единоличный решить — называю architect на сверке.
+
+      - id: consumer-migration
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "apps/skin/…/input переезжает — только после того, как ось и проекция готовы"
+        description: |
+          `apps/skin/src/widgets/component/input/{schema.ts,fields.tsx,index.tsx}` (зона
+          `assembly`) — узкий повод, с которого пакет начался (`package-scaffolded`), остаётся
+          последним шагом, не первым: переезжать ему на что-то, чего ещё нет
+          (`validator-layer-projection`+ось на паспорте), нечего. Отдельная заявка зоне `assembly`,
+          когда механика обкатана, этот пакет её сам не пишет.
+
+  - category: Не сделано
+    items:
+      - id: render-was-never-ours
+        type: decision
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "Свой рендер полей — не строим, это никогда не было нашей ролью"
+        description: |
+          Старый пункт `render-on-web-core-ui` предполагал: пакет собирает контролы поля на
+          `@web-core/ui` сам. Отклонено при пересмотре роли — рендер дерева (в т.ч. дерева ввода)
+          уже полностью умеет `@web-core/assembly` (`RenderTree`+`registry`) поверх компонентов
+          `@web-core/ui`, и делает это хорошо (диспатч наружу, приём данных — уже работает по
+          словам user). `@web-core/form` не рисует ничего никогда — отдаёт `путь → issues`,
+          дальше решает потребитель. См. `base-case-tree-to-validator`.
+
+      - id: formisch-rejected
+        type: decision
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "Formisch — не взят"
+        description: |
+          Headless, Solid-нативный, от автора Valibot — по форме ближе всего, но завязан на
+          Valibot как источник валидации/типов. В репозитории `zod` (через `@web-core/io`),
+          заводить второй стек валидации ради одного движка форм решили не делать. Разбор —
+          FAQ.md.
+
+      - id: jsfe-rejected
+        type: decision
+        status: Rejected
+        priority: Low
+        milestone: null
+        name: "jsfe (json-schema-form-element) — не взят"
+        description: |
+          Web component, авто-генерация формы по JSON Schema, работает и с Solid. На момент
+          разбора (2026-09-12) сам себя маркирует "not for production", в разгаре переписывания,
+          `oneOf`/`anyOf`/`allOf`/conditionals не реализованы. Разбор — FAQ.md.
+
+log:
+  - id: package-scaffolded
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Заявка началась с конкретной боли user: форма правки данных компонента в
+      `apps/skin/src/widgets/component/input` работает, но "выглядит крайне плохо", и это не
+      разовый кейс — предстоит много правок JSON, нужен отдельный пакет-движок. Разобрали и
+      отбросили react-jsonschema-form/JSONForms/Formily (React/Vue/Angular, не Solid), затем
+      Formisch (Valibot-lock-in) и jsfe (не для продакшена) — см. `formisch-rejected`/
+      `jsfe-rejected`. Остановились на `@tanstack/solid-form`: Solid уже есть в семье вендоров
+      (router/query), schema-agnostic через Standard Schema — Zod заходит без конвертации,
+      headless, полный набор операций над массивами. По прямой просьбе user пакет заведён без
+      отдельной ветки/PR (архитектор обычно ведёт git сам, здесь user попросил сразу шаблон +
+      овнера в harness.yaml + стартовый роадмап). Заполнено по образцу `packages/router`/
+      `packages/query`: package.json (dependencies на `@tanstack/solid-form` и `@web-core/io`, БЕЗ
+      `zod` напрямую — поправлено по факту, см. `io-not-zod-direct`), tsconfig/tsconfig.build/
+      eslint.config/vitest.config, `src/index.ts` + `src/engine/index.ts` (голый реэкспорт
+      вендора), README/FAQ начерно. Содержания (мост к текущей io-схеме, операции над массивами,
+      рендер на `@web-core/ui`) НЕТ — это открытая работа овнера, см. категории выше.
+
+  - id: role-pivot-tree-validator
+    type: decision
+    date: 2026-09-12
+    summary: >
+      Первый заход в роль пакета (сессия owner-form) начал с узкого чтения — «мост между
+      `apps/skin/…/input/schema.ts` и `createForm`», то есть форма как стейт инпутов/чекбоксов.
+      User развернул рамку целиком: `@web-core/form` — вторая нога той же механики, что
+      `@web-core/assembly` (дерево→рендер), только дерево→ВАЛИДАТОР. Разбор шёл по факту чтения
+      `packages/assembly/src/engine/` (tree.ts, self-assembly.ts, registry.ts, compose.ts,
+      nesting.ts, coordinate.ts, `render/props.ts`) и `packages/skin/src/engine/passport/form/
+      passport.ts` + `packages/ui/src/{accordion,field}/entity/passport.ts` +
+      `packages/ui/src/shared/utils/skin-life.ts`. Три развилки свёрены явно с user по ходу
+      разговора: (1) базовый кейс — `tree → validator`, не `schema → tree` (готовая сборка уже
+      есть, диспатч и данные внутрь уже работают, не хватает именно валидации, которая должна
+      отличаться для одного и того же дерева в разных местах); (2) layer адресуется путём в
+      данных (JSON Pointer, форма `bind`), не `nodeId` — валидность свойство данных, не узла;
+      (3) переиспользование правил по типу узла — той же идеей, что `selfAssembly` (объявлено
+      раз на паспорте, растится по ссылке на `type` в дереве), не копипастом path-by-path.
+      Финальная развилка — где живёт правило по умолчанию для типа узла: паспорт компонента
+      (`ComponentPassport`, третья ось рядом со скином/self-assembly) или отдельный реестр
+      `@web-core/form`. User выбрал паспорт — сразу «настоящий» вариант, дешёвую половинчатую
+      реализацию (layer сам по себе + потребитель руками ставит `invalid`/`errorText`) решили не
+      строить: «нам всё равно это делать, нет смысла сейчас тестить полумеры». Найден готовый
+      крючок под первую нагрузку оси: `packages/ui/src/field/entity/passport.ts` уже объявляет
+      `invalid`/`required`/`errorText`/`requiredIndicator` с CSS-метками — красный текст при
+      невалидном поле скин уже умеет рисовать, не хватает только того, кто выставит эти пропы по
+      правде. Cross-zone часть (правка `ComponentPassport` в `packages/skin`, новый хук в
+      `packages/ui` рядом с `useKitLife`) — user уносит architect'у на ADR/план по зонам, этот
+      пакет её не решает, только называет форму запроса (категория «Ось валидации на
+      ComponentPassport»). Старые пункты `field-descriptors-bridge`/`array-ops-integration`/
+      `render-on-web-core-ui` из первой версии роадмапа пересмотрены под новую роль (см.
+      `layer-default-from-io-schema`, `array-path-projection`, `render-was-never-ours`) — не
+      выброшены как факт, а переосмыслены: обход JSON Schema и операции над массивами остаются
+      нужны, просто не в форме «список полей для своего рендера».

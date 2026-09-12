@@ -5,6 +5,7 @@ export type {
   AdmissionRule,
   ComponentGenus,
   Genus,
+  GrowablePassport,
   ReadablePart,
   ReadablePassport,
 } from "./passport-read.js";
@@ -12,6 +13,15 @@ export { partOf } from "./passport-read.js";
 
 export type { SelfAssembly, SelfAssemblyContent, SelfAssemblyElement, SelfAssemblyNode } from "./self-assembly.js";
 export { growSelfAssembly } from "./self-assembly.js";
+
+export type {
+  AssemblyTemplate,
+  AssemblyTemplateContent,
+  AssemblyTemplateElement,
+  AssemblyTemplateNode,
+  AssemblyTemplateRepeat,
+} from "./expand.js";
+export { baseAssemblyOf, scopedPath } from "./expand.js";
 
 export type {
   AssemblyContent,

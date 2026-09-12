@@ -62,6 +62,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@web-core/assembly": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/trace": "workspace:*",
     "@zag-js/anatomy": "^1.43.1"
