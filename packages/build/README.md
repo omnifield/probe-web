@@ -36,6 +36,7 @@
 | Пресет тест-раннера | `@web-core/build/vitest` | `defineTestConfig` |
 | Профиль типов — фронтенд | `@web-core/build/tsconfig` | JSON, только `extends` |
 | Профиль типов — сервер без Vite | `@web-core/build/tsconfig-node` | JSON, только `extends` |
+| Условие резолва типов соседа-исходника | `customConditions: ["development"]` в общей базе `src/tsconfig/shared.json` | часть обоих профилей, не отдельный подпуть |
 | TS-раннер серверов | бинарник `web-core-node` | CLI (`web-core-node <файл>`, `web-core-node watch <файл>`) |
 
 📂 Пять частей — четыре независимых инструмента, не грани одного движка: у `/vite` и `/vitest`
@@ -143,6 +144,8 @@ tsconfig-профили и раннер настроек не принимают
 |---|---|---|
 | Дев-режим — сосед виден исходником | сработал `resolve.alias` | `/vite`, `apply: "serve"` |
 | Тест-прогон — сосед виден исходником | сработал `resolve.alias` | `/vitest`, `defineTestConfig()` |
+| `tsc`/IDE — типы соседа видны исходником | пакет-сосед опубликовал условие `development` в своём `exports`, оно совпало с `customConditions` потребителя | `/tsconfig`, `/tsconfig-node` |
+| `tsc`/IDE — типы соседа всё ещё из `dist/*.d.ts` | сосед условие `development` пока не опубликовал | `/tsconfig`, `/tsconfig-node` — см. FAQ.md |
 | Дев-режим — CSS соседа порождён функцией | `resolveId`+`load` вернули результат | `/vite`, `generatedCssPlugin` |
 | Дев-режим — CSS соседа остался файлом с диска | `load` вернул `undefined` | `/vite`, нет функции в `./generate` |
 | Сборка — ничего не подменяется | оба дев-плагина `apply: "serve"`, в билде не участвуют | `/vite` |
@@ -183,6 +186,7 @@ tsconfig-профили и раннер настроек не принимают
 | `defineConfig`/`defineTestConfig` экспортируются | `import()` собранного `dist/vite/index.js` и `dist/vitest/index.js` | обе функции — `function` |
 | `web-core-node` исполняет `.ts` | ручной прогон на тестовом файле | вывод программы, без ошибок загрузчика |
 | `/tsconfig`, `/tsconfig-node` резолвят `extends` | `tsc --noEmit` на файле, наследующем каждый профиль из `dist/` | оба прохода зелёные |
+| `customConditions` не ломает потребителя без условия `development` в `exports` | `pnpm run typecheck` в `apps/skin` (сосед `@web-core/skin` условие ещё не публикует) до и после правки | тот же набор ошибок, регрессии нет |
 | Тарбол не тащит лишнего | `pnpm pack`, разбор содержимого архива | только `dist` + корневой `README.md` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>

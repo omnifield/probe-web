@@ -231,22 +231,69 @@ categories:
           Означает: инструмент (профиль + раннер) готов, серверы ещё не переведены — это задача
           владельцев тех зон, не `build`.
 
-      - id: typecheck-workspace-source-alias
+      - id: retire-workspace-source-alias
         type: feature
         status: Backlog
+        priority: Low
+        milestone: null
+        name: Снести алиас `workspace-source.ts`, когда все соседи опубликуют `development`
+        description: |
+          Означает: пока хотя бы один пакет-сосед не публикует условие `"development"` в своём
+          `exports`, `resolve.alias`-подмена (`findWorkspaceSources`/`workspaceSourcePlugin`,
+          `src/vite/workspace-source.ts`) остаётся единственным способом видеть его исходник в
+          деве/тестах — снимать её раньше значило бы вернуть регресс, который чинили `dev-source-
+          alias`/`vitest-workspace-source-alias`. Как только миграция соседей на условие
+          `exports` завершится (задача владельцев тех пакетов, не `build` — см. FAQ.md
+          «Почему соседи по воркспейсу подменяются алиасом»), альтернативная сторона алиаса
+          (JS/TS-резолв, не CSS-порождение) станет мёртвым кодом — снести. Часть
+          `generated-css.ts`/CSS-порождение на запрос эта задача не трогает: у неё другая
+          природа (вызов функции вместо чтения файла), условием `exports` не закрывается.
+
+      - id: typecheck-workspace-source-alias
+        type: feature
+        status: Done
         priority: Medium
         milestone: null
-        name: Типы соседа-исходника — `tsc --noEmit`/IDE ещё смотрят в `dist`
+        name: Типы соседа-исходника — приёмная часть в tsconfig для условия `development`
         description: |
-          Означает: `vitest-workspace-source-alias` (см. выше) чинит РАНТАЙМ-резолв — dev-сервер
-          и тесты теперь видят исходник соседа. Но `tsc --noEmit`/IDE резолвят типы соседа через
-          его `dist/*.d.ts`: декларации не подменяются алиасом Vite (`resolve.alias`) в принципе —
-          это механизм бандлера, не компилятора TS. Правка типа в исходнике соседа (новое поле
-          пропса и т.п.) не будет видна тайпчеку потребителя, пока сосед не пересобран.
-          Замечено архитектором по ходу починки `vitest-workspace-source-alias`, за рамки той
-          задачи не входило.
+          Означает: сторона `build` готова — `customConditions: ["development"]` в общей базе
+          `src/tsconfig/shared.json` (наследуют оба профиля, `/tsconfig` и `/tsconfig-node`).
+          Как только сосед публикует у себя в `exports` условие `"development": "./src/..."`
+          (ключ раньше `types`/`default` — резолвер берёт первый подошедший по порядку), `tsc
+          --noEmit`/IDE потребителя видят исходник соседа тем же путём, каким Vite/Vitest уже
+          видят его сегодня через `resolve.alias`. Публикация условия у каждого соседа — решение
+          владельца ТОГО пакета (меняет публикуемую поверхность, см. FAQ.md), не `build`; сама
+          правка `build` — чисто аддитивная и не активна, пока ни один сосед условие не
+          опубликовал (проверено: `apps/skin` типчек до/после правки — идентичный набор ошибок).
+          Алиас `workspace-source.ts` остаётся действовать и после — он несёт дев-цикл для ещё
+          не мигрировавших соседей и не мешает уже мигрировавшим. Снос алиаса, когда миграция
+          соседей завершится — отдельный пункт, `retire-workspace-source-alias`.
 
 log:
+  - id: typecheck-workspace-source-alias
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Заресёрчено вместе с user, направление подтверждено architect'ом: `resolve.alias` — приём
+      бандлера, у `tsc`/IDE его нет, они читают `exports` пакета напрямую. Рынок для этого
+      разрыва уже несёт штатный рычаг — условие `exports` (`development`/`production`), которое
+      Vite резолвит из коробки (сам подставляет условие по режиму serve/build, без плагина), а
+      TS с 5.4+ читает через `compilerOptions.customConditions` (у нас TS 5.9.3, `moduleResolution:
+      "bundler"` уже стоял). `defineTestConfig()` (`src/vitest/index.ts`) уже держал
+      `resolve.conditions: ["development", "browser"]` — вхолостую, потому что ни один сосед
+      условие `development` не публиковал. Добавлено: `customConditions: ["development"]` в
+      `src/tsconfig/shared.json` (общая база `/tsconfig`+`/tsconfig-node`) — единственная правка
+      кода со стороны `build`. Дальше — не `build`: публикация `"development": "./src/..."` в
+      `exports` каждого пакета-соседа — решение владельца ТОГО пакета (меняет публикуемую
+      поверхность, старый довод FAQ «Почему алиас, а не условие» этим не отменяется, а сужается
+      до Vite/Vitest — там алиас остаётся оправданным умолчанием). Проверено: `pnpm run build`
+      + `pnpm run typecheck` пакета — зелёные; `pnpm run typecheck` в `apps/skin` (сосед
+      `@web-core/skin`, условие `development` ещё не публикует) — тот же набор ошибок до и
+      после правки, включая исходный репортнутый баг (`useComponentSkinData` не виден типам) —
+      он остаётся, но теперь ожидаемо: закрывается миграцией `@web-core/skin`, не `build`.
+      `resolve.alias` (`workspace-source.ts`) не тронут — снос за отдельным пунктом
+      (`retire-workspace-source-alias`), когда миграция соседей завершится.
+
   - id: vitest-workspace-source-alias
     type: plan
     date: 2026-09-11
