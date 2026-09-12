@@ -352,6 +352,85 @@ categories:
 
   - category: Информация о компоненте
     items:
+      - id: component-info-sync-descriptor
+        type: feature
+        status: Done
+        priority: Medium
+        name: Синхронный срез компонента (componentDescriptorOf/listComponents) — без службы раздачи
+        description: |
+          Найдено user при разборе `apps/skin` (2026-09-12): "неудобно, приходится дублировать и
+          собирать" про рутовые хелперы кита — конкретно двумя фактами.
+
+          1. `apps/skin/src/entities/component/model/list.ts` и
+             `apps/skin/src/entities/component/ui/catalog/tree/adapter.ts` оба писали
+             `Object.keys(KIT).sort()` ради одного и того же перечня имён компонентов — и оба ради
+             этого тащили весь Solid-кит (39 настоящих компонентов всех частей), хотя нужны были
+             только ключи, которые давно лежат в данных (`PASSPORTS`, без единой строчки Solid).
+          2. `apps/skin/.mcp/src/engine/kit.ts` (MCP-инструменты, синхронный процесс, без
+             `presets`) вручную стыковал `passportOf`/`editorInfoOf`/`IO.get` по каждому
+             компоненту — ровно ту же склейку, что уже делает `createComponentInfo`, только без
+             async и без службы раздачи, которой MCP не имеет и не просит.
+
+          Решение: в `component-info.ts` — `ComponentDescriptor` (паспорт + срез редактора + io,
+          без skin) и `componentDescriptorOf(component, provider?)` поверх уже существующего
+          `kitComponentProvider()`; `listComponents(provider?)` — отсортированные имена из
+          `provider.components`. Оба принимают поставщика вторым (необязательным) параметром — та
+          же DI-форма, что у `createComponentInfo`, второй поставщик кита — тем же
+          `mergeComponentProviders`. `createComponentInfo` переписан поверх `componentDescriptorOf`
+          вместо своей копии той же склейки — одна реализация на двоих, не две синхронизируемые
+          вручную.
+
+          Новый подпуть НЕ заведён: обе функции живут в уже опубликованном `./component-info`,
+          сборка (`vite.config.ts`/`package.json` exports) не тронута.
+
+          Проверено: тесты (`test/component-info.test.ts`, 5/5 — два новых сценария на
+          `componentDescriptorOf` включая неизвестный компонент, один на `listComponents`),
+          `tsc --noEmit`, `eslint`, `vite build` — весь пакет: 279/279 тестов зелёные, сборка без
+          ошибок, `dist/component-info.js` обновлён.
+
+          НЕ сделано здесь (зона `apps/skin`, не `packages/ui` — user переносит сам): переключение
+          `list.ts`/`catalog/tree/adapter.ts` на `listComponents()` и `apps/skin/.mcp/.../kit.ts` на
+          `componentDescriptorOf()` вместо ручной стыковки.
+
+      - id: component-info-derived-group
+        type: feature
+        status: Done
+        priority: Medium
+        name: groupOf(component)/GROUPS в component-info.ts — производный факт готовым, не сырой editorInfo
+        description: |
+          Продолжение `component-info-sync-descriptor`. User перевёл
+          `apps/skin/.../catalog/tree/adapter.ts` на `listComponents()`, но заметил живьём: файл
+          всё ещё импортировал `GROUPS`/`editorInfoOf`/`groupOf` из `@web-core/ui/passport`
+          напрямую и сам считал `groupOf(editorInfo)` — та же болезнь, что чинил
+          `component-info-sync-descriptor`, просто на один шаг глубже. Дословно: "я не хочу чтобы
+          потребители лазили в паспорта или в ио или подобные данные напрямую — я хочу чтобы это
+          было через отдельный хелпер... если потребителю нужно работать не просто с компонентами,
+          а с их внутренностями, чтобы он это делал через одну точку, а не ковырялся напрямую".
+
+          Решение: `component-info.ts` — `groupOf(component, provider?)` (группа компонента,
+          `undefined` — компонента/среза редактора нет) поверх `provider.editorInfoOf` +
+          `@web-core/skin/editor`'s `groupOf(editorInfo)` (тот же приём, что `componentDescriptorOf`
+          поверх `passportOf`/`editorInfoOf`/`io.get`); `GROUPS` — реэкспорт каталога групп оттуда
+          же, не второй перечень рядом. Потребителю каталога компонентов (дерево показа, список)
+          теперь достаточно `@web-core/ui/component-info` целиком — `@web-core/ui/passport` не
+          нужен вовсе.
+
+          Прямые импорты `@web-core/ui/passport`/`@web-core/ui/io` НЕ запрещены как таковые —
+          подпути остаются для инфраструктурной проводки, которой нужна именно сырая функция
+          (`SkinProvider`, `apps/skin/src/app/providers/skin.tsx`, зовёт `passportOf` как
+          `lookup` движка скина — не "внутренности компонента для показа", а контракт конкретного
+          API движка). Правило — про потребителя, который хочет ФАКТ о компоненте для витрины/
+          каталога/показа: тот идёт через `component-info.ts`, не собирает факт сам из сырых
+          паспорта/среза редактора/io.
+
+          Проверено: `test/component-info.test.ts` — два новых сценария (`groupOf` известного
+          компонента входит в `GROUPS`, `groupOf` неизвестного — `undefined`, не подставляет
+          дефолтную группу), `tsc --noEmit`, `eslint`, `vite build` — весь пакет: 281/281 тестов
+          зелёные.
+
+          НЕ сделано здесь (зона `apps/skin`): переключение `adapter.ts` на `groupOf`/`GROUPS` из
+          `@web-core/ui/component-info` — user переносит сам.
+
       - id: component-info-multiple-forms-per-component
         type: bug
         status: Done

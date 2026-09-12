@@ -1,5 +1,4 @@
-import { KIT } from "@web-core/ui";
-import { GROUPS, editorInfoOf, groupOf } from "@web-core/ui/passport";
+import { GROUPS, groupOf, listComponents } from "@web-core/ui/component-info";
 
 export interface TreeItemData {
   readonly value: string;
@@ -8,17 +7,14 @@ export interface TreeItemData {
 }
 
 export function treeItems(): readonly TreeItemData[] {
-  const components = Object.keys(KIT).sort();
+  const components = listComponents();
 
   return Object.entries(GROUPS)
     .map(([group, title]) => ({
       value: group,
       label: title,
       children: components
-        .filter((component) => {
-          const editorInfo = editorInfoOf(component);
-          return editorInfo !== undefined && groupOf(editorInfo) === group;
-        })
+        .filter((component) => groupOf(component) === group)
         .map(
           (component): TreeItemData => ({ value: component, label: component }),
         ),

@@ -35,7 +35,7 @@
 
 import { createIoRegistry, type IoEntry, type IoRegistry } from "@web-core/io";
 import type { ComponentPassport, Form } from "@web-core/skin/model";
-import type { PassportEditorInfo } from "@web-core/skin/editor";
+import { groupOf as groupOfEditorInfo, GROUPS, type ComponentGroup, type PassportEditorInfo } from "@web-core/skin/editor";
 import { PRESET_KIND, type PresetRecord, type PresetsClient } from "@web-core/skin/presets";
 import { groupByTag, type TagGroup } from "@web-core/skin/tags";
 
@@ -156,6 +156,83 @@ export function mergeComponentProviders(...providers: readonly ComponentProvider
   };
 }
 
+/**
+ * Синхронный срез одного компонента — паспорт, срез редактора, io-схема, БЕЗ службы раздачи.
+ *
+ * Заведён отдельно от {@link ComponentInfo} не как урезанная копия, а как то, что реально нужно
+ * потребителю, которому нечем ждать `Promise` и негде взять `presets` (MCP-инструменты
+ * `apps/skin/.mcp` — синхронный процесс, `skin`-пресеты им не нужны вовсе). Раньше такой
+ * потребитель либо тащил async-путь ради данных, которые у него есть синхронно, либо стыковал
+ * `passportOf`/`editorInfoOf`/`IO.get` тремя вызовами сам — и обе копии (эта и `createComponentInfo`
+ * ниже) держали одну и ту же склейку раздельно, разъезжаясь при первой же правке одной из них.
+ */
+export interface ComponentDescriptor {
+  readonly component: string;
+  readonly passport: ComponentPassport | undefined;
+  readonly editorInfo: PassportEditorInfo | undefined;
+  readonly io: IoEntry | undefined;
+}
+
+/**
+ * Складывает паспорт + срез редактора + io-схему ОДНОГО компонента — не назван поставщик, берётся
+ * у {@link kitComponentProvider} (свой кит). Второй поставщик — {@link mergeComponentProviders},
+ * результатом сюда.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ * @param provider `passportOf`/`editorInfoOf`/`io` — не назван, берётся у своего кита
+ */
+export function componentDescriptorOf(
+  component: string,
+  provider: Pick<ComponentProviderFields, "passportOf" | "editorInfoOf" | "io"> = kitComponentProvider(),
+): ComponentDescriptor {
+  return {
+    component,
+    passport: provider.passportOf(component),
+    editorInfo: provider.editorInfoOf(component),
+    io: provider.io.get(component),
+  };
+}
+
+/**
+ * Имена компонентов поставщика, отсортированные — не назван, берётся у {@link kitComponentProvider}.
+ *
+ * Заведена по тому же следу, что {@link componentDescriptorOf}: `Object.keys(KIT).sort()` писался
+ * в двух местах `apps/skin` (список каталога и дерево показа) ради одного и того же перечня имён —
+ * и оба тащили ради этого весь Solid-кит (реальные компоненты всех частей), хотя нужны были только
+ * ключи, которые давно лежат в данных (`PASSPORTS`) без единой строчки Solid.
+ */
+export function listComponents(provider: Pick<ComponentProvider, "components"> = kitComponentProvider()): readonly string[] {
+  return [...provider.components].sort();
+}
+
+/**
+ * Каталог групп кита (`id` → человеческое название) — та же таблица, по которой раскладывается
+ * {@link groupOf}. Реэкспорт, а не отдельный источник: держать здесь второй перечень рядом с
+ * `@web-core/skin/editor` означало бы то же расхождение, которого этот файл избегает у паспорта и
+ * io.
+ */
+export { GROUPS };
+
+/**
+ * Группа компонента в каталоге — `undefined`, если компонент не объявлен в ките/без среза
+ * редактора (кому группа не нужна, тому и код неоткуда взять). Найдено у user живьём (2026-09-12,
+ * `apps/skin/.../catalog/tree/adapter.ts`): дерево показа звало `editorInfoOf(component)` из
+ * `@web-core/ui/passport` напрямую и само считало `groupOf(editorInfo)` — прямой импорт паспорта
+ * там, где нужен был один производный факт. Тот же довод, что у {@link componentDescriptorOf}:
+ * потребитель, которому нужна не сама анатомия компонента, а факт О компоненте, зовёт готовое
+ * здесь, а не собирает его из сырых `passport`/`editorInfo`/`io` сам.
+ *
+ * @param component имя компонента, оно же `data-scope` на каждом его узле
+ * @param provider `editorInfoOf` — не назван, берётся у {@link kitComponentProvider}
+ */
+export function groupOf(
+  component: string,
+  provider: Pick<ComponentProviderFields, "editorInfoOf"> = kitComponentProvider(),
+): ComponentGroup | undefined {
+  const editorInfo = provider.editorInfoOf(component);
+  return editorInfo && groupOfEditorInfo(editorInfo);
+}
+
 /** Источники, из которых складывается запись. Не названо — берётся у {@link kitComponentProvider}. */
 export interface ComponentInfoSources extends Partial<ComponentProviderFields> {
   /** Клиент службы раздачи (`createPresetsClient()`, `@web-core/skin/presets`). */
@@ -211,9 +288,11 @@ export interface ComponentInfo {
  */
 export function createComponentInfo(sources: ComponentInfoSources): (component: string) => Promise<ComponentInfo> {
   const kit = kitComponentProvider();
-  const passportOf = sources.passportOf ?? kit.passportOf;
-  const editorInfoOf = sources.editorInfoOf ?? kit.editorInfoOf;
-  const io = sources.io ?? kit.io;
+  const provider = {
+    passportOf: sources.passportOf ?? kit.passportOf,
+    editorInfoOf: sources.editorInfoOf ?? kit.editorInfoOf,
+    io: sources.io ?? kit.io,
+  };
   const { presets } = sources;
 
   return async function componentInfo(component: string): Promise<ComponentInfo> {
@@ -234,12 +313,6 @@ export function createComponentInfo(sources: ComponentInfoSources): (component: 
             })),
           };
 
-    return {
-      component,
-      passport: passportOf(component),
-      editorInfo: editorInfoOf(component),
-      io: io.get(component),
-      skin,
-    };
+    return { ...componentDescriptorOf(component, provider), skin };
   };
 }

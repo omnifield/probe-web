@@ -166,3 +166,37 @@ props)` в `Toast` плюс прямой спред `{...anatomyParts.<част�
 сделано при первой сборке компонента. Проверено живым рендером (`test/toast.test.tsx`): реальный
 `toast.create(...)` + запрос DOM по `[data-scope="toast"][data-part="…"]` на все пять частей, не
 только доказательство рецепта на бумаге (`test/recipe.test.tsx`).
+
+## Мне нужны паспорт + срез редактора + io ОДНОГО компонента — брать `createComponentInfo` или свою стыковку `passportOf`/`editorInfoOf`/`IO`?
+
+Ни то, ни другое — `componentDescriptorOf(component)` из `@web-core/ui/component-info`
+(`ROADMAP.yaml`, `component-info-sync-descriptor`). Складывает те же три куска, что и
+`createComponentInfo`, но синхронно и без службы раздачи (`presets`) — если тебе не нужны
+сохранённые формы/наряды компонента (`skin` в `ComponentInfo`), `createComponentInfo` тянет
+`Promise` и просит `PresetsClient`, которого может не быть вовсе (так у MCP-инструментов
+`apps/skin/.mcp` — синхронный процесс, служба раздачи ему не нужна). Своя стыковка трёх вызовов
+руками — тоже мимо: ровно это уже сделано и покрыто тестом, вторая копия расходится с первой при
+первой же правке одной из них (что и произошло — `apps/skin/.mcp/src/engine/kit.ts` держал такую
+копию до этой правки).
+
+Нужен список ВСЕХ имён компонентов кита (для каталога, дерева, `Object.keys(KIT).sort()`) —
+`listComponents()` из того же файла, вместо ключей полного `KIT` (`@web-core/ui`, корневой вход):
+`KIT` несёт настоящие Solid-компоненты всех частей, `listComponents()` берёт имена из данных
+(`PASSPORTS`), не через Solid.
+
+Оба принимают поставщика вторым необязательным параметром (default — свой кит,
+`kitComponentProvider()`) — второй поставщик кита подставляется тем же `mergeComponentProviders`,
+что и в `createComponentInfo`.
+
+Тот же принцип — на любой ДРУГОЙ производный факт о компоненте, не только на паспорт/срез
+редактора/io целиком. Пример: группа компонента в каталоге. Не `editorInfoOf(component)` из
+`@web-core/ui/passport` плюс свой вызов `groupOf(editorInfo)` — а `groupOf(component)` из
+`@web-core/ui/component-info` (`ROADMAP.yaml`, `component-info-derived-group`), `GROUPS` — оттуда
+же, реэкспортом. Правило общее: если нужен ФАКТ о компоненте (для показа, каталога, витрины) — за
+ним идут в `component-info.ts`, а не разбирают паспорт/срез редактора/io сами и не импортируют
+`@web-core/ui/passport`/`@web-core/ui/io` в продуктовом коде напрямую. Эти два подпути остаются
+открытыми только для инфраструктурной проводки, которой нужна именно сырая функция строго
+названной формы (пример — `SkinProvider` в `apps/skin` зовёт `passportOf` как `lookup` движка
+скина: это контракт конкретного API, не "разбор внутренностей компонента для показа"). Появился
+новый факт, которого `component-info.ts` ещё не отдаёт, — заводится функция здесь, рядом с
+`groupOf`/`componentDescriptorOf`, а не point-in-place импорт паспорта в продукте.

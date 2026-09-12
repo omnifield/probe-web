@@ -1,5 +1,6 @@
 import { EDITOR_INFOS, PASSPORTS } from "@web-core/ui/passport";
 import { IO } from "@web-core/ui/io";
+import { componentDescriptorOf } from "@web-core/ui/component-info";
 import { z } from "@web-core/io";
 import { footprintOf, groupOf, type ComponentFootprint, type ComponentGroup } from "@web-core/skin/editor";
 import { zocker } from "zocker";
@@ -37,15 +38,15 @@ export function listComponents(filter: ComponentFilter = {}) {
   return Object.keys(PASSPORTS)
     .toSorted()
     .map((name) => {
-      const editor = EDITOR_INFOS[name];
+      const { editorInfo, passport } = componentDescriptorOf(name);
       return {
         component: name,
-        genus: editor?.genus,
-        group: editor ? groupOf(editor) : undefined,
-        footprint: editor ? footprintOf(editor) : undefined,
-        package: editor?.package,
-        partsCount: PASSPORTS[name]?.anatomy.keys().length ?? 0,
-        assemblies: (editor?.assemblies ?? []).map((a) => a.name),
+        genus: editorInfo?.genus,
+        group: editorInfo ? groupOf(editorInfo) : undefined,
+        footprint: editorInfo ? footprintOf(editorInfo) : undefined,
+        package: editorInfo?.package,
+        partsCount: passport?.anatomy.keys().length ?? 0,
+        assemblies: (editorInfo?.assemblies ?? []).map((a) => a.name),
       };
     })
     .filter(

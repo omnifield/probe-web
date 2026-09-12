@@ -2,7 +2,7 @@ import { PRESET_KIND, type PresetKind, type PresetRecord, type PresetsClient } f
 import type { Form, Outfit } from "@web-core/skin/model";
 import { describe, expect, it } from "vitest";
 
-import { createComponentInfo } from "../src/component-info.js";
+import { componentDescriptorOf, createComponentInfo, GROUPS, groupOf, listComponents } from "../src/component-info.js";
 
 function formRecord(name: string, component: string, form: Partial<Form> = {}): PresetRecord<Form> {
   return {
@@ -85,5 +85,45 @@ describe("createComponentInfo — несколько сохранённых фо
     const info = await componentInfo("date-picker");
 
     expect(info.skin).toBeUndefined();
+  });
+});
+
+describe("componentDescriptorOf — синхронный срез без службы раздачи", () => {
+  it("отдаёт паспорт/срез редактора/io своего кита без presets", () => {
+    const descriptor = componentDescriptorOf("button");
+
+    expect(descriptor.component).toBe("button");
+    expect(descriptor.passport?.component).toBe("button");
+    expect(descriptor.editorInfo).toBeDefined();
+  });
+
+  it("паспорт/editorInfo — undefined у неизвестного компонента, вызов не падает", () => {
+    const descriptor = componentDescriptorOf("no-such-component");
+
+    expect(descriptor.passport).toBeUndefined();
+    expect(descriptor.editorInfo).toBeUndefined();
+    expect(descriptor.io).toBeUndefined();
+  });
+});
+
+describe("listComponents — имена своего кита, отсортированные", () => {
+  it("отдаёт имена компонентов по алфавиту", () => {
+    const names = listComponents();
+
+    expect(names).toContain("button");
+    expect(names).toEqual([...names].sort());
+  });
+});
+
+describe("groupOf — производный факт о компоненте, без сырого editorInfo на руках у потребителя", () => {
+  it("отдаёт группу известного компонента из каталога GROUPS", () => {
+    const group = groupOf("button");
+
+    expect(group).toBeDefined();
+    expect(Object.keys(GROUPS)).toContain(group);
+  });
+
+  it("undefined у неизвестного компонента — не падает и не подставляет группу по умолчанию", () => {
+    expect(groupOf("no-such-component")).toBeUndefined();
   });
 });
