@@ -16,6 +16,7 @@ afterEach(() => {
 
 const schema = z.object({
   email: z.string().email(),
+  agree: z.literal(true),
   subscribeNewsletter: z.boolean(),
 });
 
@@ -24,8 +25,11 @@ function buildTree(): AssemblyTree {
     components: {
       root: "form",
       nodes: {
-        form: { id: "form", type: "form", parentId: null, children: ["email", "newsletterBlock"] },
+        form: { id: "form", type: "form", parentId: null, children: ["email", "agree", "newsletterBlock"] },
         email: { id: "email", type: "field", parentId: "form", children: [], bind: { value: "/email" } },
+        // Checkbox — не Field: чужой проп (`@ark-ui/solid`), не `value`. Регрессия на bug, найденный
+        // architect'ом — `ownValuePathOf` брал жёстко `bind.value`, чекбокс никогда не получал issues.
+        agree: { id: "agree", type: "checkbox", parentId: "form", children: [], bind: { checked: "/agree" } },
         newsletterBlock: {
           id: "newsletterBlock",
           type: "surface",
@@ -47,6 +51,12 @@ function buildTree(): AssemblyTree {
 function EmailField() {
   const validation = useComponentValidation(undefined, { "data-node": "email" });
   return <span data-testid="email">{validation()?.invalid ? "invalid" : "ok"}</span>;
+}
+
+// Ark-контрол не Field: свой проп `checked`, не `value` — bind: {checked: path}.
+function AgreeCheckbox() {
+  const validation = useComponentValidation(undefined, { "data-node": "agree" });
+  return <span data-testid="agree">{validation()?.invalid ? "invalid" : "ok"}</span>;
 }
 
 function NewsletterBlock() {
@@ -84,6 +94,27 @@ describe("@web-core/form solid adapter", () => {
     expect(host.textContent).toBe("ok");
   });
 
+  it("узел с bind по НЕ-value ключу (checkbox: checked) тоже получает свои issues", () => {
+    const [data, setData] = createSignal<unknown>({ email: "ok@example.com", agree: false, subscribeNewsletter: false });
+    const tree = buildTree();
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <ValidationProvider tree={tree} schema={schema} data={data}>
+          <AgreeCheckbox />
+        </ValidationProvider>
+      ),
+      host,
+    );
+
+    expect(host.textContent).toBe("invalid");
+
+    setData({ email: "ok@example.com", agree: true, subscribeNewsletter: false });
+    expect(host.textContent).toBe("ok");
+  });
+
   it("rule в meta прячет узел, когда JsonLogic-условие совпало, и пересчитывается реактивно", () => {
     const [data, setData] = createSignal<unknown>({ email: "real@example.com", subscribeNewsletter: false });
     const tree = buildTree();
@@ -106,7 +137,7 @@ describe("@web-core/form solid adapter", () => {
   });
 
   it("useFormValid — агрегат по всему дереву, не по одному пути", () => {
-    const [data, setData] = createSignal<unknown>({ email: "not-an-email", subscribeNewsletter: false });
+    const [data, setData] = createSignal<unknown>({ email: "not-an-email", agree: true, subscribeNewsletter: false });
     const tree = buildTree();
 
     const host = document.createElement("div");
@@ -122,7 +153,7 @@ describe("@web-core/form solid adapter", () => {
 
     expect(host.textContent).toBe("invalid");
 
-    setData({ email: "real@example.com", subscribeNewsletter: false });
+    setData({ email: "real@example.com", agree: true, subscribeNewsletter: false });
     expect(host.textContent).toBe("valid");
   });
 });

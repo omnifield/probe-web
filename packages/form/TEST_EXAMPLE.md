@@ -165,9 +165,15 @@ export function useComponentValidation(passport: ComponentPassport, props: objec
     // его в готовое значение до рендера, packages/assembly/src/render/props.ts:14-25) — свой путь
     // узнаём через id узла (`"data-node"` доезжает как обычный проп, render-node.tsx:33-37),
     // ищем этот узел в дереве, которое провайдер и так держит целиком, и берём `bind` ОТТУДА.
+    //
+    // ЕДИНСТВЕННЫЙ ключ bind, не жёстко `.value` — Checkbox (@ark-ui/solid) бинжен как
+    // `{checked: path}`, не `{value: path}`; жёсткий `.value` для него всегда undefined, узел
+    // никогда не получил бы issues (найдено architect'ом при проверке, см. ROADMAP.yaml).
+    // Несколько ключей в bind — неоднозначно, какой из них "своё значение": не гадаем.
     const nodeId = (props as Record<string, unknown>)["data-node"] as string | undefined;
     const node = nodeId ? value.tree.components.nodes[nodeId] : undefined;
-    const path = node && "bind" in node ? node.bind?.value : undefined;
+    const ownBindPaths = node && "bind" in node && node.bind ? Object.values(node.bind) : [];
+    const path = ownBindPaths.length === 1 ? ownBindPaths[0] : undefined;
     const issues = path ? value.issuesByPath()[path] : undefined;
 
     // `meta`, в отличие от `bind`, доезжает до компонента как есть (render-node.tsx:86,98,113) —

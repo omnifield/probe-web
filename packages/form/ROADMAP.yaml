@@ -310,16 +310,19 @@ categories:
           НЕ из пропов компонента (`component-identity-via-node-id` — `props.bind` туда не
           доезжает): читает `props["data-node"]` (id узла — доезжает, это обычный DOM-атрибут-проп),
           ищет этот id в `tree.components.nodes` (тот же `tree`, что провайдер и так держит целиком)
-          и берёт `bind?.value` ОТТУДА. `rule` — читается напрямую из `props.meta?.rule` (это поле
-          в пропы доезжает, проверено чтением `render-node.tsx`, дублирующего лукапа не нужно).
-          Вместе с `useIssuesAt(найденного пути)` — единый акцессор `{ invalid?, errorText?,
-          disabled?, hidden? }`.
+          и берёт путь ОТТУДА — `ownValuePathOf(node)`, единственный ключ `node.bind`, каким бы ни
+          было его имя (не жёстко `.value` — см. правку от 2026-09-13 ниже, `checkbox-bind-key-bug`
+          в `log`). `rule` — читается напрямую из `props.meta?.rule` (это поле в пропы доезжает,
+          проверено чтением `render-node.tsx`, дублирующего лукапа не нужно). Вместе с
+          `useIssuesAt(найденного пути)` — единый акцессор `{ invalid?, errorText?, disabled?,
+          hidden? }`.
 
           Сделано: `src/solid/connection.ts`+`src/solid/provider.tsx`+`src/solid/index.ts`.
           `ValidationProvider` читает `tree`/`schema`/`data` через `untrack(() => props.x)` (тот же
           приём, что `SkinProvider` — `packages/skin/src/solid/provider.tsx`, и требование
-          eslint-plugin-solid `solid/reactivity`). Подтверждено: `test/solid.test.tsx` (3 теста —
-          issues по `data-node`, `rule`-hide реактивно на смену `data`, `useFormValid` агрегат),
+          eslint-plugin-solid `solid/reactivity`). Подтверждено: `test/solid.test.tsx` (4 теста —
+          issues по `data-node` (value-узел), issues по `data-node` с НЕ-value ключом bind
+          (checkbox), `rule`-hide реактивно на смену `data`, `useFormValid` агрегат),
           `pnpm lint`/`typecheck`/`build`/`test` зелёные.
 
       - id: drop-tanstack-vendor
@@ -617,3 +620,33 @@ log:
       `skin`), `json-logic-dependency` как формальное решение architect (в коде уже взят —
       предложение architect'у подтвердить, не откатывать), `field-invalid-errortext-wiring`,
       `consumer-migration`. Не коммичено — коммит следующим шагом этой же сессии.
+
+  - id: checkbox-bind-key-bug
+    type: decision
+    date: 2026-09-13
+    summary: >
+      Architect прогнал реализацию реально (не на слово): `pnpm --filter @web-core/form test` —
+      10/10, lint/typecheck чистые, build собирается, форма `issue.path`
+      (`PropertyKey | {key: PropertyKey}`) у Standard Schema сверена с установленным `zod@4.4.3`
+      построчно — совпадает. Но нашёл настоящий баг, не стилистику: `useComponentValidation`
+      читал путь узла как `node.bind?.value` — жёстко предполагая, что путь всегда лежит под
+      ключом `value`. Работает для `Field`, но `Checkbox` (`@ark-ui/solid`, `checked: boolean`, не
+      `value`) бинжен как `{checked: path}` — ровно как в собственном `TEST_EXAMPLE.md` этого же
+      пакета (`bind: { checked: "/subscribeNewsletter" }`). `node.bind?.value` для такого узла —
+      всегда `undefined`, чекбокс НИКОГДА не получил бы свои issues, даже если для него объявлена
+      валидация. Оба теста (`test/solid.test.tsx`, `test/engine.test.tsx`) проверяли только
+      `value`-узлы — пробел был не виден собственным прогоном. Architect верно назвал причину:
+      реализация молча выбрала ответ на ещё не решённый `passport-validation-field-open-question`
+      (какой пропс компонент считает своим значением), хотя сама роадмап называет `Checkbox`
+      среди первых кандидатов на эту ось.
+
+      Исправлено БЕЗ хардкода конкретных имён пропсов (`value`/`checked`/...) и без ответа на
+      cross-zone вопрос: `ownValuePathOf(node)` берёт ЕДИНСТВЕННЫЙ ключ `node.bind`, каким бы ни
+      было его имя — один `bind` означает однозначно «та самая точка данных, которую узел
+      показывает», несколько ключей — неоднозначно, какой из них считать значением, и без
+      ответа от `passport-validation-field-open-question` не разрешить — код честно возвращает
+      `undefined` (нет issues), не гадает. Добавлен regression-тест
+      (`test/solid.test.tsx` — узел с `bind: {checked: path}`, до и после исправления значения).
+      Подтверждено прогоном: 11/11 тестов, `pnpm lint`/`typecheck`/`build` зелёные.
+      `TEST_EXAMPLE.md` поправлен тем же приёмом (был источником бага — свой же пример
+      противоречил своему же коду).

@@ -7,7 +7,7 @@ import {
   type JSX,
   type ParentProps,
 } from "solid-js";
-import { isContent, type AssemblyTree } from "@web-core/assembly";
+import { isContent, type AssemblyNode, type AssemblyTree } from "@web-core/assembly";
 import type { z } from "@web-core/io";
 
 import { evaluateRule, type NodeRule, type RuleEffect } from "../engine/rules.js";
@@ -52,6 +52,22 @@ export interface ComponentValidation extends RuleEffect {
 }
 
 /**
+ * Путь узла-значения — тот путь, что резолвится под ЕДИНСТВЕННЫМ ключом `bind`, каким бы ни было
+ * имя пропа: `Field` бинжен как `{value: path}`, `Checkbox` (`@ark-ui/solid`, чужой проп — не
+ * `value`, а `checked`) — как `{checked: path}`. Читать конкретно `bind.value` — предполагать имя
+ * пропа, которого для чекбокса просто нет: `bind.value` для такого узла всегда `undefined`, узел
+ * никогда не получил бы свои issues, хотя формально забинжен. Один ключ в `bind` — однозначно та
+ * самая точка данных, которую узел показывает; несколько ключей — какой из них "то самое
+ * значение" неоднозначно и без ответа от `passport-validation-field-open-question` (какой пропс
+ * компонент считает своим редактируемым значением) не разрешить — не гадаем, отдаём `undefined`.
+ */
+function ownValuePathOf(node: AssemblyNode | undefined): string | undefined {
+  if (!node || isContent(node) || !node.bind) return undefined;
+  const paths = Object.values(node.bind);
+  return paths.length === 1 ? paths[0] : undefined;
+}
+
+/**
  * Внутренний хук для `useKitLife`-fold-in (cross-zone, `kit-life-validation-fold-in`) — НЕ
  * отдельный вызов рядом, компонент кита зовёт его изнутри своего `useKitLife`.
  *
@@ -59,7 +75,7 @@ export interface ComponentValidation extends RuleEffect {
  * (`packages/assembly/src/render/props.ts`) резолвит `bind` в готовое значение до рендера, путь
  * потребляется и выбрасывается. Вместо этого — `props["data-node"]` (id узла, реально доезжает
  * как обычный проп, `render-node.tsx`) лукапится в `tree`, который провайдер держит целиком, и
- * путь берётся оттуда (`bind?.value` — соглашение для `value`-полей, `Field`-семейство).
+ * путь берётся оттуда (`ownValuePathOf` — единственный `bind`, не жёстко `.value`).
  *
  * `rule`, в отличие от `bind`, доезжает до компонента как есть (`props.meta?.rule`,
  * `render-node.tsx` прокидывает `meta` пропом) — второго лукапа не нужно.
@@ -75,7 +91,7 @@ export function useComponentValidation(
     const record = props as Record<string, unknown>;
     const nodeId = record["data-node"] as string | undefined;
     const node = nodeId ? value.tree.components.nodes[nodeId] : undefined;
-    const path = node && !isContent(node) ? node.bind?.value : undefined;
+    const path = ownValuePathOf(node);
     const issues = path ? value.issuesByPath()[path] : undefined;
 
     const rule = (record.meta as { rule?: NodeRule } | undefined)?.rule;
