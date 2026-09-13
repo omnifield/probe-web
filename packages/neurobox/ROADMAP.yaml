@@ -123,7 +123,7 @@ categories:
 
       - id: feedback-both-kinds
         type: feature
-        status: Backlog
+        status: Done
         priority: Low
         milestone: null
         name: "POST /feedback — типизированная ручка, praise наравне с friction"
@@ -136,7 +136,7 @@ categories:
 
       - id: catalog-endpoints-typed-or-raw
         type: decision
-        status: Backlog
+        status: Done
         priority: Low
         milestone: null
         name: "Каталожные ручки бокса — СЫРЫЕ, не типизированные: растущий протокол"
@@ -150,6 +150,28 @@ categories:
           типизируем; открытые РАСТУЩИЕ списки (каталоги) — сырые.
 
 log:
+  - id: feedback-and-catalog-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      Оставшиеся два пункта категории закрыты — оба Low, оба ровно по решению 2026-09-13, без
+      расширения сверх названного. `feedback-both-kinds`: `src/engine/feedback.ts`,
+      `sendNeuroboxFeedback(threadId, feedback, options)` — типизированное тело `{kind:
+      friction|praise, what, where, workaround?}` на `POST /api/feedback/{threadId}`, на общей
+      `access.ts`. `workaround` сделан необязательным — решение внутри реализации (доком явно не
+      зафиксировано ни так, ни этак): осмыслен для `friction`, для `praise` обычно нечего обходить.
+      `catalog-endpoints-typed-or-raw`: `src/engine/catalog.ts` — семь сырых обёрток
+      (`fetchNeuroboxRecipes`/`Passports`/`Agents`/`Seeds`/`Refusals`/`McpServers`/`Health`), каждая
+      `Promise<unknown>` без схемы, по одной на документированную ручку (не один универсальный
+      `fetchCatalog(path)`) — так имена видны в автодополнении, а не только в строке пути.
+      `fetchNeuroboxHealth` — единственная без `NeuroboxAccessOptions`: бокс сам называет её
+      беспарольной («Без токена»), требовать token/userLogin здесь было бы строже самого бокса.
+      Тесты: `test/feedback.test.ts` (friction с workaround, praise без него, не-ok бросает),
+      `test/catalog.test.ts` (все шесть авторизованных ручек таблично + health без заголовков
+      вообще). Итог по пакету: `pnpm typecheck`/`lint`/`test` (16/16)/`build` — зелёные.
+      Категория «Решено architect+user — реализация за владельцем» закрыта полностью: все семь
+      пунктов `client-adapter-decisions-resolved` реализованы и проверены.
+
   - id: spend-tracking-implemented
     type: feature
     date: 2026-09-13

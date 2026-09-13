@@ -12,3 +12,9 @@ export * from "./connection.js";
 
 // GET /api/agent/{threadId}/spent — типизированный снимок расхода, без счёта дельт.
 export * from "./spend.js";
+
+// POST /api/feedback/{threadId} — типизированная запись отзыва, friction наравне с praise.
+export * from "./feedback.js";
+
+// GET /api/catalog/*, /api/agents, /api/mcp/servers, /api/health — сырые обёртки, растущий протокол.
+export * from "./catalog.js";

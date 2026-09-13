@@ -79,4 +79,33 @@ const spend = await fetchNeuroboxSpend("сеанс-работы-42", {
 // spend.cache_read_tokens — надёжнее cost_micros для «сколько стоит длинный разговор»
 ```
 
-Открытые вопросы (типизация `/feedback`, каталожные ручки, события отказов) — `ROADMAP.yaml`.
+Отзывы — типизированная запись, `praise` наравне с `friction` (просьба самого бокса — по одним
+жалобам не видно, что работает):
+
+```ts
+import { sendNeuroboxFeedback } from "@web-core/neurobox";
+
+await sendNeuroboxFeedback(
+  "сеанс-работы-42",
+  { kind: "friction", what: "рецепт не дал нужной ручки", where: "showcase", workaround: "написал вручную" },
+  { baseUrl: "https://neurobox.example", token: () => readBoxToken(), userLogin: () => readUserLogin() },
+);
+```
+
+Каталог — сырые обёртки без типизированной формы ответа: `fetchNeuroboxRecipes`,
+`fetchNeuroboxPassports`, `fetchNeuroboxAgents`, `fetchNeuroboxSeeds`, `fetchNeuroboxRefusals`,
+`fetchNeuroboxMcpServers` (имена для `forwardedProps` бери отсюда, не вписывай на память), и
+`fetchNeuroboxHealth` (единственная без токена):
+
+```ts
+import { fetchNeuroboxRecipes, fetchNeuroboxHealth } from "@web-core/neurobox";
+
+const recipes = await fetchNeuroboxRecipes({
+  baseUrl: "https://neurobox.example",
+  token: () => readBoxToken(),
+  userLogin: () => readUserLogin(),
+});
+const health = await fetchNeuroboxHealth({ baseUrl: "https://neurobox.example" });
+```
+
+Открытые вопросы (события отказов) — `ROADMAP.yaml`.
