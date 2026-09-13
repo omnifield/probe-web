@@ -191,6 +191,25 @@ categories:
           `mapping-separate-from-disk-engine` про то, почему это не общий `run()` с подключаемым
           источником/приёмником.
 
+  - category: Поля формы из io-схемы
+    items:
+      - id: fields-from-io-schema
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: fields/ — FieldDescriptor[] + значение по пути из io-схемы, browser-safe
+        description: |
+          Означает: `fieldsOf(schema)` берёт `z.ZodType` ОДНОЙ записи (не только компонента —
+          любого домена, например одной ручки OpenAPI) и отдаёт плоский список полей
+          (`path`/`label`/`kind`/`options`) для рендера формы редактирования — тот же класс задачи,
+          что `mapping` (внешняя схема → структурное описание), но без стадии распознавания
+          диалекта (вход всегда один тип, не несколько). Массив объектов — `kind: "list"` с
+          `element` для `fieldsOfElement` (рекурсия, включая самоссылающиеся элементы).
+          `valueAt`/`withValue` (читать/иммутабельно класть значение по тому же `FieldPath`) и
+          `blankElement` (болван нового элемента списка по умолчанию для типа) — тоже здесь, см.
+          `value-at-with-value-moved-in` про то, почему первая оценка «это домен апп» не устояла.
+
   - category: Не сделано
     items:
       - id: scaffold-write-read-tags
@@ -216,6 +235,50 @@ categories:
           которое никогда не перечитывается обратно (обвязка файла, части без тега).
 
 log:
+  - id: value-at-with-value-moved-in
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Продолжение `fields-moved-from-skin-widget` в том же чате, тот же день: user нашёл второго
+      настоящего потребителя — панель ручек OpenAPI (`apps/skin/entities/openapi`) нуждается ровно
+      в той же паре `valueAt`/`withValue`, что уже была в оставленном в апп `schema.ts`, без единого
+      отличия под конкретный домен. Это разошлось с первой оценкой («домен апп, привязано к тому,
+      как Solid-виджет хранит форму») — при повторном чтении кода выяснилось, что обе функции чистые
+      (`data: unknown` + `FieldPath`), ни сигналов, ни виджета в них никогда не было; ошибка была в
+      поспешном выводе «свойство, полезное для сигналов» ⇒ «код про сигналы». `blankElement` перенёс
+      по другой причине — он ходит по внутреннему `JsonProp`/`JsonRoot`-дереву (`resolve`), которое
+      не публикуется из `fields/index.ts`; оставлять `blankElement` в апп означало бы дать ему доступ
+      к этому дереву (расширить публичный контракт) или писать `resolve` заново. `valueAt`/
+      `withValue` — новый файл `value.ts` (не видят схему совсем, только путь+данные), `blankElement`
+      — добавлен в `walker.ts` рядом с `fieldsOfElement` (тот же внутренний обход). Рендер-цикл
+      (`<For>`+`switch(kind)`, конкретные Solid-компоненты `TextInput`/`Select`/…) НЕ перенесён и не
+      будет — JSX и DOM-компоненты этому пакету не нужны и не должны быть (см. `tsconfig.json`,
+      "no JSX anywhere in this zone"), это остаётся у `apps/skin`/`packages/ui`, обсуждался только
+      как идея общего `FieldsForm`-хелпера снаружи.
+
+  - id: fields-moved-from-skin-widget
+    type: plan
+    date: 2026-09-12
+    summary: >
+      Запрос от user (owner-app контекст, обсуждение в чате, не трекер): `apps/skin` имела рабочий,
+      но рукописный обход JSON Schema прямо в виджете (`widgets/component/input/schema.ts`) —
+      `fieldsOfNode`/`fieldsOf`/`fieldsOfElement` через `z.toJSONSchema`, тот же класс задачи, что
+      уже живёт здесь как `mapping` (внешняя схема → структурное описание для рендера). User сам
+      предложил разделение: обход схемы (`fieldsOf`/`fieldsOfElement`, `FieldDescriptor`) —
+      generic, знать про конкретные UI-контролы не должен, переезжает сюда; чтение/запись значения
+      по пути (`valueAt`/`withValue`) и генерация болвана (`blankElement`) — привязаны к тому, как
+      Solid-виджет хранит форму (копирование по пути ради новых ссылок на сигналы), остаются в
+      `apps/skin`. Перенесены только `fieldsOf`/`fieldsOfElement` + типы, под новый browser-safe
+      подпуть `./fields` (не `./mapping` — там нет стадии распознавания диалекта, вход всегда
+      `z.ZodType`, не raw-текст с несколькими шаблонами). По пути найдено: `@web-core/io` уже имеет
+      похожий обход (`paths.ts`, `describeSchema`) с тем же первым шагом (`z.toJSONSchema` +
+      резолв `$ref`), но иной формой результата (плоский отчёт для сравнения с чужими данными, не
+      форма для рендера) — переиспользование признано нецелесообразным, обе функции живут отдельно,
+      см. FAQ.md. `@web-core/io` поднят из `devDependencies` в `dependencies` — `z.ZodType` теперь
+      в публичной сигнатуре (`fieldsOf`), не только в тестах. Перенос кода из `apps/skin` (удаление
+      старого `schema.ts`, переключение виджета на `@web-core/generators/fields`) — не в этой зоне,
+      делает владелец `apps/skin`.
+
   - id: mapping-separate-from-disk-engine
     type: plan
     date: 2026-09-11

@@ -29,6 +29,11 @@
       "types": "./dist/mapping/index.d.ts",
       "default": "./dist/mapping/index.js"
     },
+    "./fields": {
+      "development": "./src/fields/index.ts",
+      "types": "./dist/fields/index.d.ts",
+      "default": "./dist/fields/index.js"
+    },
     "./plugins/kit": {
       "development": "./src/plugins/kit/index.ts",
       "types": "./dist/plugins/kit/index.d.ts",
@@ -49,11 +54,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@web-core/io": "workspace:*",
     "handlebars": "^4.7.9",
     "vite": "^8.2.1"
   },
   "devDependencies": {
-    "@web-core/io": "workspace:*",
     "@web-core/skin": "workspace:*",
     "@types/node": "^24.10.1",
     "@zag-js/accordion": "^1.43.1",
