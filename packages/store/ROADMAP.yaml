@@ -165,6 +165,19 @@ categories:
           packages/ui/src/table (не по составу полей, по ведению: Done-пункты сразу с описанием,
           log — датированный журнал решений).
 
+      - id: domain-store-recipe
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "Рецепт: доменный стор (state + actions + selectors, Zustand/Pinia-стиль)"
+        description: |
+          Означает: README получил композицию createAtom + объект actions + точечный
+          useAtom(atom, selector) как рекомендуемый паттерн для доменных сторов — не новый код
+          пакета, документация существующей композиции. Заведено после предложения перейти на
+          @tanstack/store под этот же паттерн; разбор, почему смена вендора здесь не нужна — в
+          FAQ.md (домен "Доменные сторы").
+
   - category: Не сделано
     items:
       - id: addons-composition-untested
@@ -179,6 +192,21 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: domain-store-vs-tanstack
+    type: plan
+    date: 2026-09-13
+    summary: >
+      user принёс готовое ТЗ (от стороннего источника) на "доменный стор" в стиле Zustand/Pinia —
+      state+actions+selectors на @tanstack/store, мотивация "с существующим неудобно работать".
+      Прежде чем менять движок, сверено предметно: требования ТЗ (стор без Solid-примитивов,
+      Solid только на границе, actions — единственный путь записи, точечные selector-подписки)
+      уже достижимы createAtom + объект actions + useAtom(atom, selector) — без нового кода
+      пакета. Проверены .d.ts уже лежащих в node_modules @tanstack/store и @tanstack/solid-store:
+      тот же класс изоляции от Solid (свой граф зависимостей, alien-signals), тот же пробел
+      "внешний аксессор → стор" (закрыт для @xstate/store в create-bound-atom, у TanStack не
+      закрыт вообще). Решение: не переходить на TanStack Store — задокументировать существующую
+      композицию как рецепт (domain-store-recipe), разбор — в FAQ.md.
+
   - id: create-bound-atom-scope
     type: plan
     date: 2026-09-13

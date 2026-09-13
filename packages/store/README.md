@@ -47,10 +47,11 @@ sync/async не нужно.
 
 <h2 id="использование">🚀 Использование</h2>
 
-✅ Семь сценариев покрывают всё, чем реально пишется код с этим движком: глобальный стор с
+✅ Восемь сценариев покрывают всё, чем реально пишется код с этим движком: глобальный стор с
 событиями, точечный атом (писуемый или вычисляемый из другого), атом, ведомый внешним
-Solid-аксессором, одно значение — синхронное или асинхронное по ключу, — явная стейт-машина и
-подключение аддона поверх стора.
+Solid-аксессором, доменный стор в стиле Zustand/Pinia (state + actions + selectors), одно
+значение — синхронное или асинхронное по ключу, — явная стейт-машина и подключение аддона поверх
+стора.
 
 **Плоское хранилище:**
 
@@ -136,6 +137,57 @@ export function ShowcasePage(props: { component: string }) {
   return <p>{current()}</p>;
 }
 ```
+
+**Доменный стор — state + actions + selectors** (Zustand/Pinia-стиль): не новый примитив, а
+рекомендуемая композиция `createAtom` — состояние и бизнес-логика в объекте `actions`, компонент
+не зовёт `.set()` напрямую, читает через `useAtom` с селектором:
+
+```ts
+// user.store.ts — обычный TS, ни одного импорта из solid-js
+import { createAtom } from "@web-core/store";
+
+interface User { id: string; name: string; email: string }
+interface UserState { user: User | null; loading: boolean }
+
+const userAtom = createAtom<UserState>({ user: null, loading: false });
+
+export const userStore = {
+  get: userAtom.get,
+  actions: {
+    setUser(user: User) {
+      userAtom.set((state) => ({ ...state, user }));
+    },
+    clearUser() {
+      userAtom.set((state) => ({ ...state, user: null }));
+    },
+    async loadUser() {
+      userAtom.set((state) => ({ ...state, loading: true }));
+      try {
+        const user = await fetch("/api/me").then((r) => r.json());
+        userAtom.set((state) => ({ ...state, user, loading: false }));
+      } catch (error) {
+        userAtom.set((state) => ({ ...state, loading: false }));
+        throw error;
+      }
+    },
+  },
+};
+```
+
+```tsx
+import { useAtom } from "@web-core/store";
+import { userAtom, userStore } from "./user.store";
+
+function Profile() {
+  const userName = useAtom(userAtom, (state) => state.user?.name); // точечная подписка, не весь атом
+  return <button onClick={() => userStore.actions.loadUser()}>{userName()}</button>;
+}
+```
+
+Асинхронные действия с несколькими промежуточными `.set()` (loading → результат/ошибка) на
+`createAtom` пишутся обычным `async`-кодом — в отличие от `createStore`, чьи `on`-хендлеры по духу
+синхронные редьюсеры, для такой последовательности неудобны. Разбор, почему это не повод заводить
+отдельный движок под "доменный стор" — FAQ.md.
 
 **Стейт-машины:**
 
