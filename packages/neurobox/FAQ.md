@@ -129,3 +129,34 @@ const chat = useChat({
 Свою обвязку под это писать не нужно — `onChunk` уже зовётся на каждый кадр потока, включая
 `TOOL_CALL_RESULT` (разбор выше). Пункт роадмапа закрыт этим примером, кода в пакете для него нет
 и не появится — фильтр по `chunk.type` целиком на стороне потребителя.
+
+---
+
+## MCP-клиент (`@web-core/neurobox/mcp`)
+
+### Почему `httpPeer`/`stdioPeer` — те же имена, что в `@web-core/mcp/peer`, не новые?
+
+**Чтобы переключение реальных потребителей (`apps/skin/.mcp/src/engine/browser.ts`,
+`.../scripts/push-to-prod.mjs`) было сменой импорта, не переписыванием кода.** API `Peer`
+(`callTool`/`close`) сохранён 1:1; добавлено только то, чего у оригинала не было —
+`[Symbol.asyncDispose]`, бесплатный апгрейд от `MCPClient` (`await using` вместо ручного `close()`).
+
+### Почему `Peer.callTool` явно типизирован как `Promise<CallToolResult>`, а не структурно через `MCPClient["callTool"]`?
+
+**`MCPClient["callTool"]`'s фактический возвращаемый тип оказался слабее, чем у сырого
+`Client.callTool` из `@modelcontextprotocol/sdk`** (`content` резолвился в `unknown` — проверено
+не доком, а типовой ошибкой в тесте: `result.content` не давал обратиться к полям). Тот же приём,
+что уже был в оригинальном `packages/mcp/src/peer` — явный `as Promise<CallToolResult>` на выходе
+`callTool()`, тип `CallToolResult` — прямой импорт из `@modelcontextprotocol/sdk/types.js` (пакет
+переведён в `dependencies`, не `devDependencies` — он теперь часть публичной сигнатуры `Peer`, не
+только тестовая обвязка).
+
+### Почему `@web-core/mcp` — devDependency этого пакета, если весь пункт роадмапа — уход ОТ него?
+
+**Только тесты: `createServer`/`registerTool`/`ok` из `@web-core/mcp` поднимают настоящий HTTP MCP
+сервер для проверки `httpPeer` живьём** — переписывать сессионную логику `StreamableHTTPServerTransport`
+(id-сессии, `onsessioninitialized`/`onsessionclosed`) заново в фикстуре ради независимости было бы
+копией той же сложности, не выигрышем. `@web-core/mcp` не удаляется этим переносом (`register-tool`/
+`transport` остаются — см. `ROADMAP.yaml`, `mcp-remainder-after-peer-migration`), так что зависимость
+не тянет за собой ничего, что скоро исчезнет. В `dependencies` пакета её нет — только в `devDependencies`,
+рантайм `@web-core/neurobox/mcp` от неё не зависит.

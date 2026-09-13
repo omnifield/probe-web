@@ -16,6 +16,11 @@
       "solid": "./dist/solid.jsx",
       "types": "./dist/solid.d.ts",
       "default": "./dist/solid.js"
+    },
+    "./mcp": {
+      "development": "./src/mcp/index.ts",
+      "types": "./dist/mcp.d.ts",
+      "default": "./dist/mcp.js"
     }
   },
   "files": [
@@ -32,7 +37,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@tanstack/ai-client": "^0.31.1",
+    "@tanstack/ai-mcp": "^0.3.10",
     "@tanstack/ai-solid": "^0.21.1"
   },
   "peerDependencies": {
@@ -42,6 +49,7 @@
     "@types/node": "^24.10.1",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
+    "@web-core/mcp": "workspace:*",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

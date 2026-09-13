@@ -31,6 +31,7 @@
 |---|---|---|
 | Транспорт (framework-agnostic) | `@web-core/neurobox` | весь `@tanstack/ai-client` + свой `createNeuroboxConnection` (`ConnectConnectionAdapter` под бокс) |
 | Solid-обвязка | `@web-core/neurobox/solid` | весь `@tanstack/ai-solid` (`useChat`, `createChatHook`, connection-адаптеры) — пока без добавок |
+| MCP-клиент (Node-only) | `@web-core/neurobox/mcp` | `httpPeer`/`stdioPeer` поверх `@tanstack/ai-mcp` — замена `@web-core/mcp/peer` |
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -106,6 +107,20 @@ const recipes = await fetchNeuroboxRecipes({
   userLogin: () => readUserLogin(),
 });
 const health = await fetchNeuroboxHealth({ baseUrl: "https://neurobox.example" });
+```
+
+MCP-клиент (точечный обмен между инстансами зон или с процессом, говорящим MCP по stdio) — та же
+форма (`Peer`/`PeerInfo`/`StdioPeerOptions`, те же имена), что `@web-core/mcp/peer`, поверх
+`@tanstack/ai-mcp` вместо своей реализации. Node-only (использует `child_process` через SDK):
+
+```ts
+import { httpPeer, stdioPeer } from "@web-core/neurobox/mcp";
+
+const zonePeer = httpPeer("http://127.0.0.1:4000/mcp");
+const browserPeer = stdioPeer("npx", ["chrome-devtools-mcp"]);
+
+await zonePeer.callTool("list_components", { group: "actions" });
+await zonePeer.close(); // или: await using zonePeer = httpPeer(...) — closes on scope exit
 ```
 
 Открытые вопросы (события отказов) — `ROADMAP.yaml`.

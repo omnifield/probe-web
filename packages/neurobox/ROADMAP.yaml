@@ -149,7 +149,146 @@ categories:
           разговором: явно названные боксом СТАБИЛЬНЫЕ формы (`/spent`, `/feedback`) —
           типизируем; открытые РАСТУЩИЕ списки (каталоги) — сырые.
 
+  - category: "MCP-клиент — перенос packages/mcp/src/peer+browser (не удаляем оригинал, пока не перенесено)"
+    items:
+      - id: peer-replaced-by-ai-mcp-client
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "httpPeer/stdioPeer (packages/mcp/src/peer) → createMCPClient (@tanstack/ai-mcp)"
+        description: |
+          Контекст: `packages/mcp` НЕ удаляется целиком — `register-tool`/`transport` незаменимы
+          (TanStack не строит MCP-серверы, только клиент), это отдельно решено и не пересматривается
+          здесь. Но `/peer` (`httpPeer`/`stdioPeer`, наш рукописный MCP-КЛИЕНТ) — ровно то, что
+          `@tanstack/ai-mcp` уже даёт лучше, обещано раньше в разговоре и до сих пор не сделано —
+          этот пункт закрывает тот долг.
+
+          Проверено по-настоящему (`npm view`+распакованный тарболл `@tanstack/ai-mcp@0.3.10`, не
+          пересказ доки): API почти 1:1 совпадает с нашим `Peer`.
+
+          | Наше (`packages/mcp/src/peer`) | TanStack (`@tanstack/ai-mcp`) |
+          |---|---|
+          | `httpPeer(url, info?)` | `createMCPClient({ transport: { type: "http", url, headers? } })` |
+          | `stdioPeer(command, args?, {env?})` | `createMCPClient({ transport: stdioTransport({ command, args?, env?, cwd? }) })` — `stdioTransport` из `@tanstack/ai-mcp/stdio`, Node-only подпуть (то же разделение, что у нас `stdioPeer`) |
+          | `Peer.callTool(name, args)` | `MCPClient.callTool(name, args)` — ТА ЖЕ сигнатура, тот же тип ответа (`Awaited<ReturnType<Client['callTool']>>`, тот же `@modelcontextprotocol/sdk` — `ai-mcp@0.3.10` зависит от `@modelcontextprotocol/sdk@^1.29.0`, той же линии SDK, что и наш `packages/mcp`) |
+          | `Peer.close()` | `MCPClient.close()` (+ `[Symbol.asyncDispose]` — можно `await using`, апгрейд, которого у нас не было) |
+          | `env` не задан — SDK сам даёт обрезанный безопасный набор | то же самое поведение — тот же `StdioClientTransport` под капотом, наш довод про supply-chain (chrome-devtools-mcp — чужой процесс) переносится без изменений |
+
+          Значит перенос механический на уровне вызовов `callTool`/`close` — логика `browser.ts`
+          (regex-парсинг `pageId` из текстового списка, `textOf(content)`) не меняется вообще, она
+          про формат ответа chrome-devtools-mcp, не про то, чей клиент его вызвал.
+
+          Открыто (решить при реализации, не архитектура): где живёт новый код — предложение:
+          подпуть `@web-core/neurobox/mcp` (тот же зонтик "всё, что на @tanstack/ai-*", которым
+          сейчас является этот пакет), но само имя подпути не зафиксировано, решает владелец/user.
+
+      - id: browser-wrapper-ported
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "createBrowser (packages/mcp/src/browser) переезжает на новый MCP-клиент"
+        description: |
+          `createBrowser` (newPage/navigate/screenshot/snapshot/click, обёртка над
+          `chrome-devtools-mcp` через `stdioPeer`) — зависит от `peer-replaced-by-ai-mcp-client` выше,
+          переносится тем же заходом: единственное, что меняется в теле функции — конструктор клиента
+          (`stdioPeer("npx",[...])` → `createMCPClient({transport: stdioTransport({command:"npx",
+          args:[...]})})`), сама логика вызовов тулов chrome-devtools-mcp не трогается.
+
+      - id: mcp-migration-consumers
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Потребители /peer и /browser — на новый импорт, старые не трогать до переключения"
+        description: |
+          Два реальных места зовут сегодняшний `packages/mcp/src/peer`/`/browser`, оба вне этого
+          пакета — переключить оба, когда перенос выше готов:
+          - `apps/skin/.mcp/src/engine/browser.ts` — тонкая обёртка (`createBrowser({executablePath:
+            SKIN_MCP_CHROME_EXECUTABLE})`), меняется только импорт.
+          - `apps/skin/.mcp/scripts/push-to-prod.mjs` — `stdioPeer("pnpm",["start"])` (спавнит СВОЙ
+            локальный сервер, доверенный процесс — `env: process.env` передаётся явно, как и сегодня)
+            + `httpPeer(SKIN_MCP_PROD_URL)` — оба зовутся напрямую, не через `browser.ts`.
+          `packages/mcp/src/peer`/`/browser` НЕ удалять, пока оба потребителя не переключены и не
+          проверены живьём — не оставлять зону без рабочего пути посередине переноса.
+
+      - id: mcp-remainder-after-peer-migration
+        type: decision
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "Что останется в packages/mcp после переноса /peer+/browser — не удаляется целиком"
+        description: |
+          Напоминание себе (найдено живым разговором user+architect, 2026-09-13, после того как user
+          предложил удалить весь `packages/mcp` и architect поймал нестыковку): даже после переноса
+          `/peer`+`/browser` в `packages/mcp` остаётся `register-tool`+`transport`
+          (MCP-СЕРВЕР `apps/skin/.mcp` на них построен, TanStack сервер строить не умеет вообще —
+          отдельно проверено, не пересматривается) и `pagination` (общая утилита, к MCP-протоколу как
+          таковому отношения не имеет). `feedback` (`packages/mcp/src/feedback`, GraphQL-клиент к
+          `backend/presets`) — отдельный вопрос, НЕ про `@tanstack/ai-mcp` вообще (это не MCP-клиент,
+          это клиент к нашему бэку) и не про AG-UI-фидбэк бокса (`@web-core/neurobox`'s
+          `sendNeuroboxFeedback` — другая сущность, «фидбэк зоне» ≠ «фидбэк боксу», не путать); его
+          судьба — отдельное решение, не этот пункт.
+
 log:
+  - id: peer-replaced-by-ai-mcp-client-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      `peer-replaced-by-ai-mcp-client` реализован. Открытый вопрос («где жить новому коду») решён:
+      `@web-core/neurobox/mcp` — новый подпуть, добавлен в `package.json`'s `exports` и
+      `vite.config.ts`'s `entries` (`{name:"mcp", source:"src/mcp/index.ts"}`, без `solid:true` —
+      Node-only, не браузерный код).
+      `src/mcp/index.ts`: `httpPeer`/`stdioPeer`/`Peer`/`PeerInfo`/`StdioPeerOptions` — ИМЕНА и
+      ФОРМА 1:1 с `@web-core/mcp/peer`, реализация поверх `createMCPClient`+`stdioTransport` из
+      `@tanstack/ai-mcp` (не поверх сырого `@modelcontextprotocol/sdk`, как было). Лень подключения
+      сохранена: `createMCPClient()` (сам по себе `async`, коннект внутри) зовётся ТОЛЬКО из
+      `connect`-колбэка `peerFrom()`, вызываемого на первый `callTool`, не на объявление peer — тот
+      же тест "does not open a connection before the first callTool", что проходил на оригинале.
+      Добавлен `[Symbol.asyncDispose]` — бесплатный апгрейд от `MCPClient`, `await using` вместо
+      обязательного ручного `close()`.
+      Находка при реализации (не архитектурная, деталь типов): `MCPClient["callTool"]`'s
+      возвращаемый тип структурно слабее сырого `Client.callTool` — `content` резолвился в
+      `unknown` (поймано typecheck'ом теста, не чтением доки). Решено тем же приёмом, что был в
+      оригинале: `Peer.callTool` явно типизирован как `Promise<CallToolResult>` (`@modelcontextprotocol/
+      sdk/types.js`) с `as`-кастом на выходе `MCPClient.callTool()`. `@modelcontextprotocol/sdk`
+      из-за этого — в `dependencies` пакета (публичная сигнатура, не только тесты).
+      Тесты — `test/mcp.test.ts`, ПОЛНОЕ зеркало `packages/mcp/test/peer.test.ts` (та же фикстура
+      `test/fixtures/stdio-ping-server.mjs`, скопирована, не расшарена — фикстура должна быть
+      независимо запускаемым `node`-скриптом): httpPeer живьём против настоящего слушающего
+      HTTP MCP-сервера (`@web-core/mcp/transport`'s `createServer`, взят как devDependency —
+      переписывать сессионную логику `StreamableHTTPServerTransport` заново в фикстуре не стали,
+      разбор — в FAQ.md), lazy-connect для обоих peer, переиспользование ОДНОГО stdio-процесса на
+      несколько вызовов, env-фильтрация по умолчанию и явный passthrough, плюс новый тест на
+      `[Symbol.asyncDispose]` через `await using`. Итог: 29/29 (было 22), `pnpm typecheck`/`lint`/
+      `build` — зелёные, `dist/mcp.js`+`dist/mcp.d.ts` собираются.
+      НЕ входило в эту заявку (следующие пункты той же категории): `browser-wrapper-ported`,
+      `mcp-migration-consumers` (правка `apps/skin/.mcp/*` — не зона этого пакета),
+      `mcp-remainder-after-peer-migration` (просто решение/напоминание, кода не требует).
+      `packages/mcp/src/peer` НЕ удалён и не тронут — верно по плану, оба реальных потребителя ещё
+      не переключены.
+
+  - id: peer-migration-plan-written
+    type: plan
+    date: 2026-09-13
+    summary: >
+      User предложил удалить весь `packages/mcp` теперь, когда `@web-core/neurobox` готов —
+      architect поймал нестыковку: `neurobox` закрыл только апп↔бокс (AG-UI чат), а раньше обещанный
+      перенос `/peer` на `@tanstack/ai-mcp` ни разу не был сделан, про него забыли посреди работы над
+      семью пунктами `client-adapter-decisions-resolved`. Ничего из `packages/mcp` фактически не
+      перенесено на момент этой записи. Решено (user): не торопиться, `packages/mcp` сегодня никем не
+      используется активно — записать план переноса `/peer`+`/browser` сюда, позвать владельца
+      отдельным заходом, `packages/mcp` не трогать, пока перенос не закрыт и оба потребителя
+      (`apps/skin/.mcp/src/engine/browser.ts`, `.../scripts/push-to-prod.mjs`) не переключены и не
+      проверены живьём.
+      API `@tanstack/ai-mcp@0.3.10` сверен по-настоящему (`npm view`+распакованный тарболл, не по
+      доке): `createMCPClient({transport})`'s `callTool`/`close` почти 1:1 с нашим `Peer`, `stdioTransport`
+      живёт в `@tanstack/ai-mcp/stdio` (Node-only подпуть), зависит от той же линии
+      `@modelcontextprotocol/sdk@^1.29.0`, что и `packages/mcp` сам. Перенос ожидается механическим на
+      уровне вызовов — `browser.ts`'s regex-парсинг ответов chrome-devtools-mcp не меняется, он не
+      про клиента, а про формат ответа стороннего сервера.
+
   - id: url-building-deduplicated
     type: fix
     date: 2026-09-13
