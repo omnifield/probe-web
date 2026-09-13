@@ -47,6 +47,13 @@ const connection = createNeuroboxConnection({
 const chat = useChat({
   connection,
   forwardedProps: { recipe: "сборка-скинов", passport: "опус-5", agent: "claude-code" },
+  // TOOL_CALL_RESULT — что ручка реально ответила, ДО конца прогона (NEUROBOX_CLIENT.md, раздел
+  // «Ответ»). Своей обвязки под это в пакете нет и не будет — onChunk зовётся на каждый кадр сам.
+  onChunk(chunk) {
+    if (chunk.type !== "TOOL_CALL_RESULT") return;
+    // chunk.toolCallId — тот же, что был у TOOL_CALL_START/ARGS этого вызова;
+    // chunk.content — тело ответа. Здесь: перезапросить и переключить показ.
+  },
 });
 
 // context — что апп знает о месте, едет отдельно от forwardedProps (см. NEUROBOX_CLIENT.md,
@@ -59,4 +66,17 @@ chat.sendMessage("сделай кнопку пошире", {
 `chat.stop()` — штатная отмена: `connect()` сам добивает `POST /cancel` по `abortSignal`, отдельно
 вызывать ручку бокса не нужно (детали и известная ловушка — `FAQ.md`).
 
-Открытые вопросы (типизация `/spent`/`/feedback`, каталожные ручки, события отказов) — `ROADMAP.yaml`.
+Расход — снимок как есть, без вычисления дельт между вызовами (почему — `FAQ.md`, раздел «Расход»):
+
+```ts
+import { fetchNeuroboxSpend } from "@web-core/neurobox";
+
+const spend = await fetchNeuroboxSpend("сеанс-работы-42", {
+  baseUrl: "https://neurobox.example",
+  token: () => readBoxToken(),
+  userLogin: () => readUserLogin(),
+});
+// spend.cache_read_tokens — надёжнее cost_micros для «сколько стоит длинный разговор»
+```
+
+Открытые вопросы (типизация `/feedback`, каталожные ручки, события отказов) — `ROADMAP.yaml`.

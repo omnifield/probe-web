@@ -66,7 +66,7 @@ categories:
 
       - id: tool-call-result-reactivity
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "Реакция на TOOL_CALL_RESULT — бесплатно через onChunk, ничего своего писать не надо"
@@ -106,7 +106,7 @@ categories:
 
       - id: spend-tracking-in-tokens
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "GET /spent — типизированный сырой снимок, дельты пакет не считает"
@@ -150,6 +150,38 @@ categories:
           типизируем; открытые РАСТУЩИЕ списки (каталоги) — сырые.
 
 log:
+  - id: spend-tracking-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      `spend-tracking-in-tokens` реализован: `src/engine/spend.ts`, `fetchNeuroboxSpend(threadId,
+      options)` — типизированный `GET /api/agent/{threadId}/spent`, тело `NeuroboxSpend` возвращается
+      КАК ЕСТЬ (`response.json() as NeuroboxSpend`, без рантайм-схемы — узкая явно названная боксом
+      форма, не растущий протокол, тот же довод, что у каталожных ручек в обратную сторону), без
+      вычисления дельт — решение и причина (`cost_micros` — накопительный итог, вычитание уже
+      "соврало почти втрое") record в описании пункта и в README.
+      Заодно вынесена общая `src/engine/access.ts` (`NeuroboxAccessValue`/`resolveAccessHeaders`) —
+      раньше жила только внутри `connection.ts`, теперь делят `connect()` и `fetchNeuroboxSpend`, а
+      следующие типизированные ручки (`feedback-both-kinds`) возьмут её же, не копию.
+      Тесты — `test/spend.test.ts`: снимок доходит как есть с заголовками доступа; не-ok ответ
+      бросает, а не отдаёт частичный снимок. `pnpm typecheck`/`lint`/`test`(5/5)/`build` — зелёные.
+
+  - id: tool-call-result-reactivity-closed-with-example
+    type: feature
+    date: 2026-09-13
+    summary: >
+      Ревью со стороны бокса (внешний architect) приняло реализацию `connect-adapter-implemented`
+      без блокеров, с одной находкой: `toWireContent()` (`src/engine/connection.ts`) молча
+      отбрасывает не-текстовые части сообщения (картинка/вложение/результат тула из UIMessage),
+      оставляя только текст — сегодня верно (бокс текстовый, `NEUROBOX_CLIENT.md` мультимодальность
+      не описывает), но без объяснения читалось бы как забытый кейс. Зафиксировано комментарием в
+      коде и записью в `FAQ.md` — решать заново явно, если бокс когда-нибудь начнёт принимать
+      не-текстовые части, не расширять склейку тихо.
+      Заодно закрыт `tool-call-result-reactivity`: писать в пакете нечего — `ChatClientOptions.onChunk`
+      уже зовётся на каждый кадр, включая `TOOL_CALL_RESULT` (см. `client-adapter-decisions-resolved`
+      ниже) — добавлен только пример фильтра по `chunk.type === 'TOOL_CALL_RESULT'` в README и FAQ,
+      чтобы не искать это заново при следующем использовании пакета.
+
   - id: connect-adapter-implemented
     type: feature
     date: 2026-09-13
