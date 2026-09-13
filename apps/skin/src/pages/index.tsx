@@ -8,22 +8,21 @@ import {
 } from "@web-core/ui";
 import { Outlet, useLocation, useNavigate, useParams } from "@web-core/router";
 import { railVar } from "@web-core/skin";
-import { Show } from "solid-js";
 
-import { treeItems } from "#/entities/component/model/catalog-tree";
+import { tree } from "#/entities/component";
 import { Header } from "#/widgets/header";
 import { CatalogTree } from "#/widgets/catalogs";
 
-export function WorkspaceLayout() {
-  const location = useLocation();
-  const isLab = () => location().pathname.startsWith("/lab");
+export function WorkspaceLayout(props: {
+  location: ReturnType<typeof useLocation>;
+  params: ReturnType<typeof useParams>;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const isLab = () => props.location().pathname.startsWith("/lab");
 
-  const params = useParams({ strict: false, select: (p) => p.component });
-
-  const navigate = useNavigate();
   const onSelect = (value: string) => {
-    const screen = isLab() ? "/lab/$component" : "/showcase/$component";
-    void navigate({ to: screen, params: { component: value } });
+    const screen = isLab() ? "/lab/{-$component}" : "/showcase/{-$component}";
+    void props.navigate({ to: screen, params: { component: value } });
   };
 
   return (
@@ -35,8 +34,8 @@ export function WorkspaceLayout() {
       <Toast />
       <WorkspaceSidebar style={{ width: railVar("rail-md") }}>
         <CatalogTree
-          adapter={treeItems}
-          activeValue={params()}
+          adapter={tree}
+          activeValue={props.params().component}
           onSelect={onSelect}
         />
       </WorkspaceSidebar>

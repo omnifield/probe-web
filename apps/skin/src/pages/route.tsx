@@ -1,12 +1,24 @@
 // Pathless layout — хром витрины (Header/сайдбар/чат), общий для всех "живых" маршрутов юзера
-// (`/`, `/lab`, `/playground`, `/showcase/...`). `_workspace` не входит в URL — только в
-// файловое дерево `routes/`, поэтому все дочерние файлы переехали сюда с префиксом
-// `_workspace.` без смены собственного пути. `/embed/...` — сосед по дереву, НЕ дочерний
+// (`/`, `/lab`, `/playground`, `/showcase/...`). Дерево маршрутов задано явно в
+// `shared/configs/routes.config.ts` (`layout("workspace", ...)`), не именами файлов — `_workspace`
+// нигде не встречается. `/embed/...` — сосед по дереву на верхнем уровне конфига, НЕ дочерний
 // маршрут этого layout, поэтому его не наследует.
 import { createFileRoute } from "@tanstack/solid-router";
+import { useLocation, useNavigate, useParams } from "@web-core/router";
 
-import { WorkspaceLayout } from "../pages";
+import { WorkspaceLayout } from "./index";
 
 export const Route = createFileRoute("/_workspace")({
-  component: WorkspaceLayout,
+  component: () => {
+    const location = useLocation();
+    const params = useParams({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <WorkspaceLayout
+        location={location}
+        params={params}
+        navigate={navigate}
+      />
+    );
+  },
 });

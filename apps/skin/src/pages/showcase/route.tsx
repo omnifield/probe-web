@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/solid-router";
+import { Show } from "solid-js";
 
-// Без выбранного компонента показывать нечего — `ShowcasePage` (`pages/showcase/index.tsx`)
-// требует его имя параметром.
-export const Route = createFileRoute("/_workspace/showcase/")({
-  component: () => <p>Выбери компонент слева.</p>,
+import { ShowcasePage } from "./index";
+
+export const Route = createFileRoute("/_workspace/showcase/{-$component}")({
+  component: () => {
+    const params = Route.useParams();
+    return (
+      <Show when={params().component} fallback={<p>Выбери компонент слева.</p>}>
+        <ShowcasePage />
+      </Show>
+    );
+  },
 });

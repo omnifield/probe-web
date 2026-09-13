@@ -6,7 +6,7 @@ export interface TreeItemData {
   readonly children?: readonly TreeItemData[];
 }
 
-export function treeItems(): readonly TreeItemData[] {
+export function tree(): readonly TreeItemData[] {
   const components = listComponents();
 
   return Object.entries(GROUPS)

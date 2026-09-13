@@ -24,5 +24,11 @@ const config = defineConfig();
 
 export default {
   ...config,
-  plugins: [tanstackRouterVitePlugin({ autoCodeSplitting: false }), ...(config.plugins ?? [])],
+  plugins: [
+    tanstackRouterVitePlugin({
+      autoCodeSplitting: false,
+      virtualRouteConfig: "./src/shared/configs/routes.config.ts",
+    }),
+    ...(config.plugins ?? []),
+  ],
 };

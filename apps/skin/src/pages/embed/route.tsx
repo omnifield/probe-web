@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router";
 
-import { EmbedPage } from "../pages/embed";
+import { EmbedPage } from "./index";
 
 interface EmbedSearch {
   content?: string;

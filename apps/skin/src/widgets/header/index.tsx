@@ -17,9 +17,9 @@ import { ThemeSwitch } from "#/shared/ui/theme-switch";
 import { Auth } from "#/entities/user";
 
 const SCREENS = [
-  { value: "lab", label: "Lab", to: "/lab" },
-  { value: "showcase", label: "Showcase", to: "/showcase" },
-  { value: "playground", label: "Playground", to: "/playground" },
+  { value: "lab", label: "Lab", to: "/lab/{-$component}", prefix: "/lab" },
+  { value: "showcase", label: "Showcase", to: "/showcase/{-$component}", prefix: "/showcase" },
+  { value: "playground", label: "Playground", to: "/playground", prefix: "/playground" },
 ] as const;
 
 export function Header() {
@@ -34,13 +34,13 @@ export function Header() {
 
   const screen = createMemo(
     () =>
-      SCREENS.find((item) => pathname().startsWith(item.to))?.value ??
+      SCREENS.find((item) => pathname().startsWith(item.prefix))?.value ??
       "showcase",
   );
 
   // Переключение showcase↔lab несёт имя ТЕКУЩЕГО компонента дальше (ТЗ user: "чтобы при переходе
-  // осталось название компонента") — обе стороны умеют путь `/<экран>/$component`. Playground
-  // компонент не выбирает, ему параметр нести некуда — идёт голым путём, как раньше.
+  // осталось название компонента") — обе стороны используют путь с опциональным `{-$component}`.
+  // Playground компонент не выбирает, ему параметр нести некуда — идёт голым путём, как раньше.
   const onValueChange = (details: { value: string | null }) => {
     const target = SCREENS.find((screen) => screen.value === details.value);
     if (!target) return;
@@ -50,10 +50,7 @@ export function Header() {
       active !== undefined &&
       (target.value === "lab" || target.value === "showcase")
     ) {
-      void navigate({
-        to: `${target.to}/$component`,
-        params: { component: active },
-      });
+      void navigate({ to: target.to, params: { component: active } });
       return;
     }
 
