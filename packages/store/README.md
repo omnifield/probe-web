@@ -32,7 +32,7 @@ sync/async не нужно.
 
 | Часть             | Адрес                      | Экспортирует                                                                                                                                                                                              |
 | ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
+| Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createBoundAtom`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
 | Стейт-машины      | `@web-core/store/machine`  | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef`                                                      |
 | Persist-аддон     | `@web-core/store/persist`  | `persist`, `persistAtom`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                    |
 | Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                |
@@ -40,15 +40,17 @@ sync/async не нужно.
 | Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                 |
 
 📦 Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
-`@xstate/store-solid` + `createResourceAtom` + переопределение `createAsyncAtom`),
-`src/engine/resource.ts` (реализация `createResourceAtom`). Имя `createAsyncAtom` в поверхности
-присутствует, но локально переопределено — сигнатура `() => never`, вызов всегда бросает.
+`@xstate/store-solid` + `createResourceAtom` + `createBoundAtom` + переопределение `createAsyncAtom`),
+`src/engine/resource.ts` (реализация `createResourceAtom`), `src/engine/bound.ts` (реализация
+`createBoundAtom`). Имя `createAsyncAtom` в поверхности присутствует, но локально переопределено —
+сигнатура `() => never`, вызов всегда бросает.
 
 <h2 id="использование">🚀 Использование</h2>
 
-✅ Шесть сценариев покрывают всё, чем реально пишется код с этим движком: глобальный стор с
-событиями, точечный атом (писуемый или вычисляемый из другого), одно значение — синхронное или
-асинхронное по ключу, — явная стейт-машина и подключение аддона поверх стора.
+✅ Семь сценариев покрывают всё, чем реально пишется код с этим движком: глобальный стор с
+событиями, точечный атом (писуемый или вычисляемый из другого), атом, ведомый внешним
+Solid-аксессором, одно значение — синхронное или асинхронное по ключу, — явная стейт-машина и
+подключение аддона поверх стора.
 
 **Плоское хранилище:**
 
@@ -119,6 +121,19 @@ function Panel() {
       })()}
     </p>
   );
+}
+```
+
+**`createBoundAtom`** — атом, ведомый внешним Solid-аксессором (пропом страницы, другим сигналом);
+своей реактивности не заводит, обвязка `createEffect(() => atom.set(source()))`:
+
+```ts
+import { createBoundAtom, useAtom } from "@web-core/store";
+
+export function ShowcasePage(props: { component: string }) {
+  const currentComponentAtom = createBoundAtom(() => props.component);
+  const current = useAtom(currentComponentAtom);
+  return <p>{current()}</p>;
 }
 ```
 
@@ -236,6 +251,7 @@ export const draftAtom = persistAtom(createAtom(""), {
 | `createAtom`                   | значение `T` (writable) либо геттер `(prev?: T) => T` (computed, read-only), второй параметр — `AtomOptions<T>`                                    |
 | `createResourceAtom` без ключа | `(fetcher: (info: { signal }) => Data \| Promise<Data>, options?)`                                                                                 |
 | `createResourceAtom` с ключом  | `(source: Accessor<Key>, fetcher: (key, info: { signal }) => Data \| Promise<Data>, options?)`                                                     |
+| `createBoundAtom`              | `(source: Accessor<T>, options?: AtomOptions<T>)`                                                                                                  |
 | `store.send`                   | `{ type, ...payload }`                                                                                                                             |
 | `store.trigger.<type>`         | `payload`                                                                                                                                          |
 | `store.can.<type>`             | `payload`                                                                                                                                          |
@@ -265,6 +281,8 @@ export const draftAtom = persistAtom(createAtom(""), {
 | `createResourceAtom` с ключом        | реагирует на смену ключа ПОСЛЕ резолва предыдущего запроса       | `test/resource.test.tsx` |
 | `createResourceAtom` с ключом, гонка | устаревший ответ игнорируется, если ключ сменился до его резолва | `test/resource.test.tsx` |
 | `createResourceAtom` + `useAtom`     | реальный рендер компонента, `pending` → `done` по смене ключа    | `test/resource.test.tsx` |
+| `createBoundAtom`                    | начальное значение сразу, атом следует за сменой аксессора       | `test/bound.test.tsx`    |
+| `createBoundAtom` + `useAtom`        | реальный рендер компонента, значение меняется вслед за сигналом  | `test/bound.test.tsx`    |
 | `persistAtom` + localStorage         | гидратация при вызове, запись при `.set()`                       | `test/persist.test.tsx`  |
 | `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются  | `test/persist.test.tsx`  |
 

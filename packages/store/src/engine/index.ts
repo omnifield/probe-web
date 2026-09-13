@@ -3,6 +3,8 @@ export * from "@xstate/store-solid";
 export { createResourceAtom } from "./resource.js";
 export type { ResourceFetcherInfo, ResourceState } from "./resource.js";
 
+export { createBoundAtom } from "./bound.js";
+
 // Переопределяет createAsyncAtom из реэкспорта выше — разбор в FAQ.md.
 export function createAsyncAtom(): never {
   throw new Error(

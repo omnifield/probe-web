@@ -100,6 +100,21 @@ categories:
           runId) на смену ключа до резолва предыдущего запроса. 4 теста в
           test/resource.test.tsx.
 
+      - id: create-bound-atom
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createBoundAtom — атом, ведомый внешним Solid-аксессором
+        description: |
+          Означает: createBoundAtom(source, options?) — писуемый createAtom, значение которого
+          обновляется createEffect(() => atom.set(source())) при смене source. Закрывает дыру:
+          потребитель (apps/skin/entities/component/model/store.ts, currentComponent/
+          currentOutfit, синк с пропом страницы/skin.worn()) писал голый solid createSignal +
+          setter, минуя атомы пакета — не было ручки под "атом, толкаемый снаружи". Форма
+          подтверждена чужим прецедентом (atomEffect/useAtomEffect у Jotai), не изобретена с нуля
+          — разбор в FAQ.md. 4 теста в test/bound.test.tsx.
+
   - category: Структура пакета
     items:
       - id: theme-per-subpath
@@ -164,6 +179,23 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: create-bound-atom-scope
+    type: plan
+    date: 2026-09-13
+    summary: >
+      Запрошено user по конкретному кейсу: apps/skin/entities/component/model/store.ts синкает
+      currentComponent/currentOutfit с пропом showcase-страницы и skin.worn() через голый solid
+      createSignal + createEffect(() => setCurrentComponent(props.component)) в самой странице —
+      мимо атомов пакета, потому что ручки под "атом, ведомый внешним аксессором" не было.
+      Первая мысль (одноразовая функция syncAtom(atom, source)) вызвала сомнение user — "выглядит
+      как самопальная ручка внутри важного пакета, который вот-вот начнут активно юзать все".
+      Сделан research по существующим атомным экосистемам (Jotai discussions#1487,
+      useAtomEffect, atomWithObservable, TanStack Store, nanostores, сам Solid) — подтверждено,
+      что "эффект пишет во внешний атом" это и есть устоявшийся в индустрии приём, не костыль;
+      универсальной "магической" ручки в ядре ни у кого нет, каждый источник — своя маленькая
+      обёртка. Решено оформить как createBoundAtom — конструктор той же фабричной формы, что уже
+      есть в пакете (createResourceAtom), не отдельно стоящая утилита.
+
   - id: persist-atom-scope
     type: plan
     date: 2026-09-11
