@@ -4,12 +4,13 @@ import {
 } from "@ark-ui/solid/field";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
-import { traceLife } from "../../shared/utils/trace.js";
+import { useKitLife } from "../../shared/utils/skin-life.js";
+import { passport } from "../entity/passport.js";
 
 export type FieldErrorTextProps = ArkErrorTextProps;
 
 export function FieldErrorText(props: FieldErrorTextProps) {
-  traceLife("ui.field-error-text");
+  const validation = useKitLife(passport, props);
 
-  return <ArkErrorText {...dropAddress(props)} />;
+  return <ArkErrorText {...dropAddress(props)}>{validation()?.errorText}</ArkErrorText>;
 }

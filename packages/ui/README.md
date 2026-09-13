@@ -261,13 +261,15 @@ Zag или вообще никому, если компонент свой с н
 <h3 id="скин-компонент-просит-сам">🎨 Скин — компонент просит сам</h3>
 
 Почти каждый `root.tsx` первой строкой в теле функции, до `useSlot`/`useAddress`, зовёт
-`useKitLife(passport, props)` (`shared/utils/skin-life.ts`). Утилита делает два дела одним
+`useKitLife(passport, props)` (`shared/utils/skin-life.ts`). Утилита делает три дела одним
 вызовом: пишет трейс жизни примитива (метка `ui.${passport.component}` берётся из самого паспорта,
-не набирается второй раз руками в каждом файле) и зовёт `useComponentSkin(passport, props)` из
+не набирается второй раз руками в каждом файле), зовёт `useComponentSkin(passport, props)` из
 `@web-core/skin/solid` — та реактивно допечатывает CSS только тех `variant`/`settings`, которые
-компонент реально получил в пропсах сейчас, а не весь рецепт формы целиком. Без `<SkinProvider>` в
-дереве (голый кит, тест без провайдера) — тихий no-op: кит обязан жить без presets вовсе, это его
-базовое обещание.
+компонент реально получил в пропсах сейчас, а не весь рецепт формы целиком, — и зовёт
+`useComponentValidation(passport, props)` из `@web-core/form/solid`, ВОЗВРАЩАЯ её результат
+(`Accessor<ComponentValidation | undefined>` — `{invalid?, errorText?, hidden?, disabled?}`).
+Без `<SkinProvider>`/`<ValidationProvider>` в дереве (голый кит, тест без провайдера) — тихий
+no-op по обоим: кит обязан жить без presets и без формы вовсе, это его базовое обещание.
 
 ```tsx
 import { passport } from "../entity/passport.js";
@@ -279,6 +281,16 @@ export const Button = slotAware(function Button<T extends ValidComponent = "butt
   useKitLife(passport, props);
   // ...
 });
+```
+
+Возврат — `Accessor<ComponentValidation | undefined>` — большинство компонентов зовут `useKitLife`
+выражением-стейтментом и не читают его: TS не заставляет использовать возврат, ничьё поведение не
+меняется. Компонент, которому есть что показать (`invalid`/`errorText` — `Field`, разбор ниже),
+забирает акцессор:
+
+```tsx
+const validation = useKitLife(passport, props);
+return <ArkRoot {...dropAddress(props)} invalid={validation()?.invalid} errorText={validation()?.errorText} />;
 ```
 
 **`useKitLife` не заменяет адресацию — только просит CSS.** Утилита читает `variant`/`settings` из

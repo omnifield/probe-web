@@ -350,6 +350,187 @@ categories:
           адресации (см. FAQ.md). `generate && typecheck && build && test && lint` — зелёные,
           276/276 тестов кита (было 275, +1 новый).
 
+  - category: Валидация
+    items:
+      - id: kit-life-validation-fold-in
+        type: feature
+        status: Done
+        priority: High
+        name: "useKitLife возвращает акцессор валидации — третье, что он делает, одним вызовом"
+        description: |
+          ТЗ от architect (2026-09-13), по итогам ADR `@web-core/form` (`packages/form/ROADMAP.yaml`,
+          категория «Роль и архитектура» — Done, механика реализована и прошла ревью, 11/11
+          тестов). Пакет `@web-core/form` не рендерит, не владеет состоянием формы — производит
+          `путь → issues` (валидность, из io-схемы сборки) и `nodeId → {hidden, disabled}`
+          (производное UI-состояние, JsonLogic-правило из `node.meta.rule`). Задача этой зоны —
+          подключить готовую механику к киту, тем же приёмом, каким уже подключён скин.
+
+          Тот же файл, третий вызов — `useKitLife` (`packages/ui/src/shared/utils/skin-life.ts`,
+          сегодня `traceLife`+`useComponentSkin`, `void`, `component-skin-wiring` выше в этом же
+          роадмапе) добавляет `useComponentValidation(passport, props)` из `@web-core/form/solid`
+          и ВОЗВРАЩАЕТ её результат — `Accessor<ComponentValidation | undefined>`
+          (`{invalid?, errorText?, hidden?, disabled?}`). НЕ второй хук рядом (архитектурное
+          решение зафиксировано в `@web-core/form/ROADMAP.yaml`'s `kit-life-validation-fold-in`
+          дословно от user: «useValidation должен быть внутри useKitLife»).
+
+          Блаcт-радиус, сверено `grep -rl "useKitLife(" packages/ui/src` (35 файлов): смена
+          сигнатуры с `void` на возврат — АДДИТИВНА для 34 из 35. Они зовут `useKitLife(passport,
+          props);` выражением-стейтментом, TS не требует использовать возврат — ни один из них не
+          трогается этим пунктом. Реально читает результат только `Field`
+          (`field-invalid-errortext-wiring` ниже) в рамках ЭТОГО захода; остальные компоненты с
+          объявленным `invalid`-состоянием (`Select`/`Checkbox`/`RadioGroup` — сверить по `states`
+          паспортов) — отдельным пунктом ПОСЛЕ того, как проводка на `Field` обкатана живьём, не
+          вместе с ним (объём одного захода не растягиваем на весь кит сразу).
+
+          Новая реальная зависимость — `@web-core/form` в `dependencies` `package.json` этого
+          пакета. ПРОВЕРЕНО ЭМПИРИЧЕСКИ architect'ом ДО передачи этого ТЗ (не на словах): временно
+          заведена `"@web-core/form": "workspace:*"`, прогнан `pnpm exec nx graph` (без предупреждения
+          о цикле, в отличие от прецедента `assembly⇄skin`, `packages/assembly/ROADMAP.yaml`'s
+          `verified-real-cycle-with-skin`) и `pnpm --filter @web-core/ui... build` — прошёл
+          целиком, `packages/ui build: Done`. Правка отменена сразу после теста (`git status` —
+          пусто). `@web-core/form` зависит от `@web-core/assembly`+`@web-core/io`, ни один из них
+          не зависит от `@web-core/ui`/`@web-core/form` — цикл структурно невозможен, и это же
+          подтверждено прогоном, не только по графу на бумаге.
+
+          `passport-validation-field-open-question` (`@web-core/form/ROADMAP.yaml`) закрыт БЕЗ
+          правки паспорта (`packages/skin/ROADMAP.yaml`'s `no-validation-axis-on-passport`) —
+          `useComponentValidation` не читает `ComponentPassport`, первый параметр `useKitLife`
+          прокидывается в неё чисто по совместимости сигнатуры, не по необходимости.
+
+          Сделано (2026-09-13): `@web-core/form` добавлен в `dependencies` `package.json` насовсем
+          (не откачен, в отличие от пробного захода architect'а). `shared/utils/skin-life.ts` —
+          `useKitLife` третьим вызовом зовёт `useComponentValidation(passport, props)` и возвращает
+          её результат вместо `void`; сигнатура `Accessor<ComponentValidation | undefined>`.
+          `generate && typecheck && lint && build && test` — все зелёные, 283/283 тестов кита (было
+          281, +2 новых в `test/skin-life.test.tsx`: без `<ValidationProvider>` акцессор отдаёт
+          `undefined` тем же no-op'ом, что и скин; с провайдером и реально невалидными данными
+          акцессор реально отражает `invalid` для узла по `data-node`). Блaст-радиус подтверждён на
+          деле, не только по графу — typecheck прошёл на всех 35 файлах, зовущих `useKitLife`, без
+          единой правки вызывающей стороны.
+
+      - id: field-invalid-errortext-wiring
+        type: feature
+        status: Done
+        priority: High
+        name: "Первая нагрузка оси — Field реально показывает invalid/errorText"
+        description: |
+          Заблокировано `kit-life-validation-fold-in` (делается тем же заходом, не отдельно —
+          `useKitLife` без содержимого нечего читать). Крючок уже стоит пустой:
+          `packages/ui/src/field/entity/passport.ts` объявляет состояния `invalid`/`required`/
+          `errorText`/`requiredIndicator` с CSS-метками (`data-invalid` и т.п.) — скин уже умеет
+          красить невалидное поле, не хватает только того, кто выставит эти пропы по правде.
+
+          Правка `packages/ui/src/field/components/root.tsx`:
+          ```tsx
+          export function Field(props: FieldProps) {
+            const validation = useKitLife(passport, props); // теперь не void — акцессор
+            return <ArkRoot {...dropAddress(props)} invalid={validation()?.invalid} errorText={validation()?.errorText} />;
+          }
+          ```
+          `invalid`/`errorText` — родные пропы `FieldRootProps` (Ark), передаются как есть, без
+          новой CSS-механики. Живой прогон — обязателен (не только `recipe.test.tsx` на бумаге,
+          тот же урок, что `toast-part-attrs-missing` выше в этом файле): реальный рендер `<Field>`
+          внутри `<ValidationProvider>` с заведомо невалидными данными, проверка, что
+          `[data-invalid]`/текст ошибки реально появляются в DOM, не только что функция вызвана.
+
+          Найдено при реализации: посылка ТЗ была неполной — `errorText` НЕ родной проп
+          `FieldRootProps`. Сверено по d.ts `@ark-ui/solid/field`: `UseFieldProps` несёт
+          `invalid`/`required`/`disabled`/`readOnly`/`id`/`ids`/`target`, `errorText`-сообщения
+          там нет вовсе; `tsc` валит сборку на месте. `FieldErrorText` — самостоятельная часть,
+          рендерящая ровно то, что ей передали детьми (`{...dropAddress(props)}`, без своего
+          текста) — сегодня содержимое ошибки задаёт только сам потребитель руками. `invalid` —
+          настоящий проп, довёл до DOM без проблем.
+
+          User (2026-09-13): тестировать сейчас нужно именно ось форм — что компонент реально
+          валидируется через `ValidationProvider`, а не визуальную часть. Стилизация невалидного
+          состояния (`errorText` и подобное, чего АРК не даёт) — отдельный контракт со скином
+          (визуал не на Ark, на нашем скине), решается отдельно с architect. `errorText` в эту
+          заявку сознательно не входит — не мой сейчас выбор архитектуры, не хакал обход.
+
+          Сделано (2026-09-13): `Field` (`components/root.tsx`) забирает акцессор из `useKitLife`,
+          прокидывает `invalid={validation()?.invalid}` в `ArkRoot`. Новый
+          `src/field/test/field-validation.test.tsx` — реальный рендер `<Field data-node="email">`
+          внутри `<ValidationProvider>`: невалидные данные реально ставят `data-invalid` на
+          `[data-scope="field"][data-part="root"]`, валидные — реально снимают (сигнал
+          пересчитывается реактивно); без `<ValidationProvider>` — no-op, `data-invalid` не
+          появляется сам по себе. `generate && typecheck && lint && build && test` — зелёные,
+          285/285 тестов кита (было 283, +2 новых).
+
+      - id: error-text-fold-in
+        type: feature
+        status: Done
+        priority: High
+        name: "FieldErrorText сам зовёт useKitLife — юзеру не нужно вручную прокидывать errorText"
+        description: |
+          Разобрано с user (2026-09-13) по шагам, отдельно от предыдущего пункта не потому что
+          другая механика, а потому что первый заход (`field-invalid-errortext-wiring`) сознательно
+          не входил в него — «тестировать сейчас нужно именно ось форм, не визуальную часть»
+          (see log там же).
+
+          `packages/ui/src/field/components/error-text.tsx` сегодня — только `traceLife` +
+          `dropAddress`, `errorText` содержимое рисует не сам, ждёт детей от потребителя. Правка —
+          тот же приём, что уже в `Field`:
+          ```tsx
+          export function FieldErrorText(props: FieldErrorTextProps) {
+            const validation = useKitLife(passport, props); // тот же passport, что у Field
+            return <ArkErrorText {...dropAddress(props)}>{validation()?.errorText}</ArkErrorText>;
+          }
+          ```
+          Условие для юзера — то же, что уже требует `invalid` у `Field`: `FieldErrorText` в
+          составе модуля обязан получить СВОЙ `data-node` (тот же узел дерева, что валидирует
+          нужный путь — обычно тот же `bind`, что у соответствующего `Field`, если оба заведены
+          отдельными узлами с одним и тем же путём; если `FieldErrorText` не адресован отдельным
+          узлом — акцессор просто `undefined`, `errorText` пуст, ничего не падает).
+
+          НЕ трогает self-assembly-выращенные части (`field/playground/assemblies/basic.ts`) — там
+          `errorText` получает текст старым способом (`{genus:"text", value:{path}}`, литеральная
+          привязка к данным демо-витрины, никак не связана с `growValidatorLayer`); это отдельный,
+          более ранний механизм, менять его не нужно и не входит сюда.
+
+          Сделано (2026-09-13): `error-text.tsx` — `useKitLife(passport, props)` (тот же passport,
+          что у `Field`) вместо голого `traceLife`, `<ArkErrorText>{validation()?.errorText}</...>`.
+          `mergeProps` (`@zag-js/solid`, реактивный геттер) сохраняет консьюмерские `children`, если
+          `validation()?.errorText` — `undefined` (без `<ValidationProvider>` или без своего
+          `data-node` у самого `FieldErrorText`) — тот же приём, что уже вынес `invalid` в `Field`.
+
+          Живьём найдено при тесте: `@ark-ui/solid`'s `FieldErrorText` САМ оборачивает себя в
+          `<Show when={field().invalid}>` (`field-error-text.tsx` в дисте Ark) — читает `invalid`
+          из СВОЕГО контекста `Field`, который уже реактивно ставит `field-invalid-errortext-wiring`
+          (`invalid={validation()?.invalid}` на `Field`-корне). Значит узел `error-text` не просто
+          красится, а физически появляется/пропадает из DOM САМ, без единой строчки от этой заявки —
+          `errorText` внутри него был последним недостающим кусочком, не первым.
+
+          `src/field/test/field-validation.test.tsx` — 2 новых сценария (было 2, стало 4): реальный
+          рендер `<Field data-node="email"><FieldErrorText data-node="email"/></Field>` внутри
+          `<ValidationProvider>` — невалидные данные показывают сообщение issue в DOM, валидные
+          убирают УЗЕЛ ЦЕЛИКОМ (не просто текст — это Ark's `<Show>`, не наша механика);
+          `FieldErrorText` без своего `data-node` — акцессор `undefined`, консьюмерский текст
+          (`children`) остаётся как есть. `generate && typecheck && lint && build && test` —
+          зелёные, 287/287 тестов кита (было 285, +2 новых).
+
+      - id: invalid-state-rollout-remaining-components
+        type: feature
+        status: Backlog
+        priority: Medium
+        name: "invalid из useKitLife — ещё 8 компонентов кита с объявленным состоянием invalid"
+        description: |
+          Тот же однострочный приём, что уже в `Field` (`validation()?.invalid` → `invalid`-проп
+          собственного `ArkRoot`), распространяется на остальные компоненты, у которых `invalid`
+          уже объявлен в паспорте (`grep -rl "invalid" packages/ui/src/*/entity/passport.ts` —
+          полный список, не «и другие»): `checkbox`, `date-picker`, `file-upload`, `select`,
+          `slider`, `segment-group`, `radio-group`, `switch`. Все восемь уже зовут `useKitLife(
+          passport, props)` bare statement'ом (сверено чтением каждого `root.tsx`) — правка КАЖДОГО
+          файла: забрать акцессор в переменную вместо bare-вызова, прокинуть `invalid` в
+          собственный корневой Ark-компонент. Не требует знания, под каким ключом лежит `bind`
+          (`value`/`checked`/т.п.) — `ownValuePathOf` (`@web-core/form/solid`) уже общий по любому
+          единственному ключу, спец-случаев на компонент нет.
+
+          Один компонент — один тест по образцу `field-validation.test.tsx` (реальный рендер внутри
+          `<ValidationProvider>`, проверка `data-invalid` на реальном DOM-узле, не только что
+          функция вызвана — тот же урок, что `toast-part-attrs-missing`). Восемь файлов, восемь
+          тестов — делать по одному, не одним махом без проверки каждого (тот же компонент может
+          использовать `invalid` иначе — сверить точку, прежде чем чинить, не копипастом вслепую).
+
   - category: Информация о компоненте
     items:
       - id: component-info-sync-descriptor

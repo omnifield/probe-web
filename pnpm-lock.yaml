@@ -751,6 +751,9 @@ importers:
       '@web-core/assembly':
         specifier: workspace:*
         version: link:../assembly
+      '@web-core/form':
+        specifier: workspace:*
+        version: link:../form
       '@web-core/io':
         specifier: workspace:*
         version: link:../io

@@ -10,7 +10,7 @@ import { passport } from "../entity/passport.js";
 export type FieldProps = ArkRootProps;
 
 export function Field(props: FieldProps) {
-  useKitLife(passport, props);
+  const validation = useKitLife(passport, props);
 
-  return <ArkRoot {...dropAddress(props)} />;
+  return <ArkRoot {...dropAddress(props)} invalid={validation()?.invalid} />;
 }
