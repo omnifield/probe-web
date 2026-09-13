@@ -1,25 +1,44 @@
 import { Flow } from "@web-core/ui";
-import { createEffect } from "solid-js";
-
-import { assembliesOf, variantsOf } from "#/entities/component";
-import { CatalogList, type ListItem } from "#/widgets/catalogs";
-
-const MOCK_ITEMS: readonly ListItem[] = [
-  { value: "one", label: "One" },
-  { value: "two", label: "Two" },
-  { value: "three", label: "Three" },
-];
+import { createEffect, createSignal } from "solid-js";
+import { useSkin } from "@web-core/skin/solid";
+import {
+  assembliesOf,
+  contentOf,
+  outfitsOf,
+  palettesOf,
+  tagsOf,
+  variantsOf,
+} from "#/entities/component";
+import { CatalogList } from "#/widgets/catalogs";
+import { groupByTag, type TagGroup } from "@web-core/skin/tags";
 
 export function ShowcasePage(props: { component: string; tag?: string }) {
+  const skin = useSkin();
+  const [byTag, setByTag] = createSignal<readonly TagGroup[]>([]);
+
   createEffect(() => {
     const component = props.component;
-    void variantsOf(component).then((variants) => console.log(variants));
-    void assembliesOf(component).then((assemblies) => console.log(assemblies));
+    const outfitName = skin.worn()?.name;
+    void outfitsOf().then((outfits) => console.log("outfits", outfits));
+    void palettesOf().then((palettes) => console.log("palettes", palettes));
+
+    void assembliesOf(component).then((assemblies) =>
+      console.log("assemblies", assemblies),
+    );
+    void contentOf(component).then((content) =>
+      console.log("content", content),
+    );
+    void tagsOf().then((tags) => console.log("tags", tags));
+    if (outfitName !== undefined) {
+      void variantsOf(outfitName, component).then((variants) => {
+        setByTag(groupByTag(variants));
+      });
+    }
   });
 
   return (
     <Flow data-variant="column-center">
-      <CatalogList items={MOCK_ITEMS}>{(item) => <div>{item.label}</div>}</CatalogList>
+      <CatalogList items={byTag()}>{(group) => <div>{group.tag}</div>}</CatalogList>
     </Flow>
   );
 }
