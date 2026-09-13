@@ -1,0 +1,245 @@
+# Дорожная карта @web-core/neurobox — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/router/packages/query/packages/form (categories → items, log — журнал решений).
+#
+# Пакет заведён 2026-09-13 архитектором по прямой просьбе user — клиент для бокса нейробокс
+# (менеджер рантаймов агентов, протокол AG-UI, полное описание — корневой `NEUROBOX_CLIENT.md`,
+# не пересказывается здесь). Детали уже обсуждены user с владельцем этого пакета напрямую — этот
+# файл только заводит шаблон (package.json/конфиги/голый реэкспорт), содержание — открытая работа
+# владельца. Семь развилок ниже разобраны architect+user тем же днём (см. log,
+# client-adapter-decisions-resolved) — решения приняты, код ещё не написан, поэтому статусы
+# остаются Backlog: тот же принцип, что и везде в репо — Done ставится рядом с реализацией и
+# проверкой, не рядом с решением.
+
+categories:
+  - category: Поверхность
+    items:
+      - id: full-vendor-reexport
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Полный реэкспорт @tanstack/ai-client (`.`) и @tanstack/ai-solid (`./solid`)"
+        description: |
+          `export * from "@tanstack/ai-client"` / `export * from "@tanstack/ai-solid"` —
+          единственная точка резолва, тем же приёмом, что `@web-core/router`/`@web-core/query`/
+          `@web-core/form`. Разбор, почему взят именно TanStack AI, а не свой клиент под AG-UI —
+          FAQ.md. Отправная точка, не конечная форма — пакет растёт своей обвязкой поверх вендора
+          по мере пунктов ниже, не остаётся голым реэкспортом.
+
+  - category: "Решено architect+user — реализация за владельцем"
+    items:
+      - id: auth-headers-server-side-only
+        type: decision
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Authorization + X-User-Login — пока НЕ трогаем, токен статичный как сегодня"
+        description: |
+          `NEUROBOX_CLIENT.md`, раздел «Доступ»: `X-User-Login` бокс не проверяет — «кто назвался,
+          тот и владелец», подстановка из браузера в теории позволяет назваться чужим именем.
+          РЕШЕНО (user, 2026-09-13): авторизацией сейчас не занимаемся — токен один на всех,
+          заголовки ставятся там же, где и сегодня (на клиенте), серверный прокси-слой не заводим.
+          Возврат к этому пункту — отдельным заходом, когда/если авторизация станет предметом
+          работы, не блокер для остальной части пакета.
+
+      - id: run-agent-input-shape
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Свой ConnectConnectionAdapter — штатный fetchServerSentEvents не собирает context бокса"
+        description: |
+          `forwardedProps`/`context` (`NEUROBOX_CLIENT.md`, раздел «Прогон») — чем агент думает и
+          что знает о месте (страница/компонент/вариант), два РАЗНЫХ поля конверта. РЕШЕНО (сверено
+          чтением `dist/esm/connection-adapters.js` пакета `@tanstack/ai-client@0.31.1`, не по
+          доке): `buildRunAgentInputBody()` внутри `fetchServerSentEvents()` шлёт `context: []`
+          ЗАШИТО, `data`/`options.body` сливаются только в `forwardedProps`. Значит используем не
+          `fetchServerSentEvents`, а пишем свой `ConnectConnectionAdapter` (`connect(messages, data,
+          abortSignal, runContext)` → `AsyncIterable<StreamChunk>`, тип пакета уже экспортирует) —
+          он и собирает `context` из `data`, и ставит `Authorization`/`X-User-Login`. Сборку
+          `messages` в wire-формат переизобретать не нужно — `convertMessagesToModelMessages`/
+          `normalizeToUIMessage`/`modelMessagesToUIMessages` уже публичный реэкспорт пакета.
+          Открыто по-прежнему (не архитектура, а поверхность): типизированные обёртки над
+          `GET /api/catalog/recipes`/`/passports` для имён `forwardedProps`, или сырые fetch —
+          см. `catalog-endpoints-typed-or-raw`.
+
+      - id: tool-call-result-reactivity
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Реакция на TOOL_CALL_RESULT — бесплатно через onChunk, ничего своего писать не надо"
+        description: |
+          `NEUROBOX_CLIENT.md` прямо называет `TOOL_CALL_RESULT` «тем, ради чего стоит слушать
+          поток» — по нему видно, что реально изменено, ДО конца прогона («агент сохранил данные —
+          перезапроси и переключи показ»). РЕШЕНО (сверено чтением `types.d.ts`): `ChatClientOptions`
+          несёт `onChunk?: (chunk: StreamChunk) => void`, зовётся на КАЖДЫЙ кадр, включая
+          `ToolCallResultEvent` (`type: 'TOOL_CALL_RESULT'`, поля `toolCallId`/`content` — то же,
+          что шлёт бокс). Не нужна своя обвязка поверх connection-адаптера — только фильтр по
+          `chunk.type` в `onChunk`, который передаётся потребителем пакета как обычная опция
+          `useChat`.
+
+      - id: cancel-request-wired-into-connect
+        type: decision
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "POST /cancel дожимается САМИМ connect() по abortSignal — не отдельная функция для потребителя"
+        description: |
+          `POST /api/agent/{threadId}/cancel` — отдельный запрос, не поле конверта, а `stop()` из
+          `useChat` по умолчанию рвёт только локальный `fetch` через `AbortSignal`, бокс об этом не
+          узнаёт. `NEUROBOX_CLIENT.md` прямо предупреждает про известный баг: после голого обрыва
+          соединения следующее сообщение может зависнуть до таймаута (`agent-silent`).
+          РЕШЕНО (user, 2026-09-13, вариант А из двух предложенных): свой `connect()` подписывается
+          на переданный ему `abortSignal` и САМ шлёт `POST /cancel` по его срабатыванию — потребитель
+          пакета просто зовёт штатный `stop()`, не обязан помнить про вторую ручку бокса. Известный
+          баг бокса (поток может замолчать и после нашей отмены) этим не чинится — не наша поломка,
+          но раз он документирован, поверхность пакета (тип состояния потока/README) должна явно
+          называть сценарий «после отмены — новый поток», не оставлять потребителя удивляться молча.
+
+          ⚠️ **Ловушка при реализации** (найдена ревью со стороны бокса, не блокер решения выше, но
+          обязательна к учёту в коде): `POST /cancel` НЕЛЬЗЯ слать с тем же `abortSignal`, который
+          только что сработал — сработавший сигнал оборвёт и сам запрос отмены, не дав ему дойти до
+          бокса. Нужен отдельный сигнал (свой `AbortController` на сам вызов `/cancel`, с разумным
+          таймаутом) или вызов вовсе без сигнала — не переиспользовать входной `abortSignal` дважды.
+
+      - id: spend-tracking-in-tokens
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "GET /spent — типизированный сырой снимок, дельты пакет не считает"
+        description: |
+          `NEUROBOX_CLIENT.md`, раздел «Расход»: `cost_micros` — накопительный итог, вычислять
+          цену хода вычитанием уже как-то «соврало почти втрое» по словам бокса — сам протокол
+          рекомендует ориентироваться на токены (`cache_read_tokens` растёт быстрее всего, лучше
+          показывает налог на длинный разговор). РЕШЕНО (user, 2026-09-13): пакет отдаёт снимок
+          как есть — `{thread, runs, prompt_tokens, completion_tokens, cache_read_tokens,
+          cost_micros}` — БЕЗ самостоятельного вычисления дельт; дизайн отображения расхода в UI
+          (считать ли разницу токенов между вызовами) — дело потребителя, не пакета. Форма ТИПИЗИРУЕТСЯ
+          (не сырой `unknown`) — узкая, явно названная боксом ручка, не растущий открытый протокол
+          (тот же принцип, что у `catalog-endpoints-typed-or-raw`, только в обратную сторону).
+
+      - id: feedback-both-kinds
+        type: feature
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "POST /feedback — типизированная ручка, praise наравне с friction"
+        description: |
+          `NEUROBOX_CLIENT.md` прямо просит записывать хорошее наравне с плохим — «по одним жалобам
+          не видно, что работает». Агент пишет сюда сам при затыке в боксе; от потребителя — то,
+          что сказал человек. Не писать сюда про чужие зоны (у зон свои ручки обратной связи).
+          РЕШЕНО (user, 2026-09-13): форма явно названа боксом (`kind: friction|praise`, `what`,
+          `where`, `workaround`) — типизируем, тем же принципом, что `spend-tracking-in-tokens`.
+
+      - id: catalog-endpoints-typed-or-raw
+        type: decision
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "Каталожные ручки бокса — СЫРЫЕ, не типизированные: растущий протокол"
+        description: |
+          `GET /api/catalog/*`, `/api/agents`, `/api/mcp/servers`, `/api/health` — источник имён
+          для `forwardedProps` и картины того, что бокс вообще умеет. РЕШЕНО (user, 2026-09-13):
+          сырые fetch-обёртки, БЕЗ типизированной формы ответа — сам бокс называет себя протоколом,
+          который «растёт», и молча пропускает незнакомые поля конверта; жёсткая типизация здесь
+          рассинхронится с боксом при первом же его обновлении. Общий принцип, найденный этим же
+          разговором: явно названные боксом СТАБИЛЬНЫЕ формы (`/spent`, `/feedback`) —
+          типизируем; открытые РАСТУЩИЕ списки (каталоги) — сырые.
+
+log:
+  - id: connect-adapter-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      Реализованы `run-agent-input-shape` и `cancel-request-wired-into-connect` — вместе, одним
+      `connect()`, как и было решено (не отдельная функция отмены для потребителя).
+      `src/engine/connection.ts`: `createNeuroboxConnection(options)` возвращает
+      `ConnectConnectionAdapter` (тип импортирован из `@tanstack/ai-client`, оба параметра
+      `token`/`userLogin` строка либо (async) геттер — авторизация ставится на клиенте на месте
+      отправки, как решено `auth-headers-server-side-only`). `connect()` сам собирает
+      `RunAgentInput`: `context` вынимается из слитого `{...runContext.forwardedProps, ...data}` по
+      ключу `context` (единственному специальному имени, всё остальное едет как есть в
+      `forwardedProps`) — так `data.context`, поставленный потребителем через `sendMessage(text,
+      { body: { context: [...] } })`, попадает в нужное поле конверта, а не тонет в
+      `forwardedProps` вместе с `recipe`/`passport`/`agent`. Сборка `messages` — через
+      `convertMessagesToModelMessages` (публичный реэкспорт, не приватный `uiMessagesToWire`),
+      дальше плоское `{id, role, content}`; `content`, если пришёл частями (`ContentPart[]`),
+      схлопывается в строку по текстовым частям — бокс ждёт строку. Ответ разбирается вручную
+      построчным SSE-парсером (`data: {...}` кадры, без учёта NDJSON/резюмируемости — бокс
+      признаётся, что реконнект к идущему прогону не поддерживает, воспроизводить механику
+      резюмируемых стримов вендора незачем). Отмена: слушатель на входной `abortSignal` шлёт
+      `POST {threadId}/cancel` на СВОЁМ `AbortController` с таймаутом (по умолчанию 5с) — не на
+      сработавшем входном сигнале (ловушка `cancel-abortsignal-reuse-trap-found` ниже), ошибка
+      самого запроса отмены проглатывается (fire-and-forget из обработчика события, сообщать
+      некому). Экспортирован из `src/engine/index.ts` рядом с голым реэкспортом вендора, значит и
+      из `@web-core/neurobox` (`.`) — README/FAQ обновлены под факт, не только план.
+      Тесты (`test/connection.test.ts`, новый `node`-проект в `vitest.config.ts` — единственный
+      framework-agnostic модуль пакета, JSDOM/Solid ему не нужны): (1) `context` уходит в конверт
+      отдельно от `forwardedProps`, заголовки доступа выставлены; (2) отсутствующий `context` не
+      протекает в `forwardedProps`, дефолтится пустым массивом; (3) отмена реально уходит на СВЕЖЕМ
+      сигнале, не на входном — проверено адресно (`signal !== controller.signal`, `signal.aborted
+      === false` в момент запроса). `pnpm typecheck`/`lint`/`test`/`build` — все зелёные.
+      Осталось нетронутым той же категории: `spend-tracking-in-tokens`, `feedback-both-kinds`,
+      `catalog-endpoints-typed-or-raw` — не входили в эту заявку.
+
+  - id: cancel-abortsignal-reuse-trap-found
+    type: finding
+    date: 2026-09-13
+    summary: >
+      Ревью со стороны бокса (внешний architect) подтвердил все семь решений
+      client-adapter-decisions-resolved как обоснованные фактом, не пересказом, и нашёл одну
+      реальную ловушку в реализации `cancel-request-wired-into-connect`: если `POST /cancel` уйдёт
+      с тем же `abortSignal`, который только что сработал (отменился), запрос отмены оборвётся сам,
+      не дойдя до бокса — нужен отдельный сигнал/таймаут на сам вызов `/cancel`, не переиспользование
+      входного. Зафиксировано в описании пункта и в FAQ.md. Не блокер решения (вариант А остаётся в
+      силе), только деталь реализации. Внешняя сторона считает пакет готовым к реализации.
+
+  - id: client-adapter-decisions-resolved
+    type: plan
+    date: 2026-09-13
+    summary: >
+      Architect+user разобрали все семь пунктов категории «Открытое» подряд, по одному. Три
+      технических находки подтверждены не пересказом доки, а чтением реального кода установленного
+      пакета (`node_modules/.pnpm/@tanstack+ai-client@0.31.1.../dist/esm/*.d.ts`+`.js`):
+      (1) `fetchServerSentEvents()`'s `buildRunAgentInputBody()` шлёт AG-UI поле `context` ЖЁСТКО
+      пустым массивом (`context: []`) — `data`/`options.body` уходят только в `forwardedProps`,
+      значит штатный адаптер физически не может собрать конверт бокса, где `context` — отдельное от
+      `forwardedProps` поле; пакету нужен свой `ConnectConnectionAdapter`, не голый вызов
+      `fetchServerSentEvents`. (2) `ChatClientOptions.onChunk` существует и зовётся на каждый
+      `StreamChunk`, включая `ToolCallResultEvent` (`type: 'TOOL_CALL_RESULT'`, `toolCallId`/
+      `content`) — реакция на результат тула до конца прогона достаётся бесплатно, своей обвязки не
+      требует. (3) Публичный реэкспорт пакета уже несёт `convertMessagesToModelMessages`/
+      `normalizeToUIMessage`/`modelMessagesToUIMessages` — сборку `messages` в wire-формат для
+      своего `connect()` переизобретать не придётся, даже раз приватный `uiMessagesToWire` наружу
+      не экспортирован.
+      Решения user по остальным пунктам: авторизацию сейчас не трогаем (токен статичный, как
+      сегодня); отмену дожимает сам `connect()` по `abortSignal`, не отдельная функция потребителя
+      (вариант А из двух предложенных); `/spent` и `/feedback` — типизированные снимки без
+      самостоятельного счёта дельт; каталожные ручки бокса — сырые, потому что бокс сам называет
+      протокол растущим. Из последних двух вывели общий принцип на весь пакет: явно названные
+      стабильные формы бокса — типизируем, открытые растущие списки — нет.
+      Статусы пунктов остались `Backlog` осознанно — решения приняты, код ещё не написан
+      (`src/`, помимо голого реэкспорта из `full-vendor-reexport`, не тронут).
+
+  - id: package-scaffolded
+    type: plan
+    date: 2026-09-13
+    summary: >
+      User обсудил детали с будущим владельцем пакета напрямую (вне этого разговора) — заявка
+      архитектору была узкой: завести шаблон пакета + зону в harness.yaml, содержание и роадмап
+      владелец пишет сам, architect обсуждает план ПОСЛЕ. Разобрано и подтверждено чтением реальной
+      документации (не по памяти): бокс (`NEUROBOX_CLIENT.md`, корень репозитория) — менеджер
+      рантаймов агентов поверх открытого протокола AG-UI, свой формат был и выброшен намеренно.
+      TanStack AI (`@tanstack/ai-client`+`@tanstack/ai-solid`, версии сверены `npm view` —
+      0.31.1/0.21.1 на дату заведения) подтверждён официальной докой как полностью AG-UI-совместимый
+      в обе стороны — `RunAgentInput`-конверт, не проприетарный формат, работает с ЛЮБЫМ
+      AG-UI-совместимым бэкендом, не только собственным серверным пакетом TanStack. Заполнено по
+      образцу `packages/form` (последний пилот текущей формы шаблона — vite.config.ts с
+      `defineLibraryConfig`, `.`+`./solid` подпути): package.json, tsconfig/vite/vitest/eslint
+      конфиги, `src/index.ts`+`src/engine/index.ts` (голый реэкспорт `@tanstack/ai-client`),
+      `src/solid/index.ts` (голый реэкспорт `@tanstack/ai-solid`), README/FAQ начерно. Содержания
+      нет — открытые вопросы названы (категория выше) по факту прочтения `NEUROBOX_CLIENT.md`
+      целиком, не додуманы.

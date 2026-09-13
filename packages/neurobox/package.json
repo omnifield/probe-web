@@ -1,0 +1,53 @@
+{
+  "name": "@web-core/neurobox",
+  "version": "0.1.0",
+  "description": "Клиент web-core для бокса нейробокс (AG-UI, см. NEUROBOX_CLIENT.md) поверх @tanstack/ai-client/@tanstack/ai-solid: одна точка входа вместо вендора.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./solid": {
+      "development": "./src/solid/index.ts",
+      "solid": "./dist/solid.jsx",
+      "types": "./dist/solid.d.ts",
+      "default": "./dist/solid.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/ai-client": "^0.31.1",
+    "@tanstack/ai-solid": "^0.21.1"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
+  }
+}
