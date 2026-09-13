@@ -35,6 +35,7 @@ vite-плагин с верным порядком в массиве.
 | Рантайм роутера | `@web-core/router` | весь `@tanstack/solid-router` (`RouterProvider`, `createRouter`, `createRootRoute`, `createRoute`, `createFileRoute`, `Link`, `Outlet`, `useNavigate`, `useParams`, `useSearch`, `useLoaderData`, `useRouteContext`, `getRouteApi`, `createMemoryHistory`, … ~80 экспортов) + `defaultRouterOptions` |
 | Vite-плагин | `@web-core/router/vite` | `tanstackRouterVitePlugin`, `TanstackRouterVitePluginOptions` |
 | Девтулы | `@web-core/router/devtools` | `TanStackRouterDevtools` |
+| Virtual File Routes | `@web-core/router/virtual-file-routes` | весь `@tanstack/virtual-file-routes` (`rootRoute`, `route`, `index`, `layout`, `physical`, `defineVirtualSubtreeConfig`) |
 
 📦 Внутри пакета: `src/index.ts` — единственный файл в корне `src/`, тонкая поверхность (один
 реэкспорт `engine/`). Каждый подпуть — своя папка: `src/engine/index.ts` (реэкспорт вендора +
@@ -69,6 +70,25 @@ import { createRootRoute, createRoute } from "@web-core/router";
 const rootRoute = createRootRoute({ component: () => <Outlet /> });
 const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: "/about", component: About });
 const routeTree = rootRoute.addChildren([aboutRoute]);
+```
+
+**Virtual File Routes — дерево маршрутов явным конфигом вместо парсинга имён файлов, файлы лежат где угодно (например, рядом со страницей):**
+
+```ts
+// src/routes.config.ts
+import { rootRoute, route, index, layout } from "@web-core/router/virtual-file-routes";
+
+export default rootRoute("__root.tsx", [
+  layout("workspace", "../pages/route.tsx", [
+    index("../pages/route.index.tsx"),
+    route("/about", "../pages/about/route.tsx"),
+  ]),
+]);
+```
+
+```ts
+// vite.config.ts — путь к конфигу передаётся плагину как есть
+tanstackRouterVitePlugin({ virtualRouteConfig: "./src/routes.config.ts" });
 ```
 
 **Девтулы, обёрнутые в `import.meta.env.DEV`:**

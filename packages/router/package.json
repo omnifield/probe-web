@@ -20,6 +20,11 @@
       "development": "./src/devtools/index.ts",
       "types": "./dist/devtools/index.d.ts",
       "default": "./dist/devtools/index.js"
+    },
+    "./virtual-file-routes": {
+      "development": "./src/virtual-file-routes/index.ts",
+      "types": "./dist/virtual-file-routes/index.d.ts",
+      "default": "./dist/virtual-file-routes/index.js"
     }
   },
   "files": [
@@ -37,7 +42,8 @@
   },
   "dependencies": {
     "@tanstack/router-plugin": "^1.168.35",
-    "@tanstack/solid-router-devtools": "^1.167.1"
+    "@tanstack/solid-router-devtools": "^1.167.1",
+    "@tanstack/virtual-file-routes": "^1.162.0"
   },
   "peerDependencies": {
     "@tanstack/solid-router": "^1.170.30",
