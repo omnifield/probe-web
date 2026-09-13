@@ -31,7 +31,7 @@
 |---|---|---|
 | Транспорт (framework-agnostic) | `@web-core/neurobox` | весь `@tanstack/ai-client` + свой `createNeuroboxConnection` (`ConnectConnectionAdapter` под бокс) |
 | Solid-обвязка | `@web-core/neurobox/solid` | весь `@tanstack/ai-solid` (`useChat`, `createChatHook`, connection-адаптеры) — пока без добавок |
-| MCP-клиент (Node-only) | `@web-core/neurobox/mcp` | `httpPeer`/`stdioPeer` поверх `@tanstack/ai-mcp` — замена `@web-core/mcp/peer` |
+| MCP-клиент (Node-only) | `@web-core/neurobox/mcp` | `httpPeer`/`stdioPeer` поверх `@tanstack/ai-mcp` + `createBrowser` — замена `@web-core/mcp/peer`+`/browser` |
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -117,10 +117,21 @@ MCP-клиент (точечный обмен между инстансами з
 import { httpPeer, stdioPeer } from "@web-core/neurobox/mcp";
 
 const zonePeer = httpPeer("http://127.0.0.1:4000/mcp");
-const browserPeer = stdioPeer("npx", ["chrome-devtools-mcp"]);
 
 await zonePeer.callTool("list_components", { group: "actions" });
 await zonePeer.close(); // или: await using zonePeer = httpPeer(...) — closes on scope exit
+```
+
+`createBrowser` — та же обёртка над `chrome-devtools-mcp`, что была в `@web-core/mcp/browser`,
+поверх `stdioPeer` выше (не голого `npx` руками):
+
+```ts
+import { createBrowser } from "@web-core/neurobox/mcp";
+
+const browser = createBrowser({ executablePath: "/path/to/chrome" });
+const pageId = await browser.newPage();
+await browser.navigate(pageId, "https://example.com");
+const shot = await browser.screenshot(pageId);
 ```
 
 Открытые вопросы (события отказов) — `ROADMAP.yaml`.

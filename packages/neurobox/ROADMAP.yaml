@@ -185,7 +185,7 @@ categories:
 
       - id: browser-wrapper-ported
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "createBrowser (packages/mcp/src/browser) переезжает на новый MCP-клиент"
@@ -232,6 +232,27 @@ categories:
           судьба — отдельное решение, не этот пункт.
 
 log:
+  - id: browser-wrapper-ported-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      `browser-wrapper-ported` реализован — ровно как в описании пункта: тело `createBrowser`
+      скопировано из `packages/mcp/src/browser/index.ts` в `packages/neurobox/src/mcp/browser.ts`
+      БЕЗ ИЗМЕНЕНИЙ, единственная правка — источник `stdioPeer` (`./index.js` этого же подпути
+      вместо `../peer/index.js` старого пакета). Регэксп-парсинг ответов chrome-devtools-mcp
+      (`newPage`'s `[selected]`, `textOf(content)`) не трогался — он про формат ответа стороннего
+      MCP-сервера, не про то, чей клиент его вызвал, что и предполагал пункт роадмапа.
+      Экспортирован из `src/mcp/index.ts` (`export * from "./browser.js"`) — тот же подпуть
+      `@web-core/neurobox/mcp`, не отдельный `./mcp/browser`: пункт не заводил новый под-подпуть,
+      весь Node-only MCP-код одного зонтика.
+      Тесты — `test/browser.test.ts`, точная копия `packages/mcp/test/browser.test.ts`
+      (`describe.skipIf(!hasChrome)` — тот же принцип: реальный headless Chromium, не мок; в этом
+      окружении бинарник нашёлся, оба теста прогнались ЖИВЬЁМ против настоящего chrome-devtools-mcp
+      через npx, не пропущены). Итог: 31/31 (было 29), `pnpm typecheck`/`lint`/`build` — зелёные.
+      `packages/mcp/src/browser` не тронут — тот же принцип, что и у `/peer`: оригинал остаётся,
+      пока `mcp-migration-consumers` не переключит реальных потребителей (`apps/skin/.mcp/*`, чужая
+      зона, отдельное ТЗ владельцу apps/skin).
+
   - id: peer-replaced-by-ai-mcp-client-implemented
     type: feature
     date: 2026-09-13

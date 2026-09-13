@@ -88,3 +88,7 @@ function definedOnly(env: Record<string, string | undefined>): Record<string, st
   for (const [key, value] of Object.entries(env)) if (value !== undefined) result[key] = value;
   return result;
 }
+
+// createBrowser (обёртка над chrome-devtools-mcp) — та же замена @web-core/mcp/browser, тем же
+// stdioPeer выше, см. ROADMAP.yaml, browser-wrapper-ported.
+export * from "./browser.js";
