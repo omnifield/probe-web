@@ -1,7 +1,7 @@
 {
   "name": "@web-core/form",
   "version": "0.1.0",
-  "description": "Движок правки данных по схеме web-core поверх @tanstack/solid-form: headless состояние (пути, dirty, массивы — insert/remove/move/swap). Схема приходит из @web-core/io (свой Zod внутри), этот пакет Zod напрямую не видит. Рендер — свои компоненты (@web-core/ui), библиотека формы не рисует.",
+  "description": "Проекция дерево×io-схема→валидность (@web-core/assembly + @web-core/io) — не рендерит и не владеет состоянием формы, отдаёт issues по пути и производное UI-состояние узла (JsonLogic-правило) потребителю.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -10,6 +10,12 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./solid": {
+      "development": "./src/solid/index.ts",
+      "solid": "./dist/solid.jsx",
+      "types": "./dist/solid.d.ts",
+      "default": "./dist/solid.js"
     }
   },
   "files": [
@@ -20,22 +26,24 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
     "test": "vitest run"
   },
   "dependencies": {
-    "@tanstack/solid-form": "^1.33.5",
-    "@web-core/io": "workspace:*"
+    "@web-core/assembly": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "json-logic-js": "^2.0.5"
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
+    "@types/json-logic-js": "^2.0.8",
+    "@types/node": "^24.10.1",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
-    "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",
