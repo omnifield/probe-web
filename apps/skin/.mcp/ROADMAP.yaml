@@ -613,7 +613,75 @@ categories:
           против `forms[]` каждого сохранённого наряда, флав `orphan-form` на форму, которую не
           носит ни один наряд. Ни то ни другое не начато.
 
+  - category: "Переход с @web-core/mcp (удалён) на @web-core/neurobox"
+    items:
+      - id: dependency-swap
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "package.json — @web-core/mcp → @web-core/neurobox"
+        description: |
+          `package.json`'s `dependencies` несёт `@web-core/mcp` (workspace-пакет удалён user
+          2026-09-13 — старая генерация тулинга, переписывается на новый). Заменить на
+          `@web-core/neurobox: workspace:*`.
+
+      - id: import-mapping
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Десять файлов зоны — на новые подпути @web-core/neurobox, 1:1 замена по имени"
+        description: |
+          Сверено `grep`'ом по зоне (не по памяти) — ровно эти импорты и файлы, каждый подпуть
+          `@web-core/mcp/*` имеет прямой аналог в `@web-core/neurobox` под тем же именем экспорта:
+
+          | Файл | Было (`@web-core/mcp*`) | Станет (`@web-core/neurobox/*`) |
+          |---|---|---|
+          | `src/server/index.ts` | `createServer` из `/transport` | `/server` |
+          | `src/tools/kit.ts` | `err, ok, registerTool` из корня; `limitSchema, paginate` из `/pagination` | `/server`; `/pagination` |
+          | `src/tools/presets.ts` | то же | то же |
+          | `src/tools/content.ts` | то же | то же |
+          | `src/tools/browser.ts` | `err, ok, registerTool` из корня | `/server` |
+          | `src/tools/feedback.ts` | `err, ok, registerTool` из корня; `FeedbackRefused, listFeedback, reportFeedback, resolveFeedback, FeedbackEntry` из `/feedback`; `limitSchema, paginate` из `/pagination` | `/server`; `/zone-feedback` (НЕ `/feedback` — тот подпуть занят другой сущностью, фидбэком о боксе, см. `@web-core/neurobox/FAQ.md`); `/pagination` |
+          | `src/tools/shared.ts` | `type ToolContext` из корня | `/server` |
+          | `src/engine/browser.ts` | `createBrowser`, `type Screenshot` из `/browser` | `/mcp` |
+          | `scripts/push-to-prod.mjs` | `httpPeer, stdioPeer` из `/peer` | `/mcp` |
+
+          Имена экспортов не меняются нигде — замена сводится к правке пути импорта в каждом файле,
+          не к переписыванию логики: `@web-core/neurobox`'s `/server`/`/pagination`/`/mcp`/
+          `/zone-feedback` — дословный перенос соответствующих частей бывшего `@web-core/mcp`
+          (сверено ревью при переносе, см. `packages/neurobox/ROADMAP.yaml`).
+
+      - id: verify-after-switch
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "После переключения — типовой прогон зоны живьём, не только typecheck"
+        description: |
+          `pnpm run typecheck` в этой зоне — необходимо, но не достаточно (сверяет только сигнатуры).
+          После правки импортов — поднять сервер (`pnpm start`) и прогнать реальный вызов хотя бы
+          одного тула на каждый переехавший подпуть: `list_components` (заденет `/server`+
+          `/pagination`), `report_feedback`+`list_feedback` (`/zone-feedback`), `browser_navigate`
+          (`/mcp`'s `createBrowser`), `pnpm run push-to-prod` в режиме без реальной отправки или на
+          пустой службе (`/mcp`'s `httpPeer`/`stdioPeer`) — тем же способом, каким проверялся сам
+          перенос в `packages/neurobox` на каждом шаге, не поверить на слово сборке.
+
 log:
+  - id: neurobox-migration-plan-written
+    type: plan
+    date: 2026-09-13
+    summary: >
+      `@web-core/mcp` удалён user (2026-09-13) — старая генерация тулинга переписывается на новую,
+      `@web-core/neurobox`, которая закончила собственный перенос той же механики (`/server`,
+      `/pagination`, `/mcp`, `/zone-feedback` — дословный перенос `register-tool`/`transport`/
+      `pagination`/`peer`+`browser`/`feedback`, ревью пройдено, см. `packages/neurobox/ROADMAP.yaml`).
+      Записан план перехода этой зоны: десять файлов, сверенных `grep`'ом (не по памяти) —
+      `src/server/index.ts`, пять файлов `src/tools/*.ts`, `src/engine/browser.ts`,
+      `scripts/push-to-prod.mjs` — везде только смена пути импорта, имена экспортов не меняются.
+      Не срочно и не авария — зона не в проде, просто следующая задача владельца, когда его позовут.
+
   - id: remote-stand-outfits-missing-forms
     type: fix
     date: 2026-09-10
