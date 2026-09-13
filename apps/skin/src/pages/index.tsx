@@ -6,20 +6,25 @@ import {
   WorkspaceSidebar,
   Toast,
 } from "@web-core/ui";
-import { Outlet, useLocation } from "@web-core/router";
+import { Outlet, useLocation, useNavigate, useParams } from "@web-core/router";
 import { railVar } from "@web-core/skin";
 import { Show } from "solid-js";
-import { RightbarLab, RightbarShowcase } from "#/widgets/rightbar";
-import { Tree } from "#/widgets/component";
+
+import { treeItems } from "#/entities/component/model/catalog-tree";
 import { Header } from "#/widgets/header";
+import { CatalogTree } from "#/widgets/catalogs";
 
 export function WorkspaceLayout() {
-  // `WorkspaceRightbar` — позиционный слот `Workspace` (CSS grid-area, не портал/контекст), не
-  // достаётся до него из `<Outlet/>` — значит переключение содержимого по маршруту решается
-  // здесь, а не в самих страницах. `/lab` — создание (чат), всё остальное — витрина (поля данных),
-  // решение user 2026-09-10.
   const location = useLocation();
   const isLab = () => location().pathname.startsWith("/lab");
+
+  const params = useParams({ strict: false, select: (p) => p.component });
+
+  const navigate = useNavigate();
+  const onSelect = (value: string) => {
+    const screen = isLab() ? "/lab/$component" : "/showcase/$component";
+    void navigate({ to: screen, params: { component: value } });
+  };
 
   return (
     <Workspace
@@ -29,7 +34,11 @@ export function WorkspaceLayout() {
     >
       <Toast />
       <WorkspaceSidebar style={{ width: railVar("rail-md") }}>
-        <Tree />
+        <CatalogTree
+          adapter={treeItems}
+          activeValue={params()}
+          onSelect={onSelect}
+        />
       </WorkspaceSidebar>
       <WorkspaceHeader>
         <Header />
@@ -39,9 +48,9 @@ export function WorkspaceLayout() {
         <Outlet />
       </WorkspaceMain>
       <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
-        <Show when={isLab()} fallback={<RightbarShowcase />}>
+        {/* <Show when={isLab()} fallback={<RightbarShowcase />}>
           <RightbarLab />
-        </Show>
+        </Show> */}
       </WorkspaceRightbar>
     </Workspace>
   );

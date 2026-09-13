@@ -1,60 +1,25 @@
-import type { DispatchedEvent } from "@web-core/assembly";
-import { Flow, FlowItem, toast } from "@web-core/ui";
-import { layoutSelf } from "@web-core/skin";
-import { useAtom } from "@web-core/store";
-import { createEffect, createMemo, For } from "solid-js";
+import { Flow } from "@web-core/ui";
+import { createEffect } from "solid-js";
 
-import {
-  componentDataAtom,
-  componentHandle,
-  setCurrentComponent,
-  Slot,
-} from "#/entities/component";
+import { assembliesOf, variantsOf } from "#/entities/component";
+import { CatalogList, type ListItem } from "#/widgets/catalogs";
+
+const MOCK_ITEMS: readonly ListItem[] = [
+  { value: "one", label: "One" },
+  { value: "two", label: "Two" },
+  { value: "three", label: "Three" },
+];
 
 export function ShowcasePage(props: { component: string; tag?: string }) {
-  createEffect(() => setCurrentComponent(props.component));
-
-  const data = useAtom(componentDataAtom);
-  const component = componentHandle();
-
-  // `component.info()` теперь сам держит последнее известное значение (правка в componentHandle,
-  // не здесь) — на смену компонента больше не проваливается в пусто, значит и `<For>` от него не
-  // мигает; локальный буфер, который раньше был здесь, больше не нужен.
-  const assemblies = createMemo(
-    () => component.info()?.editorInfo?.assemblies ?? [],
-  );
-  const tagGroups = createMemo(() =>
-    (component.info()?.skin?.forms ?? []).flatMap((formInfo) => formInfo.tags),
-  );
-
-  function onDispatch(event: DispatchedEvent) {
-    component.recordEvent(event);
-    // event.timestamp — ISO-строка (`new Date().toISOString()`), формат уже несёт всё — берём
-    // только часы:минуты:секунды, без даты и миллисекунд.
-    const time = event.timestamp.slice(11, 19);
-    toast.create({
-      title: `${event.name}\n${time}`,
-      description: JSON.stringify(event.context["payload"], null, 2),
-    });
-  }
+  createEffect(() => {
+    const component = props.component;
+    void variantsOf(component).then((variants) => console.log(variants));
+    void assembliesOf(component).then((assemblies) => console.log(assemblies));
+  });
 
   return (
     <Flow data-variant="column-center">
-      <For each={tagGroups()}>
-        {(tag) => (
-          <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <Slot
-              component={props.component}
-              assemblies={assemblies()}
-              tag={tag.tag}
-              variants={tag.variants}
-              data={data()}
-              loading={component.loading()}
-              dispatch={onDispatch}
-            />
-          </FlowItem>
-        )}
-      </For>
+      <CatalogList items={MOCK_ITEMS}>{(item) => <div>{item.label}</div>}</CatalogList>
     </Flow>
   );
 }

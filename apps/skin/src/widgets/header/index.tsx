@@ -24,7 +24,7 @@ const SCREENS = [
 
 export function Header() {
   const pathname = useLocation({ select: (location) => location.pathname });
-  // `strict: false` — тот же приём, что у `Tree`'s `activeValue`: `$component` объявлен то у
+  // `strict: false` — тот же приём, что у `CatalogTree`'s `activeValue`: `$component` объявлен то у
   // showcase, то у lab, читаем его независимо от того, в каком из двух сейчас находимся.
   const component = useParams({
     strict: false,
