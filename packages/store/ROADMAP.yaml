@@ -17,6 +17,22 @@ categories:
           createAtom, createAtomConfig, createReducerAtom, useSelector, useStore, useAtom,
           useAtomState. Приложение не импортирует @xstate/store*/@xstate/solid напрямую.
 
+      - id: create-action-store
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createActionStore — доменный стор (state + actions + selectors)
+        description: |
+          Означает: createActionStore(initialValue, ({setState, get}) => actions, options?) —
+          createAtom под капотом, actionsFactory собирается одним вызовом вместо ручной сборки
+          {get, actions}. Возвращает ReadonlyAtom<T> & {actions} — .set() не публичный, actions
+          единственный путь записи не только по конвенции, но структурно. Читается тем же
+          useAtom(store, selector)/useSelector, что обычный атом. Закрывает разрыв с
+          domain-store-recipe: тот был документацией ручной композиции, этот — сам примитив,
+          синтаксис один в один с тем, что просил user (@tanstack/store's createStore(initial,
+          actionsFactory)). 4 теста в test/action-store.test.tsx.
+
   - category: Стейт-машины
     items:
       - id: machine-layer
@@ -170,13 +186,16 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "Рецепт: доменный стор (state + actions + selectors, Zustand/Pinia-стиль)"
+        name: "Рецепт: доменный стор — первая версия, ручная композиция createAtom (заменена create-action-store)"
         description: |
-          Означает: README получил композицию createAtom + объект actions + точечный
-          useAtom(atom, selector) как рекомендуемый паттерн для доменных сторов — не новый код
-          пакета, документация существующей композиции. Заведено после предложения перейти на
-          @tanstack/store под этот же паттерн; разбор, почему смена вендора здесь не нужна — в
-          FAQ.md (домен "Доменные сторы").
+          Означает: первая версия README-рецепта собирала {get, actions} вручную поверх
+          createAtom — без структурного запрета на .set() наружу, actions только по конвенции.
+          Заведено после предложения перейти на @tanstack/store под паттерн state+actions;
+          разбор, почему смена вендора не нужна — в FAQ.md. В README текст рецепта заменён на
+          create-action-store: тот же вывод (вендор не нужен), но настоящий примитив вместо
+          ручной сборки — синтаксис ближе к тому, что просил user, и .set() закрыт структурно, не
+          конвенцией. Пункт оставлен в истории ради лога решения, в README ручной версии больше
+          нет.
 
   - category: Не сделано
     items:
@@ -192,6 +211,24 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: create-action-store-scope
+    type: plan
+    date: 2026-09-13
+    summary: >
+      Продолжение domain-store-vs-tanstack: user принёс ещё раз тот же @tanstack/store пример
+      (createStore(initial, ({setState, get}) => actions)) и спросил прямо — "наш стор умеет так
+      работать?" Честный ответ на тот момент был "нет, только руками" (README показывал ручную
+      сборку {get: atom.get, actions: {...}} поверх createAtom) — расхождение между "можно
+      добиться того же результата" и "есть такая ручка" запутало user, который отдельно тестировал
+      реальным агентом на apps/skin/entities/component/model/store.ts: тот попытался применить
+      actions-рецепт к currentComponent/currentOutfit (которые на деле кейс createBoundAtom — их
+      никто не "экшенит", они зеркалят проп маршрута) и в процессе притащил обратно голый
+      createSignal, задублировав состояние в сигнале и в атоме. Решено закрыть разрыв кодом, не
+      объяснением: создан createActionStore (src/engine/action-store.ts) — actionsFactory
+      собирается одним вызовом, .set() не публичный (ReadonlyAtom<T> & {actions}), синтаксис
+      один в один с примером user. README-рецепт (domain-store-recipe) заменён на реальный
+      примитив.
+
   - id: domain-store-vs-tanstack
     type: plan
     date: 2026-09-13

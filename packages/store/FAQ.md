@@ -85,21 +85,22 @@ atom.set(source()))`. У самого Solid та же картина: `createEff
 
 ## Доменные сторы (state + actions + selectors)
 
-### Почему под "стор в стиле Zustand/Pinia" (state отдельно, actions отдельно, компонент не зовёт `.set()` напрямую) не заведён отдельный примитив или движок (например `@tanstack/store`)?
+### Почему под "стор в стиле Zustand/Pinia" (state отдельно, actions отдельно, компонент не зовёт `.set()` напрямую) заведён свой `createActionStore`, а не взят готовый `@tanstack/store`?
 
-**Коротко: это не новый примитив — уже достижимо `createAtom` + объект `actions` рядом, один в один по требованиям; смена движка при этом ничего не даёт.**
+**Коротко: разница между движками была только в синтаксисе (актуально для async-действий с несколькими `setState`) — этот синтаксис теперь есть и здесь, `createActionStore` в `src/engine/action-store.ts`; менять движок под него не пришлось.**
 
-Требование "стор не импортирует Solid-примитивы, Solid — только на границе чтения" уже выполнено:
-`createAtom` — чистый `@xstate/store`, без Solid; Solid есть только в `useAtom`/`useSelector`
-(граница чтения) и в `createBoundAtom` (граница записи снаружи) — оба явно названы и документированы
-выше. Требование "компонент не мутирует стор напрямую, только через actions" — тоже не новость:
-`entities/openapi/model/endpoint/store.ts` в apps/skin уже так живёт (`createAtom` + голые
-экспортированные функции `createEndpoint`/`updateEndpoint`/... вместо прямого `.set()` из
-компонента). Единственное, чего не было явно — рецепта с `actions` как именованным объектом и
-точечными `useAtom(atom, selector)`-подписками; это добавлено в README как композиция, не как
-новый код пакета.
+Требование "стор не импортирует Solid-примитивы, Solid — только на границе чтения" уже было
+выполнено: `createAtom` — чистый `@xstate/store`, без Solid; Solid есть только в `useAtom`/
+`useSelector` (граница чтения) и в `createBoundAtom` (граница записи снаружи). Не хватало ровно
+одного — чтобы `actionsFactory` собиралась одним вызовом конструктора, а не руками (`{get:
+atom.get, actions: {...}}` россыпью). `createActionStore(initialValue, ({setState, get}) =>
+actions, options?)` это и делает: снаружи — `ReadonlyAtom<T> & {actions}`, `.set()` не публичный
+(в отличие от `createAtom`, у которого он есть) — компонент физически не может обойти `actions`,
+не только по конвенции. Читается тем же `useAtom(store, selector)`/`useSelector`, что обычный атом,
+без отдельного хука. 4 теста в `test/action-store.test.tsx`, включая кейс из исходного запроса
+(user store: `setUser`/`clearUser`/асинхронный `loadUser` с `loading`).
 
-Проверено предметно, не на словах: `@tanstack/store` и его Solid-адаптер `@tanstack/solid-store`
+Смена вендора отдельно всё равно проверена предметно, не на словах: `@tanstack/store` и его Solid-адаптер `@tanstack/solid-store`
 (оба лежат в node_modules пакетным менеджером, специально прочитаны их `.d.ts`) устроены тем же
 классом, что `@xstate/store` — собственный граф зависимостей (`dist/alien.d.ts`, ReactiveNode/Link,
 alien-signals), изолированный от реактивности Solid. `@tanstack/solid-store` даёt `useSelector`/
