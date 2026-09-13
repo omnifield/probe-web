@@ -1,4 +1,4 @@
-import { resolveAccessHeaders } from "./access.js";
+import { neuroboxUrl, resolveAccessHeaders } from "./access.js";
 import type { NeuroboxAccessOptions } from "./access.js";
 
 export type NeuroboxFeedbackKind = "friction" | "praise";
@@ -28,10 +28,9 @@ export async function sendNeuroboxFeedback(
   options: NeuroboxFeedbackOptions,
 ): Promise<void> {
   const fetchClient = options.fetchClient ?? fetch;
-  const baseUrl = options.baseUrl ?? "";
   const headers = await resolveAccessHeaders(options);
 
-  const response = await fetchClient(`${baseUrl}/api/feedback/${threadId}`, {
+  const response = await fetchClient(neuroboxUrl(options.baseUrl, "api", "feedback", threadId), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(feedback),

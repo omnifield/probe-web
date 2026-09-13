@@ -150,6 +150,29 @@ categories:
           типизируем; открытые РАСТУЩИЕ списки (каталоги) — сырые.
 
 log:
+  - id: url-building-deduplicated
+    type: fix
+    date: 2026-09-13
+    summary: >
+      Ревью со стороны бокса (внешний architect) вернуло `feedback-and-catalog-implemented`
+      обратно: запрошенный в прошлом ревью общий хелпер сборки URL с `encodeURIComponent` не был
+      сделан — `feedback.ts` повторил сырую интерполяцию `${baseUrl}/api/feedback/${threadId}`,
+      третью копию того же паттерна (после `connection.ts`'s `/cancel` и `spend.ts`'s `/spent`).
+      Починено: `neuroboxUrl(baseUrl, ...segments)` в `access.ts` — кодирует каждый сегмент через
+      `encodeURIComponent`, дефолтит отсутствующий `baseUrl` в относительный путь. Все три места
+      переведены на него (`connection.ts` — обе ссылки, основной POST и `/cancel`; `spend.ts`'s
+      `/spent`; `feedback.ts`'s POST). `catalog.ts` НЕ тронут — там нет динамических сегментов
+      (все семь путей статичные строки), инъекция невозможна, архитектор явно исключил его из
+      требования.
+      Тесты: новый `test/access.test.ts` — `neuroboxUrl` отдельно (join, дефолт без baseUrl,
+      кодирование `/`-инъекции и кириллицы/пробела), `resolveAccessHeaders` (строка и async-геттер).
+      `test/connection.test.ts` — добавлен регресс-тест: threadId со слэшем в реальном вызове
+      `/cancel` через `connect()`+abort даёт корректно закодированный URL, не лишний сегмент пути.
+      `test/spend.test.ts`/`test/feedback.test.ts` — старые ассерты на сырую кириллицу в URL
+      переписаны на `encodeURIComponent(...)` (сам факт, что они сломались при вводе хелпера,
+      подтверждает: раньше кириллица в threadId ехала в путь как есть). Итог: `pnpm typecheck`/
+      `lint`/`test` (22/22)/`build` — зелёные.
+
   - id: feedback-and-catalog-implemented
     type: feature
     date: 2026-09-13

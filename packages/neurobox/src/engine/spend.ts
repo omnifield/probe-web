@@ -1,4 +1,4 @@
-import { resolveAccessHeaders } from "./access.js";
+import { neuroboxUrl, resolveAccessHeaders } from "./access.js";
 import type { NeuroboxAccessOptions } from "./access.js";
 
 /**
@@ -24,10 +24,9 @@ export interface NeuroboxSpendOptions extends NeuroboxAccessOptions {
 
 export async function fetchNeuroboxSpend(threadId: string, options: NeuroboxSpendOptions): Promise<NeuroboxSpend> {
   const fetchClient = options.fetchClient ?? fetch;
-  const baseUrl = options.baseUrl ?? "";
   const headers = await resolveAccessHeaders(options);
 
-  const response = await fetchClient(`${baseUrl}/api/agent/${threadId}/spent`, {
+  const response = await fetchClient(neuroboxUrl(options.baseUrl, "api", "agent", threadId, "spent"), {
     method: "GET",
     headers,
   });

@@ -1,6 +1,6 @@
 import { convertMessagesToModelMessages } from "@tanstack/ai-client";
 import type { ConnectConnectionAdapter, RunAgentInputContext } from "@tanstack/ai-client";
-import { resolveAccessHeaders } from "./access.js";
+import { neuroboxUrl, resolveAccessHeaders } from "./access.js";
 import type { NeuroboxAccessOptions } from "./access.js";
 
 /** AG-UI `context`-запись — что апп знает о месте (страница/компонент/вариант), не о том, чем думать. */
@@ -116,14 +116,14 @@ async function sendCancel(
  */
 export function createNeuroboxConnection(options: NeuroboxConnectionOptions): ConnectConnectionAdapter {
   const fetchClient = options.fetchClient ?? fetch;
-  const baseUrl = options.baseUrl ?? "";
+  const baseUrl = options.baseUrl;
   const cancelTimeoutMs = options.cancelTimeoutMs ?? DEFAULT_CANCEL_TIMEOUT_MS;
 
   return {
     async *connect(messages, data, abortSignal, runContext) {
       const headers = await resolveAccessHeaders(options);
       const body = buildNeuroboxRunInput(messages, data, runContext);
-      const cancelUrl = `${baseUrl}/api/agent/${body.threadId}/cancel`;
+      const cancelUrl = neuroboxUrl(baseUrl, "api", "agent", body.threadId, "cancel");
 
       const onAbort = () => {
         void sendCancel(fetchClient, cancelUrl, headers, cancelTimeoutMs);
@@ -131,7 +131,7 @@ export function createNeuroboxConnection(options: NeuroboxConnectionOptions): Co
       abortSignal?.addEventListener("abort", onAbort, { once: true });
 
       try {
-        const response = await fetchClient(`${baseUrl}/api/agent`, {
+        const response = await fetchClient(neuroboxUrl(baseUrl, "api", "agent"), {
           method: "POST",
           headers: { "Content-Type": "application/json", ...headers },
           body: JSON.stringify(body),

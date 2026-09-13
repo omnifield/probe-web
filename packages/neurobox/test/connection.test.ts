@@ -123,4 +123,43 @@ describe("createNeuroboxConnection", () => {
     expect(cancelRequest?.init.signal).not.toBe(controller.signal);
     expect((cancelRequest?.init.signal as AbortSignal).aborted).toBe(false);
   });
+
+  it("encodes a threadId containing a slash in the /cancel path instead of letting it inject a segment", async () => {
+    const requests: Array<string> = [];
+    let resolveFirstFetchStarted!: () => void;
+    const firstFetchStarted = new Promise<void>((resolve) => {
+      resolveFirstFetchStarted = resolve;
+    });
+
+    const fetchClient = vi.fn(async (url: string, _init: RequestInit) => {
+      requests.push(url);
+      if (url.includes("/cancel")) return new Response(null, { status: 200 });
+      resolveFirstFetchStarted();
+      return new Response(new ReadableStream<Uint8Array>({}), { status: 200 });
+    });
+
+    const connection = createNeuroboxConnection({
+      baseUrl: "https://box.example",
+      token: "t",
+      userLogin: "u",
+      fetchClient: fetchClient as unknown as typeof fetch,
+    });
+
+    const controller = new AbortController();
+    const iterator = connection
+      .connect([], {}, controller.signal, { threadId: "sneaky/../other", runId: "r1" })
+      [Symbol.asyncIterator]();
+    const pendingNext = iterator.next();
+
+    await firstFetchStarted;
+    controller.abort();
+    await pendingNext.catch(() => undefined);
+
+    await vi.waitFor(() => {
+      expect(requests.some((url) => url.includes("/cancel"))).toBe(true);
+    });
+
+    const cancelUrl = requests.find((url) => url.includes("/cancel"));
+    expect(cancelUrl).toBe("https://box.example/api/agent/sneaky%2F..%2Fother/cancel");
+  });
 });

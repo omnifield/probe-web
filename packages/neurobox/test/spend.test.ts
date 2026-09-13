@@ -29,7 +29,7 @@ describe("fetchNeuroboxSpend", () => {
 
     expect(result).toEqual(snapshot);
     const [url, init] = fetchClient.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://box.example/api/agent/сеанс-работы-42/spent");
+    expect(url).toBe(`https://box.example/api/agent/${encodeURIComponent("сеанс-работы-42")}/spent`);
     expect(init.method).toBe("GET");
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer t");

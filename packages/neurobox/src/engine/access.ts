@@ -19,3 +19,15 @@ export async function resolveAccessHeaders(options: NeuroboxAccessOptions): Prom
   ]);
   return { Authorization: `Bearer ${token}`, "X-User-Login": userLogin };
 }
+
+/**
+ * Строит адрес бокса из сегментов пути, кодируя каждый через `encodeURIComponent`. `threadId`
+ * приходит от потребителя пакета (имя придумывает он, см. NEUROBOX_CLIENT.md, раздел «Поток и
+ * прогон») — без кодирования пробел/`/`/кириллица в нём ломает путь или подмешивает лишний сегмент.
+ * Один хелпер на все места, что раньше собирали `${baseUrl}/api/...` руками (connect(), /cancel,
+ * /spent, /feedback) — так дыра, однажды найденная в одном месте, не может тихо повториться в
+ * следующем.
+ */
+export function neuroboxUrl(baseUrl: string | undefined, ...segments: Array<string>): string {
+  return `${baseUrl ?? ""}${segments.map((segment) => `/${encodeURIComponent(segment)}`).join("")}`;
+}

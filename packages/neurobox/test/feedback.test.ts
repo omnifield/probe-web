@@ -15,7 +15,7 @@ describe("sendNeuroboxFeedback", () => {
 
     expect(fetchClient).toHaveBeenCalledTimes(1);
     const [url, init] = fetchClient.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://box.example/api/feedback/сеанс-работы-42");
+    expect(url).toBe(`https://box.example/api/feedback/${encodeURIComponent("сеанс-работы-42")}`);
     expect(init.method).toBe("POST");
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer t");
