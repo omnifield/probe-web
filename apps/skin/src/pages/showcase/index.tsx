@@ -1,4 +1,4 @@
-import { Flow } from "@web-core/ui";
+import { Surface } from "@web-core/ui";
 import { createEffect, createSignal } from "solid-js";
 import { useSkin } from "@web-core/skin/solid";
 import {
@@ -11,6 +11,7 @@ import {
 } from "#/entities/component";
 import { CatalogList } from "#/widgets/catalogs";
 import { groupByTag, type TagGroup } from "@web-core/skin/tags";
+import { DemoStand } from "#/features/component-manager/ui";
 
 export function ShowcasePage(props: { component: string; tag?: string }) {
   const skin = useSkin();
@@ -37,8 +38,10 @@ export function ShowcasePage(props: { component: string; tag?: string }) {
   });
 
   return (
-    <Flow data-variant="column-center">
-      <CatalogList items={byTag()}>{(group) => <div>{group.tag}</div>}</CatalogList>
-    </Flow>
+    <Surface data-variant="filled">
+      <CatalogList items={byTag()}>
+        {(group) => <DemoStand component={props.component} group={group} />}
+      </CatalogList>
+    </Surface>
   );
 }
