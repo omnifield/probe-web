@@ -207,6 +207,74 @@ function Profile() {
 для такой последовательности неудобны. Разбор, почему под это не заведён отдельный движок
 (`@tanstack/store`) — FAQ.md.
 
+**`createActionStore` — полный пример: чтение и запись во всех сценариях, не только из компонента:**
+
+```ts
+// counter.store.ts — обычный TS, ни одного импорта из solid-js
+import { createActionStore } from "@web-core/store";
+
+interface CounterState {
+  readonly count: number;
+}
+
+export const counterStore = createActionStore<
+  CounterState,
+  {
+    increment(): void;
+    decrement(): void;
+    reset(): void;
+    incrementByAsync(amount: number): Promise<void>;
+  }
+>({ count: 0 }, ({ setState }) => ({
+  increment() {
+    setState((state) => ({ ...state, count: state.count + 1 }));
+  },
+  decrement() {
+    setState((state) => ({ ...state, count: state.count - 1 }));
+  },
+  reset() {
+    setState({ count: 0 });
+  },
+  async incrementByAsync(amount) {
+    await new Promise((resolve) => setTimeout(resolve, 300)); // например, запрос на сервер
+    setState((state) => ({ ...state, count: state.count + amount }));
+  },
+}));
+```
+
+```tsx
+// CounterWidget.tsx — чтение и запись ИЗНУТРИ компонента
+import { counterStore } from "./counter.store";
+
+function CounterWidget() {
+  const count = counterStore.use((state) => state.count); // точечное чтение, Solid-аксессор
+
+  return (
+    <div>
+      <button onClick={counterStore.actions.decrement}>-</button>
+      {count()}
+      <button onClick={counterStore.actions.increment}>+</button>
+      <button onClick={() => counterStore.actions.incrementByAsync(5)}>+5 async</button>
+      <button onClick={counterStore.actions.reset}>reset</button>
+    </div>
+  );
+}
+```
+
+```ts
+// где угодно ВНЕ компонента (роутер, интерсептор, обычная функция) — без Solid вообще
+import { counterStore } from "./counter.store";
+
+function onRouteChange() {
+  console.log("count прямо сейчас:", counterStore.get().count); // разовое чтение снапшота, без подписки
+  counterStore.actions.reset(); // запись работает так же, компонент не нужен
+}
+```
+
+Правило на все случаи: читаешь внутри компонента → `.use(selector)`. Читаешь разово снаружи
+(роутер, обычная функция, тест) → `.get()`. Меняешь — всегда `.actions.*`, откуда угодно, `.set()`
+нигде не трогаешь.
+
 **Стейт-машины:**
 
 ```ts
