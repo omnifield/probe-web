@@ -48,4 +48,16 @@ describe("groupByTag — variant→tags перевёрнуто в tag→variants
   it("returns an empty array for a variant map with no tags at all", () => {
     expect(groupByTag({ solid: [] })).toEqual([]);
   });
+
+  it("accepts the flat {name, tags}[] form (e.g. presets' variantsOf output) the same way as the dict", () => {
+    const groups = groupByTag([
+      { name: "solid", tags: ["colors", DEFAULT_TAG] },
+      { name: "outline", tags: ["colors"] },
+    ]);
+
+    expect(groups).toEqual([
+      { tag: DEFAULT_TAG, variants: ["solid"] },
+      { tag: "colors", variants: ["solid", "outline"] },
+    ]);
+  });
 });

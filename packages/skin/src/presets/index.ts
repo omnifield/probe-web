@@ -1,5 +1,3 @@
-// Единственная точка входа, тянущая сеть (fetch). Разбор — FAQ.md.
-
 export { createPresetsSkinSource, type PresetsSkinSourceOptions } from "./source.js";
 export {
   createPresetsClient,
@@ -10,5 +8,6 @@ export {
   type PresetsClient,
   type PresetsClientOptions,
   type Tag,
-} from "./client.js";
+} from "./client/index.js";
 export { PresetsDown, PresetsRefused } from "./wire.js";
+export { variantsOf, type VariantSummary } from "./variants.js";

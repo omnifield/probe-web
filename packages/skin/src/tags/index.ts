@@ -33,10 +33,21 @@ export function checkTags(tags: readonly string[], knownTags: ReadonlySet<string
     }));
 }
 
+export interface TaggedName {
+  readonly name: string;
+  readonly tags: readonly string[];
+}
+
 // Переворот variantTags (имя варианта → теги) в массив групп (тег → имена вариантов), отсортированный.
-export function groupByTag(variantTags: Record<string, readonly string[]>): TagGroup[] {
+// Принимает и словарь (`Form.variantTags`), и уже плоский список ({name, tags}[], как отдаёт
+// `presets/variantsOf`) — вызывающему незачем разворачивать один в другой руками ради вызова.
+export function groupByTag(variantTags: Readonly<Record<string, readonly string[]>> | readonly TaggedName[]): TagGroup[] {
+  const entries = Array.isArray(variantTags)
+    ? variantTags.map((variant): [string, readonly string[]] => [variant.name, variant.tags])
+    : Object.entries(variantTags);
+
   const variantsByTag = new Map<string, string[]>();
-  for (const [variant, tags] of Object.entries(variantTags)) {
+  for (const [variant, tags] of entries) {
     for (const tag of tags) {
       const variants = variantsByTag.get(tag) ?? [];
       variants.push(variant);

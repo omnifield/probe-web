@@ -87,7 +87,8 @@ await skin.restore();
 checkStyleOrder({ marker: BASE_MARKER });
 ```
 
-**Служба раздачи как источник, полный CRUD по каждому виду:**
+**Служба раздачи как источник, полный CRUD по каждому виду** — детали, полный список операций и IO
+подпути в `src/presets/README.md`/`FAQ.md`:
 
 ```ts
 import { createPresetsClient, createPresetsSkinSource, PRESET_KIND } from "@web-core/skin/presets";

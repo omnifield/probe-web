@@ -1,48 +1,36 @@
-// `ComponentSkinSource` поверх службы раздачи — печатает CSS ОДНОГО компонента по значению
-// variant/setting, узким сетевым фетчем, без предзагрузки остальных форм наряда. Разбор — FAQ.md
-// (`component-skin-on-demand`).
-
 import type { PassportLookup } from "../engine/address/index.js";
 import { withPassports } from "../engine/generate/index.js";
 import type { Form, Outfit, Palette } from "../engine/look/index.js";
 import { motionsIn } from "../engine/motion/index.js";
-import { scopeRecipe, type Keyframes, type SkinVariables, type SlotRecipe, type StyleObject } from "../engine/recipe/index.js";
+import {
+  scopeRecipe,
+  type Keyframes,
+  type SkinVariables,
+  type SlotRecipe,
+  type StyleObject,
+} from "../engine/recipe/index.js";
 import type { ComponentSkinAxis, ComponentSkinSource } from "../wear/switch.js";
-import { PRESET_KIND, type PresetRecord, type PresetsClient } from "./client.js";
+
+import { PRESET_KIND, type PresetRecord, type PresetsClient } from "./client/index.js";
 import { PresetsRefused } from "./wire.js";
 
 interface OutfitContext {
   readonly outfit: Outfit;
   readonly palette: Palette;
-  /** Записи целиком (`id`/`label`/`name` службы плюс содержимое) — `outfit`/`palette` выше несут
-   *  только распакованное `.state`, движку больше ничего не нужно. Наружу отдаётся через `ensure()`'s
-   *  `outfit` (`outfit-data-passthrough`) — собрана ОДИН раз здесь же, не на каждый `ensure()`, чтобы
-   *  вызывающий видел ТУ ЖЕ ссылку между вызовами, а не новый объект-обёртку каждый раз. */
   readonly outfitData: { readonly outfit: PresetRecord<Outfit>; readonly palette: PresetRecord<Palette> };
 }
 
 interface ComponentAccumulator {
   readonly recipe: SlotRecipe;
   readonly keyframes: Keyframes | undefined;
-  /** Переменные палитры — движку нужны, чтобы ПРИЗНАТЬ ссылку на них законной (они реально на
-   *  странице, напечатаны один раз базой), не печатать их здесь заново. Разбор — FAQ.md. */
   readonly variables: SkinVariables;
   readonly variants: Set<string>;
   readonly settings: Map<string, Set<string>>;
-  /** Запись формы, из которой взят `recipe` — `undefined`, когда наряд не одевает компонент
-   *  вовсе. Наружу отдаётся через `ensure()`'s `data` (`component-skin-data-passthrough`). */
   readonly form: PresetRecord<Form> | undefined;
 }
 
 const EMPTY_RECIPE: SlotRecipe = {};
 
-/**
- * Кейфреймы формы объявлены на неё ЦЕЛИКОМ, не по variant/setting (`grow-inline-size`/
- * `grow-block-size` — обе стороны одной оси orientation, в одном `Form.keyframes`) — а сценарий,
- * ссылающийся на них через `animation`, лежит ВНУТРИ конкретного значения оси. Печатать имя,
- * которое сегодня не накоплено ни в одном значении, — заведомо "не применено ни одним правилом"
- * для проверки (`skinRules`), даже когда оно легитимно появится следующим `ensure()`. Разбор — FAQ.md.
- */
 function keyframesUsedBy(recipe: SlotRecipe, declared: Keyframes | undefined): Keyframes | undefined {
   if (declared === undefined) return undefined;
 
@@ -57,7 +45,6 @@ export interface LazyComponentSkinOptions {
   readonly lookup: PassportLookup;
 }
 
-/** Заводит `ComponentSkinSource`; состояние сбрасывается целиком при смене наряда. Разбор — FAQ.md. */
 export function createLazyComponentSkin(options: LazyComponentSkinOptions): ComponentSkinSource {
   const { client, lookup } = options;
   const { assemble, generateComponentSkinCss } = withPassports(lookup);
@@ -90,7 +77,7 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
   }
 
   function accumulatorFor(outfitName: string, component: string): Promise<ComponentAccumulator> {
-    const scoped = contextFor(outfitName); // синхронно решает, сбрасывать ли accumulators — до await
+    const scoped = contextFor(outfitName);
     let pending = accumulators.get(component);
     if (pending !== undefined) return pending;
 
@@ -100,7 +87,6 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
       const matchedName = outfit.forms.find((name) => candidates.some((candidate) => candidate.name === name));
 
       if (matchedName === undefined) {
-        // Наряд не одевает этот компонент — легитимно, не изъян. Разбор — FAQ.md.
         return {
           recipe: EMPTY_RECIPE,
           keyframes: undefined,
@@ -112,9 +98,6 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
       }
 
       const form = candidates.find((candidate) => candidate.name === matchedName)!;
-
-      // Приём `checkForm` (`apps/skin/.mcp`) — самосогласованная пара, `checkOutfit`/`assemble()`
-      // не тронуты. Разбор — FAQ.md.
       const scopedOutfit: Outfit = { ...outfit, forms: [matchedName] };
       const { skin } = assemble(scopedOutfit, { palettes: [palette], forms: [form.state] });
 
@@ -142,8 +125,6 @@ export function createLazyComponentSkin(options: LazyComponentSkinOptions): Comp
     axis: ComponentSkinAxis,
   ): Promise<{ css: string; data?: unknown; outfit?: unknown }> {
     const acc = await accumulatorFor(outfitName, component);
-    // Попадание в кеш `contextFor`, не второй сетевой фетч — `accumulatorFor` выше уже вызвала его
-    // синхронно с тем же `outfitName`. Разбор — FAQ.md (`outfit-data-passthrough`).
     const ctx = await contextFor(outfitName);
 
     if (axis.kind === "variant") {

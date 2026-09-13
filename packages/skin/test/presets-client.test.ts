@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createPresetsClient, PRESET_KIND } from "../src/presets/client.js";
+import { createPresetsClient, PRESET_KIND } from "../src/presets/client/index.js";
 import { PresetsDown, PresetsRefused } from "../src/presets/wire.js";
 
 const URL = "http://presets.test/graphql";

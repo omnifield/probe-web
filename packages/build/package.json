@@ -1,7 +1,7 @@
 {
   "name": "@web-core/build",
   "version": "0.1.0",
-  "description": "Оснастка сборки web-core: фабрика конфига Vite, базовый tsconfig, пресет vitest и TS-раннер для серверов.",
+  "description": "Оснастка сборки web-core: фабрика конфига Vite, базовый tsconfig, пресет vitest, TS-раннер для серверов и рантайм-ридер env для приложений (`/env`).",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -18,6 +18,11 @@
       "development": "./src/vitest/index.ts",
       "types": "./dist/vitest/index.d.ts",
       "default": "./dist/vitest/index.js"
+    },
+    "./env": {
+      "development": "./src/env.ts",
+      "types": "./dist/env.d.ts",
+      "default": "./dist/env.js"
     },
     "./tsconfig": "./dist/tsconfig/frontend.json",
     "./tsconfig-node": "./dist/tsconfig/node.json"

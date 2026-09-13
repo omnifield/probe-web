@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { passportLookup } from "../src/engine/address/index.js";
 import type { Form, Outfit, Palette } from "../src/engine/look/index.js";
 import { definePassport } from "../src/engine/passport/form/index.js";
-import type { PresetKind, PresetRecord, PresetsClient } from "../src/presets/client.js";
+import type { PresetKind, PresetRecord, PresetsClient } from "../src/presets/client/index.js";
 import { createLazyComponentSkin } from "../src/presets/lazy.js";
 import { PresetsRefused } from "../src/presets/wire.js";
 

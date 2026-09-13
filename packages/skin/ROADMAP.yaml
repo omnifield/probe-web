@@ -46,6 +46,31 @@ categories:
           Означает: держатель сборок — срез редактора (`PassportEditorInfo.assemblies`), не поле
           паспорта; паспорт остался про форму компонента, не про витрину случаев.
 
+      - id: no-validation-axis-on-passport
+        type: decision
+        status: Rejected
+        priority: High
+        milestone: null
+        name: "Валидация — НЕ четвёртая ось ComponentPassport, вопрос закрыт без правки здесь"
+        description: |
+          `@web-core/form` (`packages/form/ROADMAP.yaml`, `passport-validation-field-open-question`)
+          изначально предполагал новое поле паспорта, симметричное `selfAssembly` — «третья/
+          четвёртая ось» рядом со скином. Architect проверил РЕАЛЬНУЮ реализацию (`@web-core/form/
+          solid`'s `useComponentValidation`), не предположение: сигнатура —
+          `useComponentValidation(_passport: unknown, props: object)` — параметр паспорта
+          буквально не используется (подчёркивание в имени, тип `unknown`). Весь механизм
+          (свой путь через `props["data-node"]` → лукап в дереве → `bind`; правило показа/
+          доступности через `props.meta?.rule`) не читает из `ComponentPassport` ни одного поля.
+
+          Значит вопрос «нужно ли новое поле паспорта» имеет ответ: НЕТ, не сейчас — механике
+          нечего было бы с ним делать. `packages/skin` не трогается этим заходом вообще. Если
+          позже реально понадобится что-то знать О КОМПОНЕНТЕ для валидации (не о данных) —
+          заводить отдельным пунктом с живым сценарием в руках, не по аналогии с этим разбором.
+
+          Cross-zone работа по оси валидации целиком — `packages/ui`
+          (`packages/ui/ROADMAP.yaml`, `kit-life-validation-fold-in`): `useKitLife` сам решает,
+          звать ли `useComponentValidation`, паспорт этого решения не касается.
+
   - category: Значения
     items:
       - id: seed-values
@@ -132,151 +157,33 @@ categories:
           Означает: перечень пар «текст на заливке», не прошедших WCAG-норму, и пар, которые
           посчитать нечем. Пока без потребителя — витрина ещё не показывает предупреждения.
 
+  - category: Теги
+    items:
+      - id: group-by-tag-accepts-flat-list
+        type: feature
+        status: Done
+        priority: Low
+        milestone: null
+        name: "groupByTag — принимает и словарь (Form.variantTags), и плоский {name, tags}[]"
+        description: |
+          Найдено на витрине `apps/skin`: `presets/variantsOf` (`src/presets/ROADMAP.yaml`'s
+          `variants-of-outfit-scoped`) отдаёт готовый плоский список вариантов с тегами — вызывающий
+          хотел сгруппировать его по тегу для нав-списка, и первая версия ответа ("разверни
+          Object.fromEntries сам") user назвал не лучше, чем сделать это самому фильтром: "это
+          выглядит не лучше, чем если бы я просто фильтранул у себя. ты не можешь у себя расширить,
+          чтобы функция умела работать с массивом?"
+
+          Сделано: `groupByTag` принимает `Record<string, readonly string[]> | readonly
+          TaggedName[]` — `Array.isArray` различает форму на входе, тело (перевод в `tag→variants`,
+          сортировка `sortTags`) одно на оба случая. Три существующих вызывающих
+          (`packages/ui/component-info.ts`, `apps/skin/.mcp/tools/presets.ts`, тесты) передают
+          словарь и не меняются — расширение аддитивное, не ломающее.
+
   - category: Служба раздачи и надевание
     items:
-      - id: presets-full-crud
-        type: feature
-        status: Done
-        priority: High
-        milestone: null
-        name: Полный CRUD по каждому виду записи службы раздачи
-        description: |
-          Означает: list/get/save/replace/remove по палитре/форме/наряду/сборке одним клиентом;
-          имя — довод операции, не поле содержимого (у сборки своего имени нет).
-
-      - id: client-graphql-transport
-        type: feature
-        status: Done
-        priority: High
-        milestone: null
-        name: "createPresetsClient — REST → GraphQL внутри, PresetsClient/PresetRecord<T> наружу без изменений"
-        description: |
-          Backend/presets REST удалён (`internal/api`, см. `backend/presets/ROADMAP.yaml`) — этот
-          клиент сейчас ходит в никуда. Чинится ЗДЕСЬ и только здесь: `packages/ui/src/
-          component-info.ts` (`createComponentInfo`) и `./source.ts` (`createPresetsSkinSource`,
-          рантайм `wear`) стоят целиком на публичном интерфейсе `PresetsClient` — ничего не знают
-          про REST/`?kind=` под ним. Сохрани форму — `PresetRecord<T>` (`{id, label, name, state}`)
-          и сигнатуры `list`/`get`/`save`/`replace`/`remove` — и обе зоны получат фикс бесплатно,
-          без своей правки. Это НЕ рефакторинг ради чистоты — старый клиент уже сломан против
-          нового бэка.
-
-          По шагам:
-
-          1. `options.url` — теперь адрес `/graphql` целиком (тот же, что `apps/skin`'s
-             `shared/api/presets` резолвит для `PRESETS_URL`), не REST-`{base}` для `?kind=`/`/id`.
-             Транспорт — `graphqlRequest`/`gql` из `@web-core/query/graphql` (пакет уже готов,
-             `packages/query/ROADMAP.yaml`'s `graphql-subpath-no-second-cache`).
-
-          2. `wireList`+`wireRead` (индекс + N GET, тот самый N+1 из `finding-n-plus-one` в
-             корневом ROADMAP.yaml) выкидываются целиком. `list(kind)` — ОДИН GraphQL-запрos:
-             `{ presets(kind: $kind) { id label name savedAt ... on Form { component recipe
-             keyframes variantTags author } ... on Outfit { palette { name } forms { name } tags
-             { name } overrides author } ... }}` (фрагмент по нужному типу — kind уже известен
-             вызывающему, схема — `backend/presets/internal/graphql/schema.graphql`).
-
-          3. Ответ конвертируется в СЕГОДНЯШНИЙ `PresetRecord<T>` — `state` собирается из полей
-             фрагмента ОДИН В ОДИН с `packages/skin/src/engine/look/types.ts`: для `Outfit`
-             — `state.palette = palette?.name`, `state.forms = forms.map(f => f.name)`,
-             `state.tags = tags.map(t => t.name)` (связи GraphQL резолвятся в объекты, канон
-             `Outfit` хочет строки имён — переходник именно здесь, не выше). Потребитель не должен
-             отличить старый ответ от нового ни по одному полю.
-
-          4. `get(kind, name)` — тот же список, фильтр по `name` на клиенте (схема не даёт
-             get-by-name, только `preset(id)` — не регрессия, `finding-n-plus-one` уже описывал
-             это как "два обращения там, где по смыслу одно", осталось так же, поменялся транспорт).
-
-          5. `save`/`replace`/`remove` — мутации `createPreset`/`replacePreset`/`deletePreset`.
-             `replace` найдёт id тем же списком, потом ОДНА атомарная `replacePreset(id, ...)` —
-             попутно чинит корректность, не только скорость: раньше `replace` был DELETE+POST
-             (`finding-n-plus-one` #2), гонка между ними реально могла потерять запись, новая
-             мутация атомарна на бэке (`store.Replace`, одна bbolt-транзакция).
-
-          6. `wire.ts`'s `ask`/`PresetsRefused`/`PresetsDown` — контракт (два класса отказа)
-             сохраняется, `source.ts`'s `@throws` на них уже завязан. Разбор ошибок GraphQL другой:
-             сетевой обрыв/5xx → `PresetsDown` как и было; `errors` в теле 200-ответа (занятое
-             имя, неизвестный kind, кривой конверт) → `PresetsRefused`. `ClientError` от
-             `graphql-request` (уже реэкспортирован `@web-core/query/graphql`) — источник, из
-             которого этот разбор строится, не факт, что 1-в-1 по коду ошибки, сверить нужно
-             живьём, не угадывать по типам.
-
-          7. НЕ делать в этом заходе: сводить `list("form")`+`list("outfit")` из `componentInfo` в
-             один алиасированный запрос (`forms: presets(kind:"form"){...} outfits: presets(kind:
-             "outfit"){...}` — GraphQL это позволяет одним HTTP-вызовом) — заметная, но отдельная
-             оптимизация ПОВЕРХ этого фикса, не блокирует его, и трогает `packages/ui`, а не только
-             эту зону. Не добавлять `PRESET_KIND.tag` — этим клиентом сегодня никто его не зовёт,
-             заводить видом "на будущее" незачем.
-
-             УСЛОВИЕ ИЗМЕНИЛОСЬ (2026-09-09): `apps/skin/.mcp` собирается перейти на этот клиент
-             (см. `apps/skin/.mcp/ROADMAP.yaml`'s `store-client-dedup`) и реально зовёт `kind:"tag"`
-             — см. `tag-kind-support` ниже.
-
-          8. Тесты — тем же приёмом, что `batching_test.go` в бэке: не верить чтению кода, гонять
-             `list`/`get`/`save`/`replace`/`remove` против ЛИБО настоящего дев-бэка, ЛИБО мока
-             `fetch` с реальной формой ответа GraphQL (`{data: {...}}`), и сверять, что
-             `componentInfo`/`source.ts` на выходе видят ТУ ЖЕ форму `PresetRecord<T>`, что и
-             раньше — не только что запрос ушёл.
-
-      - id: tag-kind-support
-        type: feature
-        status: Done
-        priority: High
-        milestone: null
-        name: "createPresetsClient — добавить `tag`, реальный потребитель появился"
-        description: |
-          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (см. `store-client-dedup`
-          в `apps/skin/.mcp/ROADMAP.yaml`): та зона хранит словари тегов как обычный пресет
-          (`kind:"tag"` — валидный вариант в её `shared.ts`'s `KIND`-enum, реально зовётся
-          `save_preset`/`list_presets`/`get_preset`). `client-graphql-transport` сознательно НЕ
-          завёл `tag` — на тот момент клиентом никто его не звал. Теперь звёт.
-
-          Три места, зеркально тому, что уже сделано для остальных пяти видов:
-          1. `PRESET_KIND.tag = "tag"` + запись в `PresetKindState`.
-          2. `LIST_QUERY` — фрагмент `... on Tag { tagLabel author }` (схема —
-             `backend/presets/internal/graphql/schema.graphql`, поле называется `tagLabel`, НЕ
-             `label` — тот верхнеуровневый у `Preset`, разные значения на живой записи).
-          3. `toState()` — ветка `kind === "tag"`, форма `{ name, label: tagLabel, author }` (не
-             падать в `content`-ветку по умолчанию, как сегодня).
-
-          Канона TS для `Tag` в `src/engine/look/types.ts` НЕТ (см. `internal/kinds/tag.go`'s
-          комментарий на бэке — форма взята с живой записи, не с кода, которого не было). Значит
-          здесь тот же вопрос, что уже решали для `author`/`tags` у остальных видов: заводить
-          интерфейс `Tag` в каноне (`{name, label?, author?}`) или оставить тип inline в
-          `client.ts`, раз канона для него никогда не было и другие модули его не импортируют.
-          Решать по факту, не гадать — что реально нужно `checkTags`/`resolveTags`
-          (`packages/skin/src/tags`), которые с этим видом соседствуют.
-
-      - id: record-envelope-kind-and-saved-at
-        type: bug
-        status: Done
-        priority: High
-        milestone: null
-        name: "PresetRecord<T> — добавить kind/savedAt, реальный потребитель их теряет"
-        description: |
-          Найдено ПЕРЕД тем, как `apps/skin/.mcp` перешёл на этот клиент (тот же заход, что
-          `tag-kind-support`, следующий слой того же аудита). `PresetRecord<T>` сегодня —
-          `{id, label, name, state}`. Схема (`Preset`-интерфейс) несёт `kind`/`savedAt` тоже, но
-          `LIST_QUERY` их не запрашивает, а три мутации (`CREATE_MUTATION`/`REPLACE_MUTATION`)
-          запрашивают только `{id label name}` — оба поля терялись уже в `client-graphql-transport`
-          для `componentInfo`/`source.ts`, просто там их никто не читал, поэтому пропало незаметно.
-
-          `apps/skin/.mcp` их читает: `get_preset`/`list_presets(kind)`/`get_content` сегодня
-          отдают агенту `kind`+`savedAt` (старый `store.read()` тащил их с бэка), `save_preset`
-          тоже показывает их в ответе. Прямой переход на этот клиент молча срежет оба поля из
-          того, что видит агент — не потому что кто-то решил, а потому что клиент их не просил у
-          схемы.
-
-          Фикс — тем же приёмом, что `tag`, аддитивно, старым потребителям всё равно:
-          1. `PresetRecord<T>` — `+kind: PresetKind`, `+savedAt: string`.
-          2. `LIST_QUERY` — `savedAt`/`kind` рядом с сегодняшними `id label name` верхнего уровня
-             (уже есть в схеме на `Preset`, ничего не менять на бэке).
-          3. `toRecord()` — прокинуть оба поля из `WirePreset` в `PresetRecord`.
-          4. `CREATE_MUTATION`/`REPLACE_MUTATION` — та же пара полей в selection set рядом с
-             `id label name`; `save()`/`replace()` берут `kind`/`savedAt` из ОТВЕТА мутации, не
-             реконструируют сами (мутация возвращает реальный `Preset`, значения оттуда, не из
-             аргументов вызова — `savedAt`, например, ставит бэк, а не клиент).
-
-          `DELETE_MUTATION`/`remove()` не трогать — там нет записи на выходе, нечего возвращать.
-
+      # presets-full-crud, client-graphql-transport, tag-kind-support,
+      # record-envelope-kind-and-saved-at, presets-client-component-filter переехали в
+      # src/presets/ROADMAP.yaml — это пункты про сам client.ts, не про надевание.
       - id: canon-missing-author-and-tags
         type: bug
         status: Done
@@ -320,41 +227,8 @@ categories:
           Означает: `./wear` (framework-agnostic) + `./solid` (реактивный плагин) — тот же приём,
           что `@web-core/style/solid`. Гонка source.css() гасится счётчиком последнего действия.
 
-      - id: presets-client-component-filter
-        type: feature
-        status: Done
-        priority: High
-        milestone: null
-        name: "createPresetsClient.list() — принять фильтр по компоненту, не только по kind"
-        description: |
-          Вторая половина заявки `presets-component-filter` в `backend/presets/ROADMAP.yaml` —
-          та же цепь (слова user, разбор `runtime-wear-once`), сюда не повторяются, см. бэковый
-          файл. Коротко: `source.ts`'s `css()` сегодня зовёт `client.list(PRESET_KIND.form)` без
-          фильтра — тянет формы ВСЕХ компонентов аутфита, хотя странице нужна часть. Движок
-          (`generateSkinCss`/`assemble`) уже принимает произвольное подмножество `forms` — упирается
-          только в клиент, который сегодня не умеет попросить подмножество у бэка.
-
-          Зависит от бэка: контракт (скорее всего `presets(kind: String, component: [String!])`,
-          список компонентов, совпадение — ЛЮБОЙ из списка) выбирает овнер `backend/presets` по
-          факту реализации — его форму здесь ждать, не угадывать заранее по этому файлу.
-
-          По шагам (ориентир, не жёсткий рецепт):
-          1. `LIST_QUERY` (`client.ts`) — добавить переменную `$component: [String!]` рядом с
-             `$kind`, прокинуть в `presets(kind: $kind, component: $component)`.
-          2. `wireList`/`list()` — новый необязательный параметр (например второй аргумент
-             `{ component?: readonly string[] }`), пробрасывается в переменные запроса. Имеет
-             смысл только для `form`/`assembly`/`content` (те виды, у которых есть `component` в
-             схеме) — как типизировать это ограничение (отдельная перегрузка `list()` для трёх
-             видов или общий необязательный параметр без строгого ограничения типом) — решить по
-             месту, посмотрев на реальных вызывающих.
-          3. `get()`/`save()`/`replace()`/`remove()` фильтр по компоненту не нужен — они уже
-             адресуют ОДНУ запись по имени, не список.
-
-          В объём ЭТОЙ заявки НЕ входит: `source.ts`'s `createPresetsSkinSource`/`css()` — то,
-          ОТКУДА взять список нужных странице компонентов, и прокидывание его в
-          `client.list(PRESET_KIND.form, { component })`. Это следующий шаг той же цепи
-          (`runtime-wear-once` либо отдельная заявка), не эта правка — здесь только сама
-          СПОСОБНОСТЬ клиента попросить подмножество.
+      # presets-client-component-filter переехал в src/presets/ROADMAP.yaml — пункт про сам
+      # client.ts, не про надевание.
 
       - id: component-skin-on-demand
         type: feature
@@ -931,6 +805,18 @@ categories:
           плагином — не раскрывается заранее вслепую.
 
 log:
+  - id: no-passport-field-needed-for-validation
+    type: decision
+    date: 2026-09-13
+    summary: >
+      Закрытие открытого вопроса из `@web-core/form/ROADMAP.yaml`'s `passport-validation-field-
+      open-question` (owner-form честно не решал сам, назвал architect'у на сверку). Architect
+      прочитал реальную реализацию (`@web-core/form/solid/provider.tsx`, прошедшую ревью с 11/11
+      тестами) вместо того, чтобы гадать по аналогии с `selfAssembly` — `useComponentValidation`
+      физически не читает `ComponentPassport`. Решение: новое поле паспорту не заводим, весь
+      cross-zone объём оси валидации ложится на `packages/ui` (`kit-life-validation-fold-in`),
+      этот пакет в разговор не входит. См. `no-validation-axis-on-passport` выше.
+
   - id: repeat-mechanic-handed-to-assembly
     type: plan
     date: 2026-09-12
