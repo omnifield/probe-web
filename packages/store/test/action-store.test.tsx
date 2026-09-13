@@ -92,4 +92,36 @@ describe("createActionStore (кейс userStore из ТЗ)", () => {
     await userStore.actions.loadUser();
     expect(host.textContent).toBe("C");
   });
+
+  it("store.use(selector) — то же чтение, без отдельного импорта useAtom", async () => {
+    const userStore = createUserStore(() => Promise.resolve({ id: "4", name: "D" }));
+
+    function Profile() {
+      const userName = userStore.use((state) => state.user?.name);
+      return <p>{userName() ?? "none"}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Profile />, host);
+
+    expect(host.textContent).toBe("none");
+    await userStore.actions.loadUser();
+    expect(host.textContent).toBe("D");
+  });
+
+  it("store.use() без селектора отдаёт весь state", () => {
+    const userStore = createUserStore(() => Promise.resolve({ id: "5", name: "E" }));
+
+    function Debug() {
+      const state = userStore.use();
+      return <p>{state().loading ? "loading" : "idle"}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Debug />, host);
+
+    expect(host.textContent).toBe("idle");
+  });
 });

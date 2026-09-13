@@ -30,14 +30,14 @@ sync/async не нужно.
 которым эта часть достаётся. Плоское хранилище живёт в корне, стейт-машины и каждый аддон —
 отдельным подпутём: приложение импортирует ровно то, что реально использует, и ничего сверх.
 
-| Часть             | Адрес                      | Экспортирует                                                                                                                                                                                              |
-| ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Часть             | Адрес                      | Экспортирует                                                                                                                                                                                                                                      |
+| ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createBoundAtom`, `createActionStore`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
-| Стейт-машины      | `@web-core/store/machine`  | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef`                                                      |
-| Persist-аддон     | `@web-core/store/persist`  | `persist`, `persistAtom`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                    |
-| Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                |
-| Reset-аддон       | `@web-core/store/reset`    | `reset`                                                                                                                                                                                                   |
-| Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                 |
+| Стейт-машины      | `@web-core/store/machine`  | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef`                                                                                              |
+| Persist-аддон     | `@web-core/store/persist`  | `persist`, `persistAtom`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                                                            |
+| Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                                                        |
+| Reset-аддон       | `@web-core/store/reset`    | `reset`                                                                                                                                                                                                                                           |
+| Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                                                         |
 
 📦 Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
 `@xstate/store-solid` + `createResourceAtom` + `createBoundAtom` + `createActionStore` +
@@ -148,14 +148,24 @@ export function ShowcasePage(props: { component: string }) {
 // user.store.ts — обычный TS, ни одного импорта из solid-js
 import { createActionStore } from "@web-core/store";
 
-interface User { id: string; name: string; email: string }
-interface UserState { user: User | null; loading: boolean }
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+interface UserState {
+  user: User | null;
+  loading: boolean;
+}
 
-export const userStore = createActionStore<UserState, {
-  setUser(user: User): void;
-  clearUser(): void;
-  loadUser(): Promise<void>;
-}>({ user: null, loading: false }, ({ setState }) => ({
+export const userStore = createActionStore<
+  UserState,
+  {
+    setUser(user: User): void;
+    clearUser(): void;
+    loadUser(): Promise<void>;
+  }
+>({ user: null, loading: false }, ({ setState }) => ({
   setUser(user) {
     setState((state) => ({ ...state, user }));
   },
@@ -176,14 +186,21 @@ export const userStore = createActionStore<UserState, {
 ```
 
 ```tsx
-import { useAtom } from "@web-core/store";
 import { userStore } from "./user.store";
 
 function Profile() {
-  const userName = useAtom(userStore, (state) => state.user?.name); // точечная подписка, не весь стор
-  return <button onClick={() => userStore.actions.loadUser()}>{userName()}</button>;
+  const userName = userStore.use((state) => state.user?.name); // точечная подписка, не весь стор
+  return (
+    <button onClick={() => userStore.actions.loadUser()}>{userName()}</button>
+  );
 }
 ```
+
+`store.use(selector)` — то же самое, что `useAtom(store, selector)`, но без отдельного импорта;
+оба варианта эквивалентны и оба покрыты тестом (`store` типово — `ReadonlyAtom<T>`, годится в
+`useAtom`/`useSelector` как обычный атом). Стор не сделан вызываемым напрямую (`store(selector)`,
+как хук у Zustand) — `@xstate/store-solid` отличает атом от конфига по `typeof value === "object"`,
+функция этой проверке не проходит и ломает `useAtom(store, selector)` извне; разбор — FAQ.md.
 
 Асинхронные действия с несколькими промежуточными `setState` (loading → результат/ошибка) пишутся
 обычным `async`-кодом — в отличие от `createStore`, чьи `on`-хендлеры по духу синхронные редьюсеры,
@@ -248,27 +265,27 @@ export const draftAtom = persistAtom(createAtom(""), {
 настраивает свою сторону (стратегию хранения, глубину истории, что откатывать сбросом, что
 проверять рантаймом). Таблица ниже — все именованные опции по функциям, к которым они относятся.
 
-| Настройка                                          | Где                                                              | Тип                                               | По умолчанию           |
-| -------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------- | ---------------------- |
-| `compare`                                          | `createAtom`/`createResourceAtom`/`createReducerAtom`, `options` | `(prev: T, next: T) => boolean`                   | `Object.is`            |
-| `schemas`                                          | `createStore`, `definition.schemas`                              | `{context?, events?, emitted?}` (Standard Schema) | —                      |
-| `strategy`                                         | `persist`, `options.strategy`                                    | `"snapshot" \| "event"`                           | `"snapshot"`           |
-| `name`                                             | `persist`, `options.name`                                        | `string`                                          | обязательное           |
-| `storage`                                          | `persist`, `options.storage`                                     | `StateStorage`                                    | `localStorage`         |
-| `version`                                          | `persist`, `options.version`                                     | `string \| number`                                | `0`                    |
-| `throttle`                                         | `persist`, `options.throttle`                                    | `number` (мс)                                     | `0`                    |
-| `skipHydration`                                    | `persist`, `options.skipHydration`                               | `boolean`                                         | `false`                |
-| `filter`/`pick`/`migrate`/`merge`                  | `persist` (`strategy: "snapshot"`)                               | функции                                           | —                      |
-| `maxEvents`                                        | `persist` (`strategy: "event"`)                                  | `number`                                          | `Infinity`             |
-| `name`                                             | `persistAtom`, `options.name`                                    | `string`                                          | обязательное           |
-| `storage`                                          | `persistAtom`, `options.storage`                                 | `StateStorage` (синхронный)                       | `localStorage`         |
+| Настройка                                          | Где                                                              | Тип                                               | По умолчанию              |
+| -------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------- | ------------------------- |
+| `compare`                                          | `createAtom`/`createResourceAtom`/`createReducerAtom`, `options` | `(prev: T, next: T) => boolean`                   | `Object.is`               |
+| `schemas`                                          | `createStore`, `definition.schemas`                              | `{context?, events?, emitted?}` (Standard Schema) | —                         |
+| `strategy`                                         | `persist`, `options.strategy`                                    | `"snapshot" \| "event"`                           | `"snapshot"`              |
+| `name`                                             | `persist`, `options.name`                                        | `string`                                          | обязательное              |
+| `storage`                                          | `persist`, `options.storage`                                     | `StateStorage`                                    | `localStorage`            |
+| `version`                                          | `persist`, `options.version`                                     | `string \| number`                                | `0`                       |
+| `throttle`                                         | `persist`, `options.throttle`                                    | `number` (мс)                                     | `0`                       |
+| `skipHydration`                                    | `persist`, `options.skipHydration`                               | `boolean`                                         | `false`                   |
+| `filter`/`pick`/`migrate`/`merge`                  | `persist` (`strategy: "snapshot"`)                               | функции                                           | —                         |
+| `maxEvents`                                        | `persist` (`strategy: "event"`)                                  | `number`                                          | `Infinity`                |
+| `name`                                             | `persistAtom`, `options.name`                                    | `string`                                          | обязательное              |
+| `storage`                                          | `persistAtom`, `options.storage`                                 | `StateStorage` (синхронный)                       | `localStorage`            |
 | `serialize`/`deserialize`                          | `persistAtom`, `options`                                         | функции                                           | `JSON.stringify`/`.parse` |
-| `strategy`                                         | `undoRedo`, `options.strategy`                                   | `"event" \| "snapshot"`                           | `"event"`              |
-| `historyLimit`                                     | `undoRedo` (`strategy: "snapshot"`)                              | `number`                                          | `Infinity`             |
-| `getTransactionId`/`skipEvent`/`compare`/`restore` | `undoRedo`                                                       | функции                                           | —                      |
-| `to`                                               | `reset`, `options.to`                                            | `(initial, current) => TContext`                  | полный сброс к initial |
-| `context`/`events`/`emitted`                       | `validateSchemas`, `options`                                     | `boolean`                                         | —                      |
-| `unknownEvents`/`unknownEmitted`                   | `validateSchemas`, `options`                                     | `"throw" \| "ignore"`                             | —                      |
+| `strategy`                                         | `undoRedo`, `options.strategy`                                   | `"event" \| "snapshot"`                           | `"event"`                 |
+| `historyLimit`                                     | `undoRedo` (`strategy: "snapshot"`)                              | `number`                                          | `Infinity`                |
+| `getTransactionId`/`skipEvent`/`compare`/`restore` | `undoRedo`                                                       | функции                                           | —                         |
+| `to`                                               | `reset`, `options.to`                                            | `(initial, current) => TContext`                  | полный сброс к initial    |
+| `context`/`events`/`emitted`                       | `validateSchemas`, `options`                                     | `boolean`                                         | —                         |
+| `unknownEvents`/`unknownEmitted`                   | `validateSchemas`, `options`                                     | `"throw" \| "ignore"`                             | —                         |
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
@@ -318,7 +335,7 @@ export const draftAtom = persistAtom(createAtom(""), {
 | `atom.get()`                          | `T` напрямую                                                                                                 |
 | `useAtom` / `useSelector`             | аксессор `() => T`                                                                                           |
 | `createResourceAtom`                  | `ResourceState<Data, Err> = { status: "pending" } \| { status: "done", data } \| { status: "error", error }` |
-| `createActionStore`                   | `ActionStore<T, TActions> = ReadonlyAtom<T> & { actions: TActions }` — `.set()` не публичный                 |
+| `createActionStore`                   | `ActionStore<T, TActions> = ReadonlyAtom<T> & { actions: TActions, use(selector?) }` — `.set()` не публичный |
 | `store.can.<type>`                    | `boolean`                                                                                                    |
 
 <h2 id="сборки">🏗️ Сборки</h2>
@@ -328,21 +345,23 @@ export const draftAtom = persistAtom(createAtom(""), {
 аддонов друг с другом (`.with().with()`) тестом сегодня не покрыта — это документация в разделе
 «Рецепт», а не доказанная сборка.
 
-| Сборка                               | Что доказывает                                                   | Файл                     |
-| ------------------------------------ | ---------------------------------------------------------------- | ------------------------ |
-| `createStore` + `useSelector`        | реальный рендер, `count()` меняется по `store.trigger.inc()`     | `test/store.test.tsx`    |
-| `createMachine` + `useMachine`       | реальный рендер, переход `TOGGLE` меняет `state.value`           | `test/store.test.tsx`    |
-| `createResourceAtom` без ключа       | `status: "done"` сразу, без промежуточного `pending`             | `test/resource.test.tsx` |
-| `createResourceAtom` с ключом        | реагирует на смену ключа ПОСЛЕ резолва предыдущего запроса       | `test/resource.test.tsx` |
-| `createResourceAtom` с ключом, гонка | устаревший ответ игнорируется, если ключ сменился до его резолва | `test/resource.test.tsx` |
-| `createResourceAtom` + `useAtom`     | реальный рендер компонента, `pending` → `done` по смене ключа    | `test/resource.test.tsx` |
-| `createBoundAtom`                    | начальное значение сразу, атом следует за сменой аксессора       | `test/bound.test.tsx`    |
-| `createBoundAtom` + `useAtom`        | реальный рендер компонента, значение меняется вслед за сигналом  | `test/bound.test.tsx`    |
-| `createActionStore`                  | `actions` меняют state, `.set()` наружу не торчит                | `test/action-store.test.tsx` |
-| `createActionStore`, async action    | `loading: true` во время await, ошибка пробрасывается вызывающему | `test/action-store.test.tsx` |
-| `createActionStore` + `useAtom`      | реальный рендер компонента, значение меняется по вызову `actions` | `test/action-store.test.tsx` |
-| `persistAtom` + localStorage         | гидратация при вызове, запись при `.set()`                       | `test/persist.test.tsx`  |
-| `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются  | `test/persist.test.tsx`  |
+| Сборка                                                    | Что доказывает                                                    | Файл                         |
+| --------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------- |
+| `createStore` + `useSelector`                             | реальный рендер, `count()` меняется по `store.trigger.inc()`      | `test/store.test.tsx`        |
+| `createMachine` + `useMachine`                            | реальный рендер, переход `TOGGLE` меняет `state.value`            | `test/store.test.tsx`        |
+| `createResourceAtom` без ключа                            | `status: "done"` сразу, без промежуточного `pending`              | `test/resource.test.tsx`     |
+| `createResourceAtom` с ключом                             | реагирует на смену ключа ПОСЛЕ резолва предыдущего запроса        | `test/resource.test.tsx`     |
+| `createResourceAtom` с ключом, гонка                      | устаревший ответ игнорируется, если ключ сменился до его резолва  | `test/resource.test.tsx`     |
+| `createResourceAtom` + `useAtom`                          | реальный рендер компонента, `pending` → `done` по смене ключа     | `test/resource.test.tsx`     |
+| `createBoundAtom`                                         | начальное значение сразу, атом следует за сменой аксессора        | `test/bound.test.tsx`        |
+| `createBoundAtom` + `useAtom`                             | реальный рендер компонента, значение меняется вслед за сигналом   | `test/bound.test.tsx`        |
+| `createActionStore`                                       | `actions` меняют state, `.set()` наружу не торчит                 | `test/action-store.test.tsx` |
+| `createActionStore`, async action                         | `loading: true` во время await, ошибка пробрасывается вызывающему | `test/action-store.test.tsx` |
+| `createActionStore` + `useAtom`                           | реальный рендер компонента, значение меняется по вызову `actions` | `test/action-store.test.tsx` |
+| `createActionStore` + `.use(selector)`                    | тот же рендер через `store.use(...)` вместо `useAtom(store, ...)` | `test/action-store.test.tsx` |
+| `createActionStore` + `.use()` без селектора               | отдаёт весь state                                                 | `test/action-store.test.tsx` |
+| `persistAtom` + localStorage                              | гидратация при вызове, запись при `.set()`                        | `test/persist.test.tsx`      |
+| `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются                | `test/persist.test.tsx`      |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

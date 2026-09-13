@@ -26,12 +26,16 @@ categories:
         description: |
           Означает: createActionStore(initialValue, ({setState, get}) => actions, options?) —
           createAtom под капотом, actionsFactory собирается одним вызовом вместо ручной сборки
-          {get, actions}. Возвращает ReadonlyAtom<T> & {actions} — .set() не публичный, actions
-          единственный путь записи не только по конвенции, но структурно. Читается тем же
-          useAtom(store, selector)/useSelector, что обычный атом. Закрывает разрыв с
+          {get, actions}. Возвращает ReadonlyAtom<T> & {actions, use(selector?)} — .set() не
+          публичный, actions единственный путь записи не только по конвенции, но структурно.
+          Читается useAtom(store, selector)/useSelector (как обычный атом) или store.use(selector)
+          — тот же вызов без отдельного импорта. Не сделан вызываемым напрямую (store(selector),
+          зустанд-хук-стиль) — @xstate/store-solid отличает атом от конфига по typeof value ===
+          "object", функция этой проверке не проходит и рвёт useAtom(store, selector) извне;
+          проверено прогоном, не домыслом, разбор в FAQ.md. Закрывает разрыв с
           domain-store-recipe: тот был документацией ручной композиции, этот — сам примитив,
           синтаксис один в один с тем, что просил user (@tanstack/store's createStore(initial,
-          actionsFactory)). 4 теста в test/action-store.test.tsx.
+          actionsFactory)). 6 тестов в test/action-store.test.tsx.
 
   - category: Стейт-машины
     items:
@@ -211,6 +215,22 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: action-store-callable-rejected
+    type: plan
+    date: 2026-09-13
+    summary: >
+      user увидел createActionStore в деле (router.tsx → componentStore.actions.setComponent,
+      showcase → useAtom(componentStore, selector)) и попросил "пушку" — стор сам как функция-
+      селектор, зустанд-хук-стиль (const x = store(selector) вместо useAtom(store, selector)).
+      Первая попытка (Object.assign(fn, {get, subscribe, actions})) сразу упала тестом:
+      @xstate/store-solid's useAtom различает атом и AtomConfig проверкой isAtom = typeof value
+      === "object" (dist/xstate-store-solid.js:9,76) — функция эту проверку не проходит, падает в
+      definition.createAtom(...), которого нет, TypeError в реальном рендере. Проверено прогоном
+      test/action-store.test.tsx, не домыслом. Технически невозможно совместить "вызываемый как
+      функция" и "проходит isAtom чужого пакета" — взаимоисключающе на уровне typeof. Решение —
+      store.use(selector): остаётся обычным объектом (useAtom(store, selector) извне продолжает
+      работать), .use — тот же вызов без отдельного импорта. Ближайший безопасный аналог Zustand.
+
   - id: create-action-store-scope
     type: plan
     date: 2026-09-13
