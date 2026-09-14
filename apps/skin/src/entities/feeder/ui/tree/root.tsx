@@ -1,4 +1,4 @@
-import { createMemo } from "solid-js";
+import { createEffect, createMemo, createSignal } from "solid-js";
 import { fieldsOf, type FieldDescriptor } from "@web-core/generators/fields";
 
 import { componentStore } from "#/entities/component";
@@ -7,7 +7,14 @@ import { Node } from "./node";
 
 export function FeedData() {
   const kit = componentStore.use((state) => state.kit);
-  const feedData = componentStore.use((state) => state.feedData);
+  const [feedData, setFeedData] = createSignal<unknown>();
+
+  createEffect((previousKit) => {
+    const currentKit = kit();
+    if (currentKit !== previousKit) setFeedData(undefined);
+    return currentKit;
+  });
+
   const fields = createMemo<readonly FieldDescriptor[]>(() => {
     const schema = kit()?.io?.schema;
 
@@ -16,7 +23,7 @@ export function FeedData() {
 
   const binding: FieldBinding = {
     value: () => feedData() ?? {},
-    onChange: (value) => componentStore.actions.setFeedData(value),
+    onChange: setFeedData,
   };
 
   return <Node fields={fields()} binding={binding} />;

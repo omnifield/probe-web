@@ -23,7 +23,6 @@ interface ComponentState {
   readonly kit?: ComponentDescriptor;
   readonly variants: VariantsState;
   readonly assemblies: AssembliesState;
-  readonly feedData?: unknown;
 }
 
 export const componentStore = createActionStore<
@@ -31,7 +30,6 @@ export const componentStore = createActionStore<
   {
     setComponent(name: string): void;
     setOutfit(name: string | undefined): void;
-    setFeedData(data: unknown): void;
     loadVariants(): Promise<void>;
     loadAssemblies(): Promise<void>;
   },
@@ -71,7 +69,6 @@ export const componentStore = createActionStore<
           mutate<ComponentState>((draft) => {
             draft.component = component;
             draft.kit = castDraft(componentDescriptorOf(component));
-            draft.feedData = undefined;
           }),
         );
         void loadVariants();
@@ -84,13 +81,6 @@ export const componentStore = createActionStore<
           }),
         );
         void loadVariants();
-      },
-      setFeedData(feedData) {
-        setState(
-          mutate<ComponentState>((draft) => {
-            draft.feedData = feedData;
-          }),
-        );
       },
       loadVariants,
       loadAssemblies,
