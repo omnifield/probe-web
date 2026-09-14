@@ -21,6 +21,21 @@
       "development": "./src/mcp/index.ts",
       "types": "./dist/mcp.d.ts",
       "default": "./dist/mcp.js"
+    },
+    "./server": {
+      "development": "./src/server/index.ts",
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./pagination": {
+      "development": "./src/pagination/index.ts",
+      "types": "./dist/pagination.d.ts",
+      "default": "./dist/pagination.js"
+    },
+    "./zone-feedback": {
+      "development": "./src/zone-feedback/index.ts",
+      "types": "./dist/zone-feedback.d.ts",
+      "default": "./dist/zone-feedback.js"
     }
   },
   "files": [
@@ -40,7 +55,9 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@tanstack/ai-client": "^0.31.1",
     "@tanstack/ai-mcp": "^0.3.10",
-    "@tanstack/ai-solid": "^0.21.1"
+    "@tanstack/ai-solid": "^0.21.1",
+    "@web-core/io": "workspace:*",
+    "@web-core/query": "workspace:*"
   },
   "peerDependencies": {
     "solid-js": "^1.9.14"
@@ -49,7 +66,6 @@
     "@types/node": "^24.10.1",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
-    "@web-core/mcp": "workspace:*",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",

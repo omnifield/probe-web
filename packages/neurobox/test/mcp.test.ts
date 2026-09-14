@@ -1,8 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ok, registerTool } from "@web-core/mcp";
-import { createServer, type ZoneServer } from "@web-core/mcp/transport";
+import { createServer, ok, registerTool, type ZoneServer } from "../src/server/index.js";
 import { httpPeer, stdioPeer, type Peer } from "../src/mcp/index.js";
 
 const PORT = 39793;

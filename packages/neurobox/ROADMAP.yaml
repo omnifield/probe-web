@@ -215,23 +215,151 @@ categories:
 
       - id: mcp-remainder-after-peer-migration
         type: decision
-        status: Backlog
-        priority: Low
+        status: Superseded
+        priority: null
         milestone: null
-        name: "Что останется в packages/mcp после переноса /peer+/browser — не удаляется целиком"
+        name: "ОТМЕНЕНО — см. server-tools-relocated/transport-relocated/pagination-relocated/zone-feedback-relocated"
         description: |
-          Напоминание себе (найдено живым разговором user+architect, 2026-09-13, после того как user
-          предложил удалить весь `packages/mcp` и architect поймал нестыковку): даже после переноса
-          `/peer`+`/browser` в `packages/mcp` остаётся `register-tool`+`transport`
-          (MCP-СЕРВЕР `apps/skin/.mcp` на них построен, TanStack сервер строить не умеет вообще —
-          отдельно проверено, не пересматривается) и `pagination` (общая утилита, к MCP-протоколу как
-          таковому отношения не имеет). `feedback` (`packages/mcp/src/feedback`, GraphQL-клиент к
-          `backend/presets`) — отдельный вопрос, НЕ про `@tanstack/ai-mcp` вообще (это не MCP-клиент,
-          это клиент к нашему бэку) и не про AG-UI-фидбэк бокса (`@web-core/neurobox`'s
-          `sendNeuroboxFeedback` — другая сущность, «фидбэк зоне» ≠ «фидбэк боксу», не путать); его
-          судьба — отдельное решение, не этот пункт.
+          Была ошибка architect, не решение user: architect спутал «TanStack не умеет строить
+          MCP-сервер» (правда) с «значит register-tool/transport не могут переехать в
+          packages/neurobox» (не следует вообще). Технической причины держать их именно в
+          packages/mcp нет — это наш код на @modelcontextprotocol/sdk, ему всё равно, в каком
+          пакете лежать. User поправил это прямым текстом 2026-09-13, третий раз за разговор.
+          Правильный план — ниже, новая категория.
+
+  - category: "Полный перенос остатка packages/mcp → packages/neurobox (после — удаление packages/mcp целиком)"
+    items:
+      - id: server-tools-relocated
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "registerTool/ok/err (packages/mcp корень) → @web-core/neurobox/server"
+        description: |
+          `registerTool` (обязательные `access`-annotations, input/output как настоящие Zod-схемы
+          через `@modelcontextprotocol/sdk`), `ok()`/`err()` (конверт ответа по спеке MCP). Зависит
+          только от `@modelcontextprotocol/sdk` и `@web-core/io` (`z`) — ни одной зависимости на
+          `packages/mcp` как пакет, переезд — перенос файлов + правка импортов внутри них, не
+          переписывание логики. Новый подпуть `@web-core/neurobox/server` (имя обсуждаемо).
+          Тесты `packages/mcp/test/register-tool.test.ts` переезжают тем же приёмом, что
+          `test/mcp.test.ts` (полное зеркало, не общий файл — так уже сделано для peer).
+
+      - id: transport-relocated
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createServer (packages/mcp/transport) → @web-core/neurobox/server (или свой подпуть)"
+        description: |
+          Бутстрап stdio/Streamable HTTP (`createServer`), сессии по `mcp-session-id`,
+          `auth`/`host`/`allowedHosts`/`allowedOrigins` хуки. Зависит от `node:http`/`node:crypto`
+          и `@modelcontextprotocol/sdk` — опять же ни одной зависимости на пакет `packages/mcp`
+          как таковой. Открыто (поверхность, не архитектура): один подпуть `/server` вместе с
+          `register-tool`, или отдельный `/transport`, как было в оригинале — решает владелец.
+          Тесты `packages/mcp/test/transport.test.ts` переезжают тем же приёмом (реальный
+          `StreamableHTTPClientTransport` на поднятый сервер, не мок).
+
+      - id: pagination-relocated
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "paginate/limitSchema (packages/mcp/pagination) → @web-core/neurobox/pagination"
+        description: |
+          Курсорная пагинация листингов + общий `limitSchema` (`max(100)`, не голый
+          `z.number().positive()` — иначе в JSON Schema утекает предельное целое языка). Зависит
+          только от `@web-core/io`. Самый маленький и самый чистый перенос из всех — ни MCP-протокол,
+          ни TanStack тут вообще не при чём, чистая утилита.
+
+      - id: zone-feedback-relocated
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "reportFeedback/listFeedback/resolveFeedback (packages/mcp/feedback) → свой подпуть, НЕ смешивать с sendNeuroboxFeedback"
+        description: |
+          ⚠️ Не то же самое, что `@web-core/neurobox`'s уже существующий `sendNeuroboxFeedback` —
+          та ручка про «как работал бокс» (`POST /api/feedback/{threadId}` бокса), эта — про «как
+          сработал ОДИН MCP-тул зоны» (GraphQL к `backend/presets`'s `feedback.graphql`, зовётся
+          из `report_feedback`/`list_feedback`/`resolve_feedback` тулов `apps/skin/.mcp`). Обе
+          сущности реальны и обе нужны, имена/подпуть должны развести их явно (например
+          `@web-core/neurobox/zone-feedback`, не `/feedback` — этот слот уже занят смыслом бокса) —
+          решает владелец при реализации, здесь фиксируется только НЕЛЬЗЯ смешивать.
+
+      - id: mcp-package-fully-retired
+        type: decision
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "packages/mcp удаляется ЦЕЛИКОМ — после переноса выше И переключения потребителей"
+        description: |
+          Порядок (user, 2026-09-13): сначала `packages/neurobox` становится полным — весь список
+          выше плюс уже сделанные `peer`/`browser` — только ПОТОМ `apps/skin/.mcp` переводится на
+          новые импорты (`mcp-migration-consumers`, отдельное ТЗ, другая зона), и только когда оба
+          реальных потребителя (`apps/skin/.mcp/src/...`, `apps/skin/.mcp/scripts/push-to-prod.mjs`)
+          переключены и проверены живьём — `packages/mcp` удаляется целиком, без остатка. Не начинать
+          `apps/skin/.mcp` до готовности `packages/neurobox`.
 
 log:
+  - id: full-mcp-relocation-implemented
+    type: feature
+    date: 2026-09-13
+    summary: >
+      Все четыре пункта `full-mcp-relocation-plan-written` реализованы одним заходом (user: "погнали
+      по плану"). Открытые вопросы решены при реализации (владелец): `register-tool`+`transport` —
+      ОДИН подпуть `@web-core/neurobox/server`, не два раздельных (файловое разделение в
+      `packages/mcp` было организацией модуля, не смыслом импорта — тот же принцип, что уже у
+      `/mcp` = peer+browser вместе); `zone-feedback` — подпуть НЕ `/feedback` (тот смысл занят
+      `sendNeuroboxFeedback` в `.`), разбор — FAQ.md.
+      `server-tools-relocated`+`transport-relocated`: `src/server/register-tool.ts`+`transport.ts`,
+      код скопирован БЕЗ изменений кроме одной строки — текст ошибки `registerTool()` теперь называет
+      `@web-core/neurobox`, не `@web-core/mcp` (самоидентификация пакета, не поведение).
+      `pagination-relocated`: `src/pagination/index.ts`, дословно, включая обе находки в комментариях
+      (мёртвый default=50, утечка `Number.MAX_SAFE_INTEGER` в JSON Schema без верхней границы) — они
+      про историю решения, не про код текущего пакета, но переписывать их as-if-найдено-заново было
+      бы искажением истории находки.
+      `zone-feedback-relocated`: `src/zone-feedback/index.ts`, дословно — `FeedbackEntry`/
+      `FeedbackInput`/`FeedbackDown`/`FeedbackRefused`/`reportFeedback`/`listFeedback`/`resolveFeedback`,
+      с явным комментарием о неймспейс-конфликте с `sendNeuroboxFeedback`.
+      Зависимости: `@web-core/io` (пагинация — `z`/`limitSchema`) и `@web-core/query` (zone-feedback —
+      `graphqlRequest`/`gql`/`ClientError`) добавлены в `dependencies`. `@web-core/mcp` УБРАН из
+      `devDependencies` целиком: `test/mcp.test.ts` (написан для `peer-replaced-by-ai-mcp-client`)
+      переключён на СВОЙ новый `createServer`/`registerTool`/`ok` из `src/server/index.ts` вместо
+      старого `@web-core/mcp`/`@web-core/mcp/transport` — как только собственный эквивалент появился,
+      продолжать зависеть от старого пакета для проверки нового было бы противоречием цели переноса.
+      Тесты — четыре новых файла, ПОЛНЫЕ зеркала оригиналов (не общие с packages/mcp, тот же принцип,
+      что у peer/browser): `test/register-tool.test.ts`, `test/transport.test.ts` (реальный HTTP,
+      сессии, auth/allowedHosts/allowedOrigins — все 12 кейсов), `test/pagination.test.ts`,
+      `test/zone-feedback.test.ts` (мок fetch, все 8 кейсов включая различение FeedbackDown/
+      FeedbackRefused). Итог: 65/65 (было 31), `pnpm typecheck`/`lint`/`build` — зелёные, все шесть
+      подпутей (`.`/`solid`/`mcp`/`server`/`pagination`/`zone-feedback`) собираются со своими `.d.ts`.
+      Git: по прямому указанию user эта сессия НЕ коммитит (только чтение) — изменения остаются
+      рабочим деревом, коммит и разбор истории (включая инцидент со случайным чужим коммитом
+      `a7474914`) — на architect при подготовке к мёржу.
+      Осталось по плану: `mcp-migration-consumers` (переключение `apps/skin/.mcp/*` — чужая зона,
+      отдельное ТЗ) и `mcp-package-fully-retired` (удаление `packages/mcp` целиком — после
+      переключения потребителей). `packages/mcp` не тронут и не удалён.
+
+  - id: full-mcp-relocation-plan-written
+    type: plan
+    date: 2026-09-13
+    summary: >
+      Architect ошибся, user поправил прямым текстом: architect утверждал, что `register-tool`/
+      `transport` (packages/mcp) не могут переехать в packages/neurobox, потому что «TanStack не
+      умеет строить MCP-сервер» — это правда про TanStack, но не довод про наш СОБСТВЕННЫЙ код на
+      `@modelcontextprotocol/sdk`, которому всё равно, в каком пакете жить. Просьба user была прямая:
+      показать конкретное место, которое физически не может переехать — architect не смог, такого
+      места нет. `mcp-remainder-after-peer-migration` (прошлая запись с этим выводом) помечена
+      Superseded, не удалена — ошибка остаётся видна в истории, не стирается задним числом.
+      Записан полный план: `register-tool`+`transport`+`pagination`+`feedback` (zone-level,
+      переименовать при переносе — НЕ путать с уже существующим `sendNeuroboxFeedback`, box-level,
+      разные сущности под похожими именами) переезжают в packages/neurobox новыми подпутями.
+      Порядок фиксирован user: сначала packages/neurobox становится полным (весь список плюс уже
+      готовые peer/browser), потом и только потом — `apps/skin/.mcp` (`mcp-migration-consumers`,
+      отдельная зона, отдельное ТЗ), и только после того как оба реальных потребителя переключены и
+      проверены живьём — `packages/mcp` удаляется ЦЕЛИКОМ, без остатка (`mcp-package-fully-retired`).
+      Не начинать работу над `apps/skin/.mcp` до готовности `packages/neurobox`.
+
   - id: browser-wrapper-ported-implemented
     type: feature
     date: 2026-09-13

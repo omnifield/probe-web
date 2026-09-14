@@ -32,6 +32,9 @@
 | Транспорт (framework-agnostic) | `@web-core/neurobox` | весь `@tanstack/ai-client` + свой `createNeuroboxConnection` (`ConnectConnectionAdapter` под бокс) |
 | Solid-обвязка | `@web-core/neurobox/solid` | весь `@tanstack/ai-solid` (`useChat`, `createChatHook`, connection-адаптеры) — пока без добавок |
 | MCP-клиент (Node-only) | `@web-core/neurobox/mcp` | `httpPeer`/`stdioPeer` поверх `@tanstack/ai-mcp` + `createBrowser` — замена `@web-core/mcp/peer`+`/browser` |
+| MCP-сервер (Node-only) | `@web-core/neurobox/server` | `registerTool`/`ok`/`err` + `createServer`/`ZoneServer` — перенос `@web-core/mcp` (корень+`/transport`) |
+| Пагинация | `@web-core/neurobox/pagination` | `paginate`/`limitSchema` — перенос `@web-core/mcp/pagination` |
+| Фидбэк зоны (Node/browser) | `@web-core/neurobox/zone-feedback` | `reportFeedback`/`listFeedback`/`resolveFeedback` (GraphQL к `backend/presets`) — перенос `@web-core/mcp/feedback`. НЕ то же, что `sendNeuroboxFeedback` выше (тот — фидбэк о боксе, этот — о тулах зоны) |
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -132,6 +135,49 @@ const browser = createBrowser({ executablePath: "/path/to/chrome" });
 const pageId = await browser.newPage();
 await browser.navigate(pageId, "https://example.com");
 const shot = await browser.screenshot(pageId);
+```
+
+MCP-сервер — построение своих MCP-серверов зон (`apps/skin/.mcp` и подобные), перенос
+`@web-core/mcp` (корень + `/transport`) без изменений в логике:
+
+```ts
+import { createServer, ok, registerTool } from "@web-core/neurobox/server";
+import { z } from "@web-core/io";
+
+const server = createServer({
+  name: "skin-mcp",
+  version: "0.0.0",
+  transport: "http",
+  registerTools: (mcp) =>
+    registerTool(mcp, {
+      name: "list_components",
+      description: "перечень компонентов скина",
+      access: "read",
+      input: z.object({ group: z.string().optional() }),
+      handler: ({ group }) => ok({ items: [] }),
+    }),
+});
+await server.listen(4000);
+```
+
+Пагинация — курсорная, для листингов MCP-тулов:
+
+```ts
+import { paginate, limitSchema } from "@web-core/neurobox/pagination";
+
+const page = paginate(allItems, { limit: 20, cursor: request.cursor });
+```
+
+Фидбэк зоны — как сработал ОДИН MCP-тул зоны, не бокс целиком:
+
+```ts
+import { reportFeedback } from "@web-core/neurobox/zone-feedback";
+
+await reportFeedback("https://presets.example/graphql", {
+  tool: "save_preset",
+  action: "click",
+  actual: "миганием",
+});
 ```
 
 Открытые вопросы (события отказов) — `ROADMAP.yaml`.

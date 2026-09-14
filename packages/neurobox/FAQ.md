@@ -151,12 +151,44 @@ const chat = useChat({
 переведён в `dependencies`, не `devDependencies` — он теперь часть публичной сигнатуры `Peer`, не
 только тестовая обвязка).
 
-### Почему `@web-core/mcp` — devDependency этого пакета, если весь пункт роадмапа — уход ОТ него?
+### Почему `@web-core/mcp` был devDependency этого пакета (и почему им больше не является)?
 
-**Только тесты: `createServer`/`registerTool`/`ok` из `@web-core/mcp` поднимают настоящий HTTP MCP
-сервер для проверки `httpPeer` живьём** — переписывать сессионную логику `StreamableHTTPServerTransport`
-(id-сессии, `onsessioninitialized`/`onsessionclosed`) заново в фикстуре ради независимости было бы
-копией той же сложности, не выигрышем. `@web-core/mcp` не удаляется этим переносом (`register-tool`/
-`transport` остаются — см. `ROADMAP.yaml`, `mcp-remainder-after-peer-migration`), так что зависимость
-не тянет за собой ничего, что скоро исчезнет. В `dependencies` пакета её нет — только в `devDependencies`,
-рантайм `@web-core/neurobox/mcp` от неё не зависит.
+**Изначально — только тесты: `createServer`/`registerTool`/`ok` из `@web-core/mcp` поднимали настоящий
+HTTP MCP сервер для проверки `httpPeer` живьём**, переписывать сессионную логику
+`StreamableHTTPServerTransport` заново в фикстуре ради независимости было бы копией той же сложности.
+Это решение устарело на следующий же день: `server-tools-relocated`/`transport-relocated` перенесли
+ровно эти функции в `@web-core/neurobox/server` — тесты переключены на СВОЙ `createServer` (не на
+`@web-core/mcp`), devDependency убрана. `@web-core/mcp` теперь не появляется в `package.json` пакета
+вообще — ни как рантайм, ни как тестовая обвязка (разбор миграции целиком — ниже).
+
+---
+
+## Полный перенос `packages/mcp` (после — удаление целиком)
+
+### Почему `mcp-remainder-after-peer-migration` помечен `Superseded`, а не переписан?
+
+**Это была ошибка architect, не решение user — architect спутал «TanStack не умеет строить
+MCP-сервер» (правда) с «значит `register-tool`/`transport` не могут переехать в `packages/neurobox`»
+(не следует).** `register-tool`/`transport` — наш собственный код на `@modelcontextprotocol/sdk`,
+ему всё равно, в каком пакете лежать; технической причины держать их именно в `packages/mcp` не
+было. User поправил прямым текстом. Запись оставлена как `Superseded`, не удалена и не переписана —
+ошибка видна в истории роадмапа, не стирается задним числом (тот же принцип, что не откатывать
+находки постфактум).
+
+### Почему `register-tool` и `transport` — ОДИН подпуть `/server`, а не два раздельных, как в `packages/mcp`?
+
+**Разделение на файлы в `packages/mcp` было организацией МОДУЛЯ, не смыслом импорта.** Обе половины
+про одно — построение MCP-СЕРВЕРА (регистрация тула + бутстрап транспорта stdio/HTTP), не про два
+разных потребления. Роадмап явно оставлял это открытым («один подпуть `/server` вместе с
+register-tool, или отдельный `/transport` — решает владелец») — решил в пользу одного зонтика:
+меньше подпутей, тот же принцип, что уже применён к `/mcp` (peer+browser вместе, не два отдельных).
+
+### Почему `zone-feedback`, а не `/feedback`?
+
+**Слот `/feedback`-по-смыслу уже занят: `sendNeuroboxFeedback` (в `.`) — это фидбэк О БОКСЕ
+(`POST /api/feedback/{threadId}`, AG-UI-протокол, «как боксу работалось весь ход»).**
+`reportFeedback`/`listFeedback`/`resolveFeedback` из `packages/mcp/feedback` — фидбэк О ТУЛЕ ЗОНЫ
+(GraphQL к `backend/presets`, «как сработал один вызов одного MCP-тула») — совершенно другая
+сущность с похожим названием. Называть их одинаково (`/feedback` дважды в одном пакете, пусть и
+на разных объектах) было бы гарантированной путаницей на ровном месте — роадмап прямо предупреждал
+не смешивать, отсюда `zone-feedback` вместо повторного `feedback`.
