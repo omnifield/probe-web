@@ -65,16 +65,31 @@ categories:
     items:
       - id: mode-typed-tree
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "Мод 1 — зод-схема → дерево с ручным редактированием"
         description: |
-          Означает: перенос текущего `apps/skin/entities/feeder` (`ui/tree`, `ui/kit`,
-          `lib/binding`, `lib/use-tree`) в `interfaces/feeder`, оторванный от
-          `componentStore.use(kit).io.schema` — источник схемы становится параметром движка, не
-          жёстко зашитым skin-адаптером. Структура данных фиксирована схемой, юзер только
-          наполняет значения — полная типизация.
+          Означает: перенос `apps/skin/entities/feeder` (`ui/tree`, `ui/kit`, `lib/binding`,
+          `lib/use-tree`) в `interfaces/feeder` под разметку `entities/tree`/`features/edit-value`/
+          `widgets/tree`, оторванный от `componentStore.use(kit).io.schema` — `Tree` полностью
+          контролируемый (`schema`/`value`/`onChange` пропами), сам ничего не хранит. Принят user,
+          подключён живым потребителем (`apps/skin/src/pages/index.tsx`), проверен вручную в
+          браузере (правка скаляра, add/remove элемента списка).
+
+      - id: mode-typed-tree-tests
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Тесты мода 1 — entities/tree (логика) + widgets/tree (реальный DOM-рендер)"
+        description: |
+          Означает: vitest+jsdom. `entities/tree` — `itemBinding`/`useTree` чистой логикой (8
+          тестов, `createRoot`, реальная схема через `fieldsOf`). `widgets/tree` — `Tree`
+          смонтирован по-настоящему через `solid-js/web` (не мок): скаляр пишет по пути, «Добавить»
+          дописывает пустой элемент, у каждого айтема своя кнопка «Убрать» (3 теста). Потребовалось
+          `test.server.deps.inline` в `vitest.config.ts` — Ark-UI/Zag/Kobalte внутри `@web-core/ui`
+          отдают сырой `.jsx`, vitest иначе грузит их напрямую через Node и падает. Разбор — FAQ.md.
 
       - id: mode-openapi-templates
         type: feature
@@ -127,6 +142,26 @@ categories:
           `generators` уже закрывают режимы 2/3.
 
 log:
+  - id: mode-typed-tree-done
+    type: plan
+    date: 2026-09-14
+    summary: >
+      Мод 1 (`Tree`) доведён до принятого состояния. Перенос из `apps/skin/entities/feeder` под
+      разметку `entities/tree`/`features/edit-value`/`widgets/tree`, решённую в этом же заходе.
+      Тесты: `entities/tree` (чистая логика, 8 шт) + `widgets/tree` (реальный DOM-рендер через
+      `solid-js/web`, 3 шт) — потребовали `test.server.deps.inline` в `vitest.config.ts` под
+      Ark-UI/Zag/Kobalte (отдают сырой `.jsx`). build/typecheck/lint/test зелёные, закоммичено.
+
+      Побочная находка при живой проверке в браузере (`apps/skin/src/pages/index.tsx`, живой
+      потребитель `Tree`): мигание всего экрана при добавлении элемента списка — НЕ баг feeder,
+      причина в `packages/skin` (`useComponentSkin`/`ensureComponentSkin`, `provider.tsx`/
+      `connection.ts`) — там общий на всё приложение сигнал (`outfitData`) перезаписывается
+      безусловно при монтировании ЛЮБОГО компонента `@web-core/ui`, из-за чего монтирование новых
+      элементов аккордеона задевает несвязанные компоненты (например, индикатор `SegmentGroup`).
+      Найдено вместе с user через `MutationObserver`+`chrome-devtools` на живой странице, ошибочная
+      первая гипотеза (роутер `apps/skin`) отброшена по требованию user проверить точечно.
+      Эскалировано user как заявка на `packages/skin` — не в зоне feeder, не чинилось здесь.
+
   - id: fsd-layers-adapted-decided
     type: plan
     date: 2026-09-14

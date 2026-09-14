@@ -7,5 +7,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["test/**/*.test.ts", "test/**/*.test.tsx"],
+    server: {
+      deps: {
+        inline: [/@ark-ui\/solid/, /@zag-js\//, /@kobalte\/core/, /lucide-solid/, /@web-core\//],
+      },
+    },
   },
 });

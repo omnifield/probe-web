@@ -1,2 +1,2 @@
-export { FeederPlaceholder } from "./placeholder.js";
+export { FeederPlaceholder } from "./placeholder";
 export { Tree } from "./widgets/tree";
