@@ -376,7 +376,93 @@ categories:
           процессом, который просто ИМПОРТИРУЕТ тулдефы из `apps/skin`. Не решать здесь — записано,
           чтобы не забыть, когда дойдёт очередь до `apps/skin`/`apps/skin/.mcp`.
 
+  - category: "Правки после ревью бокса (2026-09-14) — connect() пропускает clientTools туда, откуда ответ нечем вернуть"
+    items:
+      - id: client-tools-passthrough-bug
+        type: bug
+        status: Backlog
+        priority: Critical
+        milestone: null
+        name: "connection.ts:60 — tools: runContext?.clientTools ?? [] живьём ломает клиентские тулы бокса"
+        description: |
+          Найдено ревью бокса, дословно: «Вчера строка была безобидной: бокс `tools` игнорировал.
+          Сегодня — нет. Всё, что TanStack положит в `clientTools`, бокс объявит агенту настоящей
+          ручкой». Сценарий поломки — ровно тот, что architect+user разбирали в чате раньше (см.
+          `tool-mechanic-design-agreed`/переписку про `NEUROBOX_CLIENT.md`'s «Свои ручки в
+          браузере»), но вывод тогда НЕ был записан пунктом роадмапа — эта строка осталась с самого
+          первого коммита `connect()` (`run-agent-input-shape`), до того как стало известно про
+          механизм клиентских тулов бокса вообще:
+
+          1. Кто-то регистрирует `.client()`-тул штатно через `useChat({tools: [...]})`.
+          2. `runContext.clientTools` уносит его в `tools[]` конверта — бокс объявляет агенту.
+          3. Агент зовёт — ход замирает, ждёт `POST /agent/{threadId}/tool/{toolCallId}`.
+          4. Но никто его не шлёт: `ChatClient` идёт СВОИМ путём —
+             `addToolResult()`→`checkForContinuation()`→новый `streamResponse()`→новый `POST
+             /api/agent` (та самая механика, разобранная раньше в этом же файле, `chat-client.js`).
+          5. Бокс: `409` («поток ждёт результат ручки приложения») — новая, недавно добавленная
+             защита с их стороны поймала то, что раньше тихо повисло бы до `tool-abandoned`.
+
+          В пакете сегодня НЕТ НИ ОДНОГО `POST /tool/`-вызова вообще — обвязки для клиентских тулов
+          бокса не существует, а канал для них уже открыт голым `clientTools`-проксированием.
+
+          РЕШЕНИЕ (согласовано раньше в чате, не пересматривается): `tools[]` НЕ берётся из
+          `runContext.clientTools`. `createNeuroboxConnection` получает свою опцию (например
+          `clientTools`) — список `{name, description, inputSchema, execute}`, которые:
+          - объявляются в `tools[]` САМИ (не через `runContext.clientTools`);
+          - НЕ регистрируются в `useChat`'s штатном `tools`-механизме вообще — `ChatClient` не
+            должен знать об их существовании как о «своих» тулах, иначе попробует штатный путь;
+          - исполнение и доставка результата — целиком внутри `connect()`: поймать
+            `TOOL_CALL_START`/`ARGS`/`END` по имени из СВОЕГО списка, исполнить, `POST
+            /api/agent/{threadId}/tool/{toolCallId}`, дальше читать тот же ещё открытый поток —
+            та же механика, что уже реализована для `/cancel` (`cancel-request-wired-into-connect`),
+            тот же приём (свой `AbortController`, не переиспользовать чужой сигнал, там же
+            актуально и для таймаута `client_tool_deadline_seconds`).
+
+      - id: threadid-fail-loud
+        type: bug
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "threadId: runContext?.threadId ?? generateId(\"thread\") — тихая подстановка прячет забытый threadId"
+        description: |
+          Найдено ревью бокса: `connection.ts:53`. Если `threadId` не пришёл — каждое сообщение
+          заводит НОВЫЙ поток тихо, выглядит рабочим. По факту: процесс агента холодный на каждый
+          ход, состояние MCP-зон (вкладка браузера) теряется каждый раз, расход не сходится по
+          `threadId` (`/spent` считает по потоку). РЕШЕНИЕ: бросать, не подставлять — отсутствие
+          `threadId` это ошибка конфигурации потребителя пакета, не штатный случай со своим
+          поведением по умолчанию.
+
+      - id: context-value-narrow-to-string
+        type: bug
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "NeuroboxContextEntry.value: unknown — протокол несёт строку, не что угодно"
+        description: |
+          Найдено ревью бокса: реальный конверт бокса несёт `context: [{description, value}]` со
+          `value` СТРОКОЙ (`NEUROBOX_CLIENT.md`'s пример — `"value": "button"`). Тип пакета сегодня
+          `value: unknown` — пропускает мимо TypeScript объект/число, которые бокс примет и
+          отклонит `422` уже на проводе, не на компиляции. Сузить до `string`.
+
 log:
+  - id: box-review-found-client-tools-hole
+    type: finding
+    date: 2026-09-14
+    summary: >
+      Внешнее ревью (агент бокса, после пуша `dev` для живого теста) нашло три проблемы в
+      `src/engine/connection.ts`. Критичная: `tools: runContext?.clientTools ?? []` пробрасывает
+      ЛЮБОЙ штатно зарегистрированный TanStack client tool в `tools[]` бокса — раньше поле
+      игнорировалось, теперь бокс реально исполняет протокол клиентских тулов
+      («Свои ручки в браузере»), и штатный путь `ChatClient` (`addToolResult`→новый `connect()`)
+      не совпадает с ожиданием бокса (`POST /tool/{toolCallId}` на тот же поток) — сценарий
+      поломки, разобранный architect+user в чате раньше (в тот же день, до этой реализации), но
+      не превращённый тогда в пункт роадмапа — пробел architect, не владельца пакета: обсуждение
+      было, запись — нет, код с дырой уехал в прод-проверку раньше, чем решение было формализовано.
+      Две находки ниже приоритетом: тихий `threadId`-фолбэк (должен падать, не подставлять) и
+      `NeuroboxContextEntry.value: unknown` (протокол несёт строку, тип должен сузиться). Все три
+      записаны категорией `client-tools-passthrough-bug`/`threadid-fail-loud`/
+      `context-value-narrow-to-string`, ничего не реализовано, статусы `Backlog`.
+
   - id: tool-definition-mechanic-implemented
     type: feature
     date: 2026-09-14
