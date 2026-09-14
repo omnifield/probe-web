@@ -793,7 +793,7 @@ categories:
 
       - id: list-docs-envelope-consistency
         type: bug
-        status: Backlog
+        status: Done
         priority: Low
         milestone: null
         name: "list_docs — голый массив, у всех сестринских list_* — {items, nextCursor?}"
@@ -805,6 +805,14 @@ categories:
           для листингов зоны, спотыкается именно на этой. Тем `docs/*.md` сегодня мало, пагинация
           не нужна практически — но форма ответа (`{items}` без `nextCursor`, раз он не нужен)
           всё равно должна совпадать по КОНТУРУ с соседями, не только по смыслу.
+
+          Сделано: не просто обёрнут результат в `{items: [...]}` вручную — `list_docs` теперь
+          принимает те же `cursor`/`limit`, что и остальные `list_*`, и пропускает результат через
+          общий `paginate()`. Тем сегодня меньше `DEFAULT_LIMIT` (20), `nextCursor` реально не
+          появится — но контур честный, не притворный: если тем когда-нибудь станет больше 20,
+          пагинация заработает сама, без повторной правки этой ручки.
+          Проверено живьём: `list_docs({})` — `{items: [...]}`, три темы, форма совпадает с
+          `list_components`/`list_content`.
 
       - id: zone-has-zero-tests
         type: decision

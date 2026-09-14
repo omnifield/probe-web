@@ -15,7 +15,11 @@ export function registerKitTools(server: McpServer): void {
     title: "Перечень тематических доков",
     description: "Заголовки docs/*.md этой зоны, без содержимого — открыть нужную темой get_doc.",
     access: "read",
-    handler: async () => ok(await listDocs()),
+    input: z.object({
+      cursor: z.string().optional().describe("курсор из предыдущей страницы"),
+      limit: limitSchema.optional(),
+    }),
+    handler: async ({ cursor, limit }) => ok(paginate(await listDocs(), { cursor, limit })),
   });
 
   registerTool(server, {
