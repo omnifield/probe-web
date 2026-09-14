@@ -10,7 +10,7 @@
     "serve": "SKIN_MCP_TRANSPORT=http SKIN_MCP_HOST=0.0.0.0 web-core-node src/index.ts",
     "dev": "web-core-node watch src/index.ts",
     "push-to-prod": "node scripts/push-to-prod.mjs",
-    "test": "node --test",
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck"
   },
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@web-core/build": "workspace:*",
     "@types/node": "^24.10.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
