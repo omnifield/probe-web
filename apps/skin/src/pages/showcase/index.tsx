@@ -1,13 +1,13 @@
-import { createEffect } from "solid-js";
-
 import { componentStore } from "#/entities/component";
+import { DemoStand } from "#/features/component-manager";
+import { CatalogList } from "#/widgets/catalogs";
 
 export function ShowcasePage() {
-  const component = componentStore.use((state) => state.component);
+  const groups = componentStore.selectors.variantsByTag;
 
-  createEffect(() => {
-    console.log("active component", component());
-  });
-
-  return <div>wdf</div>;
+  return (
+    <CatalogList items={groups()}>
+      {(item) => <DemoStand item={item} />}
+    </CatalogList>
+  );
 }

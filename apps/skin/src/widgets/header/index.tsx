@@ -18,8 +18,18 @@ import { Auth } from "#/entities/user";
 
 const SCREENS = [
   { value: "lab", label: "Lab", to: "/lab/{-$component}", prefix: "/lab" },
-  { value: "showcase", label: "Showcase", to: "/showcase/{-$component}", prefix: "/showcase" },
-  { value: "playground", label: "Playground", to: "/playground", prefix: "/playground" },
+  {
+    value: "showcase",
+    label: "Showcase",
+    to: "/showcase/{-$component}",
+    prefix: "/showcase",
+  },
+  {
+    value: "playground",
+    label: "Playground",
+    to: "/playground",
+    prefix: "/playground",
+  },
 ] as const;
 
 export function Header() {
@@ -79,7 +89,7 @@ export function Header() {
       </FlowItem>
       <FlowItem>
         <Flow>
-          {/* <ThemeSwitch /> */}
+          <ThemeSwitch />
           <Auth />
         </Flow>
       </FlowItem>

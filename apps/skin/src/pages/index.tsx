@@ -10,6 +10,7 @@ import { Outlet, useLocation, useNavigate, useParams } from "@web-core/router";
 import { railVar } from "@web-core/skin";
 
 import { tree } from "#/entities/component";
+import { FeedData } from "#/entities/feeder";
 import { Header } from "#/widgets/header";
 import { CatalogTree } from "#/widgets/catalogs";
 
@@ -47,9 +48,7 @@ export function WorkspaceLayout(props: {
         <Outlet />
       </WorkspaceMain>
       <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
-        {/* <Show when={isLab()} fallback={<RightbarShowcase />}>
-          <RightbarLab />
-        </Show> */}
+        <FeedData />
       </WorkspaceRightbar>
     </Workspace>
   );

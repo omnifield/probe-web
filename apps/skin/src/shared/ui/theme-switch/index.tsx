@@ -5,6 +5,7 @@
 // сам не владеет.
 import { PresetsDown, PresetsRefused } from "@web-core/skin/presets";
 import { useSkin } from "@web-core/skin/solid";
+import { componentStore } from "#/entities/component";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
   Toggle,
   ToggleIndicator,
 } from "@web-core/ui";
-import { createMemo, For, Show } from "solid-js";
+import { createEffect, createMemo, For, Show } from "solid-js";
 
 /** Причина отказа — короткой строкой человеку, не в отладчик. */
 function reasonOf(cause: unknown): string {
@@ -43,6 +44,11 @@ export function ThemeSwitch() {
   );
 
   const dark = createMemo(() => skin.worn()?.mode === "dark");
+  const outfitName = createMemo(() => skin.worn()?.name);
+
+  createEffect(() => {
+    componentStore.actions.setOutfit(outfitName());
+  });
 
   const trouble = (): string | null => {
     if (skin.names.error !== undefined) return reasonOf(skin.names.error);
