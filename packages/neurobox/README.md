@@ -71,6 +71,34 @@ chat.sendMessage("сделай кнопку пошире", {
 `chat.stop()` — штатная отмена: `connect()` сам добивает `POST /cancel` по `abortSignal`, отдельно
 вызывать ручку бокса не нужно (детали и известная ловушка — `FAQ.md`).
 
+`threadId` в `runContext` — обязателен, `connect()` бросает, если его нет (не заводит тихо новый
+поток на каждый ход). Через `useChat` он всегда есть сам по себе; ошибка возможна только при
+прямом вызове `connect()` в обход `ChatClient`.
+
+Свои ручки бокса ("Свои ручки в браузере", `NEUROBOX_CLIENT.md`) — `localStorage`, состояние
+экрана, что угодно, чего нет на сервере. **НЕ регистрируй их тем же тулом в `useChat({ tools:
+[...] })`** — штатный путь `ChatClient` не совпадает с протоколом бокса (см. `FAQ.md`), `connect()`
+доставляет результат сам:
+
+```ts
+const connection = createNeuroboxConnection({
+  baseUrl: "https://neurobox.example",
+  token: () => readBoxToken(),
+  userLogin: () => readUserLogin(),
+  clientTools: [
+    {
+      name: "save_favorite",
+      description: "сохраняет пресет в избранное этого браузера",
+      parameters: { type: "object", properties: { preset: { type: "string" } }, required: ["preset"] },
+      execute: async ({ preset }) => {
+        favorites.add(preset);
+        return `сохранено, теперь их ${favorites.size}`;
+      },
+    },
+  ],
+});
+```
+
 Расход — снимок как есть, без вычисления дельт между вызовами (почему — `FAQ.md`, раздел «Расход»):
 
 ```ts

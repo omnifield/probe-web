@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RunAgentInputContext } from "@tanstack/ai-client";
 import { createNeuroboxConnection } from "../src/engine/connection.js";
+import type { NeuroboxContextEntry } from "../src/engine/connection.js";
 
 function sseResponse(lines: Array<string>): Response {
   const encoder = new TextEncoder();
@@ -161,5 +162,147 @@ describe("createNeuroboxConnection", () => {
 
     const cancelUrl = requests.find((url) => url.includes("/cancel"));
     expect(cancelUrl).toBe("https://box.example/api/agent/sneaky%2F..%2Fother/cancel");
+  });
+
+  it("throws instead of silently starting a new thread when threadId is missing", async () => {
+    const fetchClient = vi.fn(async () => sseResponse([]));
+    const connection = createNeuroboxConnection({
+      token: "t",
+      userLogin: "u",
+      fetchClient: fetchClient as unknown as typeof fetch,
+    });
+
+    await expect(collect(connection.connect([], {}, undefined, { runId: "r1" } as RunAgentInputContext))).rejects.toThrow(
+      /threadId/,
+    );
+    expect(fetchClient).not.toHaveBeenCalled();
+  });
+
+  it("types NeuroboxContextEntry.value as a string — the wire protocol never carries anything else", () => {
+    // @ts-expect-error value must be a string — the wire protocol never carries anything else.
+    const entry: NeuroboxContextEntry = { description: "count", value: 42 };
+    void entry;
+  });
+
+  it("declares its own clientTools in tools[], never runContext.clientTools", async () => {
+    const fetchClient = vi.fn(async (_url: string, _init: RequestInit) => sseResponse([]));
+    const connection = createNeuroboxConnection({
+      token: "t",
+      userLogin: "u",
+      fetchClient: fetchClient as unknown as typeof fetch,
+      clientTools: [
+        { name: "save_favorite", description: "избранное", parameters: { type: "object" }, execute: () => "ok" },
+      ],
+    });
+
+    await collect(
+      connection.connect([], {}, undefined, {
+        threadId: "t1",
+        runId: "r1",
+        clientTools: [{ name: "some_tanstack_tool", description: "не должен попасть в конверт", parameters: {} }],
+      }),
+    );
+
+    const [, init] = fetchClient.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.tools).toEqual([{ name: "save_favorite", description: "избранное", parameters: { type: "object" } }]);
+  });
+
+  it("delivers a client tool's result via POST /tool/{toolCallId}, not the standard ChatClient path, and keeps reading the same stream", async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const encoder = new TextEncoder();
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_START", toolCallId: "call-1", toolCallName: "save_favorite" })}\n\n`));
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_ARGS", toolCallId: "call-1", delta: '{"preset":' })}\n\n`));
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_ARGS", toolCallId: "call-1", delta: '"кнопка-синяя"}' })}\n\n`));
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_END", toolCallId: "call-1" })}\n\n`));
+        controller = c;
+      },
+    });
+
+    const fetchClient = vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      if (url.endsWith("/tool/call-1")) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_RESULT", toolCallId: "call-1", content: "done" })}\n\n`),
+        );
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "RUN_FINISHED" })}\n\n`));
+        controller.close();
+        return new Response(null, { status: 200 });
+      }
+      return new Response(stream, { status: 200 });
+    });
+
+    const execute = vi.fn(async (args: unknown) => {
+      expect(args).toEqual({ preset: "кнопка-синяя" });
+      return "сохранено, теперь их 7";
+    });
+
+    const connection = createNeuroboxConnection({
+      baseUrl: "https://box.example",
+      token: "t",
+      userLogin: "u",
+      fetchClient: fetchClient as unknown as typeof fetch,
+      clientTools: [{ name: "save_favorite", description: "избранное", parameters: {}, execute }],
+    });
+
+    const chunks = await collect(connection.connect([], {}, undefined, { threadId: "t1", runId: "r1" }));
+
+    expect(execute).toHaveBeenCalledTimes(1);
+
+    const toolCall = calls.find((call) => call.url.endsWith("/tool/call-1"));
+    expect(toolCall?.url).toBe("https://box.example/api/agent/t1/tool/call-1");
+    expect(JSON.parse(toolCall!.init.body as string)).toEqual({ content: "сохранено, теперь их 7", failed: false });
+
+    expect((chunks as Array<{ type: string }>).map((chunk) => chunk.type)).toEqual([
+      "TOOL_CALL_START",
+      "TOOL_CALL_ARGS",
+      "TOOL_CALL_ARGS",
+      "TOOL_CALL_END",
+      "TOOL_CALL_RESULT",
+      "RUN_FINISHED",
+    ]);
+  });
+
+  it("reports a failed client tool execution as failed: true, not a thrown error swallowed silently", async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_START", toolCallId: "call-1", toolCallName: "save_favorite" })}\n\n`));
+        c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "TOOL_CALL_END", toolCallId: "call-1" })}\n\n`));
+        c.close();
+      },
+    });
+
+    const fetchClient = vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      if (url.endsWith("/tool/call-1")) return new Response(null, { status: 200 });
+      return new Response(stream, { status: 200 });
+    });
+
+    const connection = createNeuroboxConnection({
+      baseUrl: "https://box.example",
+      token: "t",
+      userLogin: "u",
+      fetchClient: fetchClient as unknown as typeof fetch,
+      clientTools: [
+        {
+          name: "save_favorite",
+          description: "избранное",
+          parameters: {},
+          execute: () => {
+            throw new Error("localStorage недоступен");
+          },
+        },
+      ],
+    });
+
+    await collect(connection.connect([], {}, undefined, { threadId: "t1", runId: "r1" }));
+
+    const toolCall = calls.find((call) => call.url.endsWith("/tool/call-1"));
+    expect(JSON.parse(toolCall!.init.body as string)).toEqual({ content: "localStorage недоступен", failed: true });
   });
 });

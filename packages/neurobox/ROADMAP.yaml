@@ -380,7 +380,7 @@ categories:
     items:
       - id: client-tools-passthrough-bug
         type: bug
-        status: Backlog
+        status: Done
         priority: Critical
         milestone: null
         name: "connection.ts:60 — tools: runContext?.clientTools ?? [] живьём ломает клиентские тулы бокса"
@@ -420,7 +420,7 @@ categories:
 
       - id: threadid-fail-loud
         type: bug
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "threadId: runContext?.threadId ?? generateId(\"thread\") — тихая подстановка прячет забытый threadId"
@@ -434,7 +434,7 @@ categories:
 
       - id: context-value-narrow-to-string
         type: bug
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "NeuroboxContextEntry.value: unknown — протокол несёт строку, не что угодно"
@@ -445,6 +445,42 @@ categories:
           отклонит `422` уже на проводе, не на компиляции. Сузить до `string`.
 
 log:
+  - id: box-review-bugs-fixed
+    type: bug
+    date: 2026-09-14
+    summary: >
+      Все три находки ревью бокса реализованы одним заходом. `client-tools-passthrough-bug`
+      (Critical): `connection.ts`'s `tools[]` больше НЕ читает `runContext.clientTools` вообще —
+      новая опция `createNeuroboxConnection({ clientTools: [{name, description, parameters,
+      execute}] })`, объявляется в `tools[]` сама, `useChat`'s штатный `tools`-механизм про эти
+      ручки не знает (не даём `ChatClient` пробовать свой путь доставки параллельно с нашим).
+      Исполнение — новый `deliverClientToolResults()`, обёртка-генератор вокруг
+      `parseNeuroboxEventStream`: кадры уходят наружу как есть (`yield` до разбора), при этом ловит
+      `TOOL_CALL_START`/`ARGS`/`END` по имени из своего списка, копит `delta`, на `END` исполняет
+      `execute()` и шлёт `POST /api/agent/{threadId}/tool/{toolCallId}` — та же механика и та же
+      ловушка, что у `/cancel` (свой `AbortController`/таймаут — `toolResultTimeoutMs`, не
+      переиспользует входной `abortSignal`), но в отличие от `sendCancel` ошибку доставки НЕ
+      глотает (бросает из `connect()`) — недоставленный результат бокс ждёт до `tool-abandoned`,
+      это достаточно серьёзно. Ошибка внутри `execute()` — другое дело, едет боксу как
+      `{failed: true}`, не роняет `connect()`.
+      `threadid-fail-loud` (Medium): `requireThreadId()` бросает вместо `?? generateId("thread")` —
+      `runId` по-прежнему автогенерируется (свежий `runId` на ход безвреден, вредно повторение
+      `threadId`).
+      `context-value-narrow-to-string` (Medium): `NeuroboxContextEntry.value: unknown` → `string`.
+      Оговорка в FAQ.md — `connect()`'s `data`-параметр типизирован вендором как
+      `Record<string, any>`, так что сужение реально форсируется только там, где потребитель явно
+      типизирует объект как `NeuroboxContextEntry` (включая внутренний cast в
+      `buildNeuroboxRunInput`), не на каждом вызове `connect()` — честно зафиксировано, не выдано
+      за большее, чем есть.
+      Тесты — `test/connection.test.ts`: threadId бросает и НЕ шлёт fetch; `NeuroboxContextEntry`
+      с `value: 42` — `@ts-expect-error`, тип действительно не пропускает; свои `clientTools` едут
+      в `tools[]`, `runContext.clientTools` НЕ едет; полный живой сценарий доставки — `TOOL_CALL_
+      START/ARGS/ARGS/END` → `execute()` с правильно собранными args → `POST /tool/{id}` с верным
+      телом → продолжение того же потока (`TOOL_CALL_RESULT`/`RUN_FINISHED` после doPOST, кадры на
+      выходе в правильном порядке); отдельно — `execute()` кидает → `{failed: true}` с текстом
+      ошибки, не падение `connect()`. Итог: 76/76 (было 71), `pnpm typecheck`/`lint`/`build` —
+      зелёные. Git по-прежнему только чтение.
+
   - id: box-review-found-client-tools-hole
     type: finding
     date: 2026-09-14
