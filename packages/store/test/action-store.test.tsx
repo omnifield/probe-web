@@ -125,3 +125,66 @@ describe("createActionStore (кейс userStore из ТЗ)", () => {
     expect(host.textContent).toBe("idle");
   });
 });
+
+describe("createActionStore — третий аргумент selectorsFactory (кейс variantsByTag)", () => {
+  function createTaggedStore(fetchUser: () => Promise<User>) {
+    return createActionStore<
+      UserState,
+      { setUser(user: User): void; loadUser(): Promise<void> },
+      { greeting(state: UserState): string; isReady(state: UserState): boolean }
+    >(
+      { user: null, loading: false },
+      ({ setState }) => ({
+        setUser(user: User) {
+          setState((state) => ({ ...state, user }));
+        },
+        async loadUser() {
+          setState((state) => ({ ...state, loading: true }));
+          const user = await fetchUser();
+          setState((state) => ({ ...state, user, loading: false }));
+        },
+      }),
+      () => ({
+        greeting(state) {
+          return state.user === null ? "гость" : `привет, ${state.user.name}`;
+        },
+        isReady(state) {
+          return state.user !== null && !state.loading;
+        },
+      }),
+    );
+  }
+
+  it("selectors — готовые реактивные аксессоры сразу после создания стора, без .use() в компоненте", () => {
+    const store = createTaggedStore(() => Promise.resolve({ id: "1", name: "A" }));
+
+    expect(store.selectors.greeting()).toBe("гость");
+    store.actions.setUser({ id: "1", name: "A" });
+    expect(store.selectors.greeting()).toBe("привет, A");
+  });
+
+  it("несколько селекторов независимо следят за своей частью state", async () => {
+    const store = createTaggedStore(() => Promise.resolve({ id: "2", name: "B" }));
+
+    expect(store.selectors.isReady()).toBe(false);
+    await store.actions.loadUser();
+    expect(store.selectors.isReady()).toBe(true);
+    expect(store.selectors.greeting()).toBe("привет, B");
+  });
+
+  it("селектор реактивен в реальном компоненте — DemoStand-кейс componentStore.selectors.variantsByTag()", async () => {
+    const store = createTaggedStore(() => Promise.resolve({ id: "3", name: "C" }));
+
+    function Greeting() {
+      return <p>{store.selectors.greeting()}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <Greeting />, host);
+
+    expect(host.textContent).toBe("гость");
+    await store.actions.loadUser();
+    expect(host.textContent).toBe("привет, C");
+  });
+});

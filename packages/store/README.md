@@ -240,6 +240,13 @@ export const counterStore = createActionStore<
     await new Promise((resolve) => setTimeout(resolve, 300)); // например, запрос на сервер
     setState((state) => ({ ...state, count: state.count + amount }));
   },
+}), () => ({
+  // Вычисляемое от state (Pinia-getter) — третий аргумент, ЖИВЁТ внутри стора, не собирается
+  // в компоненте: store.selectors.isEven() вместо store.use(state => state.count % 2 === 0)
+  // где-то сбоку. Реактивный аксессор готов сразу после создания стора.
+  isEven(state) {
+    return state.count % 2 === 0;
+  },
 }));
 ```
 
@@ -257,6 +264,7 @@ function CounterWidget() {
       <button onClick={counterStore.actions.increment}>+</button>
       <button onClick={() => counterStore.actions.incrementByAsync(5)}>+5 async</button>
       <button onClick={counterStore.actions.reset}>reset</button>
+      {counterStore.selectors.isEven() ? "чётное" : "нечётное"}
     </div>
   );
 }
@@ -272,7 +280,9 @@ function onRouteChange() {
 }
 ```
 
-Правило на все случаи: читаешь внутри компонента → `.use(selector)`. Читаешь разово снаружи
+Правило на все случаи: читаешь внутри компонента разово/по месту → `.use(selector)`. Читаешь
+именованное вычисляемое значение, которое нужно больше чем в одном месте, — заводи `selectors`
+третьим аргументом при создании стора, зови `store.selectors.x()`. Читаешь разово снаружи
 (роутер, обычная функция, тест) → `.get()`. Меняешь — всегда `.actions.*`, откуда угодно, `.set()`
 нигде не трогаешь.
 
@@ -427,7 +437,7 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createResourceAtom` без ключа | `(fetcher: (info: { signal }) => Data \| Promise<Data>, options?)`                                                                                 |
 | `createResourceAtom` с ключом  | `(source: Accessor<Key>, fetcher: (key, info: { signal }) => Data \| Promise<Data>, options?)`                                                     |
 | `createBoundAtom`              | `(source: Accessor<T>, options?: AtomOptions<T>)`                                                                                                  |
-| `createActionStore`            | `(initialValue: T, actionsFactory: (helpers: {setState, get}) => TActions, options?: AtomOptions<T>)`                                              |
+| `createActionStore`            | `(initialValue: T, actionsFactory: (helpers: {setState, get}) => TActions, options?: AtomOptions<T>)`, либо с третьим `selectorsFactory: () => TSelectors` перед `options`               |
 | `store.send`                   | `{ type, ...payload }`                                                                                                                             |
 | `store.trigger.<type>`         | `payload`                                                                                                                                          |
 | `store.can.<type>`             | `payload`                                                                                                                                          |
@@ -440,7 +450,7 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `atom.get()`                          | `T` напрямую                                                                                                 |
 | `useAtom` / `useSelector`             | аксессор `() => T`                                                                                           |
 | `createResourceAtom`                  | `ResourceState<Data, Err> = { status: "pending" } \| { status: "done", data } \| { status: "error", error }` |
-| `createActionStore`                   | `ActionStore<T, TActions> = ReadonlyAtom<T> & { actions: TActions, use(selector?) }` — `.set()` не публичный |
+| `createActionStore`                   | `ActionStore<T, TActions, TSelectors?> = ReadonlyAtom<T> & { actions, selectors, use(selector?) }` — `.set()` не публичный |
 | `store.can.<type>`                    | `boolean`                                                                                                    |
 
 <h2 id="сборки">🏗️ Сборки</h2>
@@ -465,6 +475,9 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createActionStore` + `useAtom`                           | реальный рендер компонента, значение меняется по вызову `actions` | `test/action-store.test.tsx` |
 | `createActionStore` + `.use(selector)`                    | тот же рендер через `store.use(...)` вместо `useAtom(store, ...)` | `test/action-store.test.tsx` |
 | `createActionStore` + `.use()` без селектора               | отдаёт весь state                                                 | `test/action-store.test.tsx` |
+| `createActionStore` + `selectorsFactory`                    | `store.selectors.x()` готов сразу после создания, без `.use()`     | `test/action-store.test.tsx` |
+| `createActionStore`, несколько селекторов                   | каждый следит за своей частью state независимо                    | `test/action-store.test.tsx` |
+| `createActionStore` + `selectors` в реальном рендере         | реальный рендер компонента, значение меняется по вызову `actions`  | `test/action-store.test.tsx` |
 | `persistAtom` + localStorage                              | гидратация при вызове, запись при `.set()`                        | `test/persist.test.tsx`      |
 | `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются                | `test/persist.test.tsx`      |
 | `mutate`                                                   | recipe мутирует draft, наружу — новое значение, старое не тронуто | `test/mutate.test.tsx`       |

@@ -37,6 +37,27 @@ categories:
           синтаксис один в один с тем, что просил user (@tanstack/store's createStore(initial,
           actionsFactory)). 6 тестов в test/action-store.test.tsx.
 
+      - id: action-store-selectors
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "createActionStore — третий аргумент selectorsFactory (Pinia-getters)"
+        description: |
+          Означает: createActionStore(initial, actionsFactory, selectorsFactory?, options?) —
+          selectorsFactory: () => TSelectors возвращает чистые (state) => R функции, каждая
+          оборачивается в useAtom(atom, fn) один раз при создании (внутри своего createRoot, тот
+          же приём, что у createResourceAtom/createBoundAtom для модульных синглтонов) и
+          становится store.selectors.x() — готовым реактивным аксессором. Различение
+          selectorsFactory/options по typeof === "function", тот же приём, что у
+          createResourceAtom (keyed/unkeyed). Обратная совместимость: старый вызов без селекторов
+          не изменился. Закрывает конкретную находку user: variantsByTag в
+          apps/skin/entities/component/model/store.ts жила отдельной экспортированной функцией,
+          собиралась в ShowcasePage через componentStore.use(variantsByTag) — работало, но
+          "выглядит как собрать стор в компоненте", по словам user, та же претензия, что раньше
+          была к createSignal вне стора. 3 новых теста в test/action-store.test.tsx (в т.ч.
+          реальный рендер), разбор — FAQ.md.
+
   - category: Стейт-машины
     items:
       - id: machine-layer
@@ -233,6 +254,22 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: action-store-selectors-scope
+    type: plan
+    date: 2026-09-14
+    summary: >
+      user, разбирая codestyle showcase/index.tsx, указал на конкретную несостыковку:
+      componentStore живёт цельным флоу (state+actions внутри createActionStore), а
+      variantsByTag — отдельно экспортированная функция, склеиваемая с componentStore.use(...)
+      прямо в компоненте. Дословно: "выглядит как собрать стор в компоненте... в зустанд флоу
+      так не делается... флоу селекторов уже давно не встречаю в современном коде, а если и
+      встречаю то с пометкой на переход на хуки". Решено не спорить с этим (технически .use(fn)
+      был рабочим use case, но именно как паттерн — устаревающий) и добавить third argument
+      selectorsFactory, чтобы вычисляемые значения объявлялись там же, где actions, и читались
+      как store.selectors.x() — готовый хук на сторе, не сборка на месте вызова. Реализовано
+      тем же приёмом различения по typeof, что уже был в пакете (createResourceAtom), не новая
+      идея с нуля.
+
   - id: mutate-addon-peer-to-dependency
     type: plan
     date: 2026-09-14
