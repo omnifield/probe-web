@@ -722,7 +722,88 @@ categories:
           `assemble_preview` не подходит вовсе, пока группировка остаётся зонной (не тема этого
           пункта — можно поднять отдельно, если группировку решат когда-нибудь тоже вынести в пакет).
 
+  - category: "Живой замер веса ответов (внешний агент, 2026-09-14) — три реальные находки, не гипотетические"
+    items:
+      - id: list-content-header-body-split
+        type: bug
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "list_content отдаёт тело каждой записи целиком — сосед list_presets так не делает"
+        description: |
+          Замерено живьём (не гипотеза): 13589 знаков на 20 записей, 10107 из них — тела
+          (`state: {component, data}`). Сверено чтением кода — `tools/content.ts`'s `list_content`
+          отдаёт `matching` (полные записи `presets.list("content")`) как есть в `paginate()`, не
+          режет до заголовков. `list_presets` рядом уже режет через `headersOf()` до
+          `{id, label, name, kind, savedAt}`, тело — отдельной `get_preset`. `get_content` для этого
+          уже существует (`tools/content.ts`, ручка есть) — недостающая часть не новая ручка, а
+          применение уже готового паттерна `headersOf`-среза к `list_content`. По оценке внешнего
+          агента — «одной ручкой было бы в 11 раз легче».
+
+      - id: list-presets-drop-redundant-fields
+        type: bug
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "list_presets — id (никем не используется) и kind (дублирует аргумент запроса) выкинуть из заголовка"
+        description: |
+          Замерено: 62% веса ответа — `id`/`kind`/`savedAt`. Адресация везде по `name`
+          (`get_preset({kind, name})`, не по `id` — сверено чтением `tools/presets.ts`), `id` в
+          выдаче `headersOf()` — мёртвый вес, ни один тул зоны не принимает `id` пресета аргументом.
+          `kind` дословно повторяет то, что уже названо в запросе — актуально ТОЛЬКО в ветке без
+          `kind` (обзор всех пяти видов разом), где поле реально различает записи; при явном `kind`
+          в аргументе оно избыточно на каждой записи. Решение по форме (убрать `kind` только в
+          ветке с явным `kind`, или оставить единый конверт ради простоты — компромисс) — за
+          владельцем.
+
+      - id: list-docs-envelope-consistency
+        type: bug
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "list_docs — голый массив, у всех сестринских list_* — {items, nextCursor?}"
+        description: |
+          Сверено чтением `tools/kit.ts`: `list_docs`'s handler — `ok(await listDocs())`, без
+          `paginate()` вообще, в отличие от `list_components`/`list_presets`/`list_content`/
+          `list_feedback`. Замечено внешним агентом: «разные конверты у сестринских ручек, разбор
+          ломается на переходе» — клиент, который один раз написал разбор `{items, nextCursor?}`
+          для листингов зоны, спотыкается именно на этой. Тем `docs/*.md` сегодня мало, пагинация
+          не нужна практически — но форма ответа (`{items}` без `nextCursor`, раз он не нужен)
+          всё равно должна совпадать по КОНТУРУ с соседями, не только по смыслу.
+
+      - id: zone-has-zero-tests
+        type: decision
+        status: Backlog
+        priority: null
+        milestone: null
+        name: "У зоны нет тестов вообще — наблюдение внешнего агента, не решение, не эта заявка"
+        description: |
+          `apps/skin/.mcp` несёт только `src/`, `docs/`, `scripts/` — ни одного теста, в отличие от
+          `packages/neurobox` (76 тестов на момент этой записи). Не моя зона чинить и не решение
+          architect — записано, чтобы не забыть ДО подключения витрины к зоне: агент работает с
+          этими тулами на каждом прогоне, обратной связи от тестов у зоны сегодня нет вовсе.
+
 log:
+  - id: box-agent-measured-response-weight
+    type: finding
+    date: 2026-09-14
+    summary: >
+      Внешний агент (бокс) замерил реальные ответы ручек зоны живьём (не описания) и записал три
+      находки через `report_feedback` самой зоны (доступны обратно через `list_feedback`/
+      `get_feedback`, живут в службе пресетов): `list_content` отдаёт тело целиком (13589 знаков на
+      20 записей, 10107 — тела) вместо заголовков, которые сосед `list_presets` уже умеет резать;
+      `list_presets` — 62% веса id/kind/savedAt, `id` никем не используется (адресация по `name`),
+      `kind` дублирует аргумент запроса; `list_docs` — голый массив без `{items, nextCursor?}`, в
+      отличие от всех сестринских `list_*`. Похвала (не находка): `assemble_preview` — CSS
+      `resource_link`, не тело, честно называет пробелы покрытия. Плюс отдельное наблюдение без
+      замера: у зоны нет тестов вообще (`src`/`docs`/`scripts`, ни одного `test/`), контраст с
+      `packages/neurobox` (76 тестов) — не решение, просто зафиксировано до подключения витрины.
+      Данные пресетов агент не трогал — только чтение и `assemble_preview` без сохранения.
+      Architect сверил все три технические находки чтением реального кода (`tools/content.ts`,
+      `tools/presets.ts`, `tools/kit.ts`) — точны. Записаны пунктами `list-content-header-body-split`
+      (High)/`list-presets-drop-redundant-fields` (Medium)/`list-docs-envelope-consistency` (Low)/
+      `zone-has-zero-tests` (наблюдение). Ничего не реализовано.
+
   - id: assembly-tree-esm-named-import
     type: finding
     date: 2026-09-14
