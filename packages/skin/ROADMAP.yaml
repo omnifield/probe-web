@@ -812,7 +812,7 @@ categories:
     items:
       - id: tool-export-surface
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "Операции пакета — голой функцией И toolDefinition()-обёрткой, обе публичные"
@@ -835,7 +835,83 @@ categories:
           `app-zone-tool-registry` в `packages/neurobox/ROADMAP.yaml`, отдельный вопрос) — этот
           пакет останавливается на экспорте, дальше не лезет.
 
+          СДЕЛАНО (2026-09-14). Новый подпуть `./tools` (`src/tools/index.ts`+`schemas.ts`,
+          зарегистрирован в `vite.config.ts`/`package.json`'s `exports`): четыре операции —
+          `checkOutfitTool`/`assembleOutfitTool`/`generateSkinCssTool`/`skinGapsTool`, все
+          `access: "read"`, голые функции (`checkOutfit`/`assemble`/`generateSkinCss`/`skinGaps`)
+          реэкспортированы рядом без изменений.
+
+          НАЙДЕН БЛОКЕР при проектировании схем, не предвиденный формулировкой пункта: все четыре
+          голые функции реально принимают `PassportLookup`/`Iterable<ComponentPassport>` —
+          `ComponentPassport.anatomy` несёт функции (`keys()`/`build()` от `@zag-js/anatomy`'s
+          `createAnatomy()`), это НЕ JSON, агент не может прислать паспорт телом вызова. Решено (не
+          в одиночку молча — записано и в FAQ.md, и здесь): `lookup`/`passports` НЕ входят в
+          `inputSchema` ни одного тула — это знание живого реестра компонентов ПРИЛОЖЕНИЯ
+          (`packages/ui/src/component-registry.ts`), не значение, которое агент выбирает за один
+          вызов. Тот же класс параметра, что второй аргумент `execute(input, context)` у
+          `@tanstack/ai` — контракт описывает то, что реально формулирует агент (`Outfit`/
+          `Palette`/`Form`/`Skin` — записи `presets`, не код кита), связывание с реальным `lookup`
+          остаётся заботой `.server(execute)`, которого этот заход НЕ строит (сам `app-zone-tool-
+          registry` по-прежнему не решается здесь). Разбор — FAQ.md, «Тулы для агента (`./tools`):
+          паспорт наружу не идёт».
+
+          Из пяти изначально предложенных операций `skinContrast` ОТЛОЖЕН, не пятая заодно: у
+          механики нет ни одного потребителя (`contrast-consumer`, Open, ниже) — заводить тул под
+          операцию, которую никто не зовёт, было бы расширением вслепую.
+
+          Схемы (`schemas.ts`) — каждая аннотирована `z.ZodType<T>` реальным TS-типом движка
+          (`Outfit`/`Palette`/`Form`/`Skin`/`LookParts`/`OutfitFlaw`/`OutfitReport`/`Assembled`/
+          `SkinGap`/`ValueVocabulary`, плюс их вложенные формы — `SlotRecipe`/`StyleObject`/
+          `LocalStyle`/`SkinVariables`/`DimensionSeed` и т.д.) — компилятор отказывается собрать
+          пакет при расхождении формы хоть на одно поле, не `z.any()`/`z.unknown()` наугад.
+          Рекурсивные (`StyleObject`/`LocalStyle`/`PartStyle`) — через `z.lazy()`, тот же приём, что
+          уже есть в репозитории (`packages/ui/src/shared/data/fields.ts`).
+
+          Побочный технический найденный при сборке: `.d.ts`-эмит (`rollup-plugin-dts`) не может
+          назвать инстанцированный `ToolDefinition<...>` без явной аннотации константы (тип живёт в
+          `@web-core/neurobox`'s собственном вложенном `node_modules/@tanstack/ai`, не в поднятом) —
+          решено явной аннотацией `ToolDefinition<typeof Input, typeof Output, "name">` на каждом
+          `export const`, `@tanstack/ai` заведён прямой `dependencies` этого пакета (его типы теперь
+          на публичной границе `.d.ts`, версия `^0.54.0` — та же, что у `@web-core/neurobox`).
+
+          Новые зависимости `dependencies`: `@tanstack/ai`, `@web-core/io` (`z`, по канону —
+          `io-owns-zod-boundary`, zod напрямую не заведён), `@web-core/neurobox` (`toolDefinition`/
+          `accessOf`).
+
+          Тесты — `test/tools.test.ts` (15 кейсов, новых): `access: "read"` на всех четырёх тулах
+          (`accessOf()`); `check_outfit`/`generate_skin_css`/`skin_gaps` — реальный вызов голой
+          функции (те же фикстуры, что `keyframe-collision.test.ts`/`generate-component-skin-
+          css.test.ts`), результат парсится `outputSchema` без правки; `assemble_outfit` — выход
+          сверен типизированным литералом `Assembled` (не живым вызовом: `assemble()` бросает
+          `OutfitRefused`, пока палитра не закрывает ВЕСЬ `VOCABULARY`, комбинаторно большой —
+          заводить фикстуру-палитру на сотню ролей ради одного теста не стал); три негативных
+          кейса (`OutfitSchema`/`LookPartsSchema`/`AssembledSchema` реально отвергают неполный/
+          неверный вход).
+
+          Проверено: `pnpm run lint`/`typecheck`/`test` (160/160, было 141) — зелёные, `pnpm run
+          build` — `dist/tools.js`+`dist/tools.d.ts` собираются. `pnpm build` из корня — `@web-core/
+          skin`/`@web-core/assembly`/`@web-core/ui`/`@web-core/neurobox`/`@web-core/io` все зелёные,
+          цикла нет; падают только предсуществующие `@web-core/ewc` (`UNRESOLVED_IMPORT`) и
+          `@web-core/reference` (`MISSING_EXPORT`) — не эта работа и не эта зона.
+
 log:
+  - id: tool-export-surface-implemented
+    type: feature
+    date: 2026-09-14
+    summary: >
+      `tool-export-surface` реализован (user: "супер! го!"). Новый подпуть `./tools` — четыре
+      `toolDefinition()`-обёртки (`check_outfit`/`assemble_outfit`/`generate_skin_css`/`skin_gaps`,
+      все `access: "read"`) рядом с голыми функциями, которые они описывают. Найден и решён блокер,
+      не предвиденный при планировании: `ComponentPassport`/`PassportLookup` несёт функции
+      (`@zag-js/anatomy`), не JSON — паспорт/lookup исключены из `inputSchema` всех четырёх тулов
+      как инфраструктура вызова (знание живого реестра приложения), не как значение, которое агент
+      выбирает за один вызов. Пятая предложенная операция (`skinContrast`) отложена — у механики
+      сегодня нет потребителя (`contrast-consumer`, Open). Подробности решения, найденных блокеров
+      (включая побочный — `.d.ts`-эмит `ToolDefinition<...>` без явной аннотации константы не
+      собирается) и объёма тестов — в самом пункте `tool-export-surface` (Done) и FAQ.md. Итог:
+      160/160 тестов (было 141), `lint`/`typecheck`/`build` пакета — зелёные, `pnpm build` из корня
+      без цикла (падают только предсуществующие `ewc`/`reference`).
+
   - id: tool-export-surface-planned
     type: plan
     date: 2026-09-14

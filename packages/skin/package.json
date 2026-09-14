@@ -46,6 +46,11 @@
       "development": "./src/tags/index.ts",
       "types": "./dist/tags.d.ts",
       "default": "./dist/tags.js"
+    },
+    "./tools": {
+      "development": "./src/tools/index.ts",
+      "types": "./dist/tools.d.ts",
+      "default": "./dist/tools.js"
     }
   },
   "files": [
@@ -62,7 +67,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tanstack/ai": "^0.54.0",
     "@web-core/assembly": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/neurobox": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/trace": "workspace:*",
     "@zag-js/anatomy": "^1.43.1"

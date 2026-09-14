@@ -10,5 +10,6 @@ export default defineLibraryConfig({
     { name: "wear", source: "src/wear/index.ts" },
     { name: "solid", source: "src/solid/index.ts", solid: true },
     { name: "tags", source: "src/tags/index.ts" },
+    { name: "tools", source: "src/tools/index.ts" },
   ],
 });
