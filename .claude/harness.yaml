@@ -40,6 +40,9 @@ zones:
   shared:
     paths: [packages/shared]
     description: "mount()/#root и общий perf-трейсер (createTracer) — то, что зовёт скелет у потребителя. Было packages/runtime; надевание скина уехало в skin-mech (PWEB-221)."
+  router:
+    paths: [packages/router]
+    description: "пакет для роутинга"
   skin-mech:
     paths: [packages/skin, packages/skin-reference]
     description: "МЕХАНИКА скина — модель, сборка рецепта по частям, адресация из анатомии, порождение CSS, служба раздачи (`./presets`), надевание и снятие (`./wear`, `./solid` — переехало из `packages/runtime`, PWEB-221). Рядом `skin-reference`, эталонный скин фреймворка: отдельная поставка, потому что механика не знает ни одного скина. Зависимость односторонняя: эталон знает механику, механика о нём нет. Один овнер у обоих: предмет соседний, компетенция та же."
@@ -47,7 +50,7 @@ zones:
     paths: [packages/assembly, apps/skin]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
   store:
-    paths: [packages/store]
+    paths: [packages/store, apps/skin]
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest
   build:
     paths: [packages/build]
@@ -69,7 +72,10 @@ zones:
     description: "универсальный вход/выход данных — паспорт формы компонента (`entity/io.ts` читает отсюда `z`) и слоистый движок переходников (L0 тождество / L1 переименование ключей / L2 правила полей и мутация значений / L3 форма целиком с повторами, открыт). Средство, а не решение: не знает ни про скин, ни про конкретный компонент — `packages/io` не импортирует `packages/skin` и не будет (решено user, 2026-08-29)."
   form:
     paths: [packages/form]
-    description: "движок правки данных по схеме поверх @tanstack/solid-form — headless состояние (пути, dirty, массивы), рендер полей на @web-core/ui. Схема заходит из @web-core/io, свой zod не заводит. Заведён 2026-09-12 под конкретную боль: форма в apps/skin/…/input/ работает, но выглядит плохо, и это не разовый кейс. См. packages/form/ROADMAP.yaml."
+    description: "проекция дерево×io-схема→валидность (@web-core/assembly+@web-core/io) — вторая нога механики assembly (та — дерево→рендер, эта — дерево→валидатор), не форма из инпутов. Не рендерит, не владеет состоянием (@tanstack/solid-form отклонён и снесён). Ось валидации на useKitLife — cross-zone в packages/ui, паспорт (packages/skin) не тронут. Заведён 2026-09-12, роль пересмотрена тем же днём. См. packages/form/ROADMAP.yaml."
+  neurobox:
+    paths: [packages/neurobox]
+    description: "клиент для бокса нейробокс (менеджер рантаймов агентов, протокол AG-UI — см. корневой NEUROBOX_CLIENT.md) поверх @tanstack/ai-client/@tanstack/ai-solid. Заведён 2026-09-13, детали user обсудил с владельцем напрямую. См. packages/neurobox/ROADMAP.yaml."
   # Зоны products/ стоят здесь ВРЕМЕННО и уедут отдельными продуктами. В packages/ им нельзя:
   # там база.
   tables:
