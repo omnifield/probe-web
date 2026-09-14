@@ -35,6 +35,7 @@
 | MCP-сервер (Node-only) | `@web-core/neurobox/server` | `registerTool`/`ok`/`err` + `createServer`/`ZoneServer` — перенос `@web-core/mcp` (корень+`/transport`) |
 | Пагинация | `@web-core/neurobox/pagination` | `paginate`/`limitSchema` — перенос `@web-core/mcp/pagination` |
 | Фидбэк зоны (Node/browser) | `@web-core/neurobox/zone-feedback` | `reportFeedback`/`listFeedback`/`resolveFeedback` (GraphQL к `backend/presets`) — перенос `@web-core/mcp/feedback`. НЕ то же, что `sendNeuroboxFeedback` выше (тот — фидбэк о боксе, этот — о тулах зоны) |
+| Механика тулов | `@web-core/neurobox/tool` | `toolDefinition`/`accessOf` поверх `@tanstack/ai` — тот же `access`, что был у `registerTool`, но на уровне определения тула, не только его MCP-регистрации |
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -178,6 +179,26 @@ await reportFeedback("https://presets.example/graphql", {
   action: "click",
   actual: "миганием",
 });
+```
+
+Механика тулов — трёхслойное деление (меха здесь → пакет знает свой вход/выход → апп-зона решает,
+что реально открыть агенту): `toolDefinition()` требует `access`, кладёт его в `metadata`
+`@tanstack/ai`'s тула; `accessOf()` читает обратно с любого построенного тула (`.server(...)`/
+`.client(...)` тоже несут его):
+
+```ts
+import { toolDefinition, accessOf } from "@web-core/neurobox/tool";
+import { z } from "@web-core/io";
+
+const savePreset = toolDefinition({
+  name: "save_preset",
+  description: "сохраняет пресет",
+  access: "write",
+  inputSchema: z.object({ name: z.string() }),
+});
+
+const serverTool = savePreset.server(async ({ name }) => ({ ok: true }));
+accessOf(serverTool); // "write"
 ```
 
 Открытые вопросы (события отказов) — `ROADMAP.yaml`.

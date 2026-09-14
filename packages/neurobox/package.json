@@ -36,6 +36,11 @@
       "development": "./src/zone-feedback/index.ts",
       "types": "./dist/zone-feedback.d.ts",
       "default": "./dist/zone-feedback.js"
+    },
+    "./tool": {
+      "development": "./src/tool/index.ts",
+      "types": "./dist/tool.d.ts",
+      "default": "./dist/tool.js"
     }
   },
   "files": [
@@ -53,6 +58,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@tanstack/ai": "^0.54.0",
     "@tanstack/ai-client": "^0.31.1",
     "@tanstack/ai-mcp": "^0.3.10",
     "@tanstack/ai-solid": "^0.21.1",

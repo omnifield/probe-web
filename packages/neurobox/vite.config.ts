@@ -8,5 +8,6 @@ export default defineLibraryConfig({
     { name: "server", source: "src/server/index.ts" },
     { name: "pagination", source: "src/pagination/index.ts" },
     { name: "zone-feedback", source: "src/zone-feedback/index.ts" },
+    { name: "tool", source: "src/tool/index.ts" },
   ],
 });

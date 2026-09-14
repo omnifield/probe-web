@@ -300,7 +300,130 @@ categories:
           переключены и проверены живьём — `packages/mcp` удаляется целиком, без остатка. Не начинать
           `apps/skin/.mcp` до готовности `packages/neurobox`.
 
+  - category: "Механика тулов — @web-core/neurobox/tool (наследник дисциплины register-tool: access обязателен)"
+    items:
+      - id: tool-definition-mechanic
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "toolDefinition() — общая обёртка над @tanstack/ai, не про skin и не про какой-либо конкретный пакет"
+        description: |
+          Контекст (architect+user, 2026-09-13, живой разбор в чате): деление на три слоя —
+          (1) МЕХА — как вообще устроен тул, живёт здесь, в `@web-core/neurobox`, не привязана ни
+          к одному продуктовому пакету; (2) ПАКЕТ (`packages/skin` и любой другой) — знает только
+          свой вход-выход, экспортирует голую функцию + готовый `toolDefinition()` вокруг нЕё
+          (схему своего контракта пакет знает лучше всех, это не решение потребителя); (3) ЗОНА
+          АПП — решает, какой НАБОР тулов реально открыть агенту и с каким описанием, потому что
+          только апп знает, что видит юзер («агент = юзер, 99% случаев» — user, дословно).
+          Пакеты остаются абстрактными, не привязанными к конкретному апп — это НЕ пересматривается,
+          апп-специфичный выбор живёт в апп-зоне, не здесь.
+
+          Проверено по реальным тайпингам `@tanstack/ai@0.54.0`, не по памяти
+          (`activities/chat/tools/tool-definition.d.ts`): `ToolDefinitionConfig` несёт
+          `metadata?: Record<string, unknown>` — сюда наша обёртка кладёт обязательный `access`
+          (`"read" | "write" | "destructive"`, та же дисциплина, что была у `registerTool` —
+          находка изначального аудита `apps/skin/.mcp`, где ни один тул её не нёс, не теряем её
+          при переезде на новый фундамент). `.server(execute)` возвращает объект с `execute`
+          внутри — `tool.execute(args)` для MCP-обёртки реально вызывает функцию напрямую, не
+          выдуманный API.
+
+          Набросок формы (обсуждено в чате, не финальный код):
+          ```ts
+          import { toolDefinition as tsToolDefinition } from "@tanstack/ai";
+
+          export function toolDefinition<In, Out>(def: {
+            name: string;
+            description: string;
+            access: "read" | "write" | "destructive"; // обязателен, не опционален
+            inputSchema: In;
+            outputSchema: Out;
+          }) {
+            return tsToolDefinition({ ...def, metadata: { access: def.access } });
+          }
+          ```
+          Открыто при реализации: подпуть — предложение `/tool`, не зафиксировано; как читать
+          `access` обратно из `metadata` типобезопасно на стороне MCP-обёртки (`registerTool` в
+          `@web-core/neurobox/server` ждёт узкий union, `metadata` типизирован как
+          `Record<string, unknown>` у вендора) — решает владелец.
+
+      - id: skin-package-tool-exports
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "packages/skin — первый потребитель мехи (не единственный пакет, кому это понадобится)"
+        description: |
+          НЕ входит в этот пакет (`packages/neurobox`) — задача `packages/skin`, заводится там
+          отдельным ТЗ, когда мехa (`tool-definition-mechanic`) готова. Означает: операции вроде
+          `check_palette`/`check_form`/`check_assembly`/`check_outfit`/`save_preset` (сегодня
+          живут ТОЛЬКО в `apps/skin/.mcp`, у `apps/skin`'s UI аналога нет вообще — сверено `grep`'ом
+          живьём в этом же разговоре) экспортируются из `packages/skin` двумя вещами: голой
+          функцией и `toolDefinition()`-обёрткой вокруг неё, обе публичные. Какой апп это в итоге
+          использует (сегодня — никакой, `apps/skin`'s UI read-only) — не забота пакета.
+
+      - id: app-zone-tool-registry
+        type: decision
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "Кто в apps/skin собирает список тулов агенту — открытый вопрос, не этот пакет"
+        description: |
+          Третий слой (апп решает набор+описание, регистрирует через `@web-core/neurobox/server`
+          или через клиентские тулы бокса, `NEUROBOX_CLIENT.md`'s «Свои ручки в браузере») —
+          НЕ задача `packages/neurobox`. Открытый вопрос на будущее (не сейчас): сливается ли
+          `apps/skin/.mcp` в саму `apps/skin` как единая зона регистрации, или остаётся отдельным
+          процессом, который просто ИМПОРТИРУЕТ тулдефы из `apps/skin`. Не решать здесь — записано,
+          чтобы не забыть, когда дойдёт очередь до `apps/skin`/`apps/skin/.mcp`.
+
 log:
+  - id: tool-definition-mechanic-implemented
+    type: feature
+    date: 2026-09-14
+    summary: >
+      `tool-definition-mechanic` реализован (user: "супер! погнали!"). Оба открытых вопроса решены
+      владельцем: подпуть — `@web-core/neurobox/tool` (предложенное имя подтверждено, не изменено);
+      чтение `access` обратно из `metadata` — отдельная функция `accessOf()` в том же модуле,
+      структурно типизированная (`{ metadata?: Record<string, unknown> }`), не завязанная на
+      конкретное имя типа вендора (`ToolDefinitionInstance`/`ServerTool`/`ClientTool`/их `Any*`
+      варианты — все несут `metadata` через общий `Tool`, сверено чтением `types.d.ts`, не по памяти).
+      `src/tool/index.ts`: `toolDefinition(options)` — тонкая обёртка над `@tanstack/ai`'s
+      `toolDefinition()`, требует `access` (не опционален — та же дисциплина, что была у
+      `registerTool` до переезда на `@tanstack/ai`), кладёт в `metadata`. Approval-поля вендора
+      (`needsApproval`/`approvalSchema`) сознательно НЕ проброшены — не было в запросе, решение
+      зафиксировано в FAQ.md, не молчаливый пробел. `accessOf()` бросает на отсутствующем/неверном
+      `access`, не отдаёт `undefined` — та же дисциплина, что у `registerTool`, не даём дыре
+      сдвинуться на шаг дальше по цепочке. `@tanstack/ai` переведён из фантомной (была доступна
+      только через `@tanstack/ai-client`/`@tanstack/ai-mcp`, использовалась структурно без прямого
+      импорта — тот же приём, что раньше для `StreamChunk`/`MCPClient`) в прямую зависимость: здесь
+      её типы (`ToolDefinition`/`ToolDefinitionConfig`/`SchemaInput`) именуются напрямую в публичной
+      сигнатуре, структурный обход больше не годится.
+      Тесты — `test/tool.test.ts`: `access` в `metadata` после `toolDefinition()`, сохраняется через
+      `.server(execute)` (включая реальный вызов `execute` с проверкой результата) и `.client()`,
+      `accessOf()` читает все три уровня access, бросает на пустом/неверном значении.
+      Сознательно НЕ сделано (не входило в этот пункт, читается из описания трёхслойного деления):
+      никакого моста между `toolDefinition()`-построенным тулом и `registerTool()` из
+      `@web-core/neurobox/server` — это решение апп-зоны (`app-zone-tool-registry`, Low, не сейчас) о
+      том, ЧЕРЕЗ ЧТО регистрировать тул агенту (MCP-сервер или клиентские тулы бокса), не задача
+      меха-слоя. Итог: 71/71 (было 65), `pnpm typecheck`/`lint`/`build` — зелёные, `dist/tool.js`+
+      `dist/tool.d.ts` собираются. Git — по-прежнему только чтение, ничего не закоммичено.
+
+  - id: tool-mechanic-design-agreed
+    type: plan
+    date: 2026-09-14
+    summary: >
+      User описал видение (не по коду — «в перспективе»): плагин/меха тулов не должна жить внутри
+      `packages/skin` — пакеты абстрактны, не привязаны к апп, а «агент = юзер в 99% случаев»,
+      значит НАБОР и ОПИСАНИЕ тулов, реально открытых агенту, — знание апп, не пакета. Architect
+      предложил трёхслойное деление (меха/пакет/апп-зона), user подтвердил дословно: «да! это то
+      что я и имел ввиду!». Набросок кода обсуждён в чате на примере `savePreset`, сверен по
+      реальным тайпингам `@tanstack/ai@0.54.0`'s `tool-definition.d.ts` (не по памяти): `metadata`
+      — реальное поле конфига, `.server(fn)` реально несёт `execute` на возвращаемом объекте.
+      Записаны три пункта: `tool-definition-mechanic` (сама меха, эта зона, High),
+      `skin-package-tool-exports` (НЕ эта зона — задача `packages/skin`, когда меха будет готова),
+      `app-zone-tool-registry` (открытый вопрос на будущее про `apps/skin`/`apps/skin/.mcp`, не
+      решается сейчас). Ничего не реализовано, план записан до кода.
+
   - id: full-mcp-relocation-implemented
     type: feature
     date: 2026-09-13
