@@ -1,6 +1,10 @@
-// см. README.md / FAQ.md
+// см. README.md / FAQ.md — JSON Pointer через `fast-json-patch`, не свой парсер; только дефолтный
+// импорт (именованный ломается под настоящим Node ESM — тот же паттерн уже чинили в
+// packages/io/src/engine/paths.ts, здесь применён без изменений).
 
-import { getValueByPointer } from "fast-json-patch";
+import jsonpatch from "fast-json-patch";
+
+const { getValueByPointer } = jsonpatch;
 
 import type { Genus } from "./passport-read.js";
 
