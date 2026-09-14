@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
-import { err, ok, registerTool } from "@web-core/mcp";
-import { limitSchema, paginate } from "@web-core/mcp/pagination";
+import { err, ok, registerTool } from "@web-core/neurobox/server";
+import { limitSchema, paginate } from "@web-core/neurobox/pagination";
 import { GROUPS, type ComponentGroup } from "@web-core/skin/editor";
 import { getAssemblies, getAssembly, getDoc, getIoSchema, getPassport, listComponents, listDocs } from "../engine";
 

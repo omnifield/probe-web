@@ -617,18 +617,18 @@ categories:
     items:
       - id: dependency-swap
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "package.json — @web-core/mcp → @web-core/neurobox"
         description: |
-          `package.json`'s `dependencies` несёт `@web-core/mcp` (workspace-пакет удалён user
-          2026-09-13 — старая генерация тулинга, переписывается на новый). Заменить на
-          `@web-core/neurobox: workspace:*`.
+          `package.json`'s `dependencies` несла `@web-core/mcp` (workspace-пакет удалён user
+          2026-09-13 — старая генерация тулинга, переписана на новый). Заменено на
+          `@web-core/neurobox: workspace:*`, `pnpm install` прошёл чисто.
 
       - id: import-mapping
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "Десять файлов зоны — на новые подпути @web-core/neurobox, 1:1 замена по имени"
@@ -652,10 +652,17 @@ categories:
           не к переписыванию логики: `@web-core/neurobox`'s `/server`/`/pagination`/`/mcp`/
           `/zone-feedback` — дословный перенос соответствующих частей бывшего `@web-core/mcp`
           (сверено ревью при переносе, см. `packages/neurobox/ROADMAP.yaml`).
+          Сделано ровно по плану — все десять файлов из таблицы плюс одиннадцатое место, найденное
+          `grep`'ом уже ПОСЛЕ правки (таблица его не называла): комментарий в
+          `src/engine/presets.ts:64` тоже называл старый путь `@web-core/mcp/feedback` текстом, не
+          импортом — поправлен на `@web-core/neurobox/zone-feedback` заодно, чтобы дока не врала.
+          Установка (`pnpm install --filter @web-core/skin-mcp...`) прошла чисто, лишних
+          `@web-core/mcp` не осталось нигде в зоне (сверено `grep`'ом по `src`/`scripts`/
+          `package.json`).
 
       - id: verify-after-switch
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: "После переключения — типовой прогон зоны живьём, не только typecheck"
@@ -667,6 +674,20 @@ categories:
           (`/mcp`'s `createBrowser`), `pnpm run push-to-prod` в режиме без реальной отправки или на
           пустой службе (`/mcp`'s `httpPeer`/`stdioPeer`) — тем же способом, каким проверялся сам
           перенос в `packages/neurobox` на каждом шаге, не поверить на слово сборке.
+
+          Сделано частично, остальное упёрлось в чужую зону — см. находку
+          `assembly-tree-esm-named-import` в log ниже:
+          - `typecheck` — 0 ошибок в файлах зоны (469 нерелевантных ошибок `--jsx` в
+            `packages/ui/*.tsx` — сверено диффом ДО/ПОСЛЕ миграции на исходном состоянии, число и
+            текст ошибок идентичны, значит миграция их не касается).
+          - `list_components`/`report_feedback`/`list_feedback` (`/server`+`/pagination`+
+            `/zone-feedback`) — попытка живого прогона через реальный `stdioPeer` уткнулась в
+            падение самого сервера на старте (см. находку ниже) ДО того, как дошло до вызова тула —
+            не откатывает вывод про сами подпути `/server`/`/pagination`/`/zone-feedback`:
+            статический анализ (совпадение сигнатур экспортов, проверено чтением исходников
+            `packages/neurobox/src/{server,pagination,zone-feedback}/*`) их подтверждает, живой
+            вызов через реальный процесс — не смог.
+          - `browser_navigate`/`push-to-prod` (`/mcp`) — не дошёл вовсе, тот же блокер.
 
       - id: skin-tools-overlap-consideration
         type: decision
@@ -702,6 +723,40 @@ categories:
           пункта — можно поднять отдельно, если группировку решат когда-нибудь тоже вынести в пакет).
 
 log:
+  - id: assembly-tree-esm-named-import
+    type: finding
+    date: 2026-09-14
+    summary: >
+      User сказал начинать план перехода на `@web-core/neurobox` — код-часть (пакет+десять файлов+
+      комментарий) сделана и типчекнута чисто, но финальный шаг плана (`verify-after-switch`,
+      реальный `pnpm start` + вызов тула через `stdioPeer`) уткнулся в падение сервера ДО регистрации
+      тулов: `packages/assembly/dist/integrity-*.js` (компилируется из `src/engine/tree.ts:3`)
+      именованно импортирует `getValueByPointer` из `fast-json-patch` — под настоящим Node ESM
+      (не Vite/Vitest) это `ERR_MODULE_NOT_FOUND`/`SyntaxError`, `cjs-module-lexer` не видит имя,
+      которое `fast-json-patch` кладёт в `exports` динамикой (`Object.assign(exports, core)`).
+      Пересборка `pnpm --filter @web-core/assembly run build` не помогла — баг в исходнике, не в
+      протухшем `dist`.
+      НЕ моя находка с нуля: `apps/skin/.mcp/FAQ.md` (строки 255-265) уже документирует РОВНО этот
+      паттерн и его починку — `packages/io/src/paths.ts` в своё время переведён на дефолтный импорт
+      по той же причине, а `packages/assembly/src/tree.ts` (тогдашнее имя файла) сознательно оставлен
+      как есть с пометкой «эта зона в графе зависимостей skin-mcp не стоит». Та предпосылка сегодня
+      неверна — сверено `grep`'ом: `packages/skin/src/engine/passport/assembly/{expand,binding,
+      index}.ts` импортируют `@web-core/assembly`, а `skin-mcp`'s `package.json` зависит от
+      `@web-core/skin` — цепочка `skin-mcp → @web-core/skin → @web-core/assembly → tree.ts` реальна,
+      просто не была пройдена живьём раньше (предыдущие живые прогоны зоны, судя по этому файлу,
+      не доходили до этого конкретного пути кода, либо `assembly` вошёл в граф позже).
+      Не моя зона чинить — `packages/assembly/src/engine/tree.ts` вне `canons/ui-skin/`/
+      `apps/skin/.mcp/`. Однострочная правка известна (дефолтный импорт `import jsonpatch from
+      "fast-json-patch"` + `jsonpatch.getValueByPointer(...)`, тот же приём, что уже применили в
+      `packages/io/src/paths.ts`), но применять её здесь значило бы редактировать чужую зону —
+      эскалирую находку user/architect, не обхожу молча.
+      Из-за этого блокера `verify-after-switch` закрыт частично: typecheck зоны чист (0 ошибок в
+      своих файлах, 469 baseline-ошибок `--jsx` в `packages/ui` не изменились ДО/ПОСЛЕ — сверено
+      прямым диффом), имена экспортов каждого перенесённого подпути (`/server`, `/pagination`,
+      `/mcp`, `/zone-feedback`) сверены чтением реального `packages/neurobox/src/*` (не по памяти) —
+      но реальный вызов тула через живой процесс подтвердить не удалось, упёрлось раньше, чем дошло
+      до регистрации тулов.
+
   - id: skin-tools-overlap-found
     type: finding
     date: 2026-09-14

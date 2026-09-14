@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
-import { err, ok, registerTool } from "@web-core/mcp";
+import { err, ok, registerTool } from "@web-core/neurobox/server";
 import { browser } from "../engine";
 
 export function registerBrowserTools(server: McpServer): void {
   // Своя вкладка на СЕССИЮ, не на весь сервер — registerTools зовётся заново на каждую новую
-  // сессию (@web-core/mcp/transport), замыкание здесь и есть та самая изоляция.
+  // сессию (@web-core/neurobox/server), замыкание здесь и есть та самая изоляция.
   let pageId: number | undefined;
 
   async function ensurePage(): Promise<number> {

@@ -61,7 +61,7 @@ function resolveUrl(): string {
 }
 
 /** Тот же GraphQL-адрес, что несёт `presets` — фидбэк живёт в той же службе, отдельной сущностью
- *  (`@web-core/mcp/feedback`), не видом пресета, поэтому свой клиент, но не свой адрес. */
+ *  (`@web-core/neurobox/zone-feedback`), не видом пресета, поэтому свой клиент, но не свой адрес. */
 export const presetsServiceUrl = resolveUrl();
 
 /** Клиент службы раздачи — общий на всю зону, вместо самописного HTTP-провода: та же служба,

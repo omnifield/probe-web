@@ -1,4 +1,4 @@
-import type { ToolContext } from "@web-core/mcp";
+import type { ToolContext } from "@web-core/neurobox/server";
 import { z } from "@web-core/io";
 import { DEFAULT_TAG, sortTags } from "@web-core/skin/tags";
 import { checkTags, presets, type PresetKind } from "../engine";

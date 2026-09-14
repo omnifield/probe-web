@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
-import { err, ok, registerTool } from "@web-core/mcp";
-import { FeedbackRefused, listFeedback, reportFeedback, resolveFeedback, type FeedbackEntry } from "@web-core/mcp/feedback";
-import { limitSchema, paginate } from "@web-core/mcp/pagination";
+import { err, ok, registerTool } from "@web-core/neurobox/server";
+import { FeedbackRefused, listFeedback, reportFeedback, resolveFeedback, type FeedbackEntry } from "@web-core/neurobox/zone-feedback";
+import { limitSchema, paginate } from "@web-core/neurobox/pagination";
 import { presetsServiceUrl } from "../engine";
 
 const STATUS_FILTER = z.enum(["open", "resolved", "all"]);

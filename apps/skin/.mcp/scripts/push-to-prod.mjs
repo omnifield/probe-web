@@ -1,4 +1,4 @@
-import { httpPeer, stdioPeer } from "@web-core/mcp/peer";
+import { httpPeer, stdioPeer } from "@web-core/neurobox/mcp";
 
 const PROD_URL = process.env["SKIN_MCP_PROD_URL"];
 if (!PROD_URL) {
