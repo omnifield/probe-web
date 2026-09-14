@@ -814,19 +814,45 @@ categories:
           Проверено живьём: `list_docs({})` — `{items: [...]}`, три темы, форма совпадает с
           `list_components`/`list_content`.
 
-      - id: zone-has-zero-tests
-        type: decision
+      - id: zone-test-coverage
+        type: feature
         status: Backlog
-        priority: null
+        priority: High
         milestone: null
-        name: "У зоны нет тестов вообще — наблюдение внешнего агента, не решение, не эта заявка"
+        name: "У зоны нет тестов вообще — решено user (2026-09-14): закрыть ДО живого подключения чата"
         description: |
-          `apps/skin/.mcp` несёт только `src/`, `docs/`, `scripts/` — ни одного теста, в отличие от
-          `packages/neurobox` (76 тестов на момент этой записи). Не моя зона чинить и не решение
-          architect — записано, чтобы не забыть ДО подключения витрины к зоне: агент работает с
-          этими тулами на каждом прогоне, обратной связи от тестов у зоны сегодня нет вовсе.
+          Было наблюдением внешнего агента («не моя зона, не решение»), теперь — реальное ТЗ: чат
+          на `@web-core/neurobox` в разработке, юзер хочет пользоваться им на уже проверенной мехе,
+          не вслепую. `apps/skin/.mcp` несёт только `src/`, `docs/`, `scripts/` — ни одного теста —
+          на 25 тулах, которыми агент реально пользуется на каждом прогоне.
+
+          Образец рецепта — уже дважды проверенный в этом же разговоре приём (`packages/mcp`'s
+          старые тесты, унаследован `packages/neurobox/test/*`): настоящий round-trip через
+          `@modelcontextprotocol/sdk` (`InMemoryTransport.createLinkedPair()` + реальный `Client`,
+          не мок хендлера напрямую) — `client.listTools()` сверяет annotations/`access`,
+          `client.callTool()` — реальный вызов, `structuredContent`/`isError` проверяются по факту
+          ответа. Живой `backend/presets` для тестов хранения — тем же способом, каким уже
+          проверялся `verify-after-switch` (локальный, порт 8787), не мок HTTP-клиента.
+
+          Объём и порядок — за владельцем, не диктуется здесь; разумная точка входа (не жёстко) —
+          `kit`+`presets` (`list_components`/`get_passport`/`check_*`/`save_preset`) первыми: это
+          ровно то, с чем user дальше вместе с architect будет гонять живой флоу агента, узнать о
+          поломке заранее дешевле, чем на живом прогоне. `feedback`/`content`/`browser` — следующим
+          заходом, не обязательно этим же.
 
 log:
+  - id: zone-test-coverage-requested
+    type: plan
+    date: 2026-09-14
+    summary: >
+      User подтвердил: `zone-has-zero-tests` (найдено внешним агентом, было наблюдением) — реально
+      делать, до живого подключения чата на `@web-core/neurobox`. Причина прямым текстом: «чат в
+      разработке… надо понимать что всё ок, чтобы чат юзать уже на протестированных мехах» — потом
+      отдельно (не эта заявка) user+architect вместе прогонят живой флоу агента с пресетами.
+      Пункт переведён из `decision`/наблюдения в `feature`, статус `Backlog`, priority `High`.
+      Образец — `packages/neurobox/test/*` (настоящий round-trip, не мок), точка входа —
+      `kit`+`presets` первыми (разумная рекомендация, не жёсткая), порядок и объём за владельцем.
+
   - id: box-agent-measured-response-weight
     type: finding
     date: 2026-09-14
