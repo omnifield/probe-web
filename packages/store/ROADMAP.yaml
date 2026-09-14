@@ -85,12 +85,14 @@ categories:
         milestone: null
         name: "./mutate — Immer-рецепт для setState/atom.set (ВРЕМЕННОЕ место)"
         description: |
-          Означает: @web-core/store/mutate экспортирует mutate(recipe) — обёртка над immer's
-          produce(recipe), возвращает (state) => state, годится и в createAtom.set, и в
-          createActionStore's setState (обе сигнатуры (prev) => next). immer —
-          peerDependenciesMeta.optional: true, как xstate/@xstate/solid у ./machine — не ставится,
-          пока подпуть не импортирован. 3 теста в test/mutate.test.tsx. ВАЖНО: user попросил
-          прямым текстом вынести отдельной утилитой, потому что "потом перенесём" — не
+          Означает: @web-core/store/mutate экспортирует mutate(recipe), castDraft, castImmutable,
+          тип Draft. mutate(recipe) — обёртка над immer's produce(recipe), возвращает (state) =>
+          state, годится и в createAtom.set, и в createActionStore's setState (обе сигнатуры
+          (prev) => next). immer — ОБЫЧНАЯ dependency пакета (как @xstate/store), НЕ peer —
+          первая версия сделала peer по аналогии с ./machine, ошибочно (разбор в FAQ.md); apps/skin
+          immer не ставит и не импортирует, весь набор через ./mutate. 5 тестов в
+          test/mutate.test.tsx, включая castDraft на readonly-массиве внутри поля. ВАЖНО: user
+          попросил прямым текстом вынести отдельной утилитой, потому что "потом перенесём" — не
           обосновано доменной границей (в отличие от io-owns-zod), разовая просьба под этот кейс.
           Не переносить самостоятельно без нового явного запроса — см. log.
 
@@ -231,6 +233,23 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: mutate-addon-peer-to-dependency
+    type: plan
+    date: 2026-09-14
+    summary: >
+      user разбирал типовую ошибку в apps/skin/entities/component/model/store.ts (as never на
+      каждой замене поля) — по пути вскрылось, что готовый фикс требовал castDraft прямо из
+      "immer", а immer в apps/skin вообще не стоял. user указал на асимметрию в лоб: "агент
+      импортирует свой иммер. может ему тогда и Xstore тоже импортировать? почему половина
+      иммера под капотом, половина снаружи". Справедливо — @xstate/store/@xstate/store-solid
+      обычные dependencies (apps их не видят вовсе), а immer был помечен
+      peerDependenciesMeta.optional по аналогии с xstate/@xstate/solid у ./machine, не подумав:
+      там peer оправдан размером и реальной опциональностью слоя, у immer причины нет. Решение —
+      immer в dependencies, ./mutate реэкспортирует castDraft/castImmutable/Draft вместе с
+      mutate, apps/skin immer больше не ставит и не импортирует. Отдельно подтверждено прогоном
+      tsc --strict: без явного mutate<T> — draft: unknown; без castDraft на замене поля с
+      readonly-массивом внутри — TS2322 (защита Immer, не баг обёртки).
+
   - id: mutate-addon-scope
     type: plan
     date: 2026-09-14

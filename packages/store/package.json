@@ -57,19 +57,16 @@
   },
   "dependencies": {
     "@xstate/store": "^4.2.3",
-    "@xstate/store-solid": "^2.0.0"
+    "@xstate/store-solid": "^2.0.0",
+    "immer": "^11.1.18"
   },
   "peerDependencies": {
     "@xstate/solid": "^2.0.0",
-    "immer": "^11.1.18",
     "solid-js": "^1.9.14",
     "xstate": "^5.32.6"
   },
   "peerDependenciesMeta": {
     "@xstate/solid": {
-      "optional": true
-    },
-    "immer": {
       "optional": true
     },
     "xstate": {
@@ -82,7 +79,6 @@
     "@types/node": "^24.10.1",
     "@xstate/solid": "^2.0.0",
     "eslint": "^10.8.1",
-    "immer": "^11.1.18",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",

@@ -38,7 +38,7 @@ sync/async не нужно.
 | Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                                                        |
 | Reset-аддон       | `@web-core/store/reset`    | `reset`                                                                                                                                                                                                                                           |
 | Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                                                         |
-| Mutate-аддон      | `@web-core/store/mutate`   | `mutate` — Immer-рецепт для `setState`/`atom.set`, `immer` опциональный peer                                                                                                                                                                       |
+| Mutate-аддон      | `@web-core/store/mutate`   | `mutate`, `castDraft`, `castImmutable`, тип `Draft` — `immer` обычная зависимость пакета, приложение его не ставит и не импортирует само                                                                                                          |
 
 📦 Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
 `@xstate/store-solid` + `createResourceAtom` + `createBoundAtom` + `createActionStore` +
@@ -328,14 +328,34 @@ export const draftAtom = persistAtom(createAtom(""), {
 ```
 
 **`mutate` — Immer-рецепт вместо ручного `{...state, x}`**, годится и в `atom.set`, и в
-`setState` из `createActionStore` (сигнатура та же — `(prev) => next`):
+`setState` из `createActionStore` (сигнатура та же — `(prev) => next`). `immer` — обычная
+зависимость пакета (как `@xstate/store`), приложение его не ставит и не импортирует напрямую,
+весь набор отдаётся через `./mutate`:
 
 ```ts
 import { mutate } from "@web-core/store/mutate";
 
 setOutfit(name) {
-  setState(mutate((draft) => {
+  setState(mutate<ComponentState>((draft) => {
     draft.outfit = name;
+  }));
+},
+```
+
+Явный `<ComponentState>` — не опция, а необходимость: без generic-аргумента `draft` выводится
+как `unknown` (нечем зацепить `T` изнутри вложенного вызова), и `draft.x = y` не типизируется.
+Проверено прогоном `tsc --strict`, не на словах.
+
+**Замена целого поля, где внутри есть `readonly`-массив** (объект пришёл готовым — из фетча,
+из другого конструктора — не мутируется по полям) — используй `castDraft` (тоже из
+`@web-core/store/mutate`), не `as never`:
+
+```ts
+import { castDraft, mutate } from "@web-core/store/mutate";
+
+setKit(kit: Kit) { // Kit.tags: readonly string[]
+  setState(mutate<ComponentState>((draft) => {
+    draft.kit = castDraft(kit); // без castDraft — ошибка типов, не баг Immer, а его защита
   }));
 },
 ```
@@ -450,6 +470,7 @@ setOutfit(name) {
 | `mutate`                                                   | recipe мутирует draft, наружу — новое значение, старое не тронуто | `test/mutate.test.tsx`       |
 | `mutate` + `createAtom.set`                                | работает как updater атома                                        | `test/mutate.test.tsx`       |
 | `mutate` + `createActionStore`'s `setState`                | работает как updater в action                                     | `test/mutate.test.tsx`       |
+| `mutate` + `castDraft`                                      | замена поля с `readonly`-массивом внутри без `as never`            | `test/mutate.test.tsx`       |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

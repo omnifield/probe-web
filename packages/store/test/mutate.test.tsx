@@ -1,12 +1,17 @@
 import { createAtom } from "@xstate/store";
 import { describe, expect, it } from "vitest";
 
-import { mutate } from "../src/addons/mutate.js";
+import { castDraft, mutate } from "../src/addons/mutate.js";
 import { createActionStore } from "../src/engine/action-store.js";
+
+interface Kit {
+  readonly tags: readonly string[];
+}
 
 interface ComponentState {
   readonly component?: string;
   readonly outfit?: string;
+  readonly kit?: Kit;
 }
 
 describe("mutate", () => {
@@ -47,5 +52,14 @@ describe("mutate", () => {
 
     store.actions.setOutfit("dark");
     expect(store.get()).toEqual({ component: "button", outfit: "dark" });
+  });
+
+  it("castDraft пропускает целую замену поля с readonly-массивом внутри (без as never)", () => {
+    const kit: Kit = { tags: ["a", "b"] }; // обычный объект, не draft — readonly tags внутри
+    const after = mutate<ComponentState>((draft) => {
+      draft.kit = castDraft(kit);
+    })({ component: "button" });
+
+    expect(after.kit).toEqual({ tags: ["a", "b"] });
   });
 });
