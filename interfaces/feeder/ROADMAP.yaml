@@ -1,0 +1,174 @@
+# Дорожная карта @web-core/feeder — источник правды по фактически сделанной работе. Статус
+# проставляется рядом с работой, в момент когда она сделана — не задним числом. Формат тот же,
+# что у packages/io, packages/store, packages/assembly, packages/router (categories → items,
+# log — журнал решений); без milestones — у пакета нет освоенной поставки с датами релиза, только
+# сделанное и открытое.
+
+categories:
+  - category: Фундамент слоя interfaces
+    items:
+      - id: workspace-registered
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`interfaces/*` в `pnpm-workspace.yaml`"
+        description: |
+          Означает: новый корень воркспейса зарегистрирован рядом с `packages/*`/`products/*`/
+          `apps/*` — pnpm видит пакеты внутри `interfaces/` без вложенного воркспейса (pnpm
+          вложенные не поддерживает, см. комментарий в файле).
+
+      - id: feeder-package-scaffold
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`interfaces/feeder` — скелет пакета по образцу `packages/form`"
+        description: |
+          Означает: `package.json` (`@web-core/feeder`, `vite build`, `solid-js` peer,
+          `@web-core/generators`+`@web-core/io` dependencies), `tsconfig.json`, `eslint.config.js`
+          (пресет `@web-core/lint`), `vite.config.ts` (`defineLibraryConfig`, один вход `index`,
+          `solid: true`) — build/typecheck/lint прогнаны, все зелёные.
+
+      - id: feeder-placeholder-wired
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "`FeederPlaceholder` подключён в `apps/skin/src/pages/lab`"
+        description: |
+          Означает: `apps/skin` получил зависимость `@web-core/feeder: workspace:*`, пустая
+          dev-страница `pages/lab` (`return ""` раньше) рендерит плейсхолдер. Проверено живым
+          dev-сервером Vite (`curl` по `@fs`-резолву `interfaces/feeder/src/index.ts` и по
+          скомпилированному `pages/lab/index.tsx` — цепочка резолвится и транспилируется без
+          ошибок); визуальная проверка в Chrome не сделана — профиль браузера MCP занят другой
+          параллельной сессией, убивать чужой процесс не стали.
+
+  - category: Архитектура пакета
+    items:
+      - id: fsd-layers-adapted
+        type: decision
+        status: Done
+        priority: High
+        milestone: null
+        name: "Адаптированный FSD: entities/features/widgets не в бизнес-смысле, без app/pages"
+        description: |
+          Означает: `entities` — структурная модель движка (узел дерева, правило маппинга), не
+          бизнес-сущность; `features` — фичи интерфейса (отредактировать значение, выбрать цель
+          маппинга), не бизнес-операция; `widgets` — сборка entities+features в UI мода. `app`/
+          `pages` не заведены — пакет не приложение с роутингом, вход наружу — экспорты (мод =
+          export). Разметка под мод 1: `entities/tree` (`lib/binding.ts`+`lib/use-tree.ts`),
+          `features/edit-value` (`ui/kit/*`), `widgets/tree` (`ui/tree/*`) — перенос из
+          `apps/skin/entities/feeder`. Разбор — FAQ.md.
+
+  - category: Режимы наполнения (не начато)
+    items:
+      - id: mode-typed-tree
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "Мод 1 — зод-схема → дерево с ручным редактированием"
+        description: |
+          Означает: перенос текущего `apps/skin/entities/feeder` (`ui/tree`, `ui/kit`,
+          `lib/binding`, `lib/use-tree`) в `interfaces/feeder`, оторванный от
+          `componentStore.use(kit).io.schema` — источник схемы становится параметром движка, не
+          жёстко зашитым skin-адаптером. Структура данных фиксирована схемой, юзер только
+          наполняет значения — полная типизация.
+
+      - id: mode-openapi-templates
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Мод 2 — распознавание ручек по шаблону формата/версии"
+        description: |
+          Означает: `@web-core/generators/mapping`'s `MappingTemplate`+`run()` — уже используемый
+          механизм (swagger2 в `apps/skin/entities/openapi`) — доводится до реальной схемы тела
+          запроса, не только списка ручек (`method`/`url`/`tag`, как сегодня). Новый
+          формат/версия — новый `MappingTemplate` в список, движок распознавания не меняется.
+
+      - id: mode-file-upload
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "Мод 3 — загрузка файла"
+        description: |
+          Означает: интерфейс инпут-загрузчика; структура содержимого файла неизвестна заранее —
+          тот же untyped-путь сведения, что у мода 2.
+
+      - id: mapping-ui
+        type: feature
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "UI сведения «корм → потребитель» поверх `@web-core/io`"
+        description: |
+          Означает: экран сопоставления путей — `describeSample`/`describeSchema` (плоский список
+          путей+типов чужих данных и целевой схемы) и `FieldRule[]`+`applyFieldRules`/
+          `collectFieldRuleReport` (движок «куда что положить» с отчётом) уже существуют в
+          `packages/io`, headless. UI поверх них — новая работа, нужна модам 2 и 3.
+
+  - category: Документация
+    items:
+      - id: readme-faq-roadmap-first-draft
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "README/FAQ/ROADMAP — первый черновик по шаблону «движок»"
+        description: |
+          Означает: шаблон взят по образцу `packages/store` (первый пилот genus `engine`) —
+          Анатомия/Использование заполнены тем, что реально есть (плейсхолдер); Настройки/
+          Состояния/IO/Сборки/Рецепт — честно помечены пустыми, функциональности под них пока нет
+          (правило «дока — от кода, не наоборот»). FAQ.md держит решения слоя `interfaces`
+          (группа/genus/почему openapi не сливается физически) и разбор, какие кирпичи `io`/
+          `generators` уже закрывают режимы 2/3.
+
+log:
+  - id: fsd-layers-adapted-decided
+    type: plan
+    date: 2026-09-14
+    summary: >
+      Обсуждение с user: внутренняя архитектура feeder — FSD-слои как в `apps/skin`, но
+      переосмысленные под движок, не бизнес-приложение. `entities` — структурная модель движка
+      (не бизнес-сущность), `features` — фичи интерфейса (не бизнес-операция), `widgets` —
+      сборка. `app`/`pages` не заводятся — нет роутинга, вход наружу — экспорты пакета. Разметка
+      под мод 1 зафиксирована (`entities/tree`, `features/edit-value`, `widgets/tree`). Это
+      архитектура конкретно feeder-а, не канон всего слоя `interfaces/` — user верхний уровень
+      (канон слоя, будущий `interfaces/chat`) оставляет за собой вместе с architect, возьмут
+      feeder как образец.
+
+  - id: interfaces-layer-founded
+    type: plan
+    date: 2026-09-14
+    summary: >
+      Обсуждение с user: новый корень `interfaces/` — слой между `packages/` и `apps/`, сущности
+      которого сводят функционал нескольких пакетов под общий UI и переиспользуются больше чем
+      одним приложением. Первый кейс — feeder (объединяет `@web-core/generators`+`@web-core/io`
+      под три задуманных режима наполнения — зод-схема→дерево, ручки по шаблону версии, файл),
+      второй ожидаемый — chat, ещё не заведён. По ходу разбора выяснилось, что `@web-core/io` уже
+      несёт headless-кирпичи под untyped-режимы (`describeSample`/`describeSchema`/`FieldRule`), а
+      `@web-core/generators/mapping` — механизм шаблонов по версии, уже используемый swagger2-
+      импортом в `apps/skin/entities/openapi`; недостающая часть — UI поверх них и сама разборка
+      тела запроса ручки в схему (сегодня `Endpoint.body` — голый `string`).
+
+      Решение user: сначала фундамент (воркспейс, скелет пакета, плейсхолдер в приложении), план
+      функционала — отдельным заходом. Сделано в этом заходе: `interfaces/*` в
+      `pnpm-workspace.yaml`, `interfaces/feeder` по образцу `packages/form` (vite-сборка,
+      solid-js peer), `FeederPlaceholder` подключён в пустую dev-страницу `apps/skin/src/pages/
+      lab`, build/typecheck/lint зелёные, цепочка резолва проверена dev-сервером Vite. Роль
+      architect: сделано напрямую без owner-сессии — `interfaces/` ещё не зона с назначенным
+      овнером, решение user (обсуждение в этом же заходе).
+
+  - id: readme-faq-roadmap-drafted
+    type: plan
+    date: 2026-09-14
+    summary: >
+      По просьбе user подтянута тройка README/FAQ/ROADMAP.yaml по образцу пилота genus `engine`
+      (`packages/store`). Группа `interfaces` выбрана как ещё не устоявшаяся для движков (снято
+      прямым текстом корневого README) — называет принадлежность новому корню, не то, что пакет
+      делает (это заняли бы `data`/`state`, уже занятые `io`/`store`). Разделы без реального
+      содержания (Настройки/Состояния/IO/Сборки/Рецепт) оставлены явно пустыми с пометкой «см.
+      ROADMAP», не заполнены вымышленным текстом под ещё не реализованные режимы.

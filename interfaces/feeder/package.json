@@ -1,0 +1,50 @@
+{
+  "name": "@web-core/feeder",
+  "version": "0.0.0",
+  "description": "Фундамент слоя interfaces: сводит @web-core/generators и @web-core/io в переиспользуемый UI настройки/загрузки данных для более чем одного приложения. Функциональность не спроектирована — пока только каркас пакета и плейсхолдер.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "solid": "./dist/index.jsx",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && pnpm run typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@web-core/generators": "workspace:*",
+    "@web-core/io": "workspace:*",
+    "@web-core/skin": "workspace:*",
+    "@web-core/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.9.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@web-core/build": "workspace:*",
+    "@web-core/lint": "workspace:*",
+    "eslint": "^10.8.1",
+    "jsdom": "^30.0.1",
+    "solid-js": "^1.9.14",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^4.1.10"
+  }
+}
