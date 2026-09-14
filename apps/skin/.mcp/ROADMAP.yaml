@@ -668,7 +668,55 @@ categories:
           пустой службе (`/mcp`'s `httpPeer`/`stdioPeer`) — тем же способом, каким проверялся сам
           перенос в `packages/neurobox` на каждом шаге, не поверить на слово сборке.
 
+      - id: skin-tools-overlap-consideration
+        type: decision
+        status: Backlog
+        priority: Low
+        milestone: null
+        name: "packages/skin/tools — реальное пересечение с check_outfit/assemble_preview, НЕ зеркальная замена"
+        description: |
+          `packages/skin` (`skin-package-tool-exports`, уже сделано) экспортирует `checkOutfitTool`/
+          `assembleOutfitTool`/`generateSkinCssTool`/`skinGapsTool` — `toolDefinition()`-обёртки
+          ровно над теми функциями движка, которые эта зона УЖЕ зовёт напрямую сегодня:
+
+          - `tools/presets.ts`'s `check_outfit` handler → `skin.checkOutfit(outfit, {palettes, forms})`
+          - `tools/presets.ts`'s `assemble_preview` handler → `skin.assemble(...)` +
+            `skin.generateSkinCss(...)` + `skinGaps(...)` (эта последняя — ИЗ `../engine`, не сырая
+            движковая: `engine/mechanics.ts`'s `skinGaps` группирует по тексту `means` ради бюджета
+            токенов — это НЕ то же самое, что `skinGapsTool`, которая оборачивает СЫРУЮ, негруппированную
+            версию)
+
+          Сверено чтением реального кода этой зоны (не по памяти) — совпадение неполное, НЕ 1:1:
+          обе ручки зоны делают вокруг движковых вызовов своё, специфичное именно зоне: `check_outfit`
+          резолвит `outfit.palette`/`outfit.forms` (имена-строки) в реальные объекты ИЗ СЛУЖБЫ
+          ПРЕСЕТОВ (`readPalettes`/`readForms`) — пакет этого не делает и не должен (не знает про
+          службу); `assemble_preview` группирует `skinGaps` для экономии токенов — тоже зонная
+          забота, не движковая.
+
+          НЕ решение, а находка для владельца: стоит ли переключить ТЕЛО этих двух хендлеров на вызов
+          `checkOutfitTool.execute({outfit, parts}, ...)`/`assembleOutfitTool.execute(...)` вместо
+          прямого `skin.checkOutfit(...)`/`skin.assemble(...)` (выгода — схема пакета валидирует
+          форму бесплатно; цена — двойная валидация поверх уже свободного `looseRecord` на входе тула,
+          решать по месту) — или оставить как есть, раз результат и так корректен. `skinGapsTool` для
+          `assemble_preview` не подходит вовсе, пока группировка остаётся зонной (не тема этого
+          пункта — можно поднять отдельно, если группировку решат когда-нибудь тоже вынести в пакет).
+
 log:
+  - id: skin-tools-overlap-found
+    type: finding
+    date: 2026-09-14
+    summary: >
+      User попросил освежить `README.md` перед следующим ТЗ владельцу — architect перечитал реальный
+      `tools/presets.ts`, нашёл настоящее (не гипотетическое) пересечение с новыми
+      `packages/skin/tools` (`checkOutfitTool`/`assembleOutfitTool`/`generateSkinCssTool`/
+      `skinGapsTool`): `check_outfit`/`assemble_preview` уже зовут те же движковые функции, что эти
+      тулдефы оборачивают. НЕ 1:1 замена — зона резолвит имена пресетов в объекты и группирует
+      gaps для токенов, обе заботы зонные, не движковые. Записано как находка/решение владельца
+      (`skin-tools-overlap-consideration`), не как обязательный пункт плана — план перехода
+      (`dependency-swap`/`import-mapping`/`verify-after-switch`) остаётся в силе как был, этот пункт
+      просто рядом, на усмотрение. `README.md` не редактировался — он описывает ТЕКУЩЕЕ состояние
+      зоны, план по конвенции репо живёт в `ROADMAP.yaml`, не в README.
+
   - id: neurobox-migration-plan-written
     type: plan
     date: 2026-09-13
