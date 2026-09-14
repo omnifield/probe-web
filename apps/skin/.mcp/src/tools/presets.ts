@@ -39,11 +39,13 @@ async function resolveVariantTags(form: Record<string, unknown>) {
 }
 
 // list_presets сознательно без state (бюджет токенов, api-response-shape-rework) — presets.list()
-// всегда тащит state, режем до заголовков перед отдачей агенту.
-function headersOf<T extends { id: string; label: string; name: string; kind: string; savedAt: string }>(
-  records: readonly T[],
-) {
-  return records.map((r) => ({ id: r.id, label: r.label, name: r.name, kind: r.kind, savedAt: r.savedAt }));
+// всегда тащит state, режем до заголовков перед отдачей агенту. Ни id, ни kind сюда не входят:
+// адресация везде по name (get_preset({kind, name}), authorGuard) — id никем не читается, мёртвый
+// вес; kind избыточен в ОБЕИХ ветках вызова — в ветке с явным kind он и так в аргументе запроса, в
+// ветке без kind (обзор) он и так ключ группировки byKind, а не поле записи. Замерено живьём внешним
+// агентом: id/kind/savedAt — 62% веса ответа.
+function headersOf<T extends { label: string; name: string; savedAt: string }>(records: readonly T[]) {
+  return records.map((r) => ({ label: r.label, name: r.name, savedAt: r.savedAt }));
 }
 
 export function registerPresetTools(server: McpServer): void {
