@@ -5,6 +5,13 @@ import { limitSchema, paginate } from "@web-core/neurobox/pagination";
 import { checkContentData, presets } from "../engine";
 import { authorGuard, resolveAuthor } from "./shared";
 
+// list_content сознательно без state (тот же приём, что headersOf у list_presets, бюджет токенов):
+// 13589 знаков на 20 записей, 10107 из них — тело (state) — замерено живьём внешним агентом.
+// get_content уже существует для тела одной записи.
+function headersOf(records: Awaited<ReturnType<typeof presets.list<"content">>>) {
+  return records.map((r) => ({ id: r.id, label: r.label, name: r.name, component: r.state.component, savedAt: r.savedAt }));
+}
+
 export function registerContentTools(server: McpServer): void {
   registerTool(server, {
     name: "save_content",
@@ -34,7 +41,7 @@ export function registerContentTools(server: McpServer): void {
   registerTool(server, {
     name: "list_content",
     title: "Перечень сохранённых данных наполнения",
-    description: "Записи kind:\"content\" постранично, сразу с содержимым; component сужает до одного компонента.",
+    description: "Заголовки записей (без data — см. get_content) постранично; component сужает до одного компонента.",
     access: "read",
     input: z.object({
       component: z.string().optional(),
@@ -44,7 +51,7 @@ export function registerContentTools(server: McpServer): void {
     handler: async ({ component, cursor, limit }) => {
       const entries = await presets.list("content");
       const matching = component ? entries.filter((entry) => entry.state.component === component) : entries;
-      return ok(paginate(matching, { cursor, limit }));
+      return ok(paginate(headersOf(matching), { cursor, limit }));
     },
   });
 

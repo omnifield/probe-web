@@ -739,19 +739,29 @@ categories:
     items:
       - id: list-content-header-body-split
         type: bug
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "list_content отдаёт тело каждой записи целиком — сосед list_presets так не делает"
         description: |
           Замерено живьём (не гипотеза): 13589 знаков на 20 записей, 10107 из них — тела
           (`state: {component, data}`). Сверено чтением кода — `tools/content.ts`'s `list_content`
-          отдаёт `matching` (полные записи `presets.list("content")`) как есть в `paginate()`, не
-          режет до заголовков. `list_presets` рядом уже режет через `headersOf()` до
+          отдавал `matching` (полные записи `presets.list("content")`) как есть в `paginate()`, не
+          резал до заголовков. `list_presets` рядом уже режет через `headersOf()` до
           `{id, label, name, kind, savedAt}`, тело — отдельной `get_preset`. `get_content` для этого
           уже существует (`tools/content.ts`, ручка есть) — недостающая часть не новая ручка, а
           применение уже готового паттерна `headersOf`-среза к `list_content`. По оценке внешнего
           агента — «одной ручкой было бы в 11 раз легче».
+
+          Сделано: свой `headersOf()` в `tools/content.ts` (не переиспользовал версию из
+          `presets.ts` — та без `kind`/с `component` не годится дословно, а тащить общий хелпер в
+          `shared.ts` ради одного лишнего поля не тема этой находки) — `{id, label, name, component,
+          savedAt}`. `kind` сюда НЕ добавлен (он и так всегда `"content"`, отличался бы от
+          `list_presets` только шумом) — `component` добавлен ВЗАМЕН, потому что без него заголовок
+          без фильтра неотличим один от другого (какой компонент — не видно). `list_content`
+          применяет срез ПОСЛЕ фильтра по `component` и ДО `paginate()` — фильтрация не меняется.
+          Проверено живьём: `list_content({limit:3})` — три заголовка без `data`, `nextCursor`
+          на месте; `get_content(name)` по имени из заголовка — полное тело с `data`, как раньше.
 
       - id: list-presets-drop-redundant-fields
         type: bug
