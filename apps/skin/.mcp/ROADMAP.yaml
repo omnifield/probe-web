@@ -757,6 +757,16 @@ log:
       но реальный вызов тула через живой процесс подтвердить не удалось, упёрлось раньше, чем дошло
       до регистрации тулов.
 
+      РЕШЕНО (architect, 2026-09-14, `packages/assembly` — зона прямой работы по движку): починено
+      той же однострочной правкой, что и предложил owner (`packages/io/src/engine/paths.ts` — образец),
+      других именованных импортов из `fast-json-patch` в `packages/assembly`/`packages/skin` нет
+      (сверено `grep`'ом). Проверено живьём, не только сборкой: `pnpm --filter @web-core/assembly
+      build` (пересобран `dist/`) → `pnpm start` в `apps/skin/.mcp` реально стартует без падения
+      (раньше — `SyntaxError` на первом же импорте, до этой строки процесс не доживал вовсе). Полный
+      прогон тула (`verify-after-switch`) по-прежнему не завершён этим — блокер снят, сам прогон
+      (`list_components`/`report_feedback`/`browser_navigate`/`push-to-prod`) заново не переигран,
+      остаётся за владельцем зоны.
+
   - id: skin-tools-overlap-found
     type: finding
     date: 2026-09-14
