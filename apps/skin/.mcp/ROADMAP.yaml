@@ -689,6 +689,19 @@ categories:
             вызов через реальный процесс — не смог.
           - `browser_navigate`/`push-to-prod` (`/mcp`) — не дошёл вовсе, тот же блокер.
 
+          ДОИГРАНО (2026-09-14, после того как architect починил блокер `assembly-tree-esm-named-
+          import`): реальный `stdioPeer` (`pnpm start` в этой же зоне, тот же приём, что
+          `push-to-prod.mjs`) против живого `backend/presets` (локальный, порт 8787) —
+          `list_components({limit:2})` отдал реальные карточки компонентов (`/server`+
+          `/pagination`); `report_feedback(sign:"praise")` → `list_feedback({sign:"praise"})`
+          подтвердил запись и обратное чтение (`/zone-feedback`); `browser_navigate` на
+          `data:text/html,<h1>ok</h1>` реально открыл вкладку через `chrome-devtools-mcp`
+          (`/mcp`'s `createBrowser`) — тот же примитив, что нужен `push-to-prod.mjs`'s
+          `stdioPeer`/`httpPeer`, уже использован в этом самом прогоне без отказов, отдельно не
+          гонял `pnpm run push-to-prod` (нет смысла слать на реальный прод ради проверки транспорта).
+          Все четыре подпути (`/server`, `/pagination`, `/zone-feedback`, `/mcp`) подтверждены
+          живьём, не только чтением исходников. Пункт закрыт полностью.
+
       - id: skin-tools-overlap-consideration
         type: decision
         status: Backlog
