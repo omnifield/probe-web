@@ -816,15 +816,16 @@ categories:
 
       - id: zone-test-coverage
         type: feature
-        status: Backlog
+        status: Doing
         priority: High
         milestone: null
         name: "У зоны нет тестов вообще — решено user (2026-09-14): закрыть ДО живого подключения чата"
         description: |
           Было наблюдением внешнего агента («не моя зона, не решение»), теперь — реальное ТЗ: чат
           на `@web-core/neurobox` в разработке, юзер хочет пользоваться им на уже проверенной мехе,
-          не вслепую. `apps/skin/.mcp` несёт только `src/`, `docs/`, `scripts/` — ни одного теста —
-          на 25 тулах, которыми агент реально пользуется на каждом прогоне.
+          не вслепую. `apps/skin/.mcp` несла только `src/`, `docs/`, `scripts/` — ни одного теста —
+          на 25 тулах, которыми агент реально пользуется на каждом прогоне (`"test": "node --test"`
+          в `package.json` была мёртвой строкой без единого файла — переведена на `vitest`).
 
           Образец рецепта — уже дважды проверенный в этом же разговоре приём (`packages/mcp`'s
           старые тесты, унаследован `packages/neurobox/test/*`): настоящий round-trip через
@@ -834,13 +835,37 @@ categories:
           ответа. Живой `backend/presets` для тестов хранения — тем же способом, каким уже
           проверялся `verify-after-switch` (локальный, порт 8787), не мок HTTP-клиента.
 
-          Объём и порядок — за владельцем, не диктуется здесь; разумная точка входа (не жёстко) —
-          `kit`+`presets` (`list_components`/`get_passport`/`check_*`/`save_preset`) первыми: это
-          ровно то, с чем user дальше вместе с architect будет гонять живой флоу агента, узнать о
-          поломке заранее дешевле, чем на живом прогоне. `feedback`/`content`/`browser` — следующим
-          заходом, не обязательно этим же.
+          СДЕЛАНО (`kit`+`presets`, 20/20): `test/kit.test.ts` (11, без сети — `list_docs`/`get_doc`/
+          `list_components`/`get_passport`/`get_assemblies`/`get_io_schema` на реальном ките) и
+          `test/presets.test.ts` (9 — `test/helpers/presets-server.ts` поднимает СВОЙ изолированный
+          `backend/presets` на temp-базе (`mkdtemp`) и свободном порту через `go run ./cmd/presets`,
+          dev-база `db/presets.db` не тронута ни разу — architect проверил живьём: время правки файла
+          до и после прогона не изменилось, temp-директории подчищаются в `close()`, в `/tmp` не
+          остаются. Фикстуры — реальные `omnifield-palette`/`omnifield-avatar`, снятые живьём через
+          `get_preset`, не выдуманные. Покрыто: round-trip `save_preset`/`get_preset`/`list_presets`
+          (включая проверку находки `list-presets-drop-redundant-fields` — заголовок реально без
+          `id`/`kind`), `check_palette` (валидная+сломанная), владение по `author`, `check_form`
+          (+`unknown-variant`), `check_outfit` (+несуществующая форма в наряде), `assemble_preview`
+          (CSS реально `resource_link`, не инлайн).
+
+          ОСТАЁТСЯ: `feedback`/`content`/`browser` — следующим заходом, не обязательно этим же (так
+          и было сказано в ТЗ). Статус — `Doing`, не `Done`: покрыта не вся зона, только `kit`+
+          `presets`, но именно они нужны для живого флоу агента с пресетами следующим шагом.
 
 log:
+  - id: zone-test-coverage-kit-presets-done
+    type: feature
+    date: 2026-09-14
+    summary: >
+      `kit`+`presets` закрыты — 20/20, живьём. `"test": "node --test"` (мёртвая строка, ни одного
+      файла) переведена на `vitest`. `test/kit.test.ts` (11, без сети). `test/presets.test.ts` (9) —
+      свой изолированный `backend/presets` через `test/helpers/presets-server.ts` (`go run
+      ./cmd/presets`, temp-база `mkdtemp`, свободный порт) — architect проверил живьём, что dev-база
+      `db/presets.db` не тронута и temp-каталоги не оставляют мусора. Фикстуры — реальные
+      `omnifield-palette`/`omnifield-avatar`. Ревью architect пройдено без замечаний.
+      `feedback`/`content`/`browser` — следующим заходом. Статус пункта `zone-test-coverage` —
+      `Doing`, закрыт architect'ом по просьбе user («закрой роадмап овнера, если он не закрыл»).
+
   - id: zone-test-coverage-requested
     type: plan
     date: 2026-09-14
