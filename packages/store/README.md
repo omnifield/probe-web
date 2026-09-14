@@ -38,6 +38,7 @@ sync/async не нужно.
 | Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                                                        |
 | Reset-аддон       | `@web-core/store/reset`    | `reset`                                                                                                                                                                                                                                           |
 | Validate-аддон    | `@web-core/store/validate` | `validateSchemas`, `StoreValidationError`                                                                                                                                                                                                         |
+| Mutate-аддон      | `@web-core/store/mutate`   | `mutate` — Immer-рецепт для `setState`/`atom.set`, `immer` опциональный peer                                                                                                                                                                       |
 
 📦 Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
 `@xstate/store-solid` + `createResourceAtom` + `createBoundAtom` + `createActionStore` +
@@ -326,6 +327,22 @@ export const draftAtom = persistAtom(createAtom(""), {
 });
 ```
 
+**`mutate` — Immer-рецепт вместо ручного `{...state, x}`**, годится и в `atom.set`, и в
+`setState` из `createActionStore` (сигнатура та же — `(prev) => next`):
+
+```ts
+import { mutate } from "@web-core/store/mutate";
+
+setOutfit(name) {
+  setState(mutate((draft) => {
+    draft.outfit = name;
+  }));
+},
+```
+
+Временное место — планируется перенос в другой пакет, не перестраивать импорты заранее без
+причины; разбор — FAQ.md.
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У движка нет одной сущности с общим списком настроек, как у компонента, — опции у каждого
@@ -430,6 +447,9 @@ export const draftAtom = persistAtom(createAtom(""), {
 | `createActionStore` + `.use()` без селектора               | отдаёт весь state                                                 | `test/action-store.test.tsx` |
 | `persistAtom` + localStorage                              | гидратация при вызове, запись при `.set()`                        | `test/persist.test.tsx`      |
 | `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются                | `test/persist.test.tsx`      |
+| `mutate`                                                   | recipe мутирует draft, наружу — новое значение, старое не тронуто | `test/mutate.test.tsx`       |
+| `mutate` + `createAtom.set`                                | работает как updater атома                                        | `test/mutate.test.tsx`       |
+| `mutate` + `createActionStore`'s `setState`                | работает как updater в action                                     | `test/mutate.test.tsx`       |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

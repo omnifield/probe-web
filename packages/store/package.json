@@ -35,6 +35,11 @@
       "development": "./src/addons/validate.ts",
       "types": "./dist/addons/validate.d.ts",
       "default": "./dist/addons/validate.js"
+    },
+    "./mutate": {
+      "development": "./src/addons/mutate.ts",
+      "types": "./dist/addons/mutate.d.ts",
+      "default": "./dist/addons/mutate.js"
     }
   },
   "files": [
@@ -56,11 +61,15 @@
   },
   "peerDependencies": {
     "@xstate/solid": "^2.0.0",
+    "immer": "^11.1.18",
     "solid-js": "^1.9.14",
     "xstate": "^5.32.6"
   },
   "peerDependenciesMeta": {
     "@xstate/solid": {
+      "optional": true
+    },
+    "immer": {
       "optional": true
     },
     "xstate": {
@@ -73,6 +82,7 @@
     "@types/node": "^24.10.1",
     "@xstate/solid": "^2.0.0",
     "eslint": "^10.8.1",
+    "immer": "^11.1.18",
     "jsdom": "^30.0.1",
     "solid-js": "^1.9.14",
     "typescript": "^7.0.2",
