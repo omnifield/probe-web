@@ -192,3 +192,72 @@ describe('tree view "base" — externally driven activeValue overrides Zag\'s ow
     expect(items[1]!.getAttribute("data-selected")).toBe("");
   });
 });
+
+describe('tree view "base" — a branch with SIBLING children, next to a sibling leaf at the top level', () => {
+  it("wires node/indexPath correctly for every sibling under recur, not just an only child", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = {
+      items: [
+        {
+          value: "a",
+          label: "Alpha",
+          children: [
+            { value: "a1", label: "A1" },
+            { value: "a2", label: "A2" },
+          ],
+        },
+        { value: "b", label: "Beta" },
+      ],
+    };
+
+    const host = mount(assembly as PassportAssembly, data);
+
+    await vi.waitFor(() => {
+      if (host.querySelectorAll('[data-scope="tree-view"][data-part="control"]').length === 0) {
+        throw new Error("suspended tree not resolved yet");
+      }
+    });
+
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "A1", "A2", "Beta"]);
+
+    const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
+    expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "2", "2", "1"]);
+  });
+
+  it("a real click that OPENS a multi-child branch does not throw — not just a pre-rendered snapshot", async () => {
+    const assembly = assemblies.find((candidate) => candidate.name === "base")!;
+    const data: Data = {
+      items: [
+        {
+          value: "a",
+          label: "Alpha",
+          children: [
+            { value: "a1", label: "A1" },
+            { value: "a2", label: "A2" },
+          ],
+        },
+      ],
+    };
+
+    const host = mount(assembly as PassportAssembly, data);
+
+    await vi.waitFor(() => {
+      if (host.querySelectorAll('[data-scope="tree-view"][data-part="control"]').length === 0) {
+        throw new Error("suspended tree not resolved yet");
+      }
+    });
+
+    const rootItem = host.querySelector('[data-scope="tree-view"][data-part="item"]')!;
+    expect(rootItem.getAttribute("data-state")).toBe("closed");
+
+    const control = host.querySelector('[data-scope="tree-view"][data-part="control"]') as HTMLElement;
+    control.click();
+    await Promise.resolve();
+
+    expect(rootItem.getAttribute("data-state")).toBe("open");
+
+    const controls = [...host.querySelectorAll('[data-scope="tree-view"][data-part="control"]')];
+    expect(controls.map((node) => node.textContent)).toEqual(["Alpha", "A1", "A2"]);
+  });
+});
