@@ -32,7 +32,7 @@ vite-плагин с верным порядком в массиве.
 
 | Часть | Адрес | Экспортирует |
 |---|---|---|
-| Рантайм роутера | `@web-core/router` | весь `@tanstack/solid-router` (`RouterProvider`, `createRouter`, `createRootRoute`, `createRoute`, `createFileRoute`, `Link`, `Outlet`, `useNavigate`, `useParams`, `useSearch`, `useLoaderData`, `useRouteContext`, `getRouteApi`, `createMemoryHistory`, … ~80 экспортов) + `defaultRouterOptions` |
+| Рантайм роутера | `@web-core/router` | весь `@tanstack/solid-router` (`RouterProvider`, `createRouter`, `createRootRoute`, `createRoute`, `createFileRoute`, `Link`, `Outlet`, `useNavigate`, `useParams`, `useSearch`, `useLoaderData`, `useRouteContext`, `getRouteApi`, `createMemoryHistory`, … ~80 экспортов) + `defaultRouterOptions` + `useRouteParamSelection` |
 | Vite-плагин | `@web-core/router/vite` | `tanstackRouterVitePlugin`, `TanstackRouterVitePluginOptions` |
 | Девтулы | `@web-core/router/devtools` | `TanStackRouterDevtools` |
 | Virtual File Routes | `@web-core/router/virtual-file-routes` | весь `@tanstack/virtual-file-routes` (`rootRoute`, `route`, `index`, `layout`, `physical`, `defineVirtualSubtreeConfig`) |
@@ -91,6 +91,25 @@ export default rootRoute("__root.tsx", [
 tanstackRouterVitePlugin({ virtualRouteConfig: "./src/routes.config.ts" });
 ```
 
+**Виджет-адаптер «выбор через параметр маршрута» — типовая склейка списка/табов/дерева с
+роутингом без ручного `useParams`+`useNavigate` в каждом виджете:**
+
+```ts
+import { useRouteParamSelection } from "@web-core/router";
+
+function useTabSelection(to: string) {
+  const selection = useRouteParamSelection("view", to);
+  return {
+    get value() {
+      return selection.value;
+    },
+    onValueChange(details: { value: string }) {
+      selection.select(details.value);
+    },
+  };
+}
+```
+
 **Девтулы, обёрнутые в `import.meta.env.DEV`:**
 
 ```tsx
@@ -140,6 +159,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 | `createRoute(options)` | `{ getParentRoute, path, component?, loader?, ... }` |
 | `tanstackRouterVitePlugin(options?)` | `Partial<Omit<Config, "target">>` |
 | `useParams({ from })`/`useSearch({ from })` | адрес маршрута |
+| `useRouteParamSelection(paramName, to)` | имя параметра + маршрут назначения |
 
 <h3 id="io-выход">📤 Выход</h3>
 
@@ -149,6 +169,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 | `useNavigate()` | функцию навигации, вызывается сразу: `navigate({ to: "/about" })` |
 | `Route.useLoaderData()` | акцессор `Accessor<T>` данных из `loader` |
 | `tanstackRouterVitePlugin()` | `Plugin \| Plugin[]` для массива `plugins` vite-конфига |
+| `useRouteParamSelection(paramName, to)` | `{ value: string \| undefined, select(value) }` — `value` через геттер, `select` зовёт `navigate` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -159,6 +180,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 |---|---|---|
 | `createRouter` + `RouterProvider` | реальный рендер дерева маршрутов, дефолты (`defaultPreload`) на месте | `test/router.test.tsx` |
 | `router.navigate({ to })` | навигация меняет смонтированное дерево (`home` → `about`) | `test/router.test.tsx` |
+| `useRouteParamSelection` внутри смонтированного компонента | `value` отражает параметр текущего маршрута, `select()` реально переключает URL (`/items/a` → `/items/b`) | `test/router.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

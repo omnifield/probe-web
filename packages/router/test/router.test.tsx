@@ -10,6 +10,7 @@ import {
   Link,
   Outlet,
   RouterProvider,
+  useRouteParamSelection,
 } from "../src/index.js";
 
 let dispose: (() => void) | undefined;
@@ -74,5 +75,44 @@ describe("@web-core/router", () => {
 
     expect(host.textContent).toContain("about");
     expect(host.textContent).not.toContain("home");
+  });
+
+  it("useRouteParamSelection читает параметр маршрута и переключает его навигацией", async () => {
+    const rootRoute = createRootRoute({ component: () => <Outlet /> });
+    const itemsRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/items/$view",
+      component: () => {
+        const selection = useRouteParamSelection("view", "/items/$view");
+        return (
+          <div>
+            <p>value: {selection.value}</p>
+            <button type="button" onClick={() => selection.select("b")}>
+              switch
+            </button>
+          </div>
+        );
+      },
+    });
+    const routeTree = rootRoute.addChildren([itemsRoute]);
+
+    const router = createRouter({
+      ...defaultRouterOptions,
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ["/items/a"] }),
+    });
+    await router.load();
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RouterProvider router={router} />, host);
+
+    expect(host.textContent).toContain("value: a");
+
+    host.querySelector("button")?.click();
+    await router.invalidate();
+
+    expect(host.textContent).toContain("value: b");
+    expect(router.state.location.pathname).toBe("/items/b");
   });
 });

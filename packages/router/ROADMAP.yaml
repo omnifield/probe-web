@@ -52,6 +52,23 @@ categories:
           сверено прогоном 2026-08-28. `tanstackRouterVitePlugin()` фиксирует `target: "solid"`
           и `autoCodeSplitting: true` по умолчанию, остальное — `Config` вендора как есть.
 
+  - category: Хуки
+    items:
+      - id: route-param-selection-hook
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`useRouteParamSelection(paramName, to)` — склейка `useParams`+`useNavigate`"
+        description: |
+          Означает: `{ value, select(value) }` — `value` геттером читает `paramName` из
+          параметров текущего маршрута, `select(value)` навигирует на `to` с этим параметром
+          изменённым, остальные параметры маршрута сохранены спредом. Снимает дублирование —
+          два независимых файла в `apps/skin` (`widgets/navigations/lib/router-selection.ts`,
+          `widgets/catalogs/lib/router-selection.ts`) написали один и тот же срез логики под
+          разные виджеты. Переключение самих файлов на хук — вне зоны, у владельца `apps/skin`.
+          Разбор, почему это не противоречит «пакет без своей разметки» — FAQ.md.
+
   - category: Тесты
     items:
       - id: smoke-render-navigate
@@ -64,6 +81,17 @@ categories:
           Означает: `test/router.test.tsx` монтирует реальный `RouterProvider` в JSDOM и проверяет
           смену дерева по `router.navigate()` — ловит сломанный реэкспорт или разъехавшийся
           вендор, не просто разбор опций.
+
+      - id: route-param-selection-smoke
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: Смоук-проба `useRouteParamSelection` внутри смонтированного дерева
+        description: |
+          Означает: маршрут `/items/$view`, компонент читает `value` и на клике зовёт `select`
+          — проверено, что `value` меняется и `router.state.location.pathname` реально
+          переключается (`/items/a` → `/items/b`), не просто что функция не бросает исключение.
 
   - category: Структура пакета
     items:
@@ -106,6 +134,17 @@ categories:
           фактами без обоснований (обоснования — FAQ.md), по образцу packages/store (первый
           пилот) и packages/assembly (второй пилот, доработанное размещение тегов).
 
+      - id: route-param-selection-hook-docs
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "`useRouteParamSelection` в README (Анатомия/Использование/IO/Сборки) + FAQ"
+        description: |
+          Означает: хук назван в реэкспорте главного пути, добавлен пример виджета-адаптера в
+          «Использование», строки в IO-вход/выход и «Сборки». FAQ отвечает, почему хук — не
+          нарушение «пакет без своей разметки поверх вендора» из раздела «Главное».
+
       - id: faq-roadmap-filled
         type: feature
         status: Done
@@ -132,6 +171,24 @@ categories:
           содержания за ней.
 
 log:
+  - id: route-param-selection-hook-added
+    type: plan
+    date: 2026-09-15
+    summary: >
+      User заметил дублирование: apps/skin/src/widgets/navigations/lib/router-selection.ts и
+      apps/skin/src/widgets/catalogs/lib/router-selection.ts — один и тот же срез
+      useParams+useNavigate, написанный дважды под разные виджеты (Tabs / CatalogTree). Сверка
+      рынка перед новой механикой: смотрел @tanstack/solid-router на готовый хук такого среза —
+      не нашёл, это прикладной паттерн, не забота роутера. Решение: useRouteParamSelection
+      добавлен в src/engine/index.ts — { value, select(value) }, БЕЗ переименования пропсов под
+      виджет (это остаётся на стороне apps/skin). Проверено сверкой с разделом "Главное" README
+      ("пакет не приносит своей разметки поверх вендора") — конфликта нет: "разметка" там про
+      JSX (в отличие от @web-core/ui), не про любую логику; хук не вводит нового вендора и не
+      трогает состояние сверх того, что уже даёт useParams/useNavigate. Разбор — FAQ.md. Тест —
+      реальный маршрут /items/$view, реальная навигация select() внутри смонтированного дерева
+      (не разбор опций). Переключение apps/skin на хук — НЕ сделано, это вне зоны
+      packages/router, отдано владельцу apps/skin отдельной темой.
+
   - id: vite-devtools-folders-third-pass
     type: plan
     date: 2026-09-04
