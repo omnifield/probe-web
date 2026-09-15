@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createPresetsClient } from "../src/presets/client/index.js";
 import { variantsOf } from "../src/presets/variants.js";
+import { DEFAULT_TAG } from "../src/tags/index.js";
 
 const URL = "http://presets.test/graphql";
 
@@ -87,6 +88,49 @@ describe("variantsOf — варианты компонента в рамках �
     const client = createPresetsClient({ url: URL });
     const variants = await variantsOf(client, "brand", "button");
 
+    expect(variants).toEqual([]);
+  });
+
+  it("имя наряда не передано — берёт надетый на корень (data-skin)", async () => {
+    vi.stubGlobal("document", { documentElement: { getAttribute: () => "brand" } });
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          data: {
+            presets: [
+              { id: "1", label: "Brand", name: "brand", kind: "outfit", palette: { name: "base" }, forms: [{ name: "button-brand" }] },
+            ],
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          data: {
+            presets: [
+              {
+                id: "2",
+                label: "Button (brand)",
+                name: "button-brand",
+                kind: "form",
+                component: "button",
+                recipe: { variants: { primary: {} } },
+              },
+            ],
+          },
+        }),
+      );
+
+    const client = createPresetsClient({ url: URL });
+    const variants = await variantsOf(client, "button");
+
+    expect(variants).toEqual([{ name: "primary", tags: [DEFAULT_TAG] }]);
+  });
+
+  it("имя наряда не передано и надеть нечего (нет document) — пустой список, не отказ", async () => {
+    const client = createPresetsClient({ url: URL });
+    const variants = await variantsOf(client, "button");
+
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(variants).toEqual([]);
   });
 });

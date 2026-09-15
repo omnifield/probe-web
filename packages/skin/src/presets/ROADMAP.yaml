@@ -43,6 +43,32 @@ categories:
           по ВСЕМ нарядам разом — сознательно не сделано, user сам назвал это гипотетическим будущим
           кейсом, не сегодняшним.
 
+      - id: variants-of-current-outfit-fallback
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "variantsOf(client, component) — outfitName необязателен, без него берётся надетый наряд"
+        description: |
+          Заявка user дословно: "можем ли мы добавить variantsOf только для текущего аутфита? я могу
+          получить текущий у себя, но в некоторых кейсах это неудобно через хук. сможешь сделать что
+          то типо карентВариантОф или подобное, или лучше если я не передаю имя аутфита, то давать
+          текущий" — сам же и выбрал вариант из двух предложенных.
+
+          Не отдельная функция `currentVariantsOf` — перегрузка `variantsOf(client, component)` рядом
+          с прежней `variantsOf(client, outfitName, component)`: тот же контракт («варианты компонента
+          в рамках ОДНОГО наряда»), «текущий» тут не размыт — единственный `data-skin` на
+          `document.documentElement` (`readWorn()`, `wear/root.ts`), тот же источник, что и
+          `SkinSwitch.worn()`, но без хука/Solid-контекста.
+
+          `readWorn()` рассчитан на браузер (`wear/index.ts`: только `wear/switch.ts`+`solid/`
+          трогают документ) — здесь зовётся и из Node/SSR, поэтому обёрнут в `try/catch` на границе
+          вызова (`currentOutfitName()` внутри `variants.ts`), не меняя сам `readWorn()`. Ничего не
+          надето или нет документа — тот же пустой список, что и у ненайденного наряда, не отказ.
+
+          Тесты — `test/presets-variants.test.ts`: надетый через застабленный `document` наряд
+          резолвится, отсутствие `document` — пустой список без похода в сеть.
+
           Тесты — `test/presets-variants.test.ts`: находит форму по пересечению с `outfit.forms`,
           наряда нет → `[]`, наряд не одевает компонент → `[]`.
       - id: presets-full-crud
