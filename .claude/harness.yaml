@@ -43,9 +43,6 @@ zones:
   router:
     paths: [packages/router]
     description: "пакет для роутинга"
-  skin-mech:
-    paths: [packages/skin, packages/skin-reference]
-    description: "МЕХАНИКА скина — модель, сборка рецепта по частям, адресация из анатомии, порождение CSS, служба раздачи (`./presets`), надевание и снятие (`./wear`, `./solid` — переехало из `packages/runtime`, PWEB-221). Рядом `skin-reference`, эталонный скин фреймворка: отдельная поставка, потому что механика не знает ни одного скина. Зависимость односторонняя: эталон знает механику, механика о нём нет. Один овнер у обоих: предмет соседний, компетенция та же."
   assembly:
     paths: [packages/assembly, apps/skin]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
@@ -57,7 +54,7 @@ zones:
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest
   lint:
     paths: [packages/lint]
-    description: пресет eslint-plugin-solid — канон Solid, выраженный машиной
+    description: "машинный контроль кода: Solid-канон (eslint-plugin-solid) сегодня, кодстиль/импорты (Biome) — в работе"
   mcp:
     paths: [packages/mcp]
     description: "тонкий переиспользуемый MCP-сервер  — каркас, которым ЛЮБОЙ продукт на фреймворке подключает агента: фреймворк отдаёт готовые интроспекционные инструменты (паспорта кита, пресеты), продукт добавляет свои поверх одним вызовом. Не про одного конкретного агента  — про общий протокол подключения."
@@ -76,6 +73,12 @@ zones:
   neurobox:
     paths: [packages/neurobox]
     description: "клиент для бокса нейробокс (менеджер рантаймов агентов, протокол AG-UI — см. корневой NEUROBOX_CLIENT.md) поверх @tanstack/ai-client/@tanstack/ai-solid. Заведён 2026-09-13, детали user обсудил с владельцем напрямую. См. packages/neurobox/ROADMAP.yaml."
+  feeder:
+    paths: [interfaces/feeder]
+    description: "первая сущность нового корня interfaces/ (между packages/ и apps/): сводит @web-core/generators+@web-core/io в переиспользуемый UI настройки/загрузки данных для больше чем одного приложения. Заведён 2026-09-14 (фундамент — architect напрямую, зоны без овнера ещё не было); три задуманных режима (зод-схема→дерево, ручки по шаблону версии, файл) не реализованы. См. interfaces/feeder/{README,FAQ}.md и ROADMAP.yaml."
+  chat:
+    paths: [interfaces/chat]
+    description: "второй кейс корня interfaces/ — назначение не определено, разбирает user с owner-сессией напрямую. Заведён 2026-09-14 (фундамент по тому же приёму, что feeder — architect напрямую). См. interfaces/chat/{README,FAQ}.md и ROADMAP.yaml."
   # Зоны products/ стоят здесь ВРЕМЕННО и уедут отдельными продуктами. В packages/ им нельзя:
   # там база.
   tables:

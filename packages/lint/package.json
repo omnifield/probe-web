@@ -1,7 +1,7 @@
 {
   "name": "@web-core/lint",
   "version": "0.1.0",
-  "description": "Канон Solid как машинная проверка (PROBEWEB-4): ядро — правила независимо от движка, плагин `./eslint` — сегодняшняя реализация поверх eslint-plugin-solid.",
+  "description": "Машинный контроль кода канонами, независимо от движка проверки: Solid-реактивность (`./eslint`, поверх eslint-plugin-solid) сегодня, кодстиль/импорты (`./biome`) — в работе.",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
@@ -15,17 +15,29 @@
       "development": "./src/eslint/index.ts",
       "types": "./dist/eslint/index.d.ts",
       "default": "./dist/eslint/index.js"
-    }
+    },
+    "./style": {
+      "development": "./src/style/index.ts",
+      "types": "./dist/style/index.d.ts",
+      "default": "./dist/style/index.js"
+    },
+    "./biome": {
+      "development": "./src/biome/index.ts",
+      "types": "./dist/biome/index.d.ts",
+      "default": "./dist/biome/index.js"
+    },
+    "./biome.json": "./dist/biome/biome.json"
   },
   "files": [
     "dist",
+    "scripts",
     "README.md"
   ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/generate-biome-json.mjs",
     "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "pnpm run typecheck",
@@ -37,14 +49,19 @@
     "eslint-plugin-solid": "^0.14.5"
   },
   "peerDependencies": {
+    "@biomejs/biome": "^2.0.0",
     "eslint": "^9.0.0 || ^10.0.0"
   },
   "peerDependenciesMeta": {
+    "@biomejs/biome": {
+      "optional": true
+    },
     "eslint": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "typescript": "^7.0.2",
