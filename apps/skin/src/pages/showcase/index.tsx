@@ -10,9 +10,12 @@ import {
 
 import { tree } from "#/entities/component";
 import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
+import { FeedManual } from "#/features/component-manager";
 
 export function ShowcasePage() {
-  const selection = useRouterCatalogSelection("/showcase/{-$component}");
+  const selection = useRouterCatalogSelection(
+    "/showcase/{-$component}/{-$view}",
+  );
 
   return (
     <Workspace data-variant="multi-column" outlined>
@@ -24,7 +27,7 @@ export function ShowcasePage() {
         <Outlet />
       </WorkspaceMain>
       <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
-        цвф
+        <FeedManual component={selection.activeValue} />
       </WorkspaceRightbar>
     </Workspace>
   );

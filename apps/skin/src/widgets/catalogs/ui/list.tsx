@@ -1,6 +1,7 @@
 import type { JSX } from "solid-js";
-import { For } from "solid-js";
 import { Flow, FlowItem } from "@web-core/ui";
+import { For } from "solid-js";
+
 import { layoutSelf } from "@web-core/skin";
 
 export function CatalogList<Item>(props: {
@@ -10,7 +11,11 @@ export function CatalogList<Item>(props: {
   return (
     <Flow data-variant="column-center">
       <For each={props.items}>
-        {(item) => <FlowItem style={layoutSelf({ align: "stretch" })}>{props.children(item)}</FlowItem>}
+        {(item) => (
+          <FlowItem style={layoutSelf({ align: "stretch" })}>
+            {props.children(item)}
+          </FlowItem>
+        )}
       </For>
     </Flow>
   );

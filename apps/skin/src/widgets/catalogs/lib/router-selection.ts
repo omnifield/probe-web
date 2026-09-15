@@ -1,18 +1,16 @@
-import { useNavigate, useParams } from "@web-core/router";
+import { useRouteParamSelection } from "@web-core/router";
 
 /** Склейка `CatalogTree` с роутингом: активный пункт — из `component` в параметрах текущего
  *  маршрута, выбор — переход по `to` с тем же именем параметра. Виджет каталога остаётся немым
- *  (`activeValue`/`onSelect` как сырые пропсы) — про роутер знает только этот адаптер. */
+ *  (`activeValue`/`onSelect` как сырые пропсы) — про роутер знает только этот адаптер, сама
+ *  склейка `useParams`+`useNavigate` — в пакете (`useRouteParamSelection`). */
 export function useRouterCatalogSelection(to: string) {
-  const params = useParams({ strict: false });
-  const navigate = useNavigate();
+  const selection = useRouteParamSelection("component", to);
 
   return {
     get activeValue() {
-      return params().component;
+      return selection.value;
     },
-    onSelect(value: string) {
-      void navigate({ to, params: { component: value } });
-    },
+    onSelect: selection.select,
   };
 }

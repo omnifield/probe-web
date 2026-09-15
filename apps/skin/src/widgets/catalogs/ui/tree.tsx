@@ -1,4 +1,4 @@
-import type { TreeItemData } from "#/entities/component/model/catalogs";
+import type { TreeItemData } from "@web-core/ui";
 import { createMemo } from "solid-js";
 
 import { Renderer } from "#/shared/ui/renderer";

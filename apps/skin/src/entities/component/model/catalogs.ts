@@ -1,10 +1,5 @@
 import { GROUPS, groupOf, listComponents } from "@web-core/ui/component-info";
-
-export interface TreeItemData {
-  readonly value: string;
-  readonly label: string;
-  readonly children?: readonly TreeItemData[];
-}
+import type { TreeItemData } from "@web-core/ui";
 
 export function tree(): readonly TreeItemData[] {
   const components = listComponents();

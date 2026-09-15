@@ -4,8 +4,12 @@ import { Tree } from "@web-core/feeder";
 import { componentDescriptorOf } from "#/entities/component";
 import { componentManagerStore } from "../model";
 
-export function FeedManual(props: { component: string }) {
-  const schema = () => componentDescriptorOf(props.component)?.io?.schema;
+export function FeedManual(props: { component?: string }) {
+  const schema = () =>
+    props.component === undefined
+      ? undefined
+      : componentDescriptorOf(props.component)?.io?.schema;
+
   const value = componentManagerStore.use((state) => state.feedData);
 
   return (

@@ -1,7 +1,4 @@
 import type { NativeStyle } from "@web-core/skin";
-import type { ComponentFootprint } from "@web-core/skin/editor";
-import { footprintOf } from "@web-core/skin/editor";
-import { editorInfoOf } from "@web-core/ui/passport";
 
 export type SlotSize = NativeStyle;
 
@@ -13,18 +10,13 @@ export type SlotSize = NativeStyle;
 // вокруг. Только `overflow-y` (не общий `overflow`) — по X у CarouselItemGroup уже `hidden` из
 // рецепта карусели, это часть механики пролистывания страниц; открывать X сломало бы её.
 //
-// Не токен шкалы скина: footprint — срез паспорта/кита, не палитры, готовой размерной шкалы под
-// "сколько места нужно превью" в @web-core/style нет (column-* там про читаемую ширину текста, не
-// про высоту блока) — просто rem, подобранные на глаз под каждый футпринт.
-const SIZES: Readonly<Record<ComponentFootprint, SlotSize>> = {
+// Список свой, слота — не чужой паспорт/футпринт (widgets сущностей не знает, см. DBP.md). Кто
+// вызывает Slot, сам решает, какое имя из этого списка подходит его данным — контракт "как это имя
+// выбирается" пока не придуман, имена оставлены такими же, как были у прежнего footprint-словаря.
+export const SLOT_SIZES = {
   compact: { height: "16rem", "overflow-y": "auto" },
   regular: { height: "24rem", "overflow-y": "auto" },
   wide: { height: "32rem", "overflow-y": "auto" },
-};
+} as const satisfies Record<string, SlotSize>;
 
-/** Размер вьюпорта карусели слота — по футпринту компонента (нет среза редактора → как "regular"). */
-export function slotSize(component: string): SlotSize {
-  const editorInfo = editorInfoOf(component);
-  const footprint = editorInfo ? footprintOf(editorInfo) : "regular";
-  return SIZES[footprint];
-}
+export type SlotSizeName = keyof typeof SLOT_SIZES;
