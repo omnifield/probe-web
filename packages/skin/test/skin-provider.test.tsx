@@ -126,4 +126,58 @@ describe("SkinProvider — контекст на поддерево", () => {
     expect(host.textContent).toBe("dark");
     expect(skinRef!.worn()?.mode).toBe("dark");
   });
+
+  it("onReady() отдаёт промис restore() — для кода вне дерева Solid", async () => {
+    let ready: Promise<{ name: string; mode: string } | null> | undefined;
+
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <SkinProvider
+          source={stubSource(["brand"])}
+          options={{ fallback: { skin: "brand", mode: "light" } }}
+          onReady={(p) => {
+            ready = p;
+          }}
+        >
+          <span>ok</span>
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+
+    expect(ready).toBeDefined();
+    await expect(ready).resolves.toEqual({ name: "brand", mode: "light" });
+  });
+
+  it("onReady() разрешается в null, когда restore() падает — не пробрасывает отказ", async () => {
+    let ready: Promise<unknown> | undefined;
+    const css = vi.fn().mockRejectedValue(new Error("источник недоступен"));
+
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <SkinProvider
+          source={{ names: () => ["brand"], css }}
+          options={{ fallback: { skin: "brand", mode: "light" } }}
+          onReady={(p) => {
+            ready = p;
+          }}
+        >
+          <span>ok</span>
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+
+    await expect(ready).resolves.toBeNull();
+  });
 });

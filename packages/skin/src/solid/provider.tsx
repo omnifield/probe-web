@@ -15,7 +15,7 @@ import {
 
 import { createSkinConnection, type SkinConnection } from "./connection.js";
 import type { ComponentPassport } from "../engine/passport/form/index.js";
-import type { SkinSource, SkinSwitchOptions } from "../wear/switch.js";
+import type { SkinSource, SkinSwitchOptions, SkinWorn } from "../wear/switch.js";
 
 /** `SkinConnection` плюс общий на приложение список имён источника. */
 export interface SkinContextValue extends SkinConnection {
@@ -27,6 +27,12 @@ const SkinContext = createContext<SkinContextValue>();
 export interface SkinProviderProps extends ParentProps {
   readonly source: SkinSource;
   readonly options?: SkinSwitchOptions;
+  /** Зовётся один раз на монтировании с промисом восстановления исходного наряда — для кода ВНЕ
+   *  дерева Solid (например, роутер-лоадеров), которому `worn()`-сигнал недоступен, а дождаться
+   *  «наряд определён» перед своим запросом надо. Отказ `restore()` промис гасит сам (в `null`),
+   *  наружу всегда уходит успешно разрешённый промис. Solid-потребителям он не нужен — им хватает
+   *  реактивного `worn()`. */
+  readonly onReady?: (ready: Promise<SkinWorn | null>) => void;
 }
 
 /** Заводит `SkinConnection` на всё поддерево и сам восстанавливает запомненный выбор при
@@ -37,7 +43,11 @@ export function SkinProvider(props: SkinProviderProps): JSX.Element {
   const [names] = createResource(() => source.names());
 
   onMount(() => {
-    skin.restore().catch((cause: unknown) => console.debug("скин не восстановлен", cause));
+    const ready = skin.restore().catch((cause: unknown) => {
+      console.debug("скин не восстановлен", cause);
+      return null;
+    });
+    props.onReady?.(ready);
   });
 
   return (

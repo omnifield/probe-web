@@ -129,6 +129,7 @@ import { layoutGroup, layoutSelf, railVar } from "@web-core/skin";
 | | `fallback: { skin?, mode? }` | не задан — голый кит, если ничего не запомнено |
 | `createSkinConnection(source, options)` | те же, что у `makeSkinSwitch` | те же |
 | `SkinProvider` (`source`, `options?`) | `options` — те же, что у `makeSkinSwitch` | восстановление на монтировании включено всегда |
+| | `onReady?` | не задан — промис restore() никуда не отдаётся, кроме `console.debug` при отказе |
 | `createPresetsClient({ url })` | `url` | обязательное |
 | `generateSkinCss(skin, lookup, vocabulary?)` | `vocabulary` | пустой словарь — сверх словаря ролей ничего не проверяется |
 | `SkinWearOptions.remember` | запоминать ли выбор | `true` |
@@ -245,6 +246,20 @@ function ThemeSwitch() {
     </button>
   );
 }
+```
+
+🚪 Коду ВНЕ дерева Solid (роутер-лоадеры — выполняются до рендера страницы, `useSkin()` там
+недоступен), которому нужно дождаться «наряд определён» перед своим запросом, — `onReady`:
+
+```tsx
+let readyPromise: Promise<SkinWorn | null> | undefined;
+
+<SkinProvider source={source} onReady={(p) => { readyPromise = p; }}>
+  <App />
+</SkinProvider>;
+
+// в роутер-лоадере
+await readyPromise;
 ```
 
 🐢 `wear()`/`SkinProvider` печатают вид наряда сразу: переменные палитры, шрифт, ответ о половине —
