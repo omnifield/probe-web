@@ -427,6 +427,154 @@ categories:
           test` 275/275 (тот самый набор, что ловил предыдущую регрессию field/table), `pnpm
           --filter @web-core/skin-app test` 27/27. Ни одного красного.
 
+      - id: composite-context-lost-for-label-control-positioner-recurrence
+        type: bug
+        status: Open
+        priority: Critical
+        milestone: null
+        name: "ContextError у label/control/positioner ПОВТОРИЛСЯ — те же три узла, что ловил content-of-for-freezes-after-first-nonempty, но для date-picker/slider/file-upload"
+        description: |
+          Найдено architect'ом живьём (2026-09-14, chrome-devtools, `apps/skin`, `http://
+          localhost:5174/showcase/date-picker`, клик по компоненту в дереве слева) — user поймал то
+          же на `/showcase/button` для `slider`/`file-upload` независимо, до этого. Консоль
+          `[web-core-assembly]`, дословно:
+
+          ```
+          узел «label» (date-picker.label) упал при отрисовке: ContextError: useDatePickerContext
+          returned `undefined`. Seems you forgot to wrap component within <DatePickerProvider />
+          узел «control» (date-picker.control) — та же ошибка
+          узел «positioner» (date-picker.positioner) — та же ошибка
+          ```
+
+          Ровно ТРИ повтора одного и того же трио (label/control/positioner), затем рендер
+          стабилизируется и компонент работает корректно (проверено снимком DOM после — реальный
+          календарь с кликабельными днями, `input`/`trigger`/`clearTrigger` — без единой ошибки).
+          Визуально это и есть "мигает" из жалобы user — узел падает, `ErrorBoundary` показывает
+          фолбэк, следующая попытка чаще всего проходит.
+
+          Воспроизведено дважды: сначала при переключении компонента в дереве (HMR теоретически мог
+          участвовать — шли параллельные правки в `apps/skin`), ПОТОМ повторно ПОСЛЕ жёсткой
+          перезагрузки страницы (Ctrl+Shift+R, ни один файл не сохранялся) — ошибка та же, просто на
+          другом компоненте (`date-picker` вместо `slider`/`file-upload`). Значит НЕ HMR/`solid-
+          refresh`-артефакт (тот стирается в `vite build`+`preview`, живой прод-стенд не проверен —
+          решение user, проверять ли отдельно), воспроизводится и на холодном маунте.
+
+          ПОЧЕМУ это сюда, а не в `packages/skin`/`apps/skin`: имена узлов и сам класс ошибки —
+          БУКВАЛЬНО те же, что уже ловил и чинил этот пакет в `content-of-for-freezes-after-first-
+          nonempty` (выше в этой же категории): "`useSelectContext() === undefined` у `label`/
+          `control`/`positioner` (детей ROOT'а, не только `content`)" — тогда причина была в первой,
+          неудачной версии фикса (`runWithOwner(getOwner_из_тела_createContentOf, ...)`), из-за
+          которой `<For>` детей узла усыновлялся владельцем ВЫШЕ того места, где `Comp` (тогда
+          `Select.RootProvider`) заводит свой контекст — рабочим лечением стал `createRoot((dispose)
+          => <For>...)` (`content-of.tsx:121-141`, СЕЙЧАС уже в этом виде, не откачен).
+
+          Гипотеза (НЕ подтверждена трассировкой, только по совпадению симптома — линия
+          расследования для owner'а, не готовый диагноз): тот же класс проблемы — владелец/контекст,
+          в котором `createContentOf`'s `createRoot` РЕАЛЬНО выполняется на ПЕРВЫЙ вызов `contentOf()`
+          — способен оказаться "не тем" в КАКОМ-ТО из путей монтирования составных (Provider-
+          требующих) компонентов, помимо `select`, для которого баг уже ловился тестом. Три ровных
+          повтора одного и того же трио перед стабилизацией — намёк, что дело не в разовой гонке, а
+          в чём-то, что переигрывается детерминированно 3 раза (`signature`-гейтинг `<For each=
+          {[signature()]}>` в `render-node.tsx:133-160`? Сама цепочка `RenderTree`'s `<Show when=
+          {provider()} fallback={root()} keyed>`, `render-tree.tsx:29-34,51-63`? Не проверено —
+          `provider()`'s зависимости прочитаны architect'ом, выглядят синхронными и стабильными
+          (`registry` — module-level константа в `apps/skin/shared/ui/renderer/index.tsx:6`), но
+          сама причина ТРЁХКРАТНОГО повтора не найдена).
+
+          Тест-покрытие (`test/contentof-null-vs-for.test.tsx` и смежные) сегодня проверяет именно
+          `select` — судя по тому, что бага НЕ поймал, вероятно не покрывает составные компоненты с
+          `.provider` на РЕГИСТРОВОМ уровне (`RenderTree`'s отдельный `provider()`-механизм,
+          `render-tree.tsx`), только repeat-контент внутри одного дерева без внешнего Provider.
+
+          НЕ входит в объём этой заявки (только диагноз и репро, чинить — за owner'ом): точный
+          механизм тройного повтора, выбор фикса, тест на голом реестре с составным Provider-
+          компонентом (по образцу `select-incremental-growth.test.tsx`, но с реальным `.provider`,
+          не только repeat).
+
+          ОБНОВЛЕНИЕ (owner-assembly, 2026-09-15) — третий живой случай, tree-view, разобран
+          трассировкой в реальном браузере (chrome-devtools, `apps/skin/showcase/tree-view/demo`),
+          не только по совпадению симптома. Репро: узел без детей ("Alpha", лист) получает ПЕРВОГО
+          ребёнка через редактор (`recur`) — в консоли ОДНОВременно:
+
+          ```
+          узел «content» (tree-view.content) упал: ContextError: useCollapsibleContext returned
+          `undefined`. Seems you forgot to wrap component within <CollapsibleProvider />
+          узел «item-2» (tree-view.item) упал: TypeError: Cannot read properties of undefined
+          (reading 'isBranch')
+          ```
+
+          Проверенная и ОТКЛОНЁННАЯ гипотеза: «declared» (кэш `<For>` в `contentOf()`) переживает
+          смену обёртки вокруг `props.children` (лист рисует голый `<div>`, ветка —
+          `Collapsible.Content`, заводящий свой provider) и несёт владельца от старой,
+          безпровайдерной обёртки. По этой гипотезе сделан и подтверждён ОТДЕЛЬНЫЙ, реальный баг
+          (см. `content-of-context-invalidation-on-wrapper-swap` ниже, есть тест) — но живьём, с
+          трассировкой `Owner.context` до/после перехода лист→ветка, для tree-view она НЕ
+          подтвердилась: `contentOf()` для узла «content» вызывается из ОДНОГО и ТОГО ЖЕ владельца
+          что до, что после (значит фикс по сравнению владельца тут не срабатывает, и не должен —
+          кэш ведёт себя корректно с этой стороны). Настоящая находка: уже на ПЕРВОМ построении
+          `declared` (пока узел ещё лист) `Owner.context` у вызывающего — ПУСТОЙ объект, `{}`, без
+          единого ключа: не хватает даже контекста, который `TreeRoot` (корень всего дерева,
+          `ArkRoot`/`TreeViewProvider`) заводит заметно выше. Значит обрыв владельческой цепочки
+          происходит РАНЬШЕ, чем долетает до content-of.tsx — где-то между `TreeRoot` и первым
+          вызовом `contentOf()` у листа.
+
+          Рабочая гипотеза (снова НЕ подтверждена до конца, линия расследования): `RenderTree`
+          заворачивает ВСЁ дерево в ОДИН общий `<Suspense>` (`render-tree.tsx`), а
+          `controlIndicator` (стрелка раскрытия) существует ТОЛЬКО у веток и тянет настоящую
+          `Icon` — ровно то же самое суспенс-поведение, что уже описано в кит-тесте tree-view
+          (`RenderTree` wraps everything in one `<Suspense>` — a branch's real Icon indicator
+          suspends the whole tree until it resolves"). Переход лист→ветка — это ОДНОВРЕМЕННО (а)
+          первое появление `controlIndicator` (новый suspense-триггер) И (б) первый вызов
+          `contentOf()` у content-узла этой ветки — оба события бьют по ОДНОМУ и тому же общему
+          Suspense-барьеру в ОДИН и тот же момент. Дальнейшая цепочка вложенных `createRoot`
+          (`content-of.tsx`, один на каждый уровень recur) поверх ОДНОГО suspense-boundary на ВСЮ
+          сборку — кандидат на то, где именно рвётся владелец, но НЕ прослежено до конкретной
+          строки: остановлено здесь по бюджету расследования, не потому что тупик.
+
+          Стек падения (реальный, `Error.captureStackTrace`, `apps/skin`, chrome-devtools) —
+          обрывается на `runComputation`/`updateComputation`/`devComponent`, то есть оба узла
+          («content» и «item-2») падают ВНУТРИ отдельно планируемого реактивного пересчёта
+          (Solid-scheduler), не как прямое продолжение исходного синхронного рендера — согласуется
+          с гипотезой про suspense-резюме, но само по себе её не доказывает.
+
+          НЕ входит в объём этой заявки (снова только диагноз, теперь заметно точнее прежнего):
+          проверить гипотезу про `<Suspense>`+`controlIndicator`'s `Icon` предметно (например,
+          собрать голый репро с намеренно async-резолвящимся дочерним узлом внутри ОДНОГО
+          Suspense, растущим через `recur`), найти точную строку обрыва, выбрать фикс.
+
+      - id: content-of-context-invalidation-on-wrapper-swap
+        type: bug
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "contentOf() — кэш `declared` не перестраивался при смене provider-несущей обёртки вокруг props.children"
+        description: |
+          Найдено при разборе `composite-context-lost-for-label-control-positioner-recurrence`
+          (выше) — реальный, доказанный ОТДЕЛЬНО от tree-view баг (для tree-view эта гипотеза
+          эмпирически ОТКЛОНЕНА, см. обновление выше), но сам по себе валидный: если владелец
+          узла, что читает `props.children` (=`contentOf()`), меняется МЕЖДУ двумя вызовами —
+          например, СНАЧАЛА читает голый `<div>` (без provider), ПОТОМ, после структурного
+          изменения у узла, читает обёртка, заводящая СВОЙ `<X.Provider>` — закэшированный
+          `declared`/`createRoot` продолжает нести владельца от ПЕРВОГО (безпровайдерного) чтения
+          НАВСЕГДА, дети внутри ловят `useContext() === undefined`.
+
+          Починено: `contentCache` хранит не только `memo`, но и `Owner.context` (приватное поле
+          Solid, `dev.js`) вызывающего на момент постройки — новый вызов с ДРУГИМ `.context`
+          (сравнение по ссылке, не по значению) диспоузит старый `createRoot` и строит `declared`
+          заново из-под текущего владельца. `.context` — не `Owner` целиком: `DoubleReader`
+          (`slots.test.tsx`, `props.children` читается дважды в ОДНОМ теле компонента) — два разных
+          транзитных эффекта, ОДНА и та же цепочка провайдеров — сравнение по ссылке на `Owner`
+          ломало бы этот законный случай, по `.context` — нет (проверено, тест зелёный).
+
+          Тест — `test/nested-provider-lazy-open.test.tsx`, голый движок: узел без provider (0
+          детей) → тот же узел с provider (1+ детей), контент, смонтированный ДО появления
+          provider, обязан увидеть его ПОСЛЕ. Красный без фикса (`ORPHAN` вместо ожидаемого
+          значения), зелёный с ним. Полные прогоны: `pnpm --filter @web-core/assembly test` 40/40,
+          `pnpm --filter @web-core/ui test` 289/289, `pnpm --filter @web-core/skin-app test` 33/33
+          (4 файла падают на импортах модулей, которых нет в репо — `#/entities/schema` и т.п.,
+          не связано с этим фиксом, см. `skin-app-tests-deferred` — тесты приложения временно не
+          в объёме).
+
   - category: "Своя механика, найденная в packages/skin — вернуть домой"
     items:
       - id: repeat-grow-lives-in-wrong-package

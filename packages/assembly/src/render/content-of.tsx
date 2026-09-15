@@ -108,18 +108,46 @@ export function createContentOf(
   ownProps: () => Record<string, unknown>,
   RenderNode: Component<RenderNodeProps>,
 ): () => JSX.Element | null {
-  const contentCache: { memo?: () => JSX.Element | null } = {};
-  // Долгоживущий владелец `RenderNode`'а САМОГО — ТОЛЬКО получатель `onCleanup` ниже (сигнал
-  // «узел размонтирован НАВСЕГДА»), не владелец рендера/контекста для `<For>` (см. ловушку 3)).
+  const contentCache: { memo?: () => JSX.Element | null; context?: unknown } = {};
+  // Долгоживущий владелец `RenderNode`'а САМОГО — ТОЛЬКО получатель финального `dispose` ниже
+  // (сигнал «узел размонтирован НАВСЕГДА»), не владелец рендера/контекста для `<For>` (см. ловушку
+  // 3)). Переживает ЛЮБОЕ число пересборок `declared` (see ниже, `PWEB-215`) — сам он не меняется.
   const lifetimeOwner = getOwner();
+  let currentDispose: (() => void) | undefined;
+  if (lifetimeOwner) runWithOwner(lifetimeOwner, () => onCleanup(() => currentDispose?.()));
 
   return function contentOf(): JSX.Element | null {
-    if (!contentCache.memo) {
+    // `Owner.context` (та же приватная деталь, что докблок выше уже опирается на неё цитатой из
+    // `dev.js`) — объект контекстов ТЕКУЩЕЙ цепочки владельцев; `useContext` внутри читает именно
+    // его (`Owner.context[id]`). Обычный потомок НАСЛЕДУЕТ ту же самую ссылку от родителя, новый
+    // `<X.Provider>` заводит НОВУЮ (`Owner.context = {...Owner.context, [id]: value}`) — значит
+    // сравнение по ссылке ловит РОВНО «между двумя вызовами появился/исчез provider», не «это
+    // другой DOM-эффект» (`DoubleReader` в `slots.test.tsx`: два места чтения `props.children` в
+    // ОДНОМ теле компонента — два разных транзитных эффекта, но ОДНА и та же цепочка провайдеров,
+    // `.context` совпадает, кэш ЗАКОННО не перестраивается).
+    const callerContext = (getOwner() as { context?: unknown } | null)?.context;
+    // PWEB-215 — та же ловушка №3 из докблока выше, но с ДРУГОЙ стороны: кэш по «уже строили
+    // хоть раз» ломается, когда СТРУКТУРА-обёртка вокруг `props.children` у ЧУЖОГО компонента
+    // меняется ПОСЛЕ первого вызова (не только у content — у самого узла-хозяина `contentOf`),
+    // а НОВАЯ обёртка заводит СВОЙ provider, которого закэшированный `declared` не видит (доказано
+    // голым тестом, `test/nested-provider-lazy-open.test.tsx`). Живой баг `tree-view` (ROADMAP.yaml,
+    // `composite-context-lost-for-label-control-positioner-recurrence`) ПОХОЖ по симптому
+    // (`useCollapsibleContext() === undefined` у детей, добавленных `recur`'ом), но эмпирически
+    // (реальный браузер, трассировка `Owner.context` до/после) НЕ ловится этим сравнением — там
+    // `contentOf()` для «content»-узла зовётся из ОДНОГО и ТОГО ЖЕ владельца что до, что после
+    // перехода лист→ветка (значит `declared` строится ОДИН раз и переиспользуется ЗАКОННО с точки
+    // зрения этой проверки), и уже на ПЕРВОМ построении `callerContext` пуст — не хватает даже
+    // контекста, установленного `TreeRoot`'ом заметно выше. Разбор (RenderTree's единый
+    // `<Suspense>` + `recur`-узел того же адреса, что и корень, + множество вложенных `createRoot`
+    // на каждом уровне) — в ROADMAP, не решён этим фиксом.
+    if (!contentCache.memo || contentCache.context !== callerContext) {
+      currentDispose?.();
+      contentCache.context = callerContext;
       const current = untrack(node);
       const declared =
         !current || isContent(current) || !takesContent(props.registry, current.type) ? null : (
           createRoot((dispose) => {
-            if (lifetimeOwner) runWithOwner(lifetimeOwner, () => onCleanup(dispose));
+            currentDispose = dispose;
             return (
               <For each={(node()?.children ?? []) as readonly NodeId[]}>
                 {(childId) => (
