@@ -230,6 +230,32 @@ categories:
       # presets-client-component-filter переехал в src/presets/ROADMAP.yaml — пункт про сам
       # client.ts, не про надевание.
 
+      - id: set-mode-no-refetch
+        type: bugfix
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "setMode() не ходит к source.css() — переключение половины больше не перезапрашивает скин"
+        description: |
+          Заявка user дословно: "сейчас свитчер темная/светлая тема постоянно делает перезапрос. вот
+          тут мы юзаем apps/skin/.../theme-switch/index.tsx. но там вроде вообще запроса не должно
+          быть, там же цвет вроде сразу весь едет" — и сам угадал причину: обе половины
+          действительно уже в одном CSS-тексте, полученном на первый `wear()` (`DARK_SELECTOR` в
+          `engine/generate/print.ts` печатает и светлый, и тёмный блок разом).
+
+          Было: `SkinConnection.setMode()` (`solid/connection.ts`) звал `wear(current.name, { mode })`
+          — тот же наряд, но `wear()` в `wear/switch.ts` безусловно ходит за `source.css()`, даже
+          когда имя не изменилось. Каждый клик по переключателю темы — лишний сетевой поход и
+          перепечатка листа стилей ради того, что уже есть в CSS.
+
+          Стало: `setMode()` — своя ветка в `SkinSwitch` (`wear/switch.ts`), без `source.css()`:
+          `writeDark()` + `remember()`. `SkinConnection.setMode` зовёт её и тот же `applyWorn`, что
+          `wear`/`takeOff`/`restore` — `componentData`/`outfitData` не чистятся (имя наряда не
+          менялось). Разбор — FAQ.md, раздел «Надевание».
+
+          Тесты: `test/skin-switch-component.test.tsx` (`source.css()` не растёт на второй `setMode`),
+          `test/skin-provider.test.tsx` (то же через `SkinConnection`/`SkinProvider`).
+
       - id: component-skin-on-demand
         type: feature
         status: Done

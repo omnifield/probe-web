@@ -19,7 +19,8 @@ export interface SkinConnection {
   wear(name: string, options?: SkinWearOptions): Promise<SkinWorn | null>;
   takeOff(options?: SkinWearOptions): void;
   restore(): Promise<SkinWorn | null>;
-  /** Надевает тот же скин в другой половине. Ничего не надето — не действует. */
+  /** Переключает половину БЕЗ повторного похода к источнику — обе половины уже в CSS, приехавшем
+   *  на `wear()`. Ничего не надето — не действует. */
   setMode(mode: SkinMode): void;
   /** Прямой доступ к `SkinSwitch.ensureComponentSkin` — `useComponentSkin` зовёт его сама, руками
    *  дёргать незачем, но наружу не скрыт. Побочный эффект каждого вызова — запись в
@@ -27,8 +28,8 @@ export interface SkinConnection {
   ensureComponentSkin(component: string, axis: ComponentSkinAxis): Promise<EnsuredSkinData>;
   /** `data`, отданный источником на последний `ensureComponentSkin` каждого компонента (по имени) —
    *  то, что источник нашёл, пока печатал его CSS (например, запись формы), без второго запроса за
-   *  тем же. Чистится целиком при смене ИМЕНИ наряда (не при смене режима — `setMode()` зовёт
-   *  `wear()` с тем же именем, и данные формы от режима не зависят). Разбор —
+   *  тем же. Чистится целиком при смене ИМЕНИ наряда (не при смене режима — `setMode()` не ходит
+   *  к источнику вовсе, и данные формы от режима не зависят). Разбор —
    *  FAQ.md (`component-skin-data-passthrough`). */
   componentData: Accessor<ReadonlyMap<string, unknown>>;
   /** То же самое, но про НАРЯД целиком (например, записи `Outfit`+`Palette`) — ОДНО значение на
@@ -83,9 +84,8 @@ export function createSkinConnection(
   }
 
   function setMode(mode: SkinMode): void {
-    const current = worn();
-    if (current === null) return;
-    void wear(current.name, { mode });
+    skin.setMode(mode);
+    applyWorn(skin.worn());
   }
 
   /** Гейт по имени наряда — свой, не унаследованный от `skin.ensureComponentSkin`: тот гасит гонку

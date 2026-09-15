@@ -14,10 +14,35 @@ function stubSource(components?: ComponentSkinSource): SkinSource {
 beforeEach(() => {
   localStorage.removeItem(DEFAULT_STORAGE_KEY);
   document.documentElement.removeAttribute("data-skin");
+  document.documentElement.classList.remove("dark");
 });
 
 afterEach(() => {
   document.head.querySelectorAll("[data-web-core-skin]").forEach((el) => el.remove());
+});
+
+describe("setMode — переключение половины без повторного похода к источнику", () => {
+  it("не зовёт source.css() второй раз, только переставляет класс .dark на корне", async () => {
+    const css = vi.fn().mockResolvedValue("/* base */");
+    const skin = makeSkinSwitch({ names: () => ["brand"], css });
+    await skin.wear("brand");
+    expect(css).toHaveBeenCalledTimes(1);
+
+    skin.setMode("dark");
+
+    expect(css).toHaveBeenCalledTimes(1);
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(skin.worn()).toEqual({ name: "brand", mode: "dark" });
+  });
+
+  it("ничего не надето — тихий no-op", () => {
+    const skin = makeSkinSwitch(stubSource());
+
+    skin.setMode("dark");
+
+    expect(skin.worn()).toBeNull();
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
 });
 
 describe("ensureComponentSkin — источник без ленивой способности или ничего не надето", () => {

@@ -1,5 +1,5 @@
 import { render } from "solid-js/web";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SkinProvider, useSkin } from "../src/solid/index.js";
 import { DEFAULT_STORAGE_KEY } from "../src/wear/memory.js";
@@ -92,5 +92,38 @@ describe("SkinProvider — контекст на поддерево", () => {
 
     skinRef!.takeOff();
     expect(host.textContent).toBe("none");
+  });
+
+  it("setMode() переключает половину, не заново запрашивая css() у источника", async () => {
+    let skinRef: ReturnType<typeof useSkin> | undefined;
+    const css = vi.fn().mockResolvedValue("/* base */");
+
+    function Consumer() {
+      const skin = useSkin();
+      skinRef = skin;
+      return <span>{skin.worn()?.mode ?? "none"}</span>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    dispose = render(
+      () => (
+        <SkinProvider source={{ names: () => ["brand"], css }}>
+          <Consumer />
+        </SkinProvider>
+      ),
+      host,
+    );
+
+    await tick();
+    await skinRef!.wear("brand");
+    expect(css).toHaveBeenCalledTimes(1);
+
+    skinRef!.setMode("dark");
+
+    expect(css).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toBe("dark");
+    expect(skinRef!.worn()?.mode).toBe("dark");
   });
 });

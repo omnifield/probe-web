@@ -143,6 +143,12 @@ export interface SkinSwitch {
    */
   wear(name: string, options?: SkinWearOptions): Promise<SkinWorn | null>;
   takeOff(options?: SkinWearOptions): void;
+  /**
+   * Переключает половину БЕЗ повторного похода к источнику — обе половины уже приехали одним
+   * CSS-текстом на `wear()` (`DARK_SELECTOR` в `engine/generate/print.ts`), переключение — это
+   * класс на корне, а не новый скин. Ничего не надето — тихий no-op.
+   */
+  setMode(mode: SkinMode): void;
   /** Восстанавливает запомненный выбор — и скин, и половину. */
   restore(): Promise<SkinWorn | null>;
   /**
@@ -207,6 +213,12 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
 
     done();
     return worn();
+  }
+
+  function setMode(mode: SkinMode): void {
+    if (readWorn() === null) return;
+    writeDark(mode === "dark");
+    remember(key, { mode });
   }
 
   function takeOff(wearOptions: SkinWearOptions = {}): void {
@@ -277,6 +289,7 @@ export function makeSkinSwitch(source: SkinSource, options: SkinSwitchOptions = 
     worn,
     wear,
     takeOff,
+    setMode,
     restore,
     ensureComponentSkin,
     dispose,
