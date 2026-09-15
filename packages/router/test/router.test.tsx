@@ -115,4 +115,63 @@ describe("@web-core/router", () => {
     expect(host.textContent).toContain("value: b");
     expect(router.state.location.pathname).toBe("/items/b");
   });
+
+  it("useRouteParamSelection с defaultValue сам подставляет дефолт, если сегмент не задан", async () => {
+    const rootRoute = createRootRoute({ component: () => <Outlet /> });
+    const itemsRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/items/{-$view}",
+      component: () => {
+        const selection = useRouteParamSelection("view", "/items/{-$view}", {
+          defaultValue: "a",
+        });
+        return <p>value: {selection.value}</p>;
+      },
+    });
+    const routeTree = rootRoute.addChildren([itemsRoute]);
+
+    const router = createRouter({
+      ...defaultRouterOptions,
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ["/items"] }),
+    });
+    await router.load();
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RouterProvider router={router} />, host);
+
+    expect(host.textContent).toContain("value: a");
+    await router.invalidate();
+    expect(router.state.location.pathname).toBe("/items/a");
+  });
+
+  it("useRouteParamSelection с defaultValue не трогает уже заданный сегмент", async () => {
+    const rootRoute = createRootRoute({ component: () => <Outlet /> });
+    const itemsRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/items/{-$view}",
+      component: () => {
+        const selection = useRouteParamSelection("view", "/items/{-$view}", {
+          defaultValue: "a",
+        });
+        return <p>value: {selection.value}</p>;
+      },
+    });
+    const routeTree = rootRoute.addChildren([itemsRoute]);
+
+    const router = createRouter({
+      ...defaultRouterOptions,
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ["/items/b"] }),
+    });
+    await router.load();
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(() => <RouterProvider router={router} />, host);
+
+    expect(host.textContent).toContain("value: b");
+    expect(router.state.location.pathname).toBe("/items/b");
+  });
 });
