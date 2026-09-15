@@ -37,9 +37,10 @@
 
 🧵 Первый пилот подгруппы `mcp` внутри `genus: service` (канон подгруппы — корневой README.md,
 раздел «Правила для шаблонов») — сама регистрация тулов и транспорт (stdio/Streamable HTTP) взяты
-из `@web-core/mcp` целиком (устройство и решения самого тулинга — его `README.md`/`FAQ.md`, здесь
-не повторяются); этот README держит только то, что специфично ИМЕННО скину — какие тулы, что
-каждый принимает/отдаёт, и что уже найдено живым использованием.
+из `@web-core/neurobox` целиком (устройство и решения самого тулинга — его `README.md`/`FAQ.md`,
+здесь не повторяются; преемник `@web-core/mcp`, удалённого user 2026-09-13, дословный перенос той
+же механики — см. `ROADMAP.yaml`); этот README держит только то, что специфично ИМЕННО скину —
+какие тулы, что каждый принимает/отдаёт, и что уже найдено живым использованием.
 
 <h2 id="словарь">📖 Словарь</h2>
 
@@ -82,8 +83,8 @@ recipe с нуля по одной схеме паспорта.
 | `assemble_preview` | `read` | Отчёт+покрытие сразу; CSS — `resource_link`, читается отдельно `resources/read` |
 | `save_preset` | `write` | Сохранить палитру/форму/наряд/сборку/тег — после той же проверки, что и `check_*` |
 | `report_feedback` | `write` | Сигнал по любой ручке — `sign:issue` (по умолчанию) или `praise`, без проверки |
-| `list_feedback` | `read` | Заголовки заявок (`name/label/tool/sign/status/at`), фильтры `status`/`sign`; тело — `get_feedback` |
-| `get_feedback` | `read` | Полный `tool/action/expected/actual` одной заявки по имени |
+| `list_feedback` | `read` | Заголовки заявок (`id/label/tool/sign/status/at`), фильтры `status`/`sign`; тело — `get_feedback` |
+| `get_feedback` | `read` | Полный `tool/action/expected/actual` одной заявки по `id` |
 | `resolve_feedback` | `write` | Пометить репорт разобранным — `status`, `resolvedAt` и заметка, `id` прежний |
 | `save_content` | `write` | Сохранить реальные данные наполнения компонента, сверив с io-схемой |
 | `list_content` | `read` | Перечень сохранённых данных наполнения, постранично, с фильтром по компоненту |
@@ -94,12 +95,12 @@ recipe с нуля по одной схеме паспорта.
 | `browser_screenshot` | `read` | PNG текущей страницы своей вкладки — реальный вид, не только CSS-текст |
 
 📂 Двадцать один `read`, четыре `write` (`save_preset`, `report_feedback`, `resolve_feedback`, `save_content`) —
-итого двадцать пять, размечено через `access` `@web-core/mcp`, отображается в нативные
+итого двадцать пять, размечено через `access` `@web-core/neurobox`, отображается в нативные
 `readOnlyHint`/`destructiveHint` спеки MCP. Каждый `description` — 1-2 предложения (что делает, когда
 звать); глубина — в `docs/*.md` по `get_doc` (например `get_doc("author")`/`get_doc("forms")`), не в
 самом описании — оно едет клиенту на КАЖДЫЙ `tools/list`, независимо от того, нужен ли тул сейчас.
 
-📐 **`limit` — общая `limitSchema` (`@web-core/mcp/pagination`), не голый `z.number().positive()`.**
+📐 **`limit` — общая `limitSchema` (`@web-core/neurobox/pagination`), не голый `z.number().positive()`.**
 Без верхней границы Zod печатает в JSON Schema предельное целое языка (`9007199254740991`) — не
 бизнес-правило, а утечка типа, и она едет в описании КАЖДОЙ ручки с пагинацией. `limitSchema`
 (`max(100)`) — тот же примитив, что у `list_components`/`list_presets`/`list_feedback`/`list_content`,
@@ -148,8 +149,9 @@ recipe с нуля по одной схеме паспорта.
 у платформы вызывающего агента — переживает смену агента/сессии/платформы. Обратно читается
 `list_feedback` — своя ручка, а не `get_preset`/`list_presets` (тем нужен `kind` из закрытого списка
 `palette | form | outfit | assembly | tag`, `feedback` туда намеренно не входит): постранично
-(`cursor`/`limit`), заголовки (`name/label/tool/sign/status/at`) — тело одной заявки берите
-`get_feedback(name)`, как `get_preset`/`get_content` у остальных видов (найдено живой заявкой:
+(`cursor`/`limit`), заголовки (`id/label/tool/sign/status/at` — адресация по `id`, не по `name`:
+`FeedbackEntry` имени не несёт вовсе) — тело одной заявки берите `get_feedback(id)`, как
+`get_preset`/`get_content` у остальных видов (найдено живой заявкой:
 раньше `list_feedback` отдавал КАЖДУЮ заявку целиком, вес растёт линейно с историей зоны — на
 восьми заявках 7507 знаков, дальше стал бы самой тяжёлой ручкой здесь). Это и есть та ручка,
 которой прод-инстанс отдаёт накопленные заявки локально при разборе (см. план прод-синка в
@@ -161,7 +163,7 @@ FAQ.md).
 увидеть только похвалы, только проблемы или всё разом. Запись без `sign` (сохранена раньше) считается
 `issue`, тем же приёмом, что и запись без `status` считается `open`.
 
-✅ **Разобранное закрывается `resolve_feedback`** — по имени заявки из `list_feedback`. В `state`
+✅ **Разобранное закрывается `resolve_feedback`** — по `id` заявки из `list_feedback`. В `state`
 появляются `status: "resolved"`, `resolvedAt` и `note` (чем кончился разбор), сам текст заявки не
 меняется, `id` остаётся прежним. `list_feedback` по умолчанию отдаёт только `open`, разобранное
 показывает по `status: "resolved"` или `"all"`. Заявка без поля `status` (записанная до появления
@@ -205,17 +207,19 @@ FAQ.md). Здесь, в `engine/validate.ts` и `tools/index.ts`, остался
 
 | Каталог | Роль | Публичная поверхность |
 |---|---|---|
-| `server/` | точка входа — бутстрап транспорта через `@web-core/mcp/transport` | ничего наружу, только запускает |
+| `server/` | точка входа — бутстрап транспорта через `@web-core/neurobox/server` | ничего наружу, только запускает |
 | `tools/` | граница протокола — все 25 тулов, по файлам ТЕМ (`kit`/`presets`/`feedback`/`content`/`browser`, `shared` — общие хелперы), не одним файлом | `registerTools(server)` (агрегатор `tools/index.ts`) |
-| `engine/` | связка с доменом skin — специфична ИМЕННО этой зоне, у другой MCP-зоны будет свой домен | `getPassport`/`getAssemblies`/`getAssembly`/`getIoSchema`/`listComponents` (кит), `skin`/`checkAssembly`/`skinGaps` (механика), `store` (клиент службы пресетов), `checkForm`/`checkPalette`/`checkTags` (проверка одной записи), `listDocs`/`getDoc` (доки по темам) |
+| `engine/` | связка с доменом skin — специфична ИМЕННО этой зоне, у другой MCP-зоны будет свой домен | `getPassport`/`getAssemblies`/`getAssembly`/`getIoSchema`/`listComponents` (кит), `skin`/`checkAssembly`/`skinGaps` (механика), `presets`/`presetsServiceUrl`/`readPalettes`/`readForms` (клиент службы пресетов), `checkForm`/`checkPalette`/`checkTags` (проверка одной записи), `listDocs`/`getDoc` (доки по темам) |
 
 Внутри `engine/` — четыре файла по одному на концерн (`kit.ts` реестр паспортов кита под форму
-MCP, `mechanics.ts` связка с источником паспортов, `store.ts` Node-клиент службы пресетов,
-`validate.ts` проверка ОДНОЙ палитры/формы синтетическим нарядом — своей функции для этого у
-механики нет, плюс `checkTags` — тонкая И/О-обёртка над чистым `checkTags` из
-`@web-core/skin/tags`) — они друг другу соседи, не публикуются напрямую, только через
-`engine/index.ts`. `sortTags`/`groupByTag` в `tools/index.ts` зовутся напрямую из
-`@web-core/skin/tags`, минуя `engine/` — они не про домен skin-mcp, это готовая чужая механика.
+MCP, `mechanics.ts` связка с источником паспортов, `presets.ts` Node-клиент службы пресетов
+(`createPresetsClient` из `@web-core/skin/presets`, GraphQL — не самописный HTTP-провод, как было
+раньше в `store.ts`, см. `ROADMAP.yaml`'s `retire-engine-store`), `validate.ts` проверка ОДНОЙ
+палитры/формы синтетическим нарядом — своей функции для этого у механики нет, плюс `checkTags` —
+тонкая И/О-обёртка над чистым `checkTags` из `@web-core/skin/tags`) — они друг другу соседи, не
+публикуются напрямую, только через `engine/index.ts`. `sortTags`/`groupByTag` в `tools/index.ts`
+зовутся напрямую из `@web-core/skin/tags`, минуя `engine/` — они не про домен skin-mcp, это готовая
+чужая механика.
 
 <h2 id="использование">🚀 Использование</h2>
 
@@ -223,17 +227,22 @@ MCP, `mechanics.ts` связка с источником паспортов, `st
 pnpm --filter @web-core/skin-mcp start      # stdio-сервер (по умолчанию)
 pnpm --filter @web-core/skin-mcp dev        # то же, с перезапуском на правку
 pnpm --filter @web-core/skin-mcp typecheck
+pnpm --filter @web-core/skin-mcp test       # vitest — kit чистый, presets поднимает свой backend/presets
 ```
 
-Нужна живая служба пресетов (`pnpm --filter @web-core/presets start`, порт `8787` по умолчанию) —
-без неё ручки хранения отвечают `StoreDown`.
+Нужна живая служба пресетов (`backend/presets` — Go, не pnpm-пакет: `go run ./cmd/presets` из
+`backend/presets`, слушает `127.0.0.1:8787`, GraphQL на `/graphql`, база — `./db/presets.db`,
+подробности — его README) — без неё ручки хранения отвечают `PresetsDown`. `pnpm test` для
+`presets`-раздела эту зависимость снимает сам — поднимает изолированный `go run ./cmd/presets` на
+temp-базе и свободном порту (`test/helpers/presets-server.ts`), dev-базу не трогает.
 
 ⚠️ **На свежем клоне (первый запуск на VPS) сначала `pnpm build` из корня** (`nx run-many -t build
--p '@web-core/*'`). Все зависимости этой зоны — `@web-core/mcp`, `@web-core/skin`, `@web-core/ui`,
-`@web-core/io` — потребляются через собранный `dist/` (`package.json`'s `exports`, `dist/` в
-`.gitignore`, не коммитится), не через исходники напрямую: без сборки старт падает
-`ERR_MODULE_NOT_FOUND` на первом же импорте. Проверено живьём (временно убран `packages/mcp/dist` —
-ровно этот отказ). Локально дыры не видно, потому что `dist` уже собран с прошлых правок.
+-p '@web-core/*'`). Все зависимости этой зоны — `@web-core/neurobox`, `@web-core/skin`,
+`@web-core/ui`, `@web-core/io` — потребляются через собранный `dist/` (`package.json`'s `exports`,
+`dist/` в `.gitignore`, не коммитится), не через исходники напрямую: без сборки старт падает
+`ERR_MODULE_NOT_FOUND` на первом же импорте. Проверено живьём (временно убран `dist` одной из этих
+зависимостей — ровно этот отказ). Локально дыры не видно, потому что `dist` уже собран с прошлых
+правок.
 
 **Типичный порядок вызова** (то же самое уходит агенту в `instructions` на `initialize`):
 `list_components` → `get_passport` конкретного компонента → `check_palette`/`check_form`/
@@ -260,8 +269,8 @@ pnpm --filter @web-core/skin-mcp typecheck
 |---|---|---|
 | `SKIN_MCP_TRANSPORT` | `"stdio" \| "http"` | `"stdio"` |
 | `PORT` | порт HTTP-транспорта | `8788` (не общий `3000` — см. FAQ.md) |
-| `SKIN_MCP_HOST` | адрес привязки HTTP (см. FAQ.md — зачем отдельно от умолчания пакета) | `"127.0.0.1"` (умолчание `@web-core/mcp`) |
-| `SKIN_MCP_PRESETS_URL` | адрес службы пресетов (`engine/store.ts`) | `http://127.0.0.1:8787/api/presets` |
+| `SKIN_MCP_HOST` | адрес привязки HTTP (см. FAQ.md — зачем отдельно от умолчания пакета) | `"127.0.0.1"` (умолчание `@web-core/neurobox`) |
+| `SKIN_MCP_PRESETS_URL` | адрес службы пресетов (`engine/presets.ts`) | `http://127.0.0.1:8787/graphql` |
 | `SKIN_MCP_CHROME_EXECUTABLE` | путь к бинарнику Chrome/Chromium для `browser_*` (см. FAQ.md) | не задано — `chrome-devtools-mcp` ищет сам |
 | `SKIN_MCP_PROD_URL` | адрес прод-инстанса для `pnpm run push-to-prod` (см. ниже) | обязателен для скрипта, скрипт отказывает без него |
 
@@ -283,7 +292,7 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 <h2 id="состояния">🎛️ Состояния</h2>
 
 🚦 Состояния протокола (annotations/`isError`/сессии/auth) — общие для любой зоны на
-`@web-core/mcp`, см. его README. Специфично для skin-mcp:
+`@web-core/neurobox`, см. его README. Специфично для skin-mcp:
 
 | Состояние | Метка | Где |
 |---|---|---|
@@ -294,7 +303,7 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 | Имя компонента/пресета не найдено | `isError: true` | `get_passport`, `get_preset` |
 | Форма assembly-состояния сломана | `isError: true` | `save_preset` (`kind: "assembly"`) |
 | Компонент без `entity/io.ts` | `dataCheck: "skipped"`, не тихий успех | `check_assembly` |
-| Служба пресетов недоступна | бросает `StoreDown`, SDK заворачивает в `isError: true` | любой тул со стораджем |
+| Служба пресетов недоступна | бросает `PresetsDown`, SDK заворачивает в `isError: true` | любой тул со стораджем |
 
 <h2 id="io">🔌 IO</h2>
 
@@ -316,20 +325,21 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 | `check_assembly` | `{ component, assembly }` — `PassportAssembly` |
 | `check_outfit` / `assemble_preview` | `{ outfit }` — `{ name, palette, forms[], tags? }` |
 | `save_preset` | `{ kind, state, label?, paletteName? }` |
-| `list_feedback` | `{ status?, cursor?, limit? }` — `status` это `open` (по умолчанию), `resolved` или `all` |
-| `resolve_feedback` | `{ name, note? }` — имя заявки из `list_feedback` |
+| `list_feedback` | `{ status?, sign?, cursor?, limit? }` — `status` это `open` (по умолчанию), `resolved` или `all`; `sign` — `issue`/`praise`/`all` (по умолчанию `all`) |
+| `resolve_feedback` | `{ id, note? }` — `id` заявки из `list_feedback` |
 
 <h3>📤 Выход</h3>
 
 | Тул | Отдаёт (успех) |
 |---|---|
 | `list_components` | `{ items: [{ component, genus, group, footprint, package, partsCount, assemblies: [имена] }], nextCursor? }` — сами части и `means` сборок берутся `get_passport` |
-| `get_passport` | `{ component, passport, editor, io }` |
-| `list_presets`/`get_preset` | `{ items, nextCursor? }` / конверт записи (`{id,label,...,state}`) |
+| `get_passport` | `{ component, root, parts, variantAxis, settings, selfAssembly }` — без анатомии-дубля/editor-слайса/сборок/io (те — `list_components`/`get_assemblies`/`get_io_schema`) |
+| `list_presets` | `{ items: [{label, name, savedAt}], nextCursor? }` (с `kind` в аргументе) / `{palette:[...], form:[...], ...}` (без `kind` — обзор пяти видов, каждая группа той же формы) — без `id`/`kind` в самой записи, мёртвый вес и дубль контекста, см. `ROADMAP.yaml` |
+| `get_preset` | конверт записи целиком (`{id, label, name, kind, savedAt, state}`) |
 | `check_*` | отчёт с флавами (форма своя у каждого — см. `packages/skin` README); `check_form` при `ok:true` дополнительно отдаёт `tagGroups` (`variantTags` наоборот — тег → варианты, из `@web-core/skin/tags`) — готовая раскладка под свайперы витрины |
-| `assemble_preview` | `{ report, gaps, css }` |
-| `save_preset` | `{ saved }` — сохранённый конверт |
-| `list_feedback` | `{ items: [конверт записи с `state`], nextCursor? }` |
+| `assemble_preview` | `{report, gaps}` инлайном + CSS отдельным `resource_link` (`skin-css://<uuid>`, читать `resources/read`) — не `{report, gaps, css}` одним телом |
+| `save_preset` | `{ saved }` — сохранённый конверт (`PresetRecord`, не булево) |
+| `list_feedback` | `{ items: [{id, label, tool, sign, status, at}], nextCursor? }` — без тела заявки, оно в `get_feedback(id)` |
 | `resolve_feedback` | `{ resolved }` — конверт закрытой заявки |
 
 <h2 id="сборки">🏗️ Сборки</h2>
@@ -363,11 +373,11 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 | Неизвестный тег по значению варианта | `variantTags:{error:["no-such-tag"]}` на реальной форме | флав `unknown-tag` с адресом `variantTags.error`, `css` в ответе тоже пропадает (сигнал непротиворечив) |
 | Механика тегов из `@web-core/skin/tags` (после переезда) | реальный `check_form` с известными/неизвестными тегами через живой сервер, свежий рестарт | `tagGroups` собран верно (`default` первым, `status` вторым), `unknown-tag` по-прежнему ловится — поведение не изменилось после переноса чистой механики в `packages/skin` |
 | Финальная сверка перед первым деплоем на VPS | `save_content`/`author`-guard/`report_feedback`/`assemble_preview`/`browser_*` одним прогоном через `stdioPeer` | все семь шагов зелёные; попутно найдена и починена реальная утечка в `@web-core/mcp/peer` — см. следующую строку |
-| `stdioPeer` без `env` не путает окружения | тот же прогон, ДО починки: `SKIN_MCP_ADMIN_AUTHOR`/`SKIN_MCP_CHROME_EXECUTABLE` заданы в оболочке, но не у спавненного `pnpm start` | `author`-guard молча пропускал чужую перезапись `omnifield-*`, `browser_screenshot` не находил Chrome — оба симптома исчезли после `stdioPeer(..., {env: process.env})`, см. `packages/mcp/FAQ.md` |
+| `stdioPeer` без `env` не путает окружения | тот же прогон, ДО починки: `SKIN_MCP_ADMIN_AUTHOR`/`SKIN_MCP_CHROME_EXECUTABLE` заданы в оболочке, но не у спавненного `pnpm start` | `author`-guard молча пропускал чужую перезапись `omnifield-*`, `browser_screenshot` не находил Chrome — оба симптома исчезли после `stdioPeer(..., {env: process.env})`, см. `packages/neurobox/FAQ.md` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
-🔌 Съёмный слой — `auth`-хук `createServer` (см. `@web-core/mcp`): сегодня не подключён — служба
+🔌 Съёмный слой — `auth`-хук `createServer` (см. `@web-core/neurobox`): сегодня не подключён — служба
 пресетов сама без токена/scope, работаем внутри команды, все свои (осознанное решение, не
 забытое). Когда понадобится:
 
