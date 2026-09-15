@@ -92,13 +92,15 @@ tanstackRouterVitePlugin({ virtualRouteConfig: "./src/routes.config.ts" });
 ```
 
 **Виджет-адаптер «выбор через параметр маршрута» — типовая склейка списка/табов/дерева с
-роутингом без ручного `useParams`+`useNavigate` в каждом виджете:**
+роутингом без ручного `useParams`+`useNavigate` в каждом виджете. `defaultValue` — если сегмент
+ещё не задан в адресе, хук сам подставит его туда (`replace`, без записи в историю); заданный
+сегмент не трогает — соседний селектор того же маршрута меняет свой параметр, не задевая этот:**
 
 ```ts
 import { useRouteParamSelection } from "@web-core/router";
 
 function useTabSelection(to: string) {
-  const selection = useRouteParamSelection("view", to);
+  const selection = useRouteParamSelection("view", to, { defaultValue: "demo" });
   return {
     get value() {
       return selection.value;
@@ -159,7 +161,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 | `createRoute(options)` | `{ getParentRoute, path, component?, loader?, ... }` |
 | `tanstackRouterVitePlugin(options?)` | `Partial<Omit<Config, "target">>` |
 | `useParams({ from })`/`useSearch({ from })` | адрес маршрута |
-| `useRouteParamSelection(paramName, to)` | имя параметра + маршрут назначения |
+| `useRouteParamSelection(paramName, to, options?)` | имя параметра + маршрут назначения + `{ defaultValue? }` |
 
 <h3 id="io-выход">📤 Выход</h3>
 
@@ -169,7 +171,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 | `useNavigate()` | функцию навигации, вызывается сразу: `navigate({ to: "/about" })` |
 | `Route.useLoaderData()` | акцессор `Accessor<T>` данных из `loader` |
 | `tanstackRouterVitePlugin()` | `Plugin \| Plugin[]` для массива `plugins` vite-конфига |
-| `useRouteParamSelection(paramName, to)` | `{ value: string \| undefined, select(value) }` — `value` через геттер, `select` зовёт `navigate` |
+| `useRouteParamSelection(paramName, to, options?)` | `{ value: string \| undefined, select(value) }` — `value` через геттер (с учётом `defaultValue`, если задан), `select` зовёт `navigate` |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -181,6 +183,7 @@ import { TanStackRouterDevtools } from "@web-core/router/devtools";
 | `createRouter` + `RouterProvider` | реальный рендер дерева маршрутов, дефолты (`defaultPreload`) на месте | `test/router.test.tsx` |
 | `router.navigate({ to })` | навигация меняет смонтированное дерево (`home` → `about`) | `test/router.test.tsx` |
 | `useRouteParamSelection` внутри смонтированного компонента | `value` отражает параметр текущего маршрута, `select()` реально переключает URL (`/items/a` → `/items/b`) | `test/router.test.tsx` |
+| `useRouteParamSelection` с `defaultValue` | сегмент не задан — хук сам подставляет дефолт в URL; сегмент уже задан — не трогает | `test/router.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
