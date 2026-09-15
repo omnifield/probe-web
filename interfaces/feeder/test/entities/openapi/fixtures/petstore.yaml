@@ -1,0 +1,88 @@
+swagger: "2.0"
+info:
+  title: "Swagger Petstore (trimmed)"
+  version: "1.0.0"
+host: "petstore.swagger.io"
+basePath: "/v2"
+schemes:
+  - "https"
+paths:
+  /pet:
+    post:
+      tags:
+        - "pet"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/Pet"
+      responses:
+        "405":
+          description: "Invalid input"
+  /pet/findByStatus:
+    get:
+      tags:
+        - "pet"
+      parameters:
+        - name: "status"
+          in: "query"
+          required: true
+          type: "array"
+          items:
+            type: "string"
+            enum:
+              - "available"
+              - "pending"
+              - "sold"
+      responses:
+        "200":
+          description: "successful operation"
+  /pet/{petId}:
+    get:
+      tags:
+        - "pet"
+      parameters:
+        - name: "petId"
+          in: "path"
+          required: true
+          type: "integer"
+      responses:
+        "200":
+          description: "successful operation"
+definitions:
+  Category:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      name:
+        type: "string"
+  Tag:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      name:
+        type: "string"
+  Pet:
+    type: "object"
+    required:
+      - "name"
+    properties:
+      id:
+        type: "integer"
+      category:
+        $ref: "#/definitions/Category"
+      name:
+        type: "string"
+      tags:
+        type: "array"
+        items:
+          $ref: "#/definitions/Tag"
+      status:
+        type: "string"
+        enum:
+          - "available"
+          - "pending"
+          - "sold"

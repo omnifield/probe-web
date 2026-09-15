@@ -91,17 +91,52 @@ categories:
           `test.server.deps.inline` в `vitest.config.ts` — Ark-UI/Zag/Kobalte внутри `@web-core/ui`
           отдают сырой `.jsx`, vitest иначе грузит их напрямую через Node и падает. Разбор — FAQ.md.
 
-      - id: mode-openapi-templates
+      - id: mode-openapi-recognize
         type: feature
-        status: Backlog
-        priority: Medium
+        status: Done
+        priority: High
         milestone: null
-        name: "Мод 2 — распознавание ручек по шаблону формата/версии"
+        name: "Мод 2 — entities/openapi: распознавание свагера 2.0 + zod-схема на ручку"
         description: |
-          Означает: `@web-core/generators/mapping`'s `MappingTemplate`+`run()` — уже используемый
-          механизм (swagger2 в `apps/skin/entities/openapi`) — доводится до реальной схемы тела
-          запроса, не только списка ручек (`method`/`url`/`tag`, как сегодня). Новый
-          формат/версия — новый `MappingTemplate` в список, движок распознавания не меняется.
+          Означает: свой `MappingTemplate` (механизм `@web-core/generators/mapping`, тот же
+          `run(raw, templates)`) под Swagger 2.0 — жёсткое совпадение (`isEntry` смотрит на
+          `swagger: "2.0"`), самодостаточный (не переиспользует apps/skin-шный
+          `entities/openapi/model/import/swagger2.ts`, тот завязан на свои `Endpoint`/`HttpMethod`
+          и не строит схему тела). На каждую операцию — `method`/`url`/`tag` + `z.ZodType` из её
+          `parameters`/тела (JSON Schema → zod, тот же класс работы, что `@web-core/generators/
+          fields`, но на вход другой формат). Тесты — реальный (урезанный) petstore-документ, 8
+          шт, включая вложенные `$ref` (Pet→Category/Tag) и защиту от циклов через `z.lazy`.
+
+      - id: mode-openapi-invoke
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 2 — features/invoke-endpoint: реальный HTTP-вызов"
+        description: |
+          Означает: `rawRestRequest` из `@web-core/query/rest` (новая dependency пакета) —
+          выполнить ручку с собранными параметрами, вернуть `{ status, ok, headers, body }`.
+          Path-плейсхолдеры (`{petId}`) подставляются по имени ключа `value`, остальное — query
+          (массивы — повторяющимися парами), `body` — JSON. Решение user: сеть — на стороне
+          feeder, не потребителя (в отличие от apps/skin-шного `model/endpoint/call.ts`, который
+          остаётся отдельным, не трогается). Тесты — мок `fetch`, 5 шт.
+
+      - id: mode-openapi-widget
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 2 — widgets/openapi: два вида, OpenapiEditor + OpenapiList"
+        description: |
+          Означает: по находке user поверх исходного плана — не один виджет, а два под разные
+          экраны. `OpenapiEditor` — полный: список ручек из распознанного документа, конфигурация
+          параметров каждой переиспользует `Node`/`Leaf` из `widgets/tree` (локальный `binding` на
+          карточку, не наружу на каждую правку). `OpenapiList` — компактный: принимает уже
+          настроенные `{ endpoint, value }[]`, никакого UI полей, только «Вызвать» на каждую.
+          Публичный `onChange` у обоих — `OpenapiInvocation` (`{ endpoint, value, response }`,
+          `value` добавлен по итогам ревью user — без него `OpenapiList` нечем было бы кормить),
+          стреляет на сам вызов, не на правку поля. Тесты — реальный DOM-рендер (`solid-js/web`),
+          6 шт (3+3).
 
       - id: mode-file-upload
         type: feature
@@ -111,19 +146,22 @@ categories:
         name: "Мод 3 — загрузка файла"
         description: |
           Означает: интерфейс инпут-загрузчика; структура содержимого файла неизвестна заранее —
-          тот же untyped-путь сведения, что у мода 2.
+          untyped-путь сведения (`describeSample`/`FieldRule`, см. `mapping-ui`), в отличие от
+          мода 2 (тот типизирован сразу из спеки формата).
 
       - id: mapping-ui
         type: feature
         status: Backlog
         priority: Medium
         milestone: null
-        name: "UI сведения «корм → потребитель» поверх `@web-core/io`"
+        name: "UI сведения «корм → потребитель» поверх `@web-core/io` — для мода 3"
         description: |
           Означает: экран сопоставления путей — `describeSample`/`describeSchema` (плоский список
           путей+типов чужих данных и целевой схемы) и `FieldRule[]`+`applyFieldRules`/
           `collectFieldRuleReport` (движок «куда что положить» с отчётом) уже существуют в
-          `packages/io`, headless. UI поверх них — новая работа, нужна модам 2 и 3.
+          `packages/io`, headless. UI поверх них — новая работа, нужна только моду 3 (файл) —
+          мод 2 оказался типизированным напрямую из спеки, эта механика ему не понадобилась
+          (уточнение 2026-09-14, см. FAQ.md).
 
   - category: Документация
     items:
@@ -141,7 +179,61 @@ categories:
           (группа/genus/почему openapi не сливается физически) и разбор, какие кирпичи `io`/
           `generators` уже закрывают режимы 2/3.
 
+      - id: examples-md
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "EXAMPLES.md — рабочий копипаст-код под оба мода"
+        description: |
+          Означает: по образцу `interfaces/chat/EXAMPLES.md` (сосед по слою) — не канон, а
+          готовый к запуску код. 5 кейсов: дерево без бэкенда, дерево со списком, `OpenapiEditor`
+          с реальным вызовом (jsonplaceholder, публичный fake-REST — «Отправить» реально стучится
+          в сеть), `OpenapiList`, полный флоу редактор→сохранить→витрина. README.md урезан до пары
+          базовых сниппетов со ссылкой сюда.
+
 log:
+  - id: mode-openapi-done
+    type: plan
+    date: 2026-09-15
+    summary: >
+      Мод 2 доведён до принятого состояния — весь стек, поверх переосмысления из
+      `mode-openapi-rediscussed`. `entities/openapi` (свой `MappingTemplate` под Swagger 2.0,
+      самодостаточный zod из спеки, вложенные `$ref`+циклы через `z.lazy`), `features/invoke-
+      endpoint` (реальный `fetch` через `@web-core/query/rest`, path/query/body из одного `value`),
+      `widgets/openapi` — 30 тестов на весь пакет, build/typecheck/lint зелёные.
+
+      По ходу ревью user нашёл реальный кейс, не заложенный в исходный план: настройка ручки и её
+      вызов происходят на РАЗНЫХ экранах (редактор конфигурации vs витрина показа компонента) —
+      один виджет на два сценария не годится. Решение: разделить на `OpenapiEditor` (полный,
+      бывший единственный `Openapi`) и `OpenapiList` (компактный, новый — только вызов уже
+      настроенного, без единого поля конфигурации). Следом сам user поймал вторую дыру в
+      контракте — `OpenapiInvocation` не нёс `value` (то, с чем реально вызвали), без него
+      `{ endpoint, value }` для `OpenapiList` собрать было не из чего; добавлено во все точки
+      (`EndpointCard.onInvoke`, `OpenapiEditor`, `OpenapiList`).
+
+      Живого браузера с модом 2 не было (в отличие от мода 1) — весь прогон через vitest+jsdom.
+      `EXAMPLES.md` заведён по образцу `interfaces/chat` — 5 кейсов, README урезан до базовых
+      сниппетов со ссылкой. Закоммичено вместе с этим заходом.
+
+  - id: mode-openapi-rediscussed
+    type: plan
+    date: 2026-09-14
+    summary: >
+      Переосмысление мода 2 с user — первоначальный план (см. лог `interfaces-layer-founded`) был
+      неверным: мод 2 — не «нетипизированное сведение корма» (FieldRule/mapping-ui), а типизированный
+      движок как мод 1, просто схема строится из спеки Swagger 2.0 при распознавании, а не приходит
+      готовой. Также — граница со скином тоньше, чем в первой версии FAQ: не только рендер тела
+      ручки, а весь путь целиком — свой `MappingTemplate` под свагер 2.0 (не переиспользует
+      apps/skin-шный, тот завязан на apps/skin-домен и не строит схему тела), список ручек,
+      конфигурация параметров (переиспользует `Node`/`Leaf` мода 1), и сам HTTP-вызов —
+      всё на стороне feeder (`@web-core/query/rest`, новая зависимость). `onChange` мода 2 стреляет
+      на вызов ручки (несёт `{ endpoint, response }`), не на каждую правку поля, в отличие от мода 1.
+      apps/skin-шный `entities/openapi` (модели/сторы сервисов, свой парсинг, свой `call.ts`) этой
+      работой не трогается — интеграция (заменить ли им свою механику на feeder) осталась за
+      владельцем `apps/skin`. FAQ.md/ROADMAP.yaml поправлены под уточнённую модель перед стартом
+      кода — по явной просьбе user, не в параллель с кодом.
+
   - id: mode-typed-tree-done
     type: plan
     date: 2026-09-14

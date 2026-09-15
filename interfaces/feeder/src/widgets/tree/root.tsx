@@ -5,8 +5,14 @@ import type { z } from "@web-core/io";
 import type { FieldBinding } from "../../entities/tree";
 import { Node } from "./node";
 
-export function Tree(props: { schema: z.ZodType; value: unknown; onChange: (value: unknown) => void }) {
-  const fields = createMemo<readonly FieldDescriptor[]>(() => fieldsOf(props.schema));
+export function Tree(props: {
+  schema: z.ZodType;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const fields = createMemo<readonly FieldDescriptor[]>(() =>
+    fieldsOf(props.schema),
+  );
 
   const binding: FieldBinding = {
     value: () => props.value ?? {},

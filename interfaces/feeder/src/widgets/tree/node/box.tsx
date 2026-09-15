@@ -14,16 +14,13 @@ import {
 } from "@web-core/ui";
 import { layoutSelf } from "@web-core/skin";
 
-import { itemBinding, useTree, type FieldBinding } from "../../../entities/tree";
+import {
+  itemBinding,
+  useTree,
+  type FieldBinding,
+} from "../../../entities/tree";
 import { Button } from "../../../features/edit-value";
 
-/** Обвязка списка — элементы аккордеоном, у каждого триггер (лейбл + индикатор) и «Убрать» РЯДОМ,
- *  не ВНУТРИ триггера: `AccordionControl` сам `<button>`, кнопка `<button>` внутри нативно ловила
- *  клик как «раскрыть/свернуть» заодно (вложенные `<button>` — невалидный HTML), из-за чего «Убрать»
- *  триггерил аккордеон вместо удаления. «Добавить» сюда не входит — она у поля, рядом с его лейблом
- *  (`node.tsx`), не у списка элементов как такового. Сам не знает, ЧТО рисовать внутри элемента —
- *  зовёт `children(fields, binding, index)` (уже разрешённые на конкретный элемент), обычно это
- *  снова `Node`. */
 export function Box(props: {
   field: FieldDescriptor;
   binding: FieldBinding;
@@ -33,11 +30,14 @@ export function Box(props: {
     index: number,
   ) => JSX.Element;
 }) {
-  // eslint-disable-next-line solid/reactivity -- field/binding стабильны на весь маунт Box (пересоздаётся ремонтом For, не мутирует на месте)
-  const { elementFields, items, indices, removeAt } = useTree(props.field, props.binding);
+  /* eslint-disable solid/reactivity -- field/binding стабильны на весь маунт Box (пересоздаётся ремонтом For, не мутирует на месте) */
+  const { elementFields, items, indices, removeAt } = useTree(
+    props.field,
+    props.binding,
+  );
 
   return (
-    <Accordion collapsible multiple>
+    <Accordion collapsible multiple data-variant="cards">
       <For each={indices()}>
         {(index) => (
           <AccordionItem value={String(index)}>
