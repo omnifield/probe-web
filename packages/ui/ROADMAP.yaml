@@ -350,6 +350,46 @@ categories:
           адресации (см. FAQ.md). `generate && typecheck && build && test && lint` — зелёные,
           276/276 тестов кита (было 275, +1 новый).
 
+      - id: workspace-grid-columns-not-variant-scoped
+        type: bug
+        status: Backlog
+        priority: High
+        name: "Workspace — gridTemplateColumns/Rows в base, общие на все варианты — сборке stacked нечем ими не быть"
+        description: |
+          Найдено живьём (architect+user, 2026-09-14/15): `apps/skin/src/pages/index.tsx` не рендерит
+          `WorkspaceSidebar`/`WorkspaceRightbar`/`WorkspaceFooter` вовсе (только `Header`+`Outlet`
+          внутри `WorkspaceMain`), но сетка всё равно резервирует под них колонки — пришлось обходить
+          инлайновым `style`-оверрайдом прямо в апп, с явным комментарием в коде о причине. Дословно
+          user: «у меня вообще не стоят части ни райт ни сайт бары. при этом грид зачем-то рисуется.
+          тут что-то странное».
+
+          Причина — `playground/recipe.ts`: `gridTemplateColumns`/`gridTemplateRows` лежат в
+          `base.root.props`, ОБЩИЕ на все варианты (`sidebar-first`/`header-first`/`header-full`) —
+          различается только `gridTemplateAreas`. Все три существующих варианта предполагают все три
+          колонки (sidebar/main/rightbar) — колонки/строки, задуманные как «структура сетки», на
+          самом деле часть КОНКРЕТНОГО варианта, не общий инвариант компонента.
+
+          Важно: сборка (`PassportAssembly`) для ИМЕННО этого случая уже существует —
+          `playground/assemblies/stacked.ts` («шапка во всю ширину, показ под ней, без колонок
+          вовсе», `{TOPBAR, STAGE}` — ровно header+main). Разрыв ровно там, где сборка (структурное
+          дерево, JSX) не встречается с формой (CSS-рецепт, `variants`): для `stacked` нет
+          соответствующего варианта в `recipe.ts`, и колонки из `base` навязываются, даже когда JSX
+          их не рисует вовсе.
+
+          Планируемый фикс (не финальный, за владельцем): убрать `gridTemplateColumns`/
+          `gridTemplateRows` из `base.root.props`, сделать их частью КАЖДОГО варианта (включая три
+          существующих — они этот шаг не меняют по факту, просто явно несут свои колонки/строки
+          вместо наследования из `base`) — и добавить новый вариант `stacked`
+          (`gridTemplateAreas: '"header" "main"'`, `gridTemplateColumns: "1fr"`,
+          `gridTemplateRows: "auto 1fr"`, 2 строки — footer не нужен), зеркалящий уже существующую
+          сборку `stacked` по имени и по составу.
+
+          Известный потребитель вне этой зоны, который заберёт готовый вариант следующим заходом (не
+          здесь, architect+user договорились чинить отдельно): `apps/skin/src/pages/index.tsx` —
+          снять инлайн-`style`-оверрайд, перейти на `<Workspace variant="stacked" ...>`, убрать
+          рендер уже не нужных `WorkspaceSidebar`/`WorkspaceRightbar`/`WorkspaceFooter` (сегодня их
+          и так нет — но сама раскладка апп сейчас держится на оверрайде, не на компоненте).
+
   - category: Валидация
     items:
       - id: kit-life-validation-fold-in
