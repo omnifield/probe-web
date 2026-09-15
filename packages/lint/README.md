@@ -100,11 +100,13 @@ for (const rule of rules) {
 ```
 
 **Biome-канон** — `biome.json` потребителя подключает готовый статический артефакт через
-`extends` (Biome не умеет исполняемый конфиг, импорт функции в JSON не работает):
+`extends` (Biome не умеет исполняемый конфиг, импорт функции в JSON не работает). Адрес —
+подпуть `exports` пакета, не путь до файла в `node_modules` (тот хрупкий: зависит от глубины
+вложенности и хоистинга):
 
 ```jsonc
 // biome.json потребителя
-{ "extends": ["../../node_modules/@web-core/lint/dist/biome/biome.json"] }
+{ "extends": ["@web-core/lint/biome.json"] }
 ```
 
 `defineBiomeConfig()` из `@web-core/lint/biome` — то, из чего этот файл материализуется
