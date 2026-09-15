@@ -1,0 +1,1 @@
+export { componentManagerStore } from "./store";

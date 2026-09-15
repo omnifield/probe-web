@@ -1,13 +1,31 @@
-import { componentStore } from "#/entities/component";
-import { DemoStand } from "#/features/component-manager";
-import { CatalogList } from "#/widgets/catalogs";
+import { Outlet } from "@web-core/router";
+import { railVar } from "@web-core/skin";
+import {
+  Workspace,
+  WorkspaceRightbar,
+  WorkspaceSidebar,
+  Toast,
+  WorkspaceMain,
+} from "@web-core/ui";
+
+import { tree } from "#/entities/component";
+import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
 
 export function ShowcasePage() {
-  const groups = componentStore.selectors.variantsByTag;
+  const selection = useRouterCatalogSelection("/showcase/{-$component}");
 
   return (
-    <CatalogList items={groups()}>
-      {(item) => <DemoStand item={item} />}
-    </CatalogList>
+    <Workspace data-variant="multi-column" outlined>
+      <Toast />
+      <WorkspaceSidebar style={{ width: railVar("rail-md") }}>
+        <CatalogTree adapter={tree} {...selection} />
+      </WorkspaceSidebar>
+      <WorkspaceMain>
+        <Outlet />
+      </WorkspaceMain>
+      <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
+        <Outlet />
+      </WorkspaceRightbar>
+    </Workspace>
   );
 }

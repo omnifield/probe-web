@@ -1,1 +1,2 @@
-export * from "./demo-stand";
+export * from "./feed-manual";
+export * from "./feed-api";

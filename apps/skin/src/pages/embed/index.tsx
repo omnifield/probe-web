@@ -1,3 +1,5 @@
+import { Icon } from "@web-core/ui";
+
 /**
  * Изолированный показ ОДНОГО компонента+сборки, без хрома витрины (`Header`/сайдбар/чат) —
  * `/embed/<component>/<assembly>` для агента, работающего со сборками через MCP-браузер
@@ -21,12 +23,5 @@ export function EmbedPage(props: {
   //   if (record) component.setData(record.state.data);
   // });
 
-  return <div>wd</div>;
-  // <Show when={component.ready()}>
-  //   <Renderer
-  //     component={props.component}
-  //     assembly={props.assembly}
-  //     data={data()}
-  //   />
-  // </Show>
+  return <Icon name="trash" />;
 }

@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@web-core/assembly": "workspace:*",
+    "@web-core/chat": "workspace:*",
+    "@web-core/feeder": "workspace:*",
     "@web-core/generators": "workspace:*",
     "@web-core/io": "workspace:*",
     "@web-core/query": "workspace:*",
