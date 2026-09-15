@@ -10,3 +10,4 @@ export {
   TreeContent,
   type TreeContentProps,
 } from "./components/index.js";
+export type { TreeItem as TreeItemData } from "./entity/io.js";
