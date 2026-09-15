@@ -61,7 +61,7 @@ categories:
           `features/edit-value` (`ui/kit/*`), `widgets/tree` (`ui/tree/*`) — перенос из
           `apps/skin/entities/feeder`. Разбор — FAQ.md.
 
-  - category: Режимы наполнения (не начато)
+  - category: Режимы наполнения
     items:
       - id: mode-typed-tree
         type: feature
@@ -138,6 +138,35 @@ categories:
           стреляет на сам вызов, не на правку поля. Тесты — реальный DOM-рендер (`solid-js/web`),
           6 шт (3+3).
 
+      - id: mode-mapping-entities
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 4 — entities/mapping: describeVariant + applyMapping поверх @web-core/io"
+        description: |
+          Означает: `describeVariant(unknown)` — распознаёт по `instanceof z.ZodType`, зовёт
+          `describeSchema` или `describeSample` из `@web-core/io`, обе отдают одну форму
+          (`PathType[]`). `applyMapping(source, rules)` — тонкая обёртка над `applyFieldRules`
+          (не `collectFieldRuleReport` — один инстанс, не пачка строк), источник не объект
+          считается пустым, не падает. Вся механика — в `io`, отсюда только типизация «двух
+          вариантов». Тесты — 6 шт.
+
+      - id: mode-mapping-widget
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 4 — widgets/mapping: Mapping + FieldPicker"
+        description: |
+          Означает: `Mapping(a, b, onChange)` — на каждый путь варианта Б (`describeVariant(b)`)
+          свой `FieldPicker` (нативный `<select>` из путей А — Ark-UI `Select` не открывается в
+          jsdom, разбор — FAQ.md). Живой, как мод 1 (`onChange` на каждый пик, не по кнопке) —
+          несёт `{ rules: FieldRule[], result: MappingResult }`, `rules` для переиспользования на
+          новых данных той же формы (сохранение — на стороне потребителя, бэк, по словам user),
+          `result.row` — уже применённое сведение. v1 — только 1:1 (путь→путь), без UI под
+          `steps`/`onFail`. Тесты — реальный DOM-рендер, 5 шт.
+
       - id: mode-file-upload
         type: feature
         status: Backlog
@@ -145,23 +174,25 @@ categories:
         milestone: null
         name: "Мод 3 — загрузка файла"
         description: |
-          Означает: интерфейс инпут-загрузчика; структура содержимого файла неизвестна заранее —
-          untyped-путь сведения (`describeSample`/`FieldRule`, см. `mapping-ui`), в отличие от
-          мода 2 (тот типизирован сразу из спеки формата).
+          Означает: интерфейс инпут-загрузчика; структура содержимого файла неизвестна заранее.
+          Объём сузился после мода 4 — сам UI сведения уже есть (`Mapping`), моду 3 остаётся
+          только «файл → сэмпл» и передать результат в готовый `Mapping` как вариант А, не
+          изобретать сведение заново.
 
       - id: mapping-ui
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
-        name: "UI сведения «корм → потребитель» поверх `@web-core/io` — для мода 3"
+        name: "UI сведения «корм → потребитель» поверх `@web-core/io`"
         description: |
           Означает: экран сопоставления путей — `describeSample`/`describeSchema` (плоский список
           путей+типов чужих данных и целевой схемы) и `FieldRule[]`+`applyFieldRules`/
           `collectFieldRuleReport` (движок «куда что положить» с отчётом) уже существуют в
-          `packages/io`, headless. UI поверх них — новая работа, нужна только моду 3 (файл) —
-          мод 2 оказался типизированным напрямую из спеки, эта механика ему не понадобилась
-          (уточнение 2026-09-14, см. FAQ.md).
+          `packages/io`, headless. Материализовалось как мод 4 (`Mapping`, `mode-mapping-widget`)
+          — не «только для мода 3», как думали раньше (уточнение 2026-09-14), а отдельный
+          универсальный мод, не привязанный к происхождению данных (уточнение 2026-09-15, находка
+          user — мод 2 без способа скормить результат потребителю был бесполезен).
 
   - category: Документация
     items:
@@ -184,15 +215,39 @@ categories:
         status: Done
         priority: Medium
         milestone: null
-        name: "EXAMPLES.md — рабочий копипаст-код под оба мода"
+        name: "EXAMPLES.md — рабочий копипаст-код под все реализованные моды"
         description: |
           Означает: по образцу `interfaces/chat/EXAMPLES.md` (сосед по слою) — не канон, а
-          готовый к запуску код. 5 кейсов: дерево без бэкенда, дерево со списком, `OpenapiEditor`
-          с реальным вызовом (jsonplaceholder, публичный fake-REST — «Отправить» реально стучится
-          в сеть), `OpenapiList`, полный флоу редактор→сохранить→витрина. README.md урезан до пары
-          базовых сниппетов со ссылкой сюда.
+          готовый к запуску код. Дерево без бэкенда, дерево со списком, `OpenapiEditor` с реальным
+          вызовом (jsonplaceholder, публичный fake-REST — «Отправить» реально стучится в сеть),
+          `OpenapiList`, полный флоу редактор→сохранить→витрина, `Mapping` на ответе мода 2.
+          README.md урезан до пары базовых сниппетов со ссылкой сюда.
 
 log:
+  - id: mode-mapping-done
+    type: plan
+    date: 2026-09-15
+    summary: >
+      Мод 4 (`Mapping`) заведён и доведён до принятого состояния в одном заходе — не по
+      исходному плану (там сведение было частью модов 2/3, `mapping-ui`), а по находке user
+      поверх готового мода 2: результат вызова ручки сам по себе бесполезен без способа скормить
+      его конкретному потребителю, а способ этот не должен знать, откуда данные взялись. Решение:
+      отдельный мод, вход — два «варианта» (А/Б, каждый сырые данные или zod-схема), юзер сводит
+      поля вручную (v1 — 1:1, без `steps`/`onFail` в UI), движок отдаёт `{ rules, result }` живьём
+      на каждый пик. `rules` — сохранить и переиспользовать на новых данных той же формы,
+      сохранение на бэке — забота user, не feeder.
+
+      `entities/mapping` (`describeVariant`+`applyMapping`) — тонкая обёртка, вся механика в
+      `@web-core/io` (`describeSample`/`describeSchema`/`applyFieldRules`), от feeder только
+      интерфейс — по словам user. `widgets/mapping` — по ходу тестирования выяснилось, что Ark-UI
+      `Select` (тот же приём, что `EnumInput` мода 1) в принципе не открывается в jsdom ни одним
+      способом эмуляции клика/pointer/клавиатуры — `FieldPicker` переписан на нативный `<select>`
+      (`FieldSelect` из `@web-core/ui`), надёжнее и уместнее для плоского списка путей.
+
+      41 тест на пакет, build/typecheck/lint зелёные. Объём мода 3 сузился — сможет переиспользовать
+      готовый `Mapping`, не строить сведение заново. `mapping-ui` закрыт этим модом (не только для
+      мода 3, как думали раньше). Живого браузера не было — vitest+jsdom.
+
   - id: mode-openapi-done
     type: plan
     date: 2026-09-15

@@ -6,3 +6,4 @@ export {
   type OpenapiInvocation,
   type OpenapiListItem,
 } from "./widgets/openapi";
+export { Mapping, type MappingChange } from "./widgets/mapping";
