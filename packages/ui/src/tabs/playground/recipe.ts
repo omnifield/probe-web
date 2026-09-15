@@ -6,7 +6,7 @@ const slide = "left var(--motion-normal) var(--ease-out), top var(--motion-norma
 export const recipe: SlotRecipe = {
   base: {
     root: {
-      props: { display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+      props: { display: "flex", flexDirection: "column" },
       states: { focus: { props: { outline: "none" } } },
     },
     list: {
@@ -56,7 +56,6 @@ export const recipe: SlotRecipe = {
     },
     content: {
       props: {
-        paddingBlock: "var(--space-4)",
         color: "var(--neutral-12)",
         fontSize: "var(--font-size-md)",
         lineHeight: "var(--leading-relaxed)",
