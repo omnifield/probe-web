@@ -352,7 +352,7 @@ categories:
 
       - id: workspace-grid-columns-not-variant-scoped
         type: bug
-        status: Backlog
+        status: Done
         priority: High
         name: "Workspace — gridTemplateColumns/Rows в base, общие на все варианты — сборке stacked нечем ими не быть"
         description: |
@@ -389,6 +389,21 @@ categories:
           снять инлайн-`style`-оверрайд, перейти на `<Workspace variant="stacked" ...>`, убрать
           рендер уже не нужных `WorkspaceSidebar`/`WorkspaceRightbar`/`WorkspaceFooter` (сегодня их
           и так нет — но сама раскладка апп сейчас держится на оверрайде, не на компоненте).
+
+          Сделано (2026-09-15): `playground/recipe.ts` — `gridTemplateColumns`/`gridTemplateRows`
+          убраны из `base.root.props`, разложены по каждому варианту. Три существующих
+          (`sidebar-first`/`header-first`/`header-full`) несут прежние значения (3 колонки/3
+          строки) явно, ничего не меняют по факту рендера. Новый вариант `stacked` —
+          `gridTemplateColumns: "1fr"`, `gridTemplateRows: "auto 1fr"` (2 строки, без footer),
+          `gridTemplateAreas: '"header" "main"'` — зеркалит уже существующую сборку
+          `playground/assemblies/stacked.ts` по имени и по составу (`TOPBAR`+`STAGE`). `typecheck &&
+          lint && test && build` — зелёные, 287/287 тестов кита (число не изменилось — это правка
+          формы данных рецепта, существующий `test/recipe.test.tsx` уже гоняет реальную сборку/
+          проверку пробелов по обновлённой структуре, новый DOM-сценарий не требовался).
+
+          НЕ сделано здесь (зона `apps/skin`, architect+user решили чинить отдельным заходом):
+          переключение `pages/index.tsx` на `<Workspace variant="stacked">` и снятие инлайн-
+          оверрайда — вариант в рецепте готов, подключение потребителя вне этой зоны.
 
   - category: Валидация
     items:

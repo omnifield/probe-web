@@ -5,8 +5,6 @@ export const recipe: SlotRecipe = {
     root: {
       props: {
         display: "grid",
-        gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr minmax(0, var(--column-24))",
-        gridTemplateRows: "auto 1fr auto",
         blockSize: "100%",
         minBlockSize: "0",
       },
@@ -21,6 +19,8 @@ export const recipe: SlotRecipe = {
     "sidebar-first": {
       root: {
         props: {
+          gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr minmax(0, var(--column-24))",
+          gridTemplateRows: "auto 1fr auto",
           gridTemplateAreas: '"sidebar header  rightbar" "sidebar main    rightbar" "sidebar footer  rightbar"',
         },
       },
@@ -28,6 +28,8 @@ export const recipe: SlotRecipe = {
     "header-first": {
       root: {
         props: {
+          gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr minmax(0, var(--column-24))",
+          gridTemplateRows: "auto 1fr auto",
           gridTemplateAreas: '"header   header  header" "sidebar  main    rightbar" "footer   footer  footer"',
         },
       },
@@ -35,7 +37,18 @@ export const recipe: SlotRecipe = {
     "header-full": {
       root: {
         props: {
+          gridTemplateColumns: "minmax(var(--space-32), var(--column-24)) 1fr minmax(0, var(--column-24))",
+          gridTemplateRows: "auto 1fr auto",
           gridTemplateAreas: '"header   header  header" "sidebar  main    rightbar" "sidebar  footer  rightbar"',
+        },
+      },
+    },
+    stacked: {
+      root: {
+        props: {
+          gridTemplateColumns: "1fr",
+          gridTemplateRows: "auto 1fr",
+          gridTemplateAreas: '"header" "main"',
         },
       },
     },
