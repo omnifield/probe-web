@@ -37,7 +37,7 @@
 
 | Часть          | Адрес                    | Экспортирует                                                                                                                                                                                                                    |
 | -------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Данные из сети | `@web-core/query`         | весь `@tanstack/solid-query` (`useQuery`/`createQuery`, `useMutation`/`createMutation`, `useInfiniteQuery`/`createInfiniteQuery`, `useQueries`/`createQueries`, `QueryClient`, `QueryClientProvider`, `queryOptions`, `infiniteQueryOptions`, `mutationOptions`, `useIsFetching`, `useIsMutating`, …), весь `@tanstack/query-core` реэкспортом |
+| Данные из сети | `@web-core/query`         | весь `@tanstack/solid-query` (`useQuery`/`createQuery`, `useMutation`/`createMutation`, `useInfiniteQuery`/`createInfiniteQuery`, `useQueries`/`createQueries`, `QueryClient`, `QueryClientProvider`, `queryOptions`, `infiniteQueryOptions`, `mutationOptions`, `useIsFetching`, `useIsMutating`, …), весь `@tanstack/query-core` реэкспортом, `defineQuery` (⚠️ эксперимент, см. ниже) |
 | Devtools       | `@web-core/query/devtools` | `SolidQueryDevtools`, `SolidQueryDevtoolsPanel`                                                                                                                                                                               |
 | Persist        | `@web-core/query/persist`  | `persistQueryClient`, `createSyncStoragePersister`, весь `@tanstack/query-persist-client-core` (`persistQueryClientRestore`, `persistQueryClientSave`, `persistQueryClientSubscribe`, ретрай-стратегии, `createPersister`)  |
 | GraphQL        | `@web-core/query/graphql`  | `createGraphQLClient` (основной способ) + `graphqlRequest`/`gql`/`ClientError` (внутренности движка — см. ниже)                                                                                                               |
@@ -191,6 +191,48 @@ const { data, response } = await restApi.raw<{ title: string }>(`/todos/${id()}`
 console.log(response.status, response.headers.get("x-request-id"), data);
 ```
 
+**⚠️ `defineQuery` — ЭКСПЕРИМЕНТАЛЬНО** (введено 2026-09-15, первый и пока единственный
+потребитель — `apps/skin`; если удержится на реальном использовании, будет закреплено в каноне
+как рекомендуемый способ, до этого — не документируется как основной путь наравне с
+`createQuery`/`queryOptions` выше). Решает конкретное повторение: несколько запросов одной формы
+(`queryKey`+`queryFn`, где varies только аргумент) нужны И в `loader` роутера (обычный `await`,
+без Solid-owner — там `createQuery` не работает, см. FAQ.md), И реактивно в компоненте — раньше
+это означало вручную писать `queryOptions(...)` и свой `createQuery`-хук на каждый такой запрос.
+`defineQuery` даёт одно определение, вызываемое по имени в обоих местах:
+
+```ts
+// src/api/presets.ts
+import { defineQuery } from "@web-core/query";
+import { queryClient } from "./clients.js";
+
+export const contentQuery = defineQuery(
+  queryClient,
+  (componentName: string) => ["content", componentName],
+  (componentName: string) => presetsClient.list("content", { component: [componentName] }),
+  { staleTime: Infinity },
+);
+```
+
+```ts
+// в loader — вызов по имени, обычный Promise
+const content = await contentQuery(componentName);
+```
+
+```tsx
+// в компоненте — через .use, реактивно, без createResource
+const query = contentQuery.use(() => componentName);
+query.data / query.isPending / query.isError
+```
+
+Оба пути читают из ОДНОГО `queryClient`, переданного при определении — если `loader` уже прогрел
+кэш (`staleTime: Infinity`), `.use()` в компоненте не бьёт в сеть повторно.
+
+Ловушка при тестировании (найдена при написании `test/define.test.tsx`): `vi.fn().mockResolvedValue(x)`
+не даёт `defineQuery` вывести тип данных, если аргумент запроса не `void` — возвращаемый тип
+схлопывается в `{}`. Мок нужно типизировать через реализацию: `vi.fn(async (arg) => x)`, не через
+`.mockResolvedValue`. С обычной типизированной функцией (не mock) проблемы нет — подтверждено
+изолированным прогоном `tsc` при реализации.
+
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У пакета нет своей сущности настроек — это опции конструкторов вендора, реэкспортированных как
@@ -247,6 +289,7 @@ console.log(response.status, response.headers.get("x-request-id"), data);
 | `graphqlRequest(url, document, variables?, headers?)` ⚠️ внутренности | `url: string`, `document: RequestDocument \| TypedDocumentNode`, `variables?: Variables`, `headers?: HeadersInit` — url/headers на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
 | `restRequest(input, init?)` ⚠️ внутренности | `input: string \| URL`, `init?: RequestInit & { json?: unknown }` — url на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
 | `rawRestRequest(input, init?)` ⚠️ внутренности | тот же вход, что и `restRequest` — url/`init` на КАЖДЫЙ вызов, без клиента; см. "Анатомия" |
+| `defineQuery(queryClient, queryKey, queryFn, config?)` ⚠️ эксперимент | `queryClient: QueryClient`, `queryKey: (arg: TArg) => QueryKey`, `queryFn: (arg: TArg) => Promise<TData>`, `config?: { staleTime? }` |
 
 ### 📤 Выход
 
@@ -261,6 +304,7 @@ console.log(response.status, response.headers.get("x-request-id"), data);
 | `graphqlRequest(...)` ⚠️ внутренности | `Promise<TResult>` — данные из `data` ответа; на GraphQL-ошибках/не-2xx кидает `ClientError`      |
 | `restRequest(...)` ⚠️ внутренности  | `Promise<TResult>` — JSON или текст тела по `content-type`, `undefined` на `204`/пустом теле; на не-2xx кидает `HTTPError` (несёт `response`+разобранное `data`) |
 | `rawRestRequest(...)` ⚠️ внутренности | `Promise<RestResult<TResult>>` — `{ response, data }`, ТА ЖЕ форма на успехе, что несёт `HTTPError` на ошибке (`response`+`data`); тело разобрано так же, как у `restRequest` |
+| `defineQuery(...)` ⚠️ эксперимент | функция `(arg?) => Promise<TData>` (вызов по имени — для `loader`) с довешенным `.use(arg?: Accessor<TArg>)` (для компонента, реактивно) |
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
@@ -275,6 +319,9 @@ console.log(response.status, response.headers.get("x-request-id"), data);
 | `QueryClientProvider` + `createQuery`/`createMutation` + `restRequest` | внутренности: реальный рендер (`queryFn` и `mutationFn`), `json`-шорткат проверен byte-level (`body`+`content-type`), не-2xx доезжает до `HTTPError` | `test/rest.test.tsx` |
 | `QueryClientProvider` + `createQuery` + `createRestClient` | основной способ: `baseUrl`+путь соединены, per-call `headers` перекрывают клиентские по имени | `test/rest.test.tsx` |
 | `rawRestRequest`/`<restApi>.raw` | на успехе `{ response, data }` не теряет статус/заголовки — постман-путь, симметричный `HTTPError` на ошибке | `test/rest.test.tsx` |
+| `defineQuery(...)` — вызов по имени | обычный `Promise`, без Solid-owner — годится в `loader` | `test/define.test.tsx` |
+| `defineQuery(...)` + `.use()` | реальный рендер компонента, `loading` → данные, `queryFn` вызван 1 раз | `test/define.test.tsx` |
+| `defineQuery(...)` — вызов по имени прогревает кэш, `.use()` не рефетчит | один `queryClient` на оба пути; после ручного вызова `.use()` в компоненте видит готовые данные без повторного запроса | `test/define.test.tsx` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 

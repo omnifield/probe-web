@@ -237,6 +237,59 @@ categories:
           @tanstack/solid-query-devtools, @tanstack/query-sync-storage-persister и solid-js/web в
           node_modules (не по памяти). ROADMAP.yaml — по образцу packages/store/packages/assembly.
 
+  - category: "defineQuery (эксперимент)"
+    items:
+      - id: define-query-experimental
+        type: feature
+        status: Done
+        priority: Medium
+        milestone: null
+        name: "⚠️ ЭКСПЕРИМЕНТ — `defineQuery`: одно определение запроса, вызов по имени (loader) + `.use()` (компонент)"
+        description: |
+          Не канон, статус временный. Слова user: "я пока делаю апп скин буду юзать это если все
+          полетит то введем официально" — первый и пока единственный потребитель apps/skin
+          (presets.ts: palettes/assemblies/variants/outfits/content — пять запросов одной формы
+          `presetsClient.list(kind, filter?)`, различался только аргумент).
+
+          Путь к решению: apps/skin спросил, как читать `contentQuery` (написанный через
+          `queryClient.query(...)`, императивный Promise под loader) в компоненте — ответ был
+          "через createResource". User сравнил с packages/store's createResourceAtom и назвал
+          это той же проблемой, что раньше была у store: "у тебя урезаный пакет... приходится
+          миксовать твои мехи с солид мехами". Разбор показал: createQuery — уже полный
+          реактивный примитив (не сырая механика, как store's createAtom без async), а
+          "миксовать" пришлось из-за формы presets.ts (Promise-функции под loader, не
+          queryOptions). Предложение переписать под queryOptions+свой createQuery-хук на каждый
+          запрос — по образцу TkDodo (мейнтейнер TanStack Query, tkdodo.eu/blog/
+          practical-react-query, раздел "Create custom hooks": "even for wrapping one useQuery
+          call, creating a custom hook usually pays off", сверено 2026-09-15) — user принял, но
+          спросил, почему это не заведено в пакете "из коробки". Ответ: в apps/skin пять запросов
+          СТРУКТУРНО идентичны (расходится только kind+arg, никакого select/enabled/своего
+          staleTime) — порог "не строить генерик" (реальное расхождение поведения) не сработал,
+          копирование шаблона пять раз — то самое дублирование, ради которого генерик оправдан.
+
+          Форма: `defineQuery(queryClient, queryKey, queryFn, config?)` возвращает функцию,
+          вызываемую ПО ИМЕНИ (`await contentQuery(id)` — обычный Promise через
+          `queryClient.query(...)`, годится в `loader`, где нет Solid reactive owner) с довешенным
+          `.use(arg?: Accessor<TArg>)` (реактивно, `createQuery` внутри, для компонента). Один
+          `queryClient`, переданный при определении — оба пути делят кэш, прогретый `loader`
+          не рефетчится повторно из `.use()`.
+
+          `queryKey`/`queryFn` — два ОТДЕЛЬНЫХ параметра, не один callback `{queryKey, queryFn}`:
+          через объединённый callback TypeScript не выводит `TData` одновременно с `TArg` (падает
+          в `{}`), подтверждено изолированными прогонами `tsc` при реализации. Разбор — FAQ.md.
+
+          Тесты (`test/define.test.tsx`, реальный рендер) доказывают три вещи: 1) вызов по имени
+          — обычный Promise без Solid-owner; 2) `.use()` — реальный рендер, `loading` → данные;
+          3) вызов по имени прогревает кэш, `.use()` после него не рефетчит (`queryFn` вызван 1
+          раз суммарно) — это и есть решаемая проблема, не просто синтаксический сахар.
+
+          Критерий пересмотра статуса: если реальное использование в apps/skin потребует
+          протаскивать через `defineQuery` растущий список опций вендора (`select`, условный
+          `enabled`, per-query `retry` и т.п.) — это сигнал, что механика не годится, откатывать,
+          а не разрастать сигнатуру. Держится на простых списковых запросах без такого разнообразия
+          — переводить в статус канона (README без пометки ⚠️, версия пакета — решение architect
+          при публикации).
+
   - category: Не сделано
     items:
       - id: sync-persister-deprecated
@@ -269,6 +322,21 @@ categories:
           `graphql-subpath-no-second-cache`/`graphql-codegen-types`. Не входит в объём этого файла.
 
 log:
+  - id: define-query-experimental-added
+    type: plan
+    date: 2026-09-15
+    summary: >
+      Добавлен `defineQuery` (⚠️ эксперимент, категория "defineQuery (эксперимент)" этого файла).
+      Порог "не строить генерик, если запросы расходятся по поведению" (см. лог
+      `transport-client-once-not-toolkit` ниже — тот же принцип "движок даёт готовую механику,
+      не заготовку под самостоятельную сборку") здесь не сработал в обратную сторону: пять
+      запросов apps/skin's presets.ts структурно идентичны, копирование шаблона — реальное
+      дублирование, не расхождение поведения. Реализация нашла и задокументировала (FAQ.md) два
+      факта: 1) `queryKey`/`queryFn` обязаны быть отдельными параметрами — через объединённый
+      callback TypeScript не выводит `TData` рядом с `TArg`; 2) `vi.fn().mockResolvedValue(x)` не
+      годится для тестирования параметризованных generic-хелперов — нужна типизированная
+      реализация мока. Статус пересматривается после реального использования в apps/skin.
+
   - id: transport-client-once-not-toolkit
     type: plan
     date: 2026-09-11
