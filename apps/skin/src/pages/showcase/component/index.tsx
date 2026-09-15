@@ -1,17 +1,20 @@
-import { createEffect } from "solid-js";
-import { useParams } from "@web-core/router";
+import type { ComponentDescriptor, TagGroup } from "#/entities/component";
+import { CatalogList, Slot } from "#/widgets/catalogs";
 
-export function ComponentPage() {
-  const params = useParams({ strict: false });
-
-  createEffect(() => {
-    console.log(params().component);
-  });
-
+export function ComponentPage(props: {
+  descriptor?: ComponentDescriptor;
+  tags: readonly TagGroup[];
+}) {
   return (
-    <div>wdad</div>
-    // <CatalogList items={groups()}>
-    //   {(item) => <ComponentStand item={item} />}
-    // </CatalogList>
+    <CatalogList items={props.tags}>
+      {(item) => (
+        <Slot items={item.variants} label={(variant) => variant}>
+          {(variant, index) => {
+            console.log(variant, index);
+            return null;
+          }}
+        </Slot>
+      )}
+    </CatalogList>
   );
 }

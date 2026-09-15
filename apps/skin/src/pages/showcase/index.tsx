@@ -24,7 +24,7 @@ export function ShowcasePage() {
         <Outlet />
       </WorkspaceMain>
       <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
-        <Outlet />
+        цвф
       </WorkspaceRightbar>
     </Workspace>
   );

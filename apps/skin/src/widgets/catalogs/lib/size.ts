@@ -23,7 +23,7 @@ const SIZES: Readonly<Record<ComponentFootprint, SlotSize>> = {
 };
 
 /** Размер вьюпорта карусели слота — по футпринту компонента (нет среза редактора → как "regular"). */
-export function getSize(component: string): SlotSize {
+export function slotSize(component: string): SlotSize {
   const editorInfo = editorInfoOf(component);
   const footprint = editorInfo ? footprintOf(editorInfo) : "regular";
   return SIZES[footprint];

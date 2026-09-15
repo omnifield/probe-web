@@ -20,13 +20,10 @@ export function assembliesOf(componentName: string) {
   });
 }
 
-export function variantsOf(
-  outfitName: string,
-  componentName: string,
-): Promise<readonly VariantSummary[]> {
+export function variantsOf(componentName: string): Promise<readonly VariantSummary[]> {
   return queryClient.fetchQuery({
-    queryKey: ["variants", outfitName, componentName],
-    queryFn: () => variantsOfOutfit(presetsClient, outfitName, componentName),
+    queryKey: ["variants", componentName],
+    queryFn: () => variantsOfOutfit(presetsClient, componentName),
     staleTime: Infinity,
   });
 }
