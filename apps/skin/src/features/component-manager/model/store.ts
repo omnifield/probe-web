@@ -1,30 +1,51 @@
 import { createActionStoreFamily } from "@web-core/store";
 import { castDraft, mutate } from "@web-core/store/mutate";
+import type { ComponentDescriptor } from "@web-core/ui/component-info";
+import { contentOf, variantsOf } from "#/entities/component";
 
-interface FeedState {
-  readonly feedData?: unknown;
-  readonly presetName?: string;
+interface ComponentManagerState {
+  readonly editorInfo?: ComponentDescriptor["editorInfo"];
+  readonly io?: ComponentDescriptor["io"];
+  readonly variants?: Awaited<ReturnType<typeof variantsOf>>;
+  readonly content?: Awaited<ReturnType<typeof contentOf>>;
 }
 
 export const componentManagerStoreOf = createActionStoreFamily<
-  FeedState,
+  ComponentManagerState,
   {
-    setFeedData(value: unknown): void;
-    setPreset(name: string, data: unknown): void;
+    setEditorInfo(editorInfo: ComponentDescriptor["editorInfo"]): void;
+    setIo(io: ComponentDescriptor["io"]): void;
+    loadVariants(component: string): Promise<void>;
+    loadContent(component: string): Promise<void>;
   }
 >({}, ({ setState }) => ({
-  setFeedData(value) {
+  setEditorInfo(editorInfo) {
     setState(
-      mutate<FeedState>((draft) => {
-        draft.feedData = castDraft(value);
+      mutate<ComponentManagerState>((draft) => {
+        draft.editorInfo = castDraft(editorInfo);
       }),
     );
   },
-  setPreset(name, data) {
+  setIo(io) {
     setState(
-      mutate<FeedState>((draft) => {
-        draft.presetName = name;
-        draft.feedData = castDraft(data);
+      mutate<ComponentManagerState>((draft) => {
+        draft.io = castDraft(io);
+      }),
+    );
+  },
+  async loadVariants(component) {
+    const variants = await variantsOf(component);
+    setState(
+      mutate<ComponentManagerState>((draft) => {
+        draft.variants = castDraft(variants);
+      }),
+    );
+  },
+  async loadContent(component) {
+    const content = await contentOf(component);
+    setState(
+      mutate<ComponentManagerState>((draft) => {
+        draft.content = castDraft(content);
       }),
     );
   },

@@ -1,7 +1,7 @@
 import { createMemo, Show } from "solid-js";
 import { Tree } from "@web-core/feeder";
 import { componentDescriptorOf } from "#/entities/component";
-import { componentManagerStoreOf } from "../model";
+import { componentManagerStoreOf } from "../../model";
 
 export function FeedManual(props: { component?: string }) {
   const schema = () =>

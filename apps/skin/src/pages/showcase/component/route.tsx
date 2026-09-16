@@ -1,24 +1,17 @@
 import { createFileRoute, notFound } from "@tanstack/solid-router";
-import {
-  componentDescriptorOf,
-  groupByTag,
-  Loader,
-  variantsOf,
-} from "#/entities/component";
+import { componentDescriptorOf, Loader } from "#/entities/component";
 import { ComponentPage } from "./index";
 
 export const Route = createFileRoute(
   "/_workspace/showcase/{-$component}/{-$view}",
 )({
-  loader: async ({ params }) => {
+  loader: ({ params }) => {
     const { component } = params;
     if (component === undefined) throw notFound();
 
-    const variants = await variantsOf(component);
     return {
       component,
       descriptor: componentDescriptorOf(component),
-      tags: groupByTag(variants),
     };
   },
   pendingComponent: Loader,
@@ -30,7 +23,6 @@ export const Route = createFileRoute(
       <ComponentPage
         component={data().component}
         descriptor={data().descriptor}
-        tags={data().tags}
       />
     );
   },
