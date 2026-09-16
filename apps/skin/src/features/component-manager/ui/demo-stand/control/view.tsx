@@ -5,25 +5,34 @@ import {
   SegmentGroupItemControl,
   SegmentGroupItemText,
 } from "@web-core/ui";
-import { For } from "solid-js";
+import { createMemo, For } from "solid-js";
+import { useParams } from "@web-core/router";
+import {
+  componentManagerStoreOf,
+  VIEW_MODES,
+  type ViewMode,
+} from "../../../model";
 
-export type StandMode = "demo" | "style" | "assembly";
-export const STAND_MODES: readonly StandMode[] = ["demo", "style", "assembly"];
+export function StandControlView() {
+  const component = useParams({
+    strict: false,
+    select: (params) => params.component,
+  });
+  const store = () => componentManagerStoreOf(component() ?? "");
+  const viewMode = createMemo(() => store().use((state) => state.viewMode)());
 
-export function StandControlView(props: {
-  mode: StandMode;
-  onModeChange: (mode: StandMode) => void;
-}) {
   return (
     <SegmentGroup
       orientation="horizontal"
-      value={props.mode}
+      value={viewMode()}
       onValueChange={(details) => {
-        if (details.value) props.onModeChange(details.value as StandMode);
+        if (details.value) {
+          store().actions.setViewMode(details.value as ViewMode);
+        }
       }}
     >
       <SegmentGroupIndicator />
-      <For each={STAND_MODES}>
+      <For each={VIEW_MODES}>
         {(item) => (
           <SegmentGroupItem value={item}>
             <SegmentGroupItemControl />

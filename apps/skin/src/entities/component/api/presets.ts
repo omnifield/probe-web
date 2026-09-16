@@ -31,7 +31,7 @@ export const outfitsOf = defineQuery(
   { staleTime: Infinity },
 );
 
-export const contentQuery = defineQuery(
+export const contentOf = defineQuery(
   queryClient,
   (componentName: string) => ["content", componentName],
   (componentName: string) =>

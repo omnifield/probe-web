@@ -1,19 +1,20 @@
 import { Surface } from "@web-core/ui";
-import { createEffect } from "solid-js";
-import type { ComponentDescriptor } from "#/entities/component";
-import { componentManagerStoreOf } from "../../model";
+import { componentDescriptorOf } from "#/entities/component";
+import { componentManagerStoreOf, useComponentName } from "../../model";
+import { StandContainer } from "./container";
 
-export function DemoStand(props: {
-  component: string;
-  descriptor: ComponentDescriptor;
-}) {
-  createEffect(() => {
-    const store = componentManagerStoreOf(props.component);
-    store.actions.setEditorInfo(props.descriptor.editorInfo);
-    store.actions.setIo(props.descriptor.io);
-    store.actions.loadVariants(props.component);
-    store.actions.loadContent(props.component);
-  });
+export function DemoStand() {
+  const name = useComponentName();
+  const descriptor = componentDescriptorOf(name);
+  const store = componentManagerStoreOf(name);
+  store.actions.setEditorInfo(descriptor.editorInfo);
+  store.actions.setIo(descriptor.io);
+  store.actions.loadVariants(name);
+  store.actions.loadContent(name);
 
-  return <Surface />;
+  return (
+    <Surface>
+      <StandContainer />
+    </Surface>
+  );
 }

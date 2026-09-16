@@ -12,15 +12,13 @@ import {
   SelectTrigger,
   SelectValueText,
 } from "@web-core/ui";
-import { contentOf } from "#/entities/component";
+import { componentManagerStoreOf, useComponentName } from "../../model";
 
-export function FeedPreset(props: {
-  component?: string;
-  onChange?: (data: unknown) => void;
-}) {
-  const query = contentOf.use(() => props.component ?? "");
+export function FeedPreset() {
+  const store = componentManagerStoreOf(useComponentName());
+  const content = store.use((state) => state.content);
   const items = () =>
-    (query.data ?? []).map((preset) => ({
+    (content() ?? []).map((preset) => ({
       value: preset.name,
       label: preset.label,
       data: preset.state.data,
@@ -40,7 +38,7 @@ export function FeedPreset(props: {
     if (list.some((item) => item.value === current)) return;
 
     setPresetName(list[0].value);
-    props.onChange?.(list[0].data);
+    store.actions.setFeedData(list[0].data);
   });
 
   return (
@@ -51,7 +49,7 @@ export function FeedPreset(props: {
         const item = details.items[0];
         if (item === undefined) return;
         setPresetName(item.value);
-        props.onChange?.(item.data);
+        store.actions.setFeedData(item.data);
       }}
     >
       <SelectLabel>Пресет</SelectLabel>
