@@ -88,6 +88,41 @@ categories:
           `eslint.config.js` потребителя грузит Node напрямую, подменить путь на исходники
           некому. См. FAQ.md.
 
+      - id: reactivity-custom-use-property
+        type: bug
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "`ESLINT_RULE_OPTIONS.reactivity` — добавить `customReactiveFunctions: [\"use\"]`"
+        description: |
+          Цепь: найдено при подключении `apps/skin` к `@web-core/query` — owner apps/skin упёрся
+          в чужую зону (`packages/lint` не в его `paths`) и по роли остановился, передал
+          architect'у, не полез сам. Architect проверил независимо, не поверил на слово:
+
+          Воспроизведено: `contentQuery.use(() => props.component ?? "")`
+          (`apps/skin/src/features/component-manager/ui/feed-preset.tsx:5`) — реальный
+          `eslint` на этом файле сегодня даёт `solid/reactivity`: «This function should be
+          passed to a tracked scope…». Причина — в самом `eslint-plugin-solid`
+          (`node_modules/eslint-plugin-solid/src/rules/reactivity.ts:1059-1081`): узнаёт
+          трекнутый скоуп по `/^(?:use|create)[A-Z]/` (заглавная буква сразу после префикса —
+          `useFoo`/`createBar`) ИЛИ по точному совпадению с `customReactiveFunctions` — голое
+          `.use()` (без суффикса, с маленькой буквы) не подходит ни под что, ни при вызове
+          функцией, ни свойством объекта.
+
+          `.use()` — не опечатка и не единичный случай, а САМ канон: README `@web-core/query`
+          называет `defineQuery(...).use()` реактивным потреблением в компоненте прямым текстом
+          (`packages/query/README.md:223,307,323-324`). У `@web-core/store` та же форма —
+          `store.use(selector)` (`packages/store/src/engine/action-store.ts:22,38`, комментарий
+          там же зовёт её «то же самое, без отдельного импорта»). Проверено ПОЛНОЙ выборкой:
+          `grep` по `.use(` во всём `apps/`+`packages/` — каждое совпадение (4 вызова кроме
+          самого `feed-preset.tsx`) это ровно один из этих двух канонов, никакого стороннего
+          `.use()` с другим смыслом не нашлось — риска, что правило перестанет ловить настоящий
+          баг реактивности под тем же именем, на сегодняшнем коде нет.
+
+          Правка: `ESLINT_RULE_OPTIONS` (`src/eslint/index.ts:13-15`, сейчас только
+          `jsx-no-undef`) — добавить `reactivity: { customReactiveFunctions: ["use"] }` тем же
+          приёмом (опция конкретного правила движка, не решение канона).
+
   - category: Не сделано
     items:
       - id: rebuild-test-suite
@@ -155,20 +190,80 @@ categories:
 
       - id: biome-plugin-first-consumer
         type: feature
-        status: Backlog
+        status: Done
         priority: Medium
         milestone: null
         name: Подключить ./biome как реально работающий канон в первом потребителе (apps/skin)
         description: |
-          `defineBiomeConfig()`/`dist/biome/biome.json` сегодня не подключены ни к одному
-          реальному `biome.json` потребителя — движок готов и проверен натурным прогоном CLI
-          (`test/biome.test.ts`), но без потребителя это мёртвый код в смысле «никто не может
-          на него наткнуться в реальной сборке», не в смысле «не работает». Повод и первый
-          кандидат — `apps/skin/src/widgets/catalogs/ui/list.tsx` (см. `style-canon-as-data`
-          выше). Требует правки в `apps/skin` (свой `biome.json` с `extends` на
-          `@web-core/lint/biome.json` или разрешённый Node-путь до
-          `dist/biome/biome.json`) — вне зоны `packages/lint`, задача для owner'а `apps/skin`
-          или архитектора.
+          Означает: `apps/skin/biome.json` — `{ "extends": ["@web-core/lint/biome.json"] }`,
+          скрипт `style` (`biome check .`). Проверено: `pnpm --filter @web-core/skin-app run
+          style` реально резолвит канон через пакетный `exports` и находит живые нарушения (186
+          диагностик формата/сортировки импортов на 170 файлах) — не «настроено и молчит», а
+          «настроено и ловит». Само исправление этих 186 — отдельная, не запрошенная пока
+          работа (нужно решение про `--write` на весь app разом, задача другого дня).
+
+          Правка сделана architect'ом напрямую в `apps/skin` — вне `paths` этой зоны, по прямой
+          просьбе user, не по инициативе. Сопутствующее решение — `biome-app-direct-dependency`
+          ниже, тем же заходом.
+
+      - id: biome-import-groups-web-core-first
+        type: feature
+        status: Backlog
+        priority: High
+        milestone: null
+        name: "`organizeImports` — свои группы (node → сторонние npm → `@web-core/*` → относительные)"
+        description: |
+          Сегодня `organizeImports: "on"` — плоская сортировка Biome, все внешние пакеты (наши
+          `@web-core/*` и сторонние npm) в одном алфавитном списке без разделения. По прямой
+          просьбе user — развести НАШИ пакеты в отдельную группу, с пустой строкой между
+          группами. Architect проверил натурно (не по докам, а прогоном): Biome 2.5.13 реально
+          поддерживает `groups` с предопределёнными матчерами (`:NODE:`, `:PACKAGE:`, `:PATH:`,
+          `:BLANK_LINE:`) и glob-негацией:
+
+          ```json
+          "organizeImports": {
+            "level": "on",
+            "options": {
+              "groups": [
+                [":NODE:"], ":BLANK_LINE:",
+                [":PACKAGE:", "!@web-core/**"], ":BLANK_LINE:",
+                ["@web-core/**"], ":BLANK_LINE:",
+                [":PATH:"]
+              ]
+            }
+          }
+          ```
+
+          Реальный прогон на фикстуре (node:fs/node:path, solid-js/zod, @web-core/io/@web-core/ui,
+          относительные) дал ровно 4 блока с пустой строкой между ними, в этом порядке.
+
+          Правка: `defineBiomeConfig()` (`src/biome/index.ts`) — `assist.actions.source.
+          organizeImports` меняется с булева `"on"` на объектную форму с `options.groups` выше.
+          Канон (`src/style/index.ts`) не трогается — конкретные группы, как и `indentStyle` —
+          решение движка, не канона (то же разделение, что уже названо в `biome-plugin`).
+          `BiomeConfig`-тип (`src/biome/index.ts:10-26`) придётся расширить под объектную форму
+          `organizeImports` (сейчас `"on" | "off"` строкой).
+
+      - id: biome-app-direct-dependency
+        type: decision
+        status: Backlog
+        priority: Medium
+        milestone: null
+        name: "apps/skin ставит `@biomejs/biome` прямой devDependency — временное исключение"
+        description: |
+          Конвенция репозитория: приложения (`apps/*`) подключают только НАШИ пакеты
+          (`@web-core/*`), сторонние инструменты — через них, не напрямую. `@biomejs/biome`
+          сегодня — прямая `devDependency` `apps/skin` (иначе бинарь `biome` не резолвится в
+          `node_modules/.bin` потребителя: `@web-core/lint` держит его как `peerDependency`,
+          `optional`, а peer'ы себе ставит сам потребитель, не транзитивно). User разрешил
+          исключение для линтер-тулинга явно, не молчаливо — `eslint` в этом же `package.json`
+          уже прямая зависимость по той же причине, прецедент есть.
+
+          Не решено, стоит ли снимать это позже: например, `packages/lint` заводит свой `bin`
+          (тонкий wrapper, исполняющий `biome` из СОБСТВЕННОГО `node_modules`) — тогда
+          потребителю снова не нужна прямая зависимость на сторонний пакет, чем при живом
+          `eslint`-прецеденте, где так и не сделано. Смотреть по факту, не по аналогии — решение
+          за user/architect, когда дойдёт очередь.
 
       - id: docs-biome-sketch-stale
         type: bug

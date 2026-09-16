@@ -1,44 +1,43 @@
+import { defineQuery } from "@web-core/query";
 import { presetsClient, queryClient } from "#/shared/api/clients";
-import {
-  variantsOf as variantsOfOutfit,
-  type VariantSummary,
-} from "@web-core/skin/presets";
+import { variantsOf as variantsOfOutfit } from "@web-core/skin/presets";
 
-export function palettesOf() {
-  return queryClient.fetchQuery({
-    queryKey: ["palettes"],
-    queryFn: () => presetsClient.list("palette"),
-    staleTime: Infinity,
-  });
-}
+export const palettesOf = defineQuery(
+  queryClient,
+  () => ["palettes"],
+  () => presetsClient.list("palette"),
+  { staleTime: Infinity },
+);
 
-export function assembliesOf(componentName: string) {
-  return queryClient.fetchQuery({
-    queryKey: ["assemblies", componentName],
-    queryFn: () => presetsClient.list("assembly", { component: [componentName] }),
-    staleTime: Infinity,
-  });
-}
+export const assembliesOf = defineQuery(
+  queryClient,
+  (componentName: string) => ["assemblies", componentName],
+  (componentName: string) =>
+    presetsClient.list("assembly", { component: [componentName] }),
+  { staleTime: Infinity },
+);
 
-export function variantsOf(componentName: string): Promise<readonly VariantSummary[]> {
-  return queryClient.fetchQuery({
-    queryKey: ["variants", componentName],
-    queryFn: () => variantsOfOutfit(presetsClient, componentName),
-    staleTime: Infinity,
-  });
-}
+export const variantsOf = defineQuery(
+  queryClient,
+  (componentName: string) => ["variants", componentName],
+  (componentName: string) => variantsOfOutfit(presetsClient, componentName),
+  { staleTime: Infinity },
+);
 
-export function outfitsOf() {
-  return queryClient.fetchQuery({
-    queryKey: ["outfits"],
-    queryFn: () => presetsClient.list("outfit"),
-    staleTime: Infinity,
-  });
-}
+export const outfitsOf = defineQuery(
+  queryClient,
+  () => ["outfits"],
+  () => presetsClient.list("outfit"),
+  { staleTime: Infinity },
+);
 
-export function contentOf(componentName: string) {
-  return presetsClient.list("content", { component: [componentName] });
-}
+export const contentQuery = defineQuery(
+  queryClient,
+  (componentName: string) => ["content", componentName],
+  (componentName: string) =>
+    presetsClient.list("content", { component: [componentName] }),
+  { staleTime: Infinity },
+);
 
 export function tagsOf() {
   return presetsClient.list("tag");

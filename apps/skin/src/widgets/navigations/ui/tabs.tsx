@@ -4,11 +4,12 @@ import {
   TabsList,
   TabsTrigger,
   type TabsProps,
+  Surface,
 } from "@web-core/ui";
 import { createMemo, For, type JSX } from "solid-js";
 
 export function NavigationTabs(props: {
-  content: Record<string, JSX.Element>;
+  content: Record<string, () => JSX.Element>;
   value?: TabsProps["value"];
   defaultValue?: TabsProps["defaultValue"];
   onValueChange?: TabsProps["onValueChange"];
@@ -21,6 +22,7 @@ export function NavigationTabs(props: {
       value={props.value}
       defaultValue={props.defaultValue ?? keys()[0]}
       onValueChange={props.onValueChange}
+      unmountOnExit
     >
       <TabsList>
         <For each={keys()}>
@@ -28,7 +30,11 @@ export function NavigationTabs(props: {
         </For>
       </TabsList>
       <For each={keys()}>
-        {(key) => <TabsContent value={key}>{content()[key]}</TabsContent>}
+        {(key) => (
+          <TabsContent value={key}>
+            <Surface data-variant="filled">{content()[key]!()}</Surface>
+          </TabsContent>
+        )}
       </For>
     </TabsRoot>
   );

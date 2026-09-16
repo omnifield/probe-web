@@ -3,6 +3,7 @@ import { castDraft, mutate } from "@web-core/store/mutate";
 
 interface FeedState {
   readonly feedData?: unknown;
+  readonly presetName?: string;
 }
 
 export const componentManagerStore = createActionStore<

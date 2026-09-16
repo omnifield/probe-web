@@ -39,9 +39,9 @@ export function ComponentPage(props: {
     <NavigationTabs
       {...selection}
       content={{
-        demo: () => tab("demo"),
-        style: () => tab("style"),
-        assembly: () => tab("assembly"),
+        demo: tab("demo"),
+        style: tab("style"),
+        assembly: tab("assembly"),
       }}
     />
   );

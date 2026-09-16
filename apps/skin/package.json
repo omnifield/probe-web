@@ -13,6 +13,7 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . && pnpm run typecheck",
+    "style": "biome check .",
     "test": "vitest run"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
     "@types/node": "^24.10.1",

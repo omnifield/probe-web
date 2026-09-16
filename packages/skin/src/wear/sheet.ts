@@ -28,7 +28,8 @@ export function makeSkinSheet(component?: string): SkinSheet {
 
   return {
     put(css: string): void {
-      sheet().textContent = css;
+      const el = sheet();
+      if (el.textContent !== css) el.textContent = css;
     },
 
     drop(): void {

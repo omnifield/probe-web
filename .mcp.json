@@ -27,13 +27,14 @@
         "chrome-devtools-mcp@latest",
         "--executablePath",
         "/usr/bin/chromium",
-        "--chromeArg=--no-sandbox"
+        "--chromeArg=--no-sandbox",
+        "--isolated"
       ]
     },
     "skin": {
       "type": "http",
       "url": "http://127.0.0.1:8788/mcp",
-      "headers": { "X-User-Login": "Egor Raybul" }
+      "headers": { "X-User-Login": "EgorRaybul" }
     }
   }
 }
