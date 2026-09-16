@@ -1,0 +1,2162 @@
+{
+  "type": "grid",
+  "props": {
+    "data-variant": "gallery"
+  },
+  "children": [
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Вход"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "e-mail и пароль"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {
+                        "required": true
+                      },
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "E-mail"
+                            },
+                            {
+                              "type": "field.requiredIndicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "*"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "type": "email",
+                            "placeholder": "you@company.ru"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {
+                        "required": true
+                      },
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Пароль"
+                            },
+                            {
+                              "type": "field.requiredIndicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "*"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "type": "password",
+                            "placeholder": "••••••••"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Запомнить меня"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Войти"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "tertiary",
+                                "label": "Забыли пароль?"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Регистрация"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "поле e-mail показано с ошибкой"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Имя"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "placeholder": "Анна"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {
+                        "required": true,
+                        "invalid": true
+                      },
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "E-mail"
+                            },
+                            {
+                              "type": "field.requiredIndicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "*"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "type": "email",
+                            "value": "anna@"
+                          }
+                        },
+                        {
+                          "type": "field.errorText",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Введите полный адрес, например anna@mail.ru"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {
+                        "required": true
+                      },
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Пароль"
+                            },
+                            {
+                              "type": "field.requiredIndicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "*"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "type": "password"
+                          }
+                        },
+                        {
+                          "type": "field.helperText",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Не короче 8 символов, хотя бы одна цифра"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Согласен с условиями сервиса"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Создать аккаунт"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Обратная связь"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "ответим в течение дня"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "select",
+                      "props": {
+                        "items": [
+                          {
+                            "value": "bug",
+                            "label": "Ошибка"
+                          },
+                          {
+                            "value": "idea",
+                            "label": "Предложение"
+                          },
+                          {
+                            "value": "billing",
+                            "label": "Оплата"
+                          },
+                          {
+                            "value": "other",
+                            "label": "Другое"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "select.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Тема"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "select.control",
+                          "children": [
+                            {
+                              "type": "select.trigger",
+                              "children": [
+                                {
+                                  "type": "select.valueText",
+                                  "props": {
+                                    "placeholder": "Выберите тему"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "select.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "▾"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "select.positioner",
+                          "children": [
+                            {
+                              "type": "select.content",
+                              "children": [
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "bug",
+                                      "label": "Ошибка"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Ошибка"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "idea",
+                                      "label": "Предложение"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Предложение"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "billing",
+                                      "label": "Оплата"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Оплата"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "other",
+                                      "label": "Другое"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Другое"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {
+                        "required": true
+                      },
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Сообщение"
+                            },
+                            {
+                              "type": "field.requiredIndicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "*"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.textarea",
+                          "props": {
+                            "rows": 4,
+                            "placeholder": "Опишите, что случилось"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Отправить"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "secondary",
+                                "label": "Прикрепить скриншот"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Доставка"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "шаг 2 из 3"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "radio-group",
+                      "props": {
+                        "defaultValue": "pickup"
+                      },
+                      "children": [
+                        {
+                          "type": "radio-group.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Способ"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "radio-group.item",
+                          "props": {
+                            "value": "courier"
+                          },
+                          "children": [
+                            {
+                              "type": "radio-group.itemControl"
+                            },
+                            {
+                              "type": "radio-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Курьер · 390 ₽"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "radio-group.item",
+                          "props": {
+                            "value": "pickup"
+                          },
+                          "children": [
+                            {
+                              "type": "radio-group.itemControl"
+                            },
+                            {
+                              "type": "radio-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Пункт выдачи · бесплатно"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "radio-group.item",
+                          "props": {
+                            "value": "post"
+                          },
+                          "children": [
+                            {
+                              "type": "radio-group.itemControl"
+                            },
+                            {
+                              "type": "radio-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Почта · 250 ₽"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "radio-group.indicator"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "select",
+                      "props": {
+                        "items": [
+                          {
+                            "value": "msk",
+                            "label": "Москва"
+                          },
+                          {
+                            "value": "spb",
+                            "label": "Санкт-Петербург"
+                          },
+                          {
+                            "value": "kzn",
+                            "label": "Казань"
+                          }
+                        ],
+                        "defaultValue": [
+                          "msk"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "select.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Город"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "select.control",
+                          "children": [
+                            {
+                              "type": "select.trigger",
+                              "children": [
+                                {
+                                  "type": "select.valueText",
+                                  "props": {
+                                    "placeholder": "Город"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "select.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "▾"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "select.positioner",
+                          "children": [
+                            {
+                              "type": "select.content",
+                              "children": [
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "msk",
+                                      "label": "Москва"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Москва"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "spb",
+                                      "label": "Санкт-Петербург"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Санкт-Петербург"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "select.item",
+                                  "props": {
+                                    "item": {
+                                      "value": "kzn",
+                                      "label": "Казань"
+                                    }
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "select.itemText",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "Казань"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "select.itemIndicator",
+                                      "children": [
+                                        {
+                                          "genus": "text",
+                                          "value": "✓"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Адрес"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "placeholder": "Улица, дом, квартира"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "secondary",
+                                "label": "Назад"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Далее"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Уведомления"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "что и как часто присылать"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Новые заказы"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Комментарии"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Маркетинговые письма"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "segment-group",
+                      "props": {
+                        "defaultValue": "daily"
+                      },
+                      "children": [
+                        {
+                          "type": "segment-group.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Частота"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "segment-group.indicator"
+                        },
+                        {
+                          "type": "segment-group.item",
+                          "props": {
+                            "value": "instant"
+                          },
+                          "children": [
+                            {
+                              "type": "segment-group.itemControl"
+                            },
+                            {
+                              "type": "segment-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Сразу"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "segment-group.item",
+                          "props": {
+                            "value": "daily"
+                          },
+                          "children": [
+                            {
+                              "type": "segment-group.itemControl"
+                            },
+                            {
+                              "type": "segment-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Раз в день"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "segment-group.item",
+                          "props": {
+                            "value": "weekly"
+                          },
+                          "children": [
+                            {
+                              "type": "segment-group.itemControl"
+                            },
+                            {
+                              "type": "segment-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Раз в неделю"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Сохранить"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Фильтры каталога"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "цена, бренд, размер"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "slider",
+                      "props": {
+                        "defaultValue": [
+                          2000,
+                          15000
+                        ],
+                        "min": 0,
+                        "max": 30000,
+                        "step": 500
+                      },
+                      "children": [
+                        {
+                          "type": "slider.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Цена, ₽"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "slider.valueText",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "2 000 – 15 000"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "slider.control",
+                          "children": [
+                            {
+                              "type": "slider.track",
+                              "children": [
+                                {
+                                  "type": "slider.range"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "slider.thumb",
+                              "props": {
+                                "index": 0
+                              }
+                            },
+                            {
+                              "type": "slider.thumb",
+                              "props": {
+                                "index": 1
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Бренд"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Omni"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Nord"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Lumen"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Размер"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "toggle-group",
+                      "props": {
+                        "multiple": true,
+                        "defaultValue": [
+                          "m",
+                          "l"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "s"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "S"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "m"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "M"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "l"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "L"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "xl"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "XL"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Применить"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "tertiary",
+                                "label": "Сбросить"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Документы"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "паспорт и договор, до 10 МБ"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "file-upload",
+                      "props": {
+                        "maxFiles": 5,
+                        "accept": "application/pdf,image/*"
+                      },
+                      "children": [
+                        {
+                          "type": "file-upload.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Файлы"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "file-upload.dropzone",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Перетащите файлы сюда или "
+                            },
+                            {
+                              "type": "file-upload.trigger",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "выберите"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "file-upload.clearTrigger",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Очистить всё"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Комментарий"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.textarea",
+                          "props": {
+                            "rows": 2,
+                            "placeholder": "Необязательно"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Загрузить"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Навыки"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "выберите несколько"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "listbox",
+                      "props": {
+                        "items": [
+                          {
+                            "value": "ts",
+                            "label": "TypeScript"
+                          },
+                          {
+                            "value": "solid",
+                            "label": "Solid"
+                          },
+                          {
+                            "value": "css",
+                            "label": "CSS"
+                          },
+                          {
+                            "value": "node",
+                            "label": "Node.js"
+                          },
+                          {
+                            "value": "go",
+                            "label": "Go"
+                          }
+                        ],
+                        "selectionMode": "multiple",
+                        "defaultValue": [
+                          "ts",
+                          "solid"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "listbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Стек"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listbox.content",
+                          "children": [
+                            {
+                              "type": "listbox.item",
+                              "props": {
+                                "item": {
+                                  "value": "ts",
+                                  "label": "TypeScript"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "type": "listbox.itemText",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "TypeScript"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listbox.itemIndicator",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "props": {
+                                        "name": "check"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listbox.item",
+                              "props": {
+                                "item": {
+                                  "value": "solid",
+                                  "label": "Solid"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "type": "listbox.itemText",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "Solid"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listbox.itemIndicator",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "props": {
+                                        "name": "check"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listbox.item",
+                              "props": {
+                                "item": {
+                                  "value": "css",
+                                  "label": "CSS"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "type": "listbox.itemText",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "CSS"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listbox.itemIndicator",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "props": {
+                                        "name": "check"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listbox.item",
+                              "props": {
+                                "item": {
+                                  "value": "node",
+                                  "label": "Node.js"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "type": "listbox.itemText",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "Node.js"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listbox.itemIndicator",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "props": {
+                                        "name": "check"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listbox.item",
+                              "props": {
+                                "item": {
+                                  "value": "go",
+                                  "label": "Go"
+                                }
+                              },
+                              "children": [
+                                {
+                                  "type": "listbox.itemText",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "Go"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "listbox.itemIndicator",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "props": {
+                                        "name": "check"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "field",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "field.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Опыт, лет"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "field.input",
+                          "props": {
+                            "type": "number",
+                            "min": 0,
+                            "value": "4"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Сохранить профиль"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

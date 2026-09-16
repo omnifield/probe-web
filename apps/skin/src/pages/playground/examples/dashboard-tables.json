@@ -1,0 +1,819 @@
+{
+  "type": "flow",
+  "props": {
+    "data-variant": "column"
+  },
+  "children": [
+    {
+      "type": "flow.item",
+      "children": [
+        {
+          "type": "typography",
+          "props": {
+            "data-variant": "heading-2"
+          },
+          "children": [
+            {
+              "genus": "text",
+              "value": "Операционный дэшборд"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "flow.item",
+      "children": [
+        {
+          "type": "grid",
+          "props": {
+            "data-variant": "gallery"
+          },
+          "children": [
+            {
+              "type": "grid.cell",
+              "children": [
+                {
+                  "type": "surface",
+                  "props": {
+                    "data-variant": "raised"
+                  },
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "column"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Топ товаров"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "за неделю · по продажам"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "table",
+                              "props": {
+                                "columns": [
+                                  {
+                                    "accessorKey": "product",
+                                    "header": "Товар"
+                                  },
+                                  {
+                                    "accessorKey": "sold",
+                                    "header": "Продано"
+                                  }
+                                ],
+                                "data": [
+                                  {
+                                    "product": "Наушники Air",
+                                    "sold": 412
+                                  },
+                                  {
+                                    "product": "Чехол Slim",
+                                    "sold": 388
+                                  },
+                                  {
+                                    "product": "Зарядка 65W",
+                                    "sold": 301
+                                  },
+                                  {
+                                    "product": "Кабель USB-C",
+                                    "sold": 276
+                                  },
+                                  {
+                                    "product": "Колонка Mini",
+                                    "sold": 158
+                                  }
+                                ],
+                                "defaultSorting": [
+                                  {
+                                    "columnId": "sold",
+                                    "desc": true
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "grid.cell",
+              "children": [
+                {
+                  "type": "surface",
+                  "props": {
+                    "data-variant": "raised"
+                  },
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "column"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Последние платежи"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "сегодня"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "table",
+                              "props": {
+                                "columns": [
+                                  {
+                                    "accessorKey": "client",
+                                    "header": "Клиент"
+                                  },
+                                  {
+                                    "accessorKey": "amount",
+                                    "header": "Сумма"
+                                  },
+                                  {
+                                    "accessorKey": "status",
+                                    "header": "Статус"
+                                  }
+                                ],
+                                "data": [
+                                  {
+                                    "client": "ООО «Вектор»",
+                                    "amount": "84 000 ₽",
+                                    "status": "оплачен"
+                                  },
+                                  {
+                                    "client": "ИП Соколов",
+                                    "amount": "12 500 ₽",
+                                    "status": "в обработке"
+                                  },
+                                  {
+                                    "client": "АО «Северсталь»",
+                                    "amount": "240 000 ₽",
+                                    "status": "оплачен"
+                                  },
+                                  {
+                                    "client": "ООО «Лайм»",
+                                    "amount": "6 900 ₽",
+                                    "status": "отклонён"
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "grid.cell",
+              "children": [
+                {
+                  "type": "surface",
+                  "props": {
+                    "data-variant": "raised"
+                  },
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "column"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Команда онлайн"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "сейчас в сети 4 из 6"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "table",
+                              "props": {
+                                "columns": [
+                                  {
+                                    "accessorKey": "name",
+                                    "header": "Имя"
+                                  },
+                                  {
+                                    "accessorKey": "role",
+                                    "header": "Роль"
+                                  },
+                                  {
+                                    "accessorKey": "state",
+                                    "header": "Статус"
+                                  }
+                                ],
+                                "data": [
+                                  {
+                                    "name": "Аня",
+                                    "role": "Дизайн",
+                                    "state": "в сети"
+                                  },
+                                  {
+                                    "name": "Борис",
+                                    "role": "Бэкенд",
+                                    "state": "в сети"
+                                  },
+                                  {
+                                    "name": "Вера",
+                                    "role": "Менеджер",
+                                    "state": "на встрече"
+                                  },
+                                  {
+                                    "name": "Глеб",
+                                    "role": "Фронтенд",
+                                    "state": "в сети"
+                                  },
+                                  {
+                                    "name": "Дина",
+                                    "role": "QA",
+                                    "state": "в сети"
+                                  },
+                                  {
+                                    "name": "Егор",
+                                    "role": "Архитектор",
+                                    "state": "не в сети"
+                                  }
+                                ],
+                                "defaultSorting": [
+                                  {
+                                    "columnId": "name",
+                                    "desc": false
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "flow.item",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Заказы"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "выбор строк включён · колонка № закреплена · сортировка по дате, новые сверху"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "table",
+                      "props": {
+                        "columns": [
+                          {
+                            "accessorKey": "id",
+                            "header": "№"
+                          },
+                          {
+                            "accessorKey": "date",
+                            "header": "Дата"
+                          },
+                          {
+                            "accessorKey": "client",
+                            "header": "Клиент"
+                          },
+                          {
+                            "accessorKey": "city",
+                            "header": "Город"
+                          },
+                          {
+                            "accessorKey": "total",
+                            "header": "Сумма, ₽"
+                          },
+                          {
+                            "accessorKey": "status",
+                            "header": "Статус"
+                          }
+                        ],
+                        "data": [
+                          {
+                            "id": "A-1042",
+                            "date": "2026-09-16",
+                            "client": "Мария Л.",
+                            "city": "Москва",
+                            "total": 18400,
+                            "status": "собирается"
+                          },
+                          {
+                            "id": "A-1041",
+                            "date": "2026-09-16",
+                            "client": "Олег П.",
+                            "city": "Казань",
+                            "total": 7250,
+                            "status": "новый"
+                          },
+                          {
+                            "id": "A-1040",
+                            "date": "2026-09-15",
+                            "client": "Ирина С.",
+                            "city": "Пермь",
+                            "total": 32990,
+                            "status": "в пути"
+                          },
+                          {
+                            "id": "A-1039",
+                            "date": "2026-09-15",
+                            "client": "Денис К.",
+                            "city": "Москва",
+                            "total": 4300,
+                            "status": "доставлен"
+                          },
+                          {
+                            "id": "A-1038",
+                            "date": "2026-09-14",
+                            "client": "Анна В.",
+                            "city": "Самара",
+                            "total": 12100,
+                            "status": "доставлен"
+                          },
+                          {
+                            "id": "A-1037",
+                            "date": "2026-09-13",
+                            "client": "Павел Н.",
+                            "city": "Тверь",
+                            "total": 56800,
+                            "status": "возврат"
+                          },
+                          {
+                            "id": "A-1036",
+                            "date": "2026-09-13",
+                            "client": "Ксения Р.",
+                            "city": "Сочи",
+                            "total": 9650,
+                            "status": "доставлен"
+                          }
+                        ],
+                        "defaultSorting": [
+                          {
+                            "columnId": "date",
+                            "desc": true
+                          }
+                        ],
+                        "enableRowSelection": true,
+                        "defaultRowSelection": {
+                          "0": true,
+                          "2": true
+                        },
+                        "defaultColumnPinning": {
+                          "start": [
+                            "id"
+                          ],
+                          "end": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "flow.item",
+      "children": [
+        {
+          "type": "grid",
+          "props": {
+            "data-variant": "gallery"
+          },
+          "children": [
+            {
+              "type": "grid.cell",
+              "children": [
+                {
+                  "type": "surface",
+                  "props": {
+                    "data-variant": "raised"
+                  },
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "column"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Открытые инциденты"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "колонка «Статус» отфильтрована по «открыт» · сортировка по приоритету"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "table",
+                              "props": {
+                                "columns": [
+                                  {
+                                    "accessorKey": "key",
+                                    "header": "Ключ"
+                                  },
+                                  {
+                                    "accessorKey": "title",
+                                    "header": "Что случилось"
+                                  },
+                                  {
+                                    "accessorKey": "service",
+                                    "header": "Сервис"
+                                  },
+                                  {
+                                    "accessorKey": "priority",
+                                    "header": "Приоритет"
+                                  },
+                                  {
+                                    "accessorKey": "status",
+                                    "header": "Статус",
+                                    "filterFn": "includesString"
+                                  }
+                                ],
+                                "data": [
+                                  {
+                                    "key": "INC-311",
+                                    "title": "Рост 5xx на оплате",
+                                    "service": "payments",
+                                    "priority": 1,
+                                    "status": "открыт"
+                                  },
+                                  {
+                                    "key": "INC-310",
+                                    "title": "Долгий ответ поиска",
+                                    "service": "search",
+                                    "priority": 2,
+                                    "status": "открыт"
+                                  },
+                                  {
+                                    "key": "INC-309",
+                                    "title": "Не уходят пуши",
+                                    "service": "notify",
+                                    "priority": 3,
+                                    "status": "закрыт"
+                                  },
+                                  {
+                                    "key": "INC-308",
+                                    "title": "Ошибка экспорта CSV",
+                                    "service": "reports",
+                                    "priority": 3,
+                                    "status": "открыт"
+                                  },
+                                  {
+                                    "key": "INC-307",
+                                    "title": "Падение воркера очереди",
+                                    "service": "queue",
+                                    "priority": 1,
+                                    "status": "закрыт"
+                                  }
+                                ],
+                                "defaultSorting": [
+                                  {
+                                    "columnId": "priority",
+                                    "desc": false
+                                  }
+                                ],
+                                "defaultColumnFilters": [
+                                  {
+                                    "id": "status",
+                                    "value": "открыт"
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "grid.cell",
+              "children": [
+                {
+                  "type": "surface",
+                  "props": {
+                    "data-variant": "raised"
+                  },
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "column"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Сотрудники"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "мультисортировка: отдел ↑, затем зарплата ↓ · колонка e-mail скрыта"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "table",
+                              "props": {
+                                "columns": [
+                                  {
+                                    "accessorKey": "name",
+                                    "header": "Имя"
+                                  },
+                                  {
+                                    "accessorKey": "email",
+                                    "header": "E-mail"
+                                  },
+                                  {
+                                    "accessorKey": "dept",
+                                    "header": "Отдел"
+                                  },
+                                  {
+                                    "accessorKey": "position",
+                                    "header": "Должность"
+                                  },
+                                  {
+                                    "accessorKey": "salary",
+                                    "header": "Зарплата, ₽"
+                                  }
+                                ],
+                                "data": [
+                                  {
+                                    "name": "Аня Королёва",
+                                    "email": "anya@omni.dev",
+                                    "dept": "Дизайн",
+                                    "position": "Ведущий дизайнер",
+                                    "salary": 310000
+                                  },
+                                  {
+                                    "name": "Борис Орлов",
+                                    "email": "boris@omni.dev",
+                                    "dept": "Разработка",
+                                    "position": "Бэкенд",
+                                    "salary": 340000
+                                  },
+                                  {
+                                    "name": "Глеб Иванов",
+                                    "email": "gleb@omni.dev",
+                                    "dept": "Разработка",
+                                    "position": "Фронтенд",
+                                    "salary": 290000
+                                  },
+                                  {
+                                    "name": "Дина Миронова",
+                                    "email": "dina@omni.dev",
+                                    "dept": "Разработка",
+                                    "position": "QA",
+                                    "salary": 220000
+                                  },
+                                  {
+                                    "name": "Вера Лебедева",
+                                    "email": "vera@omni.dev",
+                                    "dept": "Продукт",
+                                    "position": "Менеджер",
+                                    "salary": 300000
+                                  },
+                                  {
+                                    "name": "Лев Смирнов",
+                                    "email": "lev@omni.dev",
+                                    "dept": "Дизайн",
+                                    "position": "Дизайнер",
+                                    "salary": 210000
+                                  }
+                                ],
+                                "defaultSorting": [
+                                  {
+                                    "columnId": "dept",
+                                    "desc": false
+                                  },
+                                  {
+                                    "columnId": "salary",
+                                    "desc": true
+                                  }
+                                ],
+                                "defaultColumnVisibility": {
+                                  "email": false
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

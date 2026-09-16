@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tanstack/solid-router": "^1.170.30",
     "@web-core/assembly": "workspace:*",
     "@web-core/generators": "workspace:*",
     "@web-core/io": "workspace:*",
@@ -26,14 +27,15 @@
     "@web-core/store": "workspace:*",
     "@web-core/style": "workspace:*",
     "@web-core/ui": "workspace:*",
-    "@tanstack/solid-router": "^1.170.30",
+    "d3-scale": "^4.0.2",
     "solid-js": "^1.9.14",
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@types/d3-scale": "^4.0.9",
+    "@types/node": "^24.10.1",
     "@web-core/build": "workspace:*",
     "@web-core/lint": "workspace:*",
-    "@types/node": "^24.10.1",
     "eslint": "^10.8.1",
     "jsdom": "^30.0.1",
     "typescript": "^7.0.2",

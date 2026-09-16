@@ -1,0 +1,1245 @@
+{
+  "type": "grid",
+  "props": {
+    "data-variant": "gallery"
+  },
+  "children": [
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "avatar",
+                              "children": [
+                                {
+                                  "type": "avatar.fallback",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "АК"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "heading-3"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Анна Королёва"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Продуктовый дизайнер · Москва"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Написать"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "secondary",
+                                "label": "Профиль"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Омнибанк · Visa"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-2"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "•••• 4821"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "ANNA KOROLEVA"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "typography",
+                              "props": {
+                                "data-variant": "caption"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "12/28"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Баланс"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "display"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "128 450 ₽"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "+12% за месяц"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "flow",
+                      "props": {
+                        "data-variant": "row"
+                      },
+                      "children": [
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "primary",
+                                "label": "Пополнить"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "flow.item",
+                          "children": [
+                            {
+                              "type": "button",
+                              "props": {
+                                "data-variant": "tertiary",
+                                "label": "История"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Уведомления"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Почта"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Пуш"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "switch",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "switch.control",
+                          "children": [
+                            {
+                              "type": "switch.thumb"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "switch.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "SMS"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Тариф"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-2"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Pro"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "body-strong"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "990 ₽ / мес"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Безлимитные проекты"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {
+                        "defaultChecked": true
+                      },
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Командный доступ"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "checkbox",
+                      "props": {},
+                      "children": [
+                        {
+                          "type": "checkbox.control",
+                          "children": [
+                            {
+                              "type": "checkbox.indicator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "✓"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "checkbox.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Приоритетная поддержка"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Выбрать тариф"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Погода · Москва"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "display"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "+18°"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Облачно, ветер 4 м/с"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "toggle-group",
+                      "props": {
+                        "defaultValue": [
+                          "c"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "c"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "°C"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "toggle-group.item",
+                          "props": {
+                            "value": "f"
+                          },
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "°F"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Редизайн витрины"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "caption"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Спринт 12 · до 30 сентября"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "slider",
+                      "props": {
+                        "defaultValue": [
+                          64
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "slider.label",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "Прогресс"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "slider.valueText",
+                          "children": [
+                            {
+                              "genus": "text",
+                              "value": "64%"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "slider.control",
+                          "children": [
+                            {
+                              "type": "slider.track",
+                              "children": [
+                                {
+                                  "type": "slider.range"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "slider.thumb",
+                              "props": {
+                                "index": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Фокус-сессия"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "timer",
+                      "props": {
+                        "countdown": true,
+                        "startMs": 1500000
+                      },
+                      "children": [
+                        {
+                          "type": "timer.area",
+                          "children": [
+                            {
+                              "type": "timer.item",
+                              "props": {
+                                "type": "minutes"
+                              }
+                            },
+                            {
+                              "type": "timer.separator",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": ":"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "timer.item",
+                              "props": {
+                                "type": "seconds"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "timer.control",
+                          "children": [
+                            {
+                              "type": "timer.actionTrigger",
+                              "props": {
+                                "action": "start"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Старт"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "timer.actionTrigger",
+                              "props": {
+                                "action": "pause"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Пауза"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "timer.actionTrigger",
+                              "props": {
+                                "action": "reset"
+                              },
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Сброс"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Частые вопросы"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "accordion",
+                      "props": {
+                        "defaultValue": [
+                          "pay"
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "accordion.item",
+                          "props": {
+                            "value": "pay"
+                          },
+                          "children": [
+                            {
+                              "type": "accordion.control",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Как оплатить?"
+                                },
+                                {
+                                  "type": "accordion.controlIndicator",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "▾"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "accordion.content",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Картой или по счёту для юрлиц."
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "accordion.item",
+                          "props": {
+                            "value": "cancel"
+                          },
+                          "children": [
+                            {
+                              "type": "accordion.control",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Можно ли отменить?"
+                                },
+                                {
+                                  "type": "accordion.controlIndicator",
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "▾"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "accordion.content",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Да, в любой момент до конца периода."
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "grid.cell",
+      "children": [
+        {
+          "type": "surface",
+          "props": {
+            "data-variant": "raised"
+          },
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "column"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "label"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Статья · 5 мин"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-3"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Как собирать интерфейсы из паспортов"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "body"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Компонент описывает свои части и допуски, а модуль собирается из целых компонентов без ручной вёрстки."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "segment-group",
+                      "props": {
+                        "defaultValue": "later"
+                      },
+                      "children": [
+                        {
+                          "type": "segment-group.indicator"
+                        },
+                        {
+                          "type": "segment-group.item",
+                          "props": {
+                            "value": "now"
+                          },
+                          "children": [
+                            {
+                              "type": "segment-group.itemControl"
+                            },
+                            {
+                              "type": "segment-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Читать"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "segment-group.item",
+                          "props": {
+                            "value": "later"
+                          },
+                          "children": [
+                            {
+                              "type": "segment-group.itemControl"
+                            },
+                            {
+                              "type": "segment-group.itemText",
+                              "children": [
+                                {
+                                  "genus": "text",
+                                  "value": "Позже"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

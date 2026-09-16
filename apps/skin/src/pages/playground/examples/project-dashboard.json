@@ -1,0 +1,310 @@
+{
+  "type": "surface",
+  "props": {
+    "data-variant": "raised"
+  },
+  "children": [
+    {
+      "type": "flow",
+      "props": {
+        "data-variant": "column"
+      },
+      "children": [
+        {
+          "type": "flow.item",
+          "children": [
+            {
+              "type": "flow",
+              "props": {
+                "data-variant": "row"
+              },
+              "children": [
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "typography",
+                      "props": {
+                        "data-variant": "heading-2"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Проект «Омнифилд»"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "secondary",
+                        "label": "Настройки"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "flow.item",
+                  "children": [
+                    {
+                      "type": "button",
+                      "props": {
+                        "data-variant": "primary",
+                        "label": "Новая задача"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "flow.item",
+          "children": [
+            {
+              "type": "typography",
+              "props": {
+                "data-variant": "caption"
+              },
+              "children": [
+                {
+                  "genus": "text",
+                  "value": "Обновлено сегодня · 3 участника · спринт 12"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "flow.item",
+          "children": [
+            {
+              "type": "tabs",
+              "props": {
+                "defaultValue": "overview",
+                "data-variant": "line"
+              },
+              "children": [
+                {
+                  "type": "tabs.list",
+                  "children": [
+                    {
+                      "type": "tabs.trigger",
+                      "props": {
+                        "value": "overview"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Обзор"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tabs.trigger",
+                      "props": {
+                        "value": "team"
+                      },
+                      "children": [
+                        {
+                          "genus": "text",
+                          "value": "Команда"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "tabs.indicator"
+                    }
+                  ]
+                },
+                {
+                  "type": "tabs.content",
+                  "props": {
+                    "value": "overview"
+                  },
+                  "children": [
+                    {
+                      "type": "grid",
+                      "props": {
+                        "data-variant": "gallery"
+                      },
+                      "children": [
+                        {
+                          "type": "grid.cell",
+                          "children": [
+                            {
+                              "type": "surface",
+                              "props": {
+                                "data-variant": "filled"
+                              },
+                              "children": [
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "label"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "Задачи"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "heading-3"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "24"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "grid.cell",
+                          "children": [
+                            {
+                              "type": "surface",
+                              "props": {
+                                "data-variant": "filled"
+                              },
+                              "children": [
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "label"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "В работе"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "heading-3"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "7"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "grid.cell",
+                          "children": [
+                            {
+                              "type": "surface",
+                              "props": {
+                                "data-variant": "filled"
+                              },
+                              "children": [
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "label"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "Готово"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "typography",
+                                  "props": {
+                                    "data-variant": "heading-3"
+                                  },
+                                  "children": [
+                                    {
+                                      "genus": "text",
+                                      "value": "17"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "tabs.content",
+                  "props": {
+                    "value": "team"
+                  },
+                  "children": [
+                    {
+                      "type": "table",
+                      "props": {
+                        "columns": [
+                          {
+                            "accessorKey": "name",
+                            "header": "Имя"
+                          },
+                          {
+                            "accessorKey": "role",
+                            "header": "Роль"
+                          },
+                          {
+                            "accessorKey": "tasks",
+                            "header": "Задач"
+                          }
+                        ],
+                        "data": [
+                          {
+                            "name": "Аня",
+                            "role": "Дизайнер",
+                            "tasks": 5
+                          },
+                          {
+                            "name": "Борис",
+                            "role": "Инженер",
+                            "tasks": 12
+                          },
+                          {
+                            "name": "Вера",
+                            "role": "Менеджер",
+                            "tasks": 7
+                          }
+                        ],
+                        "defaultSorting": [
+                          {
+                            "columnId": "name",
+                            "desc": false
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
