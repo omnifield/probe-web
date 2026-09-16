@@ -1,8 +1,7 @@
 import type { JSX } from "solid-js";
-import { Flow, FlowItem } from "@web-core/ui";
 import { For } from "solid-js";
-
 import { layoutSelf } from "@web-core/skin";
+import { Flow, FlowItem } from "@web-core/ui";
 
 export function CatalogList<Item>(props: {
   items: readonly Item[];

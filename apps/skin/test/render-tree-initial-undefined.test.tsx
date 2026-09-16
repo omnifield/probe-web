@@ -1,8 +1,8 @@
-import { RenderTree } from "@web-core/assembly/render";
-import { kitComponentRenderer } from "@web-core/ui/component-registry";
 import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
+import { RenderTree } from "@web-core/assembly/render";
+import { kitComponentRenderer } from "@web-core/ui/component-registry";
 
 let dispose: (() => void) | undefined;
 
@@ -21,9 +21,13 @@ describe("RenderTree — data стартует undefined, потом появл�
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree} data={data()} />,
+      host,
+    );
 
-    const root = () => host.querySelector('[data-scope="button"][data-part="root"]');
+    const root = () =>
+      host.querySelector('[data-scope="button"][data-part="root"]');
     expect(root()?.textContent).toBe("");
 
     setData({ label: "первый" });

@@ -1,6 +1,5 @@
-import type { TreeItemData } from "@web-core/ui";
 import { createMemo } from "solid-js";
-
+import type { TreeItemData } from "@web-core/ui";
 import { Renderer } from "#/shared/ui/renderer";
 import { createCatalogSelection } from "../lib/selection";
 
@@ -10,7 +9,9 @@ export function CatalogTree(props: {
   onSelect: (value: string) => void;
 }) {
   const items = createMemo(() => props.adapter());
-  const dispatch = createCatalogSelection<TreeItemData>((value) => props.onSelect(value));
+  const dispatch = createCatalogSelection<TreeItemData>((value) =>
+    props.onSelect(value),
+  );
 
   return (
     <Renderer

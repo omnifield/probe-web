@@ -18,7 +18,13 @@ export interface Endpoint {
   readonly body: string;
 }
 
-export const HTTP_METHODS: readonly HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+export const HTTP_METHODS: readonly HttpMethod[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+];
 
 export function methodHasBody(method: HttpMethod): boolean {
   return method === "POST" || method === "PUT" || method === "PATCH";

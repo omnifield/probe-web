@@ -1,6 +1,5 @@
-import type { MappingTemplate } from "@web-core/generators/mapping";
 import { parse } from "yaml";
-
+import type { MappingTemplate } from "@web-core/generators/mapping";
 import { HTTP_METHODS, type HttpMethod } from "../endpoint";
 
 // Swagger 2.0 — `yaml`'s parse() читает JSON тоже (JSON — валидный YAML 1.2), одного парсера
@@ -11,13 +10,18 @@ interface Swagger2Document {
   readonly host?: string;
   readonly basePath?: string;
   readonly schemes?: readonly string[];
-  readonly paths?: Record<string, Record<string, { readonly tags?: readonly string[] }>>;
+  readonly paths?: Record<
+    string,
+    Record<string, { readonly tags?: readonly string[] }>
+  >;
 }
 
 function parseSwagger2(raw: string): Swagger2Document | undefined {
   try {
     const doc: unknown = parse(raw);
-    return typeof doc === "object" && doc !== null && (doc as Swagger2Document).swagger === "2.0"
+    return typeof doc === "object" &&
+      doc !== null &&
+      (doc as Swagger2Document).swagger === "2.0"
       ? (doc as Swagger2Document)
       : undefined;
   } catch {
@@ -44,7 +48,10 @@ export interface Swagger2Output {
 
 // Только методы, которые понимает наш Endpoint (`HTTP_METHODS`) — HEAD/OPTIONS и что угодно ещё
 // у Swagger'а молча пропускаются: наша форма ручки такие методы не поддерживает вообще.
-export const swagger2Template: MappingTemplate<Swagger2EndpointItem, Swagger2Output> = {
+export const swagger2Template: MappingTemplate<
+  Swagger2EndpointItem,
+  Swagger2Output
+> = {
   name: "swagger-2.0",
 
   isEntry: (raw) => parseSwagger2(raw) !== undefined,
@@ -61,7 +68,12 @@ export const swagger2Template: MappingTemplate<Swagger2EndpointItem, Swagger2Out
       for (const [method, operation] of Object.entries(operations)) {
         const upperMethod = method.toUpperCase();
         if (!HTTP_METHODS.includes(upperMethod as HttpMethod)) continue;
-        items.push({ serviceName, method: upperMethod as HttpMethod, url: `${baseUrl}${path}`, tag: operation.tags?.[0] });
+        items.push({
+          serviceName,
+          method: upperMethod as HttpMethod,
+          url: `${baseUrl}${path}`,
+          tag: operation.tags?.[0],
+        });
       }
     }
 
@@ -69,11 +81,16 @@ export const swagger2Template: MappingTemplate<Swagger2EndpointItem, Swagger2Out
   },
 
   validate: (items) => {
-    if (items.length === 0) throw new Error("swagger-2.0: в paths не нашлось ни одной операции с поддерживаемым методом");
+    if (items.length === 0)
+      throw new Error(
+        "swagger-2.0: в paths не нашлось ни одной операции с поддерживаемым методом",
+      );
   },
 
   render: (items) => ({
     name: items[0]!.serviceName,
-    endpoints: items.map(({ serviceName: _serviceName, ...endpoint }) => endpoint),
+    endpoints: items.map(
+      ({ serviceName: _serviceName, ...endpoint }) => endpoint,
+    ),
   }),
 };

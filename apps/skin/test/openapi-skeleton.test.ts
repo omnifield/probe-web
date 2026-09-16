@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import { skeletonOf } from "#/entities/schema";
 
 describe("skeletonOf — ключи и типы, без значений", () => {
@@ -12,7 +11,14 @@ describe("skeletonOf — ключи и типы, без значений", () =>
   });
 
   it("объект — ключи и тип каждого значения, само значение выброшено", () => {
-    expect(skeletonOf({ userId: 1, id: 1, title: "delectus aut autem", completed: false })).toEqual({
+    expect(
+      skeletonOf({
+        userId: 1,
+        id: 1,
+        title: "delectus aut autem",
+        completed: false,
+      }),
+    ).toEqual({
       type: "object",
       properties: {
         userId: { type: "number" },

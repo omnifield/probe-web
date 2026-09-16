@@ -18,11 +18,12 @@
 // ПО ОДНОМУ (несколько отдельных `.set()`, а не один разом, как реально работает «Добавить» в
 // `apps/skin`) замирал НАВСЕГДА на первом непустом состоянии. `test/select-incremental-growth.
 // test.tsx` доказывает голый движок на этом кейсе отдельно.
-import { RenderTree } from "@web-core/assembly/render";
-import { kitComponentRenderer } from "@web-core/ui/component-registry";
+
 import { createMemo, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
+import { RenderTree } from "@web-core/assembly/render";
+import { kitComponentRenderer } from "@web-core/ui/component-registry";
 
 let dispose: (() => void) | undefined;
 
@@ -37,13 +38,19 @@ describe("RenderTree — repeat (структура), не только текс
     const { registry, instanceOf } = kitComponentRenderer();
 
     const [data, setData] = createSignal<unknown>(undefined);
-    const tree = createMemo(() => instanceOf("radio-group", {}, "basic", data()));
+    const tree = createMemo(() =>
+      instanceOf("radio-group", {}, "basic", data()),
+    );
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree()} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree()} data={data()} />,
+      host,
+    );
 
-    const items = () => host.querySelectorAll('[data-scope="radio-group"][data-part="item"]');
+    const items = () =>
+      host.querySelectorAll('[data-scope="radio-group"][data-part="item"]');
     expect(items()).toHaveLength(0);
 
     setData({
@@ -61,14 +68,23 @@ describe("RenderTree — repeat (структура), не только текс
   it("повторная смена items меняет количество узлов на каждый .set(), не только на первый", () => {
     const { registry, instanceOf } = kitComponentRenderer();
 
-    const [data, setData] = createSignal<unknown>({ label: "Доставка", items: [{ value: "a", label: "A" }] });
-    const tree = createMemo(() => instanceOf("radio-group", {}, "basic", data()));
+    const [data, setData] = createSignal<unknown>({
+      label: "Доставка",
+      items: [{ value: "a", label: "A" }],
+    });
+    const tree = createMemo(() =>
+      instanceOf("radio-group", {}, "basic", data()),
+    );
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree()} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree()} data={data()} />,
+      host,
+    );
 
-    const items = () => host.querySelectorAll('[data-scope="radio-group"][data-part="item"]');
+    const items = () =>
+      host.querySelectorAll('[data-scope="radio-group"][data-part="item"]');
     expect(items()).toHaveLength(1);
 
     setData({
@@ -88,11 +104,16 @@ describe("RenderTree — repeat (структура), не только текс
     const { registry, instanceOf } = kitComponentRenderer();
 
     const [data, setData] = createSignal<unknown>(undefined);
-    const tree = createMemo(() => instanceOf("select", { open: true }, "basic", data()));
+    const tree = createMemo(() =>
+      instanceOf("select", { open: true }, "basic", data()),
+    );
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree()} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree()} data={data()} />,
+      host,
+    );
 
     setData({
       label: "Валюта счёта",
@@ -103,7 +124,9 @@ describe("RenderTree — repeat (структура), не только текс
       ],
     });
 
-    const items = document.body.querySelectorAll('[data-scope="select"][data-part="item"]');
+    const items = document.body.querySelectorAll(
+      '[data-scope="select"][data-part="item"]',
+    );
     expect(items).toHaveLength(2);
   });
 });

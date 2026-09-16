@@ -3,7 +3,6 @@ import {
   defaultRouterOptions,
   RouterProvider as RouterProviderBase,
 } from "@web-core/router";
-
 import { routeTree } from "#/routeTree.gen";
 
 const router = createRouter({ ...defaultRouterOptions, routeTree });

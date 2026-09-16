@@ -1,1 +1,1 @@
-export { componentManagerStore } from "./store";
+export { componentManagerStoreOf } from "./store";

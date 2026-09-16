@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/solid-router";
-
 import { EmbedPage } from "./index";
 
 interface EmbedSearch {
@@ -8,7 +7,8 @@ interface EmbedSearch {
 
 export const Route = createFileRoute("/embed/$component/$assembly")({
   validateSearch: (search: Record<string, unknown>): EmbedSearch => ({
-    content: typeof search["content"] === "string" ? search["content"] : undefined,
+    content:
+      typeof search["content"] === "string" ? search["content"] : undefined,
   }),
   component: () => {
     const params = Route.useParams();

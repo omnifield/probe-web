@@ -2,14 +2,13 @@ import { Outlet } from "@web-core/router";
 import { railVar } from "@web-core/skin";
 import {
   Workspace,
+  WorkspaceMain,
   WorkspaceRightbar,
   WorkspaceSidebar,
-  WorkspaceMain,
 } from "@web-core/ui";
-
 import { tree } from "#/entities/component";
-import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
 import { FeedManual, FeedPreset } from "#/features/component-manager";
+import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
 
 export function ShowcasePage() {
   const selection = useRouterCatalogSelection(

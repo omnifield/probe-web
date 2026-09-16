@@ -1,9 +1,14 @@
-import { EDITOR_INFOS, PASSPORTS } from "@web-core/ui/passport";
-import { IO } from "@web-core/ui/io";
-import { componentDescriptorOf } from "@web-core/ui/component-info";
-import { z } from "@web-core/io";
-import { footprintOf, groupOf, type ComponentFootprint, type ComponentGroup } from "@web-core/skin/editor";
 import { zocker } from "zocker";
+import { z } from "@web-core/io";
+import {
+  type ComponentFootprint,
+  type ComponentGroup,
+  footprintOf,
+  groupOf,
+} from "@web-core/skin/editor";
+import { componentDescriptorOf } from "@web-core/ui/component-info";
+import { IO } from "@web-core/ui/io";
+import { EDITOR_INFOS, PASSPORTS } from "@web-core/ui/passport";
 
 export function exampleDataFor(component: string): unknown {
   const input = IO[component]?.input;
@@ -14,7 +19,10 @@ export function exampleDataFor(component: string): unknown {
 // куда честнее, чем случайный zocker — но должны реально подходить под io-схему компонента, иначе
 // сами станут источником непонятных багов вместо инструмента их поиска. Компонент без io-схемы
 // (например table — своя игра с props.data, не bind по IO) — проверять нечем, не отказ.
-export function checkContentData(component: string, data: unknown): { ok: boolean; flaws: string[] } {
+export function checkContentData(
+  component: string,
+  data: unknown,
+): { ok: boolean; flaws: string[] } {
   const input = IO[component]?.input;
   if (!input) return { ok: true, flaws: [] };
 
@@ -23,7 +31,9 @@ export function checkContentData(component: string, data: unknown): { ok: boolea
 
   return {
     ok: false,
-    flaws: result.error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`),
+    flaws: result.error.issues.map(
+      (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
+    ),
   };
 }
 
@@ -78,7 +88,9 @@ export interface AssemblyCard {
 }
 
 /** Список сборок компонента — карточка (дёшево), не полное дерево. `undefined` — компонента нет. */
-export function getAssemblies(component: string): readonly AssemblyCard[] | undefined {
+export function getAssemblies(
+  component: string,
+): readonly AssemblyCard[] | undefined {
   if (!PASSPORTS[component]) return undefined;
   return (EDITOR_INFOS[component]?.assemblies ?? []).map((assembly) => ({
     name: assembly.name,
@@ -88,14 +100,24 @@ export function getAssemblies(component: string): readonly AssemblyCard[] | unde
 
 export type GetAssemblyResult =
   | { readonly ok: true; readonly assembly: unknown }
-  | { readonly ok: false; readonly reason: "unknown-component" | "unknown-assembly" };
+  | {
+      readonly ok: false;
+      readonly reason: "unknown-component" | "unknown-assembly";
+    };
 
 /** Полное дерево ОДНОЙ сборки по имени — дорого, по запросу, не в списке. */
-export function getAssembly(component: string, name: string): GetAssemblyResult {
+export function getAssembly(
+  component: string,
+  name: string,
+): GetAssemblyResult {
   if (!PASSPORTS[component]) return { ok: false, reason: "unknown-component" };
 
-  const assembly = EDITOR_INFOS[component]?.assemblies.find((candidate) => candidate.name === name);
-  return assembly ? { ok: true, assembly } : { ok: false, reason: "unknown-assembly" };
+  const assembly = EDITOR_INFOS[component]?.assemblies.find(
+    (candidate) => candidate.name === name,
+  );
+  return assembly
+    ? { ok: true, assembly }
+    : { ok: false, reason: "unknown-assembly" };
 }
 
 /** io-схема компонента — своя сущность, не часть паспорта. `undefined` — компонента нет. */

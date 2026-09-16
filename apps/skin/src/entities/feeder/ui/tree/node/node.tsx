@@ -1,8 +1,11 @@
 import { For, Match, Switch } from "solid-js";
-import { valueAt, withValue, type FieldDescriptor } from "@web-core/generators/fields";
-import { Flow, FlowItem, Icon, Typography } from "@web-core/ui";
+import {
+  type FieldDescriptor,
+  valueAt,
+  withValue,
+} from "@web-core/generators/fields";
 import { layoutGroup, layoutSelf } from "@web-core/skin";
-
+import { Flow, FlowItem, Icon, Typography } from "@web-core/ui";
 import type { FieldBinding } from "../../../lib/binding";
 import { useTree } from "../../../lib/use-tree";
 import { Button } from "../../kit";
@@ -16,14 +19,20 @@ import { Box } from "./box";
  *  своим лейблом (у поля, не у списка элементов — та часть у {@link Box}) и отдаёт элементы `Box`,
  *  рекурсируя саму `Node` на каждый (глубина внутрь идёт рекурсией, не вторым циклом в этом же
  *  теле), любое другое поле — рисует `Leaf`. */
-export function Node(props: { fields: readonly FieldDescriptor[]; binding: FieldBinding }) {
+export function Node(props: {
+  fields: readonly FieldDescriptor[];
+  binding: FieldBinding;
+}) {
   return (
     <Flow data-variant="column-center">
       <For each={props.fields}>
         {(field) => {
           const binding: FieldBinding = {
             value: () => valueAt(props.binding.value(), field.path),
-            onChange: (value) => props.binding.onChange(withValue(props.binding.value(), field.path, value)),
+            onChange: (value) =>
+              props.binding.onChange(
+                withValue(props.binding.value(), field.path, value),
+              ),
           };
 
           const { add } = useTree(field, binding);
@@ -36,19 +45,28 @@ export function Node(props: { fields: readonly FieldDescriptor[]; binding: Field
                     <FlowItem style={layoutSelf({ align: "stretch" })}>
                       <Flow
                         style={{
-                          ...layoutGroup({ justify: "space-between", align: "center" }),
+                          ...layoutGroup({
+                            justify: "space-between",
+                            align: "center",
+                          }),
                           ...layoutSelf({ align: "stretch" }),
                         }}
                       >
                         <Typography>{field.label}</Typography>
-                        <Button data-variant="tertiary" onClick={add} aria-label="Добавить">
+                        <Button
+                          data-variant="tertiary"
+                          onClick={add}
+                          aria-label="Добавить"
+                        >
                           <Icon name="plus" />
                         </Button>
                       </Flow>
                     </FlowItem>
                     <FlowItem style={layoutSelf({ align: "stretch" })}>
                       <Box field={field} binding={binding}>
-                        {(fields, itemBinding) => <Node fields={fields} binding={itemBinding} />}
+                        {(fields, itemBinding) => (
+                          <Node fields={fields} binding={itemBinding} />
+                        )}
                       </Box>
                     </FlowItem>
                   </Flow>

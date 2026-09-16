@@ -1,20 +1,19 @@
-import { createEffect, createSignal, For } from "solid-js";
+import { createEffect, createMemo, For } from "solid-js";
 import {
   Select,
-  SelectLabel,
+  SelectContent,
   SelectControl,
+  SelectIndicator,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectLabel,
+  SelectPositioner,
   SelectTrigger,
   SelectValueText,
-  SelectIndicator,
-  SelectPositioner,
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-  SelectItemIndicator,
 } from "@web-core/ui";
-
 import { contentQuery } from "#/entities/component";
-import { componentManagerStore } from "../model";
+import { componentManagerStoreOf } from "../model";
 
 export function FeedPreset(props: { component?: string }) {
   const query = contentQuery.use(() => props.component ?? "");
@@ -25,18 +24,25 @@ export function FeedPreset(props: { component?: string }) {
       data: preset.state.data,
     }));
 
-  const [selected, setSelected] = createSignal<string[]>([]);
+  const store = createMemo(() =>
+    componentManagerStoreOf(props.component ?? ""),
+  );
+  const presetName = createMemo(() =>
+    store().use((state) => state.presetName)(),
+  );
+  const selected = () => {
+    const name = presetName();
+    return name === undefined ? [] : [name];
+  };
 
   createEffect(() => {
     const list = items();
     if (list.length === 0) return;
 
-    const current = selected()[0];
+    const current = presetName();
     if (list.some((item) => item.value === current)) return;
 
-    setSelected([list[0].value]);
-    componentManagerStore.actions.setFeedData(list[0].data);
-    console.log(props?.component);
+    store().actions.setPreset(list[0].value, list[0].data);
   });
 
   return (
@@ -44,8 +50,9 @@ export function FeedPreset(props: { component?: string }) {
       items={items()}
       value={selected()}
       onValueChange={(details) => {
-        setSelected(details.value);
-        componentManagerStore.actions.setFeedData(details.items[0]?.data);
+        const item = details.items[0];
+        if (item === undefined) return;
+        store().actions.setPreset(item.value, item.data);
       }}
     >
       <SelectLabel>Пресет</SelectLabel>

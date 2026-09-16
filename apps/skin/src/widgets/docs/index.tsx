@@ -1,6 +1,6 @@
-import { Dialog, DialogContent, DialogControl } from "@web-core/ui";
-import { cardVar } from "@web-core/skin";
 import { Show } from "solid-js";
+import { cardVar } from "@web-core/skin";
+import { Dialog, DialogContent, DialogControl } from "@web-core/ui";
 
 export function Docs(props: { url?: string }) {
   // lazyMount/unmountOnExit — без них Ark держит DialogContent (значит и iframe) в DOM даже

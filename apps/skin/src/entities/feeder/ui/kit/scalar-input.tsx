@@ -1,9 +1,11 @@
 import type { FieldDescriptor } from "@web-core/generators/fields";
 import { Field, FieldInput } from "@web-core/ui";
-
 import type { FieldBinding } from "../../lib/binding";
 
-export function ScalarInput(props: { field: FieldDescriptor; binding: FieldBinding }) {
+export function ScalarInput(props: {
+  field: FieldDescriptor;
+  binding: FieldBinding;
+}) {
   return (
     <Field>
       <FieldInput
@@ -11,7 +13,9 @@ export function ScalarInput(props: { field: FieldDescriptor; binding: FieldBindi
         value={(props.binding.value() as string | number | undefined) ?? ""}
         onInput={(event) =>
           props.binding.onChange(
-            props.field.kind === "number" ? event.currentTarget.valueAsNumber : event.currentTarget.value,
+            props.field.kind === "number"
+              ? event.currentTarget.valueAsNumber
+              : event.currentTarget.value,
           )
         }
       />

@@ -3,9 +3,10 @@
 // источника) заводит `SkinProvider` на уровне приложения (`app/index.tsx`, `#/shared/api/skin`) —
 // этот компонент только читает готовый контекст (`useSkin()`) и рисует UI поверх него, источником
 // сам не владеет.
+
+import { createEffect, createMemo, For, Show } from "solid-js";
 import { PresetsDown, PresetsRefused } from "@web-core/skin/presets";
 import { useSkin } from "@web-core/skin/solid";
-import { componentStore } from "#/entities/component";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   Toggle,
   ToggleIndicator,
 } from "@web-core/ui";
-import { createEffect, createMemo, For, Show } from "solid-js";
+import { componentStore } from "#/entities/component";
 
 /** Причина отказа — короткой строкой человеку, не в отладчик. */
 function reasonOf(cause: unknown): string {

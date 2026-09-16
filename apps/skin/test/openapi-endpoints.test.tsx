@@ -1,6 +1,5 @@
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { endpointsAtom, OpenApi } from "#/entities/openapi";
 import { schemasAtom } from "#/entities/schema";
 
@@ -28,20 +27,28 @@ afterEach(() => {
 });
 
 function addButton(): HTMLElement {
-  return [...host.querySelectorAll("button")].find((button) => button.textContent === "Добавить эндпоинт")!;
+  return [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "Добавить эндпоинт",
+  )!;
 }
 
 function openControl(): HTMLButtonElement {
-  return host.querySelector<HTMLButtonElement>('[data-scope="accordion"][data-part="control"]')!;
+  return host.querySelector<HTMLButtonElement>(
+    '[data-scope="accordion"][data-part="control"]',
+  )!;
 }
 
 describe("OpenApi — аккордеон ручек, настройка внутри", () => {
   it("клик по «Добавить эндпоинт» даёт одну раскрывашку GET (без адреса)", () => {
-    expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(0);
+    expect(
+      host.querySelectorAll('[data-scope="accordion"][data-part="item"]'),
+    ).toHaveLength(0);
 
     addButton().click();
 
-    const items = host.querySelectorAll('[data-scope="accordion"][data-part="item"]');
+    const items = host.querySelectorAll(
+      '[data-scope="accordion"][data-part="item"]',
+    );
     expect(items).toHaveLength(1);
     expect(items[0]?.textContent).toContain("GET");
     expect(items[0]?.textContent).toContain("без адреса");
@@ -51,23 +58,33 @@ describe("OpenApi — аккордеон ручек, настройка внут
     addButton().click();
     openControl().click();
 
-    const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
+    const url = host.querySelector<HTMLInputElement>(
+      'input[placeholder="https://api.example.com/items"]',
+    )!;
     url.value = "https://api.example.com/orders";
     url.dispatchEvent(new Event("input", { bubbles: true }));
 
-    expect(openControl().textContent).toContain("https://api.example.com/orders");
+    expect(openControl().textContent).toContain(
+      "https://api.example.com/orders",
+    );
   });
 
   it("«Удалить эндпоинт» убирает раскрывашку целиком", () => {
     addButton().click();
     openControl().click();
 
-    expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(1);
+    expect(
+      host.querySelectorAll('[data-scope="accordion"][data-part="item"]'),
+    ).toHaveLength(1);
 
-    const removeEndpointButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Удалить эндпоинт")!;
+    const removeEndpointButton = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Удалить эндпоинт",
+    )!;
     removeEndpointButton.click();
 
-    expect(host.querySelectorAll('[data-scope="accordion"][data-part="item"]')).toHaveLength(0);
+    expect(
+      host.querySelectorAll('[data-scope="accordion"][data-part="item"]'),
+    ).toHaveLength(0);
   });
 
   it("GET не показывает поле тела, POST — показывает", () => {
@@ -76,7 +93,9 @@ describe("OpenApi — аккордеон ручек, настройка внут
 
     expect(host.querySelector('textarea[placeholder="{}"]')).toBeNull();
 
-    endpointsAtom.set((endpoints) => endpoints.map((endpoint) => ({ ...endpoint, method: "POST" })));
+    endpointsAtom.set((endpoints) =>
+      endpoints.map((endpoint) => ({ ...endpoint, method: "POST" })),
+    );
 
     expect(host.querySelector('textarea[placeholder="{}"]')).not.toBeNull();
   });
@@ -85,13 +104,17 @@ describe("OpenApi — аккордеон ручек, настройка внут
     addButton().click();
     openControl().click();
 
-    const addHeader = [...host.querySelectorAll("button")].find((button) => button.textContent === "Добавить хедер")!;
+    const addHeader = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Добавить хедер",
+    )!;
     addHeader.click();
 
     expect(host.querySelector('input[placeholder="Header"]')).not.toBeNull();
     expect(host.querySelector('input[placeholder="Value"]')).not.toBeNull();
 
-    const removeHeader = [...host.querySelectorAll("button")].find((button) => button.textContent === "Удалить")!;
+    const removeHeader = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Удалить",
+    )!;
     removeHeader.click();
 
     expect(host.querySelector('input[placeholder="Header"]')).toBeNull();
@@ -101,39 +124,59 @@ describe("OpenApi — аккордеон ручек, настройка внут
     addButton().click();
     openControl().click();
 
-    const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
+    const url = host.querySelector<HTMLInputElement>(
+      'input[placeholder="https://api.example.com/items"]',
+    )!;
     url.value = "https://api.example.com/orders";
     url.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const addHeader = [...host.querySelectorAll("button")].find((button) => button.textContent === "Добавить хедер")!;
+    const addHeader = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Добавить хедер",
+    )!;
     addHeader.click();
 
-    const key = host.querySelector<HTMLInputElement>('input[placeholder="Header"]')!;
+    const key = host.querySelector<HTMLInputElement>(
+      'input[placeholder="Header"]',
+    )!;
     key.value = "X-Test";
     key.dispatchEvent(new Event("input", { bubbles: true }));
-    const value = host.querySelector<HTMLInputElement>('input[placeholder="Value"]')!;
+    const value = host.querySelector<HTMLInputElement>(
+      'input[placeholder="Value"]',
+    )!;
     value.value = "1";
     value.dispatchEvent(new Event("input", { bubbles: true }));
 
     const buttons = [...host.querySelectorAll("button")];
-    const sendIndex = buttons.findIndex((button) => button.textContent === "Отправить запрос");
-    const addHeaderIndex = buttons.findIndex((button) => button.textContent === "Добавить хедер");
+    const sendIndex = buttons.findIndex(
+      (button) => button.textContent === "Отправить запрос",
+    );
+    const addHeaderIndex = buttons.findIndex(
+      (button) => button.textContent === "Добавить хедер",
+    );
     expect(sendIndex).toBeGreaterThanOrEqual(0);
     expect(sendIndex).toBeLessThan(addHeaderIndex);
 
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response('{"ok":true}', { status: 200, headers: { "content-type": "application/json" } }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response('{"ok":true}', {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     buttons[sendIndex]!.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
     expect(requestUrl).toBe("https://api.example.com/orders");
     expect(requestInit.method).toBe("GET");
     expect((requestInit.headers as Headers).get("X-Test")).toBe("1");
-    expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 200, ok: true, body: { ok: true } }));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 200, ok: true, body: { ok: true } }),
+    );
 
     fetchMock.mockRestore();
     logSpy.mockRestore();
@@ -143,19 +186,26 @@ describe("OpenApi — аккордеон ручек, настройка внут
     addButton().click();
     openControl().click();
 
-    const url = host.querySelector<HTMLInputElement>('input[placeholder="https://api.example.com/items"]')!;
+    const url = host.querySelector<HTMLInputElement>(
+      'input[placeholder="https://api.example.com/items"]',
+    )!;
     url.value = "https://jsonplaceholder.typicode.com/todos/1";
     url.dispatchEvent(new Event("input", { bubbles: true }));
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response('{"userId":1,"id":1,"title":"delectus aut autem","completed":false}', {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+      new Response(
+        '{"userId":1,"id":1,"title":"delectus aut autem","completed":false}',
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
     );
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    const saveButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Сохранить как схему")!;
+    const saveButton = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Сохранить как схему",
+    )!;
     saveButton.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
 

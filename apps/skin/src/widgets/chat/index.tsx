@@ -1,5 +1,10 @@
 import { createSignal } from "solid-js";
-import { Transcript, Composer, type Message, type TextPart } from "@web-core/chat";
+import {
+  Composer,
+  type Message,
+  type TextPart,
+  Transcript,
+} from "@web-core/chat";
 
 const VIEWER_ID = "viewer";
 
@@ -12,7 +17,12 @@ export function Chat() {
   function onSend(parts: readonly TextPart[]) {
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), participantId: VIEWER_ID, parts, createdAt: Date.now() },
+      {
+        id: crypto.randomUUID(),
+        participantId: VIEWER_ID,
+        parts,
+        createdAt: Date.now(),
+      },
     ]);
   }
 

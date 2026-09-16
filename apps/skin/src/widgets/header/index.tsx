@@ -1,20 +1,20 @@
 // ШАПКА ВИТРИНЫ — переключатель экрана (showcase/lab/playground) и переключатель темы. Содержимое
 // `WorkspaceHeader`, не сам слот: раскладку (флекс, отступы) держит страница (`pages/index.tsx`).
+
+import { createMemo, For } from "solid-js";
+import { useLocation, useNavigate, useParams } from "@web-core/router";
+import { layoutGroup } from "@web-core/skin";
 import {
+  Flow,
+  FlowItem,
   SegmentGroup,
   SegmentGroupIndicator,
   SegmentGroupItem,
   SegmentGroupItemControl,
   SegmentGroupItemText,
-  FlowItem,
-  Flow,
 } from "@web-core/ui";
-import { layoutGroup } from "@web-core/skin";
-import { useLocation, useNavigate, useParams } from "@web-core/router";
-import { createMemo, For } from "solid-js";
-
-import { ThemeSwitch } from "#/shared/ui/theme-switch";
 import { Auth } from "#/entities/user";
+import { ThemeSwitch } from "#/shared/ui/theme-switch";
 
 const SCREENS = [
   { value: "lab", label: "Lab", to: "/lab/{-$component}", prefix: "/lab" },

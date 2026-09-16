@@ -1,8 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "@web-core/io";
-import { err, ok, registerTool } from "@web-core/neurobox/server";
-import { FeedbackRefused, listFeedback, reportFeedback, resolveFeedback, type FeedbackEntry } from "@web-core/neurobox/zone-feedback";
 import { limitSchema, paginate } from "@web-core/neurobox/pagination";
+import { err, ok, registerTool } from "@web-core/neurobox/server";
+import {
+  type FeedbackEntry,
+  FeedbackRefused,
+  listFeedback,
+  reportFeedback,
+  resolveFeedback,
+} from "@web-core/neurobox/zone-feedback";
 import { presetsServiceUrl } from "../engine";
 
 const STATUS_FILTER = z.enum(["open", "resolved", "all"]);
@@ -20,27 +26,52 @@ export function registerFeedbackTools(server: McpServer): void {
   registerTool(server, {
     name: "report_feedback",
     title: "Оставить репорт по ручке",
-    description: "Сигнал по любой ручке — tool/action/actual(+expected?), sign:issue(по умолчанию)|praise.",
+    description:
+      "Сигнал по любой ручке — tool/action/actual(+expected?), sign:issue(по умолчанию)|praise.",
     access: "write",
     input: z.object({
-      tool: z.string().describe("имя ручки этого MCP, к которой относится репорт"),
-      action: z.string().describe("что сделали — вызов и с чем, своими словами"),
-      expected: z.string().optional().describe("что ожидали получить (для issue; необязательно для praise)"),
-      actual: z.string().describe("что получили на самом деле — плохое или хорошее, по sign"),
-      sign: SIGN.optional().describe("issue (по умолчанию) — что-то не так; praise — сработало хорошо"),
+      tool: z
+        .string()
+        .describe("имя ручки этого MCP, к которой относится репорт"),
+      action: z
+        .string()
+        .describe("что сделали — вызов и с чем, своими словами"),
+      expected: z
+        .string()
+        .optional()
+        .describe("что ожидали получить (для issue; необязательно для praise)"),
+      actual: z
+        .string()
+        .describe("что получили на самом деле — плохое или хорошее, по sign"),
+      sign: SIGN.optional().describe(
+        "issue (по умолчанию) — что-то не так; praise — сработало хорошо",
+      ),
     }),
     handler: async ({ tool, action, expected, actual, sign }) =>
-      ok({ saved: await reportFeedback(presetsServiceUrl, { tool, action, expected, actual, sign }) }),
+      ok({
+        saved: await reportFeedback(presetsServiceUrl, {
+          tool,
+          action,
+          expected,
+          actual,
+          sign,
+        }),
+      }),
   });
 
   registerTool(server, {
     name: "list_feedback",
     title: "Перечень репортов",
-    description: "Заголовки заявок (без tool/action/expected/actual — см. get_feedback). По умолчанию status:open, sign:all.",
+    description:
+      "Заголовки заявок (без tool/action/expected/actual — см. get_feedback). По умолчанию status:open, sign:all.",
     access: "read",
     input: z.object({
-      status: STATUS_FILTER.optional().describe("что показывать; по умолчанию только open"),
-      sign: SIGN_FILTER.optional().describe("issue|praise|all; по умолчанию all"),
+      status: STATUS_FILTER.optional().describe(
+        "что показывать; по умолчанию только open",
+      ),
+      sign: SIGN_FILTER.optional().describe(
+        "issue|praise|all; по умолчанию all",
+      ),
       cursor: z.string().optional().describe("курсор из предыдущей страницы"),
       limit: limitSchema.optional(),
     }),
@@ -67,13 +98,15 @@ export function registerFeedbackTools(server: McpServer): void {
   registerTool(server, {
     name: "get_feedback",
     title: "Содержимое репорта",
-    description: "Полный tool/action/expected/actual одной заявки по id (см. list_feedback).",
+    description:
+      "Полный tool/action/expected/actual одной заявки по id (см. list_feedback).",
     access: "read",
     input: z.object({ id: z.string().describe("id заявки из list_feedback") }),
     handler: async ({ id }) => {
       const entries = await listFeedback(presetsServiceUrl);
       const entry = entries.find((candidate) => candidate.id === id);
-      if (!entry) return err(`заявки "${id}" нет — id берётся из list_feedback`);
+      if (!entry)
+        return err(`заявки "${id}" нет — id берётся из list_feedback`);
       return ok(entry);
     },
   });
@@ -81,15 +114,21 @@ export function registerFeedbackTools(server: McpServer): void {
   registerTool(server, {
     name: "resolve_feedback",
     title: "Закрыть репорт",
-    description: "Ставит status:\"resolved\" на заявке по id (не удаляет) — уходит из list_feedback по умолчанию.",
+    description:
+      'Ставит status:"resolved" на заявке по id (не удаляет) — уходит из list_feedback по умолчанию.',
     access: "write",
     input: z.object({
       id: z.string().describe("id заявки из list_feedback"),
-      note: z.string().optional().describe("чем кончился разбор — своими словами"),
+      note: z
+        .string()
+        .optional()
+        .describe("чем кончился разбор — своими словами"),
     }),
     handler: async ({ id, note }) => {
       try {
-        return ok({ resolved: await resolveFeedback(presetsServiceUrl, id, note) });
+        return ok({
+          resolved: await resolveFeedback(presetsServiceUrl, id, note),
+        });
       } catch (cause) {
         if (cause instanceof FeedbackRefused) return err(cause.message);
         throw cause;

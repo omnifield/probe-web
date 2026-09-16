@@ -1,7 +1,7 @@
-import type { ToolContext } from "@web-core/neurobox/server";
 import { z } from "@web-core/io";
+import type { ToolContext } from "@web-core/neurobox/server";
 import { DEFAULT_TAG, sortTags } from "@web-core/skin/tags";
-import { checkTags, presets, type PresetKind } from "../engine";
+import { checkTags, type PresetKind, presets } from "../engine";
 
 export const KIND = z.enum(["palette", "form", "outfit", "assembly", "tag"]);
 export const looseRecord = z.looseObject({ name: z.string() });
@@ -10,7 +10,10 @@ export const looseRecord = z.looseObject({ name: z.string() });
 // (агент заголовки не пишет, только аргументы тула — раз он не может подделать заголовок, значит
 // не может выдать себя за чужого автора). На stdio (локальные скрипты вроде push-to-prod.mjs, где
 // заголовков не бывает вовсе) заголовка нет — тогда работает аргумент author, как раньше.
-export function resolveAuthor(context: ToolContext, argumentAuthor: string | undefined): string | undefined {
+export function resolveAuthor(
+  context: ToolContext,
+  argumentAuthor: string | undefined,
+): string | undefined {
   const header = context.headers["x-user-login"];
   const fromHeader = Array.isArray(header) ? header[0] : header;
   return fromHeader ?? argumentAuthor;
@@ -21,7 +24,11 @@ export function resolveAuthor(context: ToolContext, argumentAuthor: string | und
 // не занята, пишет кто угодно. author приезжает с запросом от платформы, которая уже знает, с каким
 // залогиненным юзером говорит — сама эта зона identity не проверяет (см. FAQ.md), только сверяет
 // строки, поэтому здесь никогда не было и не будет отдельного секрета вида adminToken.
-export async function authorGuard(kind: PresetKind, name: string, nextAuthor: string | undefined): Promise<string | undefined> {
+export async function authorGuard(
+  kind: PresetKind,
+  name: string,
+  nextAuthor: string | undefined,
+): Promise<string | undefined> {
   const existing = await presets.get(kind, name);
   if (!existing) return undefined;
 
@@ -36,7 +43,9 @@ export async function authorGuard(kind: PresetKind, name: string, nextAuthor: st
 }
 
 export async function resolveTags(rawTags: unknown, where = "tags") {
-  const requested = Array.isArray(rawTags) ? rawTags.filter((t): t is string => typeof t === "string") : [];
+  const requested = Array.isArray(rawTags)
+    ? rawTags.filter((t): t is string => typeof t === "string")
+    : [];
   const tags = sortTags(requested.length > 0 ? requested : [DEFAULT_TAG]);
   return { tags, flaws: await checkTags(tags, where) };
 }

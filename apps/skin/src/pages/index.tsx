@@ -1,6 +1,5 @@
-import { Workspace, WorkspaceHeader, WorkspaceMain, Toast } from "@web-core/ui";
 import { Outlet } from "@web-core/router";
-
+import { Toast, Workspace, WorkspaceHeader, WorkspaceMain } from "@web-core/ui";
 import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {

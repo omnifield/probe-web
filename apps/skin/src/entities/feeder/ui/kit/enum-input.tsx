@@ -13,15 +13,27 @@ import {
   SelectTrigger,
   SelectValueText,
 } from "@web-core/ui";
-
 import type { FieldBinding } from "../../lib/binding";
 
-export function EnumInput(props: { field: FieldDescriptor; binding: FieldBinding }) {
-  const options = createMemo(() => (props.field.options ?? []).map((value) => ({ value, label: value })));
-  const value = createMemo(() => (typeof props.binding.value() === "string" ? [props.binding.value() as string] : []));
+export function EnumInput(props: {
+  field: FieldDescriptor;
+  binding: FieldBinding;
+}) {
+  const options = createMemo(() =>
+    (props.field.options ?? []).map((value) => ({ value, label: value })),
+  );
+  const value = createMemo(() =>
+    typeof props.binding.value() === "string"
+      ? [props.binding.value() as string]
+      : [],
+  );
 
   return (
-    <Select items={options()} value={value()} onValueChange={(details) => props.binding.onChange(details.value[0])}>
+    <Select
+      items={options()}
+      value={value()}
+      onValueChange={(details) => props.binding.onChange(details.value[0])}
+    >
       <SelectControl>
         <SelectTrigger>
           <SelectValueText placeholder="Выбрать" />

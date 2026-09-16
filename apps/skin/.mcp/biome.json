@@ -1,0 +1,4 @@
+{
+  "root": false,
+  "extends": ["@web-core/lint/biome.json"]
+}

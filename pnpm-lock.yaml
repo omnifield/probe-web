@@ -220,12 +220,21 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(zod@4.4.3)
     devDependencies:
+      '@biomejs/biome':
+        specifier: ^2.5.4
+        version: 2.5.13
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3
       '@web-core/build':
         specifier: workspace:*
         version: link:../../../packages/build
+      '@web-core/lint':
+        specifier: workspace:*
+        version: link:../../../packages/lint
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1(jiti@2.7.0)(supports-color@8.1.1)
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -534,6 +543,16 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
+
+  packages/lint/test/consumer:
+    dependencies:
+      '@web-core/lint':
+        specifier: workspace:*
+        version: link:../..
+    devDependencies:
+      eslint:
+        specifier: ^10.8.1
+        version: 10.8.1(jiti@2.7.0)(supports-color@8.1.1)
 
   packages/mcp:
     dependencies:

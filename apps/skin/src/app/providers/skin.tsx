@@ -1,8 +1,7 @@
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, type JSX, Show } from "solid-js";
 import { createPresetsSkinSource } from "@web-core/skin/presets";
 import { SkinProvider as SkinProviderBase } from "@web-core/skin/solid";
 import { passportOf } from "@web-core/ui/passport";
-
 import { PRESETS_URL } from "#/shared/api/clients";
 
 const DEFAULT_SKIN = "omnifield";

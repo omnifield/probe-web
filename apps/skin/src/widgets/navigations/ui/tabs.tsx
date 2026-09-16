@@ -1,12 +1,12 @@
+import { createMemo, For, type JSX } from "solid-js";
 import {
-  Tabs as TabsRoot,
+  Surface,
   TabsContent,
   TabsList,
-  TabsTrigger,
   type TabsProps,
-  Surface,
+  Tabs as TabsRoot,
+  TabsTrigger,
 } from "@web-core/ui";
-import { createMemo, For, type JSX } from "solid-js";
 
 export function NavigationTabs(props: {
   content: Record<string, () => JSX.Element>;

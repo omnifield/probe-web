@@ -1,5 +1,4 @@
 import { createFileRoute, notFound } from "@tanstack/solid-router";
-
 import {
   componentDescriptorOf,
   groupByTag,

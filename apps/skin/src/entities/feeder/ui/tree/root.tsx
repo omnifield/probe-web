@@ -1,6 +1,5 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
-import { fieldsOf, type FieldDescriptor } from "@web-core/generators/fields";
-
+import { type FieldDescriptor, fieldsOf } from "@web-core/generators/fields";
 import { componentStore } from "#/entities/component";
 import type { FieldBinding } from "../../lib/binding";
 import { Node } from "./node";

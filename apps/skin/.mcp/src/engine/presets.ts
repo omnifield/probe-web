@@ -54,7 +54,8 @@ loadWorkspaceEnv();
  *  адрес воркспейса из корневого `.env`, тот же, что читает витрина. Путь дописываем сами, если
  *  дали только адрес службы: в `.env` естественно записать `https://host:port`. */
 function resolveUrl(): string {
-  const given = process.env["SKIN_MCP_PRESETS_URL"] ?? process.env["PRESETS_URL"];
+  const given =
+    process.env["SKIN_MCP_PRESETS_URL"] ?? process.env["PRESETS_URL"];
   const base = (given ?? "").trim().replace(/\/+$/, "") || LOCAL;
 
   return base.endsWith(GRAPHQL_PATH) ? base : base + GRAPHQL_PATH;

@@ -1,4 +1,4 @@
-import { layout, route, rootRoute } from "@web-core/router/virtual-file-routes";
+import { layout, rootRoute, route } from "@web-core/router/virtual-file-routes";
 
 export default rootRoute("__root.tsx", [
   layout("workspace", "../pages/route.tsx", [

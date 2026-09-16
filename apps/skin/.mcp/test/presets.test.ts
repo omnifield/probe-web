@@ -1,22 +1,39 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { spawnTestPresetsServer, type TestPresetsServer } from "./helpers/presets-server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  spawnTestPresetsServer,
+  type TestPresetsServer,
+} from "./helpers/presets-server";
 
 // Взято живьём с реального omnifield-палитры/omnifield-avatar (get_preset на локальном
 // backend/presets) — настоящая, структурно валидная форма, не выдуманная. name/author подогнаны
 // под этот тестовый прогон.
 const PALETTE = {
   name: "vitest-palette",
-  scales: { accent: "#3457d5", danger: "#c2282e", neutral: "#6b7280", success: "#197a3d", warning: "#a35a06" },
+  scales: {
+    accent: "#3457d5",
+    danger: "#c2282e",
+    neutral: "#6b7280",
+    success: "#197a3d",
+    warning: "#a35a06",
+  },
   dimensions: {
     "border-width": "1px",
     card: { between: ["360px", "1280px"], narrow: "20rem", wide: "24rem" },
     column: "1rem",
-    "control-height": { between: ["360px", "1280px"], narrow: "2rem", wide: "2.25rem" },
+    "control-height": {
+      between: ["360px", "1280px"],
+      narrow: "2rem",
+      wide: "2.25rem",
+    },
     density: "1",
-    "font-size": { between: ["360px", "1280px"], narrow: "0.9375rem", wide: "1rem" },
+    "font-size": {
+      between: ["360px", "1280px"],
+      narrow: "0.9375rem",
+      wide: "1rem",
+    },
     layout: { between: ["360px", "1280px"], narrow: "64rem", wide: "80rem" },
     radius: "10px",
     rail: { between: ["360px", "1280px"], narrow: "12rem", wide: "14rem" },
@@ -78,11 +95,17 @@ const FORM = {
           justifyContent: "center",
           textTransform: "uppercase",
         },
-        states: { hidden: { props: { display: "none" } }, visible: { props: { display: "flex" } } },
+        states: {
+          hidden: { props: { display: "none" } },
+          visible: { props: { display: "flex" } },
+        },
       },
       image: {
         props: { blockSize: "100%", inlineSize: "100%", objectFit: "cover" },
-        states: { hidden: { props: { display: "none" } }, visible: { props: { display: "block" } } },
+        states: {
+          hidden: { props: { display: "none" } },
+          visible: { props: { display: "block" } },
+        },
       },
       root: {
         props: {
@@ -104,12 +127,22 @@ const FORM = {
     variants: {
       lg: {
         fallback: { props: { fontSize: "var(--font-size-md)" } },
-        root: { props: { blockSize: "var(--control-height-lg)", inlineSize: "var(--control-height-lg)" } },
+        root: {
+          props: {
+            blockSize: "var(--control-height-lg)",
+            inlineSize: "var(--control-height-lg)",
+          },
+        },
       },
       md: {},
       sm: {
         fallback: { props: { fontSize: "var(--font-size-xs)" } },
-        root: { props: { blockSize: "var(--control-height-sm)", inlineSize: "var(--control-height-sm)" } },
+        root: {
+          props: {
+            blockSize: "var(--control-height-sm)",
+            inlineSize: "var(--control-height-sm)",
+          },
+        },
       },
     },
   },
@@ -129,9 +162,18 @@ beforeAll(async () => {
   // порядок, что push-to-prod.mjs (форма сверяется с палитрой по имени, variantTags — со словарём
   // тегов). "default" — DEFAULT_TAG из @web-core/skin/tags, FORM ссылается на него в variantTags.
   const client = await connectedClient();
-  await client.callTool({ name: "save_preset", arguments: { kind: "tag", state: { name: "default" }, author: "vitest" } });
-  await client.callTool({ name: "save_preset", arguments: { kind: "palette", state: PALETTE, author: "vitest" } });
-  await client.callTool({ name: "save_preset", arguments: { kind: "form", state: FORM, author: "vitest" } });
+  await client.callTool({
+    name: "save_preset",
+    arguments: { kind: "tag", state: { name: "default" }, author: "vitest" },
+  });
+  await client.callTool({
+    name: "save_preset",
+    arguments: { kind: "palette", state: PALETTE, author: "vitest" },
+  });
+  await client.callTool({
+    name: "save_preset",
+    arguments: { kind: "form", state: FORM, author: "vitest" },
+  });
 }, 30000);
 
 afterAll(async () => {
@@ -143,8 +185,12 @@ async function connectedClient(): Promise<Client> {
   registerPresetTools(server);
 
   const client = new Client({ name: "test-client", version: "0.0.0" });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  await Promise.all([
+    server.connect(serverTransport),
+    client.connect(clientTransport),
+  ]);
   return client;
 }
 
@@ -163,16 +209,29 @@ describe("save_preset + get_preset + list_presets — palette round-trip", () =>
     const palette = { ...PALETTE, name };
 
     const saved = await readJson(
-      await client.callTool({ name: "save_preset", arguments: { kind: "palette", state: palette, author: "vitest" } }),
+      await client.callTool({
+        name: "save_preset",
+        arguments: { kind: "palette", state: palette, author: "vitest" },
+      }),
     );
     // save_preset возвращает {saved: PresetRecord}, не {saved: boolean} — сверено живьём.
     expect(saved.saved.name).toBe(name);
 
-    const read = await readJson(await client.callTool({ name: "get_preset", arguments: { kind: "palette", name } }));
+    const read = await readJson(
+      await client.callTool({
+        name: "get_preset",
+        arguments: { kind: "palette", name },
+      }),
+    );
     expect(read.state.name).toBe(name);
     expect(read.state.scales.accent).toBe(PALETTE.scales.accent);
 
-    const list = await readJson(await client.callTool({ name: "list_presets", arguments: { kind: "palette" } }));
+    const list = await readJson(
+      await client.callTool({
+        name: "list_presets",
+        arguments: { kind: "palette" },
+      }),
+    );
     const names = list.items.map((item: { name: string }) => item.name);
     expect(names).toContain(name);
     // Заголовок без id/kind — та же форма, что list-presets-drop-redundant-fields закрепила.
@@ -184,7 +243,12 @@ describe("save_preset + get_preset + list_presets — palette round-trip", () =>
 describe("check_palette", () => {
   it("passes a structurally valid palette", async () => {
     const client = await connectedClient();
-    const body = await readJson(await client.callTool({ name: "check_palette", arguments: { palette: PALETTE } }));
+    const body = await readJson(
+      await client.callTool({
+        name: "check_palette",
+        arguments: { palette: PALETTE },
+      }),
+    );
     expect(body.ok).toBe(true);
   });
 
@@ -194,7 +258,12 @@ describe("check_palette", () => {
     void neutral;
     const broken = { ...PALETTE, scales: scalesWithoutNeutral };
 
-    const body = await readJson(await client.callTool({ name: "check_palette", arguments: { palette: broken } }));
+    const body = await readJson(
+      await client.callTool({
+        name: "check_palette",
+        arguments: { palette: broken },
+      }),
+    );
     expect(body.ok).toBe(false);
   });
 });
@@ -207,18 +276,31 @@ describe("save_preset — author ownership", () => {
     const first = await readJson(
       await client.callTool({
         name: "save_preset",
-        arguments: { kind: "palette", state: { ...PALETTE, name }, author: "alice" },
+        arguments: {
+          kind: "palette",
+          state: { ...PALETTE, name },
+          author: "alice",
+        },
       }),
     );
     expect(first.saved.name).toBe(name);
 
     const result = await client.callTool({
       name: "save_preset",
-      arguments: { kind: "palette", state: { ...PALETTE, name }, author: "bob" },
+      arguments: {
+        kind: "palette",
+        state: { ...PALETTE, name },
+        author: "bob",
+      },
     });
     expect(result.isError).toBe(true);
 
-    const still = await readJson(await client.callTool({ name: "get_preset", arguments: { kind: "palette", name } }));
+    const still = await readJson(
+      await client.callTool({
+        name: "get_preset",
+        arguments: { kind: "palette", name },
+      }),
+    );
     expect(still.state.author).toBe("alice");
   });
 });
@@ -226,7 +308,9 @@ describe("save_preset — author ownership", () => {
 describe("check_form", () => {
   it("passes a structurally valid form and resolves variantTags", async () => {
     const client = await connectedClient();
-    const body = await readJson(await client.callTool({ name: "check_form", arguments: { form: FORM } }));
+    const body = await readJson(
+      await client.callTool({ name: "check_form", arguments: { form: FORM } }),
+    );
 
     expect(body.ok).toBe(true);
     expect(body.tagGroups).toBeDefined();
@@ -234,36 +318,67 @@ describe("check_form", () => {
 
   it("reports unknown-variant when variantTags names a variant recipe does not have", async () => {
     const client = await connectedClient();
-    const broken = { ...FORM, variantTags: { ...FORM.variantTags, "no-such-variant": ["default"] } };
+    const broken = {
+      ...FORM,
+      variantTags: { ...FORM.variantTags, "no-such-variant": ["default"] },
+    };
 
-    const body = await readJson(await client.callTool({ name: "check_form", arguments: { form: broken } }));
+    const body = await readJson(
+      await client.callTool({
+        name: "check_form",
+        arguments: { form: broken },
+      }),
+    );
     expect(body.ok).toBe(false);
-    expect(body.referenceFlaws.some((f: { name: string }) => f.name === "unknown-variant")).toBe(true);
+    expect(
+      body.referenceFlaws.some(
+        (f: { name: string }) => f.name === "unknown-variant",
+      ),
+    ).toBe(true);
   });
 });
 
 describe("check_outfit + assemble_preview", () => {
   it("check_outfit resolves palette/forms by name and reports ok:true for a real combination", async () => {
     const client = await connectedClient();
-    const outfit = { name: "vitest-outfit", palette: PALETTE.name, forms: [FORM.name] };
+    const outfit = {
+      name: "vitest-outfit",
+      palette: PALETTE.name,
+      forms: [FORM.name],
+    };
 
-    const body = await readJson(await client.callTool({ name: "check_outfit", arguments: { outfit } }));
+    const body = await readJson(
+      await client.callTool({ name: "check_outfit", arguments: { outfit } }),
+    );
     expect(body.ok).toBe(true);
   });
 
   it("check_outfit reports a flaw for a form name that does not exist", async () => {
     const client = await connectedClient();
-    const outfit = { name: "vitest-outfit-broken", palette: PALETTE.name, forms: ["no-such-form"] };
+    const outfit = {
+      name: "vitest-outfit-broken",
+      palette: PALETTE.name,
+      forms: ["no-such-form"],
+    };
 
-    const body = await readJson(await client.callTool({ name: "check_outfit", arguments: { outfit } }));
+    const body = await readJson(
+      await client.callTool({ name: "check_outfit", arguments: { outfit } }),
+    );
     expect(body.ok).toBe(false);
   });
 
   it("assemble_preview returns a report plus a CSS resource_link, not inline CSS", async () => {
     const client = await connectedClient();
-    const outfit = { name: "vitest-outfit", palette: PALETTE.name, forms: [FORM.name] };
+    const outfit = {
+      name: "vitest-outfit",
+      palette: PALETTE.name,
+      forms: [FORM.name],
+    };
 
-    const result = await client.callTool({ name: "assemble_preview", arguments: { outfit } });
+    const result = await client.callTool({
+      name: "assemble_preview",
+      arguments: { outfit },
+    });
     expect(result.isError).toBe(false);
 
     const types = (result.content as { type: string }[]).map((c) => c.type);

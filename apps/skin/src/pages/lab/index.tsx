@@ -1,4 +1,4 @@
-import { Icon, Button, Typography } from "@web-core/ui";
+import { Button, Icon, Typography } from "@web-core/ui";
 
 export function LabPage() {
   return (

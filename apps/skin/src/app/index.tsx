@@ -24,7 +24,6 @@
 import "@web-core/style/base.css";
 
 import { mountApp } from "@web-core/solid/mount";
-
 import { QueryClientProvider, RouterProvider, SkinProvider } from "./providers";
 
 mountApp(() => (

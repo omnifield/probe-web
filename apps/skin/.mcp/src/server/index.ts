@@ -1,7 +1,8 @@
 import { createServer } from "@web-core/neurobox/server";
 import { registerTools } from "../tools";
 
-const transport = process.env["SKIN_MCP_TRANSPORT"] === "http" ? "http" : "stdio";
+const transport =
+  process.env["SKIN_MCP_TRANSPORT"] === "http" ? "http" : "stdio";
 // 8788, не общий "3000" по умолчанию у @web-core/neurobox — 3000 в реальном контейнере разработки занят
 // сторонней инфраструктурой (не web-core), listen() падает EADDRINUSE на КАЖДОМ старте без PORT.
 // 8788 — рядом со службой пресетов этой же зоны (8787), не общий с другими web-core-серверами.
@@ -18,6 +19,13 @@ const instructions = [
   "результат, не отказ инструмента. save_preset проверяет сама и откажет тем же отчётом.",
 ].join(" ");
 
-const server = createServer({ name: "web-core-skin", version: "0.0.0", transport, host, instructions, registerTools });
+const server = createServer({
+  name: "web-core-skin",
+  version: "0.0.0",
+  transport,
+  host,
+  instructions,
+  registerTools,
+});
 
 await server.listen(port);

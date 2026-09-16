@@ -1,5 +1,6 @@
 import { For, type JSX } from "solid-js";
 import type { FieldDescriptor } from "@web-core/generators/fields";
+import { layoutSelf } from "@web-core/skin";
 import {
   Accordion,
   AccordionContent,
@@ -7,14 +8,12 @@ import {
   AccordionControlIndicator,
   AccordionItem,
   Flow,
+  FlowItem,
   Icon,
   Surface,
   Typography,
-  FlowItem,
 } from "@web-core/ui";
-import { layoutSelf } from "@web-core/skin";
-
-import { itemBinding, type FieldBinding } from "../../../lib/binding";
+import { type FieldBinding, itemBinding } from "../../../lib/binding";
 import { useTree } from "../../../lib/use-tree";
 import { Button } from "../../kit";
 

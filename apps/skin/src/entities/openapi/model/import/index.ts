@@ -1,8 +1,7 @@
 import { run } from "@web-core/generators/mapping";
-
 import { createEndpoint, updateEndpoint } from "../endpoint";
-import { createService } from "../service";
 import type { Service } from "../service";
+import { createService } from "../service";
 import { swagger2Template } from "./swagger2";
 
 const templates = [swagger2Template];

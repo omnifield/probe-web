@@ -1,3 +1,4 @@
+import { createSignal, For, type JSX } from "solid-js";
 import { layoutSelf } from "@web-core/skin";
 import {
   Carousel,
@@ -9,12 +10,10 @@ import {
   CarouselNextTrigger,
   CarouselPrevTrigger,
   CarouselProgressText,
+  type CarouselProps,
   Surface,
   Typography,
-  type CarouselProps,
 } from "@web-core/ui";
-import { createSignal, For, type JSX } from "solid-js";
-
 import { SLOT_SIZES, type SlotSizeName } from "../lib/size";
 
 export function Slot<Item>(props: {

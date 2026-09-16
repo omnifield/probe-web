@@ -1,11 +1,12 @@
 // Сузить регрессию из renderer-reactivity.test.tsx: тут дерево строится ОДИН раз (не в memo, не
 // зависит от data) — если баг («второй .set() не доезжает») повторяется и здесь, дело в
 // RenderTree/RenderNode (`@web-core/assembly/render`), не в том, как apps/skin строит дерево.
-import { RenderTree } from "@web-core/assembly/render";
-import { kitComponentRenderer } from "@web-core/ui/component-registry";
+
 import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
+import { RenderTree } from "@web-core/assembly/render";
+import { kitComponentRenderer } from "@web-core/ui/component-registry";
 
 let dispose: (() => void) | undefined;
 
@@ -24,9 +25,13 @@ describe("RenderTree — статичное дерево, меняется то�
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree} data={data()} />,
+      host,
+    );
 
-    const root = () => host.querySelector('[data-scope="button"][data-part="root"]');
+    const root = () =>
+      host.querySelector('[data-scope="button"][data-part="root"]');
     expect(root()?.textContent).toBe("первый");
 
     setData({ label: "второй" });

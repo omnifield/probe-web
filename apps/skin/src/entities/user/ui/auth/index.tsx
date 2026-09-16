@@ -3,6 +3,8 @@
 // `login()` (`../../model`) просто пишет логин локально.
 // Триггер двойной: не залогинен — обычный `DialogControl` (открывает модалку); залогинен — кнопка
 // "Logout" (разлогинивает, модалку вообще не трогает).
+
+import { createSignal, type JSX, Show } from "solid-js";
 import {
   Button,
   Dialog,
@@ -15,8 +17,6 @@ import {
   FlowItem,
   toast,
 } from "@web-core/ui";
-import { createSignal, Show, type JSX } from "solid-js";
-
 import { currentUser, login, logout } from "../../model";
 
 const PASSWORD = "123";

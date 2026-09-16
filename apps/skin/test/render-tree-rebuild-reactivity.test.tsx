@@ -2,11 +2,12 @@
 // дерево, пересобираемое заново на каждую смену data (тем же приёмом, что Renderer с repeat-
 // сборками вроде tree-view), теряло байндинг со второй пересборки. Тест написан ГОЛЫМ RenderTree,
 // без Renderer apps/skin — доказывает, что причина была в движке, не в обвязке.
-import { RenderTree } from "@web-core/assembly/render";
-import { kitComponentRenderer } from "@web-core/ui/component-registry";
+
 import { createMemo, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
+import { RenderTree } from "@web-core/assembly/render";
+import { kitComponentRenderer } from "@web-core/ui/component-registry";
 
 let dispose: (() => void) | undefined;
 
@@ -25,9 +26,13 @@ describe("RenderTree — дерево пересобирается на кажд
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <RenderTree registry={registry} tree={tree()} data={data()} />, host);
+    dispose = render(
+      () => <RenderTree registry={registry} tree={tree()} data={data()} />,
+      host,
+    );
 
-    const root = () => host.querySelector('[data-scope="button"][data-part="root"]');
+    const root = () =>
+      host.querySelector('[data-scope="button"][data-part="root"]');
     expect(root()?.textContent).toBe("первый");
 
     setData({ label: "второй" });

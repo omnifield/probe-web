@@ -4,10 +4,11 @@
 // была не в `Slot`/`Carousel` — `content-of-for-freezes-after-first-nonempty` (ROADMAP.yaml
 // пакета `packages/assembly`), уже почищена там; здесь — регрессия через РЕАЛЬНЫЙ `Slot`, не
 // голый движок (тот — `test/select-incremental-growth.test.tsx`).
-import { useAtom } from "@web-core/store";
+
 import { createEffect, For } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useAtom } from "@web-core/store";
 
 const mockState = vi.hoisted(() => ({
   formRecord: {
@@ -24,7 +25,9 @@ const mockState = vi.hoisted(() => ({
 }));
 
 vi.mock("@web-core/skin/presets", async () => {
-  const actual = await vi.importActual<typeof import("@web-core/skin/presets")>("@web-core/skin/presets");
+  const actual = await vi.importActual<typeof import("@web-core/skin/presets")>(
+    "@web-core/skin/presets",
+  );
   return {
     ...actual,
     createPresetsClient: () => ({
@@ -44,19 +47,24 @@ vi.mock("@web-core/skin/presets", async () => {
   };
 });
 
-import { componentDataAtom, componentHandle, setCurrentComponent } from "#/entities/component";
-import { Renderer } from "#/shared/ui/renderer";
+import {
+  componentDataAtom,
+  componentHandle,
+  setCurrentComponent,
+} from "#/entities/component";
 import { Slot } from "#/entities/showcase";
 import { queryClient } from "#/shared/api/query-client";
+import { Renderer } from "#/shared/ui/renderer";
 
-(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-  takeRecords() {
-    return [];
-  }
-};
+(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver ??=
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  };
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
   observe() {}
   unobserve() {}
@@ -87,7 +95,8 @@ afterEach(() => {
 function WiredSlot() {
   const data = useAtom(componentDataAtom);
   const component = componentHandle();
-  const tagGroups = () => (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
+  const tagGroups = () =>
+    (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
   const assemblies = () => component.info()?.editorInfo?.assemblies ?? [];
 
   // Как реальный `Input` (`widgets/component/input/index.tsx`) — данные кладутся РЕАКТИВНО,
@@ -124,7 +133,14 @@ function WiredBareRenderer() {
     if (component.ready()) component.setData(DATA);
   });
 
-  return <Renderer component="select" assembly={assemblies()[0]?.name} variant="basic" data={data()} />;
+  return (
+    <Renderer
+      component="select"
+      assembly={assemblies()[0]?.name}
+      variant="basic"
+      data={data()}
+    />
+  );
 }
 
 async function waitFor(check: () => boolean, tries = 40): Promise<void> {
@@ -142,13 +158,26 @@ describe("select — Slot (реальный Carousel) vs голый Renderer, т
     document.body.append(host);
     dispose = render(() => <WiredBareRenderer />, host);
 
-    await waitFor(() => host.querySelector('[data-scope="select"][data-part="trigger"]') !== null);
-    const trigger = host.querySelector('[data-scope="select"][data-part="trigger"]') as HTMLElement | null;
+    await waitFor(
+      () =>
+        host.querySelector('[data-scope="select"][data-part="trigger"]') !==
+        null,
+    );
+    const trigger = host.querySelector(
+      '[data-scope="select"][data-part="trigger"]',
+    ) as HTMLElement | null;
     expect(trigger).not.toBeNull();
     trigger!.click();
 
-    await waitFor(() => document.body.querySelectorAll('[data-scope="select"][data-part="item"]').length > 0);
-    const items = document.body.querySelectorAll('[data-scope="select"][data-part="item"]');
+    await waitFor(
+      () =>
+        document.body.querySelectorAll(
+          '[data-scope="select"][data-part="item"]',
+        ).length > 0,
+    );
+    const items = document.body.querySelectorAll(
+      '[data-scope="select"][data-part="item"]',
+    );
     expect(items).toHaveLength(2);
   }, 15000);
 
@@ -160,13 +189,27 @@ describe("select — Slot (реальный Carousel) vs голый Renderer, т
     document.body.append(host);
     dispose = render(() => <WiredSlot />, host);
 
-    await waitFor(() => host.querySelector('[data-scope="select"][data-part="trigger"]') !== null, 80);
-    const trigger = host.querySelector('[data-scope="select"][data-part="trigger"]') as HTMLElement | null;
+    await waitFor(
+      () =>
+        host.querySelector('[data-scope="select"][data-part="trigger"]') !==
+        null,
+      80,
+    );
+    const trigger = host.querySelector(
+      '[data-scope="select"][data-part="trigger"]',
+    ) as HTMLElement | null;
     expect(trigger).not.toBeNull();
     trigger!.click();
 
-    await waitFor(() => document.body.querySelectorAll('[data-scope="select"][data-part="item"]').length > 0);
-    const items = document.body.querySelectorAll('[data-scope="select"][data-part="item"]');
+    await waitFor(
+      () =>
+        document.body.querySelectorAll(
+          '[data-scope="select"][data-part="item"]',
+        ).length > 0,
+    );
+    const items = document.body.querySelectorAll(
+      '[data-scope="select"][data-part="item"]',
+    );
     expect(items).toHaveLength(2);
   }, 15000);
 });
@@ -190,7 +233,8 @@ const CURRENCIES = [
 function WiredSlotDynamic(props: { onGrowDone: () => void }) {
   const data = useAtom(componentDataAtom);
   const component = componentHandle();
-  const tagGroups = () => (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
+  const tagGroups = () =>
+    (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
   const assemblies = () => component.info()?.editorInfo?.assemblies ?? [];
 
   let started = false;
@@ -198,7 +242,11 @@ function WiredSlotDynamic(props: { onGrowDone: () => void }) {
     if (!component.ready() || started) return;
     started = true;
     (async () => {
-      component.setData({ label: "Валюта счёта", placeholder: "Не выбрана", items: [] });
+      component.setData({
+        label: "Валюта счёта",
+        placeholder: "Не выбрана",
+        items: [],
+      });
       for (let i = 0; i < CURRENCIES.length; i++) {
         await new Promise((r) => setTimeout(r, 10));
         component.setData({
@@ -238,17 +286,29 @@ describe("select — ДИНАМИЧЕСКИЙ набор items (как 'Доба
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <WiredSlotDynamic onGrowDone={() => (grown = true)} />, host);
+    dispose = render(
+      () => <WiredSlotDynamic onGrowDone={() => (grown = true)} />,
+      host,
+    );
 
     await waitFor(() => grown, 80);
     expect(grown).toBe(true);
 
-    const trigger = host.querySelector('[data-scope="select"][data-part="trigger"]') as HTMLElement | null;
+    const trigger = host.querySelector(
+      '[data-scope="select"][data-part="trigger"]',
+    ) as HTMLElement | null;
     expect(trigger).not.toBeNull();
     trigger!.click();
 
-    await waitFor(() => document.body.querySelectorAll('[data-scope="select"][data-part="item"]').length > 0);
-    const items = document.body.querySelectorAll('[data-scope="select"][data-part="item"]');
+    await waitFor(
+      () =>
+        document.body.querySelectorAll(
+          '[data-scope="select"][data-part="item"]',
+        ).length > 0,
+    );
+    const items = document.body.querySelectorAll(
+      '[data-scope="select"][data-part="item"]',
+    );
     expect(items).toHaveLength(9);
   }, 15000);
 
@@ -259,17 +319,29 @@ describe("select — ДИНАМИЧЕСКИЙ набор items (как 'Доба
 
     const host = document.createElement("div");
     document.body.append(host);
-    dispose = render(() => <WiredSlotDynamic onGrowDone={() => (grown = true)} />, host);
+    dispose = render(
+      () => <WiredSlotDynamic onGrowDone={() => (grown = true)} />,
+      host,
+    );
 
-    await waitFor(() => host.querySelector('[data-scope="select"][data-part="trigger"]') !== null, 80);
-    const trigger = host.querySelector('[data-scope="select"][data-part="trigger"]') as HTMLElement | null;
+    await waitFor(
+      () =>
+        host.querySelector('[data-scope="select"][data-part="trigger"]') !==
+        null,
+      80,
+    );
+    const trigger = host.querySelector(
+      '[data-scope="select"][data-part="trigger"]',
+    ) as HTMLElement | null;
     expect(trigger).not.toBeNull();
     trigger!.click();
 
     await waitFor(() => grown, 80);
     await new Promise((r) => setTimeout(r, 50));
 
-    const items = document.body.querySelectorAll('[data-scope="select"][data-part="item"]');
+    const items = document.body.querySelectorAll(
+      '[data-scope="select"][data-part="item"]',
+    );
     expect(items).toHaveLength(9);
   }, 15000);
 });

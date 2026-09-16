@@ -1,3 +1,5 @@
+import { For } from "solid-js";
+import { layoutGroup, layoutSelf } from "@web-core/skin";
 import type { PassportAssembly } from "@web-core/skin/editor";
 import {
   Flow,
@@ -8,8 +10,6 @@ import {
   SegmentGroupItemText,
   Typography,
 } from "@web-core/ui";
-import { For } from "solid-js";
-import { layoutGroup, layoutSelf } from "@web-core/skin";
 export function Control(props: {
   tag: string;
   assemblies: readonly PassportAssembly[];

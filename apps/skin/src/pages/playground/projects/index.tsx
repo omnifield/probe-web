@@ -1,8 +1,8 @@
 import type { JSX } from "solid-js";
 import type { ComponentDescriptor, TagGroup } from "#/entities/component";
+import { DemoStand } from "#/features/component-manager";
 import { CatalogList, Slot } from "#/widgets/catalogs";
 import { NavigationTabs, useRouterViewSelection } from "#/widgets/navigations";
-import { DemoStand } from "#/features/component-manager";
 
 export function ComponentPage(props: {
   component: string;

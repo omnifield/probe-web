@@ -11,12 +11,16 @@ if (!PROD_URL) {
 // обязателен — по умолчанию SDK передаёт дочернему процессу обрезанный набор переменных (PATH/HOME/
 // ...), локальный skin-mcp иначе молча стартует с дефолтным SKIN_MCP_PRESETS_URL, даже если у
 // оператора он переопределён (найдено живой финальной сверкой, см. FAQ.md).
-const local = stdioPeer("pnpm", ["start"], { name: "push-to-prod-local", env: process.env });
+const local = stdioPeer("pnpm", ["start"], {
+  name: "push-to-prod-local",
+  env: process.env,
+});
 const prod = httpPeer(PROD_URL, { name: "push-to-prod-remote" });
 
 async function readJson(result) {
   const first = result.content?.[0];
-  if (!first || first.type !== "text") throw new Error(`unexpected tool result shape: ${JSON.stringify(result)}`);
+  if (!first || first.type !== "text")
+    throw new Error(`unexpected tool result shape: ${JSON.stringify(result)}`);
   return JSON.parse(first.text);
 }
 
@@ -31,11 +35,15 @@ const PLAN = [
 ];
 
 for (const { kind, isReference } of PLAN) {
-  const { items } = await readJson(await local.callTool("list_presets", { kind }));
+  const { items } = await readJson(
+    await local.callTool("list_presets", { kind }),
+  );
   const toPush = items.filter((record) => isReference(record.name));
 
   for (const record of toPush) {
-    const entry = await readJson(await local.callTool("get_preset", { kind, name: record.name }));
+    const entry = await readJson(
+      await local.callTool("get_preset", { kind, name: record.name }),
+    );
     // author — владение, не секрет: несём тот же author, что уже стоит на локальной записи (или
     // никакой, если его и не было), чтобы повторный пуш прошёл владельческую проверку на проде —
     // не свой отдельный env-параметр вроде прежнего adminToken.

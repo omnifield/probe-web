@@ -14,7 +14,9 @@ export function useRouterViewSelection(to: string, defaultValue?: string) {
     get value() {
       return selection.value;
     },
-    onValueChange(details: Parameters<NonNullable<TabsProps["onValueChange"]>>[0]) {
+    onValueChange(
+      details: Parameters<NonNullable<TabsProps["onValueChange"]>>[0],
+    ) {
       selection.select(details.value);
     },
   };

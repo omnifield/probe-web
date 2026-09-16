@@ -4,10 +4,11 @@
 // `widgets/component/preview`). Сеть не трогаем: `@web-core/skin/presets`'s `createPresetsClient`
 // замокан на этом уровне (граница ввода-вывода), реальная логика `componentInfo`/`Input`/`Slot`
 // остаётся настоящей.
-import { useAtom } from "@web-core/store";
+
 import { For } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useAtom } from "@web-core/store";
 
 // `vi.mock`, а значит и эта фабрика, поднимается ВЫШЕ обычных `import`/`const` — переменные,
 // которые фабрика читает, обязаны родиться через `vi.hoisted`, иначе к моменту вызова фабрики их
@@ -29,7 +30,9 @@ const mockState = vi.hoisted(() => ({
 }));
 
 vi.mock("@web-core/skin/presets", async () => {
-  const actual = await vi.importActual<typeof import("@web-core/skin/presets")>("@web-core/skin/presets");
+  const actual = await vi.importActual<typeof import("@web-core/skin/presets")>(
+    "@web-core/skin/presets",
+  );
   return {
     ...actual,
     createPresetsClient: () => ({
@@ -50,22 +53,27 @@ vi.mock("@web-core/skin/presets", async () => {
   };
 });
 
-import { componentDataAtom, componentHandle, setCurrentComponent } from "#/entities/component";
-import { Input } from "#/widgets/component/input";
+import {
+  componentDataAtom,
+  componentHandle,
+  setCurrentComponent,
+} from "#/entities/component";
 import { Slot } from "#/entities/showcase";
 import { queryClient } from "#/shared/api/query-client";
+import { Input } from "#/widgets/component/input";
 
 // jsdom не даёт IntersectionObserver/ResizeObserver — карусель (Slot) заводит их настоящей
 // zag-машиной, которая следит за видимостью и размером слайдов. Живому браузеру оба есть, здесь —
 // минимальные заглушки, только чтобы карусель могла смонтироваться.
-(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-  takeRecords() {
-    return [];
-  }
-};
+(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver ??=
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  };
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
   observe() {}
   unobserve() {}
@@ -84,7 +92,8 @@ afterEach(() => {
 function Wired() {
   const data = useAtom(componentDataAtom);
   const component = componentHandle();
-  const tagGroups = () => (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
+  const tagGroups = () =>
+    (component.info()?.skin?.forms ?? []).flatMap((f) => f.tags);
   const assemblies = () => component.info()?.editorInfo?.assemblies ?? [];
 
   return (
@@ -111,7 +120,8 @@ async function mountAndWaitForRoot(): Promise<() => Element | null> {
   document.body.append(host);
   dispose = render(() => <Wired />, host);
 
-  const root = () => host.querySelector('[data-scope="button"][data-part="root"]');
+  const root = () =>
+    host.querySelector('[data-scope="button"][data-part="root"]');
   for (let i = 0; i < 20 && !root(); i++) {
     await new Promise((r) => setTimeout(r, 50));
   }

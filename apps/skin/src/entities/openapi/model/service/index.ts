@@ -1,2 +1,7 @@
 export type { Service } from "./service";
-export { servicesAtom, createService, removeService, updateService } from "./store";
+export {
+  createService,
+  removeService,
+  servicesAtom,
+  updateService,
+} from "./store";

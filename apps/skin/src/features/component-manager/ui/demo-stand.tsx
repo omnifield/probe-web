@@ -1,13 +1,13 @@
-import { Match, Switch } from "solid-js";
-import { useComponentSkinData } from "@web-core/skin/solid";
-import { toast } from "@web-core/ui";
+import { createMemo, Match, Switch } from "solid-js";
 import type { DispatchedEvent } from "@web-core/assembly";
 import type { Form } from "@web-core/skin";
 import type { PresetRecord } from "@web-core/skin/presets";
+import { useComponentSkinData } from "@web-core/skin/solid";
+import { toast } from "@web-core/ui";
 import type { ComponentDescriptor } from "#/entities/component";
 import { Renderer } from "#/shared/ui/renderer";
-import { componentManagerStore } from "../model";
-import { createEffect, For } from "solid-js";
+import { componentManagerStoreOf } from "../model";
+
 export function DemoStand(props: {
   component: string;
   descriptor: ComponentDescriptor;
@@ -15,7 +15,9 @@ export function DemoStand(props: {
   mode: "demo" | "style" | "assembly";
 }) {
   const data = useComponentSkinData<PresetRecord<Form>>(props.component);
-  const feedData = componentManagerStore.use((state) => state.feedData);
+  const feedData = createMemo(() =>
+    componentManagerStoreOf(props.component).use((state) => state.feedData)(),
+  );
 
   const variantRecipe = () => data()?.state.recipe.variants?.[props.variant];
   const assemblies = () => props.descriptor.editorInfo?.assemblies ?? [];
@@ -26,9 +28,6 @@ export function DemoStand(props: {
       description: JSON.stringify(event.context, null, 2),
     });
   }
-  createEffect(() => {
-    console.log(feedData());
-  });
   return (
     <Switch>
       <Match when={props.mode === "demo"}>

@@ -1,6 +1,6 @@
 import { defineQuery } from "@web-core/query";
-import { presetsClient, queryClient } from "#/shared/api/clients";
 import { variantsOf as variantsOfOutfit } from "@web-core/skin/presets";
+import { presetsClient, queryClient } from "#/shared/api/clients";
 
 export const palettesOf = defineQuery(
   queryClient,

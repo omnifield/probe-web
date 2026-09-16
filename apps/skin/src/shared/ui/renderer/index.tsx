@@ -1,7 +1,11 @@
-import { composeTree, type CompositionElement, type DispatchedEvent } from "@web-core/assembly";
+import { createMemo } from "solid-js";
+import {
+  type CompositionElement,
+  composeTree,
+  type DispatchedEvent,
+} from "@web-core/assembly";
 import { RenderTree } from "@web-core/assembly/render";
 import { kitComponentRenderer } from "@web-core/ui/component-registry";
-import { createMemo } from "solid-js";
 
 const { registry, instanceOf } = kitComponentRenderer();
 
@@ -35,7 +39,9 @@ export function Renderer(props: {
     return instanceOf(
       props.component,
       {
-        ...(props.variant === undefined ? {} : { "data-variant": props.variant }),
+        ...(props.variant === undefined
+          ? {}
+          : { "data-variant": props.variant }),
         ...props.rootProps,
       },
       props.assembly,
@@ -43,5 +49,12 @@ export function Renderer(props: {
     );
   });
 
-  return <RenderTree tree={tree()} registry={registry} data={props.data} dispatch={props.dispatch} />;
+  return (
+    <RenderTree
+      tree={tree()}
+      registry={registry}
+      data={props.data}
+      dispatch={props.dispatch}
+    />
+  );
 }
