@@ -27,7 +27,7 @@ export function DemoStand(props: {
     });
   }
   createEffect(() => {
-    console.log("get", feedData());
+    console.log(feedData());
   });
   return (
     <Switch>

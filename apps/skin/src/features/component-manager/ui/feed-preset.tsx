@@ -28,16 +28,15 @@ export function FeedPreset(props: { component?: string }) {
   const [selected, setSelected] = createSignal<string[]>([]);
 
   createEffect(() => {
-    props.component;
-    setSelected([]);
-  });
+    const list = items();
+    if (list.length === 0) return;
 
-  createEffect(() => {
-    const [first] = items();
-    if (first !== undefined && selected().length === 0) {
-      setSelected([first.value]);
-      componentManagerStore.actions.setFeedData(first.data);
-    }
+    const current = selected()[0];
+    if (list.some((item) => item.value === current)) return;
+
+    setSelected([list[0].value]);
+    componentManagerStore.actions.setFeedData(list[0].data);
+    console.log(props?.component);
   });
 
   return (
