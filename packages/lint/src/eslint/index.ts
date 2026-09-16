@@ -2,16 +2,19 @@ import type { ESLint, Linter } from "eslint";
 import babelParser from "@babel/eslint-parser";
 import solid from "eslint-plugin-solid";
 
-import { canonRules, companionRules, offRules, rules as canonAll } from "../engine/index.js";
+import { canonRules, companionRules, offRules, rules as canonAll } from "../solid/index.js";
 import type { CanonRule } from "../engine/index.js";
 
 /**
  * Опции конкретных правил `eslint-plugin-solid`, которых нет в каноне (канон — id + severity,
- * не формат опций движка). Сегодня ровно одна: `jsx-no-undef` отдаёт проверку известных имён
- * компилятору TS, и это включается опцией самого плагина.
+ * не формат опций движка). `jsx-no-undef` отдаёт проверку известных имён компилятору TS.
+ * `reactivity` узнаёт трекнутый скоуп по `/^(?:use|create)[A-Z]/` ИЛИ по точному совпадению с
+ * `customReactiveFunctions` — голое `.use()` (`defineQuery(...).use()`, `store.use(selector)`,
+ * см. `@web-core/query`/`@web-core/store`) не подходит ни под что без этой опции.
  */
 const ESLINT_RULE_OPTIONS: Readonly<Partial<Record<string, unknown>>> = Object.freeze({
   "jsx-no-undef": { typescriptEnabled: true },
+  reactivity: { customReactiveFunctions: ["use"] },
 });
 
 /** Переводит канон в реальную запись `eslint-plugin-solid`: `id` → `solid/<id>`, severity → уровень ESLint. */

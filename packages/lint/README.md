@@ -44,9 +44,12 @@
 | Biome-плагин | `@web-core/lint/biome` | `defineBiomeConfig()`, тип `BiomeConfig` |
 | Готовый `biome.json` | `@web-core/lint/biome.json` | статический JSON — результат `defineBiomeConfig()`, не функция |
 
-📂 `src/engine/index.ts` — канон Solid: массивы `CanonRule` (`id`, `severity: "required" \| "off"`,
-`summary`), ноль зависимостей, ни слова про ESLint. `src/index.ts` — тонкий барель
-(`export * from "./engine/index.js"`), тот же приём, что у `@web-core/trace`/`@web-core/style`.
+📂 `src/engine/index.ts` — только тип канона: `CanonRule` (`id`, `severity: "required" \| "off"`,
+`summary`), `CanonSeverity`, ноль зависимостей, ни слова про Solid или ESLint. `src/solid/index.ts`
+— сама Solid-данность: массивы `canonRules`/`companionRules`/`offRules`/`rules` (`CanonRule[]`),
+единственное место, где живёт список конкретных правил `eslint-plugin-solid` в терминах канона.
+`src/index.ts` — тонкий барель (`export * from "./engine/index.js"; export * from
+"./solid/index.js"`), тот же приём, что у `@web-core/trace`/`@web-core/style`.
 `src/eslint/index.ts` — единственное место пакета, которое трогает `eslint`/`eslint-plugin-solid`/
 `@babel/*`: переводит `id` канона в реальное имя правила (`solid/<id>`), собирает три секции
 flat-конфига (правила + два парсера — `.ts` и `.tsx` раздельно, см. FAQ.md).

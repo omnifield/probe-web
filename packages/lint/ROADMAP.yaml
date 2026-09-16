@@ -90,7 +90,7 @@ categories:
 
       - id: reactivity-custom-use-property
         type: bug
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "`ESLINT_RULE_OPTIONS.reactivity` — добавить `customReactiveFunctions: [\"use\"]`"
@@ -119,28 +119,119 @@ categories:
           `.use()` с другим смыслом не нашлось — риска, что правило перестанет ловить настоящий
           баг реактивности под тем же именем, на сегодняшнем коде нет.
 
-          Правка: `ESLINT_RULE_OPTIONS` (`src/eslint/index.ts:13-15`, сейчас только
-          `jsx-no-undef`) — добавить `reactivity: { customReactiveFunctions: ["use"] }` тем же
-          приёмом (опция конкретного правила движка, не решение канона).
+          Сделано 2026-09-16: `ESLINT_RULE_OPTIONS.reactivity` (`src/eslint/index.ts`) держит
+          `{ customReactiveFunctions: ["use"] }` тем же приёмом, что и опция `jsx-no-undef` —
+          решение движка, не канона. Проверено натурно, не по доке: собран `dist`, реальный
+          `eslint` на фикстуре с `contentQuery.use(() => props.component ?? "")` — до правки
+          `solid/reactivity` (exit 1), после — чисто (exit 0). См. `log`,
+          `lint-roadmap-backlog-2026-09-16`.
 
   - category: Не сделано
     items:
       - id: rebuild-test-suite
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: Восстановить настоящие пробы зоны
         description: |
-          Означает: `vitest.config.ts` ссылается на `test/*.test.ts`, которого в репозитории нет
-          — снесён коммитом `f807343` («replaced by apps/panel») вместе с тестами
-          `packages/build`, и, в отличие от `build`, не восстановлен до сих пор. Раньше здесь были
-          настоящие пробы: `test/preset.test.ts` (фикстуры violation/canon/limit + сверка состава
-          канона), `test/consumer.test.ts` (чистый проект, реальный CLI ESLint, код возврата),
-          `test/prepare.test.ts` (сборка на установке с нуля), `test/surface.test.ts` (`pnpm pack`
-          + разбор тарбола). При восстановлении фикстуры и сверку состава канона нужно завести
-          независимо от движка (проверять `engine/index.ts`), а `consumer.test.ts` — уже против
-          `./eslint`, не корня.
+          Означало: `vitest.config.ts` ссылался на `test/*.test.ts`, которого в репозитории не
+          было — снесён коммитом `f807343` («replaced by apps/panel») вместе с тестами
+          `packages/build`, и, в отличие от `build`, не восстановлен был до сих пор. Раньше здесь
+          были настоящие пробы: `test/preset.test.ts` (фикстуры violation/canon/limit + сверка
+          состава канона), `test/consumer.test.ts` (чистый проект, реальный CLI ESLint, код
+          возврата), `test/prepare.test.ts` (сборка на установке с нуля), `test/surface.test.ts`
+          (`pnpm pack` + разбор тарбола).
+
+          Сделано 2026-09-16: все четыре файла восстановлены и адаптированы под сегодняшнюю форму
+          пакета (`preset.test.ts` — состав пресета сверяется против `./eslint`, а состав самого
+          канона отдельно, независимо от движка, против `../src/solid/index.js`, куда переехали
+          Solid-данные при `engine-solid-canon-not-separated`; `consumer.test.ts` — против
+          `@web-core/lint/eslint`, не корня; `surface.test.ts` — манифест с пятью точками
+          `exports`, а не одной, по обоим движкам). Фикстуры (`test/fixtures/`,
+          `test/consumer/`) восстановлены как были. По пути `surface.test.ts` поймал реальный
+          баг самой пробы: наивная сверка «каждая цель `exports` обязана лежать в тарболе»
+          считала и ветку `development` (указывает на `src/*.ts` — намеренно не едет в
+          публикацию) — поправлено, тарбол сверяется только по `types`/`default`. Итог: 6 файлов
+          проб, 40 тестов, все зелёные (`pnpm test`). См. `log`,
+          `lint-roadmap-backlog-2026-09-16`.
+
+      - id: engine-solid-canon-not-separated
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "`engine/` выдаёт себя за framework-agnostic ядро, а на деле — переименованный список правил `eslint-plugin-solid`"
+        description: |
+          User нашёл при подключении пакета в `apps/skin` (2026-09-16): `id` канона в
+          `engine/index.ts` (`reactivity`, `no-destructure`, `no-react-deps`,
+          `components-return-once`, `event-handlers`, `imports`, `jsx-no-duplicate-props`,
+          `jsx-no-undef`, `jsx-uses-vars`, `jsx-no-script-url`, `no-innerhtml`,
+          `no-react-specific-props`, `prefer-for`, `style-prop`, `self-closing-comp`,
+          `no-unknown-namespaces`, `no-array-handlers`, `prefer-show`, `no-proxy-apis`,
+          `prefer-classlist`) — не независимая номенклатура, а один в один имена правил
+          `eslint-plugin-solid`. Тест, который должен сверять, что каждое правило плагина
+          попадает ровно в одну из трёх карт (см. `rebuild-test-suite` выше — не восстановлен),
+          закрепляет это устройство: канон ОПРЕДЕЛЁН через состав плагина, а не плагин реализует
+          независимо сформулированный канон. `eslint/index.ts:3` тем же заходом жёстко
+          импортирует `eslint-plugin-solid` — границы «движок берёт подключаемый плагин
+          снаружи» нет вообще, `defineConfig()` умеет ровно одну технологию и не может иначе.
+
+          Годная форма для сравнения — в этом же репозитории: `packages/generators/src/engine/
+          types.ts` (`AggregatePlugin`/`PerEntryPlugin` — интерфейс, ядро `engine/runner.ts` не
+          знает вообще ничего о содержимом плагина) + `packages/generators/src/plugins/kit/
+          barrels.ts` (конкретный плагин, реализующий интерфейс СНАРУЖИ ядра). Второй пример
+          слабее, но тоже в тему — `packages/assembly/src/engine/` (framework-agnostic: дерево,
+          реестр, admits) отделён от `packages/assembly/src/render/` (Solid-слой).
+
+          Solid-реактивность не обязана становиться framework-agnostic содержимым
+          (деструктуризация props бессмысленна как запрет для React) — цель не «поддержать
+          другой фреймворк», а перестать структурой врать, что список правил независим, когда
+          он 1:1 списан с одного плагина. Целевая форма по образцу `generators`: `engine/`
+          оставляет только тип (`CanonRule` — уже нейтральный, переносить некуда), сама
+          Solid-данность (текущее содержимое `engine/index.ts`) переезжает в отдельный модуль
+          (например `canons/solid.ts` или `plugins/solid.ts`), `eslint/index.ts` становится
+          явным потребителем этого модуля — граница данные/адаптер по факту уже есть (данные в
+          `engine/`, перевод в `eslint/`), но имя папки `engine/` называет её так, будто это
+          исполняемый механизм, а хранит она только Solid-данные.
+
+          Публичные точки входа (`@web-core/lint`, `./eslint`, `./biome`, `./biome.json`) не
+          меняются — переезд файлов внутри пакета, риска для потребителей (`apps/skin`,
+          `apps/skin/.mcp`) нет.
+
+          Сделано 2026-09-16, по образцу `generators`: `engine/index.ts` теперь несёт только тип
+          `CanonRule` (+ `CanonSeverity`), ничего Solid-специфичного. Solid-данность (три карты
+          правил, ранее жившие в `engine/index.ts`) переехала в новый `src/solid/index.ts`.
+          `eslint/index.ts` стал явным потребителем: `import { canonRules, ... } from
+          "../solid/index.js"` вместо `"../engine/index.js"`. Барель `src/index.ts` теперь
+          реэкспортирует оба модуля (`./engine/index.js` + `./solid/index.js`) — публичный набор
+          экспортов (`rules`, `canonRules`, `companionRules`, `offRules`, тип `CanonRule`) не
+          изменился. Проверено натурно: собранный барель отдаёт те же 20/4 правила, что и до
+          переезда; реальный `eslint` на фикстуре с деструктурированными props по-прежнему ловит
+          `solid/no-destructure`. Граница «движок берёт плагин снаружи» до конца не выстроена —
+          `eslint/index.ts` всё ещё жёстко импортирует `eslint-plugin-solid` (это и есть его
+          работа, тут ничего не задумывалось менять): разведённое — это данные/адаптер
+          (`solid/` vs `eslint/`), а не подключаемость чужого плагина. См. `log`,
+          `lint-roadmap-backlog-2026-09-16`.
+
+      - id: style-canon-app-path-citation
+        type: bug
+        status: Done
+        priority: Low
+        milestone: null
+        name: "`style/index.ts` цитирует путь `apps/skin/...` внутри данных канона — заменить на абстрактную формулировку"
+        description: |
+          Тот же повод, что и `engine-solid-canon-not-separated`, но дешёвый отдельный фикс:
+          `summary` правила `organized-imports` (`src/style/index.ts`) называл конкретный файл
+          `apps/skin/src/widgets/catalogs/ui/list.tsx` поводом для правила. Не код-связь (не
+          импорт), но смысловая — канон, задуманный независимым источником правды, цитировал
+          потребителя внутри себя. В `ROADMAP.yaml` (`log`: `style-canon-as-data`,
+          `biome-for-style-not-reactivity`) та же цитата уместна — это журнал решений, ему и
+          положено называть повод. В `summary` самого правила — нет.
+
+          Сделано 2026-09-16: `summary` заменён на «Импорты сортируются и группируются
+          автоматически — в репозитории сегодня порядок импортов не проверяет ничто.», без
+          конкретного пути. См. `log`, `lint-roadmap-backlog-2026-09-16`.
 
   - category: Канон кодстиля (новый, Biome)
     items:
@@ -208,7 +299,7 @@ categories:
 
       - id: biome-import-groups-web-core-first
         type: feature
-        status: Backlog
+        status: Done
         priority: High
         milestone: null
         name: "`organizeImports` — свои группы (node → сторонние npm → `@web-core/*` → относительные)"
@@ -237,12 +328,50 @@ categories:
           Реальный прогон на фикстуре (node:fs/node:path, solid-js/zod, @web-core/io/@web-core/ui,
           относительные) дал ровно 4 блока с пустой строкой между ними, в этом порядке.
 
-          Правка: `defineBiomeConfig()` (`src/biome/index.ts`) — `assist.actions.source.
-          organizeImports` меняется с булева `"on"` на объектную форму с `options.groups` выше.
-          Канон (`src/style/index.ts`) не трогается — конкретные группы, как и `indentStyle` —
-          решение движка, не канона (то же разделение, что уже названо в `biome-plugin`).
-          `BiomeConfig`-тип (`src/biome/index.ts:10-26`) придётся расширить под объектную форму
-          `organizeImports` (сейчас `"on" | "off"` строкой).
+          Сделано 2026-09-16: `defineBiomeConfig()` (`src/biome/index.ts`) отдаёт
+          `assist.actions.source.organizeImports` объектной формой (`{ level: "on", options: {
+          groups: IMPORT_GROUPS } }`) вместо булева `"on"` — `IMPORT_GROUPS` держит ровно
+          рецепт выше. Канон (`src/style/index.ts`) не тронут — конкретные группы, как и
+          `indentStyle`, решение движка, не канона (то же разделение, что уже названо в
+          `biome-plugin`). `BiomeConfig`-тип расширен новым `ImportGroupEntry`/`OrganizeImportsOn`
+          под объектную форму. Проверено натурно ещё раз, отдельно от прогона architect'а: тот же
+          рецепт на фикстуре с `node:fs`/`node:path`, `zod`/`solid-js`,
+          `@web-core/io`/`@web-core/ui`, `./local` через собранный `dist/biome/biome.json` дал
+          ровно 4 блока с пустой строкой в этом порядке — записано настоящим прогоном CLI в
+          `test/biome.test.ts` (не мок).
+
+          ПЕРЕИГРАНО тем же днём, по прямой просьбе user, ДО того как правка выше дошла до
+          `apps/skin`: рецепт сменился целиком. Было (см. выше) — 4 группы с пустой строкой
+          между каждой, `@web-core/*` отдельным блоком от остальных scoped-пакетов. Стало —
+          голые имена (node + обычные npm) → ЛЮБОЙ `@`-scoped пакет (наши `@web-core/*` и чужие
+          — `@tanstack`, `@ark-ui`, `@xstate`, `@zag-js` и т.д. — одним блоком, НЕ разведены) →
+          `#`-алиасы (subpath imports вида `#/entities/...`) → относительные пути, БЕЗ пустой
+          строки между блоками вообще — одним куском, порядок задаёт только их взаимное
+          расположение:
+
+          ```json
+          "organizeImports": {
+            "level": "on",
+            "options": {
+              "groups": [
+                [":NODE:", ":PACKAGE:", "!@*/**", "!#*/**"],
+                ["@*/**"],
+                ["#*/**"],
+                [":PATH:"]
+              ]
+            }
+          }
+          ```
+
+          Заодно проверено и отклонено: user попросил 2 пустые строки между импортами и кодом —
+          натурный прогон подтвердил, что Biome максимум держит 1 пустую строку подряд и молча
+          схлопывает 2+ в 1, настройки на «ровно N» у форматтера нет. Осталась 1 (дефолт), это
+          не решение канона — Biome так устроен.
+
+          `IMPORT_GROUPS`/тест в `test/biome.test.ts` переписаны на этот рецепт — прежняя
+          фикстура (разведение `@web-core/*`) заменена новой, с одним `@tanstack`-импортом,
+          показывающим намеренное объединение с чужими scoped-пакетами. См. `log`,
+          `lint-roadmap-backlog-2026-09-16`.
 
       - id: biome-app-direct-dependency
         type: decision
@@ -279,6 +408,65 @@ categories:
           `biome-plugin-implementation`), стейл-тезиса не осталось.
 
 log:
+  - id: biome-import-groups-revised
+    type: fix
+    date: 2026-09-16
+    summary: >
+      Тем же днём, сразу после первой реализации `biome-import-groups-web-core-first` (см. её
+      запись выше), user попросил переиграть рецепт группировки: вместо 4 групп с пустой строкой
+      между каждой и отдельным блоком для `@web-core/*` — голые имена → любой `@`-scoped пакет
+      (наши и чужие вперемешку, не разведены) → `#`-алиасы → относительные, одним куском совсем
+      без пустых строк между группами. Заодно спросил про 2 пустые строки между импортами и
+      кодом — натурный прогон (не догадка) подтвердил, что Biome жёстко схлопывает 2+ пустые
+      строки в 1 и настройки на «ровно N» у форматтера нет; осталась 1, дефолт движка.
+
+      `IMPORT_GROUPS`/`BiomeConfig` в `src/biome/index.ts`, тест в `test/biome.test.ts`
+      переписаны на новый рецепт. Проверено натурно (Biome 2.5.13, реальный `biome check
+      --write` на фикстуре с node/npm/`@tanstack`/`@web-core`/`#`-алиасом/относительным) —
+      подробности и сам рецепт в описании пункта `biome-import-groups-web-core-first` (раздел
+      «ПЕРЕИГРАНО»). `pnpm typecheck`/`build`/`test` — зелёные (41 тест).
+  - id: lint-roadmap-backlog-2026-09-16
+    type: fix
+    date: 2026-09-16
+    summary: >
+      Owner-сессия зоны `lint` закрыла весь Backlog, оставленный этим же днём architect'ом (см.
+      `engine-solid-coupling-review` ниже) — пять пунктов: `engine-solid-canon-not-separated`,
+      `style-canon-app-path-citation`, `reactivity-custom-use-property`, `rebuild-test-suite`,
+      `biome-import-groups-web-core-first`. Каждый пункт несёт свою запись выше с деталями
+      правки и проверки — здесь сводка.
+
+      Единственный пункт, оставшийся `Backlog` — `biome-app-direct-dependency` (`type: decision`,
+      не код, и касается `apps/skin`, вне `paths` зоны `lint`).
+
+      `pnpm typecheck`/`pnpm build`/`pnpm test` зоны — зелёные (6 файлов проб, 41 тест).
+
+      Второе ревью architect'а тем же днём нашло то, что не было сделано в первом проходе:
+      статусы пяти закрытых пунктов остались `Backlog` (повтор паттерна, уже названного в
+      `biome-plugin-docs-fix` ниже — «код+тесты сделаны, роадмап не тронут»), и `README.md`
+      (`§Анатомия`) продолжал описывать структуру ДО `engine-solid-canon-not-separated`
+      (`src/engine/index.ts` как место Solid-данных, барель как `export * from
+      "./engine/index.js"` в одиночку). Статусы поправлены этим же логом; README — отдельной
+      правкой, см. её собственный след в истории файла.
+  - id: engine-solid-coupling-review
+    type: decision
+    date: 2026-09-16
+    summary: >
+      User обнаружил при живом подключении пакета в `apps/skin`: `engine/index.ts` называет себя
+      каноном, а на деле — переименованный список правил `eslint-plugin-solid` (`id` совпадают
+      1:1), `eslint/index.ts` жёстко импортирует именно этот плагин без границы «движок берёт
+      подключаемый плагин снаружи». `style/index.ts` вдобавок цитирует конкретный путь
+      `apps/skin/...` внутри данных канона. Вопрос user: чинить по образцу настоящего
+      движка-с-плагинами (в репозитории такой есть) или сносить пакет целиком.
+
+      Architect разведал прецеденты: `packages/generators` (`engine/types.ts` +
+      `engine/runner.ts` — ядро не знает о содержимом плагина, `plugins/kit/barrels.ts` —
+      конкретная реализация снаружи) — точный образец. `packages/assembly` (`engine/` vs
+      `render/`) — второй, послабее.
+
+      Вердикт: не сносить. Объём реорганизации небольшой (перенос файлов + переименование,
+      публичный `exports` не меняется, риска для потребителей нет), прецедент под рукой. Открыты
+      `engine-solid-canon-not-separated` (структурная часть) и `style-canon-app-path-citation`
+      (цитата `apps/skin`, дешёвый фикс) — оба `Backlog`, ждут owner-сессию зоны `lint`.
   - id: biome-plugin-docs-fix
     type: fix
     date: 2026-09-15

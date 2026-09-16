@@ -14,7 +14,7 @@ const canon = <const T extends readonly StyleCanonRule[]>(rules: T): T =>
   Object.freeze(rules) as T;
 
 /**
- * Канон кодстиля — отдельно от Solid-канона (`../engine/index.js`): реактивность и порядок
+ * Канон кодстиля — отдельно от Solid-канона (`../solid/index.js`): реактивность и порядок
  * импортов не смешиваются в одну карту, у них разные движки (ESLint vs Biome) и разный повод.
  */
 export const rules = canon([
@@ -31,8 +31,7 @@ export const rules = canon([
     id: "organized-imports",
     severity: "required",
     summary:
-      "Импорты сортируются и группируются автоматически. Повод — грязные, несортированные " +
-      "импорты в apps/skin/src/widgets/catalogs/ui/list.tsx, которые не ловит ничего в " +
-      "репозитории.",
+      "Импорты сортируются и группируются автоматически — в репозитории сегодня порядок " +
+      "импортов не проверяет ничто.",
   },
 ]);
