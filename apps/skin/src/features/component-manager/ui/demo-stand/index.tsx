@@ -1,7 +1,7 @@
 import { Surface } from "@web-core/ui";
 import { componentDescriptorOf } from "#/entities/component";
 import { componentManagerStoreOf, useComponentName } from "../../model";
-import { StandContainer } from "./container";
+import { Container } from "./container";
 
 export function DemoStand() {
   const name = useComponentName();
@@ -14,7 +14,7 @@ export function DemoStand() {
 
   return (
     <Surface>
-      <StandContainer />
+      <Container />
     </Surface>
   );
 }

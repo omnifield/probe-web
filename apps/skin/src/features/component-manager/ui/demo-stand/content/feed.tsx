@@ -1,3 +1,3 @@
-export function StandFeed() {
-  return <div>StandFeed</div>;
+export function Feed() {
+  return <div>Feed</div>;
 }

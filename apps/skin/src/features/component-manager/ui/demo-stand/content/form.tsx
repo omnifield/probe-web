@@ -4,7 +4,7 @@ import { toast } from "@web-core/ui";
 import { Renderer } from "#/shared/ui/renderer";
 import { componentManagerStoreOf } from "../../../model";
 
-export function StandForm(props: { component: string; variant: string }) {
+export function Form(props: { component: string; variant: string }) {
   const feedData = createMemo(() =>
     componentManagerStoreOf(props.component).use((state) => state.feedData)(),
   );

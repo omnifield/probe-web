@@ -13,7 +13,7 @@ import {
   type ViewMode,
 } from "../../../model";
 
-export function StandControlView() {
+export function ControlView() {
   const component = useParams({
     strict: false,
     select: (params) => params.component,

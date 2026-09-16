@@ -1,13 +1,9 @@
-import { StandControlAssembly } from "./assembly";
-import { StandControlVariant } from "./variant";
-import { StandControlView } from "./view";
+import { ControlView } from "./view";
 
-export function StandControl(props: { label: string }) {
+export function Control(props: { label: string }) {
   return (
     <>
-      <StandControlView />
-      <StandControlAssembly />
-      <StandControlVariant label={props.label} />
+      <ControlView />
     </>
   );
 }
