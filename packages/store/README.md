@@ -32,7 +32,7 @@ sync/async не нужно.
 
 | Часть             | Адрес                      | Экспортирует                                                                                                                                                                                                                                      |
 | ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createBoundAtom`, `createActionStore`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
+| Плоское хранилище | `@web-core/store`          | `createStore`, `createAtom`, `createAtomConfig`, `createReducerAtom`, `createResourceAtom`, `createBoundAtom`, `createActionStore`, `createActionStoreFamily`, `createStoreConfig`, `createStoreLogic`, `shallowEqual`, `useSelector`, `useStore`, `useAtom`, `useAtomState` |
 | Стейт-машины      | `@web-core/store/machine`  | весь `xstate` (`createMachine`, `setup`, `assign`, `fromPromise`, `createActor`, guards, …), `useMachine`, `useActor`, `useActorRef`, `fromActorRef`                                                                                              |
 | Persist-аддон     | `@web-core/store/persist`  | `persist`, `persistAtom`, `createJSONStorage`, `clearStorage`, `flushStorage`, `isHydrated`, `rehydrateStore`, `createBroadcastStorage`, `subscribeToBroadcastStorage`                                                                            |
 | Undo/redo-аддон   | `@web-core/store/undo`     | `undoRedo`                                                                                                                                                                                                                                        |
@@ -42,9 +42,9 @@ sync/async не нужно.
 
 📦 Внутри `@web-core/store`: `src/index.ts` (тонкий реэкспорт), `src/engine/index.ts` (реэкспорт
 `@xstate/store-solid` + `createResourceAtom` + `createBoundAtom` + `createActionStore` +
-переопределение `createAsyncAtom`), `src/engine/resource.ts` (реализация `createResourceAtom`),
-`src/engine/bound.ts` (реализация `createBoundAtom`), `src/engine/action-store.ts` (реализация
-`createActionStore`). Имя `createAsyncAtom` в поверхности присутствует, но локально переопределено
+`createActionStoreFamily` + переопределение `createAsyncAtom`), `src/engine/resource.ts` (реализация
+`createResourceAtom`), `src/engine/bound.ts` (реализация `createBoundAtom`), `src/engine/action-store.ts`
+(реализация `createActionStore` и `createActionStoreFamily`). Имя `createAsyncAtom` в поверхности присутствует, но локально переопределено
 — сигнатура `() => never`, вызов всегда бросает.
 
 <h2 id="использование">🚀 Использование</h2>
@@ -286,6 +286,46 @@ function onRouteChange() {
 (роутер, обычная функция, тест) → `.get()`. Меняешь — всегда `.actions.*`, откуда угодно, `.set()`
 нигде не трогаешь.
 
+**`createActionStoreFamily`** — тот же `createActionStore`, но отдельный физический стор на каждый
+ключ, не один общий слот с переключаемым содержимым. Нужен, когда несколько сущностей живы
+ОДНОВРЕМЕННО и не должны видеть данные друг друга (конечный/известный набор ключей — каталог
+компонентов, вкладки). Если в моменте жив ровно один инстанс, а ключей может быть много —
+это `createResourceAtom`, не это; критерий — не размер N, а одновременная живость:
+
+```ts
+// feed.store.ts
+import { createActionStoreFamily } from "@web-core/store";
+
+interface FeedState {
+  readonly feedData?: unknown;
+}
+
+export const feedStoreOf = createActionStoreFamily<FeedState, { setFeedData(value: unknown): void }>(
+  {},
+  ({ setState }) => ({
+    setFeedData(value) {
+      setState((state) => ({ ...state, feedData: value }));
+    },
+  }),
+);
+```
+
+```tsx
+// FeedPreset.tsx — переключение компонента читает/пишет СВОЙ стор, не общий слот
+import { feedStoreOf } from "./feed.store";
+
+function FeedPreset(props: { component: string }) {
+  const feedData = feedStoreOf(props.component).use((state) => state.feedData);
+  return <p>{JSON.stringify(feedData())}</p>;
+}
+```
+
+Ленивое создание + кэш (`Map<K, ActionStore<...>>`) под капотом: `actionsFactory`/`selectorsFactory`
+вызываются один раз на первое обращение к ключу, дальше — тот же инстанс. Без политики вытеснения
+— рассчитан на конечный/известный набор ключей, не на неограниченный поток (для него кэш растёт
+без границ). `K` сравнивается как ключ `Map` (`SameValueZero`): примитив — по значению, объект —
+по ссылке; для составного ключа нужен свой `toKey(k): string` снаружи.
+
 **Стейт-машины:**
 
 ```ts
@@ -438,6 +478,7 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createResourceAtom` с ключом  | `(source: Accessor<Key>, fetcher: (key, info: { signal }) => Data \| Promise<Data>, options?)`                                                     |
 | `createBoundAtom`              | `(source: Accessor<T>, options?: AtomOptions<T>)`                                                                                                  |
 | `createActionStore`            | `(initialValue: T, actionsFactory: (helpers: {setState, get}) => TActions, options?: AtomOptions<T>)`, либо с третьим `selectorsFactory: () => TSelectors` перед `options`               |
+| `createActionStoreFamily`      | те же аргументы, что у `createActionStore` — отдаёт не стор, а `(key: K) => ActionStore<T, TActions, TSelectors>`                                                                        |
 | `store.send`                   | `{ type, ...payload }`                                                                                                                             |
 | `store.trigger.<type>`         | `payload`                                                                                                                                          |
 | `store.can.<type>`             | `payload`                                                                                                                                          |
@@ -451,6 +492,7 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `useAtom` / `useSelector`             | аксессор `() => T`                                                                                           |
 | `createResourceAtom`                  | `ResourceState<Data, Err> = { status: "pending" } \| { status: "done", data } \| { status: "error", error }` |
 | `createActionStore`                   | `ActionStore<T, TActions, TSelectors?> = ReadonlyAtom<T> & { actions, selectors, use(selector?) }` — `.set()` не публичный |
+| `createActionStoreFamily`             | `(key: K) => ActionStore<T, TActions, TSelectors?>` — ленивая, с кэшем по ключу |
 | `store.can.<type>`                    | `boolean`                                                                                                    |
 
 <h2 id="сборки">🏗️ Сборки</h2>
@@ -478,6 +520,10 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createActionStore` + `selectorsFactory`                    | `store.selectors.x()` готов сразу после создания, без `.use()`     | `test/action-store.test.tsx` |
 | `createActionStore`, несколько селекторов                   | каждый следит за своей частью state независимо                    | `test/action-store.test.tsx` |
 | `createActionStore` + `selectors` в реальном рендере         | реальный рендер компонента, значение меняется по вызову `actions`  | `test/action-store.test.tsx` |
+| `createActionStoreFamily`, разные ключи                     | физически разные store, запись в один не видна в другом            | `test/action-store.test.tsx` |
+| `createActionStoreFamily`, повтор ключа                     | кэш — тот же инстанс, не пересоздание                              | `test/action-store.test.tsx` |
+| `createActionStoreFamily` в реальном рендере                | переключение ключа между рендерами не путает данные разных сущностей | `test/action-store.test.tsx` |
+| `createActionStoreFamily` + `selectorsFactory`               | третий аргумент работает так же, как у `createActionStore`         | `test/action-store.test.tsx` |
 | `persistAtom` + localStorage                              | гидратация при вызове, запись при `.set()`                        | `test/persist.test.tsx`      |
 | `persistAtom` + `createJSONStorage(() => sessionStorage)` | тот же `persistAtom`, локал и сешн не пересекаются                | `test/persist.test.tsx`      |
 | `mutate`                                                   | recipe мутирует draft, наружу — новое значение, старое не тронуто | `test/mutate.test.tsx`       |

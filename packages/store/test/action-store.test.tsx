@@ -1,7 +1,7 @@
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createActionStore } from "../src/engine/action-store.js";
+import { createActionStore, createActionStoreFamily } from "../src/engine/action-store.js";
 import { useAtom } from "../src/index.js";
 
 let dispose: (() => void) | undefined;
@@ -186,5 +186,86 @@ describe("createActionStore — третий аргумент selectorsFactory (
     expect(host.textContent).toBe("гость");
     await store.actions.loadUser();
     expect(host.textContent).toBe("привет, C");
+  });
+});
+
+describe("createActionStoreFamily (кейс componentManagerStore — feedData по компоненту)", () => {
+  interface FeedState {
+    readonly feedData?: unknown;
+  }
+
+  function createFeedStoreOf() {
+    return createActionStoreFamily<FeedState, { setFeedData(value: unknown): void }>({}, ({ setState }) => ({
+      setFeedData(value) {
+        setState((state) => ({ ...state, feedData: value }));
+      },
+    }));
+  }
+
+  it("разные ключи — физически разные store, запись в один не видна в другом", () => {
+    const feedStoreOf = createFeedStoreOf();
+
+    feedStoreOf("button").actions.setFeedData({ label: "Кнопка" });
+    feedStoreOf("checkbox").actions.setFeedData({ checked: true });
+
+    expect(feedStoreOf("button").get()).toEqual({ feedData: { label: "Кнопка" } });
+    expect(feedStoreOf("checkbox").get()).toEqual({ feedData: { checked: true } });
+  });
+
+  it("повторный вызов с тем же ключом отдаёт тот же инстанс (кэш, не пересоздание)", () => {
+    const feedStoreOf = createFeedStoreOf();
+
+    const first = feedStoreOf("button");
+    first.actions.setFeedData({ label: "Кнопка" });
+
+    const second = feedStoreOf("button");
+    expect(second).toBe(first);
+    expect(second.get()).toEqual({ feedData: { label: "Кнопка" } });
+  });
+
+  it("переключение между компонентами в реальном рендере не путает feedData (баг из заявки)", () => {
+    const feedStoreOf = createFeedStoreOf();
+
+    function Feed(props: { component: string }) {
+      return <p>{JSON.stringify(feedStoreOf(props.component).use((state) => state.feedData)())}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+
+    feedStoreOf("button").actions.setFeedData({ label: "Кнопка" });
+    feedStoreOf("checkbox").actions.setFeedData({ checked: true });
+
+    dispose = render(() => <Feed component="button" />, host);
+    expect(host.textContent).toBe(JSON.stringify({ label: "Кнопка" }));
+
+    dispose?.();
+    dispose = render(() => <Feed component="checkbox" />, host);
+    expect(host.textContent).toBe(JSON.stringify({ checked: true }));
+  });
+
+  it("с selectorsFactory — тот же третий аргумент, что у createActionStore", () => {
+    const feedStoreOf = createActionStoreFamily<
+      FeedState,
+      { setFeedData(value: unknown): void },
+      { hasData(state: FeedState): boolean }
+    >(
+      {},
+      ({ setState }) => ({
+        setFeedData(value) {
+          setState((state) => ({ ...state, feedData: value }));
+        },
+      }),
+      () => ({
+        hasData(state) {
+          return state.feedData !== undefined;
+        },
+      }),
+    );
+
+    expect(feedStoreOf("button").selectors.hasData()).toBe(false);
+    feedStoreOf("button").actions.setFeedData({ label: "Кнопка" });
+    expect(feedStoreOf("button").selectors.hasData()).toBe(true);
+    expect(feedStoreOf("checkbox").selectors.hasData()).toBe(false);
   });
 });

@@ -58,6 +58,35 @@ categories:
           была к createSignal вне стора. 3 новых теста в test/action-store.test.tsx (в т.ч.
           реальный рендер), разбор — FAQ.md.
 
+      - id: create-action-store-family
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: createActionStoreFamily — стор-на-ключ (store family)
+        description: |
+          Означает: createActionStoreFamily(initialValue, actionsFactory, selectorsFactory?,
+          options?) — та же сигнатура, что у createActionStore, но возвращает не стор, а
+          (key: K) => ActionStore<T, TActions, TSelectors>. Ленивое создание + кэш Map<K,
+          ActionStore> под капотом: actionsFactory/selectorsFactory вызываются один раз на
+          первое обращение к ключу, дальше отдаётся тот же инстанс. Без политики вытеснения —
+          рассчитан на конечный/известный набор ключей (каталог компонентов, вкладки), не на
+          неограниченный поток; для последнего в пакете уже есть createResourceAtom (один атом,
+          ключ подставляется, переключение смывает предыдущее значение через AbortController +
+          runId-guard). Критерий выбора между ними — не размер N, а одновременная живость: один
+          инстанс в моменте, ключей может быть много → createResourceAtom; несколько сущностей
+          одновременно не должны видеть данные друг друга → createActionStoreFamily. Закрывает
+          дыру, найденную на конкретном баге: apps/skin component-manager держал feedData
+          (FeedPreset/FeedManual/DemoStand) в одном глобальном createActionStore без ключа —
+          при переключении между компонентами (кнопка ↔ чекбокс) данные путались, баг
+          проявлялся только на повторном заходе (contentQuery с staleTime: Infinity отдаёт
+          данные без промежуточного pending, async-гэп первого захода сам смывал старое
+          значение и маскировал архитектурную причину). Ключи-заплатки ("если component !==
+          current — сбросить") лечили бы симптом, не причину — сама возможность коллизии
+          оставалась бы. Применение (componentManagerStore → componentManagerStoreOf) — не эта
+          зона, apps/skin/src вне paths owner-store. 4 теста в test/action-store.test.tsx,
+          включая реальный рендер с переключением ключа между двумя render-проходами.
+
   - category: Стейт-машины
     items:
       - id: machine-layer
@@ -254,6 +283,24 @@ categories:
           не совмещённые через .with().
 
 log:
+  - id: create-action-store-family-scope
+    type: plan
+    date: 2026-09-16
+    summary: >
+      user принёс заявку с готовым диагнозом и предложенной формой API: apps/skin
+      component-manager путал feedData между компонентами (кнопка ↔ чекбокс) на повторном
+      заходе, потому что один глобальный createActionStore обслуживал N разных сущностей —
+      синхронизация "чей это слот сейчас" держалась на неявной реконсиляции, не на структурной
+      изоляции. В заявке уже был проведён и подтверждён верный критерий выбора между
+      createResourceAtom (один инстанс в моменте, ключей много) и недостающим примитивом
+      "стор на ключ" (несколько сущностей одновременно живы и не должны видеть данные друг
+      друга) — проверено чтением store.ts/feed-preset.tsx на факте, не на слово. Реализовано
+      как createActionStoreFamily тем же приёмом, что уже есть в пакете для различения
+      keyed/unkeyed по typeof (createResourceAtom, createActionStore + selectorsFactory) —
+      не новая идея с нуля, комбинация двух существующих. Скоуп ограничен пакетом: применение
+      в apps/skin/src (componentManagerStore → componentManagerStoreOf) — вне paths
+      owner-store, отдано architect/owner-skin-app.
+
   - id: action-store-selectors-scope
     type: plan
     date: 2026-09-14
