@@ -2,8 +2,8 @@ import { Match, Switch } from "solid-js";
 import type { PassportAssembly } from "@web-core/skin/editor";
 import type { VariantSummary } from "@web-core/skin/presets";
 import { componentManagerStoreOf, useComponentName } from "../../../model";
-import type { Cell } from "../lib/cell";
-import { groupByTags } from "../lib/group";
+import type { Cell } from "../../../lib/cell";
+import { groupByTags } from "../../../lib/group";
 import { Grid } from "./grid";
 
 type PrimaryItem = VariantSummary | PassportAssembly;

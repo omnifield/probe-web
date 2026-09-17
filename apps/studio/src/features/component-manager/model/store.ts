@@ -2,6 +2,7 @@ import { createActionStoreFamily } from "@web-core/store";
 import { castDraft, mutate } from "@web-core/store/mutate";
 import type { ComponentDescriptor } from "@web-core/ui/component-info";
 import { contentOf, variantsOf } from "#/entities/component";
+import type { Cell } from "../lib/cell";
 import { DEFAULT_AXIS, DEFAULT_LAYOUT_MODE, type Axis, type LayoutMode, type ViewMode } from "./modes";
 
 export type CellKey = string;
@@ -23,16 +24,18 @@ export const componentManagerStoreOf = createActionStoreFamily<
   {
     setLayoutMode(layoutMode: LayoutMode): void;
     setAxis(axis: Axis): void;
-    setViewMode(viewMode: ViewMode, cell?: CellKey): void;
+    setViewMode(viewMode: ViewMode, cell?: Cell): void;
     setEditorInfo(editorInfo: ComponentDescriptor["editorInfo"]): void;
     setIo(io: ComponentDescriptor["io"]): void;
     loadVariants(component: string): Promise<void>;
     loadContent(component: string): Promise<void>;
-    setFeedData(feedData: unknown, cell?: CellKey): void;
+    setFeedData(feedData: unknown, cell?: Cell): void;
   },
   {
-    viewMode(state: ComponentManagerState): ViewMode;
-    feedData(state: ComponentManagerState): unknown;
+    viewMode(state: ComponentManagerState, cell: Cell): ViewMode;
+    feedData(state: ComponentManagerState, cell: Cell): unknown;
+    variantAt(state: ComponentManagerState, cell: Cell): NonNullable<ComponentManagerState["variants"]>[number] | undefined;
+    assemblyAt(state: ComponentManagerState, cell: Cell): NonNullable<ComponentManagerState["editorInfo"]>["assemblies"][number] | undefined;
   }
 >(
   {
@@ -56,13 +59,14 @@ export const componentManagerStoreOf = createActionStoreFamily<
         }),
       );
     },
-    setViewMode(viewMode, cell = ALL_CELLS) {
+    setViewMode(viewMode, cell) {
+      const key = cell?.id ?? ALL_CELLS;
       setState(
         mutate<ComponentManagerState>((draft) => {
-          if (cell === ALL_CELLS) {
+          if (key === ALL_CELLS) {
             draft.viewMode = { [ALL_CELLS]: viewMode };
           } else {
-            draft.viewMode[cell] = viewMode;
+            draft.viewMode[key] = viewMode;
           }
         }),
       );
@@ -97,24 +101,33 @@ export const componentManagerStoreOf = createActionStoreFamily<
         }),
       );
     },
-    setFeedData(feedData, cell = ALL_CELLS) {
+    setFeedData(feedData, cell) {
+      const key = cell?.id ?? ALL_CELLS;
       setState(
         mutate<ComponentManagerState>((draft) => {
-          if (cell === ALL_CELLS) {
+          if (key === ALL_CELLS) {
             draft.feedData = { [ALL_CELLS]: castDraft(feedData) };
           } else {
-            draft.feedData[cell] = castDraft(feedData);
+            draft.feedData[key] = castDraft(feedData);
           }
         }),
       );
     },
   }),
   () => ({
-    viewMode(state) {
-      return state.viewMode[ALL_CELLS] ?? "form";
+    viewMode(state, cell) {
+      return state.viewMode[cell.id] ?? state.viewMode[ALL_CELLS] ?? "form";
     },
-    feedData(state) {
-      return state.feedData[ALL_CELLS];
+    feedData(state, cell) {
+      return state.feedData[cell.id] ?? state.feedData[ALL_CELLS];
+    },
+    variantAt(state, cell) {
+      const variants = state.variants ?? [];
+      return state.axis === "variant" ? variants[cell.index] : variants[0];
+    },
+    assemblyAt(state, cell) {
+      const assemblies = state.editorInfo?.assemblies ?? [];
+      return state.axis === "assembly" ? assemblies[cell.index] : assemblies[0];
     },
   }),
 );

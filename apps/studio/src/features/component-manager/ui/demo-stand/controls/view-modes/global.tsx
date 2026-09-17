@@ -8,6 +8,7 @@ import {
 } from "@web-core/ui";
 import { For } from "solid-js";
 import {
+  ALL_CELLS,
   componentManagerStoreOf,
   useComponentName,
   VIEW_MODES,
@@ -16,7 +17,7 @@ import {
 
 export function SwitchViewModeGlobal() {
   const store = componentManagerStoreOf(useComponentName());
-  const viewMode = store.selectors.viewMode;
+  const viewMode = store.use((state) => state.viewMode[ALL_CELLS] ?? "form");
 
   return (
     <SegmentGroup

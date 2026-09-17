@@ -12,20 +12,12 @@ import {
   SelectValueText,
 } from "@web-core/ui";
 import { For } from "solid-js";
-import {
-  ALL_CELLS,
-  componentManagerStoreOf,
-  useComponentName,
-  VIEW_MODES,
-  type CellKey,
-} from "../../../../model";
+import type { Cell } from "../../../../lib/cell";
+import { componentManagerStoreOf, useComponentName, VIEW_MODES } from "../../../../model";
 
-export function SwitchViewModeLocal(props: { cell: CellKey }) {
+export function SwitchViewModeLocal(props: { cell: Cell }) {
   const store = componentManagerStoreOf(useComponentName());
-  const viewMode = store.use(
-    (state) => state.viewMode[props.cell] ?? state.viewMode[ALL_CELLS] ?? "form",
-  );
-  const selected = () => [viewMode()];
+  const selected = () => [store.selectors.viewMode(props.cell)];
 
   return (
     <Select
