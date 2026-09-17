@@ -75,10 +75,12 @@ fi
 
 REMOTE_NAME="sync-$TARGET"
 SYNC_BRANCH="sync/$TARGET"
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+WORKTREE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sync-repo-$TARGET.XXXXXX")"
 
+# All sync work happens in this disposable worktree so a network hiccup or
+# interrupted run can never strand HEAD or the index of the main checkout.
 cleanup() {
-  git checkout "$CURRENT_BRANCH" >/dev/null 2>&1 || true
+  git worktree remove --force "$WORKTREE_DIR" >/dev/null 2>&1 || rm -rf "$WORKTREE_DIR"
   git branch -D "$SYNC_BRANCH" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -95,23 +97,25 @@ COMMIT_MSG="${MESSAGE:-sync: $SOURCE@$SRC_SHA ($(date +%Y-%m-%d))}"
 if git ls-remote --exit-code --heads "$URL" "$BRANCH" | grep -q .; then
   echo "Fetching $REMOTE_NAME/$BRANCH..."
   git fetch "$REMOTE_NAME" "$BRANCH"
-  git checkout -B "$SYNC_BRANCH" "$REMOTE_NAME/$BRANCH"
-  if ! git merge --squash "$SOURCE"; then
-    echo "Merge conflicts — resolve manually in $SYNC_BRANCH, then:" >&2
+  git worktree add -B "$SYNC_BRANCH" "$WORKTREE_DIR" "$REMOTE_NAME/$BRANCH" >/dev/null
+  if ! git -C "$WORKTREE_DIR" merge --squash "$SOURCE"; then
+    echo "Merge conflicts — resolve manually in the worktree, then:" >&2
+    echo "  cd $WORKTREE_DIR" >&2
     echo "  git commit -m \"$COMMIT_MSG\" && git push $REMOTE_NAME $SYNC_BRANCH:$BRANCH" >&2
     trap - EXIT
     exit 1
   fi
-  if git diff --cached --quiet; then
+  if git -C "$WORKTREE_DIR" diff --cached --quiet; then
     echo "Nothing to sync — $TARGET/$BRANCH is already up to date."
     exit 0
   fi
 else
   echo "Branch '$BRANCH' doesn't exist on $TARGET yet — creating it from $SOURCE."
-  git checkout --orphan "$SYNC_BRANCH" "$SOURCE"
+  git worktree add --detach "$WORKTREE_DIR" "$SOURCE" >/dev/null
+  git -C "$WORKTREE_DIR" checkout --orphan "$SYNC_BRANCH"
 fi
 
-git commit -m "$COMMIT_MSG"
+git -C "$WORKTREE_DIR" commit -m "$COMMIT_MSG"
 echo "Pushing to $TARGET/$BRANCH..."
-git push "$REMOTE_NAME" "$SYNC_BRANCH:$BRANCH"
+git -C "$WORKTREE_DIR" push "$REMOTE_NAME" "$SYNC_BRANCH:$BRANCH"
 echo "Done: $TARGET synced."
