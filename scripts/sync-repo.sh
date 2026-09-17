@@ -68,7 +68,7 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-if ! git ls-remote --exit-code "$URL" >/dev/null 2>&1; then
+if ! git ls-remote "$URL" >/dev/null 2>&1; then
   echo "Cannot reach $URL — check the URL and your credentials." >&2
   exit 1
 fi
