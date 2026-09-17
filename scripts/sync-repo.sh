@@ -22,9 +22,33 @@ list_targets() {
   awk '/^[A-Za-z0-9_-]+:[[:space:]]*$/ { sub(/:.*/,""); print }' "$CONFIG"
 }
 
+# Reads the inline flow-list `ignore: [a, b/c]` for a target — empty if the
+# target has no `ignore:` field. One line, same style as the scalar fields;
+# a real multi-doc YAML lib would be overkill for a handful of path globs.
+ignore_field() {
+  awk -v target="$1" '
+    /^[A-Za-z0-9_-]+:[[:space:]]*$/ {
+      key=$0; sub(/:.*/,"",key); in_target=(key==target); next
+    }
+    in_target && $0 ~ "^[[:space:]]+ignore:" {
+      val=$0
+      sub("^[[:space:]]+ignore:[[:space:]]*","",val)
+      print val
+      exit
+    }
+  ' "$CONFIG"
+}
+
 usage() {
-  echo "Usage: $(basename "$0") <target> [--message \"text\"]"
+  echo "Usage: $(basename "$0") <target> [--message \"text\"] [--force]"
   echo "       $(basename "$0") --list"
+  echo
+  echo "  --force   overwrite \$target/\$branch with \$source as-is (orphan branch + push --force)."
+  echo "            No merge, no conflicts — whatever is on the remote branch today is discarded."
+  echo
+  echo "  ignore: [path, ...]   optional field per target in sync-targets.yaml — paths (relative"
+  echo "                        to repo root) dropped from the tree before every commit, so they"
+  echo "                        never reach that target regardless of --force/merge mode."
   echo
   if [ -f "$CONFIG" ]; then
     echo "Configured targets:"
@@ -44,9 +68,11 @@ fi
 
 TARGET="$1"; shift
 MESSAGE=""
+FORCE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --message) MESSAGE="$2"; shift 2 ;;
+    --force) FORCE=1; shift ;;
     *) echo "Unknown arg: $1" >&2; usage ;;
   esac
 done
@@ -57,6 +83,18 @@ URL=$(field "$TARGET" url)
 BRANCH=$(field "$TARGET" branch)
 SOURCE=$(field "$TARGET" source)
 [ -n "$SOURCE" ] || SOURCE=$(git rev-parse --abbrev-ref HEAD)
+
+IGNORE_PATHS=()
+IGNORE_RAW=$(ignore_field "$TARGET")
+IGNORE_RAW="${IGNORE_RAW#\[}"
+IGNORE_RAW="${IGNORE_RAW%\]}"
+if [ -n "$IGNORE_RAW" ]; then
+  IFS=',' read -ra _ignore_items <<< "$IGNORE_RAW"
+  for item in "${_ignore_items[@]}"; do
+    item="$(echo "$item" | xargs)"
+    [ -n "$item" ] && IGNORE_PATHS+=("$item")
+  done
+fi
 
 if [[ "$URL" == *REPLACE_ME* ]]; then
   echo "Target '$TARGET' still has a placeholder URL — edit sync-targets.yaml first." >&2
@@ -94,7 +132,11 @@ fi
 SRC_SHA=$(git rev-parse --short "$SOURCE")
 COMMIT_MSG="${MESSAGE:-sync: $SOURCE@$SRC_SHA ($(date +%Y-%m-%d))}"
 
-if git ls-remote --exit-code --heads "$URL" "$BRANCH" | grep -q .; then
+if [ "$FORCE" -eq 1 ]; then
+  echo "Force mode — overwriting $TARGET/$BRANCH with $SOURCE as-is (no merge)."
+  git worktree add --detach "$WORKTREE_DIR" "$SOURCE" >/dev/null
+  git -C "$WORKTREE_DIR" checkout --orphan "$SYNC_BRANCH"
+elif git ls-remote --exit-code --heads "$URL" "$BRANCH" | grep -q .; then
   echo "Fetching $REMOTE_NAME/$BRANCH..."
   git fetch "$REMOTE_NAME" "$BRANCH"
   git worktree add -B "$SYNC_BRANCH" "$WORKTREE_DIR" "$REMOTE_NAME/$BRANCH" >/dev/null
@@ -102,12 +144,9 @@ if git ls-remote --exit-code --heads "$URL" "$BRANCH" | grep -q .; then
     echo "Merge conflicts — resolve manually in the worktree, then:" >&2
     echo "  cd $WORKTREE_DIR" >&2
     echo "  git commit -m \"$COMMIT_MSG\" && git push $REMOTE_NAME $SYNC_BRANCH:$BRANCH" >&2
+    echo "Or re-run with --force to discard the remote branch's content instead." >&2
     trap - EXIT
     exit 1
-  fi
-  if git -C "$WORKTREE_DIR" diff --cached --quiet; then
-    echo "Nothing to sync — $TARGET/$BRANCH is already up to date."
-    exit 0
   fi
 else
   echo "Branch '$BRANCH' doesn't exist on $TARGET yet — creating it from $SOURCE."
@@ -115,7 +154,24 @@ else
   git -C "$WORKTREE_DIR" checkout --orphan "$SYNC_BRANCH"
 fi
 
+if [ "${#IGNORE_PATHS[@]}" -gt 0 ]; then
+  echo "Dropping ignored paths: ${IGNORE_PATHS[*]}"
+  for p in "${IGNORE_PATHS[@]}"; do
+    rm -rf -- "$WORKTREE_DIR/$p"
+  done
+  git -C "$WORKTREE_DIR" add -A
+fi
+
+if git -C "$WORKTREE_DIR" diff --cached --quiet; then
+  echo "Nothing to sync — $TARGET/$BRANCH is already up to date."
+  exit 0
+fi
+
 git -C "$WORKTREE_DIR" commit -m "$COMMIT_MSG"
 echo "Pushing to $TARGET/$BRANCH..."
-git -C "$WORKTREE_DIR" push "$REMOTE_NAME" "$SYNC_BRANCH:$BRANCH"
+if [ "$FORCE" -eq 1 ]; then
+  git -C "$WORKTREE_DIR" push --force "$REMOTE_NAME" "$SYNC_BRANCH:$BRANCH"
+else
+  git -C "$WORKTREE_DIR" push "$REMOTE_NAME" "$SYNC_BRANCH:$BRANCH"
+fi
 echo "Done: $TARGET synced."
