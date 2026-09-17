@@ -165,12 +165,14 @@ resizing` (следующий заход `column-structure`), не изобре�
 ```
 
 **Рендер через движок** — та же композиция (стандартная структура), но по схеме (сборка `basic`),
-которую рисует `RenderTree`.
+которую рисует `RenderTree`. `columns` в сборке — литеральный проп, `data` приходит через `bind` —
+строки собирает потребитель, а не сборка.
 
 ```tsx
-const tree = instanceOf("table", {}, "basic", {});
+const data = { data: people };
+const tree = instanceOf("table", {}, "basic", data);
 
-<RenderTree tree={tree} registry={registry} data={{}} />;
+<RenderTree tree={tree} registry={registry} data={data} />;
 ```
 
 **Управляемая сортировка.** `sorting`/`onSortingChange` берут сортировку под внешний контроль —
@@ -429,6 +431,30 @@ const [roleFilter, setRoleFilter] = createSignal("");
 > указателя в компоненте нет вовсе, тот же довод, что у обычной кнопки и у пункта `toggle-group`.
 > `disabled` — нативный атрибут элемента (`header.column.getCanSort()` лживо), так что `:disabled`
 > — честная метка, браузер даёт её бесплатно, та же категория, что `:hover`/`:active` здесь.
+
+<h2 id="io">🔌 IO</h2>
+
+<h3 id="io-вход">📥 Вход</h3>
+
+```json
+{ "data": [{ "any": "row shape" }] }
+```
+
+`data` — открытый мешок строк: сама таблица не знает и не проверяет, какие поля у строки есть, —
+это решает `columns` (`accessorKey`), обычный литеральный проп, не данные. Строка без поля, которое
+просит `columns`, — та же ситуация, что была бы у рукописного использования без `entity/io.ts`
+вовсе, кит её не ловит. Одно и то же поле `data` бинда — то же имя, что у пропа `TableRoot`, тот же
+приём, что `items`↔`items` у listbox.
+
+<h3 id="io-выход">📤 Выход</h3>
+
+```json
+{ "value": ["string"] }
+```
+
+Id выбранных строк — ключи `rowSelection`, где `true`, тот же формат, что у listbox/tree-view.
+Сортировка/фильтры/видимость/закрепление — состояние вида, не то, что таблица «отдаёт» наружу как
+результат выбора, в `output` не входят.
 
 <h2 id="сборки">🏗️ Сборки</h2>
 

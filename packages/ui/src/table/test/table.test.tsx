@@ -44,15 +44,23 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe('table "basic" — three rows, sorting by name works by click', () => {
+const BASIC_DATA = {
+  data: [
+    { name: "Аня", role: "Дизайнер", age: 29 },
+    { name: "Борис", role: "Инженер", age: 34 },
+    { name: "Вера", role: "Менеджер", age: 41 },
+  ],
+};
+
+describe('table "basic" — rows from bound data, nothing hardcoded in the assembly, sorting by name works by click', () => {
   it("shows every header and every row's cells, in column order", () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", {});
+    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", BASIC_DATA);
 
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={BASIC_DATA} />, host);
 
     const headers = [...host.querySelectorAll('[data-scope="table"][data-part="header-cell"]')];
     expect(headers.map((header) => header.textContent)).toEqual(["Имя (1)", "Роль", "Возраст"]);
@@ -64,12 +72,12 @@ describe('table "basic" — three rows, sorting by name works by click', () => {
 
   it("starts sorted ascending by name, per the assembly's own defaultSorting", () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", {});
+    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", BASIC_DATA);
 
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={BASIC_DATA} />, host);
 
     const nameHeader = host.querySelector('[data-scope="table"][data-part="header-cell"]');
     expect(nameHeader?.getAttribute("data-state")).toBe("ascending");
@@ -78,12 +86,12 @@ describe('table "basic" — three rows, sorting by name works by click', () => {
 
   it("flips to descending on a real click of the sort trigger, and the rows re-order", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", {});
+    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", BASIC_DATA);
 
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={BASIC_DATA} />, host);
 
     const nameSortTrigger = host.querySelector(
       '[data-scope="table"][data-part="header-sort-trigger"]',
@@ -99,12 +107,12 @@ describe('table "basic" — three rows, sorting by name works by click', () => {
 
   it("shift-clicking a second header adds it as a secondary sort, priority index on both", async () => {
     const assembly = assemblies.find((candidate) => candidate.name === "basic")!;
-    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", {});
+    const tree = baseAssemblyOf(tablePassport, assembly as PassportAssembly, "table", BASIC_DATA);
 
     const host = document.createElement("div");
     document.body.append(host);
 
-    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
+    dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={BASIC_DATA} />, host);
 
     const triggers = [...host.querySelectorAll('[data-scope="table"][data-part="header-sort-trigger"]')] as HTMLButtonElement[];
     const [nameTrigger, roleTrigger] = triggers;
