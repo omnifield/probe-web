@@ -80,6 +80,10 @@ export type TableRootProps<TData extends RowData> = Omit<
 > & {
   columns: readonly TableColumn<TData>[];
   data: readonly TData[];
+  /** Без этого id строки — её индекс в `data`. Нужен, когда сам массив переставляется/подгружается
+   * заново снаружи (пагинация, рефетч) — иначе `rowSelection`/`columnPinning`-по-строке (будущее)
+   * держатся за позицию, не за настоящую сущность. */
+  getRowId?: (row: TData, index: number) => string;
   /** Порядок массива — приоритет сортировки: первый элемент решает первым. */
   sorting?: readonly TableSort[];
   defaultSorting?: readonly TableSort[];
@@ -173,6 +177,9 @@ export function TableRoot<TData extends RowData>(props: TableRootProps<TData>) {
     get columns() {
       return props.columns as ColumnDef<Features, TData>[];
     },
+    get getRowId() {
+      return props.getRowId;
+    },
     enableMultiSort: true,
     globalFilterFn: "includesString",
     get enableRowSelection() {
@@ -223,6 +230,7 @@ export function TableRoot<TData extends RowData>(props: TableRootProps<TData>) {
   const [local, rest] = splitProps(props, [
     "columns",
     "data",
+    "getRowId",
     "sorting",
     "defaultSorting",
     "onSortingChange",

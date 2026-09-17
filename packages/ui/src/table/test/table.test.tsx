@@ -170,6 +170,34 @@ describe('table row selection — enableRowSelection grows a real checkbox colum
     expect(rows.every((row) => row.getAttribute("data-selected") === null)).toBe(true);
   });
 
+  it("getRowId keys selection by the real row id, not its position in data", async () => {
+    const withId = [
+      { id: "a1", name: "Аня", role: "Дизайнер" },
+      { id: "b2", name: "Борис", role: "Инженер" },
+    ];
+    let captured: unknown;
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <TableRoot
+          columns={columns}
+          data={withId}
+          getRowId={(row) => row.id}
+          enableRowSelection
+          onRowSelectionChange={(next) => (captured = next)}
+        />
+      ),
+      host,
+    );
+
+    const rowTriggers = [...host.querySelectorAll('[data-scope="table"][data-part="row-select-trigger"]')] as HTMLInputElement[];
+    rowTriggers[0]!.click();
+    await Promise.resolve();
+
+    expect(captured).toEqual({ a1: true });
+  });
+
   it("clicking one row's checkbox selects that row and makes select-all indeterminate", async () => {
     const host = document.createElement("div");
     document.body.append(host);

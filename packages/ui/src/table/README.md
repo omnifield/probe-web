@@ -217,6 +217,15 @@ const [rowSelection, setRowSelection] = createSignal<TableRowSelection>({});
 />;
 ```
 
+> [!NOTE]
+> Без `getRowId` id строки — её индекс в `data`. Достаточно для статичного массива, но если сам
+> `data` переставляется/подгружается заново снаружи (пагинация, рефетч), индекс уже не указывает на
+> ту же сущность — `getRowId={(row) => row.id}` держит выбор за настоящим id, не за позицией.
+
+```tsx
+<TableRoot columns={columns} data={people} getRowId={(row) => row.id} enableRowSelection />
+```
+
 Рукописный `children` читает `table.getIsAllRowsSelected()`/`row.getIsSelected()` и рисует чекбоксы
 сам — `TableHeaderSelectTrigger`/`TableRowSelectTrigger` доступны отдельно тем же образом, что
 `TableHeaderSortTrigger`.
