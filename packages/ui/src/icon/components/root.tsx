@@ -1,4 +1,4 @@
-import { createResource, Show, splitProps } from "solid-js";
+import { createResource, Show, Suspense, splitProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 import { dropAddress } from "../../shared/utils/slot-chain.js";
@@ -26,9 +26,7 @@ const loaders: Readonly<Record<string, IconLoader | undefined>> = catalog;
 // Без него каждое ПЕРЕМОНТИРОВАНИЕ уже показанной иконки (аккордеон открылся заново, тоггл
 // переключился — `Show` в ark-ui размонтирует старую ветку и монтирует новую) заводит свежий
 // `createResource`, который стартует `pending`, даже когда `import()` мгновенно берёт всё из
-// своего кэша. Ресурс без СВОЕЙ границы `<Suspense>` всплывает до ближайшей чужой — а у TanStack
-// Router она на весь matched route (`Match.js`), поэтому мигает вся страница ради одной иконки,
-// которая уже была на экране секунду назад.
+// своего кэша.
 const loaded = new Map<string, ResolvedIcon>();
 
 async function resolveIcon(name: string): Promise<ResolvedIcon> {
@@ -48,16 +46,22 @@ export function Icon(props: IconProps) {
 
   const [local] = splitProps(dropAddress(props), ["name"]);
   // `initialValue` из уже тёплого кэша держит ресурс "resolved" с первого кадра — Solid не считает
-  // его pending при перемонтировании и не подвешивает чужой `<Suspense>` ради данных, которые уже
-  // есть. Для холодной иконки (первый показ где-либо на странице) `initialValue` пуст, и разовый
-  // pending — ожидаемый, единственный поход за сетевым чанком.
+  // его pending при перемонтировании. Для холодной иконки (первый показ где-либо на странице)
+  // `initialValue` пуст, и разовый pending — ожидаемый, единственный поход за сетевым чанком.
   const [resolved] = createResource(() => local.name, resolveIcon, {
     initialValue: loaded.get(local.name),
   });
 
+  // Solid регистрирует pending-ресурс на БЛИЖАЙШЕЙ границе `<Suspense>` по дереву чтения, а не по
+  // дереву создания ресурса — без своей границы здесь этой ближайшей оказывается чужая, у
+  // потребителя кита (в студии — на весь matched route TanStack Router), и холодная загрузка ОДНОЙ
+  // иконки гасит всю страницу. Своя граница держит pending внутри самого `<Icon>`: наружу он не
+  // просачивается, снаружи иконка просто на кадр позже появляется на своём месте.
   return (
-    <Show when={resolved()}>
-      {(Loaded) => <Dynamic component={Loaded()} {...anatomyParts.root.attrs} />}
-    </Show>
+    <Suspense>
+      <Show when={resolved()}>
+        {(Loaded) => <Dynamic component={Loaded()} {...anatomyParts.root.attrs} />}
+      </Show>
+    </Suspense>
   );
 }

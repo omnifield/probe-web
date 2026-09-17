@@ -87,11 +87,9 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
       host,
     );
 
-    // `RenderTree` wraps everything in one `<Suspense>` — the real Icon inside each listbox
-    // item's indicator suspends the whole tree until it resolves, not just its own slot.
     await vi.waitFor(() => {
       if (!host.querySelector('[data-scope="accordion"][data-part="control"]')) {
-        throw new Error("suspended tree not resolved yet");
+        throw new Error("tree not rendered yet");
       }
     });
 
@@ -104,7 +102,17 @@ describe('accordion "action-list" — real Listbox per section, trigger dispatch
     const items = [...host.querySelectorAll('[data-scope="listbox"][data-part="item"]')] as HTMLElement[];
     const texts = [...host.querySelectorAll('[data-scope="listbox"][data-part="item-text"]')] as HTMLElement[];
     expect(texts.map((text) => text.textContent)).toEqual(["Item 1", "Item 2"]);
-    expect(items[0]?.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+
+    // Индикатор — реальный `<Icon>` со своей `<Suspense>`-границей (см. `icon/components/root.tsx`),
+    // резолвится независимо от остального дерева, поэтому ждём его отдельно.
+    await vi.waitFor(
+      () => {
+        if (!items[0]?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+      },
+      { timeout: 10_000 },
+    );
 
     trigger?.click();
     items[1]!.click();

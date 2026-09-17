@@ -117,11 +117,9 @@ describe('tree view "base" — recur grows the same node again from its own data
     const dispatched: DispatchedEvent[] = [];
     const host = mount(assembly as PassportAssembly, data, (event) => dispatched.push(event));
 
-    // `RenderTree` wraps everything in one `<Suspense>` — a branch's real Icon indicator suspends
-    // the whole tree until it resolves, not just its own slot.
     await vi.waitFor(() => {
       if (host.querySelectorAll('[data-scope="tree-view"][data-part="control"]').length === 0) {
-        throw new Error("suspended tree not resolved yet");
+        throw new Error("tree not rendered yet");
       }
     });
 
@@ -131,9 +129,20 @@ describe('tree view "base" — recur grows the same node again from its own data
     const items = [...host.querySelectorAll('[data-scope="tree-view"][data-part="item"]')];
     expect(items.map((el) => el.getAttribute("data-depth"))).toEqual(["1", "2", "3"]);
 
-    // Только у веток есть controlIndicator (Zag сам не рисует его для листа).
-    expect(controls[0]!.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
-    expect(controls[1]!.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+    // Только у веток есть controlIndicator (Zag сам не рисует его для листа). Индикатор — реальный
+    // `<Icon>` со своей `<Suspense>`-границей (см. `icon/components/root.tsx`), резолвится независимо
+    // от остального дерева, поэтому ждём его отдельно.
+    await vi.waitFor(
+      () => {
+        if (!controls[0]!.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+        if (!controls[1]!.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+      },
+      { timeout: 10_000 },
+    );
     expect(controls[2]!.querySelector('svg[data-scope="icon"][data-part="root"]')).toBeNull();
 
     (controls[2] as HTMLElement).click();

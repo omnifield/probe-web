@@ -72,15 +72,6 @@ describe('listbox "basic" — skeleton filled from data, nothing hardcoded in th
 
     const host = mount(data);
 
-    // `RenderTree` wraps everything in one `<Suspense>` — the indicator icon inside each item
-    // is a real async `createResource`, which suspends the WHOLE tree (label included) until it
-    // resolves, not just its own slot.
-    await vi.waitFor(() => {
-      if (!host.querySelector('[data-scope="listbox"][data-part="label"]')) {
-        throw new Error("suspended tree not resolved yet");
-      }
-    });
-
     const label = host.querySelector('[data-scope="listbox"][data-part="label"]');
     expect(label?.textContent).toBe("Страна");
 
@@ -94,7 +85,16 @@ describe('listbox "basic" — skeleton filled from data, nothing hardcoded in th
     expect(items[1]?.dataset.state).toBe("checked");
     expect(items[0]?.dataset.state).toBe("unchecked");
 
-    expect(items[1]?.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+    // Индикатор — реальный `<Icon>` со своей `<Suspense>`-границей (см. `icon/components/root.tsx`),
+    // резолвится независимо от остального дерева, поэтому ждём его отдельно, а не заодно с кликом.
+    await vi.waitFor(
+      () => {
+        if (!items[1]?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+      },
+      { timeout: 10_000 },
+    );
   });
 
   it("shows however many items the data brings — `repeat` names no count of its own", async () => {

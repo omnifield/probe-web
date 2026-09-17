@@ -58,11 +58,9 @@ describe('file-upload "basic" — one accepted file, one rejected, from data', (
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={data} />, host);
 
-    // `RenderTree` wraps everything in one `<Suspense>` — the real Icon in each preview suspends
-    // the whole tree until it resolves, not just its own slot.
     await vi.waitFor(() => {
       if (!host.querySelector('[data-scope="file-upload"][data-part="label"]')) {
-        throw new Error("suspended tree not resolved yet");
+        throw new Error("tree not rendered yet");
       }
     });
 
@@ -84,8 +82,19 @@ describe('file-upload "basic" — one accepted file, one rejected, from data', (
     const hiddenInput = host.querySelector('input[type="file"]');
     expect(hiddenInput).not.toBeNull();
 
+    // Иконки превью — реальные `<Icon>` со своей `<Suspense>`-границей (см. `icon/components/root.tsx`),
+    // резолвятся независимо от остального дерева, поэтому ждём их отдельно.
     const previews = host.querySelectorAll('[data-scope="file-upload"][data-part="item-preview"]');
-    expect(previews[0]?.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
-    expect(previews[1]?.querySelector('svg[data-scope="icon"][data-part="root"]')).not.toBeNull();
+    await vi.waitFor(
+      () => {
+        if (!previews[0]?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+        if (!previews[1]?.querySelector('svg[data-scope="icon"][data-part="root"]')) {
+          throw new Error("icon not resolved yet");
+        }
+      },
+      { timeout: 10_000 },
+    );
   });
 });

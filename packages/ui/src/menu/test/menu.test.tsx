@@ -58,11 +58,9 @@ describe('menu "basic" — a labeled group, a separator, a checked item, open by
 
     dispose = render(() => <RenderTree registry={REGISTRY} tree={tree} data={{}} />, host);
 
-    // `RenderTree` wraps everything in one `<Suspense>` — the checked item's real Icon indicator
-    // suspends the whole tree until it resolves, not just its own slot.
     await vi.waitFor(() => {
       if (!host.querySelector('[data-scope="menu"][data-part="item-group-label"]')) {
-        throw new Error("suspended tree not resolved yet");
+        throw new Error("tree not rendered yet");
       }
     });
 
@@ -81,10 +79,17 @@ describe('menu "basic" — a labeled group, a separator, a checked item, open by
     const content = host.querySelector('[data-scope="menu"][data-part="content"]');
     expect(content?.getAttribute("data-state")).toBe("open");
 
-    const indicatorIcon = host.querySelector(
-      '[data-scope="menu"][data-part="item-indicator"] svg[data-scope="icon"][data-part="root"]',
+    // Индикатор — реальный `<Icon>` со своей `<Suspense>`-границей (см. `icon/components/root.tsx`),
+    // резолвится независимо от остального дерева, поэтому ждём его отдельно.
+    await vi.waitFor(
+      () => {
+        const indicatorIcon = host.querySelector(
+          '[data-scope="menu"][data-part="item-indicator"] svg[data-scope="icon"][data-part="root"]',
+        );
+        if (!indicatorIcon) throw new Error("icon not resolved yet");
+      },
+      { timeout: 10_000 },
     );
-    expect(indicatorIcon).not.toBeNull();
   });
 });
 
