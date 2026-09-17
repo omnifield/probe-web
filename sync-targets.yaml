@@ -1,0 +1,4 @@
+example:
+  url: https://github.com/omnifield/REPLACE_ME.git
+  branch: main
+  source: dev
