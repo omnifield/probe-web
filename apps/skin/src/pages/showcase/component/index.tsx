@@ -1,5 +1,5 @@
-import { DemoStand } from "#/features/component-manager";
+import { Stand } from "#/widgets/component-manager";
 
 export function ComponentPage() {
-  return <DemoStand />;
+  return <Stand />;
 }

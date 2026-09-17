@@ -1,4 +1,6 @@
 import { createContext, Show, useContext, type JSX } from "solid-js";
+import { componentDescriptorOf } from "#/entities/component";
+import { componentManagerStoreOf } from "./store";
 
 const ComponentNameContext = createContext<string>();
 
@@ -8,11 +10,20 @@ export function ComponentManagerProvider(props: {
 }) {
   return (
     <Show when={props.name} keyed>
-      {(name) => (
-        <ComponentNameContext.Provider value={name}>
-          {props.children}
-        </ComponentNameContext.Provider>
-      )}
+      {(name) => {
+        const descriptor = componentDescriptorOf(name);
+        const store = componentManagerStoreOf(name);
+        store.actions.setEditorInfo(descriptor.editorInfo);
+        store.actions.setIo(descriptor.io);
+        store.actions.loadVariants(name);
+        store.actions.loadContent(name);
+
+        return (
+          <ComponentNameContext.Provider value={name}>
+            {props.children}
+          </ComponentNameContext.Provider>
+        );
+      }}
     </Show>
   );
 }

@@ -2,10 +2,7 @@ import { CarouselItem } from "@web-core/ui";
 import { For, Match, Switch } from "solid-js";
 import type { ComponentDescriptor } from "#/entities/component";
 import type { ViewMode } from "../../../model";
-import { Assembly } from "./assembly";
-import { Feed } from "./feed";
-import { Form } from "./form";
-import { Style } from "./style";
+import { Assembly, Feed, Form, Style } from "../views";
 
 export function Content(props: {
   component: string;

@@ -6,7 +6,7 @@ import {
   CarouselRootProvider,
   type UseCarouselReturn,
 } from "@web-core/ui";
-import { Indicator } from "../../indicator";
+import { Indicator } from "../../indicators";
 
 export function Axis<T>(props: {
   api: UseCarouselReturn;

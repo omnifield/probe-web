@@ -1,6 +1,6 @@
 import { createMemo } from "solid-js";
 import { Flow, FlowItem, useCarousel, type UseCarouselReturn } from "@web-core/ui";
-import { ControlNavigation } from "../../control/navigation";
+import { ControlNavigation } from "../../controls";
 import { Axis } from "./axis";
 
 type Cell = { name: string; content: string };

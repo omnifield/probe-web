@@ -10,9 +10,7 @@ import { tree } from "#/entities/component";
 import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
 
 export function PlaygroundPage() {
-  const selection = useRouterCatalogSelection(
-    "/showcase/{-$component}/{-$view}",
-  );
+  const selection = useRouterCatalogSelection("/showcase/{-$component}");
 
   return (
     <Workspace data-variant="multi-column" outlined>

@@ -7,17 +7,12 @@ import {
   WorkspaceSidebar,
 } from "@web-core/ui";
 import { tree } from "#/entities/component";
-import {
-  ComponentManagerProvider,
-  FeedManual,
-  FeedPreset,
-} from "#/features/component-manager";
+import { ComponentManagerProvider } from "#/features/component-manager";
 import { CatalogTree, useRouterCatalogSelection } from "#/widgets/catalogs";
+import { Control } from "#/widgets/component-manager";
 
 export function ShowcasePage() {
-  const selection = useRouterCatalogSelection(
-    "/showcase/{-$component}/{-$view}",
-  );
+  const selection = useRouterCatalogSelection("/showcase/{-$component}");
 
   return (
     <Workspace data-variant="multi-column" outlined>
@@ -29,8 +24,7 @@ export function ShowcasePage() {
           <Outlet />
         </WorkspaceMain>
         <WorkspaceRightbar style={{ width: railVar("rail-lg") }}>
-          <FeedManual />
-          <FeedPreset />
+          <Control />
         </WorkspaceRightbar>
       </ComponentManagerProvider>
     </Workspace>

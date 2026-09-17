@@ -4,7 +4,11 @@ import { Header } from "#/widgets/header";
 
 export function WorkspaceLayout() {
   return (
-    <Workspace data-variant="stacked" outlined>
+    <Workspace
+      data-variant="stacked"
+      outlined
+      style={{ height: "100vh", overflow: "hidden" }}
+    >
       <Toast />
       <WorkspaceHeader>
         <Header />

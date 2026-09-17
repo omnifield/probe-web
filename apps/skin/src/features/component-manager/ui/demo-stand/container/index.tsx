@@ -10,7 +10,8 @@ export function Container() {
   return (
     <Switch>
       <Match when={layoutMode() === "matrix"}>
-        <Matrix />
+        <div>wdad</div>
+        {/* <Matrix /> */}
       </Match>
       <Match when={layoutMode() === "grid"}>
         <Grid />
