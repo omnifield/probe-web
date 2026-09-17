@@ -32,6 +32,7 @@ export type {
   DispatchAction,
   DispatchedEvent,
   DynamicValue,
+  EventBinding,
   NodeId,
 } from "./tree.js";
 export {
@@ -39,9 +40,11 @@ export {
   EMPTY_TREE,
   isContent,
   isDataBinding,
+  isEventBinding,
   nodeOf,
   outerTypeOf,
   resolveDataBinding,
+  resolveEventBinding,
   rootOf,
   subtreeOf,
 } from "./tree.js";

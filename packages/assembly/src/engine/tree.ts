@@ -25,7 +25,7 @@ export interface AssemblyElement {
 export interface DispatchAction {
   readonly event: {
     readonly name: string;
-    readonly context?: Readonly<Record<string, DynamicValue>>;
+    readonly context?: Readonly<Record<string, DynamicValue | EventBinding>>;
   };
 }
 
@@ -43,7 +43,7 @@ export interface DataBinding {
 
 export type DynamicValue = string | DataBinding;
 
-export function isDataBinding(value: DynamicValue): value is DataBinding {
+export function isDataBinding(value: DynamicValue | EventBinding): value is DataBinding {
   return typeof value === "object" && value !== null && "path" in value;
 }
 
@@ -55,6 +55,33 @@ export function resolveDataBinding(data: unknown, path: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+/** Третий источник контекста `on`, рядом с литералом и `DataBinding` — путь не в данные показа
+ * (`data`), а в само живое DOM-событие, дошедшее до обработчика В МОМЕНТ вызова. Разное поле
+ * (`event`, не `path`) — не то же самое, что `DataBinding` с другим источником: `DataBinding`
+ * читает то, что УЖЕ лежит в данных показа, `EventBinding` — то, что родилось только что (текст
+ * инпута, позиция слайдера) и в `data` никогда не попадёт. Точечный путь (`"currentTarget.value"`),
+ * не JSON Pointer — событие не JSON-документ, а живой объект. */
+export interface EventBinding {
+  readonly event: string;
+}
+
+export function isEventBinding(value: DynamicValue | EventBinding): value is EventBinding {
+  return typeof value === "object" && value !== null && "event" in value;
+}
+
+/** Резолвит `EventBinding.event` с живого DOM-события — `""` значит «всё событие целиком», иначе
+ * точечный путь свойств (`"currentTarget.value"`). Только чтение полей, ничего не вызывает — то,
+ * что уходит наружу через `dispatch`, остаётся плоским JSON, не сырым `Event`
+ * (`dispatchHandlersFor`, `render/props.ts`). */
+export function resolveEventBinding(domEvent: unknown, path: string): unknown {
+  if (path === "") return domEvent;
+
+  return path.split(".").reduce<unknown>((value, segment) => {
+    if (value === null || typeof value !== "object") return undefined;
+    return (value as Record<string, unknown>)[segment];
+  }, domEvent);
 }
 
 export interface AssemblyContent {

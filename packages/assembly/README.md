@@ -37,7 +37,7 @@
 
 | Часть | Адрес | Экспортирует |
 |---|---|---|
-| Дерево | `@web-core/assembly` | `AssemblyTree`, `AssemblyNode`, `AssemblyElement`, `AssemblyContent`, `NodeId`, `DataBinding`, `DynamicValue`, `EMPTY_TREE`, `isContent`, `isDataBinding`, `resolveDataBinding`, `nodeOf`, `rootOf`, `subtreeOf`, `ancestorsOf`, `outerTypeOf` |
+| Дерево | `@web-core/assembly` | `AssemblyTree`, `AssemblyNode`, `AssemblyElement`, `AssemblyContent`, `NodeId`, `DataBinding`, `DynamicValue`, `EventBinding`, `EMPTY_TREE`, `isContent`, `isDataBinding`, `isEventBinding`, `resolveDataBinding`, `resolveEventBinding`, `nodeOf`, `rootOf`, `subtreeOf`, `ancestorsOf`, `outerTypeOf` |
 | Разворот по данным | `@web-core/assembly` | `baseAssemblyOf`, `scopedPath`, `AssemblyTemplate`, `AssemblyTemplateElement`, `AssemblyTemplateContent`, `AssemblyTemplateNode`, `AssemblyTemplateRepeat` |
 | Правки | `@web-core/assembly` | `insertNode`, `removeNode`, `moveNode`, `updateNode`, `EditResult`, `EditRefusal`, `NewNode`, `NewElement`, `NewContent`, `NodePatch` |
 | Целостность | `@web-core/assembly` | `checkTree`, `TreeFlaw`, `TreeFlawName` |
@@ -255,6 +255,7 @@ const slots: Record<string, SlotEntry> = {
 | Дерево пересобирается на каждую смену `data` (новый объект `AssemblyTree`, те же id) | байндинг доезжает и на первой, и на второй, и на любой следующей пересборке — не только на первой | `test/rebuild-reactivity-repro.test.tsx` |
 | `repeat`: 0 items → N items ПОСЛЕ монтирования, без потери Ark-дефолтов на пустом контенте | узел, структурно принимающий контент, подхватывает детей, добавленных позже, — плоский случай и вложенный (через `Portal`, как `select`'s `positioner`); часть, контент не принимающая (`trigger`), остаётся `null`; часть, принимающая контент по реестру, но без детей навсегда (`field`'s `requiredIndicator`), тоже остаётся `null` — Ark-паттерн `props.children ?? "*"` срабатывает | `test/contentof-null-vs-for.test.tsx` |
 | `baseAssemblyOf`: `repeat` полем и старой обёрткой `{repeat, template}`, вложенный `repeat`, пустой `bind` внутри `repeat` (весь текущий элемент, не `undefined`), `recur` с гвардом глубины на зацикленном шаблоне/данных | разворот шаблона по данным растит верное число узлов и не виснет на цикле — та же механика, что раньше жила в `packages/skin` | `test/expand.test.ts` |
+| `EventBinding` в `on.context` — синтетический вызов и настоящий `<input>` через `RenderTree` | контекст `dispatch` может прийти из самого живого DOM-события (`{event:"target.value"}`), не только из литерала/`DataBinding` по данным показа — закрывает текстовый инпут/global-search, которого раньше нельзя было выразить | `test/on-event-binding.test.tsx` |
 
 ✅ Живая проверка на настоящем ките — транзитивно, через тесты пакетов, что реально зовут
 `RenderTree`/`baseAssemblyOf`: `packages/ui/src/button/test/button.test.tsx`,

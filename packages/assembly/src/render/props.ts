@@ -1,6 +1,14 @@
 // см. README.md / FAQ.md
 
-import { isContent, isDataBinding, resolveDataBinding, type AssemblyNode, type DispatchedEvent } from "../engine/tree.js";
+import {
+  isContent,
+  isDataBinding,
+  isEventBinding,
+  resolveDataBinding,
+  resolveEventBinding,
+  type AssemblyNode,
+  type DispatchedEvent,
+} from "../engine/tree.js";
 
 const DOM_EVENT_PROP: Readonly<Record<string, string>> = {
   click: "onClick",
@@ -26,13 +34,14 @@ export function resolveBind(
 
 /** `on` узла в DOM-обработчики — только известные `DOM_EVENT_PROP`, остальные молча пропускаются
  * (не ошибка: адресат неизвестного домового события просто не назначается). Каждый обработчик
- * резолвит свой `context` из данных показа ПЕРЕД тем, как уйти наружу через `dispatch` — тот, кто
- * слушает `DispatchedEvent`, получает готовый JSON, не сырой DOM `Event`. */
+ * принимает живое DOM-событие и резолвит свой `context` — литерал как есть, `DataBinding` из
+ * данных показа, `EventBinding` с самого этого события — ПЕРЕД тем, как уйти наружу через
+ * `dispatch`: тот, кто слушает `DispatchedEvent`, получает готовый JSON, не сырой DOM `Event`. */
 export function dispatchHandlersFor(
   current: AssemblyNode | undefined,
   data: unknown,
   dispatch: ((event: DispatchedEvent) => void) | undefined,
-): Record<string, () => void> {
+): Record<string, (domEvent: Event) => void> {
   if (!current || isContent(current) || !current.on) return {};
 
   return Object.fromEntries(
@@ -43,12 +52,16 @@ export function dispatchHandlersFor(
       return [
         [
           propName,
-          () => {
+          (nativeEvent: Event) => {
             const context = Object.fromEntries(
               Object.entries(action.event.context ?? {})
                 .map(([key, value]) => [
                   key,
-                  isDataBinding(value) ? resolveDataBinding(data, value.path) : value,
+                  isDataBinding(value)
+                    ? resolveDataBinding(data, value.path)
+                    : isEventBinding(value)
+                      ? resolveEventBinding(nativeEvent, value.event)
+                      : value,
                 ] as const)
                 .filter(([, value]) => value !== undefined),
             );

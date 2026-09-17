@@ -182,6 +182,22 @@ categories:
           Означает: DispatchAction резолвит context из DynamicValue до отправки — наружу
           уходит готовый JSON, не сырой DOM Event.
 
+      - id: dispatch-event-binding
+        type: bug
+        status: Done
+        priority: High
+        milestone: null
+        name: "`on.context` мог прийти только из `data`, не из самого события — фикс"
+        description: |
+          Означает: EventBinding ({event: "путь.в.событие"}) — третий источник context рядом с
+          литералом и DataBinding, резолвится из живого DOM-события В МОМЕНТ вызова обработчика
+          (dispatchHandlersFor теперь принимает (domEvent: Event), не () => {...}). Закрывает
+          текстовый инпут/textarea/range/select — то, что раньше нельзя было выразить (только
+          "отправь то, что уже в data", никогда "отправь то, что юзер только что напечатал").
+          Найдено при проектировании сборок Table (global-search/column-filter). Наружу
+          по-прежнему уходит плоский JSON, не сырой Event — тот же принцип, что и dispatch-events.
+          FAQ.md, test/on-event-binding.test.tsx.
+
       - id: repeat-node
         type: feature
         status: Done
@@ -1298,3 +1314,39 @@ log:
       группам возможностей (не по файлам), состояния — четыре именованных перечня отказов
       (TreeFlawName/EditRefusal/NestingRefusal/RegistryFlawName), рецепт — комбинация
       независимых пропов RenderTree (без .with()-цепочки, которой у этого пакета нет).
+
+  - id: event-binding-found-via-table-assemblies
+    type: plan
+    date: 2026-09-17
+    summary: >
+      Заявка user'а: `on.context` (`dispatchHandlersFor`, `render/props.ts`) резолвил контекст
+      только из литерала или `DataBinding` (`{path}` из данных показа) — обработчик на любое
+      DOM-событие был `() => {...}` без параметра, само событие не принималось в замыкание.
+      Работало для клика по готовому item'у (payload уже лежит в данных), но ни одно значение
+      контекста не могло прийти из самого события — текстовый инпут, `textarea`, range-слайдер,
+      любой живой контролируемый инпут были невыразимы.
+
+      Найдено при проектировании сборок Table под TanStack (`global-search`/`column-filter`
+      требуют `table.setGlobalFilter(value)`/`column.setFilterValue(value)` текущим текстом
+      инпута); проверено, что ни в одной существующей сборке кита (`field`/`checkbox`/`switch`/
+      `slider`/`select`) живого контролируемого инпута не было — не решённый где-то случай.
+
+      Фикс: `EventBinding` (`{ event: "путь.в.событие" }`, `engine/tree.ts`) — третий источник
+      `DynamicValue` рядом с литералом и `DataBinding`, резолвится `resolveEventBinding`
+      (точечный путь по свойствам объекта, не JSON Pointer) из живого DOM-события В МОМЕНТ
+      вызова обработчика; `dispatchHandlersFor` принимает `(domEvent: Event) => {...}`, не
+      `() => {...}`. Наружу через `dispatch` по-прежнему уходит плоский JSON
+      (`DispatchedEvent`), не сырой `Event`. `AssemblyContent.value`'s `DynamicValue` (содержимое
+      узлов) не тронут — третий источник объявлен только в `DispatchAction.event.context`, контент
+      живых DOM-событий не получает.
+
+      Проверено: `test/on-event-binding.test.tsx` — синтетический вызов трёх источников контекста
+      бок о бок плюс настоящий `<input>` через `RenderTree` (набор текста, `dispatchEvent(new
+      Event("input"))` до конца, не мок). `pnpm --filter @web-core/assembly lint`/`typecheck`/
+      `test` — чистые (48/48, было 42/42). README/FAQ/ROADMAP обновлены.
+
+      Дальше по цепи (не в этой зоне): user проверит на пробной сборке table с
+      `global-search`/`column-filter` поверх нового контекста; если заработает — ROADMAP на
+      "situational" сборки таблицы с фильтрами пишется владельцем той зоны (table/skin-app), не
+      здесь. Та же стена аукнется резайзу колонок (drag) и инлайн-редактированию ячеек — те же
+      будущие фичи таблицы, тот же `EventBinding` их закрывает.
