@@ -1,6 +1,12 @@
 export {
   Carousel,
   type CarouselProps,
+  CarouselRootProvider,
+  type CarouselRootProviderProps,
+  useCarousel,
+  useCarouselContext,
+  type UseCarouselProps,
+  type UseCarouselReturn,
   CarouselControl,
   type CarouselControlProps,
   CarouselPrevTrigger,

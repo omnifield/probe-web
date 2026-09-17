@@ -1,4 +1,11 @@
 export { Carousel, type CarouselProps } from "./root.js";
+export { CarouselRootProvider, type CarouselRootProviderProps } from "./root-provider.js";
+export {
+  useCarousel,
+  useCarouselContext,
+  type UseCarouselProps,
+  type UseCarouselReturn,
+} from "@ark-ui/solid/carousel";
 export { CarouselProgressText, type CarouselProgressTextProps } from "./progress-text.js";
 export { CarouselControl, type CarouselControlProps } from "./control/index.js";
 export { CarouselPrevTrigger, type CarouselPrevTriggerProps } from "./control/prev-trigger.js";
