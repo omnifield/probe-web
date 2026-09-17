@@ -44,10 +44,10 @@ zones:
     paths: [packages/router]
     description: "пакет для роутинга"
   assembly:
-    paths: [packages/assembly, apps/skin]
+    paths: [packages/assembly, apps/studio]
     description: "механика сборки — дерево узлов, реестр из паспортов, правки дерева, проверка вложенности, отрисовка по данным. Средство, а не решение: своего вида не приносит."
   store:
-    paths: [packages/store, apps/skin]
+    paths: [packages/store, apps/studio]
     description: оснастка сборки — подпути /vite, /tsconfig, /vitest
   build:
     paths: [packages/build]
@@ -94,10 +94,10 @@ zones:
     paths: [products/map, canons/map]
     description: карта — 3D-рельеф и города на MapLibre, тайлы файлом без сервера
   skin-app:
-    paths: [apps/skin]
-    description: "приложение для просмотра и создания компонентов и композиций из них"
+    paths: [apps/studio]
+    description: "приложение для просмотра и создания компонентов и композиций из них (было apps/skin, переименовано в apps/studio)"
   skin-mcp:
-    paths: [canons/ui-skin, apps/skin/.mcp]
+    paths: [canons/ui-skin, apps/studio/.mcp]
     description: "mcp для работы со скинами"
   skin:
     paths: [canons/ui-skin, packages/skin]

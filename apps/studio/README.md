@@ -1,6 +1,6 @@
-# 🖼️ web-core Skin
+# 🖼️ web-core Studio
 
-🏷️ витрина · 🧬 app · 📦 `@web-core/skin-app`
+🏷️ витрина · 🧬 app · 📦 `@web-core/studio`
 
 ## 🧭 Навигация
 
@@ -51,7 +51,7 @@ io-схеме компонента, чтобы проверить его на р
 **Поднять витрину:**
 
 ```sh
-pnpm --filter @web-core/skin-app dev
+pnpm --filter @web-core/studio dev
 # http://localhost:5174 — редирект на /showcase
 ```
 

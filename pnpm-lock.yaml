@@ -12,65 +12,6 @@ importers:
         specifier: 23.1.1
         version: 23.1.1
 
-  apps/ewc:
-    dependencies:
-      '@web-core/skin':
-        specifier: workspace:*
-        version: link:../../packages/skin
-      '@web-core/solid':
-        specifier: workspace:*
-        version: link:../../packages/solid
-      '@web-core/style':
-        specifier: workspace:*
-        version: link:../../packages/style
-      '@web-core/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-    devDependencies:
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.13.3
-      '@web-core/build':
-        specifier: workspace:*
-        version: link:../../packages/build
-      '@web-core/lint':
-        specifier: workspace:*
-        version: link:../../packages/lint
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: ^8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
-
-  apps/panel:
-    dependencies:
-      '@web-core/style':
-        specifier: workspace:*
-        version: link:../../packages/style
-      solid-js:
-        specifier: ^1.9.14
-        version: 1.9.14
-    devDependencies:
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.13.3
-      '@web-core/build':
-        specifier: workspace:*
-        version: link:../../packages/build
-      '@web-core/lint':
-        specifier: workspace:*
-        version: link:../../packages/lint
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: ^8.2.1
-        version: 8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
-
   apps/reference:
     dependencies:
       '@kobalte/core':
@@ -123,7 +64,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
 
-  apps/skin:
+  apps/studio:
     dependencies:
       '@tanstack/solid-router':
         specifier: ^1.170.30
@@ -199,7 +140,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.6)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
 
-  apps/skin/.mcp:
+  apps/studio/.mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0

@@ -1,5 +1,5 @@
 {
-  "name": "@web-core/skin-mcp",
+  "name": "@web-core/studio-mcp",
   "version": "0.0.0",
   "private": true,
   "description": "Зона skin-mcp: локальный MCP-сервер для создания скина — ручки на уже готовую механику packages/skin, а не новая. Обкатка v1 — только текст (CSS-текст, отчёты проверок); скриншот-превью — вторая волна.",

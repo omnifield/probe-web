@@ -33,7 +33,7 @@ import { withPassports, type Skin } from "@web-core/skin";
 import { makeSkinSwitch, type SkinSwitch } from "@web-core/skin/wear";
 import { passportOf } from "@web-core/ui/passport";
 
-// Источник паспортов называется ОДИН РАЗ на файл и дальше едет связкой (`PWEB-94`): у связанных
+// Источник паспортов называется ОДИН РАЗ на файл и дальше едет связкой: у связанных
 // вызовов довода для второго источника нет, и разойтись проверке с порождением нечем.
 const { generateSkinCss } = withPassports(passportOf);
 
