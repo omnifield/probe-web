@@ -22,3 +22,6 @@ export const LAYOUT_MODES: readonly {
   { value: "grid", icon: "grid-3x3" },
 ];
 export const DEFAULT_LAYOUT_MODE: LayoutMode = "grid";
+
+export type Axis = "variant" | "assembly";
+export const DEFAULT_AXIS: Axis = "variant";

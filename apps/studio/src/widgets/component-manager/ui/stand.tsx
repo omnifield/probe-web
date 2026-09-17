@@ -1,8 +1,8 @@
 import {
-  DemoStand,
   Passport,
   SwitchLayoutMode,
   SwitchViewMode,
+  Distributor,
 } from "#/features/component-manager";
 import { Flow, FlowItem, Surface } from "@web-core/ui";
 import { layoutGroup, layoutSelf } from "@web-core/skin";
@@ -19,7 +19,7 @@ export function Stand() {
           </Flow>
         </FlowItem>
         <FlowItem style={layoutSelf({ align: "stretch" })}>
-          <DemoStand />
+          <Distributor />
         </FlowItem>
       </Flow>
     </Surface>

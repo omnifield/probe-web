@@ -1,15 +1,12 @@
-import { createMemo } from "solid-js";
 import type { DispatchedEvent } from "@web-core/assembly";
+import type { PassportAssembly } from "@web-core/skin/editor";
 import { toast } from "@web-core/ui";
 import { Renderer } from "#/shared/ui/renderer";
-import { ALL_CELLS, componentManagerStoreOf } from "../../../model";
+import { componentManagerStoreOf, useComponentName } from "../../../model";
 
-export function Form(props: { component: string; variant: string }) {
-  const feedData = createMemo(() =>
-    componentManagerStoreOf(props.component).use(
-      (state) => state.feedData[props.variant] ?? state.feedData[ALL_CELLS],
-    )(),
-  );
+export function Form(props: { variant: string; assembly: PassportAssembly }) {
+  const component = useComponentName();
+  const store = componentManagerStoreOf(component);
 
   function dispatch(event: DispatchedEvent) {
     toast.create({
@@ -20,9 +17,10 @@ export function Form(props: { component: string; variant: string }) {
 
   return (
     <Renderer
-      component={props.component}
+      component={component}
+      assembly={props.assembly.name}
       variant={props.variant}
-      data={feedData()}
+      data={store.selectors.feedData()}
       dispatch={dispatch}
     />
   );

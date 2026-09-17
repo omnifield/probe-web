@@ -2,7 +2,7 @@ import { createActionStoreFamily } from "@web-core/store";
 import { castDraft, mutate } from "@web-core/store/mutate";
 import type { ComponentDescriptor } from "@web-core/ui/component-info";
 import { contentOf, variantsOf } from "#/entities/component";
-import { DEFAULT_LAYOUT_MODE, type LayoutMode, type ViewMode } from "./modes";
+import { DEFAULT_AXIS, DEFAULT_LAYOUT_MODE, type Axis, type LayoutMode, type ViewMode } from "./modes";
 
 export type CellKey = string;
 export const ALL_CELLS: CellKey = "*";
@@ -13,6 +13,7 @@ interface ComponentManagerState {
   readonly variants?: Awaited<ReturnType<typeof variantsOf>>;
   readonly content?: Awaited<ReturnType<typeof contentOf>>;
   readonly layoutMode: LayoutMode;
+  readonly axis: Axis;
   readonly viewMode: Readonly<Record<CellKey, ViewMode>>;
   readonly feedData: Readonly<Record<CellKey, unknown>>;
 }
@@ -21,6 +22,7 @@ export const componentManagerStoreOf = createActionStoreFamily<
   ComponentManagerState,
   {
     setLayoutMode(layoutMode: LayoutMode): void;
+    setAxis(axis: Axis): void;
     setViewMode(viewMode: ViewMode, cell?: CellKey): void;
     setEditorInfo(editorInfo: ComponentDescriptor["editorInfo"]): void;
     setIo(io: ComponentDescriptor["io"]): void;
@@ -35,6 +37,7 @@ export const componentManagerStoreOf = createActionStoreFamily<
 >(
   {
     layoutMode: DEFAULT_LAYOUT_MODE,
+    axis: DEFAULT_AXIS,
     viewMode: { [ALL_CELLS]: "form" },
     feedData: {},
   },
@@ -43,6 +46,13 @@ export const componentManagerStoreOf = createActionStoreFamily<
       setState(
         mutate<ComponentManagerState>((draft) => {
           draft.layoutMode = layoutMode;
+        }),
+      );
+    },
+    setAxis(axis) {
+      setState(
+        mutate<ComponentManagerState>((draft) => {
+          draft.axis = axis;
         }),
       );
     },
