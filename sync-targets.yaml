@@ -1,4 +1,4 @@
 example:
   url: https://github.com/egor6-66/test.git
-  branch: main
+  branch: dev
   source: dev
