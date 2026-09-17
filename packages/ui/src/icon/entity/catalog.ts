@@ -81,6 +81,10 @@ export const catalog = {
   "eye": () => import("lucide-solid/icons/eye"),
   "eye-off": () => import("lucide-solid/icons/eye-off"),
   "external-link": () => import("lucide-solid/icons/external-link"),
+
+  // Режимы раскладки: демо-стенд переключает matrix/grid.
+  "grid-3x3": () => import("lucide-solid/icons/grid-3x3"),
+  "layout-grid": () => import("lucide-solid/icons/layout-grid"),
 } as const satisfies Readonly<Record<string, IconLoader>>;
 
 /** Словарь кита — то, что `<Icon name>` принимает. Не `string`: список свой, и он проверяется. */
