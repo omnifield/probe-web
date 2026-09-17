@@ -1,10 +1,4 @@
-import {
-  Passport,
-  SwitchAxisMode,
-  SwitchLayoutMode,
-  SwitchViewMode,
-  Distributor,
-} from "#/features/component-manager";
+import { Passport, Distributor } from "#/features/component-manager";
 import { Flow, FlowItem, Surface } from "@web-core/ui";
 import { layoutGroup, layoutSelf } from "@web-core/skin";
 
@@ -15,9 +9,6 @@ export function Stand() {
         <FlowItem style={layoutSelf({ align: "stretch" })}>
           <Flow style={layoutGroup({ justify: "space-between" })}>
             <Passport />
-            <SwitchViewMode />
-            <SwitchAxisMode />
-            <SwitchLayoutMode />
           </Flow>
         </FlowItem>
         <FlowItem style={layoutSelf({ align: "stretch" })}>

@@ -4,8 +4,13 @@ export interface Group<T> {
   readonly items: readonly T[];
 }
 
-/** Общая механика разделения — сейчас единственный поставщик групп (по тегам), но
- *  Grid/Matrix потребляют `Group<T>[]`, не зная, чем группы порождены. */
+/** Без фильтра — один плоский бакет, дефолт distributor'а. */
+export function noGroup<T>(items: readonly T[]): readonly Group<T>[] {
+  return [{ label: "", items }];
+}
+
+/** Группировка по тегам — один из поставщиков `Group<T>[]` наравне с `noGroup` (и будущими:
+ *  по автору и т.д.). Grid/Matrix потребляют результат, не зная, чем группы порождены. */
 export function groupByTags<T>(
   items: readonly T[],
   tagsOf: (item: T) => readonly string[] | undefined,

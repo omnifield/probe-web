@@ -23,6 +23,16 @@ export const LAYOUT_MODES: readonly {
 ];
 export const DEFAULT_LAYOUT_MODE: LayoutMode = "grid";
 
+export type FilterMode = "none" | "tags";
+export const FILTER_MODES: readonly {
+  readonly value: FilterMode;
+  readonly icon: IconName;
+}[] = [
+  { value: "none", icon: "folder-open" },
+  { value: "tags", icon: "folder" },
+];
+export const DEFAULT_FILTER_MODE: FilterMode = "none";
+
 export type AxisMode = "variant" | "assembly";
 export const AXIS_MODES: readonly {
   readonly value: AxisMode;

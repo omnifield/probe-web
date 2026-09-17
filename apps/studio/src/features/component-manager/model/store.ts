@@ -3,7 +3,15 @@ import { castDraft, mutate } from "@web-core/store/mutate";
 import type { ComponentDescriptor } from "@web-core/ui/component-info";
 import { contentOf, variantsOf } from "#/entities/component";
 import type { Cell } from "../lib/cell";
-import { DEFAULT_AXIS_MODE, DEFAULT_LAYOUT_MODE, type AxisMode, type LayoutMode, type ViewMode } from "./modes";
+import {
+  DEFAULT_AXIS_MODE,
+  DEFAULT_FILTER_MODE,
+  DEFAULT_LAYOUT_MODE,
+  type AxisMode,
+  type FilterMode,
+  type LayoutMode,
+  type ViewMode,
+} from "./modes";
 
 export type CellKey = string;
 export const ALL_CELLS: CellKey = "*";
@@ -15,8 +23,10 @@ interface ComponentManagerState {
   readonly content?: Awaited<ReturnType<typeof contentOf>>;
   readonly layoutMode: LayoutMode;
   readonly axisMode: AxisMode;
+  readonly filterMode: FilterMode;
   readonly viewMode: Readonly<Record<CellKey, ViewMode>>;
   readonly feedData: Readonly<Record<CellKey, unknown>>;
+  readonly secondaryIndex: Readonly<Record<CellKey, number>>;
 }
 
 export const componentManagerStoreOf = createActionStoreFamily<
@@ -24,16 +34,19 @@ export const componentManagerStoreOf = createActionStoreFamily<
   {
     setLayoutMode(layoutMode: LayoutMode): void;
     setAxisMode(axisMode: AxisMode): void;
+    setFilterMode(filterMode: FilterMode): void;
     setViewMode(viewMode: ViewMode, cell?: Cell): void;
     setEditorInfo(editorInfo: ComponentDescriptor["editorInfo"]): void;
     setIo(io: ComponentDescriptor["io"]): void;
     loadVariants(component: string): Promise<void>;
     loadContent(component: string): Promise<void>;
     setFeedData(feedData: unknown, cell?: Cell): void;
+    setSecondaryIndex(index: number, cell?: Cell): void;
   },
   {
     viewMode(state: ComponentManagerState, cell: Cell): ViewMode;
     feedData(state: ComponentManagerState, cell: Cell): unknown;
+    secondaryIndex(state: ComponentManagerState, cell: Cell): number;
     variantAt(state: ComponentManagerState, cell: Cell): NonNullable<ComponentManagerState["variants"]>[number] | undefined;
     assemblyAt(state: ComponentManagerState, cell: Cell): NonNullable<ComponentManagerState["editorInfo"]>["assemblies"][number] | undefined;
   }
@@ -41,8 +54,10 @@ export const componentManagerStoreOf = createActionStoreFamily<
   {
     layoutMode: DEFAULT_LAYOUT_MODE,
     axisMode: DEFAULT_AXIS_MODE,
+    filterMode: DEFAULT_FILTER_MODE,
     viewMode: { [ALL_CELLS]: "form" },
     feedData: {},
+    secondaryIndex: {},
   },
   ({ setState }) => ({
     setLayoutMode(layoutMode) {
@@ -56,6 +71,13 @@ export const componentManagerStoreOf = createActionStoreFamily<
       setState(
         mutate<ComponentManagerState>((draft) => {
           draft.axisMode = axisMode;
+        }),
+      );
+    },
+    setFilterMode(filterMode) {
+      setState(
+        mutate<ComponentManagerState>((draft) => {
+          draft.filterMode = filterMode;
         }),
       );
     },
@@ -113,6 +135,14 @@ export const componentManagerStoreOf = createActionStoreFamily<
         }),
       );
     },
+    setSecondaryIndex(index, cell) {
+      const key = cell?.id ?? ALL_CELLS;
+      setState(
+        mutate<ComponentManagerState>((draft) => {
+          draft.secondaryIndex[key] = index;
+        }),
+      );
+    },
   }),
   () => ({
     viewMode(state, cell) {
@@ -121,13 +151,16 @@ export const componentManagerStoreOf = createActionStoreFamily<
     feedData(state, cell) {
       return state.feedData[cell.id] ?? state.feedData[ALL_CELLS];
     },
+    secondaryIndex(state, cell) {
+      return state.secondaryIndex[cell.id] ?? 0;
+    },
     variantAt(state, cell) {
       const variants = state.variants ?? [];
-      return state.axisMode === "variant" ? variants[cell.index] : variants[0];
+      return state.axisMode === "variant" ? variants[cell.index] : variants[state.secondaryIndex[cell.id] ?? 0];
     },
     assemblyAt(state, cell) {
       const assemblies = state.editorInfo?.assemblies ?? [];
-      return state.axisMode === "assembly" ? assemblies[cell.index] : assemblies[0];
+      return state.axisMode === "assembly" ? assemblies[cell.index] : assemblies[state.secondaryIndex[cell.id] ?? 0];
     },
   }),
 );

@@ -3,7 +3,7 @@ import type { PassportAssembly } from "@web-core/skin/editor";
 import type { VariantSummary } from "@web-core/skin/presets";
 import { componentManagerStoreOf, useComponentName } from "../../../model";
 import type { Cell } from "../../../lib/cell";
-import { groupByTags } from "../../../lib/group";
+import { groupByTags, noGroup } from "../../../lib/group";
 import { Grid } from "./grid";
 
 type PrimaryItem = VariantSummary | PassportAssembly;
@@ -13,6 +13,7 @@ export function Distributor() {
   const store = componentManagerStoreOf(name);
   const layoutMode = store.use((state) => state.layoutMode);
   const axis = store.use((state) => state.axisMode);
+  const filter = store.use((state) => state.filterMode);
   const variants = store.use((state) => state.variants ?? []);
   const assemblies = store.use((state) => state.editorInfo?.assemblies ?? []);
 
@@ -21,10 +22,15 @@ export function Distributor() {
 
   const indexed = () => primary().map((item, index) => ({ item, index }));
 
+  const entryGroups = () =>
+    filter() === "tags"
+      ? groupByTags(indexed(), (entry) =>
+          "tags" in entry.item ? entry.item.tags : undefined,
+        )
+      : noGroup(indexed());
+
   const groups = () =>
-    groupByTags(indexed(), (entry) =>
-      "tags" in entry.item ? entry.item.tags : undefined,
-    ).map((group) => ({
+    entryGroups().map((group) => ({
       label: group.label,
       items: group.items.map(
         (entry): Cell => ({ index: entry.index, id: String(entry.index) }),
