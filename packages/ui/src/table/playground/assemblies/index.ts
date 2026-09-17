@@ -4,7 +4,8 @@ import type { ComponentPassport } from "@web-core/skin/model";
 import type { Data } from "../../entity/io.js";
 import type { passport } from "../../entity/passport.js";
 import { basic } from "./basic.js";
+import { withSearch } from "./with-search.js";
 
 type TablePart = typeof passport extends ComponentPassport<infer Part> ? Part : never;
 
-export const assemblies: readonly PassportAssembly<TablePart, string, Data>[] = [basic];
+export const assemblies: readonly PassportAssembly<TablePart, string, Data>[] = [basic, withSearch];

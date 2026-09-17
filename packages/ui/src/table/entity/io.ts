@@ -8,6 +8,7 @@ export const input = z.object({
   data: z.array(row),
   columns: z.array(column),
   defaultSorting: z.array(sort).optional(),
+  globalFilter: z.string().optional(),
 });
 
 export const output = z.object({ value: z.array(z.string()) });
