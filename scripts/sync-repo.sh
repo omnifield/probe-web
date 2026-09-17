@@ -98,7 +98,7 @@ if git ls-remote --exit-code --heads "$URL" "$BRANCH" | grep -q .; then
   echo "Fetching $REMOTE_NAME/$BRANCH..."
   git fetch "$REMOTE_NAME" "$BRANCH"
   git worktree add -B "$SYNC_BRANCH" "$WORKTREE_DIR" "$REMOTE_NAME/$BRANCH" >/dev/null
-  if ! git -C "$WORKTREE_DIR" merge --squash "$SOURCE"; then
+  if ! git -C "$WORKTREE_DIR" merge --squash --allow-unrelated-histories "$SOURCE"; then
     echo "Merge conflicts — resolve manually in the worktree, then:" >&2
     echo "  cd $WORKTREE_DIR" >&2
     echo "  git commit -m \"$COMMIT_MSG\" && git push $REMOTE_NAME $SYNC_BRANCH:$BRANCH" >&2
