@@ -50,6 +50,12 @@ const BASIC_DATA = {
     { name: "Борис", role: "Инженер", age: 34 },
     { name: "Вера", role: "Менеджер", age: 41 },
   ],
+  columns: [
+    { accessorKey: "name", header: "Имя" },
+    { accessorKey: "role", header: "Роль" },
+    { accessorKey: "age", header: "Возраст" },
+  ],
+  defaultSorting: [{ columnId: "name", desc: false }],
 };
 
 describe('table "basic" — rows from bound data, nothing hardcoded in the assembly, sorting by name works by click', () => {

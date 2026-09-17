@@ -82,6 +82,21 @@ milestones:
 categories:
   - category: Основа
     items:
+      - id: columns-as-bound-data
+        type: feature
+        status: Done
+        priority: Critical
+        milestone: null
+        name: columns и defaultSorting — тоже данные, не литерал сборки
+        description: |
+          Означает: `columns` (`{accessorKey, header}[]`) и `defaultSorting` (`{columnId, desc}[]`)
+          входят в `entity/io.ts` рядом с `data` и бинд-ятся из пресета, а не хардкодятся в
+          конкретной сборке. Одна сборка `basic` этим обслуживает любую форму данных — проверено
+          на 4 разных наборах в сервисе пресетов (`basic`/`inventory`/`orders`/`team-large`), у
+          каждого свои поля и свои колонки.
+          Примечание: `columns`/`defaultSorting` в io — плоский JSON без функций/JSX; `ColumnDef`
+          со своим рендером ячейки по-прежнему код потребителя, в контракт не входит.
+
       - id: grid
         type: feature
         status: Done
@@ -456,6 +471,17 @@ log:
       не отдельно в Windshift. `done`-пункты (grid/sorting) получили категорию «Основа» с
       `milestone: null` — предшествуют самой системе вех. `depends_on` — настоящая связь
       "Depends On", не только проза в описании.
+
+  - id: columns-are-data-not-code
+    type: plan
+    date: 2026-09-17
+    summary: >
+      Первая версия `entity/io.ts` вывела `columns` за пределы контракта — "columns пишет
+      разработчик в коде, data приходит снаружи". Решение отменено: `columns` — такой же JSON без
+      функций, как `data`, а хардкод в одной сборке не тянет больше одной формы данных сразу —
+      "сборка на каждый набор данных" отклонена явно как несмасштабируемая (10 ручек бэка сегодня,
+      ещё 10 у следующего аппа завтра). `columns` и `defaultSorting` переехали в io рядом с `data`,
+      бинд-ятся из одного пресета, сборка остаётся одна — item `columns-as-bound-data`.
 
 # Прикидка по размеру (не оценка в часах, порядок величины):
 #   S — TanStack даёт логику почти бесплатно, нужен только слой anatomy+passport+wiring
