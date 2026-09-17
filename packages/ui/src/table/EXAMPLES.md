@@ -114,7 +114,7 @@ export function MultiSortTableDemo() {
 заводить не нужно.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal } from "@web-core/solid";
 import { TableRoot, type TableColumn, type TableRowSelection } from "@web-core/ui";
 
 type Person = { id: string; name: string; role: string };
@@ -162,7 +162,7 @@ export function SelectableTableDemo() {
 `table.getAllColumns()`/`column.getToggleVisibilityHandler()` дают всё для своего переключателя.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal } from "@web-core/solid";
 import { TableRoot, type TableColumn, type TableColumnVisibility } from "@web-core/ui";
 
 type Person = { name: string; role: string; age: number };
@@ -240,7 +240,7 @@ export function ColumnPinningDemo() {
 регистронезависимый, подстрокой, по всем колонкам сразу.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal } from "@web-core/solid";
 import { TableRoot, type TableColumn } from "@web-core/ui";
 
 type Person = { name: string; role: string };
@@ -281,7 +281,7 @@ export function GlobalSearchDemo() {
 отфильтрованную колонку. Виджет (текст/select/диапазон) — обычное содержимое, кит его не рисует.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal } from "@web-core/solid";
 import { TableRoot, type TableColumn, type TableColumnFilters } from "@web-core/ui";
 
 type Person = { name: string; role: string };
@@ -330,7 +330,7 @@ export function ColumnFilterDemo() {
 `table`-инстансу только через `children`.
 
 ```tsx
-import { For } from "solid-js";
+import { For } from "@web-core/solid";
 import { TableRoot, TableHead, TableHeadRow, TableHeaderCell, TableBody, TableRow, TableCell, type TableColumn } from "@web-core/ui";
 
 type Person = { name: string; role: string };
@@ -434,7 +434,7 @@ DOM-событие, не только уже забинженные данные
 `test/with-search.test.tsx`.
 
 ```tsx
-import { createSignal } from "solid-js";
+import { createSignal } from "@web-core/solid";
 import { RenderTree } from "@web-core/assembly/render";
 import { instanceOf } from "@web-core/skin/editor";
 import type { DispatchedEvent } from "@web-core/assembly";
