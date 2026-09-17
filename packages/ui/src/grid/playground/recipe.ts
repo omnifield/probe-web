@@ -5,7 +5,7 @@ export const recipe: SlotRecipe = {
     root: {
       props: {
         display: "grid",
-        gap: "var(--space-4)",
+        gap: "var(--space-1)",
         gridTemplateColumns: "repeat(auto-fill, minmax(var(--space-32), 1fr))",
       },
     },
