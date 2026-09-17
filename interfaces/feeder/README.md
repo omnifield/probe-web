@@ -42,6 +42,13 @@ skin-адаптер. Уже подключён живым потребителе
 Сам HTTP-вызов — на стороне движка (`@web-core/query/rest`), не потребителя. Живого браузера с
 модом 2 не было (в отличие от мода 1) — только vitest+jsdom, см. «Сборки».
 
+`OpenapiEditor` работает не с одним документом, а с ГРУППАМИ (`OpenapiGroup`) — у юзера бывает
+сколько угодно бэков со сваггером и сколько угодно вообще без него, ручки без документа заводятся
+вручную (схема A — `EndpointDescriptor`, редактируется той же `Tree`, что и мод 1), и группы не
+сливаются в общий список, каждая подписана юзером. Группа-схема (`SchemaGroup`) — read-only состав,
+группа-юзер (`ManualGroup`) — редактируемая. Находка user поверх и без того непервоначального
+плана, разбор — FAQ.md.
+
 Мод 4 (`Mapping`) — сведение «корм → потребитель»: два варианта (А/Б, каждый — сырые данные ИЛИ
 zod-схема), юзер сводит поля, движок отдаёт готовый `FieldRule[]`+результат. Завёлся НЕ как часть
 задуманных трёх режимов, а отдельной находкой user поверх исходного плана — мод 2 сам по себе
@@ -61,7 +68,7 @@ UI сведения заново.
 | Часть                   | Адрес             | Экспортирует                          |
 | ------------------------ | ------------------ | --------------------------------------- |
 | Дерево (мод 1)           | `@web-core/feeder` | `Tree`                                |
-| Редактор ручек (мод 2)   | `@web-core/feeder` | `OpenapiEditor`, `OpenapiInvocation`  |
+| Редактор ручек (мод 2)   | `@web-core/feeder` | `OpenapiEditor`, `OpenapiInvocation`, `OpenapiGroup`, `SchemaGroup`, `ManualGroup`, `EndpointDescriptor`, `EndpointParam` |
 | Список ручек (мод 2)     | `@web-core/feeder` | `OpenapiList`, `OpenapiListItem`      |
 | Сведение (мод 4)         | `@web-core/feeder` | `Mapping`, `MappingChange`            |
 | Плейсхолдер (dev-проба)  | `@web-core/feeder` | `FeederPlaceholder`                   |
@@ -75,9 +82,12 @@ UI сведения заново.
 
 Мод 1: `entities/tree` (модель узла, биндинг), `features/edit-value` (инпуты редактирования),
 `widgets/tree` (сборка дерева). Мод 2: `entities/openapi` (свой `MappingTemplate` под Swagger 2.0 —
-распознавание + сборка `z.ZodType` на ручку), `features/invoke-endpoint` (реальный HTTP-вызов,
-`@web-core/query/rest`), `widgets/openapi` — два виджета: `OpenapiEditor` (переиспользует `Node` из
-`widgets/tree` для конфигурации параметров) и `OpenapiList` (без конфигурации, только вызов уже
+распознавание + сборка `z.ZodType` на ручку; плюс `EndpointDescriptor`+`descriptorToEndpoint` —
+схема A и адаптер под вручную заведённые ручки, без документа-источника), `features/invoke-endpoint`
+(реальный HTTP-вызов, `@web-core/query/rest`), `widgets/openapi` — `OpenapiEditor` (список ГРУПП,
+`SchemaGroupView` read-only внутри группы-схемы + `ManualGroupEditor` — `Tree` для структуры
+дескрипторов группы-юзера, обе переиспользуют `EndpointCard`/`Node` из `widgets/tree` для
+конфигурации значений одной ручки) и `OpenapiList` (без конфигурации, только вызов уже
 настроенного). Мод 4: `entities/mapping` (тонкая обёртка над `describeSample`/`describeSchema`/
 `applyFieldRules` из `@web-core/io` — механика целиком в `io`, здесь только типизация «двух
 вариантов»), `widgets/mapping` (`Mapping`+`FieldPicker` — список полей Б, на каждое нативный
@@ -100,14 +110,24 @@ function Settings() {
 }
 ```
 
-✅ Мод 2 — два вида: `OpenapiEditor` (сырой Swagger 2.0 → список ручек, конфиг параметров, вызов) и
-`OpenapiList` (уже настроенные ручки, только «Вызвать», без единого поля):
+✅ Мод 2 — два вида: `OpenapiEditor` (список групп — распознанный Swagger 2.0 и/или вручную
+заведённые ручки, конфиг параметров, вызов) и `OpenapiList` (уже настроенные ручки, только
+«Вызвать», без единого поля):
 
 ```tsx
-import { OpenapiEditor, type OpenapiInvocation } from "@web-core/feeder";
+import { OpenapiEditor, type OpenapiGroup, type OpenapiInvocation } from "@web-core/feeder";
 
 function ApiEditor() {
-  return <OpenapiEditor raw={swaggerText} onChange={(invocation: OpenapiInvocation) => save(invocation)} />;
+  const [groups, setGroups] = createSignal<readonly OpenapiGroup[]>([
+    { id: "1", name: "Основной бэк", kind: "schema", raw: swaggerText },
+  ]);
+  return (
+    <OpenapiEditor
+      groups={groups()}
+      onGroupsChange={setGroups}
+      onChange={(invocation: OpenapiInvocation) => save(invocation)}
+    />
+  );
 }
 ```
 
@@ -130,22 +150,26 @@ function Adapter() {
 <h2 id="настройки">🎚️ Настройки</h2>
 
 🔧 У `Tree` один обязательный проп-настройка — `schema: z.ZodType` (`@web-core/io`), источник дерева
-полей (`fieldsOf` из `@web-core/generators/fields`). У `OpenapiEditor` — `raw: string` (сырой
-Swagger 2.0), у `OpenapiList` — `items: { endpoint, value }[]` (уже настроенные ручки). У `Mapping`
-— `a`/`b: unknown` (сырые данные ИЛИ `z.ZodType`, каждый сам по себе). Опций самого движка (порядок
-полей, кастомные рендеры листа, другие форматы кроме Swagger 2.0, трансформации/`onFail` у
-`FieldRule` в UI мода 4) пока нет ни у одного мода.
+полей (`fieldsOf` из `@web-core/generators/fields`). У `OpenapiEditor` — `groups:
+OpenapiGroup[]` (`SchemaGroup { raw }` — сырой Swagger 2.0, read-only состав; `ManualGroup {
+endpoints: EndpointDescriptor[] }` — вручную заведённые дескрипторы, редактируемые), у `OpenapiList`
+— `items: { endpoint, value }[]` (уже настроенные ручки). У `Mapping` — `a`/`b: unknown` (сырые
+данные ИЛИ `z.ZodType`, каждый сам по себе). Опций самого движка (порядок полей, кастомные рендеры
+листа, другие форматы кроме Swagger 2.0, `headers`/`enum`/`array` у `EndpointParam`,
+трансформации/`onFail` у `FieldRule` в UI мода 4) пока нет ни у одного мода.
 
 <h2 id="состояния">🎛️ Состояния</h2>
 
 🚦 `Tree` — своих состояний нет, полностью контролируемый (`value`/`onChange` снаружи), внутри
 только производные `createMemo` от `schema`/`value`. `OpenapiList` — так же, без состояния.
-`OpenapiEditor` — единственное место в пакете, где движок реально что-то хранит сам: список ручек
-(`createResource` от `raw`) и у каждой карточки (`EndpointCard`) — локальный `value`/`status`
-сигнал с настроенными параметрами, наружу не текущий на каждую правку (наружу — только на вызов,
-см. «IO»). `Mapping` — локальный сигнал `picks` (какой путь `a` выбран на каждое поле `b`), наружу
-течёт на каждый пик (как `Tree`, не как `OpenapiEditor`). Управление сбросом/начальным значением у
-`Tree` — забота потребителя, не движка.
+`OpenapiEditor` — сам список групп полностью контролируемый (`groups`/`onGroupsChange` снаружи,
+как и структура дескрипторов группы-юзера — правки идут через тот же `onGroupsChange`, не хранятся
+внутри); локально движок держит только форму «добавить группу» (имя+вид, до нажатия кнопки). Внутри
+группы-схемы — распознавание (`createResource` от `raw`); внутри каждой карточки (`EndpointCard`,
+в любой группе) — локальный `value`/`status` сигнал с настроенными параметрами вызова, наружу не
+текущий на каждую правку (наружу — только на сам вызов, см. «IO»). `Mapping` — локальный сигнал
+`picks` (какой путь `a` выбран на каждое поле `b`), наружу течёт на каждый пик (как `Tree`, не как
+`EndpointCard`). Управление сбросом/начальным значением у `Tree` — забота потребителя, не движка.
 
 <h2 id="io">🔌 IO</h2>
 
@@ -153,13 +177,17 @@ Swagger 2.0), у `OpenapiList` — `items: { endpoint, value }[]` (уже нас
 `onChange(value: unknown)` на каждое изменение любого поля (запись идёт через `withValue` по пути
 поля, наружу — новый цельный объект, не патч).
 
-Мод 2 (оба вида): вход `OpenapiEditor` — `raw: string` (сырой Swagger 2.0, жёсткое совпадение,
-другой формат/версия отклоняется), вход `OpenapiList` — `items: { endpoint, value }[]` (уже
-настроенные). Выход у обоих — `onChange(invocation: OpenapiInvocation)`,
-`{ endpoint, value, response }`, стреляет НЕ на правку поля (как мод 1), а на реальный вызов ручки
-(`@web-core/query/rest`) — ответ ручки и есть «еда». `{ endpoint, value }` из инвокации —
-готовый айтем для `OpenapiList` (флоу «настроил в редакторе → сохранил → дёрнул на витрине»,
-примеры — EXAMPLES.md). Контракт мода 3 (сырой «корм» неизвестной формы на входе) появится с ним.
+Мод 2: вход `OpenapiEditor` — `groups: OpenapiGroup[]` + `onGroupsChange`. Группа-схема несёт
+`raw: string` (сырой Swagger 2.0, жёсткое совпадение, другой формат/версия отклоняется) — свой
+состав read-only, изменить можно только заменой `raw` целиком через `onGroupsChange`. Группа-юзер
+несёт `endpoints: EndpointDescriptor[]` — юзер добавляет/убирает/правит их сам (через `Tree` внутри
+`OpenapiEditor`), правки идут наружу тем же `onGroupsChange`. Вход `OpenapiList` — `items: {
+endpoint, value }[]` (уже настроенные). Выход обоих виджетов — `onChange(invocation:
+OpenapiInvocation)`, `{ endpoint, value, response }`, стреляет НЕ на правку поля (как мод 1) и НЕ на
+правку группы, а на реальный вызов ручки (`@web-core/query/rest`) — ответ ручки и есть «еда».
+`{ endpoint, value }` из инвокации — готовый айтем для `OpenapiList` (флоу «настроил в редакторе →
+сохранил → дёрнул на витрине», примеры — EXAMPLES.md). Контракт мода 3 (сырой «корм» неизвестной
+формы на входе) появится с ним.
 
 Мод 4: вход — `a`/`b: unknown` (сырые данные или `z.ZodType` каждый, `describeVariant` сам
 распознаёт по `instanceof`). Выход — `onChange(change: MappingChange)`,
@@ -169,15 +197,17 @@ Swagger 2.0), у `OpenapiList` — `items: { endpoint, value }[]` (уже нас
 
 <h2 id="сборки">🏗️ Сборки</h2>
 
-🧪 Vitest+jsdom, 41 тест. Мод 1: `entities/tree` — чистая логика (`itemBinding`, `useTree`, 8
+🧪 Vitest+jsdom, 52 теста. Мод 1: `entities/tree` — чистая логика (`itemBinding`, `useTree`, 8
 тестов, без DOM, `schema` реальная через `fieldsOf`); `widgets/tree` — настоящий DOM-рендер
 (`solid-js/web`, не мок, 3 теста): скаляр пишет по пути, «Добавить»/«Убрать» на элемент списка.
 
 Мод 2: `entities/openapi` — распознавание + сборка схемы на реальном (урезанном) petstore-документе
-(8 тестов, включая вложенные `$ref` и циклы через `z.lazy`); `features/invoke-endpoint` — мок
-`fetch` (`vi.stubGlobal`), path/query/body собираются верно, не-2xx — валидный результат, не
-исключение (5 тестов); `widgets/openapi` — реальный DOM-рендер обоих видов, `OpenapiEditor`
-(3 теста) и `OpenapiList` (3 теста), доезжает до мока `fetch` и обратно до `onChange`.
+(8 тестов, включая вложенные `$ref` и циклы через `z.lazy`), плюс `descriptor.ts` — схема A и
+`descriptorToEndpoint` на дескрипторах без документа-источника (7 тестов); `features/invoke-
+endpoint` — мок `fetch` (`vi.stubGlobal`), path/query/body собираются верно, не-2xx — валидный
+результат, не исключение (5 тестов); `widgets/openapi` — реальный DOM-рендер, `OpenapiEditor`
+(11 тестов: группа-схема, группа-юзер, добавление/удаление самой группы) и `OpenapiList`
+(3 теста), доезжает до мока `fetch` и обратно до `onChange`.
 
 Мод 4: `entities/mapping` — `describeVariant`/`applyMapping` тонкой обёрткой над `@web-core/io`
 (6 тестов); `widgets/mapping` — реальный DOM-рендер, пик поля/сброс/несколько полей независимо

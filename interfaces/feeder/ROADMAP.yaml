@@ -167,6 +167,51 @@ categories:
           `result.row` — уже применённое сведение. v1 — только 1:1 (путь→путь), без UI под
           `steps`/`onFail`. Тесты — реальный DOM-рендер, 5 шт.
 
+      - id: mode-openapi-manual-descriptor
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 2 — entities/openapi: EndpointDescriptor (схема A) + descriptorToEndpoint"
+        description: |
+          Означает: второй способ получить `OpenapiEndpoint[]` — не распознаванием чужого
+          документа (swagger2Template), а вручную заполненными дескрипторами. `EndpointDescriptor`
+          (`method`/`url`/`params: EndpointParam[]`, `EndpointParam` — `name`/`type: "string"|
+          "number"|"boolean"`/`required`) — своя, урезанная схема A по сравнению со
+          `Swagger2Parameter`: без `in` (query/path определяется тем же приёмом, что уже применяет
+          `invokeEndpoint` — по совпадению имени с `{плейсхолдером}` url), без `enum`/вложенных
+          объектов/`headers` (`invokeEndpoint` их сегодня не поддерживает — заводить под них
+          дескриптор значило бы строить мёртвую функциональность, отложено явной просьбой user
+          «пока базовых настроек хватит»). `endpointDescriptorSchema`+`manualGroupSchema` (обёртка
+          `{ endpoints }` — `Tree` рендерит только объектный корень) — те же zod-схемы, что рисует
+          `Tree`. `descriptorToEndpoint` — адаптер в `OpenapiEndpoint`, тем же приёмом, что
+          `scalarParamToZod` у свагера, дальше по пайплайну (карточка, вызов) разницы в
+          происхождении уже нет. Тесты — 7 шт (`test/entities/openapi/descriptor.test.ts`).
+
+      - id: mode-openapi-groups
+        type: feature
+        status: Done
+        priority: High
+        milestone: null
+        name: "Мод 2 — widgets/openapi: OpenapiEditor группами (схема read-only / юзер редактируемая)"
+        description: |
+          Означает: `OpenapiEditor` больше не принимает один `raw: string` — принимает
+          `groups: OpenapiGroup[]` (`SchemaGroup { raw }` | `ManualGroup { endpoints:
+          EndpointDescriptor[] }`, у обеих `id`+`name` от юзера) + `onGroupsChange`. Группы НЕ
+          сливаются в общий список ручек — рендерятся отдельными секциями, каждая подписана; у
+          юзера может быть сколько угодно бэков со свагером и сколько угодно без него, находка
+          user поверх исходного плана (обсуждение, см. FAQ.md). Группа-схема — read-only состав
+          (`SchemaGroupView`, бывшее тело всего `OpenapiEditor` до групп, вынесено как есть):
+          «обновить» значит заменить `raw` целиком снаружи, не редактировать ручку поштучно.
+          Группа-юзер (`ManualGroupEditor`) — `Tree` (мод 1) поверх `manualGroupSchema` для
+          структуры (add/remove/edit ручки и параметра — готовая механика списков мода 1, ничего
+          нового не изобреталось) плюс `EndpointCard` на каждый дескриптор (та же карточка
+          конфигурации значений+вызова, что у группы-схемы — мод 2 не знает, откуда взялся
+          `OpenapiEndpoint`). Добавление/удаление самой группы — тоже внутри `OpenapiEditor`
+          (имя+выбор вида+кнопка), не отдельная забота потребителя, тем же приёмом, что и списки
+          мода 1. Тесты — 11 шт (`test/widgets/openapi/editor.test.tsx`, было 3). Живого браузера
+          не было — vitest+jsdom, тот же precedent, что и у первой версии мода 2.
+
       - id: mode-file-upload
         type: feature
         status: Backlog
@@ -224,6 +269,40 @@ categories:
           README.md урезан до пары базовых сниппетов со ссылкой сюда.
 
 log:
+  - id: mode-openapi-groups-done
+    type: plan
+    date: 2026-09-17
+    summary: >
+      Обсуждение с user, доведённое до кода в одном заходе: кейс — часть бэков юзера отдаёт
+      сваггер 2.0, часть вообще без него, ручки нужно заводить вручную. Первая гипотеза (мод 2
+      напрямую читает наш собственный «формат» через ещё один `MappingTemplate` рядом со
+      swagger2Template) отброшена по ходу разбора — `run(raw, templates)` выбирает ОДИН подошедший
+      шаблон, не объединяет, а сваггер-ручки и ручные должны сосуществовать РЯДОМ, не сливаясь в
+      кучу (юзеру важно подписывать, что откуда).
+
+      Решение: `OpenapiEditor` работает не с одним `raw`, а со списком ГРУПП (`OpenapiGroup` —
+      `SchemaGroup`|`ManualGroup`, у каждой имя от юзера). Группа-схема — read-only, тот же
+      `swagger2Template`, что и раньше, «обновить» = заменить `raw` целиком. Группа-юзер —
+      полностью редактируемая: ручки внутри заводятся как схема A (`EndpointDescriptor` —
+      `method`/`url`/`params[]`), а схема A рендерится и редактируется той же `Tree` (мод 1), что
+      уже умеет add/remove/edit по зод-схеме — находка user в разговоре («мод 1 рисует форму по
+      схеме, схема для мода 2 — тоже просто данные, зачем что-то новое изобретать»). Уточнение по
+      ходу: `Tree` не СТРОИТ zod-тип, он редактирует данные ПО готовой схеме — поэтому реально два
+      разных zod-объекта на разных уровнях (схема A самого дескриптора, известная заранее и
+      статичная — редактируется `Tree`; итоговая схема ОДНОЙ ручки, `z.ZodType`, строится из
+      заполненного дескриптора адаптером `descriptorToEndpoint`, тем же приёмом, что и парсинг
+      свагера). `headers`/`enum`/вложенные объекты в дескриптор не заведены — `invokeEndpoint` их
+      сегодня не поддерживает, а часть param-типов (`array`) не входит в v1 — explicit «пока
+      базовых настроек хватит, расширим по мере необходимости» от user.
+
+      `entities/openapi/descriptor.ts` (схема + адаптер, 7 тестов) — `widgets/openapi/{schema-
+      group,manual-group}.tsx` (тело каждого вида группы, извлечено/заведено) — `editor.tsx`
+      переписан на `groups`+`onGroupsChange`, добавление/удаление группы — тоже внутри виджета
+      (11 тестов на файл, было 3). build/typecheck/lint/test зелёные (52 теста на пакет). Публичный
+      контракт `OpenapiEditor` сменился (`raw` → `groups`) — единственный внешний потребитель
+      (`apps/studio/src/pages/lab`) держит вызов закомментированным, живым потребителем мода 2
+      по-прежнему никто не был (тот же precedent, что и у первой версии). Разбор — FAQ.md.
+
   - id: mode-mapping-done
     type: plan
     date: 2026-09-15
