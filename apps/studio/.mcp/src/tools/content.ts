@@ -37,7 +37,7 @@ export function registerContentTools(server: McpServer): void {
           "имя ЭТОГО набора данных, не компонента — можно завести несколько на компонент",
         ),
       data: z
-        .unknown()
+        .record(z.string(), z.unknown())
         .describe("данные вида, ожидаемого io-схемой компонента"),
       label: z.string().optional(),
       author: z

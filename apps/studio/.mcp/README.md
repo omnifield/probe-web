@@ -374,6 +374,7 @@ MCP-тулы (`list_presets`/`get_preset` локально, `save_preset` на �
 | Механика тегов из `@web-core/skin/tags` (после переезда) | реальный `check_form` с известными/неизвестными тегами через живой сервер, свежий рестарт | `tagGroups` собран верно (`default` первым, `status` вторым), `unknown-tag` по-прежнему ловится — поведение не изменилось после переноса чистой механики в `packages/skin` |
 | Финальная сверка перед первым деплоем на VPS | `save_content`/`author`-guard/`report_feedback`/`assemble_preview`/`browser_*` одним прогоном через `stdioPeer` | все семь шагов зелёные; попутно найдена и починена реальная утечка в `@web-core/mcp/peer` — см. следующую строку |
 | `stdioPeer` без `env` не путает окружения | тот же прогон, ДО починки: `SKIN_MCP_ADMIN_AUTHOR`/`SKIN_MCP_CHROME_EXECUTABLE` заданы в оболочке, но не у спавненного `pnpm start` | `author`-guard молча пропускал чужую перезапись `omnifield-*`, `browser_screenshot` не находил Chrome — оба симптома исчезли после `stdioPeer(..., {env: process.env})`, см. `packages/neurobox/FAQ.md` |
+| `save_content` — `data` печатает `"type": "object"` в JSON Schema | `client.listTools()`, `inputSchema.properties.data` до/после замены `z.unknown()` на `z.record(z.string(), z.unknown())` | ДО: `{"description": "..."}` без `type` — MCP-клиенты не понимали, что нужен объект, слали `data` строкой, служба честно отказывала `expected object, received string`; ПОСЛЕ: `{"type":"object", ...}` |
 
 <h2 id="рецепт">🎨 Рецепт</h2>
 
