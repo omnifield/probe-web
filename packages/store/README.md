@@ -247,6 +247,11 @@ export const counterStore = createActionStore<
   isEven(state) {
     return state.count % 2 === 0;
   },
+  // Параметризованный геттер — аргументы ПОСЛЕ state: store.selectors.isMultipleOf(3) сразу
+  // отдаёт значение (не аксессор, промежуточный "()" не нужен), реактивно, свой кэш на n.
+  isMultipleOf(state, n: number) {
+    return state.count % n === 0;
+  },
 }));
 ```
 
@@ -265,6 +270,7 @@ function CounterWidget() {
       <button onClick={() => counterStore.actions.incrementByAsync(5)}>+5 async</button>
       <button onClick={counterStore.actions.reset}>reset</button>
       {counterStore.selectors.isEven() ? "чётное" : "нечётное"}
+      {counterStore.selectors.isMultipleOf(3) ? " · кратно 3" : ""}
     </div>
   );
 }
@@ -282,9 +288,11 @@ function onRouteChange() {
 
 Правило на все случаи: читаешь внутри компонента разово/по месту → `.use(selector)`. Читаешь
 именованное вычисляемое значение, которое нужно больше чем в одном месте, — заводи `selectors`
-третьим аргументом при создании стора, зови `store.selectors.x()`. Читаешь разово снаружи
-(роутер, обычная функция, тест) → `.get()`. Меняешь — всегда `.actions.*`, откуда угодно, `.set()`
-нигде не трогаешь.
+третьим аргументом при создании стора, зови `store.selectors.x()`. Нужен внешний параметр
+(id ячейки, тег и т.п.) — тот же `selectors`, но с аргументами ПОСЛЕ `state`
+(`x(state, arg) { … }`), зови `store.selectors.x(arg)`: результат сразу, реактивно, без
+промежуточного `()`. Читаешь разово снаружи (роутер, обычная функция, тест) → `.get()`.
+Меняешь — всегда `.actions.*`, откуда угодно, `.set()` нигде не трогаешь.
 
 **`createActionStoreFamily`** — тот же `createActionStore`, но отдельный физический стор на каждый
 ключ, не один общий слот с переключаемым содержимым. Нужен, когда несколько сущностей живы
@@ -479,7 +487,7 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createResourceAtom` без ключа | `(fetcher: (info: { signal }) => Data \| Promise<Data>, options?)`                                                                                 |
 | `createResourceAtom` с ключом  | `(source: Accessor<Key>, fetcher: (key, info: { signal }) => Data \| Promise<Data>, options?)`                                                     |
 | `createBoundAtom`              | `(source: Accessor<T>, options?: AtomOptions<T>)`                                                                                                  |
-| `createActionStore`            | `(initialValue: T, actionsFactory: (helpers: {setState, get}) => TActions, options?: AtomOptions<T>)`, либо с третьим `selectorsFactory: () => TSelectors` перед `options`               |
+| `createActionStore`            | `(initialValue: T, actionsFactory: (helpers: {setState, get}) => TActions, options?: AtomOptions<T>)`, либо с третьим `selectorsFactory: () => TSelectors` перед `options` — селектор `(state) => R` даёт `store.selectors.x()`, `(state, ...args) => R` даёт `store.selectors.x(...args)` |
 | `createActionStoreFamily`      | те же аргументы, что у `createActionStore` — отдаёт не стор, а `(key: K) => ActionStore<T, TActions, TSelectors>`                                                                        |
 | `store.send`                   | `{ type, ...payload }`                                                                                                                             |
 | `store.trigger.<type>`         | `payload`                                                                                                                                          |
@@ -522,6 +530,8 @@ setKit(kit: Kit) { // Kit.tags: readonly string[]
 | `createActionStore` + `selectorsFactory`                    | `store.selectors.x()` готов сразу после создания, без `.use()`     | `test/action-store.test.tsx` |
 | `createActionStore`, несколько селекторов                   | каждый следит за своей частью state независимо                    | `test/action-store.test.tsx` |
 | `createActionStore` + `selectors` в реальном рендере         | реальный рендер компонента, значение меняется по вызову `actions`  | `test/action-store.test.tsx` |
+| `createActionStore` + параметризованный селектор             | `store.selectors.x(arg)` отдаёт значение сразу, без `()`            | `test/action-store.test.tsx` |
+| `createActionStore` + параметризованный селектор в рендере    | реактивен для каждого `arg` независимо, в реальном рендере          | `test/action-store.test.tsx` |
 | `createActionStoreFamily`, разные ключи                     | физически разные store, запись в один не видна в другом            | `test/action-store.test.tsx` |
 | `createActionStoreFamily`, повтор ключа                     | кэш — тот же инстанс, не пересоздание                              | `test/action-store.test.tsx` |
 | `createActionStoreFamily` в реальном рендере                | переключение ключа между рендерами не путает данные разных сущностей | `test/action-store.test.tsx` |

@@ -97,7 +97,56 @@ selectorsFactory, options)`.
 Полезно проверить: подпись кнопки переключается "нечётное" → "чётное" на каждый клик, без единого
 `.use()`/`createMemo` в компоненте под это конкретное значение.
 
-### 3. `createActionStore` — чтение и запись СНАРУЖИ компонента
+### 3. `createActionStore` — параметризованный селектор (аргументы после `state`)
+
+Тот же `selectorsFactory`, но вычисляемое зависит ещё и от внешнего параметра (id ячейки, тег и
+т.п.), а не только от state, — аргументы объявляются ПОСЛЕ `state`, и вызов идёт сразу с ними:
+`store.selectors.x(arg)` отдаёт значение напрямую, реактивно, без промежуточного `()`. Кейс —
+DemoStand-грид: variant ячейки зависит от `axis` в state и от `cell.index` снаружи:
+
+```tsx
+import { createActionStore } from "@web-core/store";
+
+interface GridState {
+  readonly axis: "variant" | "assembly";
+  readonly variants: readonly string[];
+}
+
+const gridStore = createActionStore<
+  GridState,
+  { setAxis(axis: GridState["axis"]): void },
+  { variantAt(state: GridState, index: number): string | undefined }
+>(
+  { axis: "variant", variants: ["a", "b", "c"] },
+  ({ setState }) => ({
+    setAxis(axis) {
+      setState((state) => ({ ...state, axis }));
+    },
+  }),
+  () => ({
+    // arity > 1 (state + index) — это и отличает параметризованный геттер от обычного,
+    // никакого отдельного флага объявлять не нужно.
+    variantAt(state, index) {
+      return state.axis === "variant" ? state.variants[index] : state.variants[0];
+    },
+  }),
+);
+
+export function GridCell(props: { index: number }) {
+  // сразу значение, не аксессор — .selectors.variantAt(index), не .selectors.variantAt()(index)
+  return <div>{gridStore.selectors.variantAt(props.index)}</div>;
+}
+```
+
+Под капотом на каждый уникальный `index` заводится своя подписка лениво (при первом вызове с этим
+значением) и кэшируется — повторный вызов с тем же `index` переиспользует ту же подписку, не
+пересобирает её каждый рендер. Разбор — FAQ.md, раздел про параметризованные селекторы.
+
+Полезно проверить: несколько `<GridCell index={n} />` с разными `n` показывают разные буквы;
+`gridStore.actions.setAxis("assembly")` схлопывает все ячейки к `variants[0]`, кроме своей логики
+у `assembly`-геттера, если он есть.
+
+### 4. `createActionStore` — чтение и запись СНАРУЖИ компонента
 
 Стор не привязан к дереву компонентов — читать/писать можно откуда угодно (роутер, интерсептор,
 тест), без единого импорта из `solid-js`:
@@ -129,7 +178,7 @@ export function isAuthed(): boolean {
 Полезно проверить: вызови `onLoginSuccess("abc")`, затем `isAuthed()` — `true`, ни разу не
 понадобился Solid.
 
-### 4. `createActionStoreFamily` — ключ фиксирован на весь жизненный цикл компонента
+### 5. `createActionStoreFamily` — ключ фиксирован на весь жизненный цикл компонента
 
 Тот же приём для семьи сторов: пока ключ (`props.id`) не меняется, пока компонент жив — `.use()`
 тоже вызывается один раз, напрямую, без обёртки:
@@ -162,7 +211,7 @@ function Tab(props: { id: string }) {
 Полезно проверить: два `<Tab id="a" />`/`<Tab id="b" />` рядом — правка одного поля не трогает
 второе, это разные физические сторы, не один слот.
 
-### 5. Ключ семьи реактивный, компонент сам НЕ перемонтируется — перемонтируй поддерево по ключу
+### 6. Ключ семьи реактивный, компонент сам НЕ перемонтируется — перемонтируй поддерево по ключу
 
 Ключ приходит из роута (`useParams`) и может смениться, пока внешний компонент остаётся
 смонтированным (родитель его не размонтирует). Вызов `family(key).use(selector)` один раз в теле
@@ -209,7 +258,7 @@ function FeedFor(props: { component: string }) {
 него), значение переключается на данные нового ключа; запись в стор другого (неактивного) ключа на
 экран не просачивается, пока на него явно не переключились.
 
-### 6. `createStore` + `useSelector` — плоское хранилище, события вместо actions
+### 7. `createStore` + `useSelector` — плоское хранилище, события вместо actions
 
 Когда состояние проще выразить событиями (`on: { тип: (context, event) => новыйContext }`), а не
 объектом actions — например, конечная стейт-машина без вложенных состояний/guards, для которой
@@ -236,7 +285,7 @@ export function FlatStoreDemo() {
 Полезно проверить: клик прибавляет `1`; `counterStore.send({ type: "inc", by: 1 })` — то же самое,
 `trigger.inc(payload)` просто короче писать на вызывающей стороне.
 
-### 7. `createAtom` — точечный атом, писуемый и вычисляемый
+### 8. `createAtom` — точечный атом, писуемый и вычисляемый
 
 Самая мелкая единица движка — одно значение, без actions/событий вокруг:
 
@@ -260,7 +309,7 @@ export function AtomDemo() {
 
 Полезно проверить: клик — `id` растёт на 1, `doubled` растёт на 2 сам, без ручной синхронизации.
 
-### 8. `createReducerAtom` — атом, меняющийся событиями (как `useReducer`), не голым `.set()`
+### 9. `createReducerAtom` — атом, меняющийся событиями (как `useReducer`), не голым `.set()`
 
 ```tsx
 import { createReducerAtom, useAtom } from "@web-core/store";
@@ -286,7 +335,7 @@ export function ReducerAtomDemo() {
 Полезно проверить: "+3" трижды подряд даёт `9`, "сброс" возвращает `0` — `.set()` тут вообще не
 нужен, вся запись идёт через `send`.
 
-### 9. `createBoundAtom` — атом, ведомый внешним Solid-аксессором
+### 10. `createBoundAtom` — атом, ведомый внешним Solid-аксессором
 
 Синк атома с внешним реактивным источником (пропом компонента, сигналом из другого места) — не
 своя реактивность, обвязка поверх `createEffect(() => atom.set(source()))` (тот же приём, что у
@@ -308,7 +357,7 @@ export function ShowcasePage(props: { component: string }) {
 Полезно проверить: смени `props.component` снаружи — `current()` следует за ним; вызови
 `currentComponentAtom.set("вручную")` — значение меняется, до следующего изменения `props.component`.
 
-### 10. `createResourceAtom` без ключа — один фетч при создании
+### 11. `createResourceAtom` без ключа — один фетч при создании
 
 ```tsx
 import { createResourceAtom, useAtom } from "@web-core/store";
@@ -338,7 +387,7 @@ export function ResourceNoKeyDemo() {
 РОВНО один раз, повторный рендер компонента новый запрос не запускает (атом модульный, живёт вне
 компонента).
 
-### 11. `createResourceAtom` с ключом — гонка резолвится сама
+### 12. `createResourceAtom` с ключом — гонка резолвится сама
 
 Смена ключа до того, как предыдущий фетч успел ответить, — устаревший ответ должен быть
 проигнорирован:
@@ -371,7 +420,7 @@ export function ResourceRaceDemo() {
 Полезно проверить: жми "slow", сразу за ним "fast" — итоговое значение `id: "fast"`, ответ
 "slow" приходит позже, но уже не актуален, `status` не мигает обратно в `pending` после `done`.
 
-### 12. `createAtomConfig` + `useAtomState` — атом, локальный для компонента
+### 13. `createAtomConfig` + `useAtomState` — атом, локальный для компонента
 
 Атомы выше — модульные синглтоны (создаются один раз, живут вне дерева компонентов). Когда атом
 нужен НА ВРЕМЯ ЖИЗНИ конкретного компонента (не переживает его размонтирование, не расшарен
@@ -395,7 +444,7 @@ export function LocalAtomDemo() {
 
 ## `./machine` — стейт-машины (полный `xstate`, когда нужны guards/вложенные состояния/акторы)
 
-### 13. `createMachine` + `useMachine`
+### 14. `createMachine` + `useMachine`
 
 ```tsx
 import { createMachine, useMachine } from "@web-core/store/machine";
@@ -423,7 +472,7 @@ export function ToggleDemo() {
 
 ## Аддоны — подключаются явным импортом отдельного подпути, ничего не подмешано в `.` по умолчанию
 
-### 14. `./mutate` — Immer-рецепт вместо ручного `{...state, x}`
+### 15. `./mutate` — Immer-рецепт вместо ручного `{...state, x}`
 
 Годится и в `atom.set`, и в `setState` из `createActionStore` (сигнатура updater'а та же —
 `(prev) => next`). `immer` — обычная зависимость пакета, ничего ставить в приложении не нужно:
@@ -468,7 +517,7 @@ const componentStore = createActionStore<ComponentState, { setOutfit(name: strin
 Полезно проверить: `componentStore.actions.setOutfit("dark")` → `componentStore.get().outfit ===
 "dark"`, исходный объект state не мутирован (`Object.is` со старым снапшотом — `false`).
 
-### 15. `./persist` — `persistAtom`, атом переживает перезагрузку страницы
+### 16. `./persist` — `persistAtom`, атом переживает перезагрузку страницы
 
 `createStore` подключает `persist` через `.with(...)` (аддон самого `@xstate/store`, см. пример
 №17). У `createAtom` нет `.with()` — для него отдельная функция `persistAtom`:
@@ -493,7 +542,7 @@ export const draftAtom = persistAtom(createAtom(""), {
 `persistAtom(createAtom(0), { name: "count" })` — атом гидрируется значением `5`, не `0`;
 `atom.set(3)` — `localStorage.getItem("count") === "3"` сразу же, без отдельного `flush`.
 
-### 16. `./undo`, `./reset` — события `undo`/`redo`/`reset` поверх `createStore`
+### 17. `./undo`, `./reset` — события `undo`/`redo`/`reset` поверх `createStore`
 
 ⚠️ Прямой реэкспорт аддонов `@xstate/store` — работают через `.with(...)`, композиция друг с
 другом (как ниже) не покрыта тестом в этом пакете, это рецепт, не доказанная сборка (см. README,
@@ -521,7 +570,7 @@ store.trigger.reset(); // добавлено reset
 Полезно проверить: `store.trigger.inc()` дважды → `count: 2`; `store.trigger.undo()` → `count: 1`;
 `store.trigger.reset()` → `count: 0` (назад к initial, не к состоянию до undo).
 
-### 17. `./validate` — `validateSchemas`, рантайм-проверка переходов по Standard Schema
+### 18. `./validate` — `validateSchemas`, рантайм-проверка переходов по Standard Schema
 
 Оборачивает переходы `createStore` проверкой контекста/событий по схеме (zod/valibot/любая
 Standard-Schema-совместимая библиотека — сам пакет `zod` в `@web-core/store` не тянется, схему

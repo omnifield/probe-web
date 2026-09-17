@@ -269,3 +269,75 @@ describe("createActionStoreFamily (кейс componentManagerStore — feedData �
     expect(feedStoreOf("checkbox").selectors.hasData()).toBe(false);
   });
 });
+
+describe("createActionStore — параметризованный селектор (кейс component-manager: значение по cell)", () => {
+  interface GridState {
+    readonly axis: "variant" | "assembly";
+    readonly variants: readonly string[];
+  }
+
+  function createGridStore() {
+    return createActionStore<
+      GridState,
+      { setAxis(axis: GridState["axis"]): void; setVariants(variants: readonly string[]): void },
+      { variantAt(state: GridState, index: number): string | undefined }
+    >(
+      { axis: "variant", variants: [] },
+      ({ setState }) => ({
+        setAxis(axis) {
+          setState((state) => ({ ...state, axis }));
+        },
+        setVariants(variants) {
+          setState((state) => ({ ...state, variants }));
+        },
+      }),
+      () => ({
+        variantAt(state, index) {
+          return state.axis === "variant" ? state.variants[index] : state.variants[0];
+        },
+      }),
+    );
+  }
+
+  it("зовётся с аргументом и сразу отдаёт значение, без промежуточного `()`", () => {
+    const store = createGridStore();
+    store.actions.setVariants(["a", "b", "c"]);
+
+    expect(store.selectors.variantAt(0)).toBe("a");
+    expect(store.selectors.variantAt(2)).toBe("c");
+  });
+
+  it("реактивен для каждого аргумента независимо, в реальном рендере", () => {
+    const store = createGridStore();
+    store.actions.setVariants(["a", "b"]);
+
+    function Cell(props: { index: number }) {
+      return <p>{store.selectors.variantAt(props.index)}</p>;
+    }
+
+    const host = document.createElement("div");
+    document.body.append(host);
+    dispose = render(
+      () => (
+        <>
+          <Cell index={0} />
+          <Cell index={1} />
+        </>
+      ),
+      host,
+    );
+
+    expect(host.textContent).toBe("ab");
+    store.actions.setVariants(["x", "y"]);
+    expect(host.textContent).toBe("xy");
+  });
+
+  it("axis влияет на результат так же, как обычный (беспараметровый) селектор видел бы state целиком", () => {
+    const store = createGridStore();
+    store.actions.setVariants(["a", "b", "c"]);
+
+    expect(store.selectors.variantAt(1)).toBe("b");
+    store.actions.setAxis("assembly");
+    expect(store.selectors.variantAt(1)).toBe("a");
+  });
+});

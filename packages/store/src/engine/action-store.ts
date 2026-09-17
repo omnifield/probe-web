@@ -9,9 +9,22 @@ export interface ActionStoreHelpers<T> {
   readonly get: Atom<T>["get"];
 }
 
-type SelectorsShape<T> = Record<string, (state: T) => unknown>;
+type SelectorsShape<T> = Record<string, (state: T, ...args: never[]) => unknown>;
+
+/**
+ * Селектор без своих аргументов — как раньше, готовый реактивный аксессор `() => R`.
+ * Селектор с аргументами ПОСЛЕ `state` (`(state, cell) => R`) — параметризованный геттер:
+ * вызывается `store.selectors.x(arg)` и сразу отдаёт `R`, реактивно, без промежуточного `()`.
+ * Различаются по arity сигнатуры внутри `createActionStore` (`fn.length`), не по отдельному флагу.
+ */
+type SelectorAccessor<T, F> = F extends (state: T) => infer R
+  ? Accessor<R>
+  : F extends (state: T, ...args: infer A) => infer R
+    ? (...args: A) => R
+    : never;
+
 type SelectorAccessors<T, TSelectors extends SelectorsShape<T>> = {
-  readonly [K in keyof TSelectors]: Accessor<ReturnType<TSelectors[K]>>;
+  readonly [K in keyof TSelectors]: SelectorAccessor<T, TSelectors[K]>;
 };
 
 export interface ActionStore<T, TActions, TSelectors extends SelectorsShape<T> = Record<string, never>>
@@ -77,7 +90,31 @@ export function createActionStore<
     const selectorFns = selectorsFactory();
     createRoot(() => {
       for (const key of Object.keys(selectorFns) as (keyof TSelectors)[]) {
-        (selectors as Record<keyof TSelectors, Accessor<unknown>>)[key] = useAtom(atom, selectorFns[key]);
+        const fn = selectorFns[key] as unknown as (state: T, ...args: unknown[]) => unknown;
+        if (fn.length <= 1) {
+          (selectors as Record<keyof TSelectors, Accessor<unknown>>)[key] = useAtom(atom, fn);
+          continue;
+        }
+
+        // Параметризованный геттер: своя подписка на каждый набор аргументов, лениво и
+        // с кэшем по ключу — тот же приём, что у createActionStoreFamily по K, только уровнем
+        // ниже (внутри одного стора, не между сторами). Кэш не вытесняется — рассчитан на
+        // конечный набор аргументов (id ячейки, тег и т.п.), не на неограниченный поток.
+        const cache = new Map<string, Accessor<unknown>>();
+        (selectors as Record<keyof TSelectors, (...args: unknown[]) => unknown>)[key] = (...args: unknown[]) => {
+          const cacheKey = args.map((arg) => (typeof arg === "object" && arg !== null ? JSON.stringify(arg) : String(arg))).join(" ");
+          let accessor = cache.get(cacheKey);
+          if (accessor === undefined) {
+            // Собственный createRoot, а не текущий owner — ленивое создание может случиться
+            // из тела компонента; без своего root эффект унаследует owner ЭТОГО компонента и
+            // умрёт вместе с ним, хотя закэширован для переиспользования другими вызывающими.
+            createRoot(() => {
+              accessor = useAtom(atom, (state: T) => fn(state, ...args));
+              cache.set(cacheKey, accessor as Accessor<unknown>);
+            });
+          }
+          return (accessor as Accessor<unknown>)();
+        };
       }
     });
   }
