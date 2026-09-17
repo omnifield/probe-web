@@ -5,7 +5,7 @@ import { componentManagerStoreOf, useComponentName } from "../../model";
 export function FeedManual() {
   const store = componentManagerStoreOf(useComponentName());
   const schema = store.use((state) => state.io?.schema);
-  const value = store.use((state) => state.feedData);
+  const value = store.selectors.feedData;
 
   return (
     <Show when={schema()} keyed>

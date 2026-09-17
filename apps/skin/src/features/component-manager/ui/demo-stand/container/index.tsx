@@ -1,17 +1,18 @@
 import { Match, Switch } from "solid-js";
-import { useMode } from "../../../model";
-import { Matrix } from "../modes/matrix";
-import { Grid } from "../modes/grid";
+import { componentManagerStoreOf, useComponentName } from "../../../model";
+import { Matrix } from "../layouts/matrix";
+import { Grid } from "../layouts/grid";
 
 export function Container() {
-  const { mode } = useMode();
+  const store = componentManagerStoreOf(useComponentName());
+  const layoutMode = store.use((state) => state.layoutMode);
 
   return (
     <Switch>
-      <Match when={mode() === "matrix"}>
+      <Match when={layoutMode() === "matrix"}>
         <Matrix />
       </Match>
-      <Match when={mode() === "grid"}>
+      <Match when={layoutMode() === "grid"}>
         <Grid />
       </Match>
     </Switch>

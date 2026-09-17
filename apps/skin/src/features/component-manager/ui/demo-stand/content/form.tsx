@@ -2,11 +2,13 @@ import { createMemo } from "solid-js";
 import type { DispatchedEvent } from "@web-core/assembly";
 import { toast } from "@web-core/ui";
 import { Renderer } from "#/shared/ui/renderer";
-import { componentManagerStoreOf } from "../../../model";
+import { ALL_CELLS, componentManagerStoreOf } from "../../../model";
 
 export function Form(props: { component: string; variant: string }) {
   const feedData = createMemo(() =>
-    componentManagerStoreOf(props.component).use((state) => state.feedData)(),
+    componentManagerStoreOf(props.component).use(
+      (state) => state.feedData[props.variant] ?? state.feedData[ALL_CELLS],
+    )(),
   );
 
   function dispatch(event: DispatchedEvent) {

@@ -19,7 +19,7 @@ export function ControlView() {
     select: (params) => params.component,
   });
   const store = () => componentManagerStoreOf(component() ?? "");
-  const viewMode = createMemo(() => store().use((state) => state.viewMode)());
+  const viewMode = createMemo(() => store().selectors.viewMode());
 
   return (
     <SegmentGroup

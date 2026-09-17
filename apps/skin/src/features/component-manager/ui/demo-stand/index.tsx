@@ -1,4 +1,3 @@
-import { Surface } from "@web-core/ui";
 import { componentDescriptorOf } from "#/entities/component";
 import { componentManagerStoreOf, useComponentName } from "../../model";
 import { Container } from "./container";
@@ -12,9 +11,5 @@ export function DemoStand() {
   store.actions.loadVariants(name);
   store.actions.loadContent(name);
 
-  return (
-    <Surface>
-      <Container />
-    </Surface>
-  );
+  return <Container />;
 }
