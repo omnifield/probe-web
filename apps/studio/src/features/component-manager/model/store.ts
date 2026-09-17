@@ -3,7 +3,7 @@ import { castDraft, mutate } from "@web-core/store/mutate";
 import type { ComponentDescriptor } from "@web-core/ui/component-info";
 import { contentOf, variantsOf } from "#/entities/component";
 import type { Cell } from "../lib/cell";
-import { DEFAULT_AXIS, DEFAULT_LAYOUT_MODE, type Axis, type LayoutMode, type ViewMode } from "./modes";
+import { DEFAULT_AXIS_MODE, DEFAULT_LAYOUT_MODE, type AxisMode, type LayoutMode, type ViewMode } from "./modes";
 
 export type CellKey = string;
 export const ALL_CELLS: CellKey = "*";
@@ -14,7 +14,7 @@ interface ComponentManagerState {
   readonly variants?: Awaited<ReturnType<typeof variantsOf>>;
   readonly content?: Awaited<ReturnType<typeof contentOf>>;
   readonly layoutMode: LayoutMode;
-  readonly axis: Axis;
+  readonly axisMode: AxisMode;
   readonly viewMode: Readonly<Record<CellKey, ViewMode>>;
   readonly feedData: Readonly<Record<CellKey, unknown>>;
 }
@@ -23,7 +23,7 @@ export const componentManagerStoreOf = createActionStoreFamily<
   ComponentManagerState,
   {
     setLayoutMode(layoutMode: LayoutMode): void;
-    setAxis(axis: Axis): void;
+    setAxisMode(axisMode: AxisMode): void;
     setViewMode(viewMode: ViewMode, cell?: Cell): void;
     setEditorInfo(editorInfo: ComponentDescriptor["editorInfo"]): void;
     setIo(io: ComponentDescriptor["io"]): void;
@@ -40,7 +40,7 @@ export const componentManagerStoreOf = createActionStoreFamily<
 >(
   {
     layoutMode: DEFAULT_LAYOUT_MODE,
-    axis: DEFAULT_AXIS,
+    axisMode: DEFAULT_AXIS_MODE,
     viewMode: { [ALL_CELLS]: "form" },
     feedData: {},
   },
@@ -52,10 +52,10 @@ export const componentManagerStoreOf = createActionStoreFamily<
         }),
       );
     },
-    setAxis(axis) {
+    setAxisMode(axisMode) {
       setState(
         mutate<ComponentManagerState>((draft) => {
-          draft.axis = axis;
+          draft.axisMode = axisMode;
         }),
       );
     },
@@ -123,11 +123,11 @@ export const componentManagerStoreOf = createActionStoreFamily<
     },
     variantAt(state, cell) {
       const variants = state.variants ?? [];
-      return state.axis === "variant" ? variants[cell.index] : variants[0];
+      return state.axisMode === "variant" ? variants[cell.index] : variants[0];
     },
     assemblyAt(state, cell) {
       const assemblies = state.editorInfo?.assemblies ?? [];
-      return state.axis === "assembly" ? assemblies[cell.index] : assemblies[0];
+      return state.axisMode === "assembly" ? assemblies[cell.index] : assemblies[0];
     },
   }),
 );

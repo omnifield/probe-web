@@ -12,7 +12,7 @@ export function Distributor() {
   const name = useComponentName();
   const store = componentManagerStoreOf(name);
   const layoutMode = store.use((state) => state.layoutMode);
-  const axis = store.use((state) => state.axis);
+  const axis = store.use((state) => state.axisMode);
   const variants = store.use((state) => state.variants ?? []);
   const assemblies = store.use((state) => state.editorInfo?.assemblies ?? []);
 

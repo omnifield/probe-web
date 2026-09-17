@@ -23,5 +23,12 @@ export const LAYOUT_MODES: readonly {
 ];
 export const DEFAULT_LAYOUT_MODE: LayoutMode = "grid";
 
-export type Axis = "variant" | "assembly";
-export const DEFAULT_AXIS: Axis = "variant";
+export type AxisMode = "variant" | "assembly";
+export const AXIS_MODES: readonly {
+  readonly value: AxisMode;
+  readonly icon: IconName;
+}[] = [
+  { value: "variant", icon: "copy" },
+  { value: "assembly", icon: "folder" },
+];
+export const DEFAULT_AXIS_MODE: AxisMode = "variant";

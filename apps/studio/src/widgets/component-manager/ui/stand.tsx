@@ -1,5 +1,6 @@
 import {
   Passport,
+  SwitchAxisMode,
   SwitchLayoutMode,
   SwitchViewMode,
   Distributor,
@@ -15,6 +16,7 @@ export function Stand() {
           <Flow style={layoutGroup({ justify: "space-between" })}>
             <Passport />
             <SwitchViewMode />
+            <SwitchAxisMode />
             <SwitchLayoutMode />
           </Flow>
         </FlowItem>
