@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { EndpointDescriptor } from "../../../src/entities/openapi/index.js";
 import { OpenapiEditor } from "../../../src/widgets/openapi/editor.js";
-import type { OpenapiGroup, OpenapiInvocation, SchemaGroup } from "../../../src/widgets/openapi/types.js";
+import type { OpenapiGroup, OpenapiInvocation } from "../../../src/widgets/openapi/types.js";
 
 const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), "../../entities/openapi/fixtures");
 const petstore = readFileSync(join(fixtureDir, "petstore.yaml"), "utf-8");
@@ -27,8 +29,27 @@ function mount(groups: readonly OpenapiGroup[], onChange: (invocation: OpenapiIn
   return host;
 }
 
-function schemaGroup(raw: string): SchemaGroup {
-  return { id: "g1", name: "Основной бэк", kind: "schema", raw };
+/** Реально стейтфульный монтаж (в отличие от `mount`, где `onGroupsChange` — просто наблюдатель) —
+ *  для проверки, что группа САМА визуально возвращается в нейтральный вид, не только что колбэк
+ *  позвали с правильными данными. */
+function mountControlled(initial: readonly OpenapiGroup[]): { host: HTMLElement; groups: () => readonly OpenapiGroup[] } {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const [groups, setGroups] = createSignal<readonly OpenapiGroup[]>(initial);
+  dispose = render(() => <OpenapiEditor groups={groups()} onGroupsChange={setGroups} onChange={() => {}} />, host);
+  return { host, groups };
+}
+
+function schemaGroup(raw: string): OpenapiGroup {
+  return { id: "g1", name: "Основной бэк", raw, endpoints: [] };
+}
+
+function manualGroup(endpoints: readonly EndpointDescriptor[] = []): OpenapiGroup {
+  return { id: "g2", name: "Бэк без сваггера", raw: "", endpoints };
+}
+
+function emptyGroup(): OpenapiGroup {
+  return { id: "g3", name: "Ещё не решено", raw: "", endpoints: [] };
 }
 
 function findInputNear(host: HTMLElement, labelText: string): HTMLInputElement {
@@ -55,6 +76,12 @@ function setValue(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+  setter.call(textarea, value);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 describe("OpenapiEditor — группа-схема", () => {
   it("список ручек рендерится после распознавания свагера, под именем группы", async () => {
     const host = mount([schemaGroup(petstore)], () => {});
@@ -65,10 +92,10 @@ describe("OpenapiEditor — группа-схема", () => {
     expect(host.textContent).toContain("POST https://petstore.swagger.io/v2/pet");
   });
 
-  it("пустой raw — ничего не рендерит и не падает (не пытается распознать), кроме формы «добавить группу»", () => {
+  it("пустой raw — ничего не рендерит и не падает, группа выглядит нейтральной (textarea+кнопка)", () => {
     const host = mount([schemaGroup("")], () => {});
-    // Единственный инпут на экране — «Название группы» формы добавления, ни одной карточки ручки.
-    expect(host.querySelectorAll('input[data-part="input"]')).toHaveLength(1);
+    expect(host.querySelector("textarea")).not.toBeNull();
+    expect(host.querySelector('button[aria-label="Добавить ручку вручную"]')).not.toBeNull();
     expect(host.textContent).not.toContain("GET ");
   });
 
@@ -112,15 +139,14 @@ describe("OpenapiEditor — группы", () => {
     expect(host.querySelectorAll('input[data-part="input"]')).toHaveLength(1);
   });
 
-  it("«Добавить группу» с именем зовёт onGroupsChange с новой группой-схемой", () => {
+  it("«Добавить группу» с именем зовёт onGroupsChange с новой нейтральной группой — без выбора вида", () => {
     let next: readonly OpenapiGroup[] = [];
     const host = mount([], () => {}, (groups) => (next = groups));
 
     setValue(host.querySelector('input[data-part="input"]')!, "Новый бэк");
     Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Добавить группу")!.click();
 
-    expect(next).toHaveLength(1);
-    expect(next[0]).toMatchObject({ name: "Новый бэк", kind: "schema", raw: "" });
+    expect(next).toEqual([{ id: expect.any(String), name: "Новый бэк", raw: "", endpoints: [] }]);
   });
 
   it("«Убрать группу» зовёт onGroupsChange без неё", () => {
@@ -133,35 +159,91 @@ describe("OpenapiEditor — группы", () => {
   });
 });
 
-describe("OpenapiEditor — группа-юзер", () => {
-  function manualGroup(): OpenapiGroup {
-    return { id: "g2", name: "Бэк без сваггера", kind: "manual", endpoints: [] };
-  }
-
-  it("пустая группа — без готовых ручек, но с кнопкой «Добавить» дерева дескриптора", () => {
-    const host = mount([manualGroup()], () => {});
-    expect(host.textContent).toContain("Бэк без сваггера");
-    expect(host.querySelectorAll('button[aria-label="Добавить"]').length).toBeGreaterThan(0);
-    expect(host.textContent).not.toContain("Отправить");
+describe("OpenapiEditor — нейтральная группа (вид детектится действием, не селектором и не флагом)", () => {
+  it("рендерит textarea для схемы и кнопку «Добавить ручку вручную», без селектора вида", () => {
+    const host = mount([emptyGroup()], () => {});
+    expect(host.querySelector("textarea")).not.toBeNull();
+    expect(host.querySelector('button[aria-label="Добавить ручку вручную"]')).not.toBeNull();
+    expect(host.querySelector("select")).toBeNull();
   });
 
-  it("«Добавить» в дереве дескриптора дописывает пустую ручку через onGroupsChange", () => {
+  it("вставить raw в textarea — группа становится схемой, тем же id/name", () => {
     let next: readonly OpenapiGroup[] | undefined;
-    const host = mount([manualGroup()], () => {}, (groups) => (next = groups));
+    const host = mount([emptyGroup()], () => {}, (groups) => (next = groups));
+
+    setTextareaValue(host.querySelector("textarea")!, petstore);
+
+    expect(next).toEqual([{ id: "g3", name: "Ещё не решено", raw: petstore, endpoints: [] }]);
+  });
+
+  it("«Добавить ручку вручную» — группа становится юзерской, с одним пустым дескриптором", () => {
+    let next: readonly OpenapiGroup[] | undefined;
+    const host = mount([emptyGroup()], () => {}, (groups) => (next = groups));
+
+    host.querySelector<HTMLButtonElement>('button[aria-label="Добавить ручку вручную"]')!.click();
+
+    expect(next).toEqual([{ id: "g3", name: "Ещё не решено", raw: "", endpoints: [{ method: "GET", url: "", params: [] }] }]);
+  });
+
+  it("ввести один нераспознанный символ — приложение не падает, показывает текст ошибки (регрессия)", async () => {
+    const { host } = mountControlled([emptyGroup()]);
+
+    setTextareaValue(host.querySelector("textarea")!, "x");
+
+    await vi.waitFor(() => expect(host.textContent).toContain("none of the templates recognize"));
+    // Дерево живо дальше — «Добавить группу» снаружи по-прежнему работает, ничего не размонтировало приложение.
+    expect(host.textContent).toContain("Добавить группу");
+  });
+});
+
+describe("OpenapiEditor — группа-схема, обновление/очистка", () => {
+  it("правка textarea — то же самое, что «обновить»: raw группы меняется через onGroupsChange", () => {
+    let next: readonly OpenapiGroup[] | undefined;
+    const host = mount([schemaGroup(petstore)], () => {}, (groups) => (next = groups));
+
+    setTextareaValue(host.querySelector("textarea")!, "openapi: 3.0.0");
+
+    expect(next).toEqual([{ id: "g1", name: "Основной бэк", raw: "openapi: 3.0.0", endpoints: [] }]);
+  });
+
+  it("«Очистить» — просто обнуляет raw, группа сама становится нейтральной (нет отдельного флага)", () => {
+    const { host, groups } = mountControlled([schemaGroup(petstore)]);
+    expect(groups()[0]!.raw).not.toBe("");
+
+    Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Очистить")!.click();
+
+    expect(groups()).toEqual([{ id: "g1", name: "Основной бэк", raw: "", endpoints: [] }]);
+    expect(host.querySelector('button[aria-label="Добавить ручку вручную"]')).not.toBeNull();
+  });
+});
+
+describe("OpenapiEditor — группа-юзер", () => {
+  it("уже с одной ручкой — «Добавить» в дереве дописывает ВТОРУЮ пустую ручку через onGroupsChange", () => {
+    const first: EndpointDescriptor = { method: "GET", url: "https://api.example.com/a", params: [] };
+    let next: readonly OpenapiGroup[] | undefined;
+    const host = mount([manualGroup([first])], () => {}, (groups) => (next = groups));
 
     host.querySelector<HTMLButtonElement>('button[aria-label="Добавить"]')!.click();
 
-    expect(next).toEqual([{ ...manualGroup(), endpoints: [{ method: "GET", url: "", params: [] }] }]);
+    expect(next).toEqual([manualGroup([first, { method: "GET", url: "", params: [] }])]);
+  });
+
+  it("убрать ПОСЛЕДНЮЮ ручку — группа сама визуально возвращается в нейтральную (регрессия)", () => {
+    const { host, groups } = mountControlled([manualGroup([{ method: "GET", url: "https://api.example.com/ping", params: [] }])]);
+
+    host.querySelector<HTMLButtonElement>('button[aria-label="Убрать"]')!.click();
+
+    expect(groups()).toEqual([manualGroup([])]);
+    // Не осталась «юзерской» с пустым списком — рендерит нейтральный вид заново.
+    expect(host.querySelector('button[aria-label="Добавить ручку вручную"]')).not.toBeNull();
+    expect(host.querySelector("textarea")).not.toBeNull();
   });
 
   it("уже заполненный дескриптор — своя карточка EndpointCard, отправить вызывает invoke как у группы-схемы", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const filledGroup: OpenapiGroup = {
-      ...manualGroup(),
-      endpoints: [{ method: "GET", url: "https://api.example.com/ping", params: [{ name: "id", type: "string", required: true }] }],
-    };
+    const filledGroup = manualGroup([{ method: "GET", url: "https://api.example.com/ping", params: [{ name: "id", type: "string", required: true }] }]);
     const invocations: OpenapiInvocation[] = [];
     const host = mount([filledGroup], (invocation) => invocations.push(invocation));
 

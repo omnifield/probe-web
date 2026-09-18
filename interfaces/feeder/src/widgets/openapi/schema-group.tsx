@@ -20,13 +20,18 @@ export function SchemaGroupView(props: { raw: string; onInvoke: (endpoint: Opena
   return (
     <Flow data-variant="column-center">
       <Show when={endpoints.error}>{(error) => <Typography>{String(error())}</Typography>}</Show>
-      <For each={endpoints()}>
-        {(endpoint) => (
-          <FlowItem style={layoutSelf({ align: "stretch" })}>
-            <EndpointCard endpoint={endpoint} onInvoke={(value, response) => props.onInvoke(endpoint, value, response)} />
-          </FlowItem>
-        )}
-      </For>
+      {/* Резолвер `Resource` бросает синхронно при вызове в состоянии "errored" (расчёт на
+       *  ErrorBoundary/Suspense, которых здесь нет) — не читаем аксессор, пока `.error` не пуст,
+       *  иначе один нераспознанный символ в `raw` роняет всё дерево, а не только эту секцию. */}
+      <Show when={!endpoints.error}>
+        <For each={endpoints() ?? []}>
+          {(endpoint) => (
+            <FlowItem style={layoutSelf({ align: "stretch" })}>
+              <EndpointCard endpoint={endpoint} onInvoke={(value, response) => props.onInvoke(endpoint, value, response)} />
+            </FlowItem>
+          )}
+        </For>
+      </Show>
     </Flow>
   );
 }

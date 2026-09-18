@@ -10,27 +10,25 @@ export interface OpenapiInvocation {
   readonly response: InvokeResult;
 }
 
-/** Группа-схема — ручки распознаются из `raw` (сегодня свагер 2.0), read-only: юзер не правит
- *  ручки внутри поштучно, «обновить» значит перезалить `raw` целиком и переразобрать заново, тот
- *  же контракт, что и `OpenapiEditor` до групп. */
-export interface SchemaGroup {
+/** Одна секция `OpenapiEditor`. Группа НЕ хранит отдельный флаг «чем я являюсь» — только сами
+ *  данные (`raw`/`endpoints`), вид всегда выводится из их текущего содержимого (`openapiGroupKind`)
+ *  заново на каждый рендер. Из этого сразу следует нужное поведение без отдельной обработки: юзер
+ *  убрал последнюю ручку из группы-юзера или стёр `raw` из группы-схемы — группа САМА возвращается
+ *  в нейтральное состояние, никакой «залипшей» отметки вида не остаётся. */
+export interface OpenapiGroup {
   readonly id: string;
   readonly name: string;
-  readonly kind: "schema";
   readonly raw: string;
-}
-
-/** Группа-юзер — ручки без исходного документа, дескрипторы (`EndpointDescriptor`) заполняются
- *  вручную через `Tree` (мод 1). Полностью редактируемая — юзер добавляет/убирает/правит ручки
- *  сам, в отличие от группы-схемы. */
-export interface ManualGroup {
-  readonly id: string;
-  readonly name: string;
-  readonly kind: "manual";
   readonly endpoints: readonly EndpointDescriptor[];
 }
 
-/** Одна секция `OpenapiEditor`. У юзера может быть сколько угодно бэков со свагером и сколько
- *  угодно бэков без него — группы не сливаются в общий список ручек, каждая подписана юзером и
- *  остаётся своим источником (см. FAQ.md). */
-export type OpenapiGroup = SchemaGroup | ManualGroup;
+export type OpenapiGroupKind = "empty" | "schema" | "manual";
+
+/** `raw` непустой — группа-схема (даже если параллельно как-то оказались и `endpoints` — приоритет
+ *  у `raw`, это не должно происходить через штатный UI, но функция обязана быть тотальной).
+ *  Иначе — есть хоть одна ручка → юзер, иначе — нейтральная. */
+export function openapiGroupKind(group: OpenapiGroup): OpenapiGroupKind {
+  if (group.raw.trim() !== "") return "schema";
+  if (group.endpoints.length > 0) return "manual";
+  return "empty";
+}

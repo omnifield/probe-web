@@ -1,3 +1,3 @@
 export { OpenapiEditor } from "./editor.js";
 export { OpenapiList, type OpenapiListItem } from "./list.js";
-export type { OpenapiInvocation, OpenapiGroup, SchemaGroup, ManualGroup } from "./types.js";
+export { openapiGroupKind, type OpenapiInvocation, type OpenapiGroup, type OpenapiGroupKind } from "./types.js";
