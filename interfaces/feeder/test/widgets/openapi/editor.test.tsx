@@ -8,7 +8,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { EndpointDescriptor } from "../../../src/entities/openapi/index.js";
 import { OpenapiEditor } from "../../../src/widgets/openapi/editor.js";
-import type { OpenapiGroup, OpenapiInvocation } from "../../../src/widgets/openapi/types.js";
+import type { OpenapiGroup } from "../../../src/widgets/openapi/groups/types.js";
+import type { OpenapiInvocation } from "../../../src/widgets/openapi/types.js";
 
 const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), "../../entities/openapi/fixtures");
 const petstore = readFileSync(join(fixtureDir, "petstore.yaml"), "utf-8");
@@ -133,18 +134,18 @@ describe("OpenapiEditor — группа-схема", () => {
 });
 
 describe("OpenapiEditor — группы", () => {
-  it("без единой группы рендерит только форму «добавить группу»", () => {
+  it("без единой группы рендерит только форму создания группы", () => {
     const host = mount([], () => {});
-    expect(host.textContent).toContain("Добавить группу");
     expect(host.querySelectorAll('input[data-part="input"]')).toHaveLength(1);
+    expect(host.querySelectorAll("button")).toHaveLength(1);
   });
 
-  it("«Добавить группу» с именем зовёт onGroupsChange с новой нейтральной группой — без выбора вида", () => {
+  it("форма создания группы с именем зовёт onGroupsChange с новой нейтральной группой — без выбора вида", () => {
     let next: readonly OpenapiGroup[] = [];
     const host = mount([], () => {}, (groups) => (next = groups));
 
     setValue(host.querySelector('input[data-part="input"]')!, "Новый бэк");
-    Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Добавить группу")!.click();
+    host.querySelector<HTMLButtonElement>("button")!.click();
 
     expect(next).toEqual([{ id: expect.any(String), name: "Новый бэк", raw: "", endpoints: [] }]);
   });
@@ -186,13 +187,14 @@ describe("OpenapiEditor — нейтральная группа (вид дете
   });
 
   it("ввести один нераспознанный символ — приложение не падает, показывает текст ошибки (регрессия)", async () => {
-    const { host } = mountControlled([emptyGroup()]);
+    const { host, groups } = mountControlled([emptyGroup()]);
 
     setTextareaValue(host.querySelector("textarea")!, "x");
 
     await vi.waitFor(() => expect(host.textContent).toContain("none of the templates recognize"));
-    // Дерево живо дальше — «Добавить группу» снаружи по-прежнему работает, ничего не размонтировало приложение.
-    expect(host.textContent).toContain("Добавить группу");
+    // Дерево живо дальше — «Очистить» всё ещё реально работает, ничего не размонтировало приложение.
+    Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Очистить")!.click();
+    expect(groups()).toEqual([emptyGroup()]);
   });
 });
 
@@ -239,7 +241,7 @@ describe("OpenapiEditor — группа-юзер", () => {
     expect(host.querySelector("textarea")).not.toBeNull();
   });
 
-  it("уже заполненный дескриптор — своя карточка EndpointCard, отправить вызывает invoke как у группы-схемы", async () => {
+  it("уже заполненный дескриптор — url виден как РЕДАКТИРУЕМОЕ поле (не текст EndpointCard), отправить в том же аккордионе вызывает invoke", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -247,7 +249,7 @@ describe("OpenapiEditor — группа-юзер", () => {
     const invocations: OpenapiInvocation[] = [];
     const host = mount([filledGroup], (invocation) => invocations.push(invocation));
 
-    expect(host.textContent).toContain("GET https://api.example.com/ping");
+    expect(findInputNear(host, "url").value).toBe("https://api.example.com/ping");
 
     const idInput = findInputNear(host, "id");
     setValue(idInput, "42");

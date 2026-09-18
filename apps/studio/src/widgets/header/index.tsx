@@ -3,7 +3,7 @@
 
 import { createMemo, For } from "solid-js";
 import { useLocation, useNavigate, useParams } from "@web-core/router";
-import { layoutGroup } from "@web-core/skin";
+import { layoutSelf } from "@web-core/skin";
 import {
   Flow,
   FlowItem,
@@ -67,10 +67,20 @@ export function Header() {
     void navigate({ to: target.to });
   };
 
+  // `space-between` балансирует зазоры, а не центр: середина съезжает к более широкому боку. Три
+  // грид-колонки (`1fr auto auto 1fr` бы неверно — здесь `1fr auto 1fr`) держат сегмент-группу
+  // ровно по центру шапки независимо от ширины LOGO и правого блока, а боковые `justify-self`
+  // прибивают их к своим краям.
   return (
-    <Flow style={layoutGroup({ justify: "space-between" })}>
-      <FlowItem>LOGO</FlowItem>
-      <FlowItem>
+    <Flow
+      style={{
+        display: "grid",
+        "grid-template-columns": "1fr auto 1fr",
+        "align-items": "center",
+      }}
+    >
+      <FlowItem style={layoutSelf({ justify: "start" })}>LOGO</FlowItem>
+      <FlowItem style={layoutSelf({ justify: "center" })}>
         <SegmentGroup
           value={screen()}
           onValueChange={onValueChange}
@@ -87,7 +97,7 @@ export function Header() {
           </For>
         </SegmentGroup>
       </FlowItem>
-      <FlowItem>
+      <FlowItem style={layoutSelf({ justify: "end" })}>
         <Flow>
           <ThemeSwitch />
           <Auth />

@@ -80,6 +80,10 @@ UI сведения заново.
 в готовый UI мода. Без `app`/`pages` — пакет не приложение с роутингом, входы наружу — экспорты
 пакета (мод = export, не страница).
 
+Как писать код на каждом слое (правила импортов, где граница `entities`/`features`/`widgets`) —
+канон в [`src/DBP.md`](./src/DBP.md) и `DBP.md` в корне каждого слоя, не здесь: этот раздел про
+ЧТО есть, DBP.md — про то, КАК устроено и почему.
+
 Мод 1: `entities/tree` (модель узла, биндинг), `features/edit-value` (инпуты редактирования),
 `widgets/tree` (сборка дерева). Мод 2: `entities/openapi` (свой `MappingTemplate` под Swagger 2.0 —
 распознавание + сборка `z.ZodType` на ручку; плюс `EndpointDescriptor`+`descriptorToEndpoint` —

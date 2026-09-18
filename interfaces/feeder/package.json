@@ -31,6 +31,7 @@
     "@web-core/io": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/skin": "workspace:*",
+    "@web-core/store": "workspace:*",
     "@web-core/ui": "workspace:*",
     "yaml": "^2.8.1"
   },

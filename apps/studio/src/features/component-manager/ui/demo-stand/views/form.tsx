@@ -5,11 +5,16 @@ import { Renderer } from "#/shared/ui/renderer";
 import type { Cell } from "../../../lib/cell";
 import { componentManagerStoreOf, useComponentName } from "../../../model";
 
-export function Form(props: { cell: Cell; variant: string; assembly: PassportAssembly }) {
+export function Form(props: {
+  cell: Cell;
+  variant: string;
+  assembly: PassportAssembly;
+}) {
   const component = useComponentName();
   const store = componentManagerStoreOf(component);
 
   function dispatch(event: DispatchedEvent) {
+    console.log(event);
     toast.create({
       title: event.name,
       description: JSON.stringify(event.context, null, 2),

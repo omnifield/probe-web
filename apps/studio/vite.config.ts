@@ -31,4 +31,11 @@ export default {
     }),
     ...(config.plugins ?? []),
   ],
+  // `partial-json` (CJS, транзитивный через `@tanstack/ai-client` → `@tanstack/ai`'s
+  // `json-parser.js`) внутри чужого чанка теряет CJS-интероп у дев-оптимизатора Vite 8
+  // (Rolldown) — браузер получает «does not provide an export named 'parse'». Явный прямой
+  // `dependencies` (см. package.json) + `include` заводят его СВОИМ отдельным входом
+  // оптимизатора с корректным интероп-шимом; строгая изоляция pnpm без прямой зависимости не
+  // дала бы `include` вообще резолвнуть пакет («Failed to resolve dependency»).
+  optimizeDeps: { include: ["partial-json"] },
 };

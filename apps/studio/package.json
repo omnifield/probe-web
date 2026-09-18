@@ -22,6 +22,7 @@
     "@web-core/feeder": "workspace:*",
     "@web-core/generators": "workspace:*",
     "@web-core/io": "workspace:*",
+    "@web-core/neurobox": "workspace:*",
     "@web-core/query": "workspace:*",
     "@web-core/router": "workspace:*",
     "@web-core/skin": "workspace:*",
@@ -30,6 +31,7 @@
     "@web-core/style": "workspace:*",
     "@web-core/ui": "workspace:*",
     "@tanstack/solid-router": "^1.170.30",
+    "partial-json": "^0.1.7",
     "solid-js": "^1.9.14",
     "yaml": "^2.8.1"
   },

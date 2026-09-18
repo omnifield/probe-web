@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { descriptorToEndpoint, endpointDescriptorSchema, manualGroupSchema } from "../../../src/entities/openapi/descriptor.js";
-import type { EndpointDescriptor } from "../../../src/entities/openapi/types.js";
+import { descriptorToEndpoint } from "../../../src/entities/openapi/descriptor.js";
+import { endpointDescriptorSchema, manualGroupSchema, type EndpointDescriptor } from "../../../src/entities/openapi/models/index.js";
 
 describe("endpointDescriptorSchema / manualGroupSchema", () => {
   it("дескриптор без параметров валиден", () => {

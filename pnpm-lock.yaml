@@ -84,6 +84,9 @@ importers:
       '@web-core/io':
         specifier: workspace:*
         version: link:../../packages/io
+      '@web-core/neurobox':
+        specifier: workspace:*
+        version: link:../../packages/neurobox
       '@web-core/query':
         specifier: workspace:*
         version: link:../../packages/query
@@ -105,6 +108,9 @@ importers:
       '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      partial-json:
+        specifier: ^0.1.7
+        version: 0.1.7
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
@@ -231,6 +237,9 @@ importers:
       '@web-core/skin':
         specifier: workspace:*
         version: link:../../packages/skin
+      '@web-core/store':
+        specifier: workspace:*
+        version: link:../../packages/store
       '@web-core/ui':
         specifier: workspace:*
         version: link:../../packages/ui

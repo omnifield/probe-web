@@ -1,35 +1,41 @@
-import { createSignal } from "solid-js";
-import {
-  Composer,
-  type Message,
-  type TextPart,
-  Transcript,
-} from "@web-core/chat";
+import { Composer, Transcript } from "@web-core/chat";
+import { useNeuroboxChat } from "@web-core/chat/neurobox";
+import { NEUROBOX_USER, neuroboxConnection } from "#/shared/api/clients";
 
 const VIEWER_ID = "viewer";
+const THREAD_STORAGE_KEY = "studio-chat-thread-id";
 
-// Локальный стейт вместо бэкенда — `@web-core/chat` историю не хранит сам (README, «Историю чат не
-// хранит»), а агентский адаптер (`@web-core/chat/neurobox`) требует подключения, которого у
-// skin-app пока нет. Это тестовая проводка ядра, не готовый продуктовый чат.
+// Поток — на сеанс работы, не на сообщение (NEUROBOX_CLIENT.md, «Поток и прогон»): забыть
+// `threadId` — тихо заводить новый холодный поток на каждый ход. `localStorage` переживает
+// перезагрузку страницы, генерируется один раз при первом визите.
+function readThreadId(): string {
+  const stored = localStorage.getItem(THREAD_STORAGE_KEY);
+  if (stored !== null) return stored;
+
+  const generated = crypto.randomUUID();
+  localStorage.setItem(THREAD_STORAGE_KEY, generated);
+  return generated;
+}
+
+// Мод работы с агентом: бокс сам переписку не хранит (README/`NEUROBOX_CLIENT.md`, «Кто помнит
+// разговор») — `useNeuroboxChat` читает историю ЭТОГО прогона из `useChat` и переводит её в
+// нейтральные `parts` ядра, ничего своего не добавляя.
 export function Chat() {
-  const [messages, setMessages] = createSignal<Message<TextPart>[]>([]);
-
-  function onSend(parts: readonly TextPart[]) {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        participantId: VIEWER_ID,
-        parts,
-        createdAt: Date.now(),
-      },
-    ]);
-  }
+  const chat = useNeuroboxChat({
+    connection: neuroboxConnection,
+    threadId: readThreadId(),
+    viewerId: VIEWER_ID,
+    viewerName: NEUROBOX_USER,
+  });
 
   return (
     <>
-      <Transcript messages={messages()} />
-      <Composer onSend={onSend} />
+      <Transcript messages={chat.conversation().messages} />
+      <Composer
+        onSend={chat.onSend}
+        isStreaming={chat.isStreaming()}
+        onStop={chat.onStop}
+      />
     </>
   );
 }
