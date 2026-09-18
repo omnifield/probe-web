@@ -5,6 +5,7 @@ import { componentManagerStoreOf, useComponentName } from "../../../model";
 import type { Cell } from "../../../lib/cell";
 import { groupByTags, noGroup } from "../../../lib/group";
 import { Grid } from "./grid";
+import { Matrix } from "./matrix";
 
 type PrimaryItem = VariantSummary | PassportAssembly;
 
@@ -19,6 +20,8 @@ export function Distributor() {
 
   const primary = (): readonly PrimaryItem[] =>
     axis() === "variant" ? variants() : assemblies();
+  const secondary = (): readonly PrimaryItem[] =>
+    axis() === "variant" ? assemblies() : variants();
 
   const indexed = () => primary().map((item, index) => ({ item, index }));
 
@@ -33,17 +36,21 @@ export function Distributor() {
     entryGroups().map((group) => ({
       label: group.label,
       items: group.items.map(
-        (entry): Cell => ({ index: entry.index, id: String(entry.index) }),
+        (entry): Cell => ({
+          primary: entry.index,
+          id: String(entry.index),
+          group: group.label,
+        }),
       ),
     }));
 
   return (
     <Switch>
       <Match when={layoutMode() === "grid"}>
-        <Grid groups={groups()} />
+        <Grid groups={groups()} secondaryItems={secondary()} />
       </Match>
       <Match when={layoutMode() === "matrix"}>
-        <div>Matrix</div>
+        <Matrix groups={groups()} secondaryItems={secondary()} />
       </Match>
     </Switch>
   );

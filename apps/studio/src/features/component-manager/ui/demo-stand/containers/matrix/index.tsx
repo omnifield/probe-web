@@ -1,82 +1,46 @@
-import { createMemo } from "solid-js";
-import { Flow, FlowItem, useCarousel, type UseCarouselReturn } from "@web-core/ui";
-import { ControlNavigation } from "../../controls";
+import { For } from "solid-js";
+import { Flow, FlowItem, Typography, useCarousel } from "@web-core/ui";
+import type { Cell } from "../../../../lib/cell";
+import type { Group } from "../../../../lib/group";
+import { ControlNavigation, SwitchSecondaryIndex } from "../../controls";
 import { Axis } from "./axis";
+import { Wrapper } from "./wrapper";
 
-type Cell = { name: string; content: string };
-type Row = { name: string; cells: Cell[] };
+type SecondaryItem = { readonly name: string };
 
-const matrix: Row[] = [
-  {
-    name: "Строка A",
-    cells: [
-      { name: "A1", content: "Контент A1" },
-      { name: "A2", content: "Контент A2" },
-      { name: "A3", content: "Контент A3" },
-    ],
-  },
-  {
-    name: "Строка B",
-    cells: [
-      { name: "B1", content: "Контент B1" },
-      { name: "B2", content: "Контент B2" },
-    ],
-  },
-  {
-    name: "Строка C",
-    cells: [
-      { name: "C1", content: "Контент C1" },
-      { name: "C2", content: "Контент C2" },
-      { name: "C3", content: "Контент C3" },
-      { name: "C4", content: "Контент C4" },
-    ],
-  },
-];
+export function Matrix(props: {
+  groups: readonly Group<Cell>[];
+  secondaryItems: readonly SecondaryItem[];
+}) {
+  return (
+    <For each={props.groups}>
+      {(group) => (
+        <MatrixGroup group={group} secondaryItems={props.secondaryItems} />
+      )}
+    </For>
+  );
+}
 
-export function Matrix() {
-  const rows = useCarousel({
-    slideCount: matrix.length,
-    orientation: "vertical",
-  });
-  const rowApis: UseCarouselReturn[] = [];
-
-  const activeRow = createMemo(() => rowApis[rows().page]);
-  const activeRowName = createMemo(() => matrix[rows().page].name);
-  const activeCellName = createMemo(() => {
-    const cellsApi = activeRow();
-    return cellsApi
-      ? matrix[rows().page].cells[cellsApi().page]?.name
-      : undefined;
-  });
+// Одна обёртка на группу, независимая от соседних: горизонтальный carousel листает primary
+// (столько слайдов, сколько элементов в группе — без кросс-продукта с secondary). Secondary —
+// общий на всю обёртку пикер (`SwitchSecondaryIndex`), пишет через любую ячейку группы: стор сам
+// резолвит scope в `cell.group`, так что все слайды меняются синхронно.
+function MatrixGroup(props: {
+  group: Group<Cell>;
+  secondaryItems: readonly SecondaryItem[];
+}) {
+  const primary = useCarousel(() => ({ slideCount: props.group.items.length }));
 
   return (
     <Flow data-variant="column">
+      {props.group.label !== "" && <Typography>{props.group.label}</Typography>}
       <FlowItem>
-        <ControlNavigation
-          api={rows}
-          orientation="vertical"
-          label={<strong>{activeRowName()}</strong>}
-        />
-
-        <ControlNavigation
-          api={() => activeRow()?.()}
-          orientation="horizontal"
-          label={<strong>{activeCellName()}</strong>}
-        />
+        <ControlNavigation api={primary} orientation="horizontal" />
+        <SwitchSecondaryIndex cell={props.group.items[0]} items={props.secondaryItems} />
       </FlowItem>
-
       <FlowItem>
-        <Axis api={rows} items={matrix} orientation="vertical">
-          {(row, index) => {
-            const cells = useCarousel({ slideCount: row.cells.length });
-            rowApis[index()] = cells;
-
-            return (
-              <Axis api={cells} items={row.cells} orientation="horizontal">
-                {(cell) => cell.content}
-              </Axis>
-            );
-          }}
+        <Axis api={primary} items={props.group.items} orientation="horizontal">
+          {(cell) => <Wrapper cell={cell} />}
         </Axis>
       </FlowItem>
     </Flow>

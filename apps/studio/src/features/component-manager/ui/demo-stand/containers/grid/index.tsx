@@ -4,7 +4,12 @@ import type { Cell } from "../../../../lib/cell";
 import type { Group } from "../../../../lib/group";
 import { CellWrapper } from "./cell-wrapper";
 
-export function Grid(props: { groups: readonly Group<Cell>[] }) {
+type SecondaryItem = { readonly name: string };
+
+export function Grid(props: {
+  groups: readonly Group<Cell>[];
+  secondaryItems: readonly SecondaryItem[];
+}) {
   return (
     <For each={props.groups}>
       {(group) => (
@@ -14,7 +19,7 @@ export function Grid(props: { groups: readonly Group<Cell>[] }) {
             <For each={group.items}>
               {(cell) => (
                 <GridCell>
-                  <CellWrapper cell={cell} />
+                  <CellWrapper cell={cell} secondaryItems={props.secondaryItems} />
                 </GridCell>
               )}
             </For>

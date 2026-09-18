@@ -16,6 +16,24 @@ import {
 export type CellKey = string;
 export const ALL_CELLS: CellKey = "*";
 
+function primaryIndexAt(cell: Cell): number {
+  return cell.primary;
+}
+
+function secondaryScopeOf(
+  state: Pick<ComponentManagerState, "layoutMode">,
+  cell: Cell,
+): CellKey {
+  return state.layoutMode === "matrix" ? cell.group : cell.id;
+}
+
+function secondaryIndexAt(
+  state: Pick<ComponentManagerState, "secondaryIndex" | "layoutMode">,
+  cell: Cell,
+): number {
+  return state.secondaryIndex[secondaryScopeOf(state, cell)] ?? 0;
+}
+
 interface ComponentManagerState {
   readonly editorInfo?: ComponentDescriptor["editorInfo"];
   readonly io?: ComponentDescriptor["io"];
@@ -41,7 +59,7 @@ export const componentManagerStoreOf = createActionStoreFamily<
     loadVariants(component: string): Promise<void>;
     loadContent(component: string): Promise<void>;
     setFeedData(feedData: unknown, cell?: Cell): void;
-    setSecondaryIndex(index: number, cell?: Cell): void;
+    setSecondaryIndex(index: number, cell: Cell): void;
   },
   {
     viewMode(state: ComponentManagerState, cell: Cell): ViewMode;
@@ -136,10 +154,9 @@ export const componentManagerStoreOf = createActionStoreFamily<
       );
     },
     setSecondaryIndex(index, cell) {
-      const key = cell?.id ?? ALL_CELLS;
       setState(
         mutate<ComponentManagerState>((draft) => {
-          draft.secondaryIndex[key] = index;
+          draft.secondaryIndex[secondaryScopeOf(draft, cell)] = index;
         }),
       );
     },
@@ -152,15 +169,17 @@ export const componentManagerStoreOf = createActionStoreFamily<
       return state.feedData[cell.id] ?? state.feedData[ALL_CELLS];
     },
     secondaryIndex(state, cell) {
-      return state.secondaryIndex[cell.id] ?? 0;
+      return secondaryIndexAt(state, cell);
     },
     variantAt(state, cell) {
       const variants = state.variants ?? [];
-      return state.axisMode === "variant" ? variants[cell.index] : variants[state.secondaryIndex[cell.id] ?? 0];
+      const index = state.axisMode === "variant" ? primaryIndexAt(cell) : secondaryIndexAt(state, cell);
+      return variants[index];
     },
     assemblyAt(state, cell) {
       const assemblies = state.editorInfo?.assemblies ?? [];
-      return state.axisMode === "assembly" ? assemblies[cell.index] : assemblies[state.secondaryIndex[cell.id] ?? 0];
+      const index = state.axisMode === "assembly" ? primaryIndexAt(cell) : secondaryIndexAt(state, cell);
+      return assemblies[index];
     },
   }),
 );

@@ -14,24 +14,29 @@ import {
 import type { Cell } from "../../../../lib/cell";
 import { componentManagerStoreOf, useComponentName } from "../../../../model";
 
-export function SwitchAxisModeLocal(props: { cell: Cell }) {
-  const store = componentManagerStoreOf(useComponentName());
-  const axisMode = store.use((state) => state.axisMode);
-  const variants = store.use((state) => state.variants ?? []);
-  const assemblies = store.use((state) => state.editorInfo?.assemblies ?? []);
+type SecondaryItem = { readonly name: string };
 
-  const names = () => (axisMode() === "variant" ? assemblies() : variants()).map((item) => item.name);
-  const items = () => names().map((name, index) => ({ value: String(index), label: name }));
+/** Выбор secondary-элемента для `cell`. Один и тот же контрол для grid и matrix — куда именно
+ *  пишется выбор (на саму ячейку или на всю её группу), решает стор по `layoutMode`
+ *  (`secondaryScopeOf` в `model/store.ts`), контрол этого не знает и знать не должен. */
+export function SwitchSecondaryIndex(props: {
+  cell: Cell;
+  items: readonly SecondaryItem[];
+}) {
+  const store = componentManagerStoreOf(useComponentName());
+
+  const options = () =>
+    props.items.map((item, index) => ({ value: String(index), label: item.name }));
 
   const index = () => store.selectors.secondaryIndex(props.cell);
   const selected = () => {
-    const item = items()[index()];
+    const item = options()[index()];
     return item === undefined ? [] : [item.value];
   };
 
   return (
     <Select
-      items={items()}
+      items={options()}
       value={selected()}
       onValueChange={(details) => {
         const item = details.items[0];
@@ -41,13 +46,13 @@ export function SwitchAxisModeLocal(props: { cell: Cell }) {
     >
       <SelectControl>
         <SelectTrigger>
-          <SelectValueText placeholder={axisMode() === "variant" ? "Сборка" : "Вариант"} />
+          <SelectValueText placeholder="Выбрать" />
         </SelectTrigger>
         <SelectIndicator>▾</SelectIndicator>
       </SelectControl>
       <SelectPositioner>
         <SelectContent>
-          <For each={items()}>
+          <For each={options()}>
             {(item) => (
               <SelectItem item={item}>
                 <SelectItemText>{item.label}</SelectItemText>
