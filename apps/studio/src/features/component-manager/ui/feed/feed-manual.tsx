@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-// import { Tree } from "@web-core/feeder";
+import { TreeForm } from "@web-core/feeder";
 import {
   ALL_CELLS,
   componentManagerStoreOf,
@@ -12,15 +12,14 @@ export function FeedManual() {
   const feedData = store.use((state) => state.feedData[ALL_CELLS]);
 
   return (
-    <div>wd</div>
-    // <Show when={schema()} keyed>
-    //   {(schema) => (
-    //     <Tree
-    //       schema={schema}
-    //       value={feedData()}
-    //       onChange={(next) => store.actions.setFeedData(next)}
-    //     />
-    //   )}
-    // </Show>
+    <Show when={schema()} keyed>
+      {(schema) => (
+        <TreeForm
+          schema={schema}
+          value={feedData()}
+          onChange={(next) => store.actions.setFeedData(next)}
+        />
+      )}
+    </Show>
   );
 }
